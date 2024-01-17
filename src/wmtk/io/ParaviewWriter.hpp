@@ -6,8 +6,8 @@
 #include <filesystem>
 
 namespace paraviewo {
-class HDF5VTUWriter;
-}
+class ParaviewWriter;
+} // namespace paraviewo
 
 namespace wmtk {
 class Mesh;
@@ -40,7 +40,7 @@ private:
 
         bool m_enabled;
 
-        std::shared_ptr<paraviewo::HDF5VTUWriter> m_paraview_file;
+        std::shared_ptr<paraviewo::ParaviewWriter> m_paraview_file;
 
         Eigen::MatrixXd m_vertices;
         Eigen::MatrixXi m_elements;
