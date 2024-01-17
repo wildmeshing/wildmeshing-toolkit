@@ -9,5 +9,8 @@ set(SRC_FILES
 
     SumEnergy.hpp
     SumEnergy.cpp
+
+    DistanceEnergy.hpp
+    DistanceEnergy.cpp
 )
 target_sources(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${SRC_FILES})

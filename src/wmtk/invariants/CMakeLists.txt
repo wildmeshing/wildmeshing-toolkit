@@ -5,6 +5,9 @@ set(SRC_FILES
     EnvelopeInvariant.hpp
     EnvelopeInvariant.cpp
 
+    StateChanges.hpp
+    StateChanges.cpp
+
     FunctionInvariant.hpp
     FunctionInvariant.cpp
     InvariantCollection.hpp

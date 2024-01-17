@@ -18,9 +18,18 @@ public:
     double m_amips_weight;
     bool m_area_weighted_amips;
 
+    std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
+        m_evaluator_ptr;
+    std::shared_ptr<wmtk::components::function::utils::IntegralBase> m_integral_ptr;
+
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_edge_length_update;
-    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>> m_xyz_update;
+    //.... TODO can be deleted once multimesh transfer strategy is implemented
+    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
+        m_uvmesh_xyz_update;
+    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
+        m_pmesh_xyz_update;
+    // ....
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_sum_error_update;
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
@@ -32,7 +41,10 @@ public:
 
     Accessor<double> m_uv_accessor;
     Accessor<double> m_edge_length_accessor;
-    Accessor<double> m_xyz_accessor;
+    //.... TODO can be deleted once multimesh transfer strategy is implemented
+    Accessor<double> m_uvmesh_xyz_accessor;
+    Accessor<double> m_pmesh_xyz_accessor;
+    //.....
     Accessor<double> m_quadrature_error_accessor;
     Accessor<double> m_sum_error_accessor;
     Accessor<double> m_barrier_energy_accessor;
@@ -72,8 +84,10 @@ public:
         std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
 
     ///// update
-    void set_xyz_update_rule();
-    void initialize_vertex_xyz();
+    void set_uvmesh_xyz_update_rule();
+    void initialize_pmesh_vertex_xyz();
+    void initialize_uvmesh_vertex_xyz();
+
     void set_edge_length_update_rule();
     void initialize_edge_length();
     void set_sum_error_update_rule();

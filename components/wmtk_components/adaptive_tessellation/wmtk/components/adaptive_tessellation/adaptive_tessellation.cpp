@@ -46,6 +46,7 @@
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATData.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATOperations.hpp>
 
+#include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -58,7 +59,8 @@ namespace AT = wmtk::components;
 
 namespace {
 void write(
-    const std::shared_ptr<Mesh>& mesh,
+    const std::shared_ptr<Mesh>& position_mesh,
+    const std::shared_ptr<Mesh>& uv_mesh,
     const std::string& uv_output,
     const std::string& xyz_output,
     const int64_t index,
@@ -69,21 +71,21 @@ void write(
         wmtk::io::ParaviewWriter writer(
             data_dir / (uv_output + "_" + std::to_string(index)),
             "vertices",
-            *mesh,
+            *uv_mesh,
             true,
             true,
             true,
             false);
-        mesh->serialize(writer);
+        uv_mesh->serialize(writer);
         wmtk::io::ParaviewWriter writer3d(
             data_dir / (xyz_output + "_" + std::to_string(index)),
-            "position",
-            *mesh,
+            "positions",
+            *uv_mesh,
             true,
             true,
             true,
             false);
-        mesh->serialize(writer3d);
+        uv_mesh->serialize(writer3d);
     }
 }
 void write_face_attr(
@@ -144,7 +146,7 @@ void _debug_texture_integral(
         std::cout << "func_res: " << func_res << std::endl;
         std::cout << "image_res: " << image_res << std::endl;
     }
-    write(mesh, "diff_sampling_debug_og_l4", "at_sampling_flat__xyz_output", 0, 1);
+    // write(mesh, "diff_sampling_debug_og_l4", "at_sampling_flat__xyz_output", 0, 1);
 }
 } // namespace
 
@@ -159,7 +161,9 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     std::cout << "options.amips_weight: " << options.amips_weight << std::endl;
     std::cout << "options.passes: " << options.passes << std::endl;
     // const std::filesystem::path& file = options.input;
-    std::shared_ptr<Mesh> mesh = cache.read_mesh(options.input);
+
+    std::shared_ptr<Mesh> position_mesh_ptr = cache.read_mesh(options.parent);
+    std::shared_ptr<Mesh> uv_mesh_ptr = cache.read_mesh(options.child);
 
     //////////////////////////////////
     // Storing edge lengths
@@ -202,14 +206,21 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     images[1]->set(v);
     images[2]->set(height_function);
 
-    // AT::operations::internal::ATData atdata(mesh, funcs);
-    AT::operations::internal::ATData atdata(mesh, images, AT::image::SAMPLING_METHOD::Bicubic);
+
+    AT::operations::internal::ATData atdata(
+        position_mesh_ptr,
+        uv_mesh_ptr,
+        options.position_path,
+        options.normal_path,
+        options.height_path);
+    // AT::operations::internal::ATData atdata(mesh, images);
+
     // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator image_evaluator(
     //     images,
     //     image::SAMPLING_METHOD::Bicubic,
     //     image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
-    // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator func_evaluator(funcs);
-    // atdata._debug_sampling(image_evaluator, func_evaluator);
+    // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator
+    // func_evaluator(funcs); atdata._debug_sampling(image_evaluator, func_evaluator);
 
     // _debug_texture_integral(mesh, atdata.uv_handle(), image_evaluator, func_evaluator);
     // exit(0);
@@ -227,31 +238,38 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     at_ops.set_energies();
     nlohmann::ordered_json FaceErrorJson_sum;
     nlohmann::ordered_json FaceErrorJson_amips;
-    write(mesh, options.uv_output, options.xyz_output, 0, options.intermediate_output);
-    write_face_attr(
-        mesh,
-        at_ops.m_sum_error_accessor,
-        FaceErrorJson_sum,
+    write(
+        position_mesh_ptr,
+        uv_mesh_ptr,
+        options.uv_output,
+        options.xyz_output,
         0,
-        options.uv_output + "_face_error.json");
-    write_face_attr(
-        mesh,
-        at_ops.m_amips_error_accessor,
-        FaceErrorJson_amips,
-        0,
-        options.uv_output + "_amips_error.json");
+        options.intermediate_output);
+
+    // write_face_attr(
+    //     position_mesh_ptr,
+    //     at_ops.m_sum_error_accessor,
+    //     FaceErrorJson_sum,
+    //     0,
+    //     options.uv_output + "_face_error.json");
+    // write_face_attr(
+    //     position_mesh_ptr,
+    //     at_ops.m_amips_error_accessor,
+    //     FaceErrorJson_amips,
+    //     0,
+    //     options.uv_output + "_amips_error.json");
     opt_logger().set_level(spdlog::level::level_enum::critical);
 
 
     // 1) wmtk::operations::EdgeSplit
-    // at_ops.AT_split_interior(at_ops.m_high_error_edges_first, at_ops.m_sum_energy);
+    at_ops.AT_split_interior(at_ops.m_high_error_edges_first, at_ops.m_sum_energy);
 
 
     // 3) EdgeSwap
     // at_ops.AT_swap_interior(at_ops.m_valence_improvement, at_ops.m_sum_energy);
 
     // 4) Smoothing
-    at_ops.AT_smooth_interior(at_ops.m_sum_energy);
+    // at_ops.AT_smooth_interior(at_ops.m_sum_energy);
 
 
     // nlohmann::ordered_json FaceErrorJson;
@@ -263,6 +281,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         SchedulerStats pass_stats;
         for (auto& op : at_ops.m_ops) pass_stats += scheduler.run_operation_on_all(*op);
 
+        // cache.write_mesh(*uv_mesh_ptr, "bumpyDice_debug_" + std::to_string(i));
         logger().info(
             "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
             pass_stats.number_of_performed_operations(),
@@ -273,19 +292,25 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
             pass_stats.executing_time);
 
         write_face_attr(
-            mesh,
+            uv_mesh_ptr,
             at_ops.m_sum_error_accessor,
             FaceErrorJson_sum,
             i + 1,
             options.uv_output + "_face_error.json");
         write_face_attr(
-            mesh,
+            uv_mesh_ptr,
             at_ops.m_amips_error_accessor,
             FaceErrorJson_amips,
             i + 1,
             options.uv_output + "_amips_error.json");
 
-        write(mesh, options.uv_output, options.xyz_output, i + 1, options.intermediate_output);
+        write(
+            uv_mesh_ptr,
+            uv_mesh_ptr,
+            options.uv_output,
+            options.xyz_output,
+            i + 1,
+            options.intermediate_output);
     }
 
     // write(mesh, "no_operation", 0, options.intermediate_output);
