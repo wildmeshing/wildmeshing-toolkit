@@ -54,6 +54,8 @@ ProjectOperation::ProjectOperation(
 
 std::vector<simplex::Simplex> ProjectOperation::execute(const simplex::Simplex& simplex)
 {
+    // mesh has to be the same as the main_op mesh
+    assert(&m_main_op->mesh() == &mesh());
     const auto main_simplices = (*m_main_op)(simplex);
     if (main_simplices.empty()) return {};
     assert(main_simplices.size() == 1);
