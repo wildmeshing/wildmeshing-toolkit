@@ -361,7 +361,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         op.add_transfer_strategy(edge_length_update);
         op.add_transfer_strategy(update_child_positon);
 
-        collapse.add_invariant(link_condition);
+        // collapse.add_invariant(link_condition);
 
         collapse.set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::CopyOther);
         split.set_new_attribute_strategy(pt_attribute);
