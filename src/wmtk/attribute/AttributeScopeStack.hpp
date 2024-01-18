@@ -1,5 +1,4 @@
 #pragma once
-#include <spdlog/spdlog.h>
 #include <memory>
 #include <vector>
 #include "AttributeCache.hpp"
@@ -71,9 +70,12 @@ public:
     T const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index, int8_t offset) const;
 #endif
 
+    void reserve(size_t size);
+
 protected:
-    std::unique_ptr<AttributeScope<T>> m_start;
-    mutable AttributeScope<T>* m_active = nullptr;
+    // std::unique_ptr<AttributeScope<T>> m_start;
+    mutable std::vector<AttributeScope<T>> m_scopes;
+    mutable typename std::vector<AttributeScope<T>>::iterator m_active;
 #if defined(WMTK_ENABLE_GENERIC_CHECKPOINTS)
     std::vector<AttributeScope<T> const*> m_checkpoints;
 #endif
@@ -83,35 +85,24 @@ protected:
 };
 
 template <typename T>
-inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index) -> MapResult
+inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index)
+    -> MapResult
 {
     assert(writing_enabled());
 
 
-#if defined(WMTK_FLUSH_ON_FAIL)
     // make sure we record the original value of this attribute by inserting if it hasn't been
     // inserted yet
     auto value = accessor.vector_attribute(index);
-    if (bool(m_start)) {
-
-        auto& l = m_start->m_data;
-        auto [it, was_inserted] = l.try_emplace(index,AttributeCacheData<T>{});
+    if (!empty()) {
+        auto& l = m_scopes.back().m_data;
+        auto [it, was_inserted] = l.try_emplace(index, AttributeCacheData<T>{});
         if (was_inserted) {
             it->second.data = value;
-            if constexpr(!std::is_same_v<T,Rational>) {
-            }
         }
     }
 
     return value;
-#else
-    if (m_active) {
-        return m_active->vector_attribute(accessor, index);
-    } else {
-        return accessor.vector_attribute(index);
-    }
-
-#endif
 }
 
 template <typename T>
@@ -119,10 +110,10 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
     const AccessorBase<T>& accessor,
     int64_t index) const -> ConstMapResult
 {
-    if (m_active != nullptr) {
-        return m_active->const_vector_attribute(accessor, index);
-    } else {
+    if (at_current_scope()) {
         return accessor.const_vector_attribute(index);
+    } else {
+        return m_active->const_vector_attribute(accessor, index);
     }
 }
 
@@ -145,10 +136,10 @@ inline auto AttributeScopeStack<T>::const_scalar_attribute(
     int64_t index,
     int8_t offset) const -> T
 {
-    if (m_active != nullptr) {
-        return m_active->const_vector_attribute(accessor, index)(offset);
-    } else {
+    if (at_current_scope()) {
         return accessor.const_scalar_attribute(index, offset);
+    } else {
+        return m_active->const_vector_attribute(accessor, index)(offset);
     }
 }
 } // namespace attribute
