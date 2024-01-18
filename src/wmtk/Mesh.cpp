@@ -29,7 +29,7 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted)
 {
     std::vector<Tuple> ret;
 
-    if (static_cast<int64_t>(type) > top_cell_dimension()) return ret;
+    if (static_cast<int8_t>(type) > top_cell_dimension()) return ret;
 
     const int64_t cap = capacity(type);
 
