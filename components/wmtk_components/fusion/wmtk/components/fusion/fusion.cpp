@@ -6,7 +6,10 @@
 #include <wmtk/TriMesh.hpp>
 
 #include <wmtk/Types.hpp>
+#include <wmtk/utils/EigenMatrixWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/mesh_utils.hpp>
+
 
 namespace wmtk::components {
 
@@ -14,7 +17,7 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     // load mesh
     FusionOptions options = j.get<FusionOptions>();
-    auto mesh = cache.read_mesh(options.input);
+    std::shared_ptr<Mesh> mesh = cache.read_mesh(options.input);
 
     // get fusion axis
     int64_t fusion_axis = static_cast<int64_t>(options.fusion_axis);
@@ -24,8 +27,6 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
     // get mesh dimension and checks
     int64_t mesh_dim = mesh->top_cell_dimension();
 
-    auto pos_handle = mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    const auto pos_accessor = mesh->create_const_accessor<double>(pos_handle.as<double>());
     double eps = 1e-8;
 
     switch (mesh_dim) {
@@ -34,8 +35,18 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
             throw std::runtime_error("cannot fusion axis Z of a 2D mesh");
         }
 
+        MatrixX<double> V;
+        MatrixX<int64_t> FV;
+        wmtk::utils::EigenMatrixWriter writer;
+        mesh->serialize(writer);
+
+        writer.get_position_matrix(V);
+        writer.get_FV_matrix(FV);
+
+        assert(V.rows() == mesh->get_all(PrimitiveType::Vertex).size());
+        assert(FV.rows() == mesh->get_all(PrimitiveType::Face).size());
+
         std::map<int64_t, int64_t> vertex_map;
-        const auto& vertices = mesh->get_all(PrimitiveType::Vertex);
 
         std::array<std::vector<std::pair<int64_t, Eigen::VectorXd>>, 2> vertices_on_zero;
         std::array<std::vector<std::pair<int64_t, Eigen::VectorXd>>, 2> vertices_on_one;
@@ -45,9 +56,8 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         int64_t v10 = -1;
         int64_t v11 = -1;
 
-        for (int64_t i = 0; i < vertices.size(); ++i) {
-            const auto& v = vertices[i];
-            const auto& pos = pos_accessor.const_vector_attribute(v);
+        for (int64_t i = 0; i < V.rows(); ++i) {
+            const auto& pos = V.row(i);
 
             if (abs(pos[0] - 0.0) < eps) {
                 vertices_on_zero[0].push_back(std::make_pair(i, pos));
@@ -115,18 +125,47 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         }
 
         // create periodic mesh
-        RowVectors3l FV;
-        RowVectors3d V(vertices.size(), 3);
+        RowVectors3l FV_new(FV.rows(), 3);
 
-        for (int64_t i = 0; i < vertices.size(); ++i) {
-            V.row(i) = pos_accessor.const_vector_attribute(vertices[i]);
+        for (int64_t i = 0; i < FV.rows(); ++i) {
+            for (int64_t k = 0; k < 3; ++k) {
+                if (vertex_map.find(FV(i, k)) != vertex_map.end()) {
+                    FV_new(i, k) = vertex_map[FV(i, k)];
+                } else {
+                    FV_new(i, k) = FV(i, k);
+                }
+            }
         }
 
-        const auto& faces = mesh->get_all(PrimitiveType::Face);
-        FV.resize(faces.size(), 3);
+        RowVectors3l V_new(V.rows(), 3);
 
-        for (int64_t i = 0; i < faces.size(); ++i) {
+        // remove unused vertices
+        std::map<int64_t, int64_t> v_consolidate_map;
+
+        int64_t v_valid_cnt = 0;
+        for (int64_t i = 0; i < V.rows(); ++i) {
+            if (vertex_map.find(i) != vertex_map.end() && vertex_map[i] != i) {
+                V_new(v_valid_cnt, 0) = V(i, 0);
+                V_new(v_valid_cnt, 1) = V(i, 1);
+                V_new(v_valid_cnt, 2) = V(i, 2);
+                v_consolidate_map[i] = v_valid_cnt++;
+            }
         }
+
+        V_new.resize(v_valid_cnt, 3);
+
+        // update FV_new
+        for (int64_t i = 0; i < FV_new.rows(); ++i) {
+            for (int64_t k = 0; k < FV_new.cols(); ++k) {
+                FV_new(i, k) = v_consolidate_map[FV_new(i, k)];
+            }
+        }
+
+        TriMesh fusion_mesh;
+        fusion_mesh.initialize(FV_new);
+        mesh_utils::set_matrix_attribute(V_new, "vertices", PrimitiveType::Vertex, fusion_mesh);
+
+        cache.write_mesh(fusion_mesh, options.name);
 
         break;
     }
