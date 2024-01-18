@@ -142,18 +142,18 @@ bool MeshAttributes<T>::has_attribute(const std::string& name) const
 template <typename T>
 bool MeshAttributes<T>::operator==(const MeshAttributes<T>& other) const
 {
-    if(m_handles != other.m_handles) {
+    if (m_handles != other.m_handles) {
         return false;
     }
-    if(m_attributes.size() != other.m_attributes.size()) {
+    if (m_attributes.size() != other.m_attributes.size()) {
         return false;
     }
-    for(size_t j = 0; j < m_attributes.size(); ++j) {
-        if(!(*m_attributes[j] == *other.m_attributes[j]) ){
+    for (size_t j = 0; j < m_attributes.size(); ++j) {
+        if (!(*m_attributes[j] == *other.m_attributes[j])) {
             return false;
         }
     }
-        return true;
+    return true;
 }
 
 
@@ -186,6 +186,8 @@ size_t MeshAttributes<T>::attribute_count() const
 template <typename T>
 void MeshAttributes<T>::reserve(const int64_t size)
 {
+    assert(size >= m_reserved_size);
+
     m_reserved_size = size;
     for (auto& attr_ptr : m_attributes) {
         attr_ptr->reserve(size);
