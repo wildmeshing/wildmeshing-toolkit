@@ -8,6 +8,8 @@ set(SRC_FILES
 
     BoundaryChecker.cpp
     BoundaryChecker.hpp
+    consolidate.hpp
+    consolidate.cpp
     )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
