@@ -12,151 +12,28 @@
 
 
 namespace wmtk::invariants {
-EnvelopeInvariant::EnvelopeInvariant(
-    const Mesh& m,
-    const TypedAttributeHandle<double>& coordinate,
-    const TypedAttributeHandle<int64_t>& tag,
-    int64_t value,
-    const Eigen::MatrixXd& vertices,
-    const Eigen::MatrixXi& faces,
-    double envelope_size)
-    : Invariant(m)
-    , m_coordinate_handle(coordinate)
-    , m_tag(tag)
-    , m_value(value)
-    , m_envelope_size(envelope_size)
-{
-    logger().warn("Envelope is using tag instead of mm");
-
-    if (faces.cols() == 3) {
-        std::vector<Eigen::Vector3d> verticesv(vertices.rows());
-        std::vector<Eigen::Vector3i> facesv(faces.rows());
-
-        for (size_t i = 0; i < verticesv.size(); ++i) verticesv[i] = vertices.row(i);
-        for (size_t i = 0; i < facesv.size(); ++i) facesv[i] = faces.row(i);
-
-        m_envelope = std::make_shared<fastEnvelope::FastEnvelope>(verticesv, facesv, envelope_size);
-
-    } else if (faces.cols() == 2) {
-        logger().warn("Envelope for edge mesh is using sampling");
-
-        m_bvh = std::make_shared<SimpleBVH::BVH>();
-        m_bvh->init(vertices, faces, 1e-10);
-    } else {
-        throw std::runtime_error("Envelope works only for tri meshes");
-    }
-}
 
 EnvelopeInvariant::EnvelopeInvariant(
-    const Mesh& m,
-    const TypedAttributeHandle<double>& coordinate,
-    const TypedAttributeHandle<int64_t>& tag,
-    int64_t value,
-    double envelope_size)
-    : Invariant(m)
-    , m_coordinate_handle(coordinate)
-    , m_tag(tag)
-    , m_value(value)
+    const attribute::MeshAttributeHandle& envelope_mesh_coordinate,
+    double envelope_size,
+    const attribute::MeshAttributeHandle& coordinate)
+    : Invariant(coordinate.mesh())
+    , m_coordinate_handle(coordinate.as<double>())
     , m_envelope_size(envelope_size)
 {
-    logger().warn("Envelope is using tag instead of mm");
-
-    ConstAccessor<double> accessor = mesh().create_accessor(m_coordinate_handle);
-    ConstAccessor<int64_t> tag_accessor = mesh().create_accessor(m_tag);
-
-
-    if (mesh().top_simplex_type() == PrimitiveType::Tetrahedron) {
-        std::vector<Eigen::Vector3d> vertices;
-        std::vector<Eigen::Vector3i> faces;
-
-        int count = 0;
-        assert(accessor.dimension() == 3);
-
-        const std::vector<Tuple>& facest = m.get_all(wmtk::PrimitiveType::Face);
-        for (const auto& f : facest) {
-            if (tag_accessor.const_scalar_attribute(f) != m_value) continue;
-
-
-            Eigen::Vector3d p0 = accessor.const_vector_attribute(f);
-            Eigen::Vector3d p1 = accessor.const_vector_attribute(mesh().switch_vertex(f));
-            Eigen::Vector3d p2 =
-                accessor.const_vector_attribute(mesh().switch_vertex(mesh().switch_edge(f)));
-
-            faces.emplace_back(count, count + 1, count + 2);
-            vertices.push_back(p0);
-            vertices.push_back(p1);
-            vertices.push_back(p2);
-
-            count += 3;
-        }
-
-        m_envelope = std::make_shared<fastEnvelope::FastEnvelope>(vertices, faces, envelope_size);
-
-    } else if (mesh().top_simplex_type() == PrimitiveType::Face) {
-        logger().warn("Envelope for edge mesh is using sampling");
-
-
-        int64_t count = 0;
-        int64_t index = 0;
-
-        const std::vector<Tuple>& edgest = m.get_all(wmtk::PrimitiveType::Edge);
-
-        Eigen::MatrixXd vertices(2 * edgest.size(), accessor.dimension());
-        Eigen::MatrixXi edges(edgest.size(), 2);
-
-        for (const auto& e : edgest) {
-            if (tag_accessor.const_scalar_attribute(e) != m_value) continue;
-
-            auto p0 = accessor.const_vector_attribute(e);
-            auto p1 = accessor.const_vector_attribute(mesh().switch_vertex(e));
-
-            edges.row(index) << count, count + 1;
-            vertices.row(2 * index) = p0;
-            vertices.row(2 * index + 1) = p1;
-
-            count += 2;
-            ++index;
-        }
-
-        edges.conservativeResize(index, 2);
-        vertices.conservativeResize(2 * index, vertices.cols());
-
-        m_bvh = std::make_shared<SimpleBVH::BVH>();
-        m_bvh->init(vertices, edges, 1e-10);
-    } else {
-        throw std::runtime_error("Envelope works only for tri meshes");
-    }
-}
-
-
-EnvelopeInvariant::EnvelopeInvariant(
-    const Mesh& m,
-    const TypedAttributeHandle<double>& coordinate,
-    const TypedAttributeHandle<int64_t>& tag,
-    int64_t value,
-    const Mesh& envelope_mesh,
-    const TypedAttributeHandle<double>& envelope_mesh_coordinate,
-    double envelope_size)
-    : Invariant(m)
-    , m_coordinate_handle(coordinate)
-    , m_tag(tag)
-    , m_value(value)
-    , m_envelope_size(envelope_size)
-{
-    logger().warn("Envelope is using tag instead of mm");
-
-    ConstAccessor<double> accessor = envelope_mesh.create_accessor(envelope_mesh_coordinate);
+    const auto& envelope_mesh = envelope_mesh_coordinate.mesh();
+    ConstAccessor<double> accessor =
+        envelope_mesh.create_accessor(envelope_mesh_coordinate.as<double>());
 
 
     if (envelope_mesh.top_simplex_type() == PrimitiveType::Face) {
         std::vector<Eigen::Vector3d> vertices;
         std::vector<Eigen::Vector3i> faces;
 
-
         int count = 0;
         assert(accessor.dimension() == 3);
 
-        const std::vector<Tuple>& facest = m.get_all(wmtk::PrimitiveType::Face);
+        const std::vector<Tuple>& facest = envelope_mesh.get_all(wmtk::PrimitiveType::Face);
         for (const auto& f : facest) {
             Eigen::Vector3d p0 = accessor.const_vector_attribute(f);
             Eigen::Vector3d p1 = accessor.const_vector_attribute(envelope_mesh.switch_vertex(f));
@@ -176,11 +53,10 @@ EnvelopeInvariant::EnvelopeInvariant(
     } else if (envelope_mesh.top_simplex_type() == PrimitiveType::Edge) {
         logger().warn("Envelope for edge mesh is using sampling");
 
-
         int64_t count = 0;
         int64_t index = 0;
 
-        const std::vector<Tuple>& edgest = m.get_all(wmtk::PrimitiveType::Edge);
+        const std::vector<Tuple>& edgest = envelope_mesh.get_all(wmtk::PrimitiveType::Edge);
 
         Eigen::MatrixXd vertices(2 * edgest.size(), accessor.dimension());
         Eigen::MatrixXi edges(edgest.size(), 2);
@@ -200,7 +76,7 @@ EnvelopeInvariant::EnvelopeInvariant(
         m_bvh = std::make_shared<SimpleBVH::BVH>();
         m_bvh->init(vertices, edges, 1e-10);
     } else {
-        throw std::runtime_error("Envelope works only for tri meshes");
+        throw std::runtime_error("Envelope works only for tri/edges meshes");
     }
 }
 
@@ -208,30 +84,10 @@ bool EnvelopeInvariant::after(
     const std::vector<Tuple>& top_dimension_tuples_before,
     const std::vector<Tuple>& top_dimension_tuples_after) const
 {
+    if (top_dimension_tuples_after.empty()) return true;
+
     ConstAccessor<double> accessor = mesh().create_accessor(m_coordinate_handle);
-    ConstAccessor<int64_t> tag_accessor = mesh().create_accessor(m_tag);
-
-    //////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////
-    // hack to use tags
-    simplex::SimplexCollection sc(mesh());
-    const PrimitiveType type = static_cast<PrimitiveType>(mesh().top_cell_dimension() - 1);
-    for (const auto& t : top_dimension_tuples_after) {
-        sc.add(
-            faces_single_dimension(mesh(), simplex::Simplex(mesh().top_simplex_type(), t), type));
-    }
-    sc.sort_and_clean();
-    const std::vector<Tuple> all_tuples = sc.simplex_vector_tuples(type);
-    std::vector<Tuple> tuples;
-    tuples.reserve(all_tuples.size());
-    // filter based on tag
-    for (const Tuple& tuple : all_tuples) {
-        if (tag_accessor.const_scalar_attribute(tuple) == m_value) tuples.push_back(tuple);
-    }
-    if (tuples.empty()) return true;
-    //////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////
-
+    const auto type = mesh().top_simplex_type();
 
     if (m_envelope) {
         assert(accessor.dimension() == 3);
@@ -241,7 +97,7 @@ bool EnvelopeInvariant::after(
         if (type == PrimitiveType::Face) {
             std::array<Eigen::Vector3d, 3> triangle;
 
-            for (const Tuple& tuple : tuples) {
+            for (const Tuple& tuple : top_dimension_tuples_after) {
                 faces = faces_single_dimension_tuples(
                     mesh(),
                     simplex::Simplex(type, tuple),
@@ -256,7 +112,7 @@ bool EnvelopeInvariant::after(
 
             return true;
         } else if (type == PrimitiveType::Edge) {
-            for (const Tuple& tuple : tuples) {
+            for (const Tuple& tuple : top_dimension_tuples_after) {
                 faces = faces_single_dimension_tuples(
                     mesh(),
                     simplex::Simplex(type, tuple),
@@ -270,7 +126,7 @@ bool EnvelopeInvariant::after(
 
             return true;
         } else if (type == PrimitiveType::Vertex) {
-            for (const Tuple& tuple : tuples) {
+            for (const Tuple& tuple : top_dimension_tuples_after) {
                 Eigen::Vector3d p = accessor.const_vector_attribute(tuple);
 
                 if (m_envelope->is_outside(p)) return false;
@@ -294,7 +150,7 @@ bool EnvelopeInvariant::after(
         if (type == PrimitiveType::Edge) {
             std::vector<SimpleBVH::VectorMax3d> pts;
 
-            for (const Tuple& tuple : tuples) {
+            for (const Tuple& tuple : top_dimension_tuples_after) {
                 SimpleBVH::VectorMax3d p0 = accessor.const_vector_attribute(tuple);
                 SimpleBVH::VectorMax3d p1 =
                     accessor.const_vector_attribute(mesh().switch_vertex(tuple));
@@ -321,7 +177,7 @@ bool EnvelopeInvariant::after(
 
             return true;
         } else if (type == PrimitiveType::Vertex) {
-            for (const Tuple& tuple : tuples) {
+            for (const Tuple& tuple : top_dimension_tuples_after) {
                 Eigen::Vector3d p = accessor.const_vector_attribute(tuple);
                 m_bvh->nearest_facet(p, nearest_point, sq_dist);
                 if (sq_dist > m_envelope_size * m_envelope_size) return false;

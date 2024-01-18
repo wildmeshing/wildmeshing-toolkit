@@ -14,7 +14,7 @@ std::array<Tuple, 2> EdgeOperationData::split_output_edges(const EdgeMesh& m) co
 {
     std::array<Tuple, 2> r;
     for (size_t j = 0; j < 2; ++j) {
-        r[j] = tuple_from_id(m, PrimitiveType::Face, m_split_e[j]);
+        r[j] = tuple_from_id(m, PrimitiveType::Edge, m_split_e[j]);
     }
     return r;
 }

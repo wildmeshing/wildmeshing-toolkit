@@ -57,10 +57,7 @@ bool InvariantCollection::after(
                 continue;
             }
             auto map = [&](const auto& tuples) {
-                return mesh().map_tuples(
-                    invariant->mesh(),
-                    mesh().top_simplex_type(),
-                    top_dimension_tuples_after);
+                return mesh().map_tuples(invariant->mesh(), mesh().top_simplex_type(), tuples);
             };
             const std::vector<Tuple> mapped_tuples_after =
                 invariant_uses_new_state ? map(top_dimension_tuples_after) : std::vector<Tuple>{};

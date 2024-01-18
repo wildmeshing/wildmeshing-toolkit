@@ -92,7 +92,7 @@ void OptimizationSmoothing::WMTKProblem::hessian(const TVector& x, Eigen::Matrix
 
 void OptimizationSmoothing::WMTKProblem::solution_changed(const TVector& new_x)
 {
-    m_accessor.vector_attribute(m_simplex.tuple()) = new_x;
+    // m_accessor.vector_attribute(m_simplex.tuple()) = new_x;
 }
 
 
@@ -140,15 +140,17 @@ void OptimizationSmoothing::create_solver()
 
 std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simplex& simplex)
 {
-    WMTKProblem problem(
-        mesh().create_accessor(m_energy->attribute_handle().as<double>()),
-        simplex,
-        m_invariants,
-        *m_energy);
+    auto accessor = mesh().create_accessor(m_energy->attribute_handle().as<double>());
+    WMTKProblem problem(std::move(accessor), simplex, m_invariants, *m_energy);
+
+    // std::cout << "smoothing: " << simplex.tuple().m_hash << std::endl;
 
     auto x = problem.initial_value();
     try {
         m_solver->minimize(problem, x);
+
+        accessor.vector_attribute(simplex.tuple()) = x;
+
     } catch (const std::exception&) {
         return {};
     }
