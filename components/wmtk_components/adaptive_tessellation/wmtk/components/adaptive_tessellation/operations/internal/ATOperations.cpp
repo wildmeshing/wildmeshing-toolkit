@@ -180,6 +180,11 @@ void ATOperations::set_energies()
         m_atdata.uv_handle(),
         m_integral_ptr,
         m_distance_weight);
+    m_distance_nondiff_energy = std::make_shared<wmtk::function::DistanceEnergyNonDiff>(
+        *m_atdata.uv_mesh_ptr(),
+        m_atdata.uv_handle(),
+        m_integral_ptr,
+        m_distance_weight);
 
 
     m_amips_energy = std::make_shared<wmtk::function::TriangleAMIPS>(

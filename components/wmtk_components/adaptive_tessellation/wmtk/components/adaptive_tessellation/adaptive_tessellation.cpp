@@ -213,7 +213,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         options.position_path,
         options.normal_path,
         options.height_path);
-    // AT::operations::internal::ATData atdata(mesh, images);
+    // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
 
     // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator image_evaluator(
     //     images,
@@ -262,7 +262,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
 
     // 1) wmtk::operations::EdgeSplit
-    at_ops.AT_split_interior(at_ops.m_high_distance_edges_first, at_ops.m_distance_energy);
+    at_ops.AT_split_interior(at_ops.m_high_distance_edges_first, at_ops.m_distance_nondiff_energy);
 
 
     // 3) EdgeSwap
@@ -291,26 +291,26 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
-        write_face_attr(
-            uv_mesh_ptr,
-            at_ops.m_sum_error_accessor,
-            FaceErrorJson_sum,
-            i + 1,
-            options.uv_output + "_face_error.json");
-        write_face_attr(
-            uv_mesh_ptr,
-            at_ops.m_amips_error_accessor,
-            FaceErrorJson_amips,
-            i + 1,
-            options.uv_output + "_amips_error.json");
+        // write_face_attr(
+        //     uv_mesh_ptr,
+        //     at_ops.m_sum_error_accessor,
+        //     FaceErrorJson_sum,
+        //     i + 1,
+        //     options.uv_output + "_face_error.json");
+        // write_face_attr(
+        //     uv_mesh_ptr,
+        //     at_ops.m_amips_error_accessor,
+        //     FaceErrorJson_amips,
+        //     i + 1,
+        //     options.uv_output + "_amips_error.json");
 
-        write(
-            uv_mesh_ptr,
-            uv_mesh_ptr,
-            options.uv_output,
-            options.xyz_output,
-            i + 1,
-            options.intermediate_output);
+        // write(
+        //     uv_mesh_ptr,
+        //     uv_mesh_ptr,
+        //     options.uv_output,
+        //     options.xyz_output,
+        //     i + 1,
+        //     options.intermediate_output);
     }
 
     // write(mesh, "no_operation", 0, options.intermediate_output);
