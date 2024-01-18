@@ -5,7 +5,7 @@
 namespace wmtk::components {
 struct FusionOptions
 {
-    enum class Axis { X = 0, Y = 1, Z = 2, All = 3 };
+    enum class Axis : int64_t { X = 0, Y = 1, Z = 2, All = 3 };
     Axis fusion_axis;
 
     std::string input;

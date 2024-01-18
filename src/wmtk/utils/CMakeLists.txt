@@ -53,6 +53,9 @@ set(SRC_FILES
 
     VolumeRemesherTriangleInsertion.hpp
     VolumeRemesherTriangleInsertion.cpp
+
+    EigenMatrixWriter.hpp
+    EigenMatrixWriter.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
