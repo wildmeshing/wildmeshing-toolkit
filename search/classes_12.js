@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['valenceimprovementinvariant_2263',['ValenceImprovementInvariant',['../classwmtk_1_1invariants_1_1_valence_improvement_invariant.html',1,'wmtk::invariants']]],
-  ['vertexlaplaciansmooth_2264',['VertexLaplacianSmooth',['../classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html',1,'wmtk::operations']]],
-  ['vertextangentiallaplaciansmooth_2265',['VertexTangentialLaplacianSmooth',['../classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html',1,'wmtk::operations']]]
+  ['valenceimprovementinvariant_2272',['ValenceImprovementInvariant',['../classwmtk_1_1invariants_1_1_valence_improvement_invariant.html',1,'wmtk::invariants']]],
+  ['vertexlaplaciansmooth_2273',['VertexLaplacianSmooth',['../classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html',1,'wmtk::operations']]],
+  ['vertextangentiallaplaciansmooth_2274',['VertexTangentialLaplacianSmooth',['../classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html',1,'wmtk::operations']]]
 ];

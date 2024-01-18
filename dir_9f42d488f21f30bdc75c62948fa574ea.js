@@ -41,5 +41,7 @@ var dir_9f42d488f21f30bdc75c62948fa574ea =
       [ "TupleInspector", "classwmtk_1_1utils_1_1_tuple_inspector.html", null ]
     ] ],
     [ "vector_hash.cpp", "vector__hash_8cpp.html", "vector__hash_8cpp" ],
-    [ "vector_hash.hpp", "vector__hash_8hpp.html", "vector__hash_8hpp" ]
+    [ "vector_hash.hpp", "vector__hash_8hpp.html", "vector__hash_8hpp" ],
+    [ "VolumeRemesherTriangleInsertion.cpp", "_volume_remesher_triangle_insertion_8cpp.html", "_volume_remesher_triangle_insertion_8cpp" ],
+    [ "VolumeRemesherTriangleInsertion.hpp", "_volume_remesher_triangle_insertion_8hpp.html", "_volume_remesher_triangle_insertion_8hpp" ]
 ];

@@ -17,6 +17,7 @@ var _types_8hpp =
     [ "Vector2", "_types_8hpp.html#aa8602f5df2ebb323b2d2ad01b466eb90", null ],
     [ "Vector2l", "_types_8hpp.html#a30c6efa3ff491450e712bffb6d7345c4", null ],
     [ "Vector3", "_types_8hpp.html#a3855b2c13dbe4ac1cf2a204649eee13b", null ],
+    [ "Vector3d", "_types_8hpp.html#a8f74118e77f6f9bce5ebc12a1be515f3", null ],
     [ "Vector3l", "_types_8hpp.html#a0266b59714942ac7443d6514b4ef9113", null ],
     [ "Vector4", "_types_8hpp.html#a111fda8fb05607f0418f99fddc2bd8e8", null ],
     [ "Vector4l", "_types_8hpp.html#a6ce769f4c1328170db11e553c05deb3c", null ],

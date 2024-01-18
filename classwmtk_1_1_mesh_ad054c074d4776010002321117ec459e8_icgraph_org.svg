@@ -467,32 +467,49 @@
 <!-- Node29 -->
 <g id="node29" class="node">
 <title>Node29</title>
-<g id="a_node29"><a xlink:href="test__component__isotropic__remeshing_8cpp.html#aae475685ae29b731655dd43137a950d6" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="54,-142.5 54,-161.5 125,-161.5 125,-142.5 54,-142.5"/>
-<text text-anchor="middle" x="89.5" y="-149.5" font-family="Helvetica,sans-Serif" font-size="10.00">TEST_CASE</text>
+<g id="a_node29"><a xlink:href="namespacewmtk_1_1utils.html#af5ade8ca9598ff7d68dd37bcf395b9aa" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="13,-161.5 13,-202.5 166,-202.5 166,-161.5 13,-161.5"/>
+<text text-anchor="start" x="21" y="-190.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::utils::generate</text>
+<text text-anchor="start" x="21" y="-179.5" font-family="Helvetica,sans-Serif" font-size="10.00">_raw_tetmesh_with_surface</text>
+<text text-anchor="middle" x="89.5" y="-168.5" font-family="Helvetica,sans-Serif" font-size="10.00">_from_input</text>
 </a>
 </g>
 </g>
 <!-- Node28&#45;&gt;Node29 -->
 <g id="edge30" class="edge">
 <title>Node28&#45;&gt;Node29</title>
-<path fill="none" stroke="midnightblue" d="M204.9,-140.47C177.35,-143.25 147.39,-146.27 125.04,-148.52"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="205.32,-143.94 214.92,-139.46 204.62,-136.98 205.32,-143.94"/>
+<path fill="none" stroke="midnightblue" d="M205.22,-152.18C192.38,-155.52 179.01,-158.99 166.12,-162.34"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="206.12,-155.56 214.92,-149.66 204.36,-148.79 206.12,-155.56"/>
 </g>
 <!-- Node30 -->
 <g id="node30" class="node">
 <title>Node30</title>
-<g id="a_node30"><a xlink:href="namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="0,-104.5 0,-123.5 179,-123.5 179,-104.5 0,-104.5"/>
-<text text-anchor="middle" x="89.5" y="-111.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::components::wildmeshing</text>
+<g id="a_node30"><a xlink:href="test__component__isotropic__remeshing_8cpp.html#aae475685ae29b731655dd43137a950d6" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="54,-123.5 54,-142.5 125,-142.5 125,-123.5 54,-123.5"/>
+<text text-anchor="middle" x="89.5" y="-130.5" font-family="Helvetica,sans-Serif" font-size="10.00">TEST_CASE</text>
 </a>
 </g>
 </g>
 <!-- Node28&#45;&gt;Node30 -->
 <g id="edge31" class="edge">
 <title>Node28&#45;&gt;Node30</title>
-<path fill="none" stroke="midnightblue" d="M204.77,-125.52C196.35,-124.67 187.7,-123.8 179.12,-122.93"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="204.62,-129.02 214.92,-126.54 205.32,-122.06 204.62,-129.02"/>
+<path fill="none" stroke="midnightblue" d="M204.9,-133C177.35,-133 147.39,-133 125.04,-133"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="204.92,-136.5 214.92,-133 204.92,-129.5 204.92,-136.5"/>
+</g>
+<!-- Node31 -->
+<g id="node31" class="node">
+<title>Node31</title>
+<g id="a_node31"><a xlink:href="namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="0,-85.5 0,-104.5 179,-104.5 179,-85.5 0,-85.5"/>
+<text text-anchor="middle" x="89.5" y="-92.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::components::wildmeshing</text>
+</a>
+</g>
+</g>
+<!-- Node28&#45;&gt;Node31 -->
+<g id="edge32" class="edge">
+<title>Node28&#45;&gt;Node31</title>
+<path fill="none" stroke="midnightblue" d="M204.99,-118.08C182.35,-113.52 158.08,-108.62 137.73,-104.52"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="204.42,-121.54 214.92,-120.08 205.81,-114.67 204.42,-121.54"/>
 </g>
 </g>
 </svg>

@@ -73,6 +73,7 @@ var namespacewmtk =
     [ "Vector2", "namespacewmtk.html#aa8602f5df2ebb323b2d2ad01b466eb90", null ],
     [ "Vector2l", "namespacewmtk.html#a30c6efa3ff491450e712bffb6d7345c4", null ],
     [ "Vector3", "namespacewmtk.html#a3855b2c13dbe4ac1cf2a204649eee13b", null ],
+    [ "Vector3d", "namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3", null ],
     [ "Vector3l", "namespacewmtk.html#a0266b59714942ac7443d6514b4ef9113", null ],
     [ "Vector4", "namespacewmtk.html#a111fda8fb05607f0418f99fddc2bd8e8", null ],
     [ "Vector4l", "namespacewmtk.html#a6ce769f4c1328170db11e553c05deb3c", null ],
