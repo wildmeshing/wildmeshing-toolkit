@@ -147,7 +147,6 @@ void SeamlessSmoothing::SeamlessProblem::solution_changed(const TVector& new_x)
     }
 }
 
-// TODO: maybe this is the last piece
 bool SeamlessSmoothing::SeamlessProblem::is_step_valid(const TVector& x0, const TVector& x1)
 {
     std::vector<TVector> tmps(m_simplices.size());
@@ -253,7 +252,7 @@ std::vector<simplex::Simplex> SeamlessSmoothing::execute(const simplex::Simplex&
                 return {};
             }
         }
-        // TODO: create problem and use solver to solve its
+        //  create problem and use solver to solve its
         SeamlessProblem problem(
             m_energy->mesh().create_accessor(m_energy->attribute_handle().as<double>()),
             vs_on_cut_mesh,
@@ -268,11 +267,10 @@ std::vector<simplex::Simplex> SeamlessSmoothing::execute(const simplex::Simplex&
             return {};
         }
     } else {
-        // return {};
         return OptimizationSmoothing::execute(
             simplex); // as the new  execute on OptimizationSmoothing is supporting mapping
     }
-    return AttributesUpdate::execute(simplex);
+    // return AttributesUpdate::execute(simplex);
 }
 
 } // namespace wmtk::operations
