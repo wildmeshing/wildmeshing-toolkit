@@ -65,6 +65,7 @@ void SimplexCollection::sort_and_clean()
     using SimplexIdPair = std::pair<int64_t, Simplex>;
 
     std::vector<SimplexIdPair> tmp;
+    tmp.reserve(m_simplices.size());
 
     std::transform(
         m_simplices.begin(),
