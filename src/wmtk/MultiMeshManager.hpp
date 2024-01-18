@@ -5,8 +5,8 @@
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
 // included to make a friend as this requires IDs
-#include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
+#include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 
 
@@ -50,6 +50,7 @@ public:
     // let the visitor object access the internal details
     template <int64_t cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshSimplexVisitor;
+    friend class Mesh;
     template <typename Visitor>
     friend class multimesh::MultiMeshSimplexVisitorExecutor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;

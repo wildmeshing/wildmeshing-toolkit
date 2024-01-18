@@ -1,6 +1,7 @@
 #include <numeric>
 #include "Mesh.hpp"
 
+#include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include "Primitive.hpp"
@@ -240,6 +241,49 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
             accessor.attribute().index_remap(old2new[d]);
         }
     }
+
+    {
+        constexpr static int64_t TUPLE_SIZE = multimesh::utils::TUPLE_SIZE; // in terms of int64_t
+        constexpr static int64_t GLOBAL_ID_INDEX = multimesh::utils::GLOBAL_ID_INDEX;
+        const static std::vector<Eigen::Index> image_map_offsets{
+            Eigen::Index(TUPLE_SIZE + GLOBAL_ID_INDEX)};
+        const static std::vector<Eigen::Index> domain_map_offsets{Eigen::Index(GLOBAL_ID_INDEX)};
+        size_t dim = get_primitive_type_id(top_simplex_type());
+        const auto& top_map = old2new[dim];
+        if (auto parent_ptr = m_multi_mesh_manager.m_parent; parent_ptr != nullptr) {
+            {
+                int64_t child_id = m_multi_mesh_manager.m_child_id;
+                const auto& child_data = parent_ptr->m_multi_mesh_manager.m_children[child_id];
+                const auto handle = child_data.map_handle;
+                auto acc = parent_ptr->create_accessor(handle);
+                auto& attr = acc.attribute();
+                attr.index_remap(top_map, image_map_offsets);
+            }
+
+            {
+                const auto handle = m_multi_mesh_manager.map_to_parent_handle;
+                auto acc = create_accessor(handle);
+                auto& attr = acc.attribute();
+                attr.index_remap(top_map, domain_map_offsets);
+            }
+        }
+
+        for (const auto& child_data : m_multi_mesh_manager.m_children) {
+            {
+                const auto handle = child_data.map_handle;
+                auto acc = create_accessor(handle);
+                auto& attr = acc.attribute();
+                attr.index_remap(top_map, domain_map_offsets);
+            }
+            {
+                const auto handle = child_data.mesh->m_multi_mesh_manager.map_to_parent_handle;
+                auto acc = child_data.mesh->create_accessor(handle);
+                auto& attr = acc.attribute();
+                attr.index_remap(top_map, image_map_offsets);
+            }
+        }
+    }
+
     // Return both maps for custom attribute remapping
     return {new2old, old2new};
 }
