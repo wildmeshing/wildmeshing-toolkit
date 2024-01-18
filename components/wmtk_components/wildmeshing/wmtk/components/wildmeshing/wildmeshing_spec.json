@@ -11,8 +11,7 @@
             "pass_through",
             "passes",
             "target_edge_length",
-            "intermediate_output",
-            "track_boundary_child_mesh"
+            "intermediate_output"
         ]
     },
     {
@@ -56,11 +55,6 @@
     },
     {
         "pointer": "/intermediate_output",
-        "type": "bool",
-        "default": false
-    },
-    {
-        "pointer": "/track_boundary_child_mesh",
         "type": "bool",
         "default": false
     }
