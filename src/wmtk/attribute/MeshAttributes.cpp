@@ -186,8 +186,6 @@ size_t MeshAttributes<T>::attribute_count() const
 template <typename T>
 void MeshAttributes<T>::reserve(const int64_t size)
 {
-    assert(size >= m_reserved_size);
-
     m_reserved_size = size;
     for (auto& attr_ptr : m_attributes) {
         attr_ptr->reserve(size);
