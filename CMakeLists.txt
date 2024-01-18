@@ -149,6 +149,12 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     simple_bvh::simple_bvh
 )
 
+
+if(MSVC)
+    target_compile_options(wildmeshing_toolkit PUBLIC /MP)
+    target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/GL>)
+endif()
+
 add_subdirectory(components)
 
 
@@ -205,6 +211,14 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
         CLI11::CLI11
         jse::jse
     )
+
+
+    if(MSVC)
+        target_compile_options(wmtk_app PUBLIC /MP)
+        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/GL>)
+        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/LTCG>)
+        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/INCREMENTAL:NO>)
+    endif()
 
     target_compile_definitions(wmtk_app PUBLIC WMTK_APP_INPUT_SPEC="${CMAKE_SOURCE_DIR}/components/wmtk_spec.json")
 endif()
