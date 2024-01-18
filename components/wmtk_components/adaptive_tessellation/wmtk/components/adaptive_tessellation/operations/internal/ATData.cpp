@@ -99,10 +99,12 @@ ATData::ATData(
     std::array<std::shared_ptr<image::Image>, 3>& images)
     : m_position_mesh_ptr(position_mesh_ptr)
     , m_uv_mesh_ptr(uv_mesh_ptr)
+    , m_images(images)
 {
-    auto child_map =
-        wmtk::multimesh::same_simplex_dimension_bijection(*m_position_mesh_ptr, *m_uv_mesh_ptr);
-    m_position_mesh_ptr->register_child_mesh(m_uv_mesh_ptr, child_map);
+    // auto child_map =
+    //     wmtk::multimesh::same_simplex_dimension_bijection(*m_position_mesh_ptr, *m_uv_mesh_ptr);
+    // m_position_mesh_ptr->register_child_mesh(m_uv_mesh_ptr, child_map);
+
     std::cout << "!!!!! using image sampling !!!!" << std::endl;
     initialize_handles();
 }
