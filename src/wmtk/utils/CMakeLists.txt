@@ -50,6 +50,9 @@ set(SRC_FILES
 
     merkle_tree_diff.hpp
     merkle_tree_diff.cpp
+
+    VolumeRemesherTriangleInsertion.hpp
+    VolumeRemesherTriangleInsertion.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
