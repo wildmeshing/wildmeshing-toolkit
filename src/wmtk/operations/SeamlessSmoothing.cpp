@@ -270,7 +270,7 @@ std::vector<simplex::Simplex> SeamlessSmoothing::execute(const simplex::Simplex&
         return OptimizationSmoothing::execute(
             simplex); // as the new  execute on OptimizationSmoothing is supporting mapping
     }
-    // return AttributesUpdate::execute(simplex);
+    return AttributesUpdate::execute(simplex);
 }
 
 } // namespace wmtk::operations
