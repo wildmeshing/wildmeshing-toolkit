@@ -125,7 +125,8 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     // update hash on all tets in the two-ring neighborhood
     simplex::SimplexCollection hash_update_region(m);
     for (const simplex::Simplex& v : edge_closed_star.simplex_vector(PrimitiveType::Vertex)) {
-        const simplex::SimplexCollection v_closed_star = simplex::closed_star(m_mesh, v);
+        const simplex::SimplexCollection v_closed_star =
+            simplex::top_dimension_cofaces(m_mesh, v, false);
         hash_update_region.add(v_closed_star);
     }
     hash_update_region.sort_and_clean();
@@ -356,10 +357,12 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 
     assert(m_incident_face_datas.size() == new_incident_face_data.size());
 
-    // debug code
+// debug code
+#ifndef NDEBUG
     for (int64_t i = 0; i < m_incident_face_datas.size(); ++i) {
         assert(m_incident_face_datas[i].fid == new_incident_face_data[i].fid_old);
     }
+#endif
 
 
     // local ids for return tuple

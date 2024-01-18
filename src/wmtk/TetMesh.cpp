@@ -326,38 +326,6 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
             }
         }
 
-        ///////////////////////////////
-        // for debug
-        std::vector<int64_t> debug_te;
-        std::vector<int64_t> debug_tv;
-        std::vector<int64_t> debug_tf;
-        std::vector<int64_t> debug_tt;
-        std::vector<int64_t> debug_origin_te;
-        std::vector<int64_t> debug_origin_tv;
-        std::vector<int64_t> debug_origin_tf;
-        std::vector<int64_t> debug_origin_tt;
-
-        auto te_old = m_te_accessor->const_vector_attribute(tuple);
-        auto tv_old = m_tv_accessor->const_vector_attribute(tuple);
-        auto tf_old = m_tf_accessor->const_vector_attribute(tuple);
-        auto tt_old = m_tt_accessor->const_vector_attribute(tuple);
-
-        for (int64_t i = 0; i < 6; ++i) {
-            debug_origin_te.push_back(te_old(i));
-            debug_te.push_back(te(i));
-        }
-
-        for (int64_t i = 0; i < 4; ++i) {
-            debug_origin_tv.push_back(tv_old(i));
-            debug_tv.push_back(tv(i));
-            debug_origin_tf.push_back(tf_old(i));
-            debug_tf.push_back(tf(i));
-            debug_origin_tt.push_back(tt_old(i));
-            debug_tt.push_back(tt(i));
-        }
-
-        /////////////////////////////////
-
         for (int64_t i = 0; i < 6; ++i) {
             if (te(i) == geid) {
                 leid_new = i;
