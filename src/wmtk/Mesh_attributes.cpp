@@ -189,7 +189,6 @@ attribute::AttributeScopeHandle Mesh::create_single_mesh_scope()
 
 std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>> Mesh::consolidate()
 {
-    spdlog::info("Consolidating {}", fmt::join(absolute_multi_mesh_id(), ","));
     // Number of dimensions
     int64_t tcp = top_cell_dimension() + 1;
 
