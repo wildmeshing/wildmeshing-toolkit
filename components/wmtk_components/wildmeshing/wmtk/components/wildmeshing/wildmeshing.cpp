@@ -8,7 +8,9 @@
 #include <wmtk/TriMesh.hpp>
 
 #include <wmtk/components/base/get_attributes.hpp>
+#include <wmtk/multimesh/consolidate.hpp>
 #include <wmtk/utils/Logger.hpp>
+
 
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
@@ -484,7 +486,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
-        // mesh->consolidate();
+        multimesh::consolidate(*mesh);
 
         write(
             mesh,
