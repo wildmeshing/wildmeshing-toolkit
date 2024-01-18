@@ -1,4 +1,5 @@
 #include "Attribute.hpp"
+#include <numeric>
 #include <wmtk/attribute/PerThreadAttributeScopeStacks.hpp>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -135,7 +136,9 @@ void Attribute<T>::clear_current_scope()
 template <typename T>
 void Attribute<T>::consolidate(const std::vector<int64_t>& new2old)
 {
-    for (int64_t i = 0; i < new2old.size(); ++i) vector_attribute(i) = vector_attribute(new2old[i]);
+    for (int64_t i = 0; i < new2old.size(); ++i) {
+        vector_attribute(i) = vector_attribute(new2old[i]);
+    }
 
     m_data.resize(new2old.size() * m_dimension);
 }
@@ -147,10 +150,23 @@ void Attribute<T>::consolidate(const std::vector<int64_t>& new2old)
 template <typename T>
 void Attribute<T>::index_remap(const std::vector<T>& old2new)
 {
+    std::vector<Eigen::Index> indices(dimension());
+    std::iota(indices.begin(), indices.end(), Eigen::Index(0));
+    index_remap(old2new, indices);
+}
+
+template <typename T>
+void Attribute<T>::index_remap(const std::vector<T>& old2new, const std::vector<Eigen::Index>& cols)
+{
     if constexpr (std::is_same_v<T, int64_t>) {
-        for (int64_t i = 0; i < m_data.size(); ++i)
-            if (m_data[i] >= 0) // Negative number are error codes, not indices
-                m_data[i] = old2new[m_data[i]];
+        for (int64_t i = 0; i < reserved_size(); ++i) {
+            auto vec = vector_attribute(i);
+            for (Eigen::Index idx : cols) {
+                int64_t& v = vec(idx);
+                if (v >= 0) // Negative number are error codes, not indices
+                    v = old2new[v];
+            }
+        }
     } else {
         throw std::runtime_error("Only int64_t attributes can be index remapped.");
     }
