@@ -30,6 +30,7 @@ var classwmtk_1_1attribute_1_1_mesh_attribute_handle =
     [ "operator=", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#abba790064af8ebd9994f570e3e666279", null ],
     [ "operator==", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#afa3e054b5c063cfa5264861887ed0e9d", null ],
     [ "primitive_type", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#aee17c525d1547806f9350ad95fa66f5f", null ],
+    [ "primitive_typeT", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a5b258004f11155a8ab99bb804975cb6c", null ],
     [ "wmtk::hash< MeshAttributeHandle >", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a8611cdcdc1530bbe60de3753f3eddfac", null ],
     [ "wmtk::Mesh", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a40e16ebf947f9980244ad9e954e38aa3", null ],
     [ "m_handle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a1d9b995056615e22b42c6a101d4314e8", null ],

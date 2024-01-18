@@ -150,6 +150,8 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a75477c4fe069fcdff90f57a76087afe0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh.html#a75477c4fe069fcdff90f57a76087afe0">consolidate</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh)</td></tr>
+<tr class="separator:a75477c4fe069fcdff90f57a76087afe0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a01d3d8f1b33c52ff3e2346930a8c08f3"><td class="memTemplParams" colspan="2">template&lt;int64_t cell_dimension, typename Functor &gt; </td></tr>
 <tr class="memitem:a01d3d8f1b33c52ff3e2346930a8c08f3"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh.html#a01d3d8f1b33c52ff3e2346930a8c08f3">MultiMeshSimplexEventVisitor</a> (const <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html">MultiMeshSimplexVisitor</a>&lt; cell_dimension, Functor &gt; &amp;visitor) -&gt; <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor.html">MultiMeshSimplexEventVisitor</a>&lt; cell_dimension, Functor &gt;</td></tr>
 <tr class="separator:a01d3d8f1b33c52ff3e2346930a8c08f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -168,6 +170,34 @@ Functions</h2></td></tr>
 <tr class="separator:a7bd59ab748f0b54f3ab7dc9d625b04ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="a75477c4fe069fcdff90f57a76087afe0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a75477c4fe069fcdff90f57a76087afe0">&#9670;&nbsp;</a></span>consolidate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::multimesh::consolidate </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="consolidate_8cpp_source.html#l00013">13</a> of file <a class="el" href="consolidate_8cpp_source.html">consolidate.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_multi_mesh_visitor_8hpp_source.html#l00080">wmtk::multimesh::MultiMeshVisitor&lt; NodeFunctor_ &gt;::execute_from_root()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_a75477c4fe069fcdff90f57a76087afe0_cgraph.svg" width="100%" height="428"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
 <a id="a01d3d8f1b33c52ff3e2346930a8c08f3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a01d3d8f1b33c52ff3e2346930a8c08f3">&#9670;&nbsp;</a></span>MultiMeshSimplexEventVisitor()</h2>
 
@@ -294,7 +324,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="same__simplex__dimension__bijection_8cpp_source.html#l00009">9</a> of file <a class="el" href="same__simplex__dimension__bijection_8cpp_source.html">same_simplex_dimension_bijection.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00076">wmtk::Mesh::capacity()</a>, <a class="el" href="same__simplex__dimension__surjection_8cpp_source.html#l00008">same_simplex_dimension_surjection()</a>, and <a class="el" href="_mesh_8cpp_source.html#l00013">wmtk::Mesh::top_simplex_type()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00077">wmtk::Mesh::capacity()</a>, <a class="el" href="same__simplex__dimension__surjection_8cpp_source.html#l00008">same_simplex_dimension_surjection()</a>, and <a class="el" href="_mesh_8cpp_source.html#l00013">wmtk::Mesh::top_simplex_type()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="multimesh_8cpp_source.html#l00009">wmtk::components::multimesh()</a>.</p>
 <div class="dynheader">

@@ -19,6 +19,7 @@ var classwmtk_1_1attribute_1_1_attribute =
     [ "dimension", "classwmtk_1_1attribute_1_1_attribute.html#a505bc996591f0476e092f572515ab9fd", null ],
     [ "get_local_scope_stack_ptr", "classwmtk_1_1attribute_1_1_attribute.html#a93e216e02de0ed9c205cdff715555358", null ],
     [ "index_remap", "classwmtk_1_1attribute_1_1_attribute.html#a1e347aa313eb681f44a5102d52c0f177", null ],
+    [ "index_remap", "classwmtk_1_1attribute_1_1_attribute.html#a9f9f2dedd450ce4756f54d1ec54613aa", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_attribute.html#a0be737f3a9176ca76a4ab7e23dd14b5c", null ],
     [ "operator==", "classwmtk_1_1attribute_1_1_attribute.html#a84e8ed1ce66c110ee594e7ad22fa37b9", null ],
     [ "pop_scope", "classwmtk_1_1attribute_1_1_attribute.html#a7f010435a3b330a9dfc29d6c6b9d7c6e", null ],

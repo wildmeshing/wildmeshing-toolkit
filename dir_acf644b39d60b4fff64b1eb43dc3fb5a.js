@@ -7,6 +7,8 @@ var dir_acf644b39d60b4fff64b1eb43dc3fb5a =
     [ "BoundaryChecker.hpp", "_boundary_checker_8hpp.html", [
       [ "BoundaryChecker", "classwmtk_1_1multimesh_1_1_boundary_checker.html", "classwmtk_1_1multimesh_1_1_boundary_checker" ]
     ] ],
+    [ "consolidate.cpp", "consolidate_8cpp.html", "consolidate_8cpp" ],
+    [ "consolidate.hpp", "consolidate_8hpp.html", "consolidate_8hpp" ],
     [ "Mappable.hpp", "_mappable_8hpp.html", [
       [ "Mappable", "classwmtk_1_1multimesh_1_1_mappable.html", "classwmtk_1_1multimesh_1_1_mappable" ]
     ] ],

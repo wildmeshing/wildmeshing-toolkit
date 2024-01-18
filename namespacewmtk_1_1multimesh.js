@@ -17,6 +17,7 @@ var namespacewmtk_1_1multimesh =
     [ "Mappable", "classwmtk_1_1multimesh_1_1_mappable.html", "classwmtk_1_1multimesh_1_1_mappable" ],
     [ "MappableContainer", "classwmtk_1_1multimesh_1_1_mappable_container.html", "classwmtk_1_1multimesh_1_1_mappable_container" ],
     [ "MultiMeshSimplexEventVisitor", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor.html", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor" ],
+    [ "consolidate", "namespacewmtk_1_1multimesh.html#a75477c4fe069fcdff90f57a76087afe0", null ],
     [ "MultiMeshSimplexEventVisitor", "namespacewmtk_1_1multimesh.html#a01d3d8f1b33c52ff3e2346930a8c08f3", null ],
     [ "MultiMeshSimplexVisitor", "namespacewmtk_1_1multimesh.html#ac447732e8bc8b65ee41196c57a3cdb48", null ],
     [ "MultiMeshSimplexVisitor", "namespacewmtk_1_1multimesh.html#a898c3217faf649a20219206925c382ce", null ],
