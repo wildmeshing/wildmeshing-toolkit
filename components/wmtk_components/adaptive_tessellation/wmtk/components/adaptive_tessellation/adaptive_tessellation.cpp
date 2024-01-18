@@ -262,11 +262,11 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
 
     // 1) wmtk::operations::EdgeSplit
-    at_ops.AT_split_interior(at_ops.m_high_error_edges_first, at_ops.m_sum_energy);
+    at_ops.AT_split_interior(at_ops.m_high_distance_edges_first, at_ops.m_distance_energy);
 
 
     // 3) EdgeSwap
-    // at_ops.AT_swap_interior(at_ops.m_valence_improvement, at_ops.m_sum_energy);
+    at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first, at_ops.m_sum_energy);
 
     // 4) Smoothing
     // at_ops.AT_smooth_interior(at_ops.m_sum_energy);

@@ -14,7 +14,7 @@ public:
     double m_target_edge_length;
     double m_barrier_weight;
     double m_barrier_triangle_area;
-    double m_quadrature_weight;
+    double m_distance_weight;
     double m_amips_weight;
     bool m_area_weighted_amips;
 
@@ -33,7 +33,7 @@ public:
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_sum_error_update;
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
-        m_quadrature_error_update;
+        m_distance_error_update;
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_barrier_energy_update;
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
@@ -45,17 +45,19 @@ public:
     Accessor<double> m_uvmesh_xyz_accessor;
     Accessor<double> m_pmesh_xyz_accessor;
     //.....
-    Accessor<double> m_quadrature_error_accessor;
+    Accessor<double> m_distance_error_accessor;
     Accessor<double> m_sum_error_accessor;
     Accessor<double> m_barrier_energy_accessor;
     Accessor<double> m_amips_error_accessor;
 
     std::function<std::vector<double>(const Simplex&)> m_high_error_edges_first;
+    std::function<std::vector<double>(const Simplex&)> m_high_distance_edges_first;
+    std::function<std::vector<double>(const Simplex&)> m_high_amips_edges_first;
     std::function<std::vector<double>(const Simplex&)> m_long_edges_first;
     std::function<std::vector<double>(const Simplex&)> m_short_edges_first;
     std::function<std::vector<long>(const Simplex&)> m_valence_improvement;
 
-    std::shared_ptr<wmtk::function::PerSimplexFunction> m_quadrature_energy;
+    std::shared_ptr<wmtk::function::PerSimplexFunction> m_distance_energy;
     std::shared_ptr<wmtk::function::TriangleAMIPS> m_amips_energy;
     std::shared_ptr<wmtk::function::PositionMapAMIPS> m_3d_amips_energy;
     std::shared_ptr<wmtk::function::SumEnergy> m_sum_energy;
@@ -67,7 +69,7 @@ public:
         double target_edge_length,
         double barrier_weight,
         double barrier_triangle_area,
-        double quadrature_weight,
+        double distance_weight,
         double amips_weight,
         bool area_weighted_amips);
     void set_energies();
@@ -80,7 +82,7 @@ public:
     void AT_split_boundary();
     void AT_collapse_interior(std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
     void AT_swap_interior(
-        std::function<std::vector<long>(const Simplex&)>& priority,
+        std::function<std::vector<double>(const Simplex&)>& priority,
         std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
 
     ///// update
@@ -92,8 +94,8 @@ public:
     void initialize_edge_length();
     void set_sum_error_update_rule();
     void initialize_sum_error();
-    void set_quadrature_error_update_rule();
-    void initialize_quadrature_error();
+    void set_distance_error_update_rule();
+    void initialize_distance_error();
     void set_amips_error_update_rule();
     void initialize_amips_error();
     void set_barrier_energy_update_rule();

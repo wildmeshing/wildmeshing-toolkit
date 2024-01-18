@@ -178,8 +178,8 @@ void ATData::initialize_handles()
         m_uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1, true);
     m_sum_error_handle =
         m_uv_mesh_ptr->register_attribute<double>("sum_error", PrimitiveType::Face, 1, true);
-    m_quadrature_error_handle =
-        m_uv_mesh_ptr->register_attribute<double>("quadrature_error", PrimitiveType::Face, 1, true);
+    m_distance_error_handle =
+        m_uv_mesh_ptr->register_attribute<double>("distance_error", PrimitiveType::Face, 1, true);
     m_amips_error_handle =
         m_uv_mesh_ptr->register_attribute<double>("amips_error", PrimitiveType::Face, 1, true);
     m_barrier_energy_handle =
