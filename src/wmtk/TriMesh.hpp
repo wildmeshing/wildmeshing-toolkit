@@ -22,9 +22,10 @@ public:
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     TriMesh();
     TriMesh(const TriMesh& o) = delete;
-    TriMesh(TriMesh&& o) = default;
     TriMesh& operator=(const TriMesh& o) = delete;
-    TriMesh& operator=(TriMesh&& o) = default;
+    TriMesh(TriMesh&& o);
+    TriMesh& operator=(TriMesh&& o);
+    void make_cached_accessors();
 
     int64_t top_cell_dimension() const override { return 2; }
 
@@ -86,7 +87,6 @@ protected:
     Tuple tuple_from_global_ids(int64_t fid, int64_t eid, int64_t vid) const;
 
 protected:
-
     attribute::TypedAttributeHandle<int64_t> m_vf_handle;
     attribute::TypedAttributeHandle<int64_t> m_ef_handle;
 
