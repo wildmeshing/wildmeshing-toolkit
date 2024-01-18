@@ -32,8 +32,7 @@ TEST_CASE("wildmeshing", "[components][wildmeshing][.]")
         "intermediate_output": true,
         "attributes": {"position": "vertices"},
         "pass_through": [],
-        "output": "test",
-        "track_boundary_child_mesh": false
+        "output": "test"
         })"_json;
 
     CHECK_NOTHROW(wmtk::components::wildmeshing(Paths(), input, cache));
@@ -61,7 +60,6 @@ TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
         {"target_edge_length", 0.05},
         {"intermediate_output", true},
         {"output", "test_mm"},
-        {"track_boundary_child_mesh", false},
         {"pass_through", std::vector<int64_t>()},
         {"attributes", attributes}};
 
@@ -89,7 +87,6 @@ TEST_CASE("wildmeshing_3d_multimesh", "[components][wildmeshing][.]")
         {"target_edge_length", 0.1},
         {"intermediate_output", true},
         {"output", "test_multimesh"},
-        {"track_boundary_child_mesh", true},
         {"pass_through", std::vector<int64_t>()},
         {"attributes", attributes}};
 
