@@ -21,7 +21,7 @@ add_library(wildmeshing_components)
 add_library(wmtk::components ALIAS wildmeshing_components)
 target_include_directories(wildmeshing_components PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/main")
 target_link_libraries(wildmeshing_components PUBLIC wmtk::toolkit ${WMTK_COMPONENT_PREFIX}::base jse::jse)
-target_compile_definitions(wildmeshing_components PRIVATE WMTK_APP_INPUT_SPEC="${CMAKE_SOURCE_DIR}/wmtk_spec.json")
+target_compile_definitions(wildmeshing_components PRIVATE WMTK_APP_INPUT_SPEC="${CMAKE_CURRENT_SOURCE_DIR}/wmtk_spec.json")
 add_subdirectory("wmtk_components/main/wmtk/components")
 
 
@@ -35,6 +35,7 @@ file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/main/wmtk/components/com
 file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/main/wmtk/components/components_map.hpp" ${WMTK_AUTOGEN_COMMENT})
 file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/main/wmtk/components/spec_include.hpp" ${WMTK_AUTOGEN_COMMENT}
 "spec_engine.include_directories.push_back( \"${CMAKE_CURRENT_SOURCE_DIR}\");\n"
+"spec_engine.include_directories.push_back( \"${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/main/wmtk/components\");\n"
 )
 set(json_components "")
 
@@ -55,7 +56,7 @@ add_component(${WMTK_COMPONENT_PREFIX} "procedural")
 string(LENGTH ${json_components} json_components_length)
 math(EXPR json_components_length "${json_components_length}-2")
 string(SUBSTRING ${json_components} 0 ${json_components_length} json_components)
-file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/main/wmtk/components/scomponents.json" "[\n${json_components}\n]")
+file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/main/wmtk/components/components.json" "[\n${json_components}\n]")
 
 
 

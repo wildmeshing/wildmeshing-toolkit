@@ -9,13 +9,13 @@ int main(int argc, char** argv)
     using path = std::filesystem::path;
 
     CLI::App app{argv[0]};
+
+    app.ignore_case();
+
     path json_input_file;
     app.add_option("-j, --json", json_input_file, "json specification file")->required(true);
     bool is_strict = true;
-    app.add_flag(
-        "-s,--strict_validation,!--ns,!--no_strict_validation",
-        is_strict,
-        "Disables strict validation of input JSON");
+    app.add_flag("--ns", is_strict, "Disables strict validation of input JSON");
 
 
     CLI11_PARSE(app, argc, argv);
