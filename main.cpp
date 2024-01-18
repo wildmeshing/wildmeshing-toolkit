@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <wmtk/components/run_components.hpp>
 #include <wmtk/utils/Logger.hpp>
+
 using json = nlohmann::json;
 
 int main(int argc, char** argv)

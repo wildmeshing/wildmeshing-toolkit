@@ -1,7 +1,6 @@
 #include "run_components.hpp"
 
 #include <jse/jse.h>
-#include <wmtk/io/Cache.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 
@@ -15,7 +14,7 @@
 namespace wmtk::components {
 
 
-void run_components(const nlohmann::json& json_input_file, bool strict)
+wmtk::io::Cache run_components(const nlohmann::json& json_input_file, bool strict)
 {
     const std::filesystem::path wmtk_spec_file = WMTK_APP_INPUT_SPEC;
     nlohmann::json rules_json;
@@ -87,5 +86,7 @@ void run_components(const nlohmann::json& json_input_file, bool strict)
             components[el.key()](paths, el.value(), cache);
         }
     }
+
+    return cache;
 }
 } // namespace wmtk::components
