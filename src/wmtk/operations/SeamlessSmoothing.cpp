@@ -199,6 +199,7 @@ std::vector<simplex::Simplex> SeamlessSmoothing::execute(const simplex::Simplex&
     // map simplex to cut_mesh
     std::vector<simplex::Simplex> vs_on_cut_mesh = mesh().map_to_child(m_cut_mesh, simplex);
     if (m_cut_mesh.is_boundary(vs_on_cut_mesh[0])) {
+        // if (false) {
         // std::cout << "optimizing on boundary" << std::endl;
         // get all rotation matrices
         auto find_next_bd_edge = [this](const Tuple input_edge_tuple) -> Tuple {
