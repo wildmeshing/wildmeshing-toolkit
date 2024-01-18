@@ -1,6 +1,5 @@
 var NAVTREEINDEX3 =
 {
-"_use_parent_scope_r_a_i_i_8cpp_source.html":[5,0,2,0,5,0,7],
 "_use_parent_scope_r_a_i_i_8hpp.html":[5,0,2,0,5,0,8],
 "_use_parent_scope_r_a_i_i_8hpp_source.html":[5,0,2,0,5,0,8],
 "_valence_improvement_invariant_8cpp.html":[5,0,2,0,3,42],
@@ -28,8 +27,8 @@ var NAVTREEINDEX3 =
 "_volume_remesher_triangle_insertion_8hpp.html#af5ade8ca9598ff7d68dd37bcf395b9aa":[5,0,2,0,8,33,1],
 "_volume_remesher_triangle_insertion_8hpp_source.html":[5,0,2,0,8,33],
 "_wildmeshing_options_8hpp.html":[5,0,0,1,13,0,0,0,2],
+"_wildmeshing_options_8hpp.html#a2b58f4552c90f63b86f68b6b8bf62859":[5,0,0,1,13,0,0,0,2,2],
 "_wildmeshing_options_8hpp.html#a8d7ec3154745148645546bb201c8968a":[5,0,0,1,13,0,0,0,2,3],
-"_wildmeshing_options_8hpp.html#ab1fbe591db85d5397824db6ef4900330":[5,0,0,1,13,0,0,0,2,2],
 "_wildmeshing_options_8hpp_source.html":[5,0,0,1,13,0,0,0,2],
 "adaptive__tessellation_8cpp.html":[5,0,0,1,0,0,0,0,1],
 "adaptive__tessellation_8cpp_source.html":[5,0,0,1,0,0,0,0,1],
@@ -249,5 +248,6 @@ var NAVTREEINDEX3 =
 "classwmtk_1_1_mesh.html#a04adec229d19f4fb31dab0b562f79b74":[4,0,2,29,118],
 "classwmtk_1_1_mesh.html#a05eaf6f3eeb78949f3b95c359cc6df68":[4,0,2,29,95],
 "classwmtk_1_1_mesh.html#a072ba17f33381b00b9dec76cb3d986af":[4,0,2,29,104],
-"classwmtk_1_1_mesh.html#a0758b4aea3349c4bf75214bc18e5ffe7":[4,0,2,29,45]
+"classwmtk_1_1_mesh.html#a0758b4aea3349c4bf75214bc18e5ffe7":[4,0,2,29,45],
+"classwmtk_1_1_mesh.html#a07e92d16749ee808899eedf5e90ce32e":[4,0,2,29,136]
 };

@@ -6,6 +6,5 @@ var structwmtk_1_1components_1_1_wildmeshing_options =
     [ "output", "structwmtk_1_1components_1_1_wildmeshing_options.html#a49af2c4f737f53ab6fdc8b2854e36442", null ],
     [ "pass_through", "structwmtk_1_1components_1_1_wildmeshing_options.html#a59660158f8a2710928e1cd4e3f4f5a50", null ],
     [ "passes", "structwmtk_1_1components_1_1_wildmeshing_options.html#a7b02467b85dfa9fb29740720de89fcad", null ],
-    [ "target_edge_length", "structwmtk_1_1components_1_1_wildmeshing_options.html#a24a40853fa3bfdf1fca1a1ce95565daa", null ],
-    [ "track_boundary_child_mesh", "structwmtk_1_1components_1_1_wildmeshing_options.html#ab510b9d972b7cfc58d5a35ff8ed7c483", null ]
+    [ "target_edge_length", "structwmtk_1_1components_1_1_wildmeshing_options.html#a24a40853fa3bfdf1fca1a1ce95565daa", null ]
 ];

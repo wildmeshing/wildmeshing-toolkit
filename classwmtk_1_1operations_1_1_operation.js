@@ -21,7 +21,6 @@ var classwmtk_1_1operations_1_1_operation =
     [ "set_priority", "classwmtk_1_1operations_1_1_operation.html#afbd6dcef97f60e4109029fc8b985ddc0", null ],
     [ "set_transfer_strategy", "classwmtk_1_1operations_1_1_operation.html#a5ad5d9852d043d54623bd580079c090d", null ],
     [ "unmodified_primitives", "classwmtk_1_1operations_1_1_operation.html#ac3a7663793ab40bc2e8d0501e353faab", null ],
-    [ "update_cell_hashes", "classwmtk_1_1operations_1_1_operation.html#a67874a9d6522485c21183ed63d29fa2d", null ],
     [ "use_random_priority", "classwmtk_1_1operations_1_1_operation.html#a9be3cddedfbf05cb1c17356d7cf4273e", null ],
     [ "use_random_priority", "classwmtk_1_1operations_1_1_operation.html#aa0c646b0871dfa2c87540c7db2969544", null ],
     [ "m_attr_transfer_strategies", "classwmtk_1_1operations_1_1_operation.html#afcc1ed4d86610e9cdbce5f3b7c8e2868", null ],

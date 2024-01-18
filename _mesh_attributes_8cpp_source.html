@@ -259,18 +259,18 @@ $(document).ready(function(){initNavTree('_mesh_attributes_8cpp_source.html','')
 <div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
 <div class="line"><a name="l00143"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a71110eb742259fd194285ea7077c120d">  143</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a71110eb742259fd194285ea7077c120d">MeshAttributes&lt;T&gt;::operator==</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attributes.html">MeshAttributes&lt;T&gt;</a>&amp; other)<span class="keyword"> const</span></div>
 <div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <span class="keywordflow">if</span>(m_handles != other.<a class="code" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a5a1f05a517e3cf5e2578cfc1b58b7fd0">m_handles</a>) {</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <span class="keywordflow">if</span> (m_handles != other.<a class="code" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a5a1f05a517e3cf5e2578cfc1b58b7fd0">m_handles</a>) {</div>
 <div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
 <div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    }</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="keywordflow">if</span>(m_attributes.size() != other.<a class="code" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a0f5e1ce753026d570ed579f1120879d6">m_attributes</a>.size()) {</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="keywordflow">if</span> (m_attributes.size() != other.<a class="code" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a0f5e1ce753026d570ed579f1120879d6">m_attributes</a>.size()) {</div>
 <div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
 <div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    }</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    <span class="keywordflow">for</span>(<span class="keywordtype">size_t</span> j = 0; j &lt; m_attributes.size(); ++j) {</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        <span class="keywordflow">if</span>(!(*m_attributes[j] == *other.<a class="code" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a0f5e1ce753026d570ed579f1120879d6">m_attributes</a>[j]) ){</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> j = 0; j &lt; m_attributes.size(); ++j) {</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        <span class="keywordflow">if</span> (!(*m_attributes[j] == *other.<a class="code" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a0f5e1ce753026d570ed579f1120879d6">m_attributes</a>[j])) {</div>
 <div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
 <div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        }</div>
 <div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    }</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
 <div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;}</div>
 <div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160; </div>
 <div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160; </div>

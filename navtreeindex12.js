@@ -1,12 +1,5 @@
 var NAVTREEINDEX12 =
 {
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a4e0c7b5bfdee6b25b73fb53701390f35":[4,0,2,8,0,0,7,15],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a4ff7dd6d2ee32b60ac06f7fc0063ae8b":[4,0,2,8,0,0,7,13],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5290906e9b9c635dc1bd82246eb39b42":[4,0,2,8,0,0,7,12],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5911b98fdeaf259e91e2649094795d97":[4,0,2,8,0,0,7,1],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a6f67b595c951b31a275be70248bc51eb":[4,0,2,8,0,0,7,3],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a76bdf86ea1457c769a17278894153cab":[4,0,2,8,0,0,7,6],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a79a5f07c106ce8b9c97ad9afc2bcbdcd":[4,0,2,8,0,0,7,7],
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9c30109e04f4b004d569263f8e9d5664":[4,0,2,8,0,0,7,14],
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9f0013e1fdf17bbf857a0ac60561f46e":[4,0,2,8,0,0,7,5],
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9fa14f38973e98fb5b4e26a7d4775dd2":[4,0,2,8,0,0,7,16],
@@ -249,5 +242,12 @@ var NAVTREEINDEX12 =
 "faces__single__dimension_8hpp_source.html":[5,0,2,0,7,16],
 "files.html":[5,0],
 "find__invariant__in__collection__by__type_8hpp.html":[5,0,2,0,3,5],
-"find__invariant__in__collection__by__type_8hpp.html#a03e738f947e892d769944effbc92963c":[5,0,2,0,3,5,1]
+"find__invariant__in__collection__by__type_8hpp.html#a03e738f947e892d769944effbc92963c":[5,0,2,0,3,5,1],
+"find__invariant__in__collection__by__type_8hpp.html#ae975d72ae7f4a759f36108e53d2c144d":[5,0,2,0,3,5,0],
+"find__invariant__in__collection__by__type_8hpp_source.html":[5,0,2,0,3,5],
+"find__local__switch__sequence_8cpp.html":[5,0,2,0,5,2,5],
+"find__local__switch__sequence_8cpp.html#a99cdf56ec6abe68409d30e0b67f4ce82":[5,0,2,0,5,2,5,0],
+"find__local__switch__sequence_8cpp_source.html":[5,0,2,0,5,2,5],
+"find__local__switch__sequence_8hpp.html":[5,0,2,0,5,2,6],
+"find__local__switch__sequence_8hpp.html#a99cdf56ec6abe68409d30e0b67f4ce82":[5,0,2,0,5,2,6,0]
 };

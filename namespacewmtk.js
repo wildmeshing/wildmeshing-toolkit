@@ -94,7 +94,6 @@ var namespacewmtk =
     [ "edgemesh_topology_initialization", "namespacewmtk.html#adf595e35ecb28937978ce5e794bb041e", null ],
     [ "find_invariant_in_collection_by_type", "namespacewmtk.html#ae975d72ae7f4a759f36108e53d2c144d", null ],
     [ "find_invariants_in_collection_by_type", "namespacewmtk.html#a03e738f947e892d769944effbc92963c", null ],
-    [ "get_all_candidate_tuples_for_child_mesh", "namespacewmtk.html#a185d5b060c04d06b87ffde0515ea4e47", null ],
     [ "get_max_primitive_type_id", "namespacewmtk.html#a71c70b23475a8313d0109f43cae0ca43", null ],
     [ "get_primitive_type_from_id", "namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59", null ],
     [ "get_primitive_type_id", "namespacewmtk.html#a5cf45c152e856196bb734c6f48919a24", null ],

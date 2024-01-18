@@ -1,14 +1,5 @@
 var NAVTREEINDEX19 =
 {
-"unique__homogeneous__simplices_8cpp_source.html":[5,0,2,0,7,2,6],
-"unique__homogeneous__simplices_8hpp.html":[5,0,2,0,7,2,7],
-"unique__homogeneous__simplices_8hpp.html#aa306c7de45015f9be0e104fca1aacad2":[5,0,2,0,7,2,7,0],
-"unique__homogeneous__simplices_8hpp.html#ac63b7720749de23b2125f3f9c26f609f":[5,0,2,0,7,2,7,1],
-"unique__homogeneous__simplices_8hpp_source.html":[5,0,2,0,7,2,7],
-"unwrap__ref_8hpp.html":[5,0,2,0,8,0,11],
-"unwrap__ref_8hpp.html#adf089393c6525dbba180ff6e677ce971":[5,0,2,0,8,0,11,3],
-"unwrap__ref_8hpp_source.html":[5,0,2,0,8,0,11],
-"utils_2_a_m_i_p_s_8cpp.html":[5,0,2,0,2,1,0],
 "utils_2_a_m_i_p_s_8cpp.html#a18f88d299cb5212b810962fac2ea76bc":[5,0,2,0,2,1,0,0],
 "utils_2_a_m_i_p_s_8cpp.html#a54632060141525ae015c018708e73d3b":[5,0,2,0,2,1,0,1],
 "utils_2_a_m_i_p_s_8cpp_source.html":[5,0,2,0,2,1,0],

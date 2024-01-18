@@ -58,9 +58,9 @@ var sectionId = 'dynsection-13';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="utility for subclasses">
-<polygon fill="#bfbfbf" stroke="black" points="594,-73.5 594,-103.5 750,-103.5 750,-73.5 594,-73.5"/>
-<text text-anchor="start" x="602" y="-91.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Operation</text>
-<text text-anchor="middle" x="672" y="-80.5" font-family="Helvetica,sans-Serif" font-size="10.00">::hash_accessor</text>
+<polygon fill="#bfbfbf" stroke="black" points="594,-97.5 594,-127.5 750,-127.5 750,-97.5 594,-97.5"/>
+<text text-anchor="start" x="602" y="-115.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Operation</text>
+<text text-anchor="middle" x="672" y="-104.5" font-family="Helvetica,sans-Serif" font-size="10.00">::hash_accessor</text>
 </a>
 </g>
 </g>
@@ -77,8 +77,8 @@ var sectionId = 'dynsection-13';
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M614.49,-106.64C586.85,-115.52 553.97,-126.07 527.75,-134.49"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="615.58,-109.97 624.03,-103.58 613.44,-103.3 615.58,-109.97"/>
+<path fill="none" stroke="midnightblue" d="M583.94,-129.45C575.32,-131.13 566.62,-132.83 558.12,-134.48"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="584.85,-132.84 593.99,-127.5 583.51,-125.97 584.85,-132.84"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
@@ -93,24 +93,8 @@ var sectionId = 'dynsection-13';
 <!-- Node1&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
 <title>Node1&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M583.94,-88.5C575.32,-88.5 566.62,-88.5 558.12,-88.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="583.99,-92 593.99,-88.5 583.99,-85 583.99,-92"/>
-</g>
-<!-- Node10 -->
-<g id="node10" class="node">
-<title>Node10</title>
-<g id="a_node10"><a xlink:href="classwmtk_1_1operations_1_1_operation.html#a67874a9d6522485c21183ed63d29fa2d" target="_top" xlink:title="utility for subclasses">
-<polygon fill="none" stroke="black" points="402,-24.5 402,-54.5 558,-54.5 558,-24.5 402,-24.5"/>
-<text text-anchor="start" x="410" y="-42.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Operation</text>
-<text text-anchor="middle" x="480" y="-31.5" font-family="Helvetica,sans-Serif" font-size="10.00">::update_cell_hashes</text>
-</a>
-</g>
-</g>
-<!-- Node1&#45;&gt;Node10 -->
-<g id="edge9" class="edge">
-<title>Node1&#45;&gt;Node10</title>
-<path fill="none" stroke="midnightblue" d="M602.95,-70.95C582.09,-65.57 559.33,-59.7 539.19,-54.51"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="602.15,-74.36 612.7,-73.47 603.89,-67.58 602.15,-74.36"/>
+<path fill="none" stroke="midnightblue" d="M583.94,-101.5C575.32,-100.41 566.62,-99.32 558.12,-98.24"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="583.63,-104.99 593.99,-102.77 584.51,-98.05 583.63,-104.99"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
@@ -173,8 +157,8 @@ var sectionId = 'dynsection-13';
 <!-- Node4&#45;&gt;Node9 -->
 <g id="edge8" class="edge">
 <title>Node4&#45;&gt;Node9</title>
-<path fill="none" stroke="midnightblue" d="M414.52,-69.93C410.23,-68.23 406.02,-66.42 402,-64.5 384.64,-56.22 383.33,-48.83 366,-40.5 358.39,-36.84 350.13,-33.54 341.9,-30.63"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="413.4,-73.25 423.99,-73.48 415.85,-66.69 413.4,-73.25"/>
+<path fill="none" stroke="midnightblue" d="M436.42,-69.3C415.41,-60.11 389.57,-49.24 366,-40.5 356.75,-37.07 346.78,-33.67 337.15,-30.54"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="435.14,-72.56 445.71,-73.39 437.96,-66.16 435.14,-72.56"/>
 </g>
 <!-- Node6 -->
 <g id="node6" class="node">

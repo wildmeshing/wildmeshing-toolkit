@@ -1,6 +1,5 @@
 var NAVTREEINDEX8 =
 {
-"classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#ac3d654316795bdfc6518efe951fb8713":[4,0,2,1,0,0,2,0],
 "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#af038ad822ce76c562feeac251938952f":[4,0,2,1,0,0,2,1],
 "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#af4983c4e0e36130a4279bb08e37144bf":[4,0,2,1,0,0,2,8],
 "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_bicubic.html":[4,0,2,1,0,0,4],
@@ -171,16 +170,12 @@ var NAVTREEINDEX8 =
 "classwmtk_1_1invariants_1_1_edge_valence_invariant.html#a766e57656585236e28bc8786744a8697":[4,0,2,3,1,0],
 "classwmtk_1_1invariants_1_1_edge_valence_invariant.html#afaa685a02d9fb6254f91003e788df630":[4,0,2,3,1,2],
 "classwmtk_1_1invariants_1_1_envelope_invariant.html":[4,0,2,3,2],
-"classwmtk_1_1invariants_1_1_envelope_invariant.html#a28b2f11435f8aa1982f84db589ed3b08":[4,0,2,3,2,6],
-"classwmtk_1_1invariants_1_1_envelope_invariant.html#a4d834a753526ea4996f7a9aa5b078f45":[4,0,2,3,2,3],
-"classwmtk_1_1invariants_1_1_envelope_invariant.html#a51c214e11195e53e976b8050069563eb":[4,0,2,3,2,9],
-"classwmtk_1_1invariants_1_1_envelope_invariant.html#a8e365106ba7157cfda150a5275d7ec1a":[4,0,2,3,2,0],
-"classwmtk_1_1invariants_1_1_envelope_invariant.html#a91afb4ae30b04095739f234f52d913c6":[4,0,2,3,2,7],
-"classwmtk_1_1invariants_1_1_envelope_invariant.html#aa2004d5b337cab1a2274c74ddc046a5c":[4,0,2,3,2,2],
-"classwmtk_1_1invariants_1_1_envelope_invariant.html#aa5cb3de3628dd4fe7d8e5270369cc8ab":[4,0,2,3,2,5],
-"classwmtk_1_1invariants_1_1_envelope_invariant.html#abce7700146882e35e1136041e53d6e26":[4,0,2,3,2,4],
-"classwmtk_1_1invariants_1_1_envelope_invariant.html#ac474b5910a8e5832bf30d12aec79de1e":[4,0,2,3,2,8],
-"classwmtk_1_1invariants_1_1_envelope_invariant.html#adaada85b99222a617fc070aff83a6bd2":[4,0,2,3,2,1],
+"classwmtk_1_1invariants_1_1_envelope_invariant.html#a28b2f11435f8aa1982f84db589ed3b08":[4,0,2,3,2,4],
+"classwmtk_1_1invariants_1_1_envelope_invariant.html#a4d834a753526ea4996f7a9aa5b078f45":[4,0,2,3,2,1],
+"classwmtk_1_1invariants_1_1_envelope_invariant.html#a91afb4ae30b04095739f234f52d913c6":[4,0,2,3,2,5],
+"classwmtk_1_1invariants_1_1_envelope_invariant.html#a9922df313c474f3e9f896940aa1c1656":[4,0,2,3,2,0],
+"classwmtk_1_1invariants_1_1_envelope_invariant.html#aa5cb3de3628dd4fe7d8e5270369cc8ab":[4,0,2,3,2,3],
+"classwmtk_1_1invariants_1_1_envelope_invariant.html#abce7700146882e35e1136041e53d6e26":[4,0,2,3,2,2],
 "classwmtk_1_1invariants_1_1_function_invariant.html":[4,0,2,3,3],
 "classwmtk_1_1invariants_1_1_function_invariant.html#a2a577858f2cf7eb6f09e9d5f575e46c7":[4,0,2,3,3,2],
 "classwmtk_1_1invariants_1_1_function_invariant.html#a6e35a4c1c4cc84250bff49b4987819c1":[4,0,2,3,3,0],
@@ -249,5 +244,10 @@ var NAVTREEINDEX8 =
 "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html":[4,0,2,3,12],
 "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#a30e554417dfffcaedce3a167b351173b":[4,0,2,3,12,1],
 "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#a81baa9211019d481fc47e699d0747b3b":[4,0,2,3,12,0],
-"classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#a90573e114b9f766af56663e5ccb62c94":[4,0,2,3,12,2]
+"classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#a90573e114b9f766af56663e5ccb62c94":[4,0,2,3,12,2],
+"classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#aa6dc014c8027e10d5d86423596a0b582":[4,0,2,3,12,3],
+"classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#aff1a26182c124923c042df408c02a002":[4,0,2,3,12,4],
+"classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html":[4,0,2,3,13],
+"classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html#a0e062b5f4b86d824d0193ff69fde64de":[4,0,2,3,13,0],
+"classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html#a3adb6f7a2e4637f4204e4e8ae39d6bc8":[4,0,2,3,13,2]
 };
