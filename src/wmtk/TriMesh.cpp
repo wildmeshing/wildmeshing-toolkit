@@ -15,6 +15,11 @@ TriMesh::TriMesh()
     , m_fe_handle(register_attribute_typed<int64_t>("m_fe", PrimitiveType::Face, 3, false, -1))
     , m_ff_handle(register_attribute_typed<int64_t>("m_ff", PrimitiveType::Face, 3, false, -1))
 {
+    make_cached_accessors();
+}
+
+void TriMesh::make_cached_accessors()
+{
     m_vf_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_vf_handle);
     m_ef_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_ef_handle);
     m_fv_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_fv_handle);
@@ -22,19 +27,38 @@ TriMesh::TriMesh()
     m_ff_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_ff_handle);
 }
 
+TriMesh::TriMesh(TriMesh&& o)
+    : Mesh(std::move(o))
+{
+    m_vf_handle = o.m_vf_handle;
+    m_ef_handle = o.m_ef_handle;
+    m_fv_handle = o.m_fv_handle;
+    m_fe_handle = o.m_fe_handle;
+    m_ff_handle = o.m_ff_handle;
+
+    make_cached_accessors();
+}
+TriMesh& TriMesh::operator=(TriMesh&& o)
+{
+    Mesh::operator=(std::move(o));
+    m_vf_handle = o.m_vf_handle;
+    m_ef_handle = o.m_ef_handle;
+    m_fv_handle = o.m_fv_handle;
+    m_fe_handle = o.m_fe_handle;
+    m_ff_handle = o.m_ff_handle;
+
+    make_cached_accessors();
+    return *this;
+}
 
 int64_t TriMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
-        ConstAccessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
-        // int64_t v = fv_accessor.const_topological_scalar_attribute(tuple, PrimitiveType::Vertex);
         int64_t v = m_fv_accessor->const_topological_scalar_attribute(tuple, PrimitiveType::Vertex);
         return v;
     }
     case PrimitiveType::Edge: {
-        // ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
-        // int64_t v = fe_accessor.const_topological_scalar_attribute(tuple, PrimitiveType::Edge);
         int64_t v = m_fe_accessor->const_topological_scalar_attribute(tuple, PrimitiveType::Edge);
         return v;
     }
@@ -65,8 +89,6 @@ bool TriMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 bool TriMesh::is_boundary_edge(const Tuple& tuple) const
 {
     assert(is_valid_slow(tuple));
-    // ConstAccessor<int64_t> ff_accessor = create_const_accessor<int64_t>(m_ff_handle);
-    // return ff_accessor.const_vector_attribute(tuple)(tuple.m_local_eid) < 0;
     return m_ff_accessor->const_vector_attribute(tuple)(tuple.m_local_eid) < 0;
 }
 
@@ -102,20 +124,14 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         const int64_t geid = id(tuple, PrimitiveType::Edge);
         const int64_t gfid = id(tuple, PrimitiveType::Face);
 
-        //ConstAccessor<int64_t> ff_accessor = create_const_accessor<int64_t>(m_ff_handle);
-        //auto ff = ff_accessor.const_vector_attribute(tuple);
-         auto ff = m_ff_accessor->const_vector_attribute(tuple);
+        auto ff = m_ff_accessor->const_vector_attribute(tuple);
 
         int64_t gcid_new = ff(tuple.m_local_eid);
         int64_t lvid_new = -1, leid_new = -1;
 
-        ConstAccessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
-        auto fv = fv_accessor.index_access().const_vector_attribute(gcid_new);
-        // auto fv = m_fv_accessor->index_access().const_vector_attribute(gcid_new);
+        auto fv = m_fv_accessor->index_access().const_vector_attribute(gcid_new);
 
-        //ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
-        //auto fe = fe_accessor.index_access().const_vector_attribute(gcid_new);
-         auto fe = m_fe_accessor->index_access().const_vector_attribute(gcid_new);
+        auto fe = m_fe_accessor->index_access().const_vector_attribute(gcid_new);
 
         if (gfid == gcid_new) {
             // this supports 0,1,0 triangles not 0,0,0 triangles
@@ -241,12 +257,8 @@ void TriMesh::initialize(Eigen::Ref<const RowVectors3l> F)
 
 Tuple TriMesh::tuple_from_global_ids(int64_t fid, int64_t eid, int64_t vid) const
 {
-    ConstAccessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
-    auto fv = fv_accessor.index_access().const_vector_attribute(fid);
-    // auto fv = m_fv_accessor->index_access().const_vector_attribute(fid);
-    ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
-    auto fe = fe_accessor.index_access().const_vector_attribute(fid);
-    // auto fe = m_fe_accessor->index_access().const_vector_attribute(fid);
+    auto fv = m_fv_accessor->index_access().const_vector_attribute(fid);
+    auto fe = m_fe_accessor->index_access().const_vector_attribute(fid);
 
     int64_t lvid = -1;
     int64_t leid = -1;
@@ -293,12 +305,8 @@ Tuple TriMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
 
 Tuple TriMesh::vertex_tuple_from_id(int64_t id) const
 {
-    //ConstAccessor<int64_t> vf_accessor = create_const_accessor<int64_t>(m_vf_handle);
-    //auto f = vf_accessor.index_access().const_scalar_attribute(id);
-     auto f = m_vf_accessor->index_access().const_scalar_attribute(id);
-    //ConstAccessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
-    //auto fv = fv_accessor.index_access().const_vector_attribute(f);
-     auto fv = m_fv_accessor->index_access().const_vector_attribute(f);
+    auto f = m_vf_accessor->index_access().const_scalar_attribute(id);
+    auto fv = m_fv_accessor->index_access().const_vector_attribute(f);
     for (int64_t i = 0; i < 3; ++i) {
         if (fv(i) == id) {
             assert(autogen::tri_mesh::auto_2d_table_complete_vertex[i][0] == i);
@@ -319,12 +327,8 @@ Tuple TriMesh::vertex_tuple_from_id(int64_t id) const
 
 Tuple TriMesh::edge_tuple_from_id(int64_t id) const
 {
-    //ConstAccessor<int64_t> ef_accessor = create_const_accessor<int64_t>(m_ef_handle);
-    //auto f = ef_accessor.index_access().const_scalar_attribute(id);
-     auto f = m_ef_accessor->index_access().const_scalar_attribute(id);
-    //ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
-    //auto fe = fe_accessor.index_access().const_vector_attribute(f);
-     auto fe = m_fe_accessor->index_access().const_vector_attribute(f);
+    auto f = m_ef_accessor->index_access().const_scalar_attribute(id);
+    auto fe = m_fe_accessor->index_access().const_vector_attribute(f);
     for (int64_t i = 0; i < 3; ++i) {
         if (fe(i) == id) {
             assert(autogen::tri_mesh::auto_2d_table_complete_edge[i][1] == i);

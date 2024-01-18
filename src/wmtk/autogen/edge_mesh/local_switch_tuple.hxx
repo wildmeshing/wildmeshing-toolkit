@@ -1,9 +1,9 @@
-#include "local_switch_tuple.hpp"
+#pragma once
 #include <stdexcept>
 #include <wmtk/utils/TupleInspector.hpp>
 
 namespace wmtk::autogen::edge_mesh {
-Tuple local_switch_tuple(const Tuple& tuple, PrimitiveType pt)
+inline Tuple local_switch_tuple(const Tuple& tuple, PrimitiveType pt)
 {
     using namespace utils;
     const int64_t global_cid = TupleInspector::global_cid(tuple);
