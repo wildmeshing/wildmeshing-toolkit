@@ -5,6 +5,8 @@
 
 #include <wmtk/components/run_components.hpp>
 
+#include <wmtk/utils/random_seed.hpp>
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -57,6 +59,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
         "opt_log_level": 5
         })"_json;
 
+    utils::set_random_seed(0);
     auto cache = wmtk::components::run_components(in_args, true);
 
     auto meshes = in_args["tests"]["meshes"];
