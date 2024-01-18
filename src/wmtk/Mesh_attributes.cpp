@@ -189,6 +189,7 @@ attribute::AttributeScopeHandle Mesh::create_single_mesh_scope()
 
 std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>> Mesh::consolidate()
 {
+    spdlog::info("Consolidating {}", fmt::join(absolute_multi_mesh_id(), ","));
     // Number of dimensions
     int64_t tcp = top_cell_dimension() + 1;
 
@@ -245,24 +246,42 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
     {
         constexpr static int64_t TUPLE_SIZE = multimesh::utils::TUPLE_SIZE; // in terms of int64_t
         constexpr static int64_t GLOBAL_ID_INDEX = multimesh::utils::GLOBAL_ID_INDEX;
-        const static std::vector<Eigen::Index> parent_map_offsets{
+        const static std::vector<Eigen::Index> image_map_offsets{
             Eigen::Index(TUPLE_SIZE + GLOBAL_ID_INDEX)};
-        const static std::vector<Eigen::Index> child_map_offsets{Eigen::Index(GLOBAL_ID_INDEX)};
+        const static std::vector<Eigen::Index> domain_map_offsets{Eigen::Index(GLOBAL_ID_INDEX)};
+        size_t dim = get_primitive_type_id(top_simplex_type());
+        const auto& top_map = old2new[dim];
         if (auto parent_ptr = m_multi_mesh_manager.m_parent; parent_ptr != nullptr) {
-            int64_t child_id = m_multi_mesh_manager.m_child_id;
-            const auto& child_data = parent_ptr->m_multi_mesh_manager.m_children[child_id];
-            const auto parent_to_child_handle = child_data.map_handle;
-            auto acc = parent_ptr->create_accessor(parent_to_child_handle);
-            auto& attr = acc.attribute();
-            size_t dim = get_primitive_type_id(parent_to_child_handle.primitive_type());
-            attr.index_remap(old2new[dim], parent_map_offsets);
+            {
+                int64_t child_id = m_multi_mesh_manager.m_child_id;
+                const auto& child_data = parent_ptr->m_multi_mesh_manager.m_children[child_id];
+                const auto handle = child_data.map_handle;
+                auto acc = parent_ptr->create_accessor(handle);
+                auto& attr = acc.attribute();
+                attr.index_remap(top_map, image_map_offsets);
+            }
+
+            {
+                const auto handle = m_multi_mesh_manager.map_to_parent_handle;
+                auto acc = create_accessor(handle);
+                auto& attr = acc.attribute();
+                attr.index_remap(top_map, domain_map_offsets);
+            }
         }
+
         for (const auto& child_data : m_multi_mesh_manager.m_children) {
-            const auto parent_to_child_handle = child_data.map_handle;
-            auto acc = create_accessor(parent_to_child_handle);
-            auto& attr = acc.attribute();
-            size_t dim = get_primitive_type_id(parent_to_child_handle.primitive_type());
-            attr.index_remap(old2new[dim], child_map_offsets);
+            {
+                const auto handle = child_data.map_handle;
+                auto acc = create_accessor(handle);
+                auto& attr = acc.attribute();
+                attr.index_remap(top_map, domain_map_offsets);
+            }
+            {
+                const auto handle = child_data.mesh->m_multi_mesh_manager.map_to_parent_handle;
+                auto acc = child_data.mesh->create_accessor(handle);
+                auto& attr = acc.attribute();
+                attr.index_remap(top_map, image_map_offsets);
+            }
         }
     }
 

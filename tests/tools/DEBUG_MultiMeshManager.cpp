@@ -60,7 +60,7 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
                 "[{} -> {}] Checking asserts from child {} {} (input tuple was {})",
                 fmt::join(absolute_id(), ","),
                 fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                wmtk::utils::TupleInspector::as_string(child_tuple_from_child),
+                wmtk::utils::TupleInspector::as_string(parent_tuple_from_child),
                 wmtk::utils::TupleInspector::as_string(child_tuple_from_child),
                 wmtk::utils::TupleInspector::as_string(child_tuple));
             assert(child_mesh.is_valid_slow(child_tuple_from_child));

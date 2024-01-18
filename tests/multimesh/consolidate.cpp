@@ -139,3 +139,34 @@ TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
         REQUIRE(child2.is_connectivity_valid());
     }
 }
+
+
+
+TEST_CASE("consolidate_multimesh_splits", "[mesh][consolidate_multimesh]")
+{
+    using namespace wmtk::operations;
+    int number = 20;
+    auto dptr = disk_to_individual_multimesh(number);
+
+    auto& c = dptr->get_multi_mesh_child_mesh({0});
+
+    operations::EdgeSplit split_op(*dptr);
+
+
+    for (int j = 0; j < 5; ++j) {
+        for (const auto& tup : dptr->get_all(wmtk::PrimitiveType::Edge)) {
+            split_op(simplex::Simplex::edge(tup)).empty();
+        }
+    }
+    DEBUG_TriMesh& debug_d = reinterpret_cast<DEBUG_TriMesh&>(*dptr);
+    DEBUG_TriMesh& debug_i = reinterpret_cast<DEBUG_TriMesh&>(c);
+
+    multimesh::consolidate(*dptr);
+    debug_d.multi_mesh_manager().check_map_valid(debug_d);
+    debug_i.multi_mesh_manager().check_map_valid(debug_i);
+    for (int j = 0; j < 5; ++j) {
+        for (const auto& tup : dptr->get_all(wmtk::PrimitiveType::Edge)) {
+            split_op(simplex::Simplex::edge(tup));
+        }
+    }
+}
