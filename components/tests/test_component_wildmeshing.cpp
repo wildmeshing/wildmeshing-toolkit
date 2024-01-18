@@ -58,7 +58,7 @@ TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
         {"passes", 10},
         {"input", "mesh"},
         {"target_edge_length", 0.05},
-        {"intermediate_output", true},
+        {"intermediate_output", false},
         {"output", "test_mm"},
         {"pass_through", std::vector<int64_t>()},
         {"attributes", attributes}};

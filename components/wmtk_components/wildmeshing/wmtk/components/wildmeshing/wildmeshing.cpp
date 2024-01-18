@@ -406,10 +406,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         ops_name.push_back("swap32");
 
         // 3 - 3) TetFaceSwap 2-3
-        auto swap23 = std::make_shared<TetFaceSwap>(*mesh);
-        setup_swap(*swap23, swap23->collapse(), swap23->split(), interior_face);
-        ops.push_back(swap23);
-        ops_name.push_back("swap23");
+        // auto swap23 = std::make_shared<TetFaceSwap>(*mesh);
+        // setup_swap(*swap23, swap23->collapse(), swap23->split(), interior_face);
+        // ops.push_back(swap23);
+        // ops_name.push_back("swap23");
     }
 
     // 4) Smoothing
@@ -504,5 +504,15 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             i + 1,
             options.intermediate_output);
     }
+
+    write(mesh, paths.output_dir, options.output, options.attributes.position, -1, true);
+
+    write(
+        child_mesh,
+        paths.output_dir,
+        options.output + "_boundary",
+        options.attributes.position,
+        -1,
+        true);
 }
 } // namespace wmtk::components

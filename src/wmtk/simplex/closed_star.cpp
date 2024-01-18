@@ -15,11 +15,12 @@ SimplexCollection closed_star(const Mesh& mesh, const Simplex& simplex, const bo
 
     collection.add(simplex);
 
-    const SimplexCollection top_dimension_cofaces_collection = top_dimension_cofaces(mesh, simplex, false);
+    const SimplexCollection top_dimension_cofaces_collection =
+        top_dimension_cofaces(mesh, simplex, false);
 
     for (const Simplex& coface_cell : top_dimension_cofaces_collection.simplex_vector()) {
         collection.add(coface_cell);
-        const SimplexCollection cell_boundary = faces(mesh, coface_cell);
+        const SimplexCollection cell_boundary = faces(mesh, coface_cell, false);
         collection.add(cell_boundary);
     }
 
