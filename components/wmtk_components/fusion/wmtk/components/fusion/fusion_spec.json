@@ -1,0 +1,26 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required":[
+            "input",
+            "axis",
+            "name"
+        ]
+    },
+    {
+        "pointer": "/input",
+        "type": "string"
+    },
+    {
+        "pointer": "/axis",
+        "type": "string",
+        "default": "default",
+        "doc": "The axis to fusion",
+        "options": ["X", "Y", "Z", "All"]
+    },
+    {
+        "pointer": "/name",
+        "type": "string"
+    }
+]
