@@ -13,7 +13,7 @@ class ATOperations
 {
 public:
     ATData& m_atdata;
-    std::vector<std::shared_ptr<wmtk::operations::Operation>> m_ops;
+
     double m_target_edge_length;
     double m_barrier_weight;
     double m_barrier_triangle_area;
@@ -21,12 +21,24 @@ public:
     double m_amips_weight;
     bool m_area_weighted_amips;
 
+    Accessor<double> m_uv_accessor;
+    //.... TODO can be deleted once multimesh transfer strategy is implemented
+    Accessor<double> m_uvmesh_xyz_accessor;
+    Accessor<double> m_pmesh_xyz_accessor;
+    //.....
+    Accessor<double> m_distance_error_accessor;
+    Accessor<double> m_sum_error_accessor;
+    Accessor<double> m_barrier_energy_accessor;
+    Accessor<double> m_amips_error_accessor;
+    Accessor<double> m_edge_priority_accessor;
+
+    std::vector<std::shared_ptr<wmtk::operations::Operation>> m_ops;
     std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
         m_evaluator_ptr;
     std::shared_ptr<wmtk::components::function::utils::IntegralBase> m_integral_ptr;
 
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
-        m_edge_length_update;
+        m_edge_priority_update;
     //.... TODO can be deleted once multimesh transfer strategy is implemented
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_uvmesh_xyz_update;
@@ -42,19 +54,9 @@ public:
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_amips_error_update;
 
-    Accessor<double> m_uv_accessor;
-    Accessor<double> m_edge_length_accessor;
-    //.... TODO can be deleted once multimesh transfer strategy is implemented
-    Accessor<double> m_uvmesh_xyz_accessor;
-    Accessor<double> m_pmesh_xyz_accessor;
-    //.....
-    Accessor<double> m_distance_error_accessor;
-    Accessor<double> m_sum_error_accessor;
-    Accessor<double> m_barrier_energy_accessor;
-    Accessor<double> m_amips_error_accessor;
-
     std::function<std::vector<double>(const Simplex&)> m_high_error_edges_first;
     std::function<std::vector<double>(const Simplex&)> m_high_distance_edges_first;
+    std::function<std::vector<double>(const Simplex&)> m_high_distance_faces_first;
     std::function<std::vector<double>(const Simplex&)> m_high_amips_edges_first;
     std::function<std::vector<double>(const Simplex&)> m_long_edges_first;
     std::function<std::vector<double>(const Simplex&)> m_short_edges_first;
@@ -81,7 +83,10 @@ public:
     void AT_split_single_edge_mesh(Mesh* edge_meshi_ptr);
     void AT_smooth_interior();
     void AT_smooth_interior(std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
-    void AT_split_interior(
+    void AT_edge_split(
+        std::function<std::vector<double>(const Simplex&)>& priority,
+        std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
+    void AT_face_split(
         std::function<std::vector<double>(const Simplex&)>& priority,
         std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
     void AT_split_boundary();
