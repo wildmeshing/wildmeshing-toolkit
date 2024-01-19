@@ -54,7 +54,6 @@ void check(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
         }
     }
 }
-
 template <typename VectorAcc>
 void populate_sieve(DEBUG_PointMesh& m, VectorAcc& va, int value)
 {
@@ -308,14 +307,17 @@ TEST_CASE("test_accessor_caching_scope_fails", "[accessor]")
         // TODO: create scope
         auto scope = m.create_scope();
 
+        spdlog::info("Populating");
         populate(m, int64_t_acc, false);
         populate(m, double_acc, false);
+        spdlog::info("Checking");
         check(m, int64_t_acc, false);
         check(m, double_acc, false);
 
         spdlog::info("Walking out of scope");
         scope.mark_failed();
     }
+    spdlog::info("Walked out of scope");
     check(m, int64_t_acc, true);
     check(m, double_acc, true);
 }
@@ -382,12 +384,32 @@ TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor]")
             populate(m, double_acc, true);
             check(m, int64_t_acc, true);
             check(m, double_acc, true);
+            {
+                auto scope3 = m.create_scope();
+                populate(m, int64_t_acc, false);
+                populate(m, double_acc, false);
+                check(m, int64_t_acc, false);
+                check(m, double_acc, false);
+            }
+            check(m, int64_t_acc, false);
+            check(m, double_acc, false);
+            {
+                auto scope3 = m.create_scope();
+                populate(m, int64_t_acc, true);
+                populate(m, double_acc, true);
+                check(m, int64_t_acc, true);
+                check(m, double_acc, true);
+                scope3.mark_failed();
+            }
+            check(m, int64_t_acc, false);
+            check(m, double_acc, false);
         }
         scope.mark_failed();
     }
     check(m, int64_t_acc, true);
     check(m, double_acc, true);
 }
+
 
 TEST_CASE("accessor_parent_scope_access", "[accessor]")
 {
