@@ -18,8 +18,7 @@ var classwmtk_1_1attribute_1_1_attribute_scope_stack =
     [ "flush_changes_to_vector", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ae18947bef8614b41d75a7f0ef9b19d17", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a0bd6111f8a9d44159b20531c6e93d7e9", null ],
     [ "pop", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a54f12a705b67a04bdc61260f3ee424bf", null ],
-    [ "reserve", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a2dee49852284261eb3e561dbf697f33f", null ],
     [ "writing_enabled", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a3a158d2405c4b872d3ba0083debdf345", null ],
-    [ "m_active", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a24b424f9072142aa048a519b3fab7c9c", null ],
-    [ "m_scopes", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#af499ea60bb67f48f500358987101dd75", null ]
+    [ "m_active", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#aa452d83614280fb38411552c9b1aa332", null ],
+    [ "m_start", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ae327630746537c5c88a9ed23d5d557ef", null ]
 ];

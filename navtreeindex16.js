@@ -1,10 +1,5 @@
 var NAVTREEINDEX16 =
 {
-"namespacewmtk_1_1utils_1_1metaprogramming.html#a54c04510f7a534aecfdd676aec9eb16f":[3,0,7,12,0,6],
-"namespacewmtk_1_1utils_1_1metaprogramming.html#a6bd713570ddef111dc6db3a9b5df3995":[3,0,7,12,0,11],
-"namespacewmtk_1_1utils_1_1metaprogramming.html#a960863b4ff77683286c7b21062aeab8d":[3,0,7,12,0,13],
-"namespacewmtk_1_1utils_1_1metaprogramming.html#a97f0566787764f25e1c654dc79f59320":[3,0,7,12,0,7],
-"namespacewmtk_1_1utils_1_1metaprogramming.html#aa5a891c5f82fc2a28e4fbdfc325b46f0":[3,0,7,12,0,15],
 "namespacewmtk_1_1utils_1_1metaprogramming.html#ab18df618f964d4cb34717b41fa760069":[3,0,7,12,0,14],
 "namespacewmtk_1_1utils_1_1metaprogramming.html#ac1fdb62c5fe7d08f71e0846a8099b2f5":[3,0,7,12,0,10],
 "namespacewmtk_1_1utils_1_1metaprogramming.html#ac3d938798f1517d594b9c6fe5a4bcecf":[3,0,7,12,0,8],
@@ -249,5 +244,10 @@ var NAVTREEINDEX16 =
 "structwmtk_1_1components_1_1internal_1_1_delaunay_options.html":[4,0,2,1,2,0],
 "structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a31df5573bebe7a210f91e8a3e3630ecc":[4,0,2,1,2,0,1],
 "structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a530eb32a4b9c1c76ee08970d034d1172":[4,0,2,1,2,0,0],
-"structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a637d65071f6091ccb69b30d02b006cb0":[4,0,2,1,2,0,2]
+"structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a637d65071f6091ccb69b30d02b006cb0":[4,0,2,1,2,0,2],
+"structwmtk_1_1components_1_1internal_1_1_disk_options_1_1_coordinates.html":[4,0,2,1,2,12,0],
+"structwmtk_1_1components_1_1internal_1_1_disk_options_1_1_coordinates.html#a8515ad5f5e5552c08fc2023f9314fe37":[4,0,2,1,2,12,0,0],
+"structwmtk_1_1components_1_1internal_1_1_disk_options_1_1_coordinates.html#ac629c07d277b21d34bcea39521753f42":[4,0,2,1,2,12,0,1],
+"structwmtk_1_1components_1_1internal_1_1_disk_options_1_1_coordinates.html#adc3963cc548d739f748bac08cbec903f":[4,0,2,1,2,12,0,2],
+"structwmtk_1_1components_1_1internal_1_1_disk_options_1_1_coordinates.html#ae2abe8d2c4d521cbf6b9b485b369a3d0":[4,0,2,1,2,12,0,4]
 };

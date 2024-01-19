@@ -1,10 +1,5 @@
 var NAVTREEINDEX18 =
 {
-"test__component__delaunay_8cpp.html":[5,0,0,0,1],
-"test__component__delaunay_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5":[5,0,0,0,1,8],
-"test__component__delaunay_8cpp.html#a3289eee87d4f27bda966d30b81c51812":[5,0,0,0,1,4],
-"test__component__delaunay_8cpp.html#a3817f7ebe538bd98507ed2a69f3e65a3":[5,0,0,0,1,2],
-"test__component__delaunay_8cpp.html#a64385d68ba4e206528466fe0e90d4c41":[5,0,0,0,1,3],
 "test__component__delaunay_8cpp.html#a73a69c5d875625f08c630cf0cafa2b71":[5,0,0,0,1,7],
 "test__component__delaunay_8cpp.html#a8efb223c76864bc1dde445456c339570":[5,0,0,0,1,5],
 "test__component__delaunay_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d":[5,0,0,0,1,0],
@@ -249,5 +244,10 @@ var NAVTREEINDEX18 =
 "tuple__map__attribute__io_8hpp_source.html":[5,0,2,0,5,2,12],
 "tuple__vector__to__homogeneous__simplex__vector_8cpp.html":[5,0,2,0,7,2,4],
 "tuple__vector__to__homogeneous__simplex__vector_8cpp.html#abc97acf22bd5eb87df2b16ad3b372cfb":[5,0,2,0,7,2,4,0],
-"tuple__vector__to__homogeneous__simplex__vector_8cpp_source.html":[5,0,2,0,7,2,4]
+"tuple__vector__to__homogeneous__simplex__vector_8cpp_source.html":[5,0,2,0,7,2,4],
+"tuple__vector__to__homogeneous__simplex__vector_8hpp.html":[5,0,2,0,7,2,5],
+"tuple__vector__to__homogeneous__simplex__vector_8hpp.html#abc97acf22bd5eb87df2b16ad3b372cfb":[5,0,2,0,7,2,5,0],
+"tuple__vector__to__homogeneous__simplex__vector_8hpp_source.html":[5,0,2,0,7,2,5],
+"unique__homogeneous__simplices_8cpp.html":[5,0,2,0,7,2,6],
+"unique__homogeneous__simplices_8cpp.html#aa306c7de45015f9be0e104fca1aacad2":[5,0,2,0,7,2,6,0]
 };

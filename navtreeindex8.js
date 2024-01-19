@@ -1,10 +1,5 @@
 var NAVTREEINDEX8 =
 {
-"classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#a42fb02021013bcc96863e923799d379a":[4,0,2,1,0,0,2,4],
-"classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#a58a047d9192b9cf402cf8efa4eb6f4ad":[4,0,2,1,0,0,2,5],
-"classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#a6c8d4c5e7ba916235f5784b365b63b50":[4,0,2,1,0,0,2,3],
-"classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#a9c8c5afe36f00526ac91934a27469cb8":[4,0,2,1,0,0,2,6],
-"classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#ab147b6e15fbc8d709751877d4e37ec53":[4,0,2,1,0,0,2,7],
 "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#abb3e31fbc8f093bac3b5f50ee9593ab6":[4,0,2,1,0,0,2,9],
 "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#abec7d93546d07e2ed7ece544e2451306":[4,0,2,1,0,0,2,2],
 "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#ac3d654316795bdfc6518efe951fb8713":[4,0,2,1,0,0,2,0],
@@ -249,5 +244,10 @@ var NAVTREEINDEX8 =
 "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant.html#ab4f0c7c0b863decf5f5dded67ae8919c":[4,0,2,3,11,2],
 "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant.html#ab623540283606bbc089679997536332e":[4,0,2,3,11,0],
 "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant.html#acc0f76008a189003956a2d9ab20deb4f":[4,0,2,3,11,3],
-"classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html":[4,0,2,3,12]
+"classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html":[4,0,2,3,12],
+"classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#a30e554417dfffcaedce3a167b351173b":[4,0,2,3,12,1],
+"classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#a81baa9211019d481fc47e699d0747b3b":[4,0,2,3,12,0],
+"classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#a90573e114b9f766af56663e5ccb62c94":[4,0,2,3,12,2],
+"classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#aa6dc014c8027e10d5d86423596a0b582":[4,0,2,3,12,3],
+"classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#aff1a26182c124923c042df408c02a002":[4,0,2,3,12,4]
 };
