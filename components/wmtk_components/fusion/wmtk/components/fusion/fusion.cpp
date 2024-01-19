@@ -61,6 +61,25 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         assert(V.rows() == mesh->get_all(PrimitiveType::Vertex).size());
         assert(FV.rows() == mesh->get_all(PrimitiveType::Face).size());
 
+        // rescale to [0, 1]
+        RowVectors3d V_rescale(V.rows(), 3);
+
+        Vector3d min_pos = V.colwise().minCoeff();
+
+        if (abs(min_pos[2] - 0.0) > eps)
+            throw std::runtime_error("has non-zero z coordinate on 2d mesh");
+
+        for (int64_t i = 0; i < V_rescale.rows(); ++i) {
+            V_rescale.row(i) = V.row(i) - min_pos.transpose();
+        }
+
+        Vector3d max_pos = V_rescale.colwise().maxCoeff();
+        for (int64_t i = 0; i < V_rescale.rows(); ++i) {
+            V_rescale(i, 0) /= max_pos[0];
+            V_rescale(i, 1) /= max_pos[1];
+        }
+
+
         // debug code
         // std::cout << FV << std::endl;
         // std::cout << V << std::endl;
@@ -75,8 +94,8 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         int64_t v10 = -1;
         int64_t v11 = -1;
 
-        for (int64_t i = 0; i < V.rows(); ++i) {
-            const auto& pos = V.row(i);
+        for (int64_t i = 0; i < V_rescale.rows(); ++i) {
+            const auto& pos = V_rescale.row(i);
 
             if (abs(pos[0] - 0.0) < eps) {
                 vertices_on_zero[0].push_back(std::make_pair(i, pos));
@@ -191,11 +210,21 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         fusion_mesh.initialize(FV_new);
         // mesh_utils::set_matrix_attribute(V_new, "vertices", PrimitiveType::Vertex, fusion_mesh);
 
-        TriMesh& m = dynamic_cast<TriMesh&>(*mesh);
+        // TriMesh& m = dynamic_cast<TriMesh&>(*mesh);
 
         // make a copy
         // TriMesh child_mesh(std::move(m));
-        std::shared_ptr<TriMesh> child_ptr = std::make_shared<TriMesh>(std::move(m));
+        // std::shared_ptr<TriMesh> child_ptr = std::make_shared<TriMesh>(std::move(m));
+
+        TriMesh position_mesh;
+        position_mesh.initialize(FV);
+        mesh_utils::set_matrix_attribute(
+            V_rescale,
+            "vertices",
+            PrimitiveType::Vertex,
+            position_mesh);
+
+        std::shared_ptr<TriMesh> child_ptr = std::make_shared<TriMesh>(std::move(position_mesh));
 
         auto child_map = multimesh::same_simplex_dimension_bijection(fusion_mesh, *child_ptr);
 
@@ -222,13 +251,29 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         assert(V.rows() == mesh->get_all(PrimitiveType::Vertex).size());
         assert(TV.rows() == mesh->get_all(PrimitiveType::Tetrahedron).size());
 
+        // rescale to [0, 1]
+        RowVectors3d V_rescale(V.rows(), 3);
+
+        Vector3d min_pos = V.colwise().minCoeff();
+
+        for (int64_t i = 0; i < V_rescale.rows(); ++i) {
+            V_rescale.row(i) = V.row(i) - min_pos.transpose();
+        }
+
+        Vector3d max_pos = V_rescale.colwise().maxCoeff();
+        for (int64_t i = 0; i < V_rescale.rows(); ++i) {
+            V_rescale(i, 0) /= max_pos[0];
+            V_rescale(i, 1) /= max_pos[1];
+            V_rescale(i, 2) /= max_pos[2];
+        }
+
         std::map<int64_t, int64_t> vertex_map;
 
         std::array<std::vector<std::pair<int64_t, Eigen::VectorXd>>, 3> vertices_on_zero;
         std::array<std::vector<std::pair<int64_t, Eigen::VectorXd>>, 3> vertices_on_one;
 
-        for (int64_t i = 0; i < V.rows(); ++i) {
-            const auto& pos = V.row(i);
+        for (int64_t i = 0; i < V_rescale.rows(); ++i) {
+            const auto& pos = V_rescale.row(i);
 
             for (int k = 0; k < 3; ++k) {
                 if (abs(pos[k] - 0.0) < eps) {
@@ -329,9 +374,16 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         fusion_mesh.initialize(TV_new);
         // mesh_utils::set_matrix_attribute(V_new, "vertices", PrimitiveType::Vertex, fusion_mesh);
 
-        TetMesh& m = dynamic_cast<TetMesh&>(*mesh);
+        TetMesh position_mesh;
+        position_mesh.initialize(TV);
+        mesh_utils::set_matrix_attribute(
+            V_rescale,
+            "vertices",
+            PrimitiveType::Vertex,
+            position_mesh);
 
-        std::shared_ptr<TetMesh> child_ptr = std::make_shared<TetMesh>(std::move(m));
+        std::shared_ptr<TetMesh> child_ptr = std::make_shared<TetMesh>(std::move(position_mesh));
+
         auto child_map = multimesh::same_simplex_dimension_bijection(fusion_mesh, *child_ptr);
         fusion_mesh.register_child_mesh(child_ptr, child_map);
 

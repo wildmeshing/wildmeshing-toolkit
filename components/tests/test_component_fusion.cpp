@@ -31,21 +31,21 @@ TEST_CASE("fusion_2d", "[components][fusion][.]")
 
     RowVectors3d V;
     V.resize(15, 3);
-    V.row(0) << 0.0, 0.0, 0.0;
-    V.row(1) << 0.25, 0.0, 0.0;
-    V.row(2) << 0.5, 0.0, 0.0;
-    V.row(3) << 0.75, 0.0, 0.0;
-    V.row(4) << 1.0, 0.0, 0.0;
-    V.row(5) << 0.0, 0.5, 0.0;
-    V.row(6) << 0.25, 0.5, 0.0;
-    V.row(7) << 0.5, 0.5, 0.0;
-    V.row(8) << 0.75, 0.5, 0.0;
-    V.row(9) << 1.0, 0.5, 0.0;
-    V.row(10) << 0.0, 1.0, 0.0;
-    V.row(11) << 0.25, 1.0, 0.0;
-    V.row(12) << 0.5, 1.0, 0.0;
-    V.row(13) << 0.75, 1.0, 0.0;
-    V.row(14) << 1.0, 1.0, 0.0;
+    V.row(0) << 1.0, 0.0, 0.0;
+    V.row(1) << 1.25, 0.0, 0.0;
+    V.row(2) << 1.5, 0.0, 0.0;
+    V.row(3) << 1.75, 0.0, 0.0;
+    V.row(4) << 2.0, 0.0, 0.0;
+    V.row(5) << 1.0, 1.0, 0.0;
+    V.row(6) << 1.25, 1.0, 0.0;
+    V.row(7) << 1.5, 1.0, 0.0;
+    V.row(8) << 1.75, 1.0, 0.0;
+    V.row(9) << 2.0, 1.0, 0.0;
+    V.row(10) << 1.0, 2.0, 0.0;
+    V.row(11) << 1.25, 2.0, 0.0;
+    V.row(12) << 1.5, 2.0, 0.0;
+    V.row(13) << 1.75, 2.0, 0.0;
+    V.row(14) << 2.0, 2.0, 0.0;
 
     RowVectors3l F;
     F.resize(16, 3);
@@ -91,13 +91,11 @@ TEST_CASE("fusion_2d", "[components][fusion][.]")
         wmtk::utils::EigenMatrixWriter writer;
         periodic_mesh.serialize(writer);
 
-        // MatrixX<double> V_p;
         MatrixX<int64_t> F_p;
-        // writer.get_position_matrix(V_p);
         writer.get_FV_matrix(F_p);
 
-        // std::cout << V_p << std::endl << std::endl;
-        std::cout << F_p << std::endl;
+        std::cout << F_p << std::endl << std::endl;
+
         auto childs = periodic_mesh.get_child_meshes();
         CHECK(childs.size() == 1);
         CHECK(
@@ -105,6 +103,17 @@ TEST_CASE("fusion_2d", "[components][fusion][.]")
             periodic_mesh.get_all(PrimitiveType::Face).size());
         CHECK(periodic_mesh.get_all(PrimitiveType::Vertex).size() == 12);
         CHECK(childs[0]->get_all(PrimitiveType::Vertex).size() == 15);
+
+        wmtk::utils::EigenMatrixWriter writer_child;
+        childs[0]->serialize(writer_child);
+        MatrixX<int64_t> FV_child;
+        MatrixX<double> V_child;
+
+        writer_child.get_position_matrix(V_child);
+        writer_child.get_FV_matrix(FV_child);
+
+        std::cout << V_child << std::endl << std::endl;
+        std::cout << FV_child << std::endl << std::endl;
     }
     SECTION("y")
     {
@@ -179,14 +188,14 @@ TEST_CASE("fusion_3d", "[components][fusion][.]")
 
     RowVectors3d V;
     V.resize(8, 3);
-    V.row(0) << 0.0, 0.0, 0.0;
-    V.row(1) << 1.0, 0.0, 0.0;
-    V.row(2) << 1.0, 1.0, 0.0;
-    V.row(3) << 0.0, 1.0, 0.0;
-    V.row(4) << 0.0, 0.0, 1.0;
-    V.row(5) << 1.0, 0.0, 1.0;
-    V.row(6) << 1.0, 1.0, 1.0;
-    V.row(7) << 0.0, 1.0, 1.0;
+    V.row(0) << 1.0, 1.0, 1.0;
+    V.row(1) << 3.0, 1.0, 1.0;
+    V.row(2) << 3.0, 1.5, 1.0;
+    V.row(3) << 1.0, 1.5, 1.0;
+    V.row(4) << 1.0, 1.0, 4.0;
+    V.row(5) << 3.0, 1.0, 4.0;
+    V.row(6) << 3.0, 1.5, 4.0;
+    V.row(7) << 1.0, 1.5, 4.0;
 
     RowVectors4l T;
     T.resize(6, 4);
@@ -235,6 +244,17 @@ TEST_CASE("fusion_3d", "[components][fusion][.]")
             childs[0]->get_all(PrimitiveType::Tetrahedron).size() ==
             periodic_mesh.get_all(PrimitiveType::Tetrahedron).size());
         CHECK(periodic_mesh.get_all(PrimitiveType::Vertex).size() == 4);
+
+        wmtk::utils::EigenMatrixWriter writer_child;
+        childs[0]->serialize(writer_child);
+        MatrixX<int64_t> TV_child;
+        MatrixX<double> V_child;
+
+        writer_child.get_position_matrix(V_child);
+        writer_child.get_TV_matrix(TV_child);
+
+        std::cout << V_child << std::endl << std::endl;
+        std::cout << TV_child << std::endl << std::endl;
     }
 
     SECTION("xy")
