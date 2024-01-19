@@ -5,6 +5,7 @@
 #include <functional>
 #include <wmtk/attribute/internal/hash.hpp>
 #include <wmtk/simplex/closed_star.hpp>
+#include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/utils/make_unique.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
@@ -26,6 +27,8 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
     const ConstAccessor<int64_t>& map_accessor,
     const Tuple& source_tuple)
 {
+    assert(source_mesh.is_valid_slow(source_tuple));
+
     PrimitiveType source_mesh_primitive_type = source_mesh.top_simplex_type();
     PrimitiveType target_mesh_primitive_type = target_mesh.top_simplex_type();
     PrimitiveType min_primitive_type =
@@ -37,6 +40,10 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
     if (source_mesh_base_tuple.is_null() || target_mesh_base_tuple.is_null()) {
         return Tuple(); // return null tuple
     }
+
+    assert(source_mesh.is_valid_slow(source_mesh_base_tuple));
+    assert(target_mesh.is_valid_slow(target_mesh_base_tuple));
+
 
     if (source_mesh_base_tuple.m_global_cid != source_mesh_target_tuple.m_global_cid) {
         assert(source_mesh_primitive_type > target_mesh_primitive_type);
@@ -224,6 +231,8 @@ void MultiMeshManager::register_child_mesh(
 
     // register maps
     for (const auto& [child_tuple, my_tuple] : child_tuple_my_tuple_map) {
+        assert(my_mesh.is_valid_slow(my_tuple));
+        assert(child_mesh_ptr->is_valid_slow(child_tuple));
         wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
             parent_to_child_accessor,
             child_to_parent_accessor,
@@ -504,60 +513,6 @@ Tuple MultiMeshManager::map_tuple_to_parent_tuple(const Mesh& my_mesh, const Tup
     return map_tuple_between_meshes(my_mesh, parent_mesh, map_accessor, my_tuple);
 }
 
-// helper function for map tuple
-std::vector<Tuple> get_all_candidate_tuples_for_child_mesh(
-    PrimitiveType parent_type,
-    PrimitiveType child_type,
-    PrimitiveType simplex_type,
-    const std::vector<Tuple>& parent_tuples)
-{
-    if (parent_type == child_type || child_type == simplex_type) {
-        return parent_tuples;
-    }
-
-    std::vector<Tuple> ret_tuples = parent_tuples;
-    switch (simplex_type) {
-    case PrimitiveType::Vertex:
-        if (parent_type == PrimitiveType::Face) {
-            for (const Tuple& t : parent_tuples) {
-                ret_tuples.emplace_back(wmtk::multimesh::utils::local_switch_tuple(
-                    parent_type,
-                    t,
-                    PrimitiveType::Edge));
-            }
-        }
-        if (parent_type == PrimitiveType::Tetrahedron) {
-            for (const Tuple& t : parent_tuples) {
-                ret_tuples.emplace_back(wmtk::multimesh::utils::local_switch_tuple(
-                    parent_type,
-                    t,
-                    PrimitiveType::Edge));
-                ret_tuples.emplace_back(wmtk::multimesh::utils::local_switch_tuples(
-                    parent_type,
-                    t,
-                    {PrimitiveType::Face, PrimitiveType::Edge}));
-            }
-        }
-
-        break;
-    case PrimitiveType::Edge:
-        if (parent_type == PrimitiveType::Tetrahedron) {
-            for (const Tuple& t : parent_tuples) {
-                ret_tuples.emplace_back(wmtk::multimesh::utils::local_switch_tuple(
-                    parent_type,
-                    t,
-                    PrimitiveType::Face));
-            }
-        }
-        break;
-    case PrimitiveType::Face:
-    case PrimitiveType::Tetrahedron:
-    case PrimitiveType::HalfEdge:
-    default: break;
-    }
-
-    return ret_tuples;
-}
 
 std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
     const Mesh& my_mesh,
@@ -573,15 +528,15 @@ std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
     const auto map_handle = child_data.map_handle;
     // we will overwrite these tuples inline with the mapped ones while running down the map
     // functionalities
-    std::vector<Tuple> tuples = simplex::top_dimension_cofaces_tuples(my_mesh, my_simplex);
+
+    std::vector<Tuple> tuples = simplex::cofaces_single_dimension_tuples(
+        my_mesh,
+        my_simplex,
+        child_mesh.top_simplex_type());
+
     /*
         get all tuples of child mesh top simplex type that contain my_simplex
     */
-    tuples = get_all_candidate_tuples_for_child_mesh(
-        my_mesh.top_simplex_type(),
-        child_mesh.top_simplex_type(),
-        my_simplex.primitive_type(),
-        tuples);
 
     auto map_accessor = my_mesh.create_accessor(map_handle);
     for (Tuple& tuple : tuples) {

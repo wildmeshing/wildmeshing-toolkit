@@ -51,10 +51,6 @@ bool MeshAttributeHandle::is_valid() const
 //}
 
 
-PrimitiveType MeshAttributeHandle::primitive_type() const
-{
-    return std::visit([](const auto& h) { return h.primitive_type(); }, m_handle);
-}
 // AttributeHandle MeshAttributeHandle::base_handle() const
 //{
 //     return std::visit([](const auto& h) { return h.m_base_handle; }, m_handle);

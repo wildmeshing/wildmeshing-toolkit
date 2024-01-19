@@ -57,10 +57,7 @@ bool InvariantCollection::after(
                 continue;
             }
             auto map = [&](const auto& tuples) {
-                return mesh().map_tuples(
-                    invariant->mesh(),
-                    mesh().top_simplex_type(),
-                    top_dimension_tuples_after);
+                return mesh().map_tuples(invariant->mesh(), mesh().top_simplex_type(), tuples);
             };
             const std::vector<Tuple> mapped_tuples_after =
                 invariant_uses_new_state ? map(top_dimension_tuples_after) : std::vector<Tuple>{};
@@ -87,11 +84,29 @@ bool InvariantCollection::directly_modified_after(
     const std::vector<simplex::Simplex>& simplices_before,
     const std::vector<simplex::Simplex>& simplices_after) const
 {
+#ifndef NDEBUG
+    for (const auto& s : simplices_before) {
+        mesh().parent_scope([&]() { assert(mesh().is_valid_slow(s.tuple())); });
+    }
+    for (const auto& s : simplices_after) {
+        assert(mesh().is_valid_slow(s.tuple()));
+    }
+#endif
+
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
             auto mapped_simplices_after = mesh().map(invariant->mesh(), simplices_after);
             auto mapped_simplices_before = mesh().parent_scope(
                 [&]() { return mesh().map(invariant->mesh(), simplices_before); });
+#ifndef NDEBUG
+            for (const auto& s : mapped_simplices_before) {
+                mesh().parent_scope([&]() { assert(invariant->mesh().is_valid_slow(s.tuple())); });
+            }
+            for (const auto& s : mapped_simplices_after) {
+                assert(invariant->mesh().is_valid_slow(s.tuple()));
+            }
+            assert(mesh().is_from_same_multi_mesh_structure(invariant->mesh()));
+#endif
             if (!invariant->directly_modified_after(
                     mapped_simplices_before,
                     mapped_simplices_after)) {

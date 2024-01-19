@@ -76,12 +76,13 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
             for (int k = 0; k < 3; k++) {
                 size_t size = parent_to_child_vertex_map.size();
                 parent_to_child_vertex_map.try_emplace(vs[k], size);
-                tri_mesh_matrix(i, k) = parent_to_child_vertex_map[vs[k]];
+                tri_mesh_matrix(i, k) = parent_to_child_vertex_map.at(vs[k]);
             }
         }
         std::shared_ptr<TriMesh> child_ptr = std::make_shared<TriMesh>();
         auto& child = *child_ptr;
         child.initialize(tri_mesh_matrix);
+
         return child_ptr;
     };
 

@@ -1,9 +1,30 @@
 [
     {
+        "pointer": "/",
+        "type": "object",
+        "doc": "Settings for a fan mesh (a single interior vertex surrounded by triangles like a pie)",
+        "required": [
+            "size",
+            "coordinates"
+        ]
+    },
+    {
+        "pointer": "/size",
+        "type": "int",
+        "min": 2,
+        "doc": "The number of triangles used. Assumes at least 2 triangles for now, but this should change later on"
+    },
+    {
         "pointer": "/coordinates",
         "type": "object",
-        "required": ["name","degrees","radius"],
-        "optional": ["center"],
+        "required": [
+            "name",
+            "degrees",
+            "radius"
+        ],
+        "optional": [
+            "center"
+        ],
         "doc": "The coordinates of the triangle fan. uses (center + radius * (cos(degree),sin(degree)))"
     },
     {
@@ -15,7 +36,10 @@
         "type": "list",
         "min": 2,
         "max": 2,
-        "default": [0,0],
+        "default": [
+            0,
+            0
+        ],
         "doc": "The coordinates for the center"
     },
     {
