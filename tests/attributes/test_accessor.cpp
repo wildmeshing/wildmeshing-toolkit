@@ -54,6 +54,40 @@ void check(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
         }
     }
 }
+
+template <typename VectorAcc>
+void populate_sieve(DEBUG_PointMesh& m, VectorAcc& va, int value)
+{
+    auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
+    size_t dimension = va.dimension();
+    Eigen::Matrix<typename VectorAcc::Scalar, Eigen::Dynamic, 1> x;
+    for (const wmtk::Tuple& tup : vertices) {
+        int64_t id = m.id(tup);
+        auto v = va.vector_attribute(tup);
+        if (id % value == 0) {
+            v.setConstant(value);
+        } else {
+            v.setZero();
+        }
+    }
+}
+template <typename VectorAcc>
+void check_sieve(DEBUG_PointMesh& m, VectorAcc& va, int value)
+{
+    auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
+    size_t dimension = va.dimension();
+    Eigen::Matrix<typename VectorAcc::Scalar, Eigen::Dynamic, 1> x;
+    bool is_scalar = va.dimension() == 1;
+    x.resize(va.dimension());
+    for (const wmtk::Tuple& tup : vertices) {
+        int64_t id = m.id(tup);
+        if (value % id == 0) {
+            CHECK((va.const_vector_attribute(tup).array() == value).all());
+        } else {
+            CHECK((va.const_vector_attribute(tup).array() == 0).all());
+        }
+    }
+}
 } // namespace
 
 TEST_CASE("test_accessor_basic", "[accessor]")
