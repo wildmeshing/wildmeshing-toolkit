@@ -17,15 +17,42 @@
     {
         "pointer": "/coordinates",
         "type": "object",
-        "required": ["name","radius"],
-        "optional": ["degree_offset", "center"],
+        "required": [
+            "name",
+            "radius"
+        ],
+        "optional": [
+            "degree_offset",
+            "center"
+        ],
         "doc": "The coordinates of the triangle fan. uses (center + radius * (cos(degree),sin(degree)))"
+    },
+    {
+        "pointer": "/coordinates/name",
+        "type": "string"
+    },
+    {
+        "pointer": "/coordinates/radius",
+        "type": "float"
     },
     {
         "pointer": "/coordinates/degree_offset",
         "type": "float",
         "default": 0,
         "doc": "What angle (in degrees) the disk starts at"
+    },
+    {
+        "pointer": "/coordinates/center",
+        "type": "list",
+        "default": [
+            0,
+            0
+        ],
+        "min": 2,
+        "max": 3
+    },
+    {
+        "pointer": "/coordinates/center/*",
+        "type": "float"
     }
-
 ]

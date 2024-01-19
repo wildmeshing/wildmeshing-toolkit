@@ -31,7 +31,7 @@ public:
         nlohmann_json_j["dimensions"] = nlohmann_json_t.dimensions;
         {
             const auto& b = nlohmann_json_t.cycles;
-            std::array<bool,3> bs{{b[0],b[1],b[2]}};
+            std::array<bool, 3> bs{{b[0], b[1], b[2]}};
             nlohmann_json_j["cycles"] = bs;
         }
     }
@@ -62,7 +62,8 @@ public:
             }
         }
         if (const auto& coords = nlohmann_json_j["coordinates"]; !coords.is_null()) {
-            nlohmann_json_t.coordinates = coords.get<Coordinates>();
+            if (nlohmann_json_j["coordinates"]["spacing"][0] > 0)
+                nlohmann_json_t.coordinates = coords.get<Coordinates>();
         }
     }
 };
