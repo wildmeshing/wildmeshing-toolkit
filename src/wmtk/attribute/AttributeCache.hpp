@@ -16,9 +16,13 @@ class AttributeCache
 {
 public:
     using Data = AttributeCacheData<T>;
-    using DataStorage = std::map<int64_t, Data, std::less<int64_t>
+    using DataStorage = std::map<
+        int64_t,
+        Data,
+        std::less<int64_t>
 #if defined(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
-        , std::pmr::polymorphic_allocator<std::pair<const int64_t, Data>>
+        ,
+        std::pmr::polymorphic_allocator<std::pair<const int64_t, Data>>
 #endif
         >;
 
@@ -30,6 +34,8 @@ public:
     ~AttributeCache();
     AttributeCache(const AttributeCache&) = delete;
     AttributeCache& operator=(const AttributeCache&) = delete;
+    AttributeCache(AttributeCache&&) = default;
+    AttributeCache& operator=(AttributeCache&&) = default;
 
     // returns an iterator and if the value was inserted
     // the returned value may have undetermined state if new oen was inserted
@@ -53,3 +59,4 @@ protected:
     mutable DataStorage m_data;
 };
 } // namespace wmtk::attribute
+#include "AttributeCache.hxx"
