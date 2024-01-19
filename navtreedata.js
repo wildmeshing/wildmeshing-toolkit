@@ -101,12 +101,12 @@ var NAVTREEINDEX =
 "classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#a91b96d794b93777dc8ce4254375661aa",
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a265c81185c9479ef1fb62dc47d8ade2c",
 "faces__single__dimension_8cpp.html#a1e05d4988ed483121e2f5b6101c6abbf",
-"md_src_wmtk_attribute__r_e_a_d_m_e.html#autotoc_md18",
-"namespacewmtk_1_1components.html#a2089f999b4072674bda24b29e86257e1",
-"namespacewmtk_1_1utils.html#a81fce5e5de645986df7e56f010ca2886",
-"struct_diff_scalar_base.html",
-"structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1as__variant__type.html",
-"triangle__areas_8hpp.html"
+"make__unique_8cpp_source.html",
+"namespacewmtk_1_1components.html#a0271fbc50dba277ddd2d1d3e32d1fb3d",
+"namespacewmtk_1_1simplex_1_1utils.html#accca10e19c43ac50ef093dceba76e556",
+"struct_d_scalar2.html#ab82578b12ee9963f6ad8d121db846316",
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#a49e48f2f8e2a839ae2c03f36f3291870",
+"tri__mesh_2is__ccw_8hxx.html#aaab85f5120a223c29bae0881cd7f2c87"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

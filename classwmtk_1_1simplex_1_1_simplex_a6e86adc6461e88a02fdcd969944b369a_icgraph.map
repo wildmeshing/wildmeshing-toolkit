@@ -1,5 +1,5 @@
 <map id="wmtk::simplex::Simplex::vertex" name="wmtk::simplex::Simplex::vertex">
-<area shape="rect" id="node1" title=" " alt="" coords="803,747,983,788"/>
+<area shape="rect" id="node1" title=" " alt="" coords="803,784,983,825"/>
 <area shape="rect" id="node2" href="$classwmtk_1_1invariants_1_1_valence_improvement_invariant.html#ac2f6805f4a5bfc3aba4f0c2169e03a99" title=" " alt="" coords="511,5,730,47"/>
 <area shape="rect" id="node3" href="$classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a2dbbc55e551845492a5befcccf9bc541" title="split edge v1&#45;v2" alt="" coords="497,71,744,112"/>
 <area shape="rect" id="node5" href="$classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a89f4f801e8e99648fcad59e11e8595b4" title=" " alt="" coords="487,136,755,177"/>
@@ -16,20 +16,21 @@
 <area shape="rect" id="node17" href="$classwmtk_1_1function_1_1_edge_valence_energy.html#af25dd9d07e1f9d18c92c7a3395f271c1" title="This function is defined over a simplex (normally a triangle or tetrahedron)." alt="" coords="515,885,726,927"/>
 <area shape="rect" id="node18" href="$classwmtk_1_1_tet_mesh.html#a31b2ec618edb4d478e36f0868a85d86e" title=" " alt="" coords="517,951,725,992"/>
 <area shape="rect" id="node21" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a03c779db7485cb3e628da2c6162af6b1" title=" " alt="" coords="513,1017,729,1073"/>
-<area shape="rect" id="node24" href="$namespacewmtk_1_1simplex.html#a428755c0a4c93af10690b6828a3c79f5" title=" " alt="" coords="222,1089,421,1131"/>
-<area shape="rect" id="node25" href="$namespacewmtk_1_1simplex.html#a3b3266f811539b7df8d85a51552bc1f7" title=" " alt="" coords="523,1148,718,1189"/>
-<area shape="rect" id="node27" href="$classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#afdafef0c67dc0d9b6f2aef827d638eb6" title="split edge v1&#45;v2" alt="" coords="497,1213,744,1255"/>
-<area shape="rect" id="node29" href="$test__component__isotropic__remeshing_8cpp.html#a19a81e7a94de35f0cf57c82b492c78e8" title=" " alt="" coords="573,1279,668,1306"/>
-<area shape="rect" id="node30" href="$classwmtk_1_1operations_1_1_edge_collapse.html#a3d220f8778201e7d3f433724aa539d81" title=" " alt="" coords="505,1331,737,1372"/>
-<area shape="rect" id="node31" href="$namespacewmtk_1_1operations_1_1utils.html#a02d04aef5d974c2e0f204ed036773e88" title=" " alt="" coords="524,1397,717,1453"/>
-<area shape="rect" id="node32" href="$classwmtk_1_1_multi_mesh_manager.html#a4f75c13c6e1e4531f605e1cae19a86c0" title="update all the hashes of the top&#45;simplces of the parent mesh around a vertex hashes of the parent tup..." alt="" coords="524,1477,717,1533"/>
+<area shape="rect" id="node24" href="$namespacewmtk_1_1simplex.html#a7787f1abe16a9b57db117d6fd53b59d9" title=" " alt="" coords="545,1097,696,1123"/>
+<area shape="rect" id="node25" href="$namespacewmtk_1_1simplex.html#a428755c0a4c93af10690b6828a3c79f5" title=" " alt="" coords="222,1137,421,1179"/>
+<area shape="rect" id="node26" href="$namespacewmtk_1_1simplex.html#a3b3266f811539b7df8d85a51552bc1f7" title=" " alt="" coords="523,1199,718,1240"/>
+<area shape="rect" id="node28" href="$classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#afdafef0c67dc0d9b6f2aef827d638eb6" title="split edge v1&#45;v2" alt="" coords="497,1264,744,1305"/>
+<area shape="rect" id="node30" href="$test__component__isotropic__remeshing_8cpp.html#a19a81e7a94de35f0cf57c82b492c78e8" title=" " alt="" coords="573,1330,668,1357"/>
+<area shape="rect" id="node31" href="$classwmtk_1_1operations_1_1_edge_collapse.html#a3d220f8778201e7d3f433724aa539d81" title=" " alt="" coords="505,1381,737,1423"/>
+<area shape="rect" id="node32" href="$namespacewmtk_1_1operations_1_1utils.html#a02d04aef5d974c2e0f204ed036773e88" title=" " alt="" coords="524,1447,717,1503"/>
+<area shape="rect" id="node33" href="$classwmtk_1_1_multi_mesh_manager.html#a4f75c13c6e1e4531f605e1cae19a86c0" title="update all the hashes of the top&#45;simplces of the parent mesh around a vertex hashes of the parent tup..." alt="" coords="524,1527,717,1583"/>
 <area shape="rect" id="node4" href="$classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html#ab9f0ca902b9ffcd615e71f6f1b005a84" title=" " alt="" coords="204,63,439,119"/>
 <area shape="rect" id="node8" href="$classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html#a6bdafc81c42b34cdafe1b229217d819c" title=" " alt="" coords="221,259,422,315"/>
-<area shape="rect" id="node19" href="$classwmtk_1_1_tet_mesh.html#a4d9f4016fdd79930e161da787889bdf7" title="check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not" alt="" coords="217,907,425,934"/>
-<area shape="rect" id="node20" href="$namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d" title=" " alt="" coords="5,995,156,1036"/>
-<area shape="rect" id="node22" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a86763a63b94889f8e22cd9c705c84110" title=" " alt="" coords="213,959,429,1000"/>
-<area shape="rect" id="node23" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a75aa725e6ae913b914734b6b4d084a7b" title=" " alt="" coords="213,1024,429,1065"/>
-<area shape="rect" id="node26" href="$namespacewmtk_1_1simplex.html#aad86388bdc8c1685d7d55fad016f0ca2" title=" " alt="" coords="246,1155,397,1196"/>
-<area shape="rect" id="node28" href="$classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html#af010a058e1bd67dbd1019342c0ac8c7d" title=" " alt="" coords="218,1221,425,1277"/>
-<area shape="rect" id="node33" href="$classwmtk_1_1_mesh.html#ad303dff226282b38e9110fb6d1c4c853" title="wrapper function to update hashes (for parent mesh *this and its child meshes) after vertex operation..." alt="" coords="225,1484,418,1525"/>
+<area shape="rect" id="node19" href="$classwmtk_1_1_tet_mesh.html#a4d9f4016fdd79930e161da787889bdf7" title="check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not" alt="" coords="217,955,425,982"/>
+<area shape="rect" id="node20" href="$namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d" title=" " alt="" coords="5,1043,156,1084"/>
+<area shape="rect" id="node22" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a86763a63b94889f8e22cd9c705c84110" title=" " alt="" coords="213,1007,429,1048"/>
+<area shape="rect" id="node23" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a75aa725e6ae913b914734b6b4d084a7b" title=" " alt="" coords="213,1072,429,1113"/>
+<area shape="rect" id="node27" href="$namespacewmtk_1_1simplex.html#aad86388bdc8c1685d7d55fad016f0ca2" title=" " alt="" coords="246,1203,397,1244"/>
+<area shape="rect" id="node29" href="$classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html#af010a058e1bd67dbd1019342c0ac8c7d" title=" " alt="" coords="218,1269,425,1325"/>
+<area shape="rect" id="node34" href="$classwmtk_1_1_mesh.html#ad303dff226282b38e9110fb6d1c4c853" title="wrapper function to update hashes (for parent mesh *this and its child meshes) after vertex operation..." alt="" coords="225,1535,418,1576"/>
 </map>
