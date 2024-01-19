@@ -23,8 +23,12 @@ public:
     AttributeScope();
     AttributeScope(const AttributeScope&) = delete;
     AttributeScope& operator=(const AttributeScope&) = delete;
+    // should basically never be called?
+    AttributeScope(AttributeScope&&) = default;
+    // should basically never be called?
+    AttributeScope& operator=(AttributeScope&&) = default;
     ~AttributeScope();
-    AttributeScope(std::unique_ptr<AttributeScope<T>>&& next);
+    AttributeScope(AttributeScope<T>* next);
 
 
 private:
@@ -49,7 +53,7 @@ private:
 
     void flush_changes_to_vector(const Attribute<T>& attr, std::vector<T>& data);
 
-    std::unique_ptr<AttributeScope<T>> pop_to_next();
+    void pop();
 #if !defined(WMTK_FLUSH_ON_FAIL)
     MapResult vector_attribute(AccessorBase<T>& accessor, int64_t index);
     T& scalar_attribute(AccessorBase<T>& accessor, int64_t index);
@@ -69,11 +73,11 @@ private:
     const AttributeScope<T>* previous() const { return m_previous; }
     AttributeScope<T>* previous() { return m_previous; }
 
-    const AttributeScope<T>* next() const { return m_next.get(); }
-    AttributeScope<T>* next() { return m_next.get(); }
+    const AttributeScope<T>* next() const { return m_next; }
+    AttributeScope<T>* next() { return m_next; }
 
 private:
-    std::unique_ptr<AttributeScope<T>> m_next = nullptr;
+    AttributeScope<T>* m_next = nullptr;
     //
     AttributeScope<T>* m_previous = nullptr;
 #if defined(WMTK_ENABLE_GENERIC_CHECKPOINTS)

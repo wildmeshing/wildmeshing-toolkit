@@ -274,14 +274,17 @@ TEST_CASE("test_accessor_caching_scope_fails", "[accessor]")
         // TODO: create scope
         auto scope = m.create_scope();
 
+        spdlog::info("Populating");
         populate(m, int64_t_acc, false);
         populate(m, double_acc, false);
+        spdlog::info("Checking");
         check(m, int64_t_acc, false);
         check(m, double_acc, false);
 
         spdlog::info("Walking out of scope");
         scope.mark_failed();
     }
+    spdlog::info("Walked out of scope");
     check(m, int64_t_acc, true);
     check(m, double_acc, true);
 }
