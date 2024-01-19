@@ -13,8 +13,8 @@
         "type": "string"
     },
     {
-        "pointer": "/axis",
-        "type": "string",
+        "pointer": "/fusion_axis",
+        "type": "int64_t",
         "default": "default",
         "doc": "The axis to fusion",
         "options": ["X", "Y", "Z", "All"]
