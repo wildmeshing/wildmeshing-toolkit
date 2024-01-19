@@ -346,7 +346,6 @@ protected:
     // Child Meshes
     std::vector<ChildData> m_children;
 
-public:
     // indicates which kind of child mesh the parent mesh has
     std::vector<bool> m_has_child_mesh_in_dimension;
 
