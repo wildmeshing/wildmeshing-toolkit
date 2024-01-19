@@ -105,7 +105,8 @@ void Mesh::update_cell_hash(const Tuple& cell, Accessor<int64_t>& hash_accessor)
 }
 void Mesh::update_cell_hash(const int64_t cid, Accessor<int64_t>& hash_accessor)
 {
-    ++hash_accessor.index_access().scalar_attribute(cid);
+    auto& h = hash_accessor.index_access().scalar_attribute(cid);
+    h = (h + 1) % (1 << 6);
 }
 
 void Mesh::update_cell_hashes(const std::vector<Tuple>& cells, Accessor<int64_t>& hash_accessor)
