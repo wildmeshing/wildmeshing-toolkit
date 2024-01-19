@@ -41,9 +41,12 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
 
             std::shuffle(simplices.begin(), simplices.end(), gen);
         } else {
-            std::sort(simplices.begin(), simplices.end(), [&op](const auto& s_a, const auto& s_b) {
-                return op.priority(s_a) < op.priority(s_b);
-            });
+            std::stable_sort(
+                simplices.begin(),
+                simplices.end(),
+                [&op](const auto& s_a, const auto& s_b) {
+                    return op.priority(s_a) < op.priority(s_b);
+                });
         }
     }
 
