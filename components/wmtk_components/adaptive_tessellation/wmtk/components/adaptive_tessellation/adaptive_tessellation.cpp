@@ -50,6 +50,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <wmtk/components/adaptive_tessellation/operations/internal/AT_debug.cpp>
 
 namespace wmtk::components {
 using namespace operations;
@@ -112,42 +113,6 @@ void write_face_attr(
     }
 }
 
-
-void _debug_texture_integral(
-    std::shared_ptr<Mesh> mesh,
-    wmtk::attribute::MeshAttributeHandle m_uv_handle,
-    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator& image_evaluator,
-    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator& func_evaluator)
-{
-    Accessor<double> m_uv_accessor = mesh->create_accessor(m_uv_handle.as<double>());
-    wmtk::attribute::MeshAttributeHandle image_res_handle =
-        mesh->register_attribute<double>("image_res", PrimitiveType::Face, 1);
-    Accessor<double> image_res_accessor = mesh->create_accessor(image_res_handle.as<double>());
-    wmtk::attribute::MeshAttributeHandle func_res_handle =
-        mesh->register_attribute<double>("func_res", PrimitiveType::Face, 1);
-    Accessor<double> func_res_accessor = mesh->create_accessor(func_res_handle.as<double>());
-    for (auto& f : mesh->get_all(PrimitiveType::Face)) {
-        if (!mesh->is_ccw(f)) {
-            f = mesh->switch_vertex(f);
-        }
-        const Eigen::Vector2d uv0 = m_uv_accessor.vector_attribute(f);
-        const Eigen::Vector2d uv1 = m_uv_accessor.vector_attribute(mesh->switch_vertex(f));
-        const Eigen::Vector2d uv2 =
-            m_uv_accessor.vector_attribute(mesh->switch_vertex(mesh->switch_edge(f)));
-
-        wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
-            analytical_quadrature(func_evaluator);
-        double func_res = analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2);
-        func_res_accessor.scalar_attribute(f) = func_res;
-
-        wmtk::components::function::utils::TextureIntegral texture_integral(image_evaluator);
-        double image_res = texture_integral.get_error_one_triangle_exact(uv0, uv1, uv2);
-        image_res_accessor.scalar_attribute(f) = image_res;
-        std::cout << "func_res: " << func_res << std::endl;
-        std::cout << "image_res: " << image_res << std::endl;
-    }
-    // write(mesh, "diff_sampling_debug_og_l4", "at_sampling_flat__xyz_output", 0, 1);
-}
 } // namespace
 
 void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
@@ -215,15 +180,25 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         options.height_path);
     // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
 
-    // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator image_evaluator(
-    //     images,
-    //     image::SAMPLING_METHOD::Bicubic,
-    //     image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
-    // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator
-    // func_evaluator(funcs); atdata._debug_sampling(image_evaluator, func_evaluator);
+    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator image_evaluator(
+        images,
+        image::SAMPLING_METHOD::Bicubic,
+        image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
+    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator func_evaluator(funcs);
+    // wmtk::components::operations::internal::_debug_sampling(
+    //     atdata.uv_mesh_ptr(),
+    //     atdata.uv_handle(),
+    //     image_evaluator,
+    //     func_evaluator);
 
-    // _debug_texture_integral(mesh, atdata.uv_handle(), image_evaluator, func_evaluator);
-    // exit(0);
+    // wmtk::components::operations::internal::_debug_texture_integral(
+    //     atdata.uv_mesh_ptr(),
+    //     atdata.uv_handle(),
+    //     image_evaluator,
+    //     func_evaluator);
+
+
+    exit(0);
 
     AT::operations::internal::ATOperations at_ops(
         atdata,
@@ -261,12 +236,13 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     opt_logger().set_level(spdlog::level::level_enum::critical);
 
 
+    // 1.5) FaceSplit
+    // at_ops.AT_face_split(at_ops.m_high_distance_faces_first, at_ops.m_distance_nondiff_energy);
     // 1) wmtk::operations::EdgeSplit
-    at_ops.AT_split_interior(at_ops.m_high_distance_edges_first, at_ops.m_distance_nondiff_energy);
-
+    // at_ops.AT_edge_split(at_ops.m_high_distance_edges_first, at_ops.m_distance_energy);
 
     // 3) EdgeSwap
-    at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first, at_ops.m_sum_energy);
+    // at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first, at_ops.m_sum_energy);
 
     // 4) Smoothing
     // at_ops.AT_smooth_interior(at_ops.m_sum_energy);
@@ -293,10 +269,10 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
         // write_face_attr(
         //     uv_mesh_ptr,
-        //     at_ops.m_sum_error_accessor,
+        //     at_ops.m_distance_error_accessor,
         //     FaceErrorJson_sum,
         //     i + 1,
-        //     options.uv_output + "_face_error.json");
+        //     options.uv_output + "_distance_error.json");
         // write_face_attr(
         //     uv_mesh_ptr,
         //     at_ops.m_amips_error_accessor,
@@ -304,13 +280,13 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         //     i + 1,
         //     options.uv_output + "_amips_error.json");
 
-        // write(
-        //     uv_mesh_ptr,
-        //     uv_mesh_ptr,
-        //     options.uv_output,
-        //     options.xyz_output,
-        //     i + 1,
-        //     options.intermediate_output);
+        write(
+            uv_mesh_ptr,
+            uv_mesh_ptr,
+            options.uv_output,
+            options.xyz_output,
+            i + 1,
+            options.intermediate_output);
     }
 
     // write(mesh, "no_operation", 0, options.intermediate_output);
