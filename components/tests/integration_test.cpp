@@ -142,6 +142,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
         in_args["tests"]["faces"] = expected_faces;
         in_args["tests"]["tetrahedra"] = expected_tetrahedra;
         in_args.erase("root_path");
+        in_args.erase("settings");
 
         std::ofstream file(json_file);
         file << in_args;
