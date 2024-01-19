@@ -10,7 +10,7 @@ using json = nlohmann::json;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-TEST_CASE("component_procedural_nocoord", "[components][procedural]")
+TEST_CASE("component_procedural_nocoord", "[components][procedural][.]")
 {
     wmtk::io::Cache cache("wmtk_cache", ".");
 
@@ -67,7 +67,7 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural]")
         CHECK_NOTHROW(wmtk::components::procedural(Paths(), component_json, cache));
     }
 }
-TEST_CASE("component_procedural_coords", "[components][procedural]")
+TEST_CASE("component_procedural_coords", "[components][procedural][.]")
 {
     wmtk::io::Cache cache("wmtk_cache", ".");
 
