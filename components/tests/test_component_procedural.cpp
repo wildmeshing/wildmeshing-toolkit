@@ -17,7 +17,6 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural][.]")
     // SECTION("grid2")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "grid2"},
             {"type", "grid"},
             {"grid",
@@ -32,7 +31,6 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural][.]")
     // SECTION("grid3")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "grid3"},
             {"type", "grid"},
             {"grid",
@@ -47,7 +45,6 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural][.]")
     // SECTION("triangle_fan")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "triangle_fan"},
             {"type", "fan"},
             {"fan", {{"size", 10}, {"coordinates", nullptr}}}};
@@ -74,7 +71,6 @@ TEST_CASE("component_procedural_coords", "[components][procedural][.]")
     // SECTION("grid2")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "grid2"},
             {"type", "grid"},
             {"grid",
@@ -89,7 +85,6 @@ TEST_CASE("component_procedural_coords", "[components][procedural][.]")
     // SECTION("grid3")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "grid3"},
             {"type", "grid"},
             {"grid",
@@ -104,7 +99,6 @@ TEST_CASE("component_procedural_coords", "[components][procedural][.]")
     // SECTION("triangle_fan")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "triangle_fan"},
             {"type", "fan"},
             {"fan",
@@ -121,7 +115,6 @@ TEST_CASE("component_procedural_coords", "[components][procedural][.]")
     // SECTION("disk")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "disk"},
             {"type", "disk"},
             {"disk",
@@ -143,7 +136,6 @@ TEST_CASE("component_procedural_cyclic_grids", "[components][procedural]")
     // SECTION("grid2")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "grid2"},
             {"type", "grid"},
             {"grid",
@@ -158,7 +150,6 @@ TEST_CASE("component_procedural_cyclic_grids", "[components][procedural]")
     // SECTION("grid3")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "grid3"},
             {"type", "grid"},
             {"grid",
