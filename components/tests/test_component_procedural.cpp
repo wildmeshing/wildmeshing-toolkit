@@ -19,8 +19,8 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural][.]")
         json component_json = {
             {"type", "procedural"},
             {"name", "grid2"},
-            {"mesh_type", "grid"},
-            {"settings",
+            {"type", "grid"},
+            {"grid",
              {{"tiling", "diagonal"},
               {"dimensions", {5, 5}},
               {"cycles", {false, false}},
@@ -34,8 +34,8 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural][.]")
         json component_json = {
             {"type", "procedural"},
             {"name", "grid3"},
-            {"mesh_type", "grid"},
-            {"settings",
+            {"type", "grid"},
+            {"grid",
              {{"tiling", "freudenthal"},
               {"dimensions", {5, 5, 5}},
               {"cycles", {false, false, false}},
@@ -49,8 +49,8 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural][.]")
         json component_json = {
             {"type", "procedural"},
             {"name", "triangle_fan"},
-            {"mesh_type", "triangle_fan"},
-            {"settings", {{"size", 10}, {"coordinates", nullptr}}}};
+            {"type", "fan"},
+            {"fan", {{"size", 10}, {"coordinates", nullptr}}}};
 
 
         CHECK_NOTHROW(wmtk::components::procedural(Paths(), component_json, cache));
@@ -60,8 +60,8 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural][.]")
         json component_json = {
             {"type", "procedural"},
             {"name", "disk"},
-            {"mesh_type", "disk"},
-            {"settings", {{"size", 10}, {"coordinates", nullptr}}}};
+            {"type", "disk"},
+            {"disk", {{"size", 10}, {"coordinates", nullptr}}}};
 
 
         CHECK_NOTHROW(wmtk::components::procedural(Paths(), component_json, cache));
@@ -76,8 +76,8 @@ TEST_CASE("component_procedural_coords", "[components][procedural][.]")
         json component_json = {
             {"type", "procedural"},
             {"name", "grid2"},
-            {"mesh_type", "grid"},
-            {"settings",
+            {"type", "grid"},
+            {"grid",
              {{"tiling", "diagonal"},
               {"dimensions", {5, 5}},
               {"cycles", {false, false}},
@@ -91,8 +91,8 @@ TEST_CASE("component_procedural_coords", "[components][procedural][.]")
         json component_json = {
             {"type", "procedural"},
             {"name", "grid3"},
-            {"mesh_type", "grid"},
-            {"settings",
+            {"type", "grid"},
+            {"grid",
              {{"tiling", "freudenthal"},
               {"dimensions", {5, 5, 5}},
               {"cycles", {false, false, false}},
@@ -106,8 +106,8 @@ TEST_CASE("component_procedural_coords", "[components][procedural][.]")
         json component_json = {
             {"type", "procedural"},
             {"name", "triangle_fan"},
-            {"mesh_type", "triangle_fan"},
-            {"settings",
+            {"type", "fan"},
+            {"fan",
              {{"size", 10},
               {"coordinates",
                {{"name", "vertices"},
@@ -123,8 +123,8 @@ TEST_CASE("component_procedural_coords", "[components][procedural][.]")
         json component_json = {
             {"type", "procedural"},
             {"name", "disk"},
-            {"mesh_type", "disk"},
-            {"settings",
+            {"type", "disk"},
+            {"disk",
              {{"size", 10},
               {"coordinates",
                {{"name", "vertices"},
@@ -145,8 +145,8 @@ TEST_CASE("component_procedural_cyclic_grids", "[components][procedural]")
         json component_json = {
             {"type", "procedural"},
             {"name", "grid2"},
-            {"mesh_type", "grid"},
-            {"settings",
+            {"type", "grid"},
+            {"grid",
              {{"tiling", "diagonal"},
               {"dimensions", {5, 5}},
               {"cycles", {true, true}},
@@ -160,8 +160,8 @@ TEST_CASE("component_procedural_cyclic_grids", "[components][procedural]")
         json component_json = {
             {"type", "procedural"},
             {"name", "grid3"},
-            {"mesh_type", "grid"},
-            {"settings",
+            {"type", "grid"},
+            {"grid",
              {{"tiling", "freudenthal"},
               {"dimensions", {5, 5, 5}},
               {"cycles", {true, true, true}},
