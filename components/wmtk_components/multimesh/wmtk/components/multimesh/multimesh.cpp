@@ -95,7 +95,7 @@ void multimesh(const base::Paths& paths, const nlohmann::json& j, io::Cache& cac
 
         parent = mesh;
         names[name] = parent->absolute_multi_mesh_id();
-        names[name + "_" + tag] = child_mesh->absolute_multi_mesh_id();
+        names[tag] = child_mesh->absolute_multi_mesh_id();
     }
 
 
