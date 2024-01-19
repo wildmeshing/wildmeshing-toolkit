@@ -1,5 +1,7 @@
 var NAVTREEINDEX9 =
 {
+"classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#aa6dc014c8027e10d5d86423596a0b582":[4,0,2,3,12,3],
+"classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#aff1a26182c124923c042df408c02a002":[4,0,2,3,12,4],
 "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html":[4,0,2,3,13],
 "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html#a0e062b5f4b86d824d0193ff69fde64de":[4,0,2,3,13,0],
 "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html#a3adb6f7a2e4637f4204e4e8ae39d6bc8":[4,0,2,3,13,2],
@@ -247,7 +249,5 @@ var NAVTREEINDEX9 =
 "classwmtk_1_1operations_1_1_base_split_new_attribute_strategy.html#a7a04b8f5e5e6c33320ba5cd2a851ee92":[4,0,2,6,9,0],
 "classwmtk_1_1operations_1_1_base_split_new_attribute_strategy.html#a817436be6ac22ba49c5c8e4b2ee78475":[4,0,2,6,9,1],
 "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html":[4,0,2,6,6],
-"classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a0a4ee7f8de76cb4cd958357334e8f908":[4,0,2,6,6,5],
-"classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a49ea0904446e71447fd073a3ecb3f70f":[4,0,2,6,6,12],
-"classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a562db9463fc4961043b8a274a8083536":[4,0,2,6,6,7]
+"classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a0a4ee7f8de76cb4cd958357334e8f908":[4,0,2,6,6,5]
 };

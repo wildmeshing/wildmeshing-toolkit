@@ -142,6 +142,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4.html">mesh_type_from_primitive_type&lt; PrimitiveType::Tetrahedron &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1_random_seed_singleton.html">RandomSeedSingleton</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1_tuple_cell_less_than.html">TupleCellLessThan</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1_tuple_inspector.html">TupleInspector</a></td></tr>
@@ -165,6 +167,10 @@ Functions</h2></td></tr>
 <tr class="separator:a2f4fed1ebdeb2d5c03a59b1760a30f61"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad4153e2c24f98b817e39406defdc9f7e"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#ad4153e2c24f98b817e39406defdc9f7e">primitive_below</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> pt, bool lower_to_upper)</td></tr>
 <tr class="separator:ad4153e2c24f98b817e39406defdc9f7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c36f4ea039196043ac93202181d91e1"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a3c36f4ea039196043ac93202181d91e1">get_random_seed</a> ()</td></tr>
+<tr class="separator:a3c36f4ea039196043ac93202181d91e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64740d03539293929ff81b84cd082485"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a64740d03539293929ff81b84cd082485">set_random_seed</a> (uint64_t val)</td></tr>
+<tr class="separator:a64740d03539293929ff81b84cd082485"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f0aa51f02854bf0163c6baa0301f576"><td class="memTemplParams" colspan="2">template&lt;typename ADerived , typename BDerived , typename CDerived &gt; </td></tr>
 <tr class="memitem:a8f0aa51f02854bf0163c6baa0301f576"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a8f0aa51f02854bf0163c6baa0301f576">triangle_3d_area</a> (const Eigen::MatrixBase&lt; ADerived &gt; &amp;a, const Eigen::MatrixBase&lt; BDerived &gt; &amp;b, const Eigen::MatrixBase&lt; CDerived &gt; &amp;c) -&gt; typename ADerived::Scalar</td></tr>
 <tr class="separator:a8f0aa51f02854bf0163c6baa0301f576"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -382,11 +388,54 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00517">517</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00171">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00133">generate_raw_tetmesh_from_input_surface()</a>, <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00158">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00133">generate_raw_tetmesh_from_input_surface()</a>, <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_af5ade8ca9598ff7d68dd37bcf395b9aa_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a3c36f4ea039196043ac93202181d91e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c36f4ea039196043ac93202181d91e1">&#9670;&nbsp;</a></span>get_random_seed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned int wmtk::utils::get_random_seed </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="random__seed_8hpp_source.html#l00030">30</a> of file <a class="el" href="random__seed_8hpp_source.html">random_seed.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="random__seed_8hpp_source.html#l00017">wmtk::utils::RandomSeedSingleton::get_seed()</a>, and <a class="el" href="random__seed_8hpp_source.html#l00010">wmtk::utils::RandomSeedSingleton::instance()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_scheduler_8cpp_source.html#l00020">wmtk::Scheduler::run_operation_on_all()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a3c36f4ea039196043ac93202181d91e1_cgraph.svg" width="528" height="118"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a3c36f4ea039196043ac93202181d91e1_icgraph.svg" width="100%" height="552"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -589,6 +638,50 @@ Here is the call graph for this function:</div>
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a8dab5bd8df4c7c658413914f37210244_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a64740d03539293929ff81b84cd082485"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64740d03539293929ff81b84cd082485">&#9670;&nbsp;</a></span>set_random_seed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::utils::set_random_seed </td>
+          <td>(</td>
+          <td class="paramtype">uint64_t&#160;</td>
+          <td class="paramname"><em>val</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="random__seed_8hpp_source.html#l00035">35</a> of file <a class="el" href="random__seed_8hpp_source.html">random_seed.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="random__seed_8hpp_source.html#l00010">wmtk::utils::RandomSeedSingleton::instance()</a>, and <a class="el" href="random__seed_8hpp_source.html#l00016">wmtk::utils::RandomSeedSingleton::set_seed()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="integration__test_8cpp_source.html#l00034">authenticate_json()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a64740d03539293929ff81b84cd082485_cgraph.svg" width="528" height="118"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a64740d03539293929ff81b84cd082485_icgraph.svg" width="559" height="38"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -883,7 +976,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="vector__hash_8cpp_source.html#l00028">28</a> of file <a class="el" href="vector__hash_8cpp_source.html">vector_hash.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_attribute_8cpp_source.html#l00044">wmtk::attribute::Attribute&lt; T &gt;::child_hashes()</a>, <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00106">wmtk::MultiMeshManager::child_hashes()</a>, <a class="el" href="hash_8cpp_source.html#l00030">wmtk::hash&lt; wmtk::attribute::MeshAttributeHandle &gt;::mesh_hash()</a>, <a class="el" href="hash_8cpp_source.html#l00011">wmtk::hash&lt; wmtk::attribute::MeshAttributeHandle &gt;::operator()()</a>, <a class="el" href="hash_8hpp_source.html#l00026">wmtk::hash&lt; wmtk::attribute::TypedAttributeHandle&lt; T &gt; &gt;::operator()()</a>, and <a class="el" href="vector__hash_8cpp_source.html#l00044">vector_hash()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_attribute_8cpp_source.html#l00044">wmtk::attribute::Attribute&lt; T &gt;::child_hashes()</a>, <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00112">wmtk::MultiMeshManager::child_hashes()</a>, <a class="el" href="hash_8cpp_source.html#l00030">wmtk::hash&lt; wmtk::attribute::MeshAttributeHandle &gt;::mesh_hash()</a>, <a class="el" href="hash_8cpp_source.html#l00011">wmtk::hash&lt; wmtk::attribute::MeshAttributeHandle &gt;::operator()()</a>, <a class="el" href="hash_8hpp_source.html#l00026">wmtk::hash&lt; wmtk::attribute::TypedAttributeHandle&lt; T &gt; &gt;::operator()()</a>, and <a class="el" href="vector__hash_8cpp_source.html#l00044">vector_hash()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">

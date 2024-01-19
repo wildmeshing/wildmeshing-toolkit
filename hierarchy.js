@@ -188,12 +188,14 @@ var hierarchy =
       [ "wmtk::io::ParaviewWriter", "classwmtk_1_1io_1_1_paraview_writer.html", null ]
     ] ],
     [ "wmtk::MshReader", "classwmtk_1_1_msh_reader.html", null ],
+    [ "wmtk::components::MultimeshBOptions", "structwmtk_1_1components_1_1_multimesh_b_options.html", null ],
     [ "wmtk::operations::utils::MultiMeshEdgeCollapseFunctor", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html", null ],
     [ "wmtk::operations::utils::MultiMeshEdgeSplitFunctor", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html", null ],
-    [ "wmtk::components::MultimeshOptions", "structwmtk_1_1components_1_1_multimesh_options.html", null ],
     [ "wmtk::multimesh::MultiMeshSimplexEventVisitor< cell_dimension, Functor >", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor.html", null ],
     [ "wmtk::multimesh::MultiMeshSimplexVisitor< cell_dimension_, NodeFunctor_ >", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html", null ],
     [ "wmtk::multimesh::MultiMeshSimplexVisitorExecutor< MMVisitor >", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html", null ],
+    [ "wmtk::components::MultimeshTOptions", "structwmtk_1_1components_1_1_multimesh_t_options.html", null ],
+    [ "wmtk::components::MultimeshUVOptions", "structwmtk_1_1components_1_1_multimesh_u_v_options.html", null ],
     [ "wmtk::multimesh::MultiMeshVisitor< NodeFunctor_ >", "classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html", null ],
     [ "wmtk::multimesh::MultiMeshVisitorExecutor< MMVisitor >", "classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html", null ],
     [ "wmtk::operations::NewAttributeStrategy", "classwmtk_1_1operations_1_1_new_attribute_strategy.html", [
@@ -243,6 +245,7 @@ var hierarchy =
       [ "wmtk::operations::OptimizationSmoothing::WMTKProblem", "classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html", null ]
     ] ],
     [ "wmtk::components::internal::ProceduralOptions", "structwmtk_1_1components_1_1internal_1_1_procedural_options.html", null ],
+    [ "wmtk::utils::RandomSeedSingleton", "classwmtk_1_1utils_1_1_random_seed_singleton.html", null ],
     [ "wmtk::Rational", "classwmtk_1_1_rational.html", null ],
     [ "wmtk::simplex::RawSimplex", "classwmtk_1_1simplex_1_1_raw_simplex.html", null ],
     [ "wmtk::simplex::RawSimplexCollection", "classwmtk_1_1simplex_1_1_raw_simplex_collection.html", null ],

@@ -75,7 +75,9 @@ var annotated_dup =
           [ "TagIntersectionValues", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values" ],
           [ "TagIntersectionOptions", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options" ]
         ] ],
-        [ "MultimeshOptions", "structwmtk_1_1components_1_1_multimesh_options.html", "structwmtk_1_1components_1_1_multimesh_options" ],
+        [ "MultimeshUVOptions", "structwmtk_1_1components_1_1_multimesh_u_v_options.html", "structwmtk_1_1components_1_1_multimesh_u_v_options" ],
+        [ "MultimeshBOptions", "structwmtk_1_1components_1_1_multimesh_b_options.html", "structwmtk_1_1components_1_1_multimesh_b_options" ],
+        [ "MultimeshTOptions", "structwmtk_1_1components_1_1_multimesh_t_options.html", "structwmtk_1_1components_1_1_multimesh_t_options" ],
         [ "TagAttribute", "classwmtk_1_1components_1_1_tag_attribute.html", "classwmtk_1_1components_1_1_tag_attribute" ],
         [ "TagIntersection", "classwmtk_1_1components_1_1_tag_intersection.html", "classwmtk_1_1components_1_1_tag_intersection" ],
         [ "WildmeshingOptionsAttributes", "structwmtk_1_1components_1_1_wildmeshing_options_attributes.html", "structwmtk_1_1components_1_1_wildmeshing_options_attributes" ],
@@ -260,6 +262,7 @@ var annotated_dup =
         [ "mesh_type_from_primitive_type< PrimitiveType::Edge >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_edge_01_4.html", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_edge_01_4" ],
         [ "mesh_type_from_primitive_type< PrimitiveType::Face >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_face_01_4.html", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_face_01_4" ],
         [ "mesh_type_from_primitive_type< PrimitiveType::Tetrahedron >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4.html", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4" ],
+        [ "RandomSeedSingleton", "classwmtk_1_1utils_1_1_random_seed_singleton.html", "classwmtk_1_1utils_1_1_random_seed_singleton" ],
         [ "TupleCellLessThan", "classwmtk_1_1utils_1_1_tuple_cell_less_than.html", "classwmtk_1_1utils_1_1_tuple_cell_less_than" ],
         [ "TupleInspector", "classwmtk_1_1utils_1_1_tuple_inspector.html", null ]
       ] ],

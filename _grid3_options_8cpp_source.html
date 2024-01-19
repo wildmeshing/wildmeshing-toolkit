@@ -131,7 +131,7 @@ $(document).ready(function(){initNavTree('_grid3_options_8cpp_source.html',''); 
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;{</div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span>&amp; d = opt.dimensions;</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="keyword">auto</span> vertex_dimensions = opt.dimensions;</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> j = 0; j &lt; 3; ++j) {</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> j = 0; j &lt; d.size(); ++j) {</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;        int64_t&amp; v = vertex_dimensions[j];</div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;        <span class="keywordflow">if</span> (!opt.cycles[j]) {</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;            v++;</div>

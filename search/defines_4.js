@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['tinyexr_5fimplementation_4249',['TINYEXR_IMPLEMENTATION',['../load__image__exr_8cpp.html#a64d249aa3458d57a008b0713db24e604',1,'load_image_exr.cpp']]],
-  ['tinyexr_5fuse_5fminiz_4250',['TINYEXR_USE_MINIZ',['../load__image__exr_8cpp.html#a45004b188e34c80a284aba01343e4f4b',1,'TINYEXR_USE_MINIZ():&#160;load_image_exr.cpp'],['../save__image__exr_8cpp.html#a45004b188e34c80a284aba01343e4f4b',1,'TINYEXR_USE_MINIZ():&#160;save_image_exr.cpp']]],
-  ['tinyexr_5fuse_5fstb_5fzlib_4251',['TINYEXR_USE_STB_ZLIB',['../load__image__exr_8cpp.html#a486fa3fe3398af5e04e233ea1ac4440e',1,'TINYEXR_USE_STB_ZLIB():&#160;load_image_exr.cpp'],['../save__image__exr_8cpp.html#a486fa3fe3398af5e04e233ea1ac4440e',1,'TINYEXR_USE_STB_ZLIB():&#160;save_image_exr.cpp']]]
+  ['wmtk_5fmesh_5fvisitor_5fonly_5fsupports_5fnonconst_5freference_4298',['WMTK_MESH_VISITOR_ONLY_SUPPORTS_NONCONST_REFERENCE',['../_multi_mesh_simplex_visitor_8hpp.html#afad7143104d744218f2094ca908a107f',1,'WMTK_MESH_VISITOR_ONLY_SUPPORTS_NONCONST_REFERENCE():&#160;MultiMeshSimplexVisitor.hpp'],['../_multi_mesh_visitor_8hpp.html#afad7143104d744218f2094ca908a107f',1,'WMTK_MESH_VISITOR_ONLY_SUPPORTS_NONCONST_REFERENCE():&#160;MultiMeshVisitor.hpp']]]
 ];

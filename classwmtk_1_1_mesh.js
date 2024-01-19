@@ -137,6 +137,7 @@ var classwmtk_1_1_mesh =
     [ "operations::utils::update_vertex_operation_multimesh_map_hash", "classwmtk_1_1_mesh.html#afa67db9c2eb6aa53c68322e6261a531a", null ],
     [ "operations::utils::UpdateEdgeOperationMultiMeshMapFunctor", "classwmtk_1_1_mesh.html#adb76cb4220d4955c139bd9a3a8852f12", null ],
     [ "simplex::RawSimplex", "classwmtk_1_1_mesh.html#a07e92d16749ee808899eedf5e90ce32e", null ],
+    [ "simplex::SimplexCollection", "classwmtk_1_1_mesh.html#aa13464adeda3c854d81ee8db54e5d7ca", null ],
     [ "simplex::utils::SimplexComparisons", "classwmtk_1_1_mesh.html#ae7f7bf7f8aa17013b046f9af6e776ca4", null ],
     [ "m_attribute_manager", "classwmtk_1_1_mesh.html#af64daf6aaf6ffd14ce791695d6428cbc", null ],
     [ "m_cell_hash_handle", "classwmtk_1_1_mesh.html#ac45dc1bfd5afaafccdaab3b9ff476345", null ],

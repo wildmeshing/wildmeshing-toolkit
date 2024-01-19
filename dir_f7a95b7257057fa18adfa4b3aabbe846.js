@@ -24,7 +24,9 @@ var dir_f7a95b7257057fa18adfa4b3aabbe846 =
       [ "EdgeMeshOperationExecutor", "classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html", "classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor" ]
     ] ],
     [ "Mesh.cpp", "_mesh_8cpp.html", null ],
-    [ "Mesh.hpp", "_mesh_8hpp.html", "_mesh_8hpp" ],
+    [ "Mesh.hpp", "_mesh_8hpp.html", [
+      [ "Mesh", "classwmtk_1_1_mesh.html", "classwmtk_1_1_mesh" ]
+    ] ],
     [ "Mesh_attributes.cpp", "_mesh__attributes_8cpp.html", null ],
     [ "Mesh_construction.cpp", "_mesh__construction_8cpp.html", null ],
     [ "Mesh_hash.cpp", "_mesh__hash_8cpp.html", null ],

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['mtao_5fpublicizing_5fid_4247',['MTAO_PUBLICIZING_ID',['../_mesh_8hpp.html#a1f766b09576e962e6f856381c140748b',1,'Mesh.hpp']]]
+  ['stb_5fimage_5fimplementation_4294',['STB_IMAGE_IMPLEMENTATION',['../mesh__with__tag__from__image_8cpp.html#a18372412ad2fc3ce1e3240b3cf0efe78',1,'mesh_with_tag_from_image.cpp']]]
 ];
