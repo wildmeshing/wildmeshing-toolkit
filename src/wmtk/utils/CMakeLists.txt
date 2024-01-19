@@ -18,7 +18,7 @@ set(SRC_FILES
     TupleInspector.cpp
     triangle_areas.hpp
     triangle_areas.cpp
-    
+
     vector_hash.hpp
     vector_hash.cpp
     #Optimization.hpp
@@ -38,6 +38,7 @@ set(SRC_FILES
     primitive_range.hpp
     primitive_range.cpp
 
+    random_seed.hpp
 
 
     MerkleTreeInteriorNode.hpp

@@ -61,11 +61,7 @@ public:
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const override;
 
-#if defined(MTAO_PUBLICIZING_ID)
-public: // TODO remove
-#else
 protected:
-#endif
     int64_t id(const Tuple& tuple, PrimitiveType type) const override;
     int64_t id(const simplex::Simplex& simplex) const
     {

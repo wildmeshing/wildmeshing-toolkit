@@ -11,6 +11,8 @@ public:
     using TriMesh::TriMesh;
     DEBUG_TriMesh(TriMesh&& m);
 
+    using TriMesh::id_vertex;
+
 
     DEBUG_TriMesh& operator=(TriMesh&& o);
 

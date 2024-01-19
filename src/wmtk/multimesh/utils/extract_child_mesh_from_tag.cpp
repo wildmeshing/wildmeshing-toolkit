@@ -83,19 +83,6 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
         auto& child = *child_ptr;
         child.initialize(tri_mesh_matrix);
 
-#ifndef NDEUBG
-        auto face = child.get_all(PrimitiveType::Face);
-        for (int64_t i = 0; i < face.size(); ++i) {
-            const std::array<int64_t, 3> vs = {
-                {child.id(face[i], PrimitiveType::Vertex),
-                 child.id(child.switch_vertex(face[i]), PrimitiveType::Vertex),
-                 child.id(child.switch_vertex(child.switch_edge(face[i])), PrimitiveType::Vertex)}};
-            assert(vs[0] == tri_mesh_matrix(i, 0));
-            assert(vs[1] == tri_mesh_matrix(i, 1));
-            assert(vs[2] == tri_mesh_matrix(i, 2));
-        }
-#endif
-
         return child_ptr;
     };
 

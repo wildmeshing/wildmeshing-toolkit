@@ -8,7 +8,9 @@
 #include <wmtk/TriMesh.hpp>
 
 #include <wmtk/components/base/get_attributes.hpp>
+#include <wmtk/multimesh/consolidate.hpp>
 #include <wmtk/utils/Logger.hpp>
+
 
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
@@ -34,6 +36,7 @@
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MaxFunctionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
@@ -285,6 +288,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto valence_3 = std::make_shared<EdgeValenceInvariant>(*mesh, 3);
     auto valence_4 = std::make_shared<EdgeValenceInvariant>(*mesh, 4);
 
+    auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(*mesh);
+
 
     //////////////////////////////////
     // Creation of the 4 ops
@@ -317,6 +322,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto collapse = std::make_shared<EdgeCollapse>(*mesh);
     collapse->add_invariant(link_condition);
     collapse->add_invariant(inversion_invariant);
+    collapse->add_invariant(invariant_mm_map);
 
     collapse->set_new_attribute_strategy(pt_attribute, clps_strat);
     for (const auto& attr : pass_through_attributes) {
@@ -424,7 +430,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         envelope_position_handle,
         *mesh,
         child_position_handle);
-    proj_smoothing->use_random_priority() = false;
+    proj_smoothing->use_random_priority() = true;
 
     proj_smoothing->add_invariant(envelope_invariant);
     proj_smoothing->add_invariant(inversion_invariant);
@@ -484,7 +490,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
-        // mesh->consolidate();
+        multimesh::consolidate(*mesh);
 
         write(
             mesh,
@@ -504,15 +510,5 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             i + 1,
             options.intermediate_output);
     }
-
-    write(mesh, paths.output_dir, options.output, options.attributes.position, -1, true);
-
-    write(
-        child_mesh,
-        paths.output_dir,
-        options.output + "_boundary",
-        options.attributes.position,
-        -1,
-        true);
 }
 } // namespace wmtk::components
