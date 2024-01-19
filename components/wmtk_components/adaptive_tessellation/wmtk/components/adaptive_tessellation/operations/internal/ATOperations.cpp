@@ -10,6 +10,7 @@
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/function/utils/amips.hpp>
 
+#include <wmtk/invariants/BoundarySimplexInvariant.hpp>
 #include <wmtk/invariants/FunctionInvariant.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
@@ -23,6 +24,7 @@
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
+#include <wmtk/operations/composite/TriFaceSplit.hpp>
 
 #include <wmtk/simplex/Simplex.hpp>
 
@@ -49,33 +51,34 @@ ATOperations::ATOperations(
     double target_edge_length,
     double barrier_weight,
     double barrier_triangle_area,
-    double quadrature_weight,
+    double distance_weight,
     double amips_weight,
     bool area_weighted_amips)
     : m_atdata(atdata)
     , m_target_edge_length(target_edge_length)
     , m_barrier_weight(barrier_weight)
     , m_barrier_triangle_area(barrier_triangle_area)
-    , m_distance_weight(quadrature_weight)
+    , m_distance_weight(distance_weight)
     , m_amips_weight(amips_weight)
     , m_area_weighted_amips(area_weighted_amips)
     , m_uv_accessor(m_atdata.uv_mesh().create_accessor(m_atdata.m_uv_handle.as<double>()))
-    , m_edge_length_accessor(
-          m_atdata.uv_mesh().create_accessor(m_atdata.m_3d_edge_length_handle.as<double>()))
-    , m_sum_error_accessor(
-          m_atdata.uv_mesh().create_accessor(m_atdata.m_sum_error_handle.as<double>()))
-    , m_distance_error_accessor(
-          m_atdata.uv_mesh().create_accessor(m_atdata.m_distance_error_handle.as<double>()))
-    , m_amips_error_accessor(
-          m_atdata.uv_mesh().create_accessor(m_atdata.m_amips_error_handle.as<double>()))
-    , m_barrier_energy_accessor(
-          m_atdata.uv_mesh().create_accessor(m_atdata.m_barrier_energy_handle.as<double>()))
-    , //.... TODO can be deleted once multimesh transfer strategy is implemented
-    m_pmesh_xyz_accessor(
-        m_atdata.position_mesh().create_accessor(m_atdata.m_pmesh_xyz_handle.as<double>()))
+
+    //.... TODO can be deleted once multimesh transfer strategy is implemented
     , m_uvmesh_xyz_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_uvmesh_xyz_handle.as<double>()))
-//....
+    , m_pmesh_xyz_accessor(
+          m_atdata.position_mesh().create_accessor(m_atdata.m_pmesh_xyz_handle.as<double>()))
+    //.....
+    , m_distance_error_accessor(
+          m_atdata.uv_mesh().create_accessor(m_atdata.m_distance_error_handle.as<double>()))
+    , m_sum_error_accessor(
+          m_atdata.uv_mesh().create_accessor(m_atdata.m_sum_error_handle.as<double>()))
+    , m_barrier_energy_accessor(
+          m_atdata.uv_mesh().create_accessor(m_atdata.m_barrier_energy_handle.as<double>()))
+    , m_amips_error_accessor(
+          m_atdata.uv_mesh().create_accessor(m_atdata.m_amips_error_handle.as<double>()))
+    , m_edge_priority_accessor(
+          m_atdata.uv_mesh().create_accessor(m_atdata.m_edge_priority_handle.as<double>()))
 {
     m_ops.clear();
     if (m_atdata.funcs()[0]) {
@@ -125,16 +128,6 @@ ATOperations::ATOperations(
         return std::vector<long>({val_before - val_after});
     };
 
-
-    m_long_edges_first = [&](const Simplex& s) {
-        assert(s.primitive_type() == PrimitiveType::Edge);
-        return std::vector<double>({-m_edge_length_accessor.scalar_attribute(s.tuple())});
-    };
-    m_short_edges_first = [&](const Simplex& s) {
-        assert(s.primitive_type() == PrimitiveType::Edge);
-        return std::vector<double>({m_edge_length_accessor.scalar_attribute(s.tuple())});
-    };
-
     m_high_error_edges_first = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         if (m_atdata.uv_mesh_ptr()->is_boundary(s)) {
@@ -143,19 +136,21 @@ ATOperations::ATOperations(
         return std::vector<double>(
             {-(m_sum_error_accessor.scalar_attribute(s.tuple()) +
                m_sum_error_accessor.scalar_attribute(
-                   m_atdata.uv_mesh_ptr()->switch_face(s.tuple()))) /
-             2});
+                   m_atdata.uv_mesh_ptr()->switch_face(s.tuple())))});
     };
     m_high_distance_edges_first = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         if (m_atdata.uv_mesh_ptr()->is_boundary(s)) {
             return std::vector<double>({-m_distance_error_accessor.scalar_attribute(s.tuple())});
         }
+        auto other_face = m_atdata.uv_mesh_ptr()->switch_face(s.tuple());
         return std::vector<double>(
             {-(m_distance_error_accessor.scalar_attribute(s.tuple()) +
-               m_distance_error_accessor.scalar_attribute(
-                   m_atdata.uv_mesh_ptr()->switch_face(s.tuple()))) /
-             2});
+               m_distance_error_accessor.scalar_attribute(other_face))});
+    };
+    m_high_distance_faces_first = [&](const Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Face);
+        return std::vector<double>({-m_distance_error_accessor.scalar_attribute(s.tuple())});
     };
 
     m_high_amips_edges_first = [&](const Simplex& s) {
@@ -257,36 +252,6 @@ void ATOperations::initialize_pmesh_vertex_xyz()
         m_pmesh_xyz_accessor.vector_attribute(position_vert) = p;
     }
 }
-
-void ATOperations::set_edge_length_update_rule()
-{ // Edge length update
-    auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-        assert(P.cols() == 2);
-        assert(P.rows() == 2 || P.rows() == 3);
-        return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
-    };
-    m_edge_length_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-            m_atdata.m_3d_edge_length_handle,
-            m_atdata.m_uvmesh_xyz_handle,
-            compute_edge_length);
-}
-void ATOperations::initialize_edge_length()
-{
-    //////////////////////////////////
-    // ASSUMES THE XYZ FIELD IS ALREADY INITIALIZED!!!!!!
-    //////////////////////////////////
-    // initialize edge lengths
-    const auto edges = m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Edge);
-    for (const auto& e : edges) {
-        const auto p0 = m_uvmesh_xyz_accessor.vector_attribute(e);
-        const auto p1 =
-            m_uvmesh_xyz_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_vertex(e));
-
-        m_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
-    }
-}
-
 void ATOperations::set_distance_error_update_rule()
 {
     auto compute_distance_error = [&](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
@@ -390,7 +355,6 @@ void ATOperations::initialize_amips_error()
 }
 void ATOperations::set_sum_error_update_rule()
 { // face error update
-
     auto compute_sum_error = [&](const Eigen::Matrix<double, 2, 3>& P) -> Eigen::VectorXd {
         assert(P.cols() == 3);
         assert(P.rows() == 2);
@@ -527,21 +491,21 @@ void ATOperations::AT_smooth_interior(
 }
 
 
-void ATOperations::AT_split_interior(
+void ATOperations::AT_edge_split(
     std::function<std::vector<double>(const Simplex&)>& priority,
     std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
 {
     std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
     std::shared_ptr<Mesh> position_mesh_ptr = m_atdata.position_mesh_ptr();
-    wmtk::attribute::MeshAttributeHandle uv_handle = m_atdata.uv_handle();
 
     // 1) EdgeSplit
     auto split = std::make_shared<wmtk::operations::EdgeSplit>(*uv_mesh_ptr);
-    split->add_invariant(std::make_shared<TodoAvgEnergyLargerInvariant>(
-        *uv_mesh_ptr,
-        m_atdata.m_sum_error_handle.as<double>(),
-        m_target_edge_length));
-    // split->add_invariant(std::make_shared<InteriorEdgeInvariant>(uv_mesh));
+    // split->add_invariant(std::make_shared<TodoAvgEnergyLargerInvariant>(
+    //     *uv_mesh_ptr,
+    //     m_atdata.m_sum_error_handle.as<double>(),
+    //     m_target_edge_length));
+    // split->add_invariant(
+    //     std::make_shared<BoundarySimplexInvariant>(*uv_mesh_ptr, PrimitiveType::Edge));
     // split->add_invariant(
     //     std::make_shared<FunctionInvariant>(uv_mesh_ptr->top_simplex_type(), function_ptr));
     split->add_invariant(
@@ -550,8 +514,6 @@ void ATOperations::AT_split_interior(
 
     split->set_new_attribute_strategy(m_atdata.m_uv_handle);
     split->set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);
-    // split->set_new_attribute_strategy(m_atdata.m_pmesh_xyz_handle);
-    split->set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
     split->set_new_attribute_strategy(m_atdata.m_distance_error_handle);
     split->set_new_attribute_strategy(m_atdata.m_barrier_energy_handle);
     split->set_new_attribute_strategy(m_atdata.m_amips_error_handle);
@@ -565,6 +527,63 @@ void ATOperations::AT_split_interior(
     split->add_transfer_strategy(m_amips_error_update);
     split->add_transfer_strategy(m_sum_error_update);
     m_ops.emplace_back(split);
+}
+
+void ATOperations::AT_face_split(
+    std::function<std::vector<double>(const Simplex&)>& priority,
+    std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
+{
+    std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
+    std::shared_ptr<Mesh> position_mesh_ptr = m_atdata.position_mesh_ptr();
+    wmtk::attribute::MeshAttributeHandle uv_handle = m_atdata.uv_handle();
+
+    auto face_split = std::make_shared<TriFaceSplit>(*uv_mesh_ptr);
+    face_split->add_invariant(
+        std::make_shared<StateChanges>(uv_mesh_ptr->top_simplex_type(), function_ptr));
+    face_split->add_invariant(std::make_shared<SimplexInversionInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.uv_handle().as<double>()));
+    face_split->set_priority(priority);
+
+    face_split->split().set_new_attribute_strategy(m_atdata.uv_handle());
+    face_split->collapse().set_new_attribute_strategy(
+        m_atdata.uv_handle(),
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+
+    face_split->split().set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);
+    face_split->collapse().set_new_attribute_strategy(
+        m_atdata.m_uvmesh_xyz_handle,
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+    {
+        // the update strategy that doesn't matter
+        face_split->split().set_new_attribute_strategy(m_atdata.m_distance_error_handle);
+        face_split->collapse().set_new_attribute_strategy(
+            m_atdata.m_distance_error_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
+        face_split->split().set_new_attribute_strategy(m_atdata.m_barrier_energy_handle);
+        face_split->collapse().set_new_attribute_strategy(
+            m_atdata.m_barrier_energy_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
+        face_split->split().set_new_attribute_strategy(
+            m_atdata.m_amips_error_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+        face_split->collapse().set_new_attribute_strategy(
+            m_atdata.m_amips_error_handle,
+            wmtk::operations::CollapseBasicStrategy::Mean);
+        face_split->split().set_new_attribute_strategy(
+            m_atdata.m_sum_error_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+        face_split->collapse().set_new_attribute_strategy(
+            m_atdata.m_sum_error_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
+    }
+    face_split->add_transfer_strategy(m_uvmesh_xyz_update);
+    face_split->add_transfer_strategy(m_amips_error_update);
+    face_split->add_transfer_strategy(m_sum_error_update);
+    face_split->add_transfer_strategy(m_distance_error_update);
+    m_ops.push_back(face_split);
 }
 
 void ATOperations::AT_swap_interior(
@@ -592,10 +611,6 @@ void ATOperations::AT_swap_interior(
     swap->collapse().set_new_attribute_strategy(
         m_atdata.m_uvmesh_xyz_handle,
         wmtk::operations::CollapseBasicStrategy::CopyOther);
-    // swap->split().set_new_attribute_strategy(m_atdata.m_pmesh_xyz_handle);
-    // swap->collapse().set_new_attribute_strategy(
-    //     m_atdata.m_pmesh_xyz_handle,
-    //     wmtk::operations::CollapseBasicStrategy::CopyOther);
     {
         // the update strategy that doesn't matter
         swap->split().set_new_attribute_strategy(m_atdata.m_distance_error_handle);
@@ -613,11 +628,6 @@ void ATOperations::AT_swap_interior(
         swap->collapse().set_new_attribute_strategy(
             m_atdata.m_amips_error_handle,
             wmtk::operations::CollapseBasicStrategy::Mean);
-        swap->split().set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
-        swap->collapse().set_new_attribute_strategy(
-            m_atdata.m_3d_edge_length_handle,
-            wmtk::operations::CollapseBasicStrategy::CopyOther);
-
         swap->split().set_new_attribute_strategy(
             m_atdata.m_sum_error_handle,
             SplitBasicStrategy::None,
@@ -630,7 +640,6 @@ void ATOperations::AT_swap_interior(
     swap->add_transfer_strategy(m_amips_error_update);
     swap->add_transfer_strategy(m_sum_error_update);
     swap->add_transfer_strategy(m_distance_error_update);
-    // swap->add_transfer_strategy(m_edge_length_update);
 
     m_ops.push_back(swap);
 }
@@ -639,17 +648,11 @@ void ATOperations::AT_split_single_edge_mesh(Mesh* edge_meshi_ptr)
 {
     auto m_t_handle = edge_meshi_ptr->get_attribute_handle<double>("t", PrimitiveType::Vertex);
     auto split = std::make_shared<wmtk::operations::EdgeSplit>(*edge_meshi_ptr);
-    split->add_invariant(std::make_shared<TodoLargerInvariant>(
-        m_atdata.uv_mesh(),
-        m_atdata.m_3d_edge_length_handle.as<double>(),
-        4.0 / 3.0 * m_target_edge_length));
     split->set_priority(m_long_edges_first);
 
-    split->set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
     split->set_new_attribute_strategy(m_atdata.m_uv_handle);
     split->set_new_attribute_strategy(m_t_handle);
 
-    split->add_transfer_strategy(m_edge_length_update);
     m_ops.emplace_back(split);
 }
 
@@ -683,10 +686,7 @@ void ATOperations::AT_collapse_interior(
         m_atdata.uv_handle().as<double>()));
     collapse->add_invariant(
         std::make_shared<FunctionInvariant>(uv_mesh_ptr->top_simplex_type(), function_ptr));
-    collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(
-        *uv_mesh_ptr,
-        m_atdata.m_3d_edge_length_handle.as<double>(),
-        4.0 / 5.0 * m_target_edge_length));
+
     collapse->set_priority(m_short_edges_first);
 
     auto clps_strat = std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(
@@ -708,12 +708,8 @@ void ATOperations::AT_collapse_interior(
     clps_strat3->set_strategy(wmtk::operations::CollapseBasicStrategy::Default);
     collapse->set_new_attribute_strategy(m_atdata.m_pmesh_xyz_handle, clps_strat3);
 
-    collapse->set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
-    // collapse->set_new_attribute_strategy(face_error_attribute);
 
     collapse->add_transfer_strategy(m_uvmesh_xyz_update);
-    collapse->add_transfer_strategy(m_edge_length_update);
-    // collapse->add_transfer_strategy(face_error_update);
     m_ops.emplace_back(collapse);
 }
 
