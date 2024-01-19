@@ -4,7 +4,9 @@
         "type": "object",
         "required":[
             "input",
-            "axis",
+            "fusion_X",
+            "fusion_Y",
+            "fusion_Z",
             "name"
         ]
     },
@@ -13,11 +15,16 @@
         "type": "string"
     },
     {
-        "pointer": "/fusion_axis",
-        "type": "int64_t",
-        "default": "default",
-        "doc": "The axis to fusion",
-        "options": ["X", "Y", "Z", "All"]
+        "pointer": "/fusion_X",
+        "type": "bool"  
+    },
+    {
+        "pointer": "/fusion_Y",
+        "type": "bool"  
+    },
+    {
+        "pointer": "/fusion_Z",
+        "type": "bool" 
     },
     {
         "pointer": "/name",

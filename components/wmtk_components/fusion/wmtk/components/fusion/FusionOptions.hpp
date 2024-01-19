@@ -5,14 +5,15 @@
 namespace wmtk::components {
 struct FusionOptions
 {
-    enum class Axis : int64_t { X = 0, Y = 1, Z = 2, All = 3 };
-    Axis fusion_axis;
+    bool fusion_X;
+    bool fusion_Y;
+    bool fusion_Z;
 
     std::string input;
     std::string name;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(FusionOptions, input, name, fusion_axis);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(FusionOptions, input, fusion_X, fusion_Y, fusion_Z, name);
 
 
 } // namespace wmtk::components

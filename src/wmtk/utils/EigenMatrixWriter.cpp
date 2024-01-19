@@ -79,6 +79,7 @@ void EigenMatrixWriter::write_internal(
     const std::vector<T>& val,
     const T& default_val)
 {
+    if (m_mm_level != 1) return;
     using MapType = typename MatrixX<T>::ConstMapType;
     Ts[std::make_pair(name, PrimitiveType(type))] =
         MapType(val.data(), stride, val.size() / stride).transpose();
@@ -132,7 +133,7 @@ void EigenMatrixWriter::write_top_simplex_type(const PrimitiveType type)
 }
 void EigenMatrixWriter::write_absolute_id(const std::vector<int64_t>& id)
 {
-    return;
+    ++m_mm_level;
 }
 void EigenMatrixWriter::write_capacities(const std::vector<int64_t>& capacities)
 {

@@ -10,6 +10,8 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
+#include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
+
 
 namespace wmtk::components {
 
@@ -20,9 +22,20 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
     std::shared_ptr<Mesh> mesh = cache.read_mesh(options.input);
 
     // get fusion axis
-    int64_t fusion_axis = static_cast<int64_t>(options.fusion_axis);
-    // int64_t fusion_axis = options.fusion_axis;
 
+    std::array<bool, 3> operating_axis = {{options.fusion_X, options.fusion_Y, options.fusion_Z}};
+
+    // for (const auto c : fusion_axis) {
+    //     if (c == 'X' || c == 'x') {
+    //         operating_axis[0] = true;
+    //     } else if (c == 'Y' || c == 'y') {
+    //         operating_axis[1] = true;
+    //     } else if (c == 'Z' || c == 'z') {
+    //         operating_axis[2] = true;
+    //     } else {
+    //         throw std::runtime_error("invalid fusion axis");
+    //     }
+    // }
 
     // get mesh dimension and checks
     int64_t mesh_dim = mesh->top_cell_dimension();
@@ -31,8 +44,8 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 
     switch (mesh_dim) {
     case (2): {
-        if (fusion_axis == 2) {
-            throw std::runtime_error("cannot fusion axis Z of a 2D mesh");
+        if (operating_axis[2]) {
+            wmtk::logger().warn("Fusion on Z axis is not supported for 2D mesh.");
         }
 
         MatrixX<double> V;
@@ -97,7 +110,7 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 
         // merge vertices
         for (int axis = 0; axis < 2; ++axis) {
-            if (axis != fusion_axis && fusion_axis != 3) continue;
+            if (!operating_axis[axis]) continue;
 
             if (vertices_on_zero[axis].size() != vertices_on_one[axis].size()) {
                 throw std::runtime_error("vertices size on the fusion axis does not match!");
@@ -121,7 +134,7 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         }
 
         // special case for fusion all axis
-        if (fusion_axis == 3) {
+        if (operating_axis[0] && operating_axis[1]) {
             vertex_map[v00] = v00;
             vertex_map[v01] = v00;
             vertex_map[v10] = v00;
@@ -159,7 +172,6 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         }
 
         RowVectors3d V_new(v_valid_cnt, 3);
-        // V_new.resize(v_valid_cnt, 3);
         V_new = V_new_tmp.block(0, 0, v_valid_cnt, 3);
 
         // std::cout << V_new << std::endl << std::endl;
@@ -175,7 +187,18 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 
         TriMesh fusion_mesh;
         fusion_mesh.initialize(FV_new);
-        mesh_utils::set_matrix_attribute(V_new, "vertices", PrimitiveType::Vertex, fusion_mesh);
+        // mesh_utils::set_matrix_attribute(V_new, "vertices", PrimitiveType::Vertex, fusion_mesh);
+
+        TriMesh& m = dynamic_cast<TriMesh&>(*mesh);
+
+        // make a copy
+        // TriMesh child_mesh(std::move(m));
+        std::shared_ptr<TriMesh> child_ptr = std::make_shared<TriMesh>(std::move(m));
+
+        auto child_map = multimesh::same_simplex_dimension_bijection(fusion_mesh, *child_ptr);
+
+
+        fusion_mesh.register_child_mesh(child_ptr, child_map);
 
         cache.write_mesh(fusion_mesh, options.name);
 
@@ -199,17 +222,6 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         std::array<std::vector<std::pair<int64_t, Eigen::VectorXd>>, 3> vertices_on_zero;
         std::array<std::vector<std::pair<int64_t, Eigen::VectorXd>>, 3> vertices_on_one;
 
-        std::array<int64_t, 8> v_corner = {{-1, -1, -1, -1, -1, -1, -1, -1}};
-        std::array<std::array<double, 3>, 8> v_corner_coord = {
-            {{{0.0, 0.0, 0.0}},
-             {{0.0, 0.0, 1.0}},
-             {{0.0, 1.0, 0.0}},
-             {{0.0, 1.0, 1.0}},
-             {{1.0, 0.0, 0.0}},
-             {{1.0, 0.0, 1.0}},
-             {{1.0, 1.0, 0.0}},
-             {{1.0, 1.0, 1.0}}}};
-
         for (int64_t i = 0; i < V.rows(); ++i) {
             const auto& pos = V.row(i);
 
@@ -221,95 +233,104 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
                     vertices_on_one[k].push_back(std::make_pair(i, pos));
                 }
             }
+        }
 
-            // corners
-            for (int k = 0; k < 8; ++k) {
-                if (abs(pos[0] - v_corner_coord[k][0]) < eps &&
-                    abs(pos[1] - v_corner_coord[k][1]) < eps &&
-                    abs(pos[2] - v_corner_coord[k][2])) {
-                    if (v_corner[k] != -1)
-                        throw std::runtime_error(
-                            "More than 1 vertices on corner " + std::to_string(k) + ".");
-                    v_corner[k] = i;
+        // merge vertices
+        for (int axis = 0; axis < 3; ++axis) {
+            if (!operating_axis[axis]) continue;
+
+            if (vertices_on_zero[axis].size() != vertices_on_one[axis].size()) {
+                throw std::runtime_error("vertices size on the fusion axis does not match!");
+            }
+
+            auto cmp = [&](const std::pair<int64_t, Eigen::VectorXd>& a,
+                           const std::pair<int64_t, Eigen::VectorXd>& b) {
+                if (abs(a.second[(axis + 2) % 3] - b.second[(axis + 2) % 3]) < eps) {
+                    return a.second[(axis + 1) % 3] < b.second[(axis + 1) % 3];
+                } else {
+                    return a.second[(axis + 2) % 3] < b.second[(axis + 2) % 3];
+                }
+            };
+
+            std::sort(vertices_on_zero[axis].begin(), vertices_on_zero[axis].end(), cmp);
+            std::sort(vertices_on_one[axis].begin(), vertices_on_one[axis].end(), cmp);
+
+            for (int64_t i = 0; i < vertices_on_zero[axis].size(); ++i) {
+                assert(
+                    abs(vertices_on_zero[axis][i].second[(axis + 1) % 3] -
+                        vertices_on_one[axis][i].second[(axis + 1) % 3]) < eps &&
+                    abs(vertices_on_zero[axis][i].second[(axis + 2) % 3] -
+                        vertices_on_one[axis][i].second[(axis + 2) % 3]) < eps);
+
+                vertex_map[vertices_on_one[axis][i].first] = vertices_on_zero[axis][i].first;
+            }
+        }
+
+        // // create periodic mesh
+        RowVectors4l TV_new(TV.rows(), 4);
+
+        for (int64_t i = 0; i < TV.rows(); ++i) {
+            for (int64_t k = 0; k < 4; ++k) {
+                if (vertex_map.find(TV(i, k)) != vertex_map.end()) {
+                    int64_t v_root = vertex_map[TV(i, k)];
+                    while (vertex_map.find(v_root) != vertex_map.end() &&
+                           vertex_map[v_root] != v_root) {
+                        v_root = vertex_map[v_root];
+                    }
+                    TV_new(i, k) = v_root;
+                } else {
+                    TV_new(i, k) = TV(i, k);
                 }
             }
         }
 
+        // std::cout << TV_new << std::endl << std::endl;
 
-        // TODO: use union find to merge vertices
-        // merge vertices
-        // for (int axis = 0; axis < 3; ++axis) {
-        //     if (axis != fusion_axis && fusion_axis != 3) continue;
 
-        //     if (vertices_on_zero[axis].size() == vertices_on_one[axis].size()) {
-        //         throw std::runtime_error("vertices size on the fusion axis does not match!");
-        //     }
+        RowVectors3d V_new_tmp(V.rows(), 3);
 
-        //     auto cmp = [&](const std::pair<int64_t, Eigen::VectorXd>& a,
-        //                    const std::pair<int64_t, Eigen::VectorXd>& b) {
-        //         if (abs(a.second[(axis + 2) % 3] - b.second[(axis + 2) % 3]) < eps) {
-        //             return a.second[(axis + 1) % 3] < b.second[(axis + 1) % 3];
-        //         } else {
-        //             return a.second[(axis + 2) % 3] < b.second[(axis + 2) % 3];
-        //         }
-        //     };
+        // remove unused vertices
+        std::map<int64_t, int64_t> v_consolidate_map;
 
-        //     std::sort(vertices_on_zero[axis].begin(), vertices_on_zero[axis].end(), cmp);
-        //     std::sort(vertices_on_one[axis].begin(), vertices_on_one[axis].end(), cmp);
+        int64_t v_valid_cnt = 0;
+        for (int64_t i = 0; i < V.rows(); ++i) {
+            if (vertex_map.find(i) == vertex_map.end() || vertex_map[i] == i) {
+                V_new_tmp(v_valid_cnt, 0) = V(i, 0);
+                V_new_tmp(v_valid_cnt, 1) = V(i, 1);
+                V_new_tmp(v_valid_cnt, 2) = V(i, 2);
+                v_consolidate_map[i] = v_valid_cnt++;
 
-        //     for (int64_t i = 0; i < vertices_on_zero[axis].size(); ++i) {
-        //         assert(
-        //             abs(vertices_on_zero[axis][i].second[(axis + 1) % 3] -
-        //                 vertices_on_one[axis][i].second[(axis + 1) % 3]) < eps &&
-        //             abs(vertices_on_zero[axis][i].second[(axis + 2) % 3] -
-        //                 vertices_on_one[axis][i].second[(axis + 2) % 3]) < eps);
+                // std::cout << V_new_tmp << std::endl << std::endl;
+            }
+        }
 
-        //         vertex_map[vertices_on_one[axis][i].first] = vertices_on_zero[axis][i].first;
-        //     }
+        RowVectors3d V_new(v_valid_cnt, 3);
+        V_new = V_new_tmp.block(0, 0, v_valid_cnt, 3);
 
-        //     // special case for fusion all axis
-        //     // TODO: check if this is correct for hypertorus
-        //     if (fusion_axis == 3) {
-        //         vertex_map[v_corner[0]] = v_corner[0];
-        //         vertex_map[v_corner[1]] = v_corner[0];
-        //         vertex_map[v_corner[2]] = v_corner[0];
-        //         vertex_map[v_corner[3]] = v_corner[0];
-        //         vertex_map[v_corner[4]] = v_corner[0];
-        //         vertex_map[v_corner[5]] = v_corner[0];
-        //         vertex_map[v_corner[6]] = v_corner[0];
-        //         vertex_map[v_corner[7]] = v_corner[0];
-        //     }
-        // }
+        // std::cout << V_new << std::endl << std::endl;
 
-        // // create periodic mesh
-        // RowVectors4l TV_new(TV.rows(), 4);
 
-        // for (int64_t i = 0; i < TV.rows(); ++i) {
-        //     for (int64_t k = 0; k < 4; ++k) {
-        //         if (vertex_map.find(TV(i, k)) != vertex_map.end()) {
-        //             TV_new(i, k) = vertex_map[TV(i, k)];
-        //         } else {
-        //             TV_new(i, k) = TV(i, k);
-        //         }
-        //     }
-        // }
+        // update TV_new
+        for (int64_t i = 0; i < TV_new.rows(); ++i) {
+            for (int64_t k = 0; k < TV_new.cols(); ++k) {
+                TV_new(i, k) = v_consolidate_map[TV_new(i, k)];
+            }
+        }
 
-        // RowVectors3d V_new(V.rows(), 3);
+        // std::cout << TV_new << std::endl << std::endl;
 
-        // std::map<int64_t, int64_t> v_consolidate_map;
 
-        // int64_t v_valid_cnt = 0;
-        // for (int64_t i = 0; i < V.rows(); ++i) {
-        //     // not in map or map to itself
-        //     if (vertex_map.find(i) == vertex_map.end() || vertex_map[i] == i) {
-        //         V_new(v_valid_cnt, 0) = V(i, 0);
-        //         V_new(v_valid_cnt, 1) = V(i, 1);
-        //         V_new(v_valid_cnt, 2) = V(i, 2);
-        //         v_consolidate_map[i] = v_valid_cnt++;
-        //     }
-        // }
+        TetMesh fusion_mesh;
+        fusion_mesh.initialize(TV_new);
+        // mesh_utils::set_matrix_attribute(V_new, "vertices", PrimitiveType::Vertex, fusion_mesh);
 
-        // V_new.resize(v_valid_cnt, 3);
+        TetMesh& m = dynamic_cast<TetMesh&>(*mesh);
+
+        std::shared_ptr<TetMesh> child_ptr = std::make_shared<TetMesh>(std::move(m));
+        auto child_map = multimesh::same_simplex_dimension_bijection(fusion_mesh, *child_ptr);
+        fusion_mesh.register_child_mesh(child_ptr, child_map);
+
+        cache.write_mesh(fusion_mesh, options.name);
 
         break;
     }

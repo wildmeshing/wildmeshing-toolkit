@@ -18,6 +18,7 @@
 using namespace wmtk::components::base;
 using namespace wmtk;
 using namespace wmtk::tests;
+using namespace wmtk::tests_3d;
 
 using json = nlohmann::json;
 
@@ -77,7 +78,9 @@ TEST_CASE("fusion_2d", "[components][fusion][.]")
             R"({
         "input": "test_mesh",
         "name": "on_x",
-        "fusion_axis": 0
+        "fusion_X": true,
+        "fusion_Y": false,
+        "fusion_Z": false
         })"_json;
 
         wmtk::components::fusion(Paths(), input, cache);
@@ -88,13 +91,20 @@ TEST_CASE("fusion_2d", "[components][fusion][.]")
         wmtk::utils::EigenMatrixWriter writer;
         periodic_mesh.serialize(writer);
 
-        MatrixX<double> V_p;
+        // MatrixX<double> V_p;
         MatrixX<int64_t> F_p;
-        writer.get_position_matrix(V_p);
+        // writer.get_position_matrix(V_p);
         writer.get_FV_matrix(F_p);
 
         // std::cout << V_p << std::endl << std::endl;
-        // std::cout << F_p << std::endl;
+        std::cout << F_p << std::endl;
+        auto childs = periodic_mesh.get_child_meshes();
+        CHECK(childs.size() == 1);
+        CHECK(
+            childs[0]->get_all(PrimitiveType::Face).size() ==
+            periodic_mesh.get_all(PrimitiveType::Face).size());
+        CHECK(periodic_mesh.get_all(PrimitiveType::Vertex).size() == 12);
+        CHECK(childs[0]->get_all(PrimitiveType::Vertex).size() == 15);
     }
     SECTION("y")
     {
@@ -102,7 +112,9 @@ TEST_CASE("fusion_2d", "[components][fusion][.]")
             R"({
         "input": "test_mesh",
         "name": "on_y",
-        "fusion_axis": 1
+        "fusion_X": false,
+        "fusion_Y": true,
+        "fusion_Z": false
         })"_json;
 
         wmtk::components::fusion(Paths(), input, cache);
@@ -113,13 +125,19 @@ TEST_CASE("fusion_2d", "[components][fusion][.]")
         wmtk::utils::EigenMatrixWriter writer;
         periodic_mesh.serialize(writer);
 
-        MatrixX<double> V_p;
+        // MatrixX<double> V_p;
         MatrixX<int64_t> F_p;
-        writer.get_position_matrix(V_p);
+        // writer.get_position_matrix(V_p);
         writer.get_FV_matrix(F_p);
 
         // std::cout << V_p << std::endl << std::endl;
         // std::cout << F_p << std::endl;
+
+        auto childs = periodic_mesh.get_child_meshes();
+        CHECK(childs.size() == 1);
+        CHECK(
+            childs[0]->get_all(PrimitiveType::Face).size() ==
+            periodic_mesh.get_all(PrimitiveType::Face).size());
     }
     SECTION("all")
     {
@@ -127,7 +145,9 @@ TEST_CASE("fusion_2d", "[components][fusion][.]")
             R"({
         "input": "test_mesh",
         "name": "on_all",
-        "fusion_axis": 3
+        "fusion_X": true,
+        "fusion_Y": true,
+        "fusion_Z": false
         })"_json;
 
         wmtk::components::fusion(Paths(), input, cache);
@@ -138,12 +158,150 @@ TEST_CASE("fusion_2d", "[components][fusion][.]")
         wmtk::utils::EigenMatrixWriter writer;
         periodic_mesh.serialize(writer);
 
-        MatrixX<double> V_p;
+        // MatrixX<double> V_p;
         MatrixX<int64_t> F_p;
-        writer.get_position_matrix(V_p);
+        // writer.get_position_matrix(V_p);
         writer.get_FV_matrix(F_p);
 
-        std::cout << V_p << std::endl << std::endl;
-        std::cout << F_p << std::endl;
+        // std::cout << V_p << std::endl << std::endl;
+        // std::cout << F_p << std::endl;
+        auto childs = periodic_mesh.get_child_meshes();
+        CHECK(childs.size() == 1);
+        CHECK(
+            childs[0]->get_all(PrimitiveType::Face).size() ==
+            periodic_mesh.get_all(PrimitiveType::Face).size());
+    }
+}
+
+TEST_CASE("fusion_3d", "[components][fusion][.]")
+{
+    wmtk::io::Cache cache("wmtk_cache", ".");
+
+    RowVectors3d V;
+    V.resize(8, 3);
+    V.row(0) << 0.0, 0.0, 0.0;
+    V.row(1) << 1.0, 0.0, 0.0;
+    V.row(2) << 1.0, 1.0, 0.0;
+    V.row(3) << 0.0, 1.0, 0.0;
+    V.row(4) << 0.0, 0.0, 1.0;
+    V.row(5) << 1.0, 0.0, 1.0;
+    V.row(6) << 1.0, 1.0, 1.0;
+    V.row(7) << 0.0, 1.0, 1.0;
+
+    RowVectors4l T;
+    T.resize(6, 4);
+    T.row(0) << 0, 1, 2, 3;
+    T.row(1) << 5, 2, 6, 7;
+    T.row(2) << 4, 1, 5, 3;
+    T.row(3) << 4, 3, 7, 5;
+    T.row(4) << 3, 1, 5, 2;
+    T.row(5) << 2, 3, 7, 5;
+
+    DEBUG_TetMesh m;
+    m.initialize(T);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
+
+    cache.write_mesh(m, "test_mesh");
+
+    SECTION("x")
+    {
+        json input =
+            R"({
+        "input": "test_mesh",
+        "name": "on_x",
+        "fusion_X": true,
+        "fusion_Y": false,
+        "fusion_Z": false
+        })"_json;
+
+        wmtk::components::fusion(Paths(), input, cache);
+
+        auto p_mesh = cache.read_mesh("on_x");
+        DEBUG_TetMesh& periodic_mesh = static_cast<DEBUG_TetMesh&>(*p_mesh);
+
+        wmtk::utils::EigenMatrixWriter writer;
+        periodic_mesh.serialize(writer);
+
+        // MatrixX<double> V_p;
+        MatrixX<int64_t> T_p;
+        // writer.get_position_matrix(V_p);
+        writer.get_TV_matrix(T_p);
+
+        // std::cout << V_p << std::endl << std::endl;
+        // std::cout << T_p << std::endl;
+        auto childs = periodic_mesh.get_child_meshes();
+        CHECK(childs.size() == 1);
+        CHECK(
+            childs[0]->get_all(PrimitiveType::Tetrahedron).size() ==
+            periodic_mesh.get_all(PrimitiveType::Tetrahedron).size());
+        CHECK(periodic_mesh.get_all(PrimitiveType::Vertex).size() == 4);
+    }
+
+    SECTION("xy")
+    {
+        json input =
+            R"({
+        "input": "test_mesh",
+        "name": "on_xy",
+        "fusion_X": true,
+        "fusion_Y": true,
+        "fusion_Z": false
+        })"_json;
+
+        wmtk::components::fusion(Paths(), input, cache);
+
+        auto p_mesh = cache.read_mesh("on_xy");
+        DEBUG_TetMesh& periodic_mesh = static_cast<DEBUG_TetMesh&>(*p_mesh);
+
+        wmtk::utils::EigenMatrixWriter writer;
+        periodic_mesh.serialize(writer);
+
+        // MatrixX<double> V_p;
+        MatrixX<int64_t> T_p;
+        // writer.get_position_matrix(V_p);
+        writer.get_TV_matrix(T_p);
+
+        // std::cout << V_p << std::endl << std::endl;
+        // std::cout << T_p << std::endl;
+        auto childs = periodic_mesh.get_child_meshes();
+        CHECK(childs.size() == 1);
+        CHECK(
+            childs[0]->get_all(PrimitiveType::Tetrahedron).size() ==
+            periodic_mesh.get_all(PrimitiveType::Tetrahedron).size());
+        CHECK(periodic_mesh.get_all(PrimitiveType::Vertex).size() == 2);
+    }
+
+    SECTION("xyz")
+    {
+        json input =
+            R"({
+        "input": "test_mesh",
+        "name": "on_xyz",
+        "fusion_X": true,
+        "fusion_Y": true,
+        "fusion_Z": true
+        })"_json;
+
+        wmtk::components::fusion(Paths(), input, cache);
+
+        auto p_mesh = cache.read_mesh("on_xyz");
+        DEBUG_TetMesh& periodic_mesh = static_cast<DEBUG_TetMesh&>(*p_mesh);
+
+        wmtk::utils::EigenMatrixWriter writer;
+        periodic_mesh.serialize(writer);
+
+        // MatrixX<double> V_p;
+        MatrixX<int64_t> T_p;
+        // writer.get_position_matrix(V_p);
+        writer.get_TV_matrix(T_p);
+
+        // std::cout << V_p << std::endl << std::endl;
+        // std::cout << T_p << std::endl;
+        auto childs = periodic_mesh.get_child_meshes();
+        CHECK(childs.size() == 1);
+        CHECK(
+            childs[0]->get_all(PrimitiveType::Tetrahedron).size() ==
+            periodic_mesh.get_all(PrimitiveType::Tetrahedron).size());
+        CHECK(periodic_mesh.get_all(PrimitiveType::Vertex).size() == 1);
     }
 }
