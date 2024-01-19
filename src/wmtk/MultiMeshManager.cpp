@@ -39,6 +39,10 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
         return Tuple(); // return null tuple
     }
 
+    assert(source_mesh.is_valid_slow(source_mesh_base_tuple));
+    assert(target_mesh.is_valid_slow(target_mesh_base_tuple));
+
+
     if (source_mesh_base_tuple.m_global_cid != source_mesh_target_tuple.m_global_cid) {
         assert(source_mesh_primitive_type > target_mesh_primitive_type);
         const std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(
