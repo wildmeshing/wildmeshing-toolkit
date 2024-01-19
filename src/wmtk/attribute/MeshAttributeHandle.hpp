@@ -1,5 +1,6 @@
 #pragma once
 #include "TypedAttributeHandle.hpp"
+#include <cassert>
 
 #include <variant>
 
@@ -43,12 +44,12 @@ public:
 
     friend class wmtk::Mesh;
     friend class wmtk::hash<MeshAttributeHandle>;
-    MeshAttributeHandle();
+    MeshAttributeHandle()= default;
     MeshAttributeHandle(Mesh& m, const HandleVariant& h);
-    MeshAttributeHandle(const MeshAttributeHandle& o);
-    MeshAttributeHandle(MeshAttributeHandle&& o);
-    MeshAttributeHandle& operator=(const MeshAttributeHandle& o);
-    MeshAttributeHandle& operator=(MeshAttributeHandle&& o);
+    MeshAttributeHandle(const MeshAttributeHandle& o)= default;
+    MeshAttributeHandle(MeshAttributeHandle&& o)= default;
+    MeshAttributeHandle& operator=(const MeshAttributeHandle& o)= default;
+    MeshAttributeHandle& operator=(MeshAttributeHandle&& o)= default;
 
     bool operator==(const MeshAttributeHandle& o) const
     {
@@ -168,6 +169,28 @@ template <typename T>
 inline PrimitiveType MeshAttributeHandle::primitive_typeT() const
 {
     return std::get<T>(m_handle).primitive_type();
+}
+
+inline MeshAttributeHandle::MeshAttributeHandle(Mesh& m, const HandleVariant& h)
+    : m_mesh(&m)
+    , m_handle(h)
+{}
+
+inline bool MeshAttributeHandle::is_same_mesh(const Mesh& m) const
+{
+    assert(m_mesh != nullptr);
+    return m_mesh == &m;
+}
+
+inline Mesh& MeshAttributeHandle::mesh()
+{
+    assert(m_mesh != nullptr);
+    return *m_mesh;
+}
+inline const Mesh& MeshAttributeHandle::mesh() const
+{
+    assert(m_mesh != nullptr);
+    return *m_mesh;
 }
 } // namespace wmtk::attribute
 
