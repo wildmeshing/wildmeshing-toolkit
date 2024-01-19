@@ -181,7 +181,7 @@ TEST_CASE("2D_random_switches", "[tuple_operation],[tuple_2d]")
     }
 }
 
-bool tuple_equal(const TriMesh& m, const Tuple& t0, const Tuple& t1)
+bool tuple_equal(const DEBUG_TriMesh& m, const Tuple& t0, const Tuple& t1)
 {
     const int64_t v0 = m.id(t0, PrimitiveType::Vertex);
     const int64_t e0 = m.id(t0, PrimitiveType::Edge);
