@@ -580,17 +580,14 @@ TEST_CASE("simplex_open_star", "[simplex_collection][2D]")
 
 TEST_CASE("simplex_open_star_trimesh", "[simplex_collection][2D]")
 {
-    std::unique_ptr<tests::DEBUG_TriMesh> mp =
-        std::make_unique<tests::DEBUG_TriMesh>(tests::hex_plus_two());
-    tests::DEBUG_TriMesh& m = *mp;
-    Mesh& mm = *dynamic_cast<Mesh*>(mp.get());
+    tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
     SECTION("vertex_interior")
     {
         const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
 
         SimplexCollection os_tri = open_star(m, simplex::Simplex::vertex(t));
-        SimplexCollection os_m = open_star(mm, simplex::Simplex::vertex(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::vertex(t));
 
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
     }
@@ -599,7 +596,7 @@ TEST_CASE("simplex_open_star_trimesh", "[simplex_collection][2D]")
         const Tuple t = m.edge_tuple_between_v1_v2(3, 4, 0);
 
         SimplexCollection os_tri = open_star(m, simplex::Simplex::vertex(t));
-        SimplexCollection os_m = open_star(mm, simplex::Simplex::vertex(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::vertex(t));
 
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
     }
@@ -608,7 +605,7 @@ TEST_CASE("simplex_open_star_trimesh", "[simplex_collection][2D]")
         const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
 
         SimplexCollection os_tri = open_star(m, simplex::Simplex::edge(t));
-        SimplexCollection os_m = open_star(mm, simplex::Simplex::edge(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::edge(t));
 
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
     }
@@ -617,7 +614,7 @@ TEST_CASE("simplex_open_star_trimesh", "[simplex_collection][2D]")
         const Tuple t = m.edge_tuple_between_v1_v2(3, 7, 5);
 
         SimplexCollection os_tri = open_star(m, simplex::Simplex::edge(t));
-        SimplexCollection os_m = open_star(mm, simplex::Simplex::edge(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::edge(t));
 
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
     }
@@ -626,7 +623,7 @@ TEST_CASE("simplex_open_star_trimesh", "[simplex_collection][2D]")
         const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
 
         SimplexCollection os_tri = open_star(m, simplex::Simplex::face(t));
-        SimplexCollection os_m = open_star(mm, simplex::Simplex::face(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::face(t));
 
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
     }
@@ -1039,6 +1036,32 @@ TEST_CASE("simplex_link_iterable", "[simplex_collection][2D]")
     }
 }
 
+TEST_CASE("simplex_open_star_tetmesh", "[simplex_collection]")
+{
+    auto mp = std::make_unique<TetMesh>(tests_3d::two_by_two_by_two_grids_tets());
+    Mesh& m = *mp;
+
+    for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+        SimplexCollection os_tri = open_star(m, simplex::Simplex::vertex(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::vertex(t));
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
+        SimplexCollection os_tri = open_star(m, simplex::Simplex::edge(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::edge(t));
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Face)) {
+        SimplexCollection os_tri = open_star(m, simplex::Simplex::face(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::face(t));
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Tetrahedron)) {
+        SimplexCollection os_tri = open_star(m, simplex::Simplex::tetrahedron(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::tetrahedron(t));
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+    }
+}
 
 TEST_CASE("simplex_cofaces_single_dimension", "[simplex_collection][2D]")
 {
@@ -1615,7 +1638,6 @@ TEST_CASE("raw_simplex_faces", "[raw_simplex_collection]")
         CHECK(sc.simplex_vector().size() == 3);
     }
 }
-
 
 TEST_CASE("simplex_link_condtion_tetmesh", "[simplex_collection]")
 {
