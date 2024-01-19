@@ -16,7 +16,7 @@ int main(int argc, char** argv)
     path json_input_file;
     app.add_option("-j, --json", json_input_file, "json specification file")->required(true);
     bool is_strict = true;
-    app.add_flag("--ns", is_strict, "Disables strict validation of input JSON");
+    // app.add_flag("--ns", is_strict, "Disables strict validation of input JSON");
 
 
     CLI11_PARSE(app, argc, argv);
