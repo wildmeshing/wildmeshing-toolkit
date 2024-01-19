@@ -1,16 +1,17 @@
-#include <wmtk/utils/Rational.hpp>
 #include "AttributeScope.hpp"
+#include <wmtk/utils/Rational.hpp>
 namespace wmtk::attribute {
 
 template <typename T>
-AttributeScope<T>::AttributeScope()
-{}
+AttributeScope<T>::AttributeScope() {
+}
 template <typename T>
-AttributeScope<T>::~AttributeScope()
-{}
+AttributeScope<T>::~AttributeScope() {
+
+}
 template <typename T>
-AttributeScope<T>::AttributeScope(AttributeScope<T>* next)
-    : m_next(next)
+AttributeScope<T>::AttributeScope(std::unique_ptr<AttributeScope>&& next)
+    : m_next(std::move(next))
 {
     if (bool(m_next)) {
         m_next->m_previous = this;
@@ -19,14 +20,13 @@ AttributeScope<T>::AttributeScope(AttributeScope<T>* next)
 
 
 template <typename T>
-void AttributeScope<T>::pop()
+std::unique_ptr<AttributeScope<T>> AttributeScope<T>::pop_to_next()
 {
     if (m_next) {
         m_next->m_previous = nullptr;
         AttributeCache<T>::flush_to(*m_next);
     }
-    m_next = nullptr;
-    // return std::move(m_next);
+    return std::move(m_next);
 }
 
 template <typename T>
@@ -105,6 +105,7 @@ auto AttributeScope<T>::load_const_cached_vector_value(
         return m_next->load_const_cached_vector_value(accessor, index);
 #endif
     } else {
+
         auto v = accessor.const_vector_attribute(index);
         return v;
     }
@@ -146,7 +147,7 @@ auto AttributeScope<T>::const_vector_attribute(const AccessorBase<T>& accessor, 
 
 #if defined(WMTK_FLUSH_ON_FAIL)
 
-    return load_const_cached_vector_value(accessor, index);
+    return load_const_cached_vector_value(accessor,index);
 #else
     auto it = AttributeCache<T>::load_it(accessor, index);
     auto& value = it->second;
@@ -181,7 +182,14 @@ auto AttributeScope<T>::const_scalar_attribute(const AccessorBase<T>& accessor, 
 template <typename T>
 void AttributeScope<T>::flush(Attribute<T>& attr)
 {
-    AttributeCache<T>::flush_to(attr);
+#if !defined(WMTK_FLUSH_ON_FAIL)
+    if (m_next) {
+        AttributeCache<T>::flush_to(*m_next);
+    } else
+#endif
+    {
+        AttributeCache<T>::flush_to(attr);
+    }
 }
 template <typename T>
 void AttributeScope<T>::flush_changes_to_vector(const Attribute<T>& attr, std::vector<T>& data)
@@ -204,8 +212,8 @@ int64_t AttributeScope<T>::depth() const
     }
 }
 
-// template class AttributeScope<int64_t>;
-// template class AttributeScope<double>;
-// template class AttributeScope<char>;
-// template class AttributeScope<Rational>;
+//template class AttributeScope<int64_t>;
+//template class AttributeScope<double>;
+//template class AttributeScope<char>;
+//template class AttributeScope<Rational>;
 } // namespace wmtk::attribute
