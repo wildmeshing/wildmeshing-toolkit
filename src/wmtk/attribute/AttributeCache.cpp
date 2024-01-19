@@ -90,8 +90,8 @@ void AttributeCache<T>::flush_to(const Attribute<T>& attribute, std::vector<T>& 
         }
     }
 }
-//template class AttributeCache<int64_t>;
-//template class AttributeCache<double>;
-//template class AttributeCache<char>;
-//template class AttributeCache<Rational>;
+template class AttributeCache<int64_t>;
+template class AttributeCache<double>;
+template class AttributeCache<char>;
+template class AttributeCache<Rational>;
 } // namespace wmtk::attribute

@@ -1,7 +1,6 @@
 
 #pragma once
 #include <variant>
-#include <tuple>
 #include "AttributeHandle.hpp"
 namespace wmtk {
 class Mesh;
@@ -69,21 +68,11 @@ public:
     PrimitiveType primitive_type() const { return m_primitive_type; }
     const AttributeHandle& base_handle() const { return m_base_handle; }
 };
-
 using TypedAttributeHandleVariant = std::variant<
     TypedAttributeHandle<char>,
     TypedAttributeHandle<int64_t>,
     TypedAttributeHandle<double>,
     TypedAttributeHandle<Rational>>;
-
-
-template <typename T>
-inline bool TypedAttributeHandle<T>::operator<(const TypedAttributeHandle<T>& o) const
-{
-    return std::tie(m_base_handle, m_primitive_type) <
-           std::tie(o.m_base_handle, o.m_primitive_type);
-}
-
 } // namespace attribute
 template <typename T>
 using TypedAttributeHandle = attribute::TypedAttributeHandle<T>;

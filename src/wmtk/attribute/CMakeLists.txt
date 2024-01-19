@@ -2,7 +2,7 @@
 set(SRC_FILES
     Attribute.hpp
     Attribute.cpp
-    AttributeCache.hxx
+    AttributeCache.cpp
     AttributeCache.hpp
     AttributeScope.hpp
     AttributeScope.hxx
