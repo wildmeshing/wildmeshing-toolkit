@@ -27,6 +27,7 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
     const ConstAccessor<int64_t>& map_accessor,
     const Tuple& source_tuple)
 {
+    assert(source_mesh.is_valid_slow(source_tuple));
     PrimitiveType source_mesh_primitive_type = source_mesh.top_simplex_type();
     PrimitiveType target_mesh_primitive_type = target_mesh.top_simplex_type();
     PrimitiveType min_primitive_type =
@@ -41,7 +42,6 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
 
     assert(source_mesh.is_valid_slow(source_mesh_base_tuple));
     assert(target_mesh.is_valid_slow(target_mesh_base_tuple));
-
 
     if (source_mesh_base_tuple.m_global_cid != source_mesh_target_tuple.m_global_cid) {
         assert(source_mesh_primitive_type > target_mesh_primitive_type);
@@ -229,6 +229,8 @@ void MultiMeshManager::register_child_mesh(
 
     // register maps
     for (const auto& [child_tuple, my_tuple] : child_tuple_my_tuple_map) {
+        assert(my_mesh.is_valid_slow(my_tuple));
+        assert(child_mesh_ptr->is_valid_slow(child_tuple));
         wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
             parent_to_child_accessor,
             child_to_parent_accessor,
@@ -731,6 +733,7 @@ void MultiMeshManager::update_map_tuple_hashes(
                 continue;
             }
 
+
             // navigate parent_original_sharer -> parent_tuple
             // then take parent_new_sharer -> parent_tuple
             parent_tuple = my_mesh.resurrect_tuple(parent_tuple, parent_hash_accessor);
@@ -797,6 +800,8 @@ void MultiMeshManager::update_map_tuple_hashes(
             assert(child_mesh.is_valid_slow(child_tuple));
 
 
+            assert(my_mesh.is_valid_slow(parent_tuple));
+            assert(child_mesh.is_valid_slow(child_tuple));
             wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
                 parent_to_child_accessor,
                 child_to_parent_accessor,
