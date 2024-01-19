@@ -351,6 +351,25 @@ TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor]")
             populate(m, double_acc, true);
             check(m, int64_t_acc, true);
             check(m, double_acc, true);
+            {
+                auto scope3 = m.create_scope();
+                populate(m, int64_t_acc, false);
+                populate(m, double_acc, false);
+                check(m, int64_t_acc, false);
+                check(m, double_acc, false);
+            }
+            check(m, int64_t_acc, false);
+            check(m, double_acc, false);
+            {
+                auto scope3 = m.create_scope();
+                populate(m, int64_t_acc, true);
+                populate(m, double_acc, true);
+                check(m, int64_t_acc, true);
+                check(m, double_acc, true);
+                scope3.mark_failed();
+            }
+            check(m, int64_t_acc, false);
+            check(m, double_acc, false);
         }
         scope.mark_failed();
     }
