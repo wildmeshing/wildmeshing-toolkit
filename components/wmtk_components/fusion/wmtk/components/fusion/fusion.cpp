@@ -42,6 +42,8 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 
     double eps = 1e-10;
 
+    std::map<std::string, std::vector<int64_t>> names;
+
     switch (mesh_dim) {
     case (2): {
         if (operating_axis[2]) {
@@ -200,7 +202,10 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 
         fusion_mesh.register_child_mesh(child_ptr, child_map);
 
-        cache.write_mesh(fusion_mesh, options.name);
+        names["periodic"] = fusion_mesh.absolute_multi_mesh_id();
+        names["position"] = child_ptr->absolute_multi_mesh_id();
+
+        cache.write_mesh(fusion_mesh, options.name, names);
 
         break;
     }
@@ -330,7 +335,10 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         auto child_map = multimesh::same_simplex_dimension_bijection(fusion_mesh, *child_ptr);
         fusion_mesh.register_child_mesh(child_ptr, child_map);
 
-        cache.write_mesh(fusion_mesh, options.name);
+        names["periodic"] = fusion_mesh.absolute_multi_mesh_id();
+        names["position"] = child_ptr->absolute_multi_mesh_id();
+
+        cache.write_mesh(fusion_mesh, options.name, names);
 
         break;
     }
