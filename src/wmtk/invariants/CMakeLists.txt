@@ -14,6 +14,10 @@ set(SRC_FILES
     InvariantCollection.cpp
     InteriorSimplexInvariant.hpp
     InteriorSimplexInvariant.cpp
+
+    BoundarySimplexInvariant.hpp
+    BoundarySimplexInvariant.cpp
+
     InteriorVertexInvariant.hpp
     InteriorVertexInvariant.cpp
     InteriorEdgeInvariant.hpp
