@@ -21,10 +21,9 @@ wmtk::io::Cache run_components(const nlohmann::json& json_input_file, bool stric
     {
         std::ifstream f(wmtk_spec_file);
         if (!f.is_open()) {
-            wmtk::logger().error(
+            log_and_throw_error(
                 "Could not open wmtk specification file: {}",
                 wmtk_spec_file.string());
-            throw std::runtime_error("Could not open wmtk specification");
         }
         rules_json = nlohmann::json::parse(f);
     }
@@ -39,8 +38,7 @@ wmtk::io::Cache run_components(const nlohmann::json& json_input_file, bool stric
     nlohmann::json spec_json;
     bool r = spec_engine.verify_json(json_input_file, rules_json);
     if (!r) {
-        wmtk::logger().error("{}", spec_engine.log2str());
-        throw std::runtime_error("Invalid spec");
+        log_and_throw_error("{}", spec_engine.log2str());
     } else {
         spec_json = spec_engine.inject_defaults(json_input_file, rules_json);
     }
