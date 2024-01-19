@@ -4,6 +4,32 @@
 #include <wmtk/utils/Rational.hpp>
 
 namespace wmtk::attribute {
+MeshAttributeHandle::MeshAttributeHandle(Mesh& m, const HandleVariant& h)
+    : m_mesh(&m)
+    , m_handle(h)
+{}
+MeshAttributeHandle::MeshAttributeHandle() = default;
+MeshAttributeHandle::MeshAttributeHandle(const MeshAttributeHandle& o) = default;
+MeshAttributeHandle::MeshAttributeHandle(MeshAttributeHandle&& o) = default;
+MeshAttributeHandle& MeshAttributeHandle::operator=(const MeshAttributeHandle& o) = default;
+MeshAttributeHandle& MeshAttributeHandle::operator=(MeshAttributeHandle&& o) = default;
+
+bool MeshAttributeHandle::is_same_mesh(const Mesh& m) const
+{
+    assert(m_mesh != nullptr);
+    return m_mesh == &m;
+}
+
+Mesh& MeshAttributeHandle::mesh()
+{
+    assert(m_mesh != nullptr);
+    return *m_mesh;
+}
+const Mesh& MeshAttributeHandle::mesh() const
+{
+    assert(m_mesh != nullptr);
+    return *m_mesh;
+}
 auto MeshAttributeHandle::held_type() const -> HeldType
 {
     return std::visit(

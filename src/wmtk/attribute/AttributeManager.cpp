@@ -1,4 +1,3 @@
-// this is to safely access fmt because including fmt and spdlog together can be problematic
 #include <spdlog/spdlog.h>
 
 #include "AttributeManager.hpp"

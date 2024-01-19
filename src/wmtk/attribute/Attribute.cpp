@@ -12,19 +12,15 @@ namespace wmtk::attribute {
 template <typename T>
 void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter& writer) const
 {
-#if !defined(WMTK_FLUSH_ON_FAIL)
     auto ptr = get_local_scope_stack_ptr();
     if (ptr == nullptr) {
-#endif
         writer.write(name, dim, dimension(), m_data, m_default_value);
-#if !defined(WMTK_FLUSH_ON_FAIL)
     } else {
         std::vector<T> data = m_data;
 
         ptr->flush_changes_to_vector(*this, data);
         writer.write(name, dim, dimension(), data, m_default_value);
     }
-#endif
 }
 
 
