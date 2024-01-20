@@ -5,7 +5,8 @@
         "required": [
             "input",
             "output",
-            "attributes"
+            "attributes",
+            "envelopes"
         ],
         "optional": [
             "pass_through",
@@ -32,6 +33,55 @@
         "pointer": "/attributes/position",
         "type": "string",
         "doc": "Position attribute"
+    },
+    {
+        "pointer": "/envelopes",
+        "type": "list",
+        "doc": "all active envelopes"
+    },
+    {
+        "pointer": "/envelopes/*",
+        "type": "object",
+        "doc": "envelope",
+        "required": [
+            "geometry",
+            "constrained_position"
+        ],
+        "optional": [
+            "thickness"
+        ]
+    },
+    {
+        "pointer": "/envelopes/*/geometry",
+        "type": "object",
+        "required": [
+            "mesh",
+            "position"
+        ],
+        "doc": "name of the mesh to build the envelope"
+    },
+    {
+        "pointer": "/envelopes/*/geometry/mesh",
+        "type": "string",
+        "doc": "name of the mesh to build the envelope"
+    },
+    {
+        "pointer": "/envelopes/*/geometry/position",
+        "type": "string",
+        "doc": "name of the attribute for the position of mesh to build the envelope"
+    },
+    {
+        "pointer": "/envelopes/*/thickness",
+        "type": "float",
+        "min": 0,
+        "default": 1e-3,
+        "doc": "thickness of the envelope"
+    },
+    {
+        "pointer": "/envelopes/*/constrained_position",
+        "type": "include",
+        "spec_file": "attribute_spec.json",
+        "doc": "name of the attribute in the main mesh hierarcy that need to be checked"
     },
     {
         "pointer": "/pass_through",
