@@ -6,7 +6,7 @@ namespace wmtk::components::internal {
 
 struct IsotropicRemeshingAttributes
 {
-    std::string position;
+    nlohmann::json position;
     nlohmann::json inversion_position;
     nlohmann::json other_positions;
 };
