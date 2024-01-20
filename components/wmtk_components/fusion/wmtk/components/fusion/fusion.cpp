@@ -44,6 +44,8 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 
     std::map<std::string, std::vector<int64_t>> names;
 
+    // TODO: a lot of matrix copies to remove
+
     switch (mesh_dim) {
     case (2): {
         if (operating_axis[2]) {
