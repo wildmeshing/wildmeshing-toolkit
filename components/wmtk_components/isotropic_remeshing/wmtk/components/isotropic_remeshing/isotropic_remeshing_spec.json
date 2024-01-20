@@ -33,7 +33,8 @@
     ],
     "optional": [
       "inversion_position",
-      "other_positions"
+      "other_positions",
+      "update_other_positions"
     ],
     "doc": "all attributes required for this component"
   },
@@ -54,6 +55,12 @@
     "type": "include",
     "spec_file": "optional_attribute_spec.json",
     "doc": "Position attribute for inversion check"
+  },
+  {
+    "pointer": "/attributes/update_other_positions",
+    "type": "bool",
+    "default": false,
+    "doc": "Use attribute update to sync other positions"
   },
   {
     "pointer": "/pass_through",

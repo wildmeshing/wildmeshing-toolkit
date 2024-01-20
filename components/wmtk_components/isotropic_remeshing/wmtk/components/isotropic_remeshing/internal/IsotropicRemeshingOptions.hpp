@@ -9,13 +9,15 @@ struct IsotropicRemeshingAttributes
     nlohmann::json position;
     nlohmann::json inversion_position;
     nlohmann::json other_positions;
+    bool update_other_positions;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     IsotropicRemeshingAttributes,
     position,
     inversion_position,
-    other_positions);
+    other_positions,
+    update_other_positions);
 
 struct IsotropicRemeshingOptions
 {
