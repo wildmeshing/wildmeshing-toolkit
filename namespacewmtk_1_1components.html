@@ -143,6 +143,10 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options_attributes.html">WildmeshingOptionsAttributes</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh.html">WildmeshingOptionsEnvelopeMesh</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options_envelope.html">WildmeshingOptionsEnvelope</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options.html">WildmeshingOptions</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -195,8 +199,12 @@ Functions</h2></td></tr>
 <tr class="separator:a503af91b8a2d86f4b9af9dbded55bec0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8d7ec3154745148645546bb201c8968a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a8d7ec3154745148645546bb201c8968a">NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (<a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options_attributes.html">WildmeshingOptionsAttributes</a>, position)</td></tr>
 <tr class="separator:a8d7ec3154745148645546bb201c8968a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b58f4552c90f63b86f68b6b8bf62859"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a2b58f4552c90f63b86f68b6b8bf62859">NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (<a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options.html">WildmeshingOptions</a>, attributes, pass_through, passes, <a class="el" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">input</a>, target_edge_length, intermediate_output, <a class="el" href="namespacewmtk_1_1components.html#afb654c569d4536f122b7cdfb9156c7d7">output</a>)</td></tr>
-<tr class="separator:a2b58f4552c90f63b86f68b6b8bf62859"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9a4dead429f27b7965c9f2a4366a8f2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#af9a4dead429f27b7965c9f2a4366a8f2">NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (<a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh.html">WildmeshingOptionsEnvelopeMesh</a>, mesh, position)</td></tr>
+<tr class="separator:af9a4dead429f27b7965c9f2a4366a8f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ba4ceae8267640d56736f0153c842ca"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a3ba4ceae8267640d56736f0153c842ca">NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (<a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options_envelope.html">WildmeshingOptionsEnvelope</a>, geometry, thickness, constrained_position)</td></tr>
+<tr class="separator:a3ba4ceae8267640d56736f0153c842ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a415d5f2274fcfe59a24448d851ebddbd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a415d5f2274fcfe59a24448d851ebddbd">NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (<a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options.html">WildmeshingOptions</a>, attributes, pass_through, passes, <a class="el" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">input</a>, envelopes, target_edge_length, intermediate_output, <a class="el" href="namespacewmtk_1_1components.html#afb654c569d4536f122b7cdfb9156c7d7">output</a>)</td></tr>
+<tr class="separator:a415d5f2274fcfe59a24448d851ebddbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader">tag_intersection</div></td></tr>
 <tr><td colspan="2"><div class="groupText"><p>when you what to get a tag intersection between several tag attributes, then you can call this function</p>
 <dl class="params"><dt>Parameters</dt><dd>
@@ -726,7 +734,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a03e56efda5037aab90de2ea4e0b9b22c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a03e56efda5037aab90de2ea4e0b9b22c">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[1/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a03e56efda5037aab90de2ea4e0b9b22c">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[1/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -772,7 +780,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a6a6a57e381b277eb9c46fd5b05e1b214"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6a6a57e381b277eb9c46fd5b05e1b214">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[2/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a6a57e381b277eb9c46fd5b05e1b214">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[2/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -836,7 +844,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a44a35faddbe06e2dc40bd704f1faa497"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a44a35faddbe06e2dc40bd704f1faa497">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[3/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a44a35faddbe06e2dc40bd704f1faa497">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[3/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -881,8 +889,8 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
-<a id="a2b58f4552c90f63b86f68b6b8bf62859"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2b58f4552c90f63b86f68b6b8bf62859">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[4/5]</span></h2>
+<a id="a415d5f2274fcfe59a24448d851ebddbd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a415d5f2274fcfe59a24448d851ebddbd">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[4/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -920,6 +928,12 @@ Here is the caller graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">envelopes&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">target_edge_length&#160;</td>
           <td class="paramname">, </td>
         </tr>
@@ -946,7 +960,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a8d7ec3154745148645546bb201c8968a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8d7ec3154745148645546bb201c8968a">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[5/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d7ec3154745148645546bb201c8968a">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[5/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -955,6 +969,80 @@ Here is the caller graph for this function:</div>
           <td class="memname">wmtk::components::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options_attributes.html">WildmeshingOptionsAttributes</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">position&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3ba4ceae8267640d56736f0153c842ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ba4ceae8267640d56736f0153c842ca">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[6/7]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::components::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options_envelope.html">WildmeshingOptionsEnvelope</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">geometry&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">thickness&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">constrained_position&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af9a4dead429f27b7965c9f2a4366a8f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af9a4dead429f27b7965c9f2a4366a8f2">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[7/7]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::components::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh.html">WildmeshingOptionsEnvelopeMesh</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">mesh&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -1329,7 +1417,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="wildmeshing_8cpp_source.html#l00112">112</a> of file <a class="el" href="wildmeshing_8cpp_source.html">wildmeshing.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_operation_8hpp_source.html#l00048">wmtk::operations::Operation::add_invariant()</a>, <a class="el" href="_operation_8cpp_source.html#l00054">wmtk::operations::Operation::add_transfer_strategy()</a>, <a class="el" href="utils_2_a_m_i_p_s_8hpp_source.html#l00020">wmtk::function::utils::amips()</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00018">wmtk::components::WildmeshingOptions::attributes</a>, <a class="el" href="_scheduler_8hpp_source.html#l00045">wmtk::SchedulerStats::collecting_time</a>, <a class="el" href="consolidate_8cpp_source.html#l00013">wmtk::multimesh::consolidate()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_scheduler_8hpp_source.html#l00047">wmtk::SchedulerStats::executing_time</a>, <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00158">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="get__attributes_8cpp_source.html#l00076">wmtk::components::base::get_attributes()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00051">wmtk::get_primitive_type_from_id()</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00016">wmtk::components::WildmeshingOptions::input</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00023">wmtk::components::WildmeshingOptions::intermediate_output</a>, <a class="el" href="link__condition_8cpp_source.html#l00024">wmtk::simplex::link_condition()</a>, <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00022">wmtk::SchedulerStats::number_of_failed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00029">wmtk::SchedulerStats::number_of_performed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00015">wmtk::SchedulerStats::number_of_successful_operations()</a>, <a class="el" href="_logger_8cpp_source.html#l00067">wmtk::opt_logger()</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00017">wmtk::components::WildmeshingOptions::output</a>, <a class="el" href="_paths_8hpp_source.html#l00010">wmtk::components::base::Paths::output_dir</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00019">wmtk::components::WildmeshingOptions::pass_through</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00021">wmtk::components::WildmeshingOptions::passes</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00008">wmtk::components::WildmeshingOptionsAttributes::position</a>, <a class="el" href="_cache_8cpp_source.html#l00148">wmtk::io::Cache::read_mesh()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00020">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_operation_8hpp_source.html#l00050">wmtk::operations::Operation::set_priority()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00046">wmtk::SchedulerStats::sorting_time</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00022">wmtk::components::WildmeshingOptions::target_edge_length</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">wmtk::simplex::vertices()</a>.</p>
+<p class="reference">References <a class="el" href="_operation_8hpp_source.html#l00048">wmtk::operations::Operation::add_invariant()</a>, <a class="el" href="_operation_8cpp_source.html#l00054">wmtk::operations::Operation::add_transfer_strategy()</a>, <a class="el" href="utils_2_a_m_i_p_s_8hpp_source.html#l00020">wmtk::function::utils::amips()</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00037">wmtk::components::WildmeshingOptions::attributes</a>, <a class="el" href="_scheduler_8hpp_source.html#l00045">wmtk::SchedulerStats::collecting_time</a>, <a class="el" href="consolidate_8cpp_source.html#l00013">wmtk::multimesh::consolidate()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00039">wmtk::components::WildmeshingOptions::envelopes</a>, <a class="el" href="_scheduler_8hpp_source.html#l00047">wmtk::SchedulerStats::executing_time</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="get__attributes_8cpp_source.html#l00076">wmtk::components::base::get_attributes()</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00035">wmtk::components::WildmeshingOptions::input</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00043">wmtk::components::WildmeshingOptions::intermediate_output</a>, <a class="el" href="link__condition_8cpp_source.html#l00024">wmtk::simplex::link_condition()</a>, <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00022">wmtk::SchedulerStats::number_of_failed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00029">wmtk::SchedulerStats::number_of_performed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00015">wmtk::SchedulerStats::number_of_successful_operations()</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00036">wmtk::components::WildmeshingOptions::output</a>, <a class="el" href="_paths_8hpp_source.html#l00010">wmtk::components::base::Paths::output_dir</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00038">wmtk::components::WildmeshingOptions::pass_through</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00041">wmtk::components::WildmeshingOptions::passes</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00008">wmtk::components::WildmeshingOptionsAttributes::position</a>, <a class="el" href="_cache_8cpp_source.html#l00148">wmtk::io::Cache::read_mesh()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00020">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_operation_8hpp_source.html#l00050">wmtk::operations::Operation::set_priority()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00046">wmtk::SchedulerStats::sorting_time</a>, <a class="el" href="_wildmeshing_options_8hpp_source.html#l00042">wmtk::components::WildmeshingOptions::target_edge_length</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">wmtk::simplex::vertices()</a>, and <a class="el" href="_cache_8cpp_source.html#l00154">wmtk::io::Cache::write_mesh()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">

@@ -31,8 +31,10 @@ var NAVTREEINDEX3 =
 "_volume_remesher_triangle_insertion_8hpp.html#af5ade8ca9598ff7d68dd37bcf395b9aa":[5,0,2,0,8,34,1],
 "_volume_remesher_triangle_insertion_8hpp_source.html":[5,0,2,0,8,34],
 "_wildmeshing_options_8hpp.html":[5,0,0,1,14,0,0,0,2],
-"_wildmeshing_options_8hpp.html#a2b58f4552c90f63b86f68b6b8bf62859":[5,0,0,1,14,0,0,0,2,2],
-"_wildmeshing_options_8hpp.html#a8d7ec3154745148645546bb201c8968a":[5,0,0,1,14,0,0,0,2,3],
+"_wildmeshing_options_8hpp.html#a3ba4ceae8267640d56736f0153c842ca":[5,0,0,1,14,0,0,0,2,6],
+"_wildmeshing_options_8hpp.html#a415d5f2274fcfe59a24448d851ebddbd":[5,0,0,1,14,0,0,0,2,4],
+"_wildmeshing_options_8hpp.html#a8d7ec3154745148645546bb201c8968a":[5,0,0,1,14,0,0,0,2,5],
+"_wildmeshing_options_8hpp.html#af9a4dead429f27b7965c9f2a4366a8f2":[5,0,0,1,14,0,0,0,2,7],
 "_wildmeshing_options_8hpp_source.html":[5,0,0,1,14,0,0,0,2],
 "adaptive__tessellation_8cpp.html":[5,0,0,1,0,0,0,0,1],
 "adaptive__tessellation_8cpp_source.html":[5,0,0,1,0,0,0,0,1],
@@ -247,7 +249,5 @@ var NAVTREEINDEX3 =
 "classwmtk_1_1_max_edge_length_invariant.html#a6b1b2ee4014a5047bb33e22656f2f9c0":[4,0,2,16,2],
 "classwmtk_1_1_max_edge_length_invariant.html#a9ddab86265371b7025915c6f7995a88c":[4,0,2,16,1],
 "classwmtk_1_1_max_edge_length_invariant.html#ab2678d7756509680241448ea7c6b704b":[4,0,2,16,3],
-"classwmtk_1_1_mesh.html":[4,0,2,29],
-"classwmtk_1_1_mesh.html#a00d9f2854936ca9367676cf9108178d7":[4,0,2,29,131],
-"classwmtk_1_1_mesh.html#a04adec229d19f4fb31dab0b562f79b74":[4,0,2,29,118]
+"classwmtk_1_1_mesh.html":[4,0,2,29]
 };
