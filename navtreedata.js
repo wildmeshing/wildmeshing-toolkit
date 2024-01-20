@@ -88,7 +88,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "_accessor_8cpp.html",
-"_isotropic_remeshing_8hpp.html#a4f2815fe9017a6f4c9fdc6a36ef04d93",
+"_isotropic_remeshing_8hpp.html#a52ec51374e16ab4f8f9e2fce7f424629",
 "_primitive_type_8hpp.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80",
 "_update_vertex_multi_mesh_map_hash_8hpp.html#ac611f929975aba963a76502b8ccbfe3f",
 "classwmtk_1_1_mesh.html#a00d9f2854936ca9367676cf9108178d7",
@@ -101,12 +101,12 @@ var NAVTREEINDEX =
 "classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html",
 "classwmtk_1_1utils_1_1_merkle_tree_interior_node.html#a93791c16f3a59b614619e6481c2804dd",
 "extract__operation__tuples_8hpp.html#a84de33f6768ece7cd80fb26fa8194488",
-"load__image__exr_8cpp.html#a555fe696faea7d9bc9ea512bcf69db62",
-"namespacewmtk_1_1autogen_1_1tet__mesh.html#ad415b6b2d9178dff559a4bf689f7e345",
-"namespacewmtk_1_1simplex.html#ad3819c31e843e174b473e7b97446a93f",
-"struct_d_scalar2.html#a73afde2f7f8de6d69e669d9bfdc88a75",
-"structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_vertex_01_4.html#a8aa20518f277363a337cc4e8d6f99183",
-"tri__mesh_2_collapse_new_attribute_topo_info_8cpp.html"
+"load__image__exr_8cpp.html#a486fa3fe3398af5e04e233ea1ac4440e",
+"namespacewmtk_1_1autogen_1_1tet__mesh.html#ace6b80b1be9aec0d6a5ac5d144b40965",
+"namespacewmtk_1_1simplex.html#ad081afa47b9c9bf5428eb5c4333f76f3",
+"struct_d_scalar2.html#a7147907b950c9d747460d4de8f893105",
+"structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4.html#a3029e28e555f6f84e913a6c68638da8b",
+"transport__tuple_8hpp.html#aa0392bf28bb6c304127cf0eea634fee8"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

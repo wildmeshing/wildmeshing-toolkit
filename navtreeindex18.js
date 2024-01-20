@@ -1,5 +1,7 @@
 var NAVTREEINDEX18 =
 {
+"structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4.html#a3029e28e555f6f84e913a6c68638da8b":[4,0,2,8,7,0],
+"structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_vertex_01_4.html":[4,0,2,8,4],
 "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_vertex_01_4.html#a8aa20518f277363a337cc4e8d6f99183":[4,0,2,8,4,0],
 "structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits.html":[4,0,2,8,0,2],
 "structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits.html#a1d47c9a0bc476bdc3a821f496628e434":[4,0,2,8,0,2,8],
@@ -247,7 +249,5 @@ var NAVTREEINDEX18 =
 "transport__tuple_8cpp.html":[5,0,2,0,5,2,9],
 "transport__tuple_8cpp.html#aa0392bf28bb6c304127cf0eea634fee8":[5,0,2,0,5,2,9,0],
 "transport__tuple_8cpp_source.html":[5,0,2,0,5,2,9],
-"transport__tuple_8hpp.html":[5,0,2,0,5,2,10],
-"transport__tuple_8hpp.html#aa0392bf28bb6c304127cf0eea634fee8":[5,0,2,0,5,2,10,0],
-"transport__tuple_8hpp_source.html":[5,0,2,0,5,2,10]
+"transport__tuple_8hpp.html":[5,0,2,0,5,2,10]
 };

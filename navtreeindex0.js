@@ -247,7 +247,7 @@ var NAVTREEINDEX0 =
 "_invariant_collection_8hpp.html":[5,0,2,0,3,17],
 "_invariant_collection_8hpp_source.html":[5,0,2,0,3,17],
 "_isotropic_remeshing_8cpp.html":[5,0,0,1,5,0,0,0,0,0],
-"_isotropic_remeshing_8cpp.html#a4f2815fe9017a6f4c9fdc6a36ef04d93":[5,0,0,1,5,0,0,0,0,0,0],
+"_isotropic_remeshing_8cpp.html#a52ec51374e16ab4f8f9e2fce7f424629":[5,0,0,1,5,0,0,0,0,0,0],
 "_isotropic_remeshing_8cpp_source.html":[5,0,0,1,5,0,0,0,0,0],
 "_isotropic_remeshing_8hpp.html":[5,0,0,1,5,0,0,0,0,1]
 };

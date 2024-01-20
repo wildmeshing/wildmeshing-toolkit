@@ -1,5 +1,6 @@
 var NAVTREEINDEX16 =
 {
+"namespacewmtk_1_1simplex.html#ad081afa47b9c9bf5428eb5c4333f76f3":[3,0,7,10,13],
 "namespacewmtk_1_1simplex.html#ad3819c31e843e174b473e7b97446a93f":[3,0,7,10,44],
 "namespacewmtk_1_1simplex.html#add076bc746a4cfd29d4766bc1571f31d":[3,0,7,10,17],
 "namespacewmtk_1_1simplex.html#ae37e7bd61fb3f9b968b6ce6f9cf6f11f":[3,0,7,10,15],
@@ -248,6 +249,5 @@ var NAVTREEINDEX16 =
 "struct_d_scalar2.html#a60f1e4e2c029f87b8e10b83ec4867d4d":[4,0,5,35],
 "struct_d_scalar2.html#a613d16702f3528bb0bb4c71d7381ec36":[4,0,5,32],
 "struct_d_scalar2.html#a68169e89cff0a1156126cf12d86cfd9f":[4,0,5,7],
-"struct_d_scalar2.html#a6a73136197d442eee2f18fe3fb605664":[4,0,5,6],
-"struct_d_scalar2.html#a7147907b950c9d747460d4de8f893105":[4,0,5,30]
+"struct_d_scalar2.html#a6a73136197d442eee2f18fe3fb605664":[4,0,5,6]
 };

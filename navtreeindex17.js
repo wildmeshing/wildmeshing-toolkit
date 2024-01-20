@@ -1,5 +1,6 @@
 var NAVTREEINDEX17 =
 {
+"struct_d_scalar2.html#a7147907b950c9d747460d4de8f893105":[4,0,5,30],
 "struct_d_scalar2.html#a73afde2f7f8de6d69e669d9bfdc88a75":[4,0,5,10],
 "struct_d_scalar2.html#a75a752c6033fe91c0ccc24fd3c782eda":[4,0,5,8],
 "struct_d_scalar2.html#a76c32b99d0c68937deb66b0bec0c4138":[4,0,5,29],
@@ -108,6 +109,7 @@ var NAVTREEINDEX17 =
 "structwmtk_1_1components_1_1internal_1_1_input_options.html#ae42ce25fa09ad129f88397869083bf4c":[4,0,2,1,2,2,0],
 "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes.html":[4,0,2,1,2,3],
 "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes.html#a0fb2c9b20a36b540cc6d9e557140876e":[4,0,2,1,2,3,2],
+"structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes.html#a6356f8f61b626414e3a1c5e4571638f5":[4,0,2,1,2,3,3],
 "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes.html#a6b84ed2d630aa41334347c1d15d74614":[4,0,2,1,2,3,0],
 "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes.html#af63457ab12ede68e4ed4c80213340ced":[4,0,2,1,2,3,1],
 "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_options.html":[4,0,2,1,2,4],
@@ -247,7 +249,5 @@ var NAVTREEINDEX17 =
 "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_edge_01_4.html#a9a77815b86c687547ad52679e7bacdbb":[4,0,2,8,5,0],
 "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_face_01_4.html":[4,0,2,8,6],
 "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_face_01_4.html#a4b57171b6b7a2fb821c0f4666b63e8f7":[4,0,2,8,6,0],
-"structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4.html":[4,0,2,8,7],
-"structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4.html#a3029e28e555f6f84e913a6c68638da8b":[4,0,2,8,7,0],
-"structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_vertex_01_4.html":[4,0,2,8,4]
+"structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4.html":[4,0,2,8,7]
 };

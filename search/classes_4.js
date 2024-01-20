@@ -1,14 +1,14 @@
 var searchData=
 [
-  ['eardata_2132',['EarData',['../structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html',1,'wmtk::operations::tri_mesh::EdgeOperationData']]],
-  ['eartet_2133',['EarTet',['../structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_ear_tet.html',1,'wmtk::operations::tet_mesh::EdgeOperationData']]],
-  ['edgecollapse_2134',['EdgeCollapse',['../classwmtk_1_1operations_1_1_edge_collapse.html',1,'wmtk::operations']]],
-  ['edgemesh_2135',['EdgeMesh',['../classwmtk_1_1_edge_mesh.html',1,'wmtk']]],
-  ['edgemeshoperationexecutor_2136',['EdgeMeshOperationExecutor',['../classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html',1,'wmtk::EdgeMesh']]],
-  ['edgeoperationdata_2137',['EdgeOperationData',['../classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html',1,'wmtk::operations::edge_mesh::EdgeOperationData'],['../classwmtk_1_1operations_1_1_edge_operation_data.html',1,'wmtk::operations::EdgeOperationData'],['../classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html',1,'wmtk::operations::tet_mesh::EdgeOperationData'],['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html',1,'wmtk::operations::tri_mesh::EdgeOperationData']]],
-  ['edgesplit_2138',['EdgeSplit',['../classwmtk_1_1operations_1_1_edge_split.html',1,'wmtk::operations']]],
-  ['edgevalenceenergy_2139',['EdgeValenceEnergy',['../classwmtk_1_1function_1_1_edge_valence_energy.html',1,'wmtk::function']]],
-  ['edgevalenceinvariant_2140',['EdgeValenceInvariant',['../classwmtk_1_1invariants_1_1_edge_valence_invariant.html',1,'wmtk::invariants']]],
-  ['envelopeinvariant_2141',['EnvelopeInvariant',['../classwmtk_1_1invariants_1_1_envelope_invariant.html',1,'wmtk::invariants']]],
-  ['equal_2142',['Equal',['../classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator_1_1_equal.html',1,'wmtk::simplex::utils::MeshSimplexComparator::Equal'],['../classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type_1_1_equal.html',1,'wmtk::utils::metaprogramming::detail::DefaultComparatorType::Equal']]]
+  ['eardata_2133',['EarData',['../structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html',1,'wmtk::operations::tri_mesh::EdgeOperationData']]],
+  ['eartet_2134',['EarTet',['../structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_ear_tet.html',1,'wmtk::operations::tet_mesh::EdgeOperationData']]],
+  ['edgecollapse_2135',['EdgeCollapse',['../classwmtk_1_1operations_1_1_edge_collapse.html',1,'wmtk::operations']]],
+  ['edgemesh_2136',['EdgeMesh',['../classwmtk_1_1_edge_mesh.html',1,'wmtk']]],
+  ['edgemeshoperationexecutor_2137',['EdgeMeshOperationExecutor',['../classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html',1,'wmtk::EdgeMesh']]],
+  ['edgeoperationdata_2138',['EdgeOperationData',['../classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html',1,'wmtk::operations::edge_mesh::EdgeOperationData'],['../classwmtk_1_1operations_1_1_edge_operation_data.html',1,'wmtk::operations::EdgeOperationData'],['../classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html',1,'wmtk::operations::tet_mesh::EdgeOperationData'],['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html',1,'wmtk::operations::tri_mesh::EdgeOperationData']]],
+  ['edgesplit_2139',['EdgeSplit',['../classwmtk_1_1operations_1_1_edge_split.html',1,'wmtk::operations']]],
+  ['edgevalenceenergy_2140',['EdgeValenceEnergy',['../classwmtk_1_1function_1_1_edge_valence_energy.html',1,'wmtk::function']]],
+  ['edgevalenceinvariant_2141',['EdgeValenceInvariant',['../classwmtk_1_1invariants_1_1_edge_valence_invariant.html',1,'wmtk::invariants']]],
+  ['envelopeinvariant_2142',['EnvelopeInvariant',['../classwmtk_1_1invariants_1_1_envelope_invariant.html',1,'wmtk::invariants']]],
+  ['equal_2143',['Equal',['../classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator_1_1_equal.html',1,'wmtk::simplex::utils::MeshSimplexComparator::Equal'],['../classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type_1_1_equal.html',1,'wmtk::utils::metaprogramming::detail::DefaultComparatorType::Equal']]]
 ];

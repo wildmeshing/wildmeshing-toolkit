@@ -128,16 +128,17 @@ $(document).ready(function(){initNavTree('_isotropic_remeshing_8hpp_source.html'
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160; </div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a> {</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a4f2815fe9017a6f4c9fdc6a36ef04d93">isotropic_remeshing</a>(</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a52ec51374e16ab4f8f9e2fce7f424629">isotropic_remeshing</a>(</div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    attribute::MeshAttributeHandle&amp; position,</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    std::vector&lt;attribute::MeshAttributeHandle&gt;&amp; pass_through_attributes,</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> length,</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">bool</span> lock_boundary,</div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">const</span> int64_t iterations,</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keyword">const</span> std::vector&lt;attribute::MeshAttributeHandle&gt;&amp; other_positions = {},</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keyword">const</span> std::optional&lt;attribute::MeshAttributeHandle&gt;&amp; position_for_inversion = {});</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;} <span class="comment">// namespace wmtk::components::internal</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keywordtype">bool</span> update_other_positions = <span class="keyword">false</span>,</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keyword">const</span> std::optional&lt;attribute::MeshAttributeHandle&gt;&amp; position_for_inversion = {});</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;} <span class="comment">// namespace wmtk::components::internal</span></div>
 <div class="ttc" id="a_collapse_new_attribute_strategy_8hpp_html"><div class="ttname"><a href="_collapse_new_attribute_strategy_8hpp.html">CollapseNewAttributeStrategy.hpp</a></div></div>
 <div class="ttc" id="a_interior_simplex_invariant_8hpp_html"><div class="ttname"><a href="_interior_simplex_invariant_8hpp.html">InteriorSimplexInvariant.hpp</a></div></div>
 <div class="ttc" id="a_max_edge_length_invariant_8hpp_html"><div class="ttname"><a href="_max_edge_length_invariant_8hpp.html">MaxEdgeLengthInvariant.hpp</a></div></div>
@@ -146,7 +147,7 @@ $(document).ready(function(){initNavTree('_isotropic_remeshing_8hpp_source.html'
 <div class="ttc" id="a_tri_mesh_8hpp_html"><div class="ttname"><a href="_tri_mesh_8hpp.html">TriMesh.hpp</a></div></div>
 <div class="ttc" id="a_valence_improvement_invariant_8hpp_html"><div class="ttname"><a href="_valence_improvement_invariant_8hpp.html">ValenceImprovementInvariant.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a></div><div class="ttdef"><b>Definition:</b> <a href="delaunay__2d_8cpp_source.html#l00006">delaunay_2d.cpp:6</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html_a4f2815fe9017a6f4c9fdc6a36ef04d93"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html#a4f2815fe9017a6f4c9fdc6a36ef04d93">wmtk::components::internal::isotropic_remeshing</a></div><div class="ttdeci">void isotropic_remeshing(attribute::MeshAttributeHandle &amp;position, std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;pass_through_attributes, const double length, const bool lock_boundary, const int64_t iterations, const std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;other_positions, const std::optional&lt; attribute::MeshAttributeHandle &gt; &amp;position_for_inversion)</div><div class="ttdef"><b>Definition:</b> <a href="_isotropic_remeshing_8cpp_source.html#l00022">IsotropicRemeshing.cpp:22</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html_a52ec51374e16ab4f8f9e2fce7f424629"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html#a52ec51374e16ab4f8f9e2fce7f424629">wmtk::components::internal::isotropic_remeshing</a></div><div class="ttdeci">void isotropic_remeshing(attribute::MeshAttributeHandle &amp;position, std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;pass_through_attributes, const double length, const bool lock_boundary, const int64_t iterations, const std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;other_positions, bool update_other_positions, const std::optional&lt; attribute::MeshAttributeHandle &gt; &amp;position_for_inversion)</div><div class="ttdef"><b>Definition:</b> <a href="_isotropic_remeshing_8cpp_source.html#l00025">IsotropicRemeshing.cpp:25</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

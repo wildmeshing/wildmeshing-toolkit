@@ -760,7 +760,7 @@ $(document).ready(function(){initNavTree('test__component__isotropic__remeshing_
 <div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;        <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> mesh_isotropic_remeshing_json = R<span class="stringliteral">&quot;({</span></div>
 <div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;<span class="stringliteral">        &quot;input&quot;: &quot;input_mesh&quot;,</span></div>
 <div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160;<span class="stringliteral">        &quot;output&quot;: &quot;output_mesh&quot;,</span></div>
-<div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;<span class="stringliteral">        &quot;attributes&quot;: {&quot;position&quot;: &quot;vertices&quot;, &quot;inversion_position&quot;: [], &quot;other_positions&quot;: []},</span></div>
+<div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;<span class="stringliteral">        &quot;attributes&quot;: {&quot;position&quot;: &quot;vertices&quot;, &quot;inversion_position&quot;: [], &quot;other_positions&quot;: [], &quot;update_other_positions&quot;: false},</span></div>
 <div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160;<span class="stringliteral">        &quot;pass_through&quot;: [],</span></div>
 <div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160;<span class="stringliteral">        &quot;iterations&quot;: 1,</span></div>
 <div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;<span class="stringliteral">        &quot;length_abs&quot;: 0.003,</span></div>
@@ -814,7 +814,7 @@ $(document).ready(function(){initNavTree('test__component__isotropic__remeshing_
 <div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160;    }</div>
 <div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160; </div>
 <div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160; </div>
-<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;    CHECK_NOTHROW(<a class="code" href="namespacewmtk_1_1components_1_1internal.html#a4f2815fe9017a6f4c9fdc6a36ef04d93">wmtk::components::internal::isotropic_remeshing</a>(</div>
+<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;    CHECK_NOTHROW(<a class="code" href="namespacewmtk_1_1components_1_1internal.html#a52ec51374e16ab4f8f9e2fce7f424629">wmtk::components::internal::isotropic_remeshing</a>(</div>
 <div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;        pos_handle,</div>
 <div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160;        pass_through_attributes,</div>
 <div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;        0.1,</div>
@@ -847,7 +847,7 @@ $(document).ready(function(){initNavTree('test__component__isotropic__remeshing_
 <div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160; </div>
 <div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;    SECTION(<span class="stringliteral">&quot;lock_boundary_false&quot;</span>)</div>
 <div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;    {</div>
-<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;        <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a4f2815fe9017a6f4c9fdc6a36ef04d93">wmtk::components::internal::isotropic_remeshing</a>(</div>
+<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;        <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a52ec51374e16ab4f8f9e2fce7f424629">wmtk::components::internal::isotropic_remeshing</a>(</div>
 <div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;            pos_handle,</div>
 <div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;            pass_through_attributes,</div>
 <div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;            0.5,</div>
@@ -877,7 +877,7 @@ $(document).ready(function(){initNavTree('test__component__isotropic__remeshing_
 <div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160; </div>
 <div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;    SECTION(<span class="stringliteral">&quot;lock_boundary_true&quot;</span>)</div>
 <div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;    {</div>
-<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;        <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a4f2815fe9017a6f4c9fdc6a36ef04d93">wmtk::components::internal::isotropic_remeshing</a>(</div>
+<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;        <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a52ec51374e16ab4f8f9e2fce7f424629">wmtk::components::internal::isotropic_remeshing</a>(</div>
 <div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;            pos_handle,</div>
 <div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;            pass_through_attributes,</div>
 <div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;            0.5,</div>
@@ -941,7 +941,7 @@ $(document).ready(function(){initNavTree('test__component__isotropic__remeshing_
 <div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;    CHECK(child_mesh.get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>).size() == 8);</div>
 <div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160; </div>
 <div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160; </div>
-<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;    <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a4f2815fe9017a6f4c9fdc6a36ef04d93">wmtk::components::internal::isotropic_remeshing</a>(</div>
+<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;    <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a52ec51374e16ab4f8f9e2fce7f424629">wmtk::components::internal::isotropic_remeshing</a>(</div>
 <div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160;        pos_handle,</div>
 <div class="line"><a name="l00829"></a><span class="lineno">  829</span>&#160;        pass_through_attributes,</div>
 <div class="line"><a name="l00830"></a><span class="lineno">  830</span>&#160;        0.5,</div>
@@ -1015,7 +1015,7 @@ $(document).ready(function(){initNavTree('test__component__isotropic__remeshing_
 <div class="line"><a name="l00898"></a><span class="lineno">  898</span>&#160;    <span class="comment">// IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);</span></div>
 <div class="line"><a name="l00899"></a><span class="lineno">  899</span>&#160; </div>
 <div class="line"><a name="l00900"></a><span class="lineno">  900</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 25; i++) {</div>
-<div class="line"><a name="l00901"></a><span class="lineno">  901</span>&#160;        <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a4f2815fe9017a6f4c9fdc6a36ef04d93">wmtk::components::internal::isotropic_remeshing</a>(</div>
+<div class="line"><a name="l00901"></a><span class="lineno">  901</span>&#160;        <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a52ec51374e16ab4f8f9e2fce7f424629">wmtk::components::internal::isotropic_remeshing</a>(</div>
 <div class="line"><a name="l00902"></a><span class="lineno">  902</span>&#160;            pos_handle,</div>
 <div class="line"><a name="l00903"></a><span class="lineno">  903</span>&#160;            pass_through_attributes,</div>
 <div class="line"><a name="l00904"></a><span class="lineno">  904</span>&#160;            0.05,</div>
@@ -1106,7 +1106,7 @@ $(document).ready(function(){initNavTree('test__component__isotropic__remeshing_
 <div class="line"><a name="l00989"></a><span class="lineno">  989</span>&#160;    <span class="comment">// mesh.multi_mesh_manager().check_map_valid(mesh);</span></div>
 <div class="line"><a name="l00990"></a><span class="lineno">  990</span>&#160;    <span class="comment">// const auto&amp; child_mesh = *child_ptr;</span></div>
 <div class="line"><a name="l00991"></a><span class="lineno">  991</span>&#160; </div>
-<div class="line"><a name="l00992"></a><span class="lineno">  992</span>&#160;    <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a4f2815fe9017a6f4c9fdc6a36ef04d93">wmtk::components::internal::isotropic_remeshing</a>(</div>
+<div class="line"><a name="l00992"></a><span class="lineno">  992</span>&#160;    <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a52ec51374e16ab4f8f9e2fce7f424629">wmtk::components::internal::isotropic_remeshing</a>(</div>
 <div class="line"><a name="l00993"></a><span class="lineno">  993</span>&#160;        pos_handle,</div>
 <div class="line"><a name="l00994"></a><span class="lineno">  994</span>&#160;        pass_through_attributes,</div>
 <div class="line"><a name="l00995"></a><span class="lineno">  995</span>&#160;        0.5,</div>
@@ -1177,8 +1177,8 @@ $(document).ready(function(){initNavTree('test__component__isotropic__remeshing_
 <div class="ttc" id="amerkle__tree__diff_8hpp_html"><div class="ttname"><a href="merkle__tree__diff_8hpp.html">merkle_tree_diff.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_1_1base_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1base.html">wmtk::components::base</a></div><div class="ttdef"><b>Definition:</b> <a href="_component_options_base_8hpp_source.html#l00005">ComponentOptionsBase.hpp:5</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a></div><div class="ttdef"><b>Definition:</b> <a href="delaunay__2d_8cpp_source.html#l00006">delaunay_2d.cpp:6</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html_a4f2815fe9017a6f4c9fdc6a36ef04d93"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html#a4f2815fe9017a6f4c9fdc6a36ef04d93">wmtk::components::internal::isotropic_remeshing</a></div><div class="ttdeci">void isotropic_remeshing(attribute::MeshAttributeHandle &amp;position, std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;pass_through_attributes, const double length, const bool lock_boundary, const int64_t iterations, const std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;other_positions, const std::optional&lt; attribute::MeshAttributeHandle &gt; &amp;position_for_inversion)</div><div class="ttdef"><b>Definition:</b> <a href="_isotropic_remeshing_8cpp_source.html#l00022">IsotropicRemeshing.cpp:22</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a1a5ffb0788dc02e8b355a7a1ad447c7f"><div class="ttname"><a href="namespacewmtk_1_1components.html#a1a5ffb0788dc02e8b355a7a1ad447c7f">wmtk::components::isotropic_remeshing</a></div><div class="ttdeci">void isotropic_remeshing(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="isotropic__remeshing_8cpp_source.html#l00033">isotropic_remeshing.cpp:33</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html_a52ec51374e16ab4f8f9e2fce7f424629"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html#a52ec51374e16ab4f8f9e2fce7f424629">wmtk::components::internal::isotropic_remeshing</a></div><div class="ttdeci">void isotropic_remeshing(attribute::MeshAttributeHandle &amp;position, std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;pass_through_attributes, const double length, const bool lock_boundary, const int64_t iterations, const std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;other_positions, bool update_other_positions, const std::optional&lt; attribute::MeshAttributeHandle &gt; &amp;position_for_inversion)</div><div class="ttdef"><b>Definition:</b> <a href="_isotropic_remeshing_8cpp_source.html#l00025">IsotropicRemeshing.cpp:25</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_a1a5ffb0788dc02e8b355a7a1ad447c7f"><div class="ttname"><a href="namespacewmtk_1_1components.html#a1a5ffb0788dc02e8b355a7a1ad447c7f">wmtk::components::isotropic_remeshing</a></div><div class="ttdeci">void isotropic_remeshing(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="isotropic__remeshing_8cpp_source.html#l00032">isotropic_remeshing.cpp:32</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html_a7de2c2a52403b035714a612f42804af3"><div class="ttname"><a href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">wmtk::components::input</a></div><div class="ttdeci">void input(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="input_8cpp_source.html#l00012">input.cpp:12</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html_afb654c569d4536f122b7cdfb9156c7d7"><div class="ttname"><a href="namespacewmtk_1_1components.html#afb654c569d4536f122b7cdfb9156c7d7">wmtk::components::output</a></div><div class="ttdeci">void output(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="output_8cpp_source.html#l00012">output.cpp:12</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1multimesh_1_1utils_html_a7382ca1de4356752b14e745f23b6892d"><div class="ttname"><a href="namespacewmtk_1_1multimesh_1_1utils.html#a7382ca1de4356752b14e745f23b6892d">wmtk::multimesh::utils::vectors_to_tuples</a></div><div class="ttdeci">std::tuple&lt; Tuple, Tuple &gt; vectors_to_tuples(const Eigen::Ref&lt; const TwoTupleVector &gt; &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="tuple__map__attribute__io_8cpp_source.html#l00071">tuple_map_attribute_io.cpp:71</a></div></div>
