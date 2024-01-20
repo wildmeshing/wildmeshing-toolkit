@@ -13,14 +13,14 @@ public:
         return _instance;
     }
 
-    inline void set_seed(uint64_t val) { m_gen.seed(val); }
+    inline void set_seed(uint64_t val) { m_gen.seed(val); std::srand(val); }
     inline unsigned int get_seed() { return m_gen(); }
 
 private:
     RandomSeedSingleton()
     {
         std::random_device rd;
-        m_gen.seed(rd());
+        set_seed(rd());
     }
 
     std::mt19937 m_gen;
