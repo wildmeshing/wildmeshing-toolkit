@@ -643,7 +643,7 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         json mesh_isotropic_remeshing_json = R"({
         "input": "input_mesh",
         "output": "output_mesh",
-        "attributes": {"position": "vertices", "inversion_position": [], "other_positions": []},
+        "attributes": {"position": "vertices", "inversion_position": [], "other_positions": [], "update_other_positions": false},
         "pass_through": [],
         "iterations": 1,
         "length_abs": 0.003,
