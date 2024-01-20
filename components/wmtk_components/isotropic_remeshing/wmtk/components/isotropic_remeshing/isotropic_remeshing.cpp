@@ -6,6 +6,7 @@
 
 #include "internal/IsotropicRemeshing.hpp"
 #include "internal/IsotropicRemeshingOptions.hpp"
+#include <Eigen/Geometry>
 
 namespace wmtk::components {
 // compute the length relative to the bounding box diagonal
@@ -15,22 +16,15 @@ double relative_to_absolute_length(
 {
     auto pos = pos_handle.mesh().create_const_accessor<double>(pos_handle);
     const auto vertices = pos_handle.mesh().get_all(PrimitiveType::Vertex);
+    Eigen::AlignedBox<double,Eigen::Dynamic> bbox(pos.dimension());
 
-    Eigen::VectorXd p_min, p_max;
-    p_min = p_max = pos.const_vector_attribute(vertices.front());
 
-    p_max.setConstant(std::numeric_limits<double>::lowest());
-    p_min.setConstant(std::numeric_limits<double>::max());
 
     for (const auto& v : vertices) {
-        const auto p = pos.const_vector_attribute(v);
-        for (int64_t d = 0; d < p_min.size(); ++d) {
-            p_min[d] = std::min(p_min[d], p[d]);
-            p_max[d] = std::max(p_max[d], p[d]);
-        }
+        bbox.extend(pos.const_vector_attribute(v));
     }
 
-    const double diag_length = (p_max - p_min).norm();
+    const double diag_length = bbox.sizes().norm();
 
     return length_rel * diag_length;
 }
