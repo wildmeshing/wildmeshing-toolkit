@@ -62,18 +62,18 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         assert(FV.rows() == mesh->get_all(PrimitiveType::Face).size());
 
         // rescale to [0, 1]
-        RowVectors3d V_rescale(V.rows(), 3);
+        Eigen::MatrixXd V_rescale(V.rows(), V.cols());
 
-        Vector3d min_pos = V.colwise().minCoeff();
+        Eigen::VectorXd min_pos = V.colwise().minCoeff();
 
-        if (abs(min_pos[2] - 0.0) > eps)
-            throw std::runtime_error("has non-zero z coordinate on 2d mesh");
+        // if (abs(min_pos[2] - 0.0) > eps)
+        //     throw std::runtime_error("has non-zero z coordinate on 2d mesh");
 
         for (int64_t i = 0; i < V_rescale.rows(); ++i) {
             V_rescale.row(i) = V.row(i) - min_pos.transpose();
         }
 
-        Vector3d max_pos = V_rescale.colwise().maxCoeff();
+        Eigen::VectorXd max_pos = V_rescale.colwise().maxCoeff();
         for (int64_t i = 0; i < V_rescale.rows(); ++i) {
             V_rescale(i, 0) /= max_pos[0];
             V_rescale(i, 1) /= max_pos[1];
@@ -175,7 +175,7 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
             }
         }
 
-        RowVectors3d V_new_tmp(V.rows(), 3);
+        Eigen::MatrixXd V_new_tmp(V.rows(), V.cols());
 
         // remove unused vertices
         std::map<int64_t, int64_t> v_consolidate_map;
@@ -183,17 +183,17 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         int64_t v_valid_cnt = 0;
         for (int64_t i = 0; i < V.rows(); ++i) {
             if (vertex_map.find(i) == vertex_map.end() || vertex_map[i] == i) {
-                V_new_tmp(v_valid_cnt, 0) = V(i, 0);
-                V_new_tmp(v_valid_cnt, 1) = V(i, 1);
-                V_new_tmp(v_valid_cnt, 2) = V(i, 2);
+                for (int k = 0; k < V_rescale.cols(); ++k) {
+                    V_new_tmp(v_valid_cnt, k) = V(i, k);
+                }
                 v_consolidate_map[i] = v_valid_cnt++;
 
                 // std::cout << V_new_tmp << std::endl << std::endl;
             }
         }
 
-        RowVectors3d V_new(v_valid_cnt, 3);
-        V_new = V_new_tmp.block(0, 0, v_valid_cnt, 3);
+        Eigen::MatrixXd V_new(v_valid_cnt, V.cols());
+        V_new = V_new_tmp.block(0, 0, v_valid_cnt, V.cols());
 
         // std::cout << V_new << std::endl << std::endl;
 
