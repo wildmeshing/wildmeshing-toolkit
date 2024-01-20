@@ -4,9 +4,9 @@
 #include <wmtk/components/base/get_attributes.hpp>
 #include <wmtk/utils/Logger.hpp>
 
+#include <Eigen/Geometry>
 #include "internal/IsotropicRemeshing.hpp"
 #include "internal/IsotropicRemeshingOptions.hpp"
-#include <Eigen/Geometry>
 
 namespace wmtk::components {
 // compute the length relative to the bounding box diagonal
@@ -16,8 +16,7 @@ double relative_to_absolute_length(
 {
     auto pos = pos_handle.mesh().create_const_accessor<double>(pos_handle);
     const auto vertices = pos_handle.mesh().get_all(PrimitiveType::Vertex);
-    Eigen::AlignedBox<double,Eigen::Dynamic> bbox(pos.dimension());
-
+    Eigen::AlignedBox<double, Eigen::Dynamic> bbox(pos.dimension());
 
 
     for (const auto& v : vertices) {
@@ -39,14 +38,15 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
     std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
 
 
-    if (mesh_in->top_simplex_type() != PrimitiveType::Face) {
-        log_and_throw_error("Info works only for triangle meshes: {}", mesh_in->top_simplex_type());
-    }
-
-
     auto pos_handles = base::get_attributes(cache, *mesh_in, options.attributes.position);
     assert(pos_handles.size() == 1);
     auto pos_handle = pos_handles.front();
+
+    if (pos_handle.mesh().top_simplex_type() != PrimitiveType::Face) {
+        log_and_throw_error(
+            "isotropic remeshing works only for triangle meshes: {}",
+            mesh_in->top_simplex_type());
+    }
 
     auto pass_through_attributes = base::get_attributes(cache, *mesh_in, options.pass_through);
     auto other_positions =
@@ -65,13 +65,13 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
     keeps.insert(keeps.end(), other_positions.begin(), other_positions.end());
 
     // TODO: brig me back!
-    mesh_in->clear_attributes(keeps);
+    // mesh_in->clear_attributes(keeps);
 
     // gather handles again as they were invalidated by clear_attributes
-    pos_handles = base::get_attributes(cache, *mesh_in, options.attributes.position);
-    assert(pos_handles.size() == 1);
-    pos_handle = pos_handles.front();
-    pass_through_attributes = base::get_attributes(cache, *mesh_in, options.pass_through);
+    // pos_handles = base::get_attributes(cache, *mesh_in, options.attributes.position);
+    // assert(pos_handles.size() == 1);
+    // pos_handle = pos_handles.front();
+    // pass_through_attributes = base::get_attributes(cache, *mesh_in, options.pass_through);
 
     std::optional<attribute::MeshAttributeHandle> position_for_inversion;
 
@@ -91,6 +91,7 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
         options.lock_boundary,
         options.iterations,
         other_positions,
+        options.attributes.update_other_positions,
         position_for_inversion);
 
     // output
