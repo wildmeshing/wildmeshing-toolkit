@@ -7,6 +7,7 @@
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
+#include <wmtk/multimesh/consolidate.hpp>
 #include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
@@ -24,6 +25,7 @@ void isotropic_remeshing(
     std::vector<attribute::MeshAttributeHandle>& pass_through_attributes,
     const double length,
     const bool lock_boundary,
+    const bool dont_lock_split,
     const int64_t iterations,
     const std::vector<attribute::MeshAttributeHandle>& other_positions,
     const std::optional<attribute::MeshAttributeHandle>& position_for_inversion)
@@ -76,7 +78,7 @@ void isotropic_remeshing(
     // split
     auto op_split = std::make_shared<EdgeSplit>(mesh);
     op_split->add_invariant(invariant_min_edge_length);
-    if (lock_boundary) {
+    if (lock_boundary && !dont_lock_split) {
         op_split->add_invariant(invariant_interior_edge);
     }
     for (auto& p : positions) {
@@ -153,7 +155,12 @@ void isotropic_remeshing(
     //////////////////////////////////////////
     // smooth
     auto op_smooth = std::make_shared<AttributesUpdateWithFunction>(mesh);
-    op_smooth->set_function(VertexTangentialLaplacianSmooth(position));
+    if (position.dimension() == 3) {
+        op_smooth->set_function(VertexTangentialLaplacianSmooth(position));
+    } else {
+        op_smooth->set_function(VertexLaplacianSmooth(position));
+    }
+
     // op_smooth->add_invariant(invariant_inversion);
     if (lock_boundary) {
         op_smooth->add_invariant(invariant_interior_vertex);
@@ -182,6 +189,8 @@ void isotropic_remeshing(
             pass_stats.collecting_time,
             pass_stats.sorting_time,
             pass_stats.executing_time);
+
+        multimesh::consolidate(mesh);
     }
 }
 

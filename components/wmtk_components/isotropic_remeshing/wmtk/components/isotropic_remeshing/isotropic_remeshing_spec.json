@@ -12,7 +12,8 @@
       "pass_through",
       "length_abs",
       "length_rel",
-      "lock_boundary"
+      "lock_boundary",
+      "dont_lock_split"
     ]
   },
   {
@@ -85,5 +86,11 @@
     "pointer": "/lock_boundary",
     "type": "bool",
     "default": true
+  },
+  {
+    "pointer": "/dont_lock_split",
+    "type": "bool",
+    "default": true
   }
+
 ]
