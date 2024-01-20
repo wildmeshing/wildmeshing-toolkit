@@ -147,9 +147,12 @@ Typedefs</h2></td></tr>
 <tr class="separator:ac3d938798f1517d594b9c6fe5a4bcecf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a54c04510f7a534aecfdd676aec9eb16f"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#a54c04510f7a534aecfdd676aec9eb16f">ConstMeshVariantType</a> = <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits.html#af44535264f95a9b770160a6e9f8e369a">MeshVariantTraits::ConstReferenceVariant</a></td></tr>
 <tr class="separator:a54c04510f7a534aecfdd676aec9eb16f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a106974a152c4dfca2e74a958707be40d"><td class="memTemplParams" colspan="2">template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </td></tr>
-<tr class="memitem:a106974a152c4dfca2e74a958707be40d"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#a106974a152c4dfca2e74a958707be40d">ReferenceWrappedFunctorReturnCache</a> = std::conditional_t&lt; all_return_void_v&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes... &gt;, std::monostate, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes... &gt; &gt;</td></tr>
-<tr class="separator:a106974a152c4dfca2e74a958707be40d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa890d0d4c247bf30f3dbd55747e667e"><td class="memTemplParams" colspan="2">template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </td></tr>
+<tr class="memitem:aaa890d0d4c247bf30f3dbd55747e667e"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#aaa890d0d4c247bf30f3dbd55747e667e">ReferenceWrappedFunctorReturnCacheCustomComparator</a> = std::conditional_t&lt; all_return_void_v&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes... &gt;, std::monostate, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes... &gt; &gt;</td></tr>
+<tr class="separator:aaa890d0d4c247bf30f3dbd55747e667e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9074a4467d8441d98089111970ecae12"><td class="memTemplParams" colspan="2">template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </td></tr>
+<tr class="memitem:a9074a4467d8441d98089111970ecae12"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#a9074a4467d8441d98089111970ecae12">ReferenceWrappedFunctorReturnCache</a> = std::conditional_t&lt; all_return_void_v&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes... &gt;, std::monostate, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type.html">detail::DefaultComparatorType</a>, OtherArgumentTypes... &gt; &gt;</td></tr>
+<tr class="separator:a9074a4467d8441d98089111970ecae12"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1fdb62c5fe7d08f71e0846a8099b2f5"><td class="memTemplParams" colspan="2">template&lt;typename Functor , typename ReferenceWrapperTraits , typename... Ts&gt; </td></tr>
 <tr class="memitem:ac1fdb62c5fe7d08f71e0846a8099b2f5"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#ac1fdb62c5fe7d08f71e0846a8099b2f5">ReferenceWrappedFunctorReturnType</a> = typename <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">detail::ReferenceWrappedFunctorReturnType</a>&lt; Functor, typename ReferenceWrapperTraits::ReferenceTuple, Ts... &gt;::type</td></tr>
 <tr class="separator:ac1fdb62c5fe7d08f71e0846a8099b2f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -222,8 +225,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a106974a152c4dfca2e74a958707be40d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a106974a152c4dfca2e74a958707be40d">&#9670;&nbsp;</a></span>ReferenceWrappedFunctorReturnCache</h2>
+<a id="a9074a4467d8441d98089111970ecae12"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9074a4467d8441d98089111970ecae12">&#9670;&nbsp;</a></span>ReferenceWrappedFunctorReturnCache</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -231,12 +234,30 @@ Functions</h2></td></tr>
 template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#a106974a152c4dfca2e74a958707be40d">wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCache</a> = typedef std::conditional_t&lt; all_return_void_v&lt;Functor, BaseVariantTraitsType, OtherArgumentTypes...&gt;, std::monostate, detail:: <a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#a106974a152c4dfca2e74a958707be40d">ReferenceWrappedFunctorReturnCache</a>&lt;Functor, BaseVariantTraitsType, OtherArgumentTypes...&gt; &gt;</td>
+          <td class="memname">using <a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#a9074a4467d8441d98089111970ecae12">wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCache</a> = typedef std::conditional_t&lt; all_return_void_v&lt;Functor, BaseVariantTraitsType, OtherArgumentTypes...&gt;, std::monostate, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type.html">detail::DefaultComparatorType</a>, OtherArgumentTypes...&gt; &gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00157">157</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00197">197</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+
+</div>
+</div>
+<a id="aaa890d0d4c247bf30f3dbd55747e667e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa890d0d4c247bf30f3dbd55747e667e">&#9670;&nbsp;</a></span>ReferenceWrappedFunctorReturnCacheCustomComparator</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#aaa890d0d4c247bf30f3dbd55747e667e">wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCacheCustomComparator</a> = typedef std::conditional_t&lt; all_return_void_v&lt;Functor, BaseVariantTraitsType, OtherArgumentTypes...&gt;, std::monostate, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes...&gt; &gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00188">188</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
 </div>
 </div>
@@ -363,7 +384,7 @@ template&lt;typename BaseVariantTraitsType &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="as__mesh__variant_8cpp_source.html#l00012">12</a> of file <a class="el" href="as__mesh__variant_8cpp_source.html">as_mesh_variant.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_multi_mesh_visitor_8hpp_source.html#l00080">wmtk::multimesh::MultiMeshVisitor&lt; NodeFunctor_ &gt;::execute_from_root()</a>, <a class="el" href="_multi_mesh_simplex_visitor_8hpp_source.html#l00110">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;::execute_from_root()</a>, <a class="el" href="_multi_mesh_visitor_8hpp_source.html#l00129">wmtk::multimesh::MultiMeshVisitorExecutor&lt; MMVisitor &gt;::run()</a>, <a class="el" href="_multi_mesh_simplex_event_visitor_8hpp_source.html#l00040">wmtk::multimesh::MultiMeshSimplexEventVisitor&lt; cell_dimension, Functor &gt;::run_on_edges()</a>, and <a class="el" href="_multi_mesh_simplex_event_visitor_8hpp_source.html#l00098">wmtk::multimesh::MultiMeshSimplexEventVisitor&lt; cell_dimension, Functor &gt;::run_on_nodes()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_multi_mesh_visitor_8hpp_source.html#l00079">wmtk::multimesh::MultiMeshVisitor&lt; NodeFunctor_ &gt;::execute_from_root()</a>, <a class="el" href="_multi_mesh_simplex_visitor_8hpp_source.html#l00114">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;::execute_from_root()</a>, <a class="el" href="_multi_mesh_visitor_8hpp_source.html#l00128">wmtk::multimesh::MultiMeshVisitorExecutor&lt; MMVisitor &gt;::run()</a>, <a class="el" href="_multi_mesh_simplex_event_visitor_8hpp_source.html#l00040">wmtk::multimesh::MultiMeshSimplexEventVisitor&lt; cell_dimension, Functor &gt;::run_on_edges()</a>, and <a class="el" href="_multi_mesh_simplex_event_visitor_8hpp_source.html#l00098">wmtk::multimesh::MultiMeshSimplexEventVisitor&lt; cell_dimension, Functor &gt;::run_on_nodes()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">

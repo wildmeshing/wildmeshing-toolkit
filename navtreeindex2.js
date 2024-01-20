@@ -1,5 +1,7 @@
 var NAVTREEINDEX2 =
 {
+"_primitive_type_8hpp.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80":[5,0,2,0,30,0,3],
+"_primitive_type_8hpp.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e":[5,0,2,0,30,0,1],
 "_primitive_type_8hpp.html#af1ebbed7ad1cf47dacc11c113236c210":[5,0,2,0,30,8],
 "_primitive_type_8hpp_source.html":[5,0,2,0,30],
 "_procedural_options_8hpp.html":[5,0,0,1,11,0,0,0,0,11],
@@ -19,7 +21,8 @@ var NAVTREEINDEX2 =
 "_raw_simplex_collection_8hpp.html":[5,0,2,0,7,34],
 "_raw_simplex_collection_8hpp_source.html":[5,0,2,0,7,34],
 "_reference_wrapped_functor_return_cache_8hpp.html":[5,0,2,0,8,0,8],
-"_reference_wrapped_functor_return_cache_8hpp.html#a106974a152c4dfca2e74a958707be40d":[5,0,2,0,8,0,8,1],
+"_reference_wrapped_functor_return_cache_8hpp.html#a9074a4467d8441d98089111970ecae12":[5,0,2,0,8,0,8,4],
+"_reference_wrapped_functor_return_cache_8hpp.html#aaa890d0d4c247bf30f3dbd55747e667e":[5,0,2,0,8,0,8,5],
 "_reference_wrapped_functor_return_cache_8hpp_source.html":[5,0,2,0,8,0,8],
 "_reference_wrapped_functor_return_type_8hpp.html":[5,0,2,0,8,0,9],
 "_reference_wrapped_functor_return_type_8hpp.html#ac1fdb62c5fe7d08f71e0846a8099b2f5":[5,0,2,0,8,0,9,3],
@@ -59,10 +62,10 @@ var NAVTREEINDEX2 =
 "_simplex_collection_8cpp_source.html":[5,0,2,0,7,37],
 "_simplex_collection_8hpp.html":[5,0,2,0,7,38],
 "_simplex_collection_8hpp_source.html":[5,0,2,0,7,38],
-"_simplex_comparisons_8cpp.html":[5,0,2,0,7,2,2],
-"_simplex_comparisons_8cpp_source.html":[5,0,2,0,7,2,2],
-"_simplex_comparisons_8hpp.html":[5,0,2,0,7,2,3],
-"_simplex_comparisons_8hpp_source.html":[5,0,2,0,7,2,3],
+"_simplex_comparisons_8cpp.html":[5,0,2,0,7,2,3],
+"_simplex_comparisons_8cpp_source.html":[5,0,2,0,7,2,3],
+"_simplex_comparisons_8hpp.html":[5,0,2,0,7,2,4],
+"_simplex_comparisons_8hpp_source.html":[5,0,2,0,7,2,4],
 "_simplex_equal_functor_8hpp.html":[5,0,2,0,7,0,6],
 "_simplex_equal_functor_8hpp_source.html":[5,0,2,0,7,0,6],
 "_simplex_getter_8cpp.html":[5,0,2,0,2,1,9],
@@ -101,7 +104,7 @@ var NAVTREEINDEX2 =
 "_split_new_value_applicator_8hpp.html":[5,0,2,0,5,0,5],
 "_split_new_value_applicator_8hpp_source.html":[5,0,2,0,5,0,5],
 "_split_return_data_8hpp.html":[5,0,2,0,5,1,3],
-"_split_return_data_8hpp.html#aaccbb4c78680f99fc6b4dbfb6fb92f44":[5,0,2,0,5,1,3,0],
+"_split_return_data_8hpp.html#ac6bc09f899ec66f20edcbfec8525eaf6":[5,0,2,0,5,1,3,0],
 "_split_return_data_8hpp_source.html":[5,0,2,0,5,1,3],
 "_sub_cache_handle_8cpp.html":[5,0,2,0,4,15],
 "_sub_cache_handle_8cpp_source.html":[5,0,2,0,4,15],
@@ -246,8 +249,5 @@ var NAVTREEINDEX2 =
 "_update_vertex_multi_mesh_map_hash_8cpp.html#ac611f929975aba963a76502b8ccbfe3f":[5,0,2,0,6,6,10,1],
 "_update_vertex_multi_mesh_map_hash_8cpp_source.html":[5,0,2,0,6,6,10],
 "_update_vertex_multi_mesh_map_hash_8hpp.html":[5,0,2,0,6,6,11],
-"_update_vertex_multi_mesh_map_hash_8hpp.html#a02d04aef5d974c2e0f204ed036773e88":[5,0,2,0,6,6,11,0],
-"_update_vertex_multi_mesh_map_hash_8hpp.html#ac611f929975aba963a76502b8ccbfe3f":[5,0,2,0,6,6,11,1],
-"_update_vertex_multi_mesh_map_hash_8hpp_source.html":[5,0,2,0,6,6,11],
-"_use_parent_scope_r_a_i_i_8cpp.html":[5,0,2,0,5,0,7]
+"_update_vertex_multi_mesh_map_hash_8hpp.html#a02d04aef5d974c2e0f204ed036773e88":[5,0,2,0,6,6,11,0]
 };

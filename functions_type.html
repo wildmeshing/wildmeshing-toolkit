@@ -138,7 +138,7 @@ $(document).ready(function(){initNavTree('functions_type.html',''); initResizabl
 , <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits.html#a81d20b5f93ae7a29ef4cd4902d9f56c6">wmtk::utils::metaprogramming::DerivedReferenceWrapperVariantTraits&lt; BaseType_, DerivedTypes &gt;</a>
 , <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl.html#aff4f6570485ae0144cd04940c1d5d882">wmtk::utils::metaprogramming::detail::as_variant_impl&lt; BaseVariantTraitsType, IsConst, TupleType, Index &gt;</a>
 , <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#ada5769dac4ebdf07570078e07c0237a5">wmtk::utils::metaprogramming::detail::as_variant_impl&lt; BaseVariantTraitsType, IsConst, std::tuple&lt; DerivedTypes... &gt;, Index &gt;</a>
-, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#afc156563eece1dc5bccf49463e977660">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;</a>
+, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ab06a94b4acba1729a798cfc90b0dd07f">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;</a>
 </li>
 <li>BaseType_
 : <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#aca4bee6e03c717bfea3c4406a1665bab">wmtk::utils::metaprogramming::detail::as_variant_impl&lt; BaseVariantTraitsType, IsConst, std::tuple&lt; DerivedTypes... &gt;, Index &gt;</a>
@@ -148,8 +148,8 @@ $(document).ready(function(){initNavTree('functions_type.html',''); initResizabl
 
 <h3><a id="index_c"></a>- c -</h3><ul>
 <li>CacheType
-: <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#ac99de571343cfa18747987ffafe5c129">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;</a>
-, <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#aa98f3325ca8e1329e3333c681677a0b2">wmtk::multimesh::MultiMeshVisitor&lt; NodeFunctor_ &gt;</a>
+: <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#a6f85dc8e8ad58fc1577b97c6c25f7a26">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;</a>
+, <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#a8ddc0eb145a07e5b1c938a669931ee27">wmtk::multimesh::MultiMeshVisitor&lt; NodeFunctor_ &gt;</a>
 </li>
 <li>CachingBaseType
 : <a class="el" href="classwmtk_1_1attribute_1_1_const_accessor.html#a6292433d740c74b225b2a3629faee2bc">wmtk::attribute::ConstAccessor&lt; T &gt;</a>
@@ -288,7 +288,8 @@ $(document).ready(function(){initNavTree('functions_type.html',''); initResizabl
 <li>KeyType
 : <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#afdad5a50d7b592cc7784167b234bf706">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;</a>
 , <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#a064d408c56fe8e3f3b0313cb2260d6ba">wmtk::multimesh::MultiMeshSimplexVisitorExecutor&lt; MMVisitor &gt;</a>
-, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5911b98fdeaf259e91e2649094795d97">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;</a>
+, <a class="el" href="classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator.html#a13b46108a1349d42c978d46232c6ba5e">wmtk::simplex::utils::MeshSimplexComparator</a>
+, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#aa5e2e1a12d476943e0c9bba1bcab24e3">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;</a>
 </li>
 </ul>
 
@@ -373,10 +374,10 @@ $(document).ready(function(){initNavTree('functions_type.html',''); initResizabl
 </li>
 <li>RefTupleType
 : <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#a49e48f2f8e2a839ae2c03f36f3291870">wmtk::utils::metaprogramming::detail::as_variant_impl&lt; BaseVariantTraitsType, IsConst, std::tuple&lt; DerivedTypes... &gt;, Index &gt;</a>
-, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#af1d0eb6581c798501ce76642ca3c561e">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;</a>
+, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a275755bf053deeafd3956e74ff1f177c">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;</a>
 </li>
 <li>RefVariantType
-: <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a6f67b595c951b31a275be70248bc51eb">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;</a>
+: <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9d01566614fd1fce0ec3954f115c73bf">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;</a>
 </li>
 <li>RetType
 : <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl.html#a9d9e369b5230eaccb1b1da1c9dfbe224">wmtk::utils::metaprogramming::detail::as_variant_impl&lt; BaseVariantTraitsType, IsConst, TupleType, Index &gt;</a>
@@ -392,8 +393,8 @@ $(document).ready(function(){initNavTree('functions_type.html',''); initResizabl
 , <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_topo_info.html#a6bb1a1d30798443a440c136aa53d0f93">wmtk::operations::SplitNewAttributeTopoInfo</a>
 </li>
 <li>ReturnDataType
-: <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#a8e397c757737c25103f428bd3ea691aa">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;</a>
-, <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#ac20906b24b402d5b1659f80c14077145">wmtk::multimesh::MultiMeshSimplexVisitorExecutor&lt; MMVisitor &gt;</a>
+: <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#a1cdc66418254b6d7623470d5b77aca62">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;</a>
+, <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#ac5c2f2a097323c550eec2c13a3ec7f87">wmtk::multimesh::MultiMeshSimplexVisitorExecutor&lt; MMVisitor &gt;</a>
 , <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#a63230e413c16b4a241183acf9e5afa2d">wmtk::multimesh::MultiMeshVisitor&lt; NodeFunctor_ &gt;</a>
 </li>
 <li>ReturnType
@@ -413,7 +414,7 @@ $(document).ready(function(){initNavTree('functions_type.html',''); initResizabl
 , <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a84f3cfa20dedcd21b693ff923f47f7f5">wmtk::operations::CollapseNewAttributeTopoInfo</a>
 , <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#aaeccdbb2a0e7dc55814eddf42d3c81f9">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>
 , <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_topo_info.html#ada49613f756802ee956d63b42a398902">wmtk::operations::SplitNewAttributeTopoInfo</a>
-, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a2a9febf7b685c91c6178513e4c34d471">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;</a>
+, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ae42f844b2f17df46d7a99817d32791c8">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;</a>
 </li>
 </ul>
 
@@ -454,7 +455,7 @@ $(document).ready(function(){initNavTree('functions_type.html',''); initResizabl
 </li>
 <li>TupleType
 : <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#ab2f99618b7a8b189f1ca55c25a9c6ff9">wmtk::utils::metaprogramming::detail::as_variant_impl&lt; BaseVariantTraitsType, IsConst, std::tuple&lt; DerivedTypes... &gt;, Index &gt;</a>
-, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9f0013e1fdf17bbf857a0ac60561f46e">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;</a>
+, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a4b22ae12458355b069affa4ca107c3a8">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;</a>
 </li>
 <li>Type
 : <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a0615d4ff21dd321382a239c9bccacc87">wmtk::attribute::TypedAttributeHandle&lt; T &gt;</a>
@@ -484,7 +485,7 @@ $(document).ready(function(){initNavTree('functions_type.html',''); initResizabl
 <li>TypeHelper
 : <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#a05eccbd2784f159ab0bcc17c276f9cce">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;</a>
 , <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#a0aea62ff052e3f396080ae60cdfc89b7">wmtk::multimesh::MultiMeshVisitor&lt; NodeFunctor_ &gt;</a>
-, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a76bdf86ea1457c769a17278894153cab">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;</a>
+, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ad676e11681a117efda4d05176c198257">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;</a>
 </li>
 </ul>
 

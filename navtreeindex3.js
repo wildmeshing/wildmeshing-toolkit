@@ -1,5 +1,8 @@
 var NAVTREEINDEX3 =
 {
+"_update_vertex_multi_mesh_map_hash_8hpp.html#ac611f929975aba963a76502b8ccbfe3f":[5,0,2,0,6,6,11,1],
+"_update_vertex_multi_mesh_map_hash_8hpp_source.html":[5,0,2,0,6,6,11],
+"_use_parent_scope_r_a_i_i_8cpp.html":[5,0,2,0,5,0,7],
 "_use_parent_scope_r_a_i_i_8cpp_source.html":[5,0,2,0,5,0,7],
 "_use_parent_scope_r_a_i_i_8hpp.html":[5,0,2,0,5,0,8],
 "_use_parent_scope_r_a_i_i_8hpp_source.html":[5,0,2,0,5,0,8],
@@ -246,8 +249,5 @@ var NAVTREEINDEX3 =
 "classwmtk_1_1_max_edge_length_invariant.html#ab2678d7756509680241448ea7c6b704b":[4,0,2,16,3],
 "classwmtk_1_1_mesh.html":[4,0,2,29],
 "classwmtk_1_1_mesh.html#a00d9f2854936ca9367676cf9108178d7":[4,0,2,29,131],
-"classwmtk_1_1_mesh.html#a04adec229d19f4fb31dab0b562f79b74":[4,0,2,29,118],
-"classwmtk_1_1_mesh.html#a05eaf6f3eeb78949f3b95c359cc6df68":[4,0,2,29,95],
-"classwmtk_1_1_mesh.html#a072ba17f33381b00b9dec76cb3d986af":[4,0,2,29,104],
-"classwmtk_1_1_mesh.html#a0758b4aea3349c4bf75214bc18e5ffe7":[4,0,2,29,45]
+"classwmtk_1_1_mesh.html#a04adec229d19f4fb31dab0b562f79b74":[4,0,2,29,118]
 };

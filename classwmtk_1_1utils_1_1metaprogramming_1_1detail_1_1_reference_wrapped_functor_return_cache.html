@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt; Class Template Reference</title>
+<title>Wildmeshing Toolkit: wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt; Class Template Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -117,7 +117,7 @@ $(document).ready(function(){initNavTree('classwmtk_1_1utils_1_1metaprogramming_
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt; Class Template Reference</div>  </div>
+<div class="title">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -125,192 +125,192 @@ $(document).ready(function(){initNavTree('classwmtk_1_1utils_1_1metaprogramming_
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a76bdf86ea1457c769a17278894153cab"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a76bdf86ea1457c769a17278894153cab">TypeHelper</a> = <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">detail::ReferenceWrappedFunctorReturnType</a>&lt; Functor, typename BaseVariantTraitsType::AllReferenceTuple, OtherArgumentTypes... &gt;</td></tr>
-<tr class="separator:a76bdf86ea1457c769a17278894153cab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a9febf7b685c91c6178513e4c34d471"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a2a9febf7b685c91c6178513e4c34d471">ReturnVariant</a> = typename TypeHelper::type</td></tr>
-<tr class="separator:a2a9febf7b685c91c6178513e4c34d471"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6f67b595c951b31a275be70248bc51eb"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a6f67b595c951b31a275be70248bc51eb">RefVariantType</a> = typename BaseVariantTraitsType::ReferenceVariant</td></tr>
-<tr class="separator:a6f67b595c951b31a275be70248bc51eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afc156563eece1dc5bccf49463e977660"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#afc156563eece1dc5bccf49463e977660">BaseType</a> = typename BaseVariantTraitsType::BaseType</td></tr>
-<tr class="separator:afc156563eece1dc5bccf49463e977660"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9f0013e1fdf17bbf857a0ac60561f46e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9f0013e1fdf17bbf857a0ac60561f46e">TupleType</a> = typename BaseVariantTraitsType::DerivedTypesTuple</td></tr>
-<tr class="separator:a9f0013e1fdf17bbf857a0ac60561f46e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af1d0eb6581c798501ce76642ca3c561e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#af1d0eb6581c798501ce76642ca3c561e">RefTupleType</a> = typename BaseVariantTraitsType::ReferenceTuple</td></tr>
-<tr class="separator:af1d0eb6581c798501ce76642ca3c561e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5911b98fdeaf259e91e2649094795d97"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5911b98fdeaf259e91e2649094795d97">KeyType</a> = std::tuple&lt; const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#afc156563eece1dc5bccf49463e977660">BaseType</a> *, OtherArgumentTypes... &gt;</td></tr>
-<tr class="separator:a5911b98fdeaf259e91e2649094795d97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad676e11681a117efda4d05176c198257"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ad676e11681a117efda4d05176c198257">TypeHelper</a> = <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">detail::ReferenceWrappedFunctorReturnType</a>&lt; Functor, typename BaseVariantTraitsType::AllReferenceTuple, OtherArgumentTypes... &gt;</td></tr>
+<tr class="separator:ad676e11681a117efda4d05176c198257"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae42f844b2f17df46d7a99817d32791c8"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ae42f844b2f17df46d7a99817d32791c8">ReturnVariant</a> = typename TypeHelper::type</td></tr>
+<tr class="separator:ae42f844b2f17df46d7a99817d32791c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d01566614fd1fce0ec3954f115c73bf"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9d01566614fd1fce0ec3954f115c73bf">RefVariantType</a> = typename BaseVariantTraitsType::ReferenceVariant</td></tr>
+<tr class="separator:a9d01566614fd1fce0ec3954f115c73bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab06a94b4acba1729a798cfc90b0dd07f"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ab06a94b4acba1729a798cfc90b0dd07f">BaseType</a> = typename BaseVariantTraitsType::BaseType</td></tr>
+<tr class="separator:ab06a94b4acba1729a798cfc90b0dd07f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4b22ae12458355b069affa4ca107c3a8"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a4b22ae12458355b069affa4ca107c3a8">TupleType</a> = typename BaseVariantTraitsType::DerivedTypesTuple</td></tr>
+<tr class="separator:a4b22ae12458355b069affa4ca107c3a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a275755bf053deeafd3956e74ff1f177c"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a275755bf053deeafd3956e74ff1f177c">RefTupleType</a> = typename BaseVariantTraitsType::ReferenceTuple</td></tr>
+<tr class="separator:a275755bf053deeafd3956e74ff1f177c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa5e2e1a12d476943e0c9bba1bcab24e3"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#aa5e2e1a12d476943e0c9bba1bcab24e3">KeyType</a> = std::tuple&lt; const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ab06a94b4acba1729a798cfc90b0dd07f">BaseType</a> *, OtherArgumentTypes... &gt;</td></tr>
+<tr class="separator:aa5e2e1a12d476943e0c9bba1bcab24e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a79a5f07c106ce8b9c97ad9afc2bcbdcd"><td class="memTemplParams" colspan="2">template&lt;typename InputType , typename ReturnType &gt; </td></tr>
-<tr class="memitem:a79a5f07c106ce8b9c97ad9afc2bcbdcd"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a79a5f07c106ce8b9c97ad9afc2bcbdcd">add</a> (ReturnType &amp;&amp;return_data, const InputType &amp;input, const OtherArgumentTypes &amp;... args)</td></tr>
-<tr class="separator:a79a5f07c106ce8b9c97ad9afc2bcbdcd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3fe48c2dfe4e46ed2f18e0a87d51bd22"><td class="memTemplParams" colspan="2">template&lt;typename InputType &gt; </td></tr>
-<tr class="memitem:a3fe48c2dfe4e46ed2f18e0a87d51bd22"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a3fe48c2dfe4e46ed2f18e0a87d51bd22">get</a> (const InputType &amp;input, const OtherArgumentTypes &amp;... ts) const -&gt; typename TypeHelper::template ReturnTypeConstRef&lt; InputType &gt;</td></tr>
-<tr class="separator:a3fe48c2dfe4e46ed2f18e0a87d51bd22"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5290906e9b9c635dc1bd82246eb39b42"><td class="memItemLeft" align="right" valign="top">const auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5290906e9b9c635dc1bd82246eb39b42">get_variant</a> (const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#afc156563eece1dc5bccf49463e977660">BaseType</a> &amp;input, const OtherArgumentTypes &amp;... ts) const</td></tr>
-<tr class="separator:a5290906e9b9c635dc1bd82246eb39b42"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9c30109e04f4b004d569263f8e9d5664"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5911b98fdeaf259e91e2649094795d97">KeyType</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9c30109e04f4b004d569263f8e9d5664">keys</a> () const</td></tr>
-<tr class="separator:a9c30109e04f4b004d569263f8e9d5664"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae0f094cd19574b98771ed8eb7fac95b8"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ae0f094cd19574b98771ed8eb7fac95b8">get_id</a> (const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#afc156563eece1dc5bccf49463e977660">BaseType</a> &amp;input, const OtherArgumentTypes &amp;... ts) const</td></tr>
-<tr class="separator:ae0f094cd19574b98771ed8eb7fac95b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ff7dd6d2ee32b60ac06f7fc0063ae8b"><td class="memItemLeft" align="right" valign="top">const auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a4ff7dd6d2ee32b60ac06f7fc0063ae8b">get_variant</a> (const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5911b98fdeaf259e91e2649094795d97">KeyType</a> &amp;key) const</td></tr>
-<tr class="separator:a4ff7dd6d2ee32b60ac06f7fc0063ae8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa599e9506cc3d80fda3778075108d0ab"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#aa599e9506cc3d80fda3778075108d0ab">begin</a> () const</td></tr>
-<tr class="separator:aa599e9506cc3d80fda3778075108d0ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a265c81185c9479ef1fb62dc47d8ade2c"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a265c81185c9479ef1fb62dc47d8ade2c">end</a> () const</td></tr>
-<tr class="separator:a265c81185c9479ef1fb62dc47d8ade2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4e0c7b5bfdee6b25b73fb53701390f35"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a4e0c7b5bfdee6b25b73fb53701390f35">set_enable_overwrites</a> (bool value)</td></tr>
-<tr class="separator:a4e0c7b5bfdee6b25b73fb53701390f35"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ffba4ecba9b713c61963ceb4fd5a2dd"><td class="memTemplParams" colspan="2">template&lt;typename InputType , typename ReturnType &gt; </td></tr>
+<tr class="memitem:a5ffba4ecba9b713c61963ceb4fd5a2dd"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5ffba4ecba9b713c61963ceb4fd5a2dd">add</a> (ReturnType &amp;&amp;return_data, const InputType &amp;input, const OtherArgumentTypes &amp;... args)</td></tr>
+<tr class="separator:a5ffba4ecba9b713c61963ceb4fd5a2dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3b4aa1a8b7415de2714b434e8520953"><td class="memTemplParams" colspan="2">template&lt;typename InputType &gt; </td></tr>
+<tr class="memitem:ae3b4aa1a8b7415de2714b434e8520953"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ae3b4aa1a8b7415de2714b434e8520953">get</a> (const InputType &amp;input, const OtherArgumentTypes &amp;... ts) const -&gt; typename TypeHelper::template ReturnTypeConstRef&lt; InputType &gt;</td></tr>
+<tr class="separator:ae3b4aa1a8b7415de2714b434e8520953"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2d4e8819e94c7d717f9cb27fb953c9e1"><td class="memItemLeft" align="right" valign="top">const auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a2d4e8819e94c7d717f9cb27fb953c9e1">get_variant</a> (const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ab06a94b4acba1729a798cfc90b0dd07f">BaseType</a> &amp;input, const OtherArgumentTypes &amp;... ts) const</td></tr>
+<tr class="separator:a2d4e8819e94c7d717f9cb27fb953c9e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae578dd8fb78ec51a6ce71a512133a118"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#aa5e2e1a12d476943e0c9bba1bcab24e3">KeyType</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ae578dd8fb78ec51a6ce71a512133a118">keys</a> () const</td></tr>
+<tr class="separator:ae578dd8fb78ec51a6ce71a512133a118"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31b56eba1f5bd731f738170979d38bfc"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a31b56eba1f5bd731f738170979d38bfc">get_id</a> (const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ab06a94b4acba1729a798cfc90b0dd07f">BaseType</a> &amp;input, const OtherArgumentTypes &amp;... ts) const</td></tr>
+<tr class="separator:a31b56eba1f5bd731f738170979d38bfc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d9c737b1ad7e78d08b2ec8aee9e8f4c"><td class="memItemLeft" align="right" valign="top">const auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a7d9c737b1ad7e78d08b2ec8aee9e8f4c">get_variant</a> (const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#aa5e2e1a12d476943e0c9bba1bcab24e3">KeyType</a> &amp;key) const</td></tr>
+<tr class="separator:a7d9c737b1ad7e78d08b2ec8aee9e8f4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a37cf7d563c8bdcaf6d2df0f0ac8bc431"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a37cf7d563c8bdcaf6d2df0f0ac8bc431">begin</a> () const</td></tr>
+<tr class="separator:a37cf7d563c8bdcaf6d2df0f0ac8bc431"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa00e9d3acae3a3ca0a77386e21207a1"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#afa00e9d3acae3a3ca0a77386e21207a1">end</a> () const</td></tr>
+<tr class="separator:afa00e9d3acae3a3ca0a77386e21207a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26a0e01292c23e5d6e2a57436174880a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a26a0e01292c23e5d6e2a57436174880a">set_enable_overwrites</a> (bool value)</td></tr>
+<tr class="separator:a26a0e01292c23e5d6e2a57436174880a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a9fa14f38973e98fb5b4e26a7d4775dd2"><td class="memItemLeft" align="right" valign="top">std::map&lt; <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5911b98fdeaf259e91e2649094795d97">KeyType</a>, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a2a9febf7b685c91c6178513e4c34d471">ReturnVariant</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9fa14f38973e98fb5b4e26a7d4775dd2">m_data</a></td></tr>
-<tr class="separator:a9fa14f38973e98fb5b4e26a7d4775dd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a188340ae4cbb06f2b70409f359ddc7e7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a188340ae4cbb06f2b70409f359ddc7e7">m_enable_overwrites</a> = false</td></tr>
-<tr class="separator:a188340ae4cbb06f2b70409f359ddc7e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a70a58a5ce7f6bb70e0d033637513c0e9"><td class="memItemLeft" align="right" valign="top">std::map&lt; <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#aa5e2e1a12d476943e0c9bba1bcab24e3">KeyType</a>, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ae42f844b2f17df46d7a99817d32791c8">ReturnVariant</a>, typename ComparatorType::Less &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a70a58a5ce7f6bb70e0d033637513c0e9">m_data</a></td></tr>
+<tr class="separator:a70a58a5ce7f6bb70e0d033637513c0e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a489990dd759a67e8a29ad85275990b7d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a489990dd759a67e8a29ad85275990b7d">m_enable_overwrites</a> = false</td></tr>
+<tr class="separator:a489990dd759a67e8a29ad85275990b7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><h3>template&lt;typename Functor, typename BaseVariantTraitsType, typename... OtherArgumentTypes&gt;<br />
-class wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;</h3>
+<div class="textblock"><h3>template&lt;typename Functor, typename BaseVariantTraitsType, typename ComparatorType, typename... OtherArgumentTypes&gt;<br />
+class wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;</h3>
 
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00014">14</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00041">41</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="afc156563eece1dc5bccf49463e977660"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afc156563eece1dc5bccf49463e977660">&#9670;&nbsp;</a></span>BaseType</h2>
+<a id="ab06a94b4acba1729a798cfc90b0dd07f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab06a94b4acba1729a798cfc90b0dd07f">&#9670;&nbsp;</a></span>BaseType</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#afc156563eece1dc5bccf49463e977660">BaseType</a> =  typename BaseVariantTraitsType::BaseType</td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ab06a94b4acba1729a798cfc90b0dd07f">BaseType</a> =  typename BaseVariantTraitsType::BaseType</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00025">25</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00052">52</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a5911b98fdeaf259e91e2649094795d97"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5911b98fdeaf259e91e2649094795d97">&#9670;&nbsp;</a></span>KeyType</h2>
+<a id="aa5e2e1a12d476943e0c9bba1bcab24e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5e2e1a12d476943e0c9bba1bcab24e3">&#9670;&nbsp;</a></span>KeyType</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5911b98fdeaf259e91e2649094795d97">KeyType</a> =  std::tuple&lt;const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#afc156563eece1dc5bccf49463e977660">BaseType</a>*, OtherArgumentTypes...&gt;</td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#aa5e2e1a12d476943e0c9bba1bcab24e3">KeyType</a> =  std::tuple&lt;const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ab06a94b4acba1729a798cfc90b0dd07f">BaseType</a>*, OtherArgumentTypes...&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00113">113</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00140">140</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
 </div>
 </div>
-<a id="af1d0eb6581c798501ce76642ca3c561e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af1d0eb6581c798501ce76642ca3c561e">&#9670;&nbsp;</a></span>RefTupleType</h2>
+<a id="a275755bf053deeafd3956e74ff1f177c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a275755bf053deeafd3956e74ff1f177c">&#9670;&nbsp;</a></span>RefTupleType</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#af1d0eb6581c798501ce76642ca3c561e">RefTupleType</a> =  typename BaseVariantTraitsType::ReferenceTuple</td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a275755bf053deeafd3956e74ff1f177c">RefTupleType</a> =  typename BaseVariantTraitsType::ReferenceTuple</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00027">27</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00054">54</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a6f67b595c951b31a275be70248bc51eb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6f67b595c951b31a275be70248bc51eb">&#9670;&nbsp;</a></span>RefVariantType</h2>
+<a id="a9d01566614fd1fce0ec3954f115c73bf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9d01566614fd1fce0ec3954f115c73bf">&#9670;&nbsp;</a></span>RefVariantType</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a6f67b595c951b31a275be70248bc51eb">RefVariantType</a> =  typename BaseVariantTraitsType::ReferenceVariant</td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9d01566614fd1fce0ec3954f115c73bf">RefVariantType</a> =  typename BaseVariantTraitsType::ReferenceVariant</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00024">24</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00051">51</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a2a9febf7b685c91c6178513e4c34d471"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2a9febf7b685c91c6178513e4c34d471">&#9670;&nbsp;</a></span>ReturnVariant</h2>
+<a id="ae42f844b2f17df46d7a99817d32791c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae42f844b2f17df46d7a99817d32791c8">&#9670;&nbsp;</a></span>ReturnVariant</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a2a9febf7b685c91c6178513e4c34d471">ReturnVariant</a> =  typename TypeHelper::type</td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ae42f844b2f17df46d7a99817d32791c8">ReturnVariant</a> =  typename TypeHelper::type</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00022">22</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00049">49</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a9f0013e1fdf17bbf857a0ac60561f46e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9f0013e1fdf17bbf857a0ac60561f46e">&#9670;&nbsp;</a></span>TupleType</h2>
+<a id="a4b22ae12458355b069affa4ca107c3a8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4b22ae12458355b069affa4ca107c3a8">&#9670;&nbsp;</a></span>TupleType</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9f0013e1fdf17bbf857a0ac60561f46e">TupleType</a> =  typename BaseVariantTraitsType::DerivedTypesTuple</td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a4b22ae12458355b069affa4ca107c3a8">TupleType</a> =  typename BaseVariantTraitsType::DerivedTypesTuple</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00026">26</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00053">53</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a76bdf86ea1457c769a17278894153cab"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a76bdf86ea1457c769a17278894153cab">&#9670;&nbsp;</a></span>TypeHelper</h2>
+<a id="ad676e11681a117efda4d05176c198257"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad676e11681a117efda4d05176c198257">&#9670;&nbsp;</a></span>TypeHelper</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a76bdf86ea1457c769a17278894153cab">TypeHelper</a> =  <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">detail::ReferenceWrappedFunctorReturnType</a>&lt; Functor, typename BaseVariantTraitsType::AllReferenceTuple, OtherArgumentTypes...&gt;</td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ad676e11681a117efda4d05176c198257">TypeHelper</a> =  <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">detail::ReferenceWrappedFunctorReturnType</a>&lt; Functor, typename BaseVariantTraitsType::AllReferenceTuple, OtherArgumentTypes...&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00017">17</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00044">44</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a79a5f07c106ce8b9c97ad9afc2bcbdcd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a79a5f07c106ce8b9c97ad9afc2bcbdcd">&#9670;&nbsp;</a></span>add()</h2>
+<a id="a5ffba4ecba9b713c61963ceb4fd5a2dd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ffba4ecba9b713c61963ceb4fd5a2dd">&#9670;&nbsp;</a></span>add()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
 <div class="memtemplate">
 template&lt;typename InputType , typename ReturnType &gt; </div>
 <table class="mlabels">
@@ -318,7 +318,7 @@ template&lt;typename InputType , typename ReturnType &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::add </td>
+          <td class="memname">void <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::add </td>
           <td>(</td>
           <td class="paramtype">ReturnType &amp;&amp;&#160;</td>
           <td class="paramname"><em>return_data</em>, </td>
@@ -348,31 +348,31 @@ template&lt;typename InputType , typename ReturnType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00034">34</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00061">61</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00125">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::get_id()</a>, <a class="el" href="input_8cpp_source.html#l00012">wmtk::components::input()</a>, <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00141">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::m_data</a>, and <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00142">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::m_enable_overwrites</a>.</p>
+<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00152">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::get_id()</a>, <a class="el" href="input_8cpp_source.html#l00012">wmtk::components::input()</a>, <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00168">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::m_data</a>, and <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00169">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::m_enable_overwrites</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache_a79a5f07c106ce8b9c97ad9afc2bcbdcd_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache_a5ffba4ecba9b713c61963ceb4fd5a2dd_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
 </div>
 </div>
-<a id="aa599e9506cc3d80fda3778075108d0ab"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa599e9506cc3d80fda3778075108d0ab">&#9670;&nbsp;</a></span>begin()</h2>
+<a id="a37cf7d563c8bdcaf6d2df0f0ac8bc431"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a37cf7d563c8bdcaf6d2df0f0ac8bc431">&#9670;&nbsp;</a></span>begin()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">auto <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::begin </td>
+          <td class="memname">auto <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::begin </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -385,25 +385,25 @@ template&lt;typename Functor , typename BaseVariantTraitsType , typename... Othe
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00135">135</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00162">162</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00141">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::m_data</a>.</p>
+<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00168">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::m_data</a>.</p>
 
 </div>
 </div>
-<a id="a265c81185c9479ef1fb62dc47d8ade2c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a265c81185c9479ef1fb62dc47d8ade2c">&#9670;&nbsp;</a></span>end()</h2>
+<a id="afa00e9d3acae3a3ca0a77386e21207a1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa00e9d3acae3a3ca0a77386e21207a1">&#9670;&nbsp;</a></span>end()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">auto <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::end </td>
+          <td class="memname">auto <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::end </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -416,19 +416,19 @@ template&lt;typename Functor , typename BaseVariantTraitsType , typename... Othe
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00136">136</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00163">163</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00141">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::m_data</a>.</p>
+<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00168">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::m_data</a>.</p>
 
 </div>
 </div>
-<a id="a3fe48c2dfe4e46ed2f18e0a87d51bd22"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3fe48c2dfe4e46ed2f18e0a87d51bd22">&#9670;&nbsp;</a></span>get()</h2>
+<a id="ae3b4aa1a8b7415de2714b434e8520953"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3b4aa1a8b7415de2714b434e8520953">&#9670;&nbsp;</a></span>get()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
 <div class="memtemplate">
 template&lt;typename InputType &gt; </div>
 <table class="mlabels">
@@ -436,7 +436,7 @@ template&lt;typename InputType &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">auto <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::get </td>
+          <td class="memname">auto <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::get </td>
           <td>(</td>
           <td class="paramtype">const InputType &amp;&#160;</td>
           <td class="paramname"><em>input</em>, </td>
@@ -461,33 +461,33 @@ template&lt;typename InputType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00074">74</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00101">101</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00106">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::get_variant()</a>, and <a class="el" href="input_8cpp_source.html#l00012">wmtk::components::input()</a>.</p>
+<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00133">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::get_variant()</a>, and <a class="el" href="input_8cpp_source.html#l00012">wmtk::components::input()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache_a3fe48c2dfe4e46ed2f18e0a87d51bd22_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache_ae3b4aa1a8b7415de2714b434e8520953_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
 </div>
 </div>
-<a id="ae0f094cd19574b98771ed8eb7fac95b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae0f094cd19574b98771ed8eb7fac95b8">&#9670;&nbsp;</a></span>get_id()</h2>
+<a id="a31b56eba1f5bd731f738170979d38bfc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31b56eba1f5bd731f738170979d38bfc">&#9670;&nbsp;</a></span>get_id()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">auto <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::get_id </td>
+          <td class="memname">auto <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::get_id </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#afc156563eece1dc5bccf49463e977660">BaseType</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ab06a94b4acba1729a798cfc90b0dd07f">BaseType</a> &amp;&#160;</td>
           <td class="paramname"><em>input</em>, </td>
         </tr>
         <tr>
@@ -509,41 +509,41 @@ template&lt;typename Functor , typename BaseVariantTraitsType , typename... Othe
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00125">125</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00152">152</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="input_8cpp_source.html#l00012">wmtk::components::input()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00034">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::add()</a>, and <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00106">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::get_variant()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00061">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::add()</a>, and <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00133">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::get_variant()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache_ae0f094cd19574b98771ed8eb7fac95b8_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache_a31b56eba1f5bd731f738170979d38bfc_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache_ae0f094cd19574b98771ed8eb7fac95b8_icgraph.svg" width="100%" height="410"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache_a31b56eba1f5bd731f738170979d38bfc_icgraph.svg" width="100%" height="410"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
 </div>
 </div>
-<a id="a5290906e9b9c635dc1bd82246eb39b42"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5290906e9b9c635dc1bd82246eb39b42">&#9670;&nbsp;</a></span>get_variant() <span class="overload">[1/2]</span></h2>
+<a id="a2d4e8819e94c7d717f9cb27fb953c9e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2d4e8819e94c7d717f9cb27fb953c9e1">&#9670;&nbsp;</a></span>get_variant() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const auto&amp; <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::get_variant </td>
+          <td class="memname">const auto&amp; <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::get_variant </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#afc156563eece1dc5bccf49463e977660">BaseType</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ab06a94b4acba1729a798cfc90b0dd07f">BaseType</a> &amp;&#160;</td>
           <td class="paramname"><em>input</em>, </td>
         </tr>
         <tr>
@@ -565,41 +565,41 @@ template&lt;typename Functor , typename BaseVariantTraitsType , typename... Othe
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00106">106</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00133">133</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00125">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::get_id()</a>, <a class="el" href="input_8cpp_source.html#l00012">wmtk::components::input()</a>, and <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00141">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::m_data</a>.</p>
+<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00152">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::get_id()</a>, <a class="el" href="input_8cpp_source.html#l00012">wmtk::components::input()</a>, and <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00168">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::m_data</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00074">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::get()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00101">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::get()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache_a5290906e9b9c635dc1bd82246eb39b42_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache_a2d4e8819e94c7d717f9cb27fb953c9e1_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache_a5290906e9b9c635dc1bd82246eb39b42_icgraph.svg" width="552" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache_a2d4e8819e94c7d717f9cb27fb953c9e1_icgraph.svg" width="552" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
 </div>
 </div>
-<a id="a4ff7dd6d2ee32b60ac06f7fc0063ae8b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4ff7dd6d2ee32b60ac06f7fc0063ae8b">&#9670;&nbsp;</a></span>get_variant() <span class="overload">[2/2]</span></h2>
+<a id="a7d9c737b1ad7e78d08b2ec8aee9e8f4c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7d9c737b1ad7e78d08b2ec8aee9e8f4c">&#9670;&nbsp;</a></span>get_variant() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const auto&amp; <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::get_variant </td>
+          <td class="memname">const auto&amp; <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::get_variant </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5911b98fdeaf259e91e2649094795d97">KeyType</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#aa5e2e1a12d476943e0c9bba1bcab24e3">KeyType</a> &amp;&#160;</td>
           <td class="paramname"><em>key</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -611,25 +611,25 @@ template&lt;typename Functor , typename BaseVariantTraitsType , typename... Othe
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00132">132</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00159">159</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00141">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::m_data</a>.</p>
+<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00168">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::m_data</a>.</p>
 
 </div>
 </div>
-<a id="a9c30109e04f4b004d569263f8e9d5664"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9c30109e04f4b004d569263f8e9d5664">&#9670;&nbsp;</a></span>keys()</h2>
+<a id="ae578dd8fb78ec51a6ce71a512133a118"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae578dd8fb78ec51a6ce71a512133a118">&#9670;&nbsp;</a></span>keys()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5911b98fdeaf259e91e2649094795d97">KeyType</a>&gt; <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::keys </td>
+          <td class="memname">std::vector&lt;<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#aa5e2e1a12d476943e0c9bba1bcab24e3">KeyType</a>&gt; <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::keys </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -642,25 +642,25 @@ template&lt;typename Functor , typename BaseVariantTraitsType , typename... Othe
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00115">115</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00142">142</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00141">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::m_data</a>.</p>
+<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00168">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::m_data</a>.</p>
 
 </div>
 </div>
-<a id="a4e0c7b5bfdee6b25b73fb53701390f35"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e0c7b5bfdee6b25b73fb53701390f35">&#9670;&nbsp;</a></span>set_enable_overwrites()</h2>
+<a id="a26a0e01292c23e5d6e2a57436174880a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a26a0e01292c23e5d6e2a57436174880a">&#9670;&nbsp;</a></span>set_enable_overwrites()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::set_enable_overwrites </td>
+          <td class="memname">void <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::set_enable_overwrites </td>
           <td>(</td>
           <td class="paramtype">bool&#160;</td>
           <td class="paramname"><em>value</em></td><td>)</td>
@@ -674,26 +674,26 @@ template&lt;typename Functor , typename BaseVariantTraitsType , typename... Othe
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00138">138</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00165">165</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00142">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::m_enable_overwrites</a>.</p>
+<p class="reference">References <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00169">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::m_enable_overwrites</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a9fa14f38973e98fb5b4e26a7d4775dd2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9fa14f38973e98fb5b4e26a7d4775dd2">&#9670;&nbsp;</a></span>m_data</h2>
+<a id="a70a58a5ce7f6bb70e0d033637513c0e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a70a58a5ce7f6bb70e0d033637513c0e9">&#9670;&nbsp;</a></span>m_data</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::map&lt;<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5911b98fdeaf259e91e2649094795d97">KeyType</a>, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a2a9febf7b685c91c6178513e4c34d471">ReturnVariant</a>&gt; <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::m_data</td>
+          <td class="memname">std::map&lt;<a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#aa5e2e1a12d476943e0c9bba1bcab24e3">KeyType</a>, <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ae42f844b2f17df46d7a99817d32791c8">ReturnVariant</a>, typename ComparatorType::Less&gt; <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::m_data</td>
         </tr>
       </table>
   </td>
@@ -703,25 +703,25 @@ template&lt;typename Functor , typename BaseVariantTraitsType , typename... Othe
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00141">141</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00168">168</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00034">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::add()</a>, <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00135">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::begin()</a>, <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00136">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::end()</a>, <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00106">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::get_variant()</a>, and <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00115">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::keys()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00061">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::add()</a>, <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00162">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::begin()</a>, <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00163">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::end()</a>, <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00133">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::get_variant()</a>, and <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00142">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::keys()</a>.</p>
 
 </div>
 </div>
-<a id="a188340ae4cbb06f2b70409f359ddc7e7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a188340ae4cbb06f2b70409f359ddc7e7">&#9670;&nbsp;</a></span>m_enable_overwrites</h2>
+<a id="a489990dd759a67e8a29ad85275990b7d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a489990dd759a67e8a29ad85275990b7d">&#9670;&nbsp;</a></span>m_enable_overwrites</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </div>
+template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::m_enable_overwrites = false</td>
+          <td class="memname">bool <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a>&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::m_enable_overwrites = false</td>
         </tr>
       </table>
   </td>
@@ -731,9 +731,9 @@ template&lt;typename Functor , typename BaseVariantTraitsType , typename... Othe
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00142">142</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00169">169</a> of file <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html">ReferenceWrappedFunctorReturnCache.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00034">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::add()</a>, and <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00138">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;::set_enable_overwrites()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00061">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::add()</a>, and <a class="el" href="_reference_wrapped_functor_return_cache_8hpp_source.html#l00165">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;::set_enable_overwrites()</a>.</p>
 
 </div>
 </div>

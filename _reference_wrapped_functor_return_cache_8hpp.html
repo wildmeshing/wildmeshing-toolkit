@@ -120,6 +120,7 @@ $(document).ready(function(){initNavTree('_reference_wrapped_functor_return_cach
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;algorithm&gt;</code><br />
+<code>#include &lt;functional&gt;</code><br />
 <code>#include &lt;map&gt;</code><br />
 <code>#include &lt;stdexcept&gt;</code><br />
 <code>#include &lt;tuple&gt;</code><br />
@@ -142,7 +143,13 @@ This graph shows which files directly or indirectly include this file:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type.html">wmtk::utils::metaprogramming::detail::DefaultComparatorType</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type_1_1_equal.html">wmtk::utils::metaprogramming::detail::DefaultComparatorType::Equal</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type_1_1_less.html">wmtk::utils::metaprogramming::detail::DefaultComparatorType::Less</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
@@ -158,9 +165,12 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a106974a152c4dfca2e74a958707be40d"><td class="memTemplParams" colspan="2">template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </td></tr>
-<tr class="memitem:a106974a152c4dfca2e74a958707be40d"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#a106974a152c4dfca2e74a958707be40d">wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCache</a> = std::conditional_t&lt; all_return_void_v&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes... &gt;, std::monostate, detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes... &gt; &gt;</td></tr>
-<tr class="separator:a106974a152c4dfca2e74a958707be40d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa890d0d4c247bf30f3dbd55747e667e"><td class="memTemplParams" colspan="2">template&lt;typename Functor , typename BaseVariantTraitsType , typename ComparatorType , typename... OtherArgumentTypes&gt; </td></tr>
+<tr class="memitem:aaa890d0d4c247bf30f3dbd55747e667e"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#aaa890d0d4c247bf30f3dbd55747e667e">wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCacheCustomComparator</a> = std::conditional_t&lt; all_return_void_v&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes... &gt;, std::monostate, detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes... &gt; &gt;</td></tr>
+<tr class="separator:aaa890d0d4c247bf30f3dbd55747e667e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9074a4467d8441d98089111970ecae12"><td class="memTemplParams" colspan="2">template&lt;typename Functor , typename BaseVariantTraitsType , typename... OtherArgumentTypes&gt; </td></tr>
+<tr class="memitem:a9074a4467d8441d98089111970ecae12"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#a9074a4467d8441d98089111970ecae12">wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCache</a> = std::conditional_t&lt; all_return_void_v&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes... &gt;, std::monostate, detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, detail::DefaultComparatorType, OtherArgumentTypes... &gt; &gt;</td></tr>
+<tr class="separator:a9074a4467d8441d98089111970ecae12"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

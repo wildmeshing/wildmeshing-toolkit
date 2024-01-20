@@ -2,9 +2,9 @@ var namespacewmtk_1_1multimesh =
 [
     [ "attribute", "namespacewmtk_1_1multimesh_1_1attribute.html", "namespacewmtk_1_1multimesh_1_1attribute" ],
     [ "operations", "namespacewmtk_1_1multimesh_1_1operations.html", [
-      [ "CollapseReturnData", "namespacewmtk_1_1multimesh_1_1operations.html#ac4140d6072e0f0e07b120db85840ea61", null ],
+      [ "CollapseReturnData", "namespacewmtk_1_1multimesh_1_1operations.html#a2364157a2f8a8c0bcc668eb5a728ae9e", null ],
       [ "OperationTupleData", "namespacewmtk_1_1multimesh_1_1operations.html#ab019d69c7a8c5d3d873e899ec736ce90", null ],
-      [ "SplitReturnData", "namespacewmtk_1_1multimesh_1_1operations.html#aaccbb4c78680f99fc6b4dbfb6fb92f44", null ],
+      [ "SplitReturnData", "namespacewmtk_1_1multimesh_1_1operations.html#ac6bc09f899ec66f20edcbfec8525eaf6", null ],
       [ "extract_operation_tuples", "namespacewmtk_1_1multimesh_1_1operations.html#a081a57c4ca754769d7673bff8cd97eb9", null ],
       [ "extract_operation_tuples", "namespacewmtk_1_1multimesh_1_1operations.html#a84de33f6768ece7cd80fb26fa8194488", null ]
     ] ],

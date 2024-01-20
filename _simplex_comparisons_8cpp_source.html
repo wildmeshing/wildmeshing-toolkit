@@ -140,7 +140,7 @@ $(document).ready(function(){initNavTree('_simplex_comparisons_8cpp_source.html'
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; a,</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; b)</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;{</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keywordflow">return</span> m.<a class="code" href="classwmtk_1_1_mesh.html#a1077cc1500921012261f86ed88ce2841">id</a>(a, primitive_type) == m.<a class="code" href="classwmtk_1_1_mesh.html#a1077cc1500921012261f86ed88ce2841">id</a>(b, primitive_type);</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keywordflow">return</span> a == b || m.<a class="code" href="classwmtk_1_1_mesh.html#a1077cc1500921012261f86ed88ce2841">id</a>(a, primitive_type) == m.<a class="code" href="classwmtk_1_1_mesh.html#a1077cc1500921012261f86ed88ce2841">id</a>(b, primitive_type);</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;}</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
 <div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="classwmtk_1_1simplex_1_1utils_1_1_simplex_comparisons.html#ae39bc4b43e4973baa95e91b549c4e59c">   29</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="classwmtk_1_1simplex_1_1utils_1_1_simplex_comparisons.html#ae39bc4b43e4973baa95e91b549c4e59c">SimplexComparisons::less</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; m, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&amp; s0, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&amp; s1)</div>
@@ -166,9 +166,12 @@ $(document).ready(function(){initNavTree('_simplex_comparisons_8cpp_source.html'
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; a,</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; b)</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;{</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keywordflow">return</span> m.<a class="code" href="classwmtk_1_1_mesh.html#a1077cc1500921012261f86ed88ce2841">id</a>(a, primitive_type) &lt; m.<a class="code" href="classwmtk_1_1_mesh.html#a1077cc1500921012261f86ed88ce2841">id</a>(b, primitive_type);</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;}</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;} <span class="comment">// namespace wmtk::simplex::utils</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keywordflow">if</span> (a == b) {</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    }</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordflow">return</span> m.<a class="code" href="classwmtk_1_1_mesh.html#a1077cc1500921012261f86ed88ce2841">id</a>(a, primitive_type) &lt; m.<a class="code" href="classwmtk_1_1_mesh.html#a1077cc1500921012261f86ed88ce2841">id</a>(b, primitive_type);</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;}</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;} <span class="comment">// namespace wmtk::simplex::utils</span></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="a_simplex_comparisons_8hpp_html"><div class="ttname"><a href="_simplex_comparisons_8hpp.html">SimplexComparisons.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00092">Mesh.hpp:93</a></div></div>
