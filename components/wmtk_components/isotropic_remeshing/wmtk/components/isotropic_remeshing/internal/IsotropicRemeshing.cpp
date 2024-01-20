@@ -20,7 +20,6 @@
 namespace wmtk::components::internal {
 
 void isotropic_remeshing(
-    TriMesh& mesh,
     attribute::MeshAttributeHandle& position,
     std::vector<attribute::MeshAttributeHandle>& pass_through_attributes,
     const double length,
@@ -29,6 +28,10 @@ void isotropic_remeshing(
     const std::vector<attribute::MeshAttributeHandle>& other_positions,
     const std::optional<attribute::MeshAttributeHandle>& position_for_inversion)
 {
+    assert(dynamic_cast<TriMesh*>(&position.mesh()) != nullptr);
+
+    TriMesh& mesh = static_cast<TriMesh&>(position.mesh());
+
     const double length_min = (4. / 5.) * length;
     const double length_max = (4. / 3.) * length;
 

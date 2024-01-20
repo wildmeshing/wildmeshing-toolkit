@@ -12,7 +12,6 @@
 namespace wmtk::components::internal {
 
 void isotropic_remeshing(
-    TriMesh& mesh,
     attribute::MeshAttributeHandle& position,
     std::vector<attribute::MeshAttributeHandle>& pass_through_attributes,
     const double length,
