@@ -23,7 +23,7 @@ bool SimplexComparisons::equal(
     const Tuple& a,
     const Tuple& b)
 {
-    return m.id(a, primitive_type) == m.id(b, primitive_type);
+    return a == b || m.id(a, primitive_type) == m.id(b, primitive_type);
 }
 
 bool SimplexComparisons::less(const Mesh& m, const Simplex& s0, const Simplex& s1)
@@ -49,6 +49,9 @@ bool SimplexComparisons::less(
     const Tuple& a,
     const Tuple& b)
 {
+    if (a == b) {
+        return false;
+    }
     return m.id(a, primitive_type) < m.id(b, primitive_type);
 }
 } // namespace wmtk::simplex::utils

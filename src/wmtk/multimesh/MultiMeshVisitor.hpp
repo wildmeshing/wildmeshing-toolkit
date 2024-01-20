@@ -33,8 +33,7 @@ public:
 
     using ReturnDataType = wmtk::utils::metaprogramming::
         ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits>;
-    using CacheType = wmtk::utils::metaprogramming::
-        ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits>;
+    using CacheType = ReturnDataType;
 
     using TypeHelper = wmtk::utils::metaprogramming::detail::
         ReferenceWrappedFunctorReturnType<NodeFunctor, MeshVariantTraits::AllReferenceTuple>;
