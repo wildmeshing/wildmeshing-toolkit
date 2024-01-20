@@ -49,7 +49,7 @@ std::shared_ptr<Mesh> make_diagonal_mesh(const Grid2Options& opt)
             int64_t f1_index = f0_index + 1;
 
             FV.row(f0_index) << c[0][0], c[0][1], c[1][0];
-            FV.row(f1_index) << c[1][1], c[0][1], c[1][0];
+            FV.row(f1_index) << c[1][1], c[1][0], c[0][1];
         }
     }
 
