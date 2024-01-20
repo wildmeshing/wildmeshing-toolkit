@@ -7,5 +7,7 @@ set(SRC_FILES
     SimplexComparisons.hxx
     unique_homogeneous_simplices.hpp
     unique_homogeneous_simplices.cpp
+
+    MeshSimplexComparator.hpp
     )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
