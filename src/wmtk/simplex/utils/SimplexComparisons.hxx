@@ -1,14 +1,15 @@
+#pragma once
 #include "SimplexComparisons.hpp"
 #include <wmtk/Mesh.hpp>
 
 namespace wmtk::simplex::utils {
 
 
-bool SimplexComparisons::equal(const Mesh& m, const Simplex& s0, const Simplex& s1)
+inline bool SimplexComparisons::equal(const Mesh& m, const Simplex& s0, const Simplex& s1)
 {
     return equal(m, s0.tuple(), s0.primitive_type(), s1.tuple(), s1.primitive_type());
 }
-bool SimplexComparisons::equal(
+inline bool SimplexComparisons::equal(
     const Mesh& m,
     const Tuple& a,
     PrimitiveType a_pt,
@@ -17,7 +18,7 @@ bool SimplexComparisons::equal(
 {
     return a_pt == b_pt && equal(m, a_pt, a, b);
 }
-bool SimplexComparisons::equal(
+inline bool SimplexComparisons::equal(
     const Mesh& m,
     PrimitiveType primitive_type,
     const Tuple& a,
@@ -26,11 +27,11 @@ bool SimplexComparisons::equal(
     return a == b || m.id(a, primitive_type) == m.id(b, primitive_type);
 }
 
-bool SimplexComparisons::less(const Mesh& m, const Simplex& s0, const Simplex& s1)
+inline bool SimplexComparisons::less(const Mesh& m, const Simplex& s0, const Simplex& s1)
 {
     return less(m, s0.tuple(), s0.primitive_type(), s1.tuple(), s1.primitive_type());
 }
-bool SimplexComparisons::less(
+inline bool SimplexComparisons::less(
     const Mesh& m,
     const Tuple& a,
     PrimitiveType a_pt,
@@ -43,7 +44,7 @@ bool SimplexComparisons::less(
         return a_pt < b_pt;
     }
 }
-bool SimplexComparisons::less(
+inline bool SimplexComparisons::less(
     const Mesh& m,
     PrimitiveType primitive_type,
     const Tuple& a,
