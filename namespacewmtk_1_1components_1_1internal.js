@@ -38,7 +38,7 @@ var namespacewmtk_1_1components_1_1internal =
     [ "from_json", "namespacewmtk_1_1components_1_1internal.html#abae421f39e544e06dc1051a6cd7f4b6f", null ],
     [ "from_json", "namespacewmtk_1_1components_1_1internal.html#a369e36ea89a3191d9840467d2483e140", null ],
     [ "from_json", "namespacewmtk_1_1components_1_1internal.html#a6e73c503f2bb2babc226368768c71070", null ],
-    [ "isotropic_remeshing", "namespacewmtk_1_1components_1_1internal.html#a222835bb096798068c48dba9236e3a92", null ],
+    [ "isotropic_remeshing", "namespacewmtk_1_1components_1_1internal.html#a4f2815fe9017a6f4c9fdc6a36ef04d93", null ],
     [ "mesh_with_tag_from_image", "namespacewmtk_1_1components_1_1internal.html#a7e292eba37fd37581ede0aa29943c3db", null ],
     [ "NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE", "namespacewmtk_1_1components_1_1internal.html#a8de60fad14ae21f40b71b453088bcae2", null ],
     [ "NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE", "namespacewmtk_1_1components_1_1internal.html#ab4d5aa85b7e849adbde7c7fedc6453bf", null ],
