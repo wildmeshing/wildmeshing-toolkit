@@ -1,0 +1,23 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "input",
+            "position",
+            "name"
+        ]
+    },
+    {
+        "pointer": "/input",
+        "type": "string"
+    },
+    {
+        "pointer": "/position",
+        "type": "string"
+    },
+    {
+        "pointer": "/name",
+        "type": "string"
+    }
+]
