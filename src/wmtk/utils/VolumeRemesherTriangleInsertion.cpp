@@ -527,7 +527,7 @@ generate_raw_tetmesh_from_input_surface(
 
     // remove unused vertices and map
     std::vector<bool> v_is_used_in_tet(v_coords.size(), false);
-    for (auto t : tets_final) {
+    for (auto& t : tets_final) {
         for (auto v : t) {
             v_is_used_in_tet[v] = true;
         }
@@ -543,7 +543,7 @@ generate_raw_tetmesh_from_input_surface(
     }
 
     // remap tets
-    for (auto t : tets_final) {
+    for (auto& t : tets_final) {
         for (int i = 0; i < 4; ++i) {
             t[i] = v_map[t[i]];
         }
