@@ -13,7 +13,7 @@
       "length_abs",
       "length_rel",
       "lock_boundary",
-      "dont_lock_split"
+      "use_for_periodic"
     ]
   },
   {
@@ -88,9 +88,9 @@
     "default": true
   },
   {
-    "pointer": "/dont_lock_split",
+    "pointer": "/use_for_periodic",
     "type": "bool",
-    "default": true
+    "default": false
   }
 
 ]

@@ -649,7 +649,7 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         "length_abs": 0.003,
         "length_rel": -1,
         "lock_boundary": true,
-        "dont_lock_split": false
+        "use_for_periodic": false
     })"_json;
         REQUIRE_NOTHROW(
             wmtk::components::isotropic_remeshing(Paths(), mesh_isotropic_remeshing_json, cache));

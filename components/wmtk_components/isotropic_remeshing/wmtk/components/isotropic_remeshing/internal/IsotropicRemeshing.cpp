@@ -2,6 +2,7 @@
 
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Scheduler.hpp>
+#include <wmtk/invariants/FusionEdgeInvariant.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
@@ -25,7 +26,7 @@ void isotropic_remeshing(
     std::vector<attribute::MeshAttributeHandle>& pass_through_attributes,
     const double length,
     const bool lock_boundary,
-    const bool dont_lock_split,
+    const bool use_for_periodic,
     const int64_t iterations,
     const std::vector<attribute::MeshAttributeHandle>& other_positions,
     const std::optional<attribute::MeshAttributeHandle>& position_for_inversion)
@@ -78,7 +79,7 @@ void isotropic_remeshing(
     // split
     auto op_split = std::make_shared<EdgeSplit>(mesh);
     op_split->add_invariant(invariant_min_edge_length);
-    if (lock_boundary && !dont_lock_split) {
+    if (lock_boundary && !use_for_periodic) {
         op_split->add_invariant(invariant_interior_edge);
     }
     for (auto& p : positions) {
@@ -104,7 +105,7 @@ void isotropic_remeshing(
     }
     op_collapse->add_invariant(invariant_max_edge_length);
     op_collapse->add_invariant(invariant_mm_map);
-    if (lock_boundary) {
+    if (lock_boundary && !use_for_periodic) {
         op_collapse->add_invariant(invariant_interior_edge);
         // set collapse towards boundary
         for (auto& p : positions) {
@@ -112,6 +113,12 @@ void isotropic_remeshing(
             tmp->set_strategy(CollapseBasicStrategy::Mean);
             tmp->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
             op_collapse->set_new_attribute_strategy(p, tmp);
+        }
+    } else if (use_for_periodic) {
+        op_collapse->add_invariant(
+            std::make_shared<invariants::FusionEdgeInvariant>(mesh, mesh.get_multi_mesh_root()));
+        for (auto& p : positions) {
+            op_collapse->set_new_attribute_strategy(p, CollapseBasicStrategy::Mean);
         }
     } else {
         for (auto& p : positions) {
