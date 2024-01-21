@@ -42,6 +42,8 @@ set(json_components "")
 # list of all components
 add_component(${WMTK_COMPONENT_PREFIX} "input")
 add_component(${WMTK_COMPONENT_PREFIX} "output")
+add_component(${WMTK_COMPONENT_PREFIX} "export_cache")
+add_component(${WMTK_COMPONENT_PREFIX} "import_cache")
 add_component(${WMTK_COMPONENT_PREFIX} "delaunay")
 add_component(${WMTK_COMPONENT_PREFIX} "isotropic_remeshing")
 add_component(${WMTK_COMPONENT_PREFIX} "marching")
