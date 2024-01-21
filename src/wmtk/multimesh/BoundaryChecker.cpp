@@ -4,26 +4,23 @@ namespace wmtk::multimesh {
 bool BoundaryChecker::is_boundary(const Mesh& mesh, const wmtk::simplex::Simplex& simplex) const
 {
     const int64_t my_dimension = mesh.top_cell_dimension();
-    if (mesh.is_boundary(simplex)) {
-        return true;
-    } else {
-        for (const Mesh* checker_ptr : m_meshes) {
-            if (&mesh == checker_ptr) { // slight optimization to avoid checking my own boundary
-                continue;
+    for (const Mesh* checker_ptr : m_meshes) {
+        if (&mesh == checker_ptr) {
+            if (mesh.is_boundary(simplex)) {
+                return true;
             }
-            if (const int64_t checker_dimension = checker_ptr->top_cell_dimension();
-                checker_dimension >= my_dimension) {
-                auto checker_simplices = mesh.map_tuples(*checker_ptr, simplex);
+        } else if (const int64_t checker_dimension = checker_ptr->top_cell_dimension();
+                   checker_dimension >= my_dimension) {
+            auto checker_simplices = mesh.map_tuples(*checker_ptr, simplex);
 
-                for (const Tuple& t : checker_simplices) {
-                    if (checker_ptr->is_boundary(simplex.primitive_type(), t)) {
-                        return true;
-                    }
-                }
-            } else if (checker_dimension == my_dimension - 1) {
-                if (mesh.can_map(*checker_ptr, simplex)) {
+            for (const Tuple& t : checker_simplices) {
+                if (checker_ptr->is_boundary(simplex.primitive_type(), t)) {
                     return true;
                 }
+            }
+        } else if (checker_dimension == my_dimension - 1) {
+            if (mesh.can_map(*checker_ptr, simplex)) {
+                return true;
             }
         }
     }
