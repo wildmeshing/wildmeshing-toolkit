@@ -3,6 +3,8 @@
 
 #include "ToPtsOptions.hpp"
 
+#include <bitset>
+
 #include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
