@@ -75,6 +75,7 @@ var annotated_dup =
           [ "TagIntersectionValues", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values" ],
           [ "TagIntersectionOptions", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options" ]
         ] ],
+        [ "FusionOptions", "structwmtk_1_1components_1_1_fusion_options.html", "structwmtk_1_1components_1_1_fusion_options" ],
         [ "MultimeshUVOptions", "structwmtk_1_1components_1_1_multimesh_u_v_options.html", "structwmtk_1_1components_1_1_multimesh_u_v_options" ],
         [ "MultimeshBOptions", "structwmtk_1_1components_1_1_multimesh_b_options.html", "structwmtk_1_1components_1_1_multimesh_b_options" ],
         [ "MultimeshTOptions", "structwmtk_1_1components_1_1_multimesh_t_options.html", "structwmtk_1_1components_1_1_multimesh_t_options" ],
@@ -106,6 +107,7 @@ var annotated_dup =
         [ "EdgeValenceInvariant", "classwmtk_1_1invariants_1_1_edge_valence_invariant.html", "classwmtk_1_1invariants_1_1_edge_valence_invariant" ],
         [ "EnvelopeInvariant", "classwmtk_1_1invariants_1_1_envelope_invariant.html", "classwmtk_1_1invariants_1_1_envelope_invariant" ],
         [ "FunctionInvariant", "classwmtk_1_1invariants_1_1_function_invariant.html", "classwmtk_1_1invariants_1_1_function_invariant" ],
+        [ "FusionEdgeInvariant", "classwmtk_1_1invariants_1_1_fusion_edge_invariant.html", "classwmtk_1_1invariants_1_1_fusion_edge_invariant" ],
         [ "InteriorEdgeInvariant", "classwmtk_1_1invariants_1_1_interior_edge_invariant.html", "classwmtk_1_1invariants_1_1_interior_edge_invariant" ],
         [ "InteriorSimplexInvariant", "classwmtk_1_1invariants_1_1_interior_simplex_invariant.html", "classwmtk_1_1invariants_1_1_interior_simplex_invariant" ],
         [ "InteriorVertexInvariant", "classwmtk_1_1invariants_1_1_interior_vertex_invariant.html", "classwmtk_1_1invariants_1_1_interior_vertex_invariant" ],
@@ -262,6 +264,7 @@ var annotated_dup =
           [ "unwrap_reference< std::reference_wrapper< U > >", "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4.html", "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4" ],
           [ "unwrap_ref_decay", "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__ref__decay.html", null ]
         ] ],
+        [ "EigenMatrixWriter", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html", "classwmtk_1_1utils_1_1_eigen_matrix_writer" ],
         [ "Hashable", "classwmtk_1_1utils_1_1_hashable.html", "classwmtk_1_1utils_1_1_hashable" ],
         [ "MerkleTreeInteriorNode", "classwmtk_1_1utils_1_1_merkle_tree_interior_node.html", "classwmtk_1_1utils_1_1_merkle_tree_interior_node" ],
         [ "mesh_type_from_primitive_type", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type.html", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type" ],

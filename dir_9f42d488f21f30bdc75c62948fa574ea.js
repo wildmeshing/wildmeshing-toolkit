@@ -3,6 +3,10 @@ var dir_9f42d488f21f30bdc75c62948fa574ea =
     [ "metaprogramming", "dir_7094acbd2526777900e9c94c9c26ba58.html", "dir_7094acbd2526777900e9c94c9c26ba58" ],
     [ "edgemesh_topology_initialization.cpp", "edgemesh__topology__initialization_8cpp.html", "edgemesh__topology__initialization_8cpp" ],
     [ "edgemesh_topology_initialization.h", "edgemesh__topology__initialization_8h.html", "edgemesh__topology__initialization_8h" ],
+    [ "EigenMatrixWriter.cpp", "_eigen_matrix_writer_8cpp.html", null ],
+    [ "EigenMatrixWriter.hpp", "_eigen_matrix_writer_8hpp.html", [
+      [ "EigenMatrixWriter", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html", "classwmtk_1_1utils_1_1_eigen_matrix_writer" ]
+    ] ],
     [ "getRSS.cpp", "get_r_s_s_8cpp.html", "get_r_s_s_8cpp" ],
     [ "getRSS.h", "get_r_s_s_8h.html", "get_r_s_s_8h" ],
     [ "Hashable.cpp", "_hashable_8cpp.html", null ],

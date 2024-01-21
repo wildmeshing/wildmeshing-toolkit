@@ -14,6 +14,10 @@ var dir_5421ed8c8fde3f7a08a046a47d931eae =
     [ "FunctionInvariant.hpp", "_function_invariant_8hpp.html", [
       [ "FunctionInvariant", "classwmtk_1_1invariants_1_1_function_invariant.html", "classwmtk_1_1invariants_1_1_function_invariant" ]
     ] ],
+    [ "FusionEdgeInvariant.cpp", "_fusion_edge_invariant_8cpp.html", null ],
+    [ "FusionEdgeInvariant.hpp", "_fusion_edge_invariant_8hpp.html", [
+      [ "FusionEdgeInvariant", "classwmtk_1_1invariants_1_1_fusion_edge_invariant.html", "classwmtk_1_1invariants_1_1_fusion_edge_invariant" ]
+    ] ],
     [ "InteriorEdgeInvariant.cpp", "_interior_edge_invariant_8cpp.html", null ],
     [ "InteriorEdgeInvariant.hpp", "_interior_edge_invariant_8hpp.html", "_interior_edge_invariant_8hpp" ],
     [ "InteriorSimplexInvariant.cpp", "_interior_simplex_invariant_8cpp.html", null ],

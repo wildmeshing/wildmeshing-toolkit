@@ -96,6 +96,7 @@ var hierarchy =
     [ "wmtk::function::Function", "classwmtk_1_1function_1_1_function.html", [
       [ "wmtk::function::LocalNeighborsSumFunction", "classwmtk_1_1function_1_1_local_neighbors_sum_function.html", null ]
     ] ],
+    [ "wmtk::components::FusionOptions", "structwmtk_1_1components_1_1_fusion_options.html", null ],
     [ "wmtk::utils::metaprogramming::tuple::detail::get_unique_remove_void_types_from_tuple< T >", "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__remove__void__types__from__tuple.html", null ],
     [ "wmtk::utils::metaprogramming::tuple::detail::get_unique_remove_void_types_from_tuple< std::tuple< Ts... > >", "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__remove__void__types__fb3a31f06bf017ae8d612e85ef9fd8019.html", null ],
     [ "wmtk::utils::metaprogramming::tuple::detail::get_unique_types<... >", "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__types.html", null ],
@@ -157,6 +158,7 @@ var hierarchy =
       [ "wmtk::invariants::EdgeValenceInvariant", "classwmtk_1_1invariants_1_1_edge_valence_invariant.html", null ],
       [ "wmtk::invariants::EnvelopeInvariant", "classwmtk_1_1invariants_1_1_envelope_invariant.html", null ],
       [ "wmtk::invariants::FunctionInvariant", "classwmtk_1_1invariants_1_1_function_invariant.html", null ],
+      [ "wmtk::invariants::FusionEdgeInvariant", "classwmtk_1_1invariants_1_1_fusion_edge_invariant.html", null ],
       [ "wmtk::invariants::InteriorSimplexInvariant", "classwmtk_1_1invariants_1_1_interior_simplex_invariant.html", [
         [ "wmtk::invariants::InteriorEdgeInvariant", "classwmtk_1_1invariants_1_1_interior_edge_invariant.html", null ],
         [ "wmtk::invariants::InteriorVertexInvariant", "classwmtk_1_1invariants_1_1_interior_vertex_invariant.html", null ]
@@ -191,7 +193,8 @@ var hierarchy =
     [ "wmtk::simplex::utils::MeshSimplexComparator", "classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator.html", null ],
     [ "wmtk::MeshWriter", "classwmtk_1_1_mesh_writer.html", [
       [ "wmtk::HDF5Writer", "classwmtk_1_1_h_d_f5_writer.html", null ],
-      [ "wmtk::io::ParaviewWriter", "classwmtk_1_1io_1_1_paraview_writer.html", null ]
+      [ "wmtk::io::ParaviewWriter", "classwmtk_1_1io_1_1_paraview_writer.html", null ],
+      [ "wmtk::utils::EigenMatrixWriter", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html", null ]
     ] ],
     [ "wmtk::MshReader", "classwmtk_1_1_msh_reader.html", null ],
     [ "wmtk::components::MultimeshBOptions", "structwmtk_1_1components_1_1_multimesh_b_options.html", null ],

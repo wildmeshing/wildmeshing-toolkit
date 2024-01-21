@@ -1,6 +1,7 @@
 var namespacewmtk_1_1utils =
 [
     [ "metaprogramming", "namespacewmtk_1_1utils_1_1metaprogramming.html", "namespacewmtk_1_1utils_1_1metaprogramming" ],
+    [ "EigenMatrixWriter", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html", "classwmtk_1_1utils_1_1_eigen_matrix_writer" ],
     [ "Hashable", "classwmtk_1_1utils_1_1_hashable.html", "classwmtk_1_1utils_1_1_hashable" ],
     [ "MerkleTreeInteriorNode", "classwmtk_1_1utils_1_1_merkle_tree_interior_node.html", "classwmtk_1_1utils_1_1_merkle_tree_interior_node" ],
     [ "mesh_type_from_primitive_type", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type.html", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type" ],

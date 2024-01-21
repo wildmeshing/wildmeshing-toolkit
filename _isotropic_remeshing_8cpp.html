@@ -121,6 +121,7 @@ $(document).ready(function(){initNavTree('_isotropic_remeshing_8cpp.html',''); i
 <div class="textblock"><code>#include &quot;<a class="el" href="_isotropic_remeshing_8hpp_source.html">IsotropicRemeshing.hpp</a>&quot;</code><br />
 <code>#include &lt;<a class="el" href="_edge_mesh_8hpp_source.html">wmtk/EdgeMesh.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_scheduler_8hpp_source.html">wmtk/Scheduler.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_fusion_edge_invariant_8hpp_source.html">wmtk/invariants/FusionEdgeInvariant.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_invariant_collection_8hpp_source.html">wmtk/invariants/InvariantCollection.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_multi_mesh_map_valid_invariant_8hpp_source.html">wmtk/invariants/MultiMeshMapValidInvariant.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_simplex_inversion_invariant_8hpp_source.html">wmtk/invariants/SimplexInversionInvariant.hpp</a>&gt;</code><br />
@@ -157,8 +158,8 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a52ec51374e16ab4f8f9e2fce7f424629"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a52ec51374e16ab4f8f9e2fce7f424629">wmtk::components::internal::isotropic_remeshing</a> (attribute::MeshAttributeHandle &amp;position, std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;pass_through_attributes, const double length, const bool lock_boundary, const int64_t iterations, const std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;other_positions, bool update_other_positions, const std::optional&lt; attribute::MeshAttributeHandle &gt; &amp;position_for_inversion)</td></tr>
-<tr class="separator:a52ec51374e16ab4f8f9e2fce7f424629"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a388e01d58f8c78330a7c7a8387c09172"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a388e01d58f8c78330a7c7a8387c09172">wmtk::components::internal::isotropic_remeshing</a> (attribute::MeshAttributeHandle &amp;position, std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;pass_through_attributes, const double length, const bool lock_boundary, const bool use_for_periodic, const int64_t iterations, const std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;other_positions, bool update_other_positions, const std::optional&lt; attribute::MeshAttributeHandle &gt; &amp;position_for_inversion)</td></tr>
+<tr class="separator:a388e01d58f8c78330a7c7a8387c09172"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

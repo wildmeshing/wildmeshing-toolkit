@@ -3,6 +3,7 @@ var dir_8064400ec315cfa027df172c4bbead09 =
     [ "adaptive_tessellation", "dir_7bf5342592ae79a05a3333a4b5931c9f.html", "dir_7bf5342592ae79a05a3333a4b5931c9f" ],
     [ "base", "dir_f9bd88f53b0c297f06c5045d55a00b25.html", "dir_f9bd88f53b0c297f06c5045d55a00b25" ],
     [ "delaunay", "dir_120f1c8542a0cba5e040bcc9c13f01c7.html", "dir_120f1c8542a0cba5e040bcc9c13f01c7" ],
+    [ "fusion", "dir_0d398ff59971483c55b4ec200bbd8b7a.html", "dir_0d398ff59971483c55b4ec200bbd8b7a" ],
     [ "get_all_meshes", "dir_b2d191c30a0ac97cb22cf3f9f0f3525c.html", "dir_b2d191c30a0ac97cb22cf3f9f0f3525c" ],
     [ "input", "dir_e0cf493bf1bfe6224d1526deac845e4d.html", "dir_e0cf493bf1bfe6224d1526deac845e4d" ],
     [ "isotropic_remeshing", "dir_d288396ca2ef99bf1ae7c96bebdbd65f.html", "dir_d288396ca2ef99bf1ae7c96bebdbd65f" ],

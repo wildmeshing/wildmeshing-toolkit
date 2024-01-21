@@ -4,6 +4,7 @@ var namespacewmtk_1_1invariants =
     [ "EdgeValenceInvariant", "classwmtk_1_1invariants_1_1_edge_valence_invariant.html", "classwmtk_1_1invariants_1_1_edge_valence_invariant" ],
     [ "EnvelopeInvariant", "classwmtk_1_1invariants_1_1_envelope_invariant.html", "classwmtk_1_1invariants_1_1_envelope_invariant" ],
     [ "FunctionInvariant", "classwmtk_1_1invariants_1_1_function_invariant.html", "classwmtk_1_1invariants_1_1_function_invariant" ],
+    [ "FusionEdgeInvariant", "classwmtk_1_1invariants_1_1_fusion_edge_invariant.html", "classwmtk_1_1invariants_1_1_fusion_edge_invariant" ],
     [ "InteriorEdgeInvariant", "classwmtk_1_1invariants_1_1_interior_edge_invariant.html", "classwmtk_1_1invariants_1_1_interior_edge_invariant" ],
     [ "InteriorSimplexInvariant", "classwmtk_1_1invariants_1_1_interior_simplex_invariant.html", "classwmtk_1_1invariants_1_1_interior_simplex_invariant" ],
     [ "InteriorVertexInvariant", "classwmtk_1_1invariants_1_1_interior_vertex_invariant.html", "classwmtk_1_1invariants_1_1_interior_vertex_invariant" ],
