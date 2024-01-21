@@ -737,7 +737,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
             pass_through_attributes,
             0.5,
             false,
-            true,
+            false,
             5);
 
         size_t n_boundary_edges = 0;
