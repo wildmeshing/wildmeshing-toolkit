@@ -121,7 +121,7 @@ var NAVTREEINDEX0 =
 "_constant_invariant_8hpp.html":[5,0,2,0,3,0,1],
 "_constant_invariant_8hpp_source.html":[5,0,2,0,3,0,1],
 "_delaunay_options_8hpp.html":[5,0,0,1,2,0,0,0,0,6],
-"_delaunay_options_8hpp.html#a8de60fad14ae21f40b71b453088bcae2":[5,0,0,1,2,0,0,0,0,6,1],
+"_delaunay_options_8hpp.html#a298027ac60629f1a77a3b963bb25aa37":[5,0,0,1,2,0,0,0,0,6,1],
 "_delaunay_options_8hpp_source.html":[5,0,0,1,2,0,0,0,0,6],
 "_derived_reference_wrapper_variant_traits_8hpp.html":[5,0,2,0,8,0,5],
 "_derived_reference_wrapper_variant_traits_8hpp_source.html":[5,0,2,0,8,0,5],

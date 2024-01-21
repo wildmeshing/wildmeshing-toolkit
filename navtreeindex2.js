@@ -165,6 +165,9 @@ var NAVTREEINDEX2 =
 "_tet_mesh_substructure_topology_preserving_invariant_8cpp_source.html":[5,0,2,0,3,38],
 "_tet_mesh_substructure_topology_preserving_invariant_8hpp.html":[5,0,2,0,3,39],
 "_tet_mesh_substructure_topology_preserving_invariant_8hpp_source.html":[5,0,2,0,3,39],
+"_to_pts_options_8hpp.html":[5,0,0,1,17,0,0,0,2],
+"_to_pts_options_8hpp.html#a9bbae47027f198074d4b11d5ea7a9423":[5,0,0,1,17,0,0,0,2,1],
+"_to_pts_options_8hpp_source.html":[5,0,0,1,17,0,0,0,2],
 "_todo_invariant_8cpp.html":[5,0,2,0,3,40],
 "_todo_invariant_8cpp_source.html":[5,0,2,0,3,40],
 "_todo_invariant_8hpp.html":[5,0,2,0,3,41],
@@ -181,6 +184,9 @@ var NAVTREEINDEX2 =
 "_tri_face_split_8cpp_source.html":[5,0,2,0,6,2,10],
 "_tri_face_split_8hpp.html":[5,0,2,0,6,2,11],
 "_tri_face_split_8hpp_source.html":[5,0,2,0,6,2,11],
+"_tri_ins_options_8hpp.html":[5,0,0,1,18,0,0,0,2],
+"_tri_ins_options_8hpp.html#a06780875aca83ca3a7c60de14bd046fb":[5,0,0,1,18,0,0,0,2,1],
+"_tri_ins_options_8hpp_source.html":[5,0,0,1,18,0,0,0,2],
 "_tri_mesh_8cpp.html":[5,0,2,0,37],
 "_tri_mesh_8cpp_source.html":[5,0,2,0,37],
 "_tri_mesh_8hpp.html":[5,0,2,0,38],
@@ -243,11 +249,5 @@ var NAVTREEINDEX2 =
 "_types_8hpp.html#a68b3d5c28c73e45250340c19898d8ed1":[5,0,2,0,43,9],
 "_types_8hpp.html#a6ce769f4c1328170db11e553c05deb3c":[5,0,2,0,43,20],
 "_types_8hpp.html#a731bef3001a94ad9a5fa2dcdeec43dcc":[5,0,2,0,43,3],
-"_types_8hpp.html#a7ff716d10e4dcaa89c691794f81b0de1":[5,0,2,0,43,5],
-"_types_8hpp.html#a82c8a56363b1b6302a662848855d5966":[5,0,2,0,43,12],
-"_types_8hpp.html#a8f74118e77f6f9bce5ebc12a1be515f3":[5,0,2,0,43,17],
-"_types_8hpp.html#a9726dab4eead2fc65c8d06890a5ee8fd":[5,0,2,0,43,7],
-"_types_8hpp.html#a9cd7285cb03e74d8aa2609646ea0308f":[5,0,2,0,43,22],
-"_types_8hpp.html#a9ffbe91b53ca4eabba746d863aeb9f99":[5,0,2,0,43,23],
-"_types_8hpp.html#aa8602f5df2ebb323b2d2ad01b466eb90":[5,0,2,0,43,14]
+"_types_8hpp.html#a7ff716d10e4dcaa89c691794f81b0de1":[5,0,2,0,43,5]
 };

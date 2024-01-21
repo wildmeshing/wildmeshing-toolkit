@@ -1,5 +1,11 @@
 var NAVTREEINDEX11 =
 {
+"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a7916a0a776c2af596d7de941bd677eb1":[4,0,2,6,0,3,7],
+"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a9a54c74b5fe18c3fa86189775a5e0543":[4,0,2,6,0,3,6],
+"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#aff1d42ecd518109b952f70b4f4adbaf7":[4,0,2,6,0,3,0],
+"classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html":[4,0,2,6,0,4],
+"classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a06cc9c4f03c970d332b7349c8a46fef5":[4,0,2,6,0,4,0],
+"classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a2dbaf5b4b254fa5c63fc9909117190df":[4,0,2,6,0,4,5],
 "classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a39329ea7632e9a86d74c466b30d38597":[4,0,2,6,0,4,3],
 "classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a74fc200484af8bd6ea09cac45b5fb0fa":[4,0,2,6,0,4,6],
 "classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a795f9d4311363c6575412bc79015df60":[4,0,2,6,0,4,7],
@@ -243,11 +249,5 @@ var NAVTREEINDEX11 =
 "classwmtk_1_1simplex_1_1_simplex_collection.html#aa4a2675404c8e8c1c3fd5a5e34042969":[4,0,2,7,10,9],
 "classwmtk_1_1simplex_1_1_simplex_collection.html#aa86023a5429af2eaa288fa305399450f":[4,0,2,7,10,16],
 "classwmtk_1_1simplex_1_1_simplex_collection.html#aaad460c26a75562c660e8e3026973778":[4,0,2,7,10,21],
-"classwmtk_1_1simplex_1_1_simplex_collection.html#ab318c99d54327383ff1b985bed043f3a":[4,0,2,7,10,18],
-"classwmtk_1_1simplex_1_1_simplex_collection.html#ac1b20ed4be1194c41b100eee0455525e":[4,0,2,7,10,0],
-"classwmtk_1_1simplex_1_1_simplex_collection.html#ad0b05393e58815dc14b2c1d4b7b2670d":[4,0,2,7,10,3],
-"classwmtk_1_1simplex_1_1_simplex_collection.html#ad76f1f147d2ef6b62c6aff05070464bd":[4,0,2,7,10,15],
-"classwmtk_1_1simplex_1_1_simplex_collection.html#aea4525770f9b9b0de351c54d72aba874":[4,0,2,7,10,10],
-"classwmtk_1_1simplex_1_1_simplex_collection.html#aeef3d13a76cdc30f45585e12e62bef89":[4,0,2,7,10,5],
-"classwmtk_1_1simplex_1_1_simplex_collection.html#af66394c610ee9b919b56aab5026a0d41":[4,0,2,7,10,22]
+"classwmtk_1_1simplex_1_1_simplex_collection.html#ab318c99d54327383ff1b985bed043f3a":[4,0,2,7,10,18]
 };

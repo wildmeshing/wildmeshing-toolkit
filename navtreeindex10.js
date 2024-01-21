@@ -1,5 +1,11 @@
 var NAVTREEINDEX10 =
 {
+"classwmtk_1_1operations_1_1_attribute_transfer_strategy.html#add6ae343d68cad58dc943adca0139457":[4,0,2,6,12,0],
+"classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html":[4,0,2,6,14],
+"classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#a0bb6dc4a95fd8943760cce7d23e40478":[4,0,2,6,14,5],
+"classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#a1f0e6eed3be553693b1d8e6feac98b64":[4,0,2,6,14,0],
+"classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#a439d6975021ad45bbeb1dc90cf67bdd2":[4,0,2,6,14,2],
+"classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#a6f7eb84716656758c191bf5facc48924":[4,0,2,6,14,1],
 "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#a7894ef3c82c53fa08b5cc5a0ce5cff95":[4,0,2,6,14,4],
 "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#a91f43fb7d01c92972c019e3156643083":[4,0,2,6,14,9],
 "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#ab7a102ab2c56e34b3c320108e723f1c0":[4,0,2,6,14,6],
@@ -243,11 +249,5 @@ var NAVTREEINDEX10 =
 "classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a173bcc3f538ea9e8c40e810017d9a86f":[4,0,2,6,0,3,5],
 "classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a1c6714160513c0d8d933618084c5903d":[4,0,2,6,0,3,3],
 "classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a2a75d7b1e956a098f9b47bb365345f7c":[4,0,2,6,0,3,1],
-"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a31cbdc65275c3680519e077a22f0f47e":[4,0,2,6,0,3,2],
-"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a7916a0a776c2af596d7de941bd677eb1":[4,0,2,6,0,3,7],
-"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a9a54c74b5fe18c3fa86189775a5e0543":[4,0,2,6,0,3,6],
-"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#aff1d42ecd518109b952f70b4f4adbaf7":[4,0,2,6,0,3,0],
-"classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html":[4,0,2,6,0,4],
-"classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a06cc9c4f03c970d332b7349c8a46fef5":[4,0,2,6,0,4,0],
-"classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a2dbaf5b4b254fa5c63fc9909117190df":[4,0,2,6,0,4,5]
+"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a31cbdc65275c3680519e077a22f0f47e":[4,0,2,6,0,3,2]
 };
