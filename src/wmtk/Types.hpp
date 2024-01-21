@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <wmtk/utils/Rational.hpp>
 
 namespace wmtk {
 template <typename T, int C>
@@ -36,6 +37,7 @@ using Vector4l = Vector<int64_t, 4>;
 using Vector5l = Vector<int64_t, 5>;
 
 using Vector3d = Vector<double, 3>;
+using Vector3r = Vector<Rational, 3>;
 
 
 using RowVector2d = RowVector<double, 2>;
@@ -46,5 +48,7 @@ using RowVectors4l = RowVectors<int64_t, 4>;
 using RowVectors6l = RowVectors<int64_t, 6>;
 using RowVectors2d = RowVectors<double, 2>;
 using RowVectors3d = RowVectors<double, 3>;
+
+using RowVectors3r = RowVectors<Rational, 3>;
 
 } // namespace wmtk
