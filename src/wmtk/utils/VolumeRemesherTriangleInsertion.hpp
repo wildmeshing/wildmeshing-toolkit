@@ -15,7 +15,9 @@ std::tuple<std::shared_ptr<wmtk::TetMesh>, std::shared_ptr<wmtk::Mesh>>
 generate_raw_tetmesh_with_surface_from_input(
     const RowVectors3d& V,
     const RowVectors3l& F,
-    const double eps_target);
+    const double eps_target,
+    const RowVectors3d& bgV = RowVectors3d(),
+    const RowVectors4l& bgF = RowVectors4l());
 
 /**
  * @brief input a triangle surface mesh, embed it into a regular grid and generate a tetmesh,
@@ -31,7 +33,9 @@ std::tuple<std::shared_ptr<wmtk::TetMesh>, std::vector<std::array<bool, 4>>>
 generate_raw_tetmesh_from_input_surface(
     const RowVectors3d& V,
     const RowVectors3l& F,
-    const double eps_target);
+    const double eps_target,
+    const RowVectors3d& bgV = RowVectors3d(),
+    const RowVectors4l& bgF = RowVectors4l());
 
 
 } // namespace wmtk::utils

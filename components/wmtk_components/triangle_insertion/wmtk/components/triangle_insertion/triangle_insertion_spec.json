@@ -4,7 +4,9 @@
         "type": "object",
         "required": [
             "input",
-            "position",
+            "input_position",
+            "background",
+            "background_position",
             "name"
         ]
     },
@@ -13,7 +15,15 @@
         "type": "string"
     },
     {
-        "pointer": "/position",
+        "pointer": "/input_position",
+        "type": "string"
+    },
+    {
+        "pointer": "/background",
+        "type": "string"
+    },
+    {
+        "pointer": "/background_position",
         "type": "string"
     },
     {
