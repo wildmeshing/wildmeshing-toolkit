@@ -4,6 +4,7 @@
     "type": "object",
     "required": [
       "input",
+      "position",
       "output",
       "cell_dimension"
     ]
@@ -12,6 +13,11 @@
     "pointer": "/input",
     "type": "string",
     "doc": "input mesh"
+  },
+  {
+    "pointer": "/position",
+    "type": "string",
+    "doc": "position"
   },
   {
     "pointer": "/output",
