@@ -644,7 +644,7 @@ $(document).ready(function(){initNavTree('_volume_remesher_triangle_insertion_8c
 <div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160; </div>
 <div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;    <span class="comment">// remove unused vertices and map</span></div>
 <div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;    std::vector&lt;bool&gt; v_is_used_in_tet(v_coords.size(), <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> t : tets_final) {</div>
+<div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; t : tets_final) {</div>
 <div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> v : t) {</div>
 <div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160;            v_is_used_in_tet[v] = <span class="keyword">true</span>;</div>
 <div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;        }</div>
@@ -660,7 +660,7 @@ $(document).ready(function(){initNavTree('_volume_remesher_triangle_insertion_8c
 <div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;    }</div>
 <div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160; </div>
 <div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;    <span class="comment">// remap tets</span></div>
-<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> t : tets_final) {</div>
+<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; t : tets_final) {</div>
 <div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 4; ++i) {</div>
 <div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;            t[i] = v_map[t[i]];</div>
 <div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;        }</div>
