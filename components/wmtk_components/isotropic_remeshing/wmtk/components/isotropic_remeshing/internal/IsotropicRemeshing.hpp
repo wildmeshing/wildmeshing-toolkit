@@ -19,6 +19,7 @@ void isotropic_remeshing(
     const bool use_for_periodic,
     const int64_t iterations,
     const std::vector<attribute::MeshAttributeHandle>& other_positions = {},
+    bool update_other_positions = false,
     const std::optional<attribute::MeshAttributeHandle>& position_for_inversion = {});
 
 } // namespace wmtk::components::internal

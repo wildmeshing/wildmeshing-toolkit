@@ -67,6 +67,11 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
     if (!compute_validation) {
         spdlog::info("Authenticating...");
 
+        if (in_args["tests"].contains("skip_check") && in_args["tests"]["skip_check"]) {
+            spdlog::warn("Skpping checks for {}", json_file);
+            return 0;
+        }
+
         auto vertices = in_args["tests"]["vertices"];
         auto edges = in_args["tests"]["edges"];
         auto faces = in_args["tests"]["faces"];

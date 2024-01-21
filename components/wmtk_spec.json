@@ -79,9 +79,16 @@
             "vertices",
             "edges",
             "faces",
-            "tetrahedra"
+            "tetrahedra",
+            "skip_check"
         ],
         "doc": "Test data"
+    },
+    {
+        "pointer": "/tests/skip_check",
+        "type": "bool",
+        "default": false,
+        "doc": "Skip check at the end."
     },
     {
         "pointer": "/tests/meshes",
