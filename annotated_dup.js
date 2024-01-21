@@ -52,7 +52,9 @@ var annotated_dup =
         ] ],
         [ "internal", "namespacewmtk_1_1components_1_1internal.html", [
           [ "DelaunayOptions", "structwmtk_1_1components_1_1internal_1_1_delaunay_options.html", "structwmtk_1_1components_1_1internal_1_1_delaunay_options" ],
+          [ "ExportCacheOptions", "structwmtk_1_1components_1_1internal_1_1_export_cache_options.html", "structwmtk_1_1components_1_1internal_1_1_export_cache_options" ],
           [ "GetAllMeshesOptions", "structwmtk_1_1components_1_1internal_1_1_get_all_meshes_options.html", "structwmtk_1_1components_1_1internal_1_1_get_all_meshes_options" ],
+          [ "ImportCacheOptions", "structwmtk_1_1components_1_1internal_1_1_import_cache_options.html", "structwmtk_1_1components_1_1internal_1_1_import_cache_options" ],
           [ "InputOptions", "structwmtk_1_1components_1_1internal_1_1_input_options.html", "structwmtk_1_1components_1_1internal_1_1_input_options" ],
           [ "IsotropicRemeshingAttributes", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes.html", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes" ],
           [ "IsotropicRemeshingOptions", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_options.html", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_options" ],
