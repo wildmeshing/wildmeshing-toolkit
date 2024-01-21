@@ -12,7 +12,8 @@
       "pass_through",
       "length_abs",
       "length_rel",
-      "lock_boundary"
+      "lock_boundary",
+      "use_for_periodic"
     ]
   },
   {
@@ -92,5 +93,11 @@
     "pointer": "/lock_boundary",
     "type": "bool",
     "default": true
+  },
+  {
+    "pointer": "/use_for_periodic",
+    "type": "bool",
+    "default": false
   }
+
 ]

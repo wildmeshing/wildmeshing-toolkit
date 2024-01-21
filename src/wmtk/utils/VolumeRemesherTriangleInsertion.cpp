@@ -382,6 +382,14 @@ generate_raw_tetmesh_from_input_surface(
                 tetra = {{v1, v0, v2, v3}};
             }
 
+            if (orient3d(
+                    v_coords[tetra[0]].data(),
+                    v_coords[tetra[1]].data(),
+                    v_coords[tetra[2]].data(),
+                    v_coords[tetra[3]].data()) <= 0) {
+                throw std::runtime_error("flipped tet crash");
+            }
+
             // push the tet to final queue;
             tets_final.push_back(tetra);
 
@@ -452,6 +460,14 @@ generate_raw_tetmesh_from_input_surface(
                          triangulated_faces[t][0],
                          triangulated_faces[t][2],
                          centroid_idx}};
+                }
+
+                if (orient3d(
+                        v_coords[tetra[0]].data(),
+                        v_coords[tetra[1]].data(),
+                        v_coords[tetra[2]].data(),
+                        v_coords[tetra[3]].data()) <= 0) {
+                    throw std::runtime_error("flipped tet crash");
                 }
 
                 tets_final.push_back(tetra);

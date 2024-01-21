@@ -49,6 +49,9 @@ set(SRC_FILES
     MaxFunctionInvariant.hpp
     MaxFunctionInvariant.cpp
 
+    FusionEdgeInvariant.hpp
+    FusionEdgeInvariant.cpp
+
 
     internal/ConstantInvariant.hpp
     internal/ConstantInvariant.cpp

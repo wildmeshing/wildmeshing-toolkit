@@ -29,6 +29,7 @@ struct IsotropicRemeshingOptions
     double length_abs;
     double length_rel;
     bool lock_boundary;
+    bool use_for_periodic;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
@@ -40,6 +41,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     length_abs,
     length_rel,
     iterations,
-    lock_boundary);
+    lock_boundary,
+    use_for_periodic);
 
 } // namespace wmtk::components::internal

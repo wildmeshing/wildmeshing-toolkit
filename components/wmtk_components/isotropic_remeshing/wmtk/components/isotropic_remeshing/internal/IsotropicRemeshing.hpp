@@ -16,6 +16,7 @@ void isotropic_remeshing(
     std::vector<attribute::MeshAttributeHandle>& pass_through_attributes,
     const double length,
     const bool lock_boundary,
+    const bool use_for_periodic,
     const int64_t iterations,
     const std::vector<attribute::MeshAttributeHandle>& other_positions = {},
     bool update_other_positions = false,

@@ -89,6 +89,7 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
         pass_through_attributes,
         options.length_abs,
         options.lock_boundary,
+        options.use_for_periodic,
         options.iterations,
         other_positions,
         options.attributes.update_other_positions,
