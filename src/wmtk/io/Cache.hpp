@@ -4,6 +4,7 @@
 #include <map>
 #include <string_view>
 #include <wmtk/Mesh.hpp>
+#include "CachedMultiMesh.hpp"
 
 namespace wmtk::io {
 
@@ -80,6 +81,8 @@ public:
      */
     std::shared_ptr<Mesh> read_mesh(const std::string& name) const;
 
+    void load_multimesh(const std::string& name) const;
+
     /**
      * @brief Write a mesh to cache.
      *
@@ -116,7 +119,8 @@ public:
 
     std::vector<int64_t> absolute_multi_mesh_id(const std::string& name) const
     {
-        return m_multimesh_names.at(name);
+        auto mm_name = name.substr(0, name.find('.'));
+        return m_multimeshes.at(mm_name).get_id_from_path(name);
     }
 
     /**
@@ -143,10 +147,14 @@ public:
         const std::filesystem::path& location = "",
         size_t max_tries = 10000);
 
+
+    /// Unsets the mesh held by each cached mm - useful for debugging whether cache loading works
+    void flush_multimeshes();
+
 private:
     std::filesystem::path m_cache_dir;
     std::map<std::string, std::filesystem::path> m_file_paths; // name --> file location
-    std::map<std::string, std::vector<int64_t>> m_multimesh_names; // name --> file location
+    mutable std::map<std::string, CachedMultiMesh> m_multimeshes;
     bool m_delete_cache = true;
 
     inline static const std::string m_cache_content_name =
