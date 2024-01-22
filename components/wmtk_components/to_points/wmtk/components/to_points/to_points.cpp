@@ -52,11 +52,11 @@ void to_points(const base::Paths& paths, const nlohmann::json& j, io::Cache& cac
         }
     }
 
-    PointMesh pts_mesh(pts.rows());
+    std::shared_ptr<PointMesh> pts_mesh = std::make_shared<PointMesh>(pts.rows());
 
-    mesh_utils::set_matrix_attribute(pts, options.position, PrimitiveType::Vertex, pts_mesh);
+    mesh_utils::set_matrix_attribute(pts, options.position, PrimitiveType::Vertex, *pts_mesh);
 
-    cache.write_mesh(pts_mesh, options.name);
+    cache.write_mesh(*pts_mesh, options.name);
 }
 
 } // namespace wmtk::components
