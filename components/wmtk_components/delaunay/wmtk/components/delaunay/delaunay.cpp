@@ -61,7 +61,8 @@ void delaunay_exec(const internal::DelaunayOptions& options, io::Cache& cache)
         throw std::runtime_error("not tested for 2d");
     }
 
-    MeshT mesh;
+    std::shared_ptr<MeshT> meshptr = std::make_shared<MeshT>();
+    MeshT& mesh = *meshptr;
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
     const auto pts_vec = points_to_rowvectors<D>(options.position, point_cloud);
