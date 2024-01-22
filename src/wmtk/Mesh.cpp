@@ -45,13 +45,18 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted)
     return ret;
 }
 
-void Mesh::serialize(MeshWriter& writer) const
+void Mesh::serialize(MeshWriter& writer, const Mesh* local_root) const
 {
+    if(local_root == nullptr) {
     writer.write_absolute_id(m_multi_mesh_manager.absolute_id());
+    } else {
+    writer.write_absolute_id(m_multi_mesh_manager.relative_id(*this, *local_root));
+
+    }
     writer.write_top_simplex_type(top_simplex_type());
     m_attribute_manager.serialize(writer);
 
-    m_multi_mesh_manager.serialize(writer);
+    m_multi_mesh_manager.serialize(writer, local_root);
 }
 
 
