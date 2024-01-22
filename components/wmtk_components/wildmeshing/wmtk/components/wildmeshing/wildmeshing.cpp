@@ -117,6 +117,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     const std::filesystem::path& file = options.input;
     auto mesh = cache.read_mesh(options.input);
 
+    if (!mesh->is_connectivity_valid()) {
+        std::cout << "invalid connectivity" << std::endl;
+        throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
+    }
+
 
     //////////////////////////////////
     // Retriving vertices
@@ -201,11 +206,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     std::vector<std::shared_ptr<Mesh>> envelopes;
     std::vector<MeshConstrainPair> mesh_constaint_pairs;
 
+    std::vector<std::shared_ptr<Mesh>> multimesh_meshes;
+
     for (const auto& v : options.envelopes) {
         auto envelope = cache.read_mesh(v.geometry.mesh);
         envelopes.emplace_back(envelope);
 
         auto constrained = base::get_attributes(cache, *mesh, v.constrained_position);
+        multimesh_meshes.push_back(constrained.front().mesh().shared_from_this());
         assert(constrained.size() == 1);
         pass_through_attributes.emplace_back(constrained.front());
 
@@ -272,6 +280,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     auto interior_edge = std::make_shared<InteriorEdgeInvariant>(*mesh);
     auto interior_face = std::make_shared<InteriorSimplexInvariant>(*mesh, PrimitiveType::Face);
+
+    for (const auto& em : multimesh_meshes) {
+        interior_edge->add_boundary(*em);
+        interior_face->add_boundary(*em);
+    }
 
     auto valence_3 = std::make_shared<EdgeValenceInvariant>(*mesh, 3);
     auto valence_4 = std::make_shared<EdgeValenceInvariant>(*mesh, 4);
@@ -451,6 +464,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 stats.sorting_time,
                 stats.executing_time);
             ++jj;
+
+            if (!mesh->is_connectivity_valid()) {
+                std::cout << "invalid connectivity after " + ops_name[jj] << std::endl;
+                throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
+            }
         }
 
         logger().info(
@@ -462,7 +480,17 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
+        if (!mesh->is_connectivity_valid()) {
+            std::cout << "invalid connectivity before consolidate" << std::endl;
+            throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
+        }
+
         multimesh::consolidate(*mesh);
+
+        if (!mesh->is_connectivity_valid()) {
+            std::cout << "invalid connectivity after consolidate" << std::endl;
+            throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
+        }
 
         write(
             mesh,

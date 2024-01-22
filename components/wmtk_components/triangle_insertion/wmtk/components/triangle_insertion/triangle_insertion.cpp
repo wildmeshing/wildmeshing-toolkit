@@ -48,6 +48,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
 
     auto [tetmesh, facemesh] =
         utils::generate_raw_tetmesh_with_surface_from_input(V, F, 0.1, Vbg, Fbg);
+
     auto pt_attribute =
         tetmesh->get_attribute_handle<double>(options.input_position, PrimitiveType::Vertex);
     auto child_position_handle = facemesh->register_attribute<double>(
@@ -65,7 +66,12 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
             propagate_to_child_position);
     update_child_positon->run_on_all();
 
-    cache.write_mesh(*tetmesh, options.name);
+    std::map<std::string, std::vector<int64_t>> names;
+
+    names["tetmesh"] = tetmesh->absolute_multi_mesh_id();
+    names["surface_mesh"] = facemesh->absolute_multi_mesh_id();
+
+    cache.write_mesh(*tetmesh, options.name, names);
 }
 
 } // namespace wmtk::components

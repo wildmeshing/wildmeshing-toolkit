@@ -517,6 +517,17 @@ bool TetMesh::is_connectivity_valid() const
                 }
             }
             if (cnt != 1) {
+                // auto my_tv = tv_accessor.index_access().const_vector_attribute(i);
+                // auto my_tf = tf_accessor.index_access().const_vector_attribute(i);
+                // auto my_tt = tt_accessor.index_access().const_vector_attribute(i);
+
+                // auto nb_tv = tv_accessor.index_access().const_vector_attribute(nb);
+                // auto nb_tf = tf_accessor.index_access().const_vector_attribute(nb);
+                // auto nb_tt = tt_accessor.index_access().const_vector_attribute(nb);
+
+                // std::cout << my_tv[0] << my_tf[0] << my_tt[0] << nb_tv[0] << nb_tf[0] << nb_tt[0]
+                //           << std::endl;
+
                 wmtk::logger().info("fail TF and TT 2");
                 return false;
             }
