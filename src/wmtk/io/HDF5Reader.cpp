@@ -21,6 +21,8 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 
+#include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
+
 #include <h5pp/h5pp.h>
 
 #include <regex>
@@ -32,8 +34,8 @@ HDF5Reader::HDF5Reader() {}
 
 std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
 {
-    constexpr static int64_t TWO_TUPLE_SIZE = 10;
-    constexpr static int64_t DEFAULT_TUPLES_VALUES = -1;
+    constexpr static int64_t TWO_TUPLE_SIZE = wmtk::multimesh::utils::TWO_TUPLE_SIZE;
+    constexpr static int64_t DEFAULT_TUPLES_VALUES = wmtk::multimesh::utils::DEFAULT_TUPLES_VALUES;
 
     h5pp::File hdf5_file(filename, h5pp::FileAccess::READONLY);
 
