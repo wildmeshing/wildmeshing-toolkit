@@ -199,8 +199,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a2481d032d7e83b7b28bd4207eb023567 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8c067f91e141a541a3de7ddbcbf3fae2 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a8c067f91e141a541a3de7ddbcbf3fae2">~Mesh</a> ()</td></tr>
 <tr class="separator:a8c067f91e141a541a3de7ddbcbf3fae2 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa77d8cd19421d1ce5959c8c0d3cb0b7e inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#aa77d8cd19421d1ce5959c8c0d3cb0b7e">serialize</a> (<a class="el" href="classwmtk_1_1_mesh_writer.html">MeshWriter</a> &amp;writer) const</td></tr>
-<tr class="separator:aa77d8cd19421d1ce5959c8c0d3cb0b7e inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a32203cf93aa0cff5c2e5c1fac502ec27 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a32203cf93aa0cff5c2e5c1fac502ec27">serialize</a> (<a class="el" href="classwmtk_1_1_mesh_writer.html">MeshWriter</a> &amp;writer, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> *local_root=nullptr) const</td></tr>
+<tr class="separator:a32203cf93aa0cff5c2e5c1fac502ec27 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d2a546c8f661bf6386cf845a1693d2f inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f">get_all</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type) const</td></tr>
 <tr class="memdesc:a6d2a546c8f661bf6386cf845a1693d2f inherit pub_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index.  <a href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f">More...</a><br /></td></tr>
 <tr class="separator:a6d2a546c8f661bf6386cf845a1693d2f inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -693,7 +693,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00052">52</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00077">wmtk::Mesh::capacity()</a>, <a class="el" href="_mesh_8cpp_source.html#l00083">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00082">wmtk::Mesh::reserve_attributes_to_fit()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00090">wmtk::Mesh::set_capacities()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00077">wmtk::Mesh::capacity()</a>, <a class="el" href="_mesh_8cpp_source.html#l00088">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00082">wmtk::Mesh::reserve_attributes_to_fit()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00090">wmtk::Mesh::set_capacities()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_point_mesh_8cpp_source.html#l00014">PointMesh()</a>.</p>
 <div class="dynheader">
@@ -970,7 +970,7 @@ false </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00063">63</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8cpp_source.html#l00064">wmtk::Mesh::is_hash_valid()</a>, and <a class="el" href="_tuple_8cpp_source.html#l00056">wmtk::Tuple::is_null()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8cpp_source.html#l00069">wmtk::Mesh::is_hash_valid()</a>, and <a class="el" href="_tuple_8cpp_source.html#l00056">wmtk::Tuple::is_null()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1194,7 +1194,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_point_mesh_8cpp_source.html#l00004">4</a> of file <a class="el" href="_point_mesh_8cpp_source.html">PointMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8cpp_source.html#l00159">wmtk::Mesh::get_cell_hash_slow()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8cpp_source.html#l00164">wmtk::Mesh::get_cell_hash_slow()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_point_mesh_8cpp_source.html#l00082">tuple_from_id()</a>.</p>
 <div class="dynheader">

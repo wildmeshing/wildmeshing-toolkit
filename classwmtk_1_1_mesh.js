@@ -94,7 +94,7 @@ var classwmtk_1_1_mesh =
     [ "reserve_more_attributes", "classwmtk_1_1_mesh.html#a458b1910b87752dc0e806742108bec4e", null ],
     [ "resurrect_tuple", "classwmtk_1_1_mesh.html#af08e5c13a9c5368402ace7c326b4bb58", null ],
     [ "resurrect_tuple_slow", "classwmtk_1_1_mesh.html#a3bb2f7ff22ab4aab437168c5962d6266", null ],
-    [ "serialize", "classwmtk_1_1_mesh.html#aa77d8cd19421d1ce5959c8c0d3cb0b7e", null ],
+    [ "serialize", "classwmtk_1_1_mesh.html#a32203cf93aa0cff5c2e5c1fac502ec27", null ],
     [ "set_capacities", "classwmtk_1_1_mesh.html#a05eaf6f3eeb78949f3b95c359cc6df68", null ],
     [ "set_capacities_from_flags", "classwmtk_1_1_mesh.html#a90f0fba7d6c94d2e545eb671df6af558", null ],
     [ "simplices_to_gids", "classwmtk_1_1_mesh.html#a76fd4d3656d2d3f21257842041ccebcf", null ],
