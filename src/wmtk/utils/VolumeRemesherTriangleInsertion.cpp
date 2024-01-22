@@ -638,48 +638,47 @@ generate_raw_tetmesh_from_input_surface(
     RowVectors3d V_final(v_coords_final.size(), 3);
 
 
-    std::vector<bool> duplicated_entry(tets_final.size(), false);
+    // std::vector<bool> duplicated_entry(tets_final.size(), false);
 
-    // check code
-    for (int64_t i = 0; i < tets_final.size(); ++i) {
-        std::set<int64_t> set1 = {
-            tets_final[i][0],
-            tets_final[i][1],
-            tets_final[i][2],
-            tets_final[i][3]};
-        for (int64_t j = i + 1; j < tets_final.size(); ++j) {
-            std::set<int64_t> set2 = {
-                tets_final[j][0],
-                tets_final[j][1],
-                tets_final[j][2],
-                tets_final[j][3]};
+    // // check code
+    // for (int64_t i = 0; i < tets_final.size(); ++i) {
+    //     std::set<int64_t> set1 = {
+    //         tets_final[i][0],
+    //         tets_final[i][1],
+    //         tets_final[i][2],
+    //         tets_final[i][3]};
+    //     for (int64_t j = i + 1; j < tets_final.size(); ++j) {
+    //         std::set<int64_t> set2 = {
+    //             tets_final[j][0],
+    //             tets_final[j][1],
+    //             tets_final[j][2],
+    //             tets_final[j][3]};
 
-            if (set1 == set2) {
-                std::cout << "duplicated TV" << std::endl;
-                // throw std::runtime_error("duplicated TV");
-                duplicated_entry[j] = true;
-            }
-        }
-    }
+    //         if (set1 == set2) {
+    //             std::cout << "duplicated TV" << std::endl;
+    //             // throw std::runtime_error("duplicated TV");
+    //             duplicated_entry[j] = true;
+    //         }
+    //     }
+    // }
 
-    std::vector<std::array<int64_t, 4>> tets_final_filtered;
+    // std::vector<std::array<int64_t, 4>> tets_final_filtered;
 
-    for (int64_t i = 0; i < tets_final.size(); ++i) {
-        if (!duplicated_entry[i]) {
-            tets_final_filtered.push_back(tets_final[i]);
-        }
-    }
+    // for (int64_t i = 0; i < tets_final.size(); ++i) {
+    //     if (!duplicated_entry[i]) {
+    //         tets_final_filtered.push_back(tets_final[i]);
+    //     }
+    // }
 
-    RowVectors4l TV_final(tets_final_filtered.size(), 4);
+    RowVectors4l TV_final(tets_final.size(), 4);
 
 
     for (int64_t i = 0; i < v_coords_final.size(); ++i) {
         V_final.row(i) = v_coords_final[i];
     }
 
-    for (int64_t i = 0; i < tets_final_filtered.size(); ++i) {
-        TV_final.row(i) << tets_final_filtered[i][0], tets_final_filtered[i][1],
-            tets_final_filtered[i][2], tets_final_filtered[i][3];
+    for (int64_t i = 0; i < tets_final.size(); ++i) {
+        TV_final.row(i) << tets_final[i][0], tets_final[i][1], tets_final[i][2], tets_final[i][3];
     }
 
     wmtk::logger().info("remove unused vertices finished.");

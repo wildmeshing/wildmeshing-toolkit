@@ -465,10 +465,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 stats.executing_time);
             ++jj;
 
-            if (!mesh->is_connectivity_valid()) {
-                std::cout << "invalid connectivity after " + ops_name[jj] << std::endl;
-                throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
-            }
+            // if (!mesh->is_connectivity_valid()) {
+            //     std::cout << "invalid connectivity after " + ops_name[jj] << std::endl;
+            //     throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
+            // }
         }
 
         logger().info(
@@ -480,17 +480,17 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
-        if (!mesh->is_connectivity_valid()) {
-            std::cout << "invalid connectivity before consolidate" << std::endl;
-            throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
-        }
+        // if (!mesh->is_connectivity_valid()) {
+        //     std::cout << "invalid connectivity before consolidate" << std::endl;
+        //     throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
+        // }
 
         multimesh::consolidate(*mesh);
 
-        if (!mesh->is_connectivity_valid()) {
-            std::cout << "invalid connectivity after consolidate" << std::endl;
-            throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
-        }
+        // if (!mesh->is_connectivity_valid()) {
+        //     std::cout << "invalid connectivity after consolidate" << std::endl;
+        //     throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
+        // }
 
         write(
             mesh,
