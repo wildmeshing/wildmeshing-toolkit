@@ -299,11 +299,8 @@ bool Cache::equals(const Cache& o)
     for (const auto& [file_name, path1] : m_file_paths) {
         const auto& path2 = o.m_file_paths.at(file_name);
 
-        spdlog::info("About to read a mesh {}", path1);
         std::shared_ptr<Mesh> mesh_ptr_1 = wmtk::read_mesh(path1);
-        spdlog::info("About to read another mesh {}", path2);
         std::shared_ptr<Mesh> mesh_ptr_2 = wmtk::read_mesh(path2);
-        spdlog::info("Checking");
 
         if (!(*mesh_ptr_1 == *mesh_ptr_2)) {
             wmtk::logger().info("Mesh {} is unequal.", file_name);

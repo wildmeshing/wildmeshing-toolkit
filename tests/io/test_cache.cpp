@@ -219,11 +219,9 @@ TEST_CASE("cache_export_import", "[cache][io]")
 
 TEST_CASE("cache_equals", "[cache][io]")
 {
-    spdlog::info("Creating acches");
     Cache c1("wmtk_cache", ".");
     Cache c2("wmtk_cache", ".");
 
-    spdlog::info("Checking empty caches equal");
     CHECK(c1.equals(c2));
 
     // add some contents
@@ -241,9 +239,7 @@ TEST_CASE("cache_equals", "[cache][io]")
             acc2.scalar_attribute(faces[i]) = i * i;
         }
 
-        spdlog::info("Writing a mesh");
         c1.write_mesh(m, "equilateral_triangle");
-        spdlog::info("Writing another mesh");
         c2.write_mesh(m, "equilateral_triangle");
     }
 
