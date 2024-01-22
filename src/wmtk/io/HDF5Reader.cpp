@@ -64,9 +64,6 @@ std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
             std::vector<int64_t> parent_id = child_id;
             parent_id.pop_back();
 
-            // TODO remove me, this is an ack
-            if (meshes.find(parent_id) == meshes.end()) break;
-
             auto parent_mesh = meshes.at(parent_id);
             auto child_mesh = p.second;
 
@@ -103,9 +100,9 @@ std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
         }
 
 #if !defined(NDEBUG)
-        // for (auto& p : meshes) {
-        //     assert(p.first == p.second->m_multi_mesh_manager.absolute_id());
-        // }
+        for (auto& p : meshes) {
+            assert(p.first == p.second->m_multi_mesh_manager.absolute_id());
+        }
 #endif
     }
 
