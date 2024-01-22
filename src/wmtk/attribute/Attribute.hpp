@@ -111,6 +111,7 @@ public:
      * This is commonly used after a consolidate to account for the change in global indices
      */
     void index_remap(const std::vector<T>& old2new);
+    void index_remap(const std::vector<T>& old2new,  const std::vector<Eigen::Index>& cols);
 
 protected:
     /**

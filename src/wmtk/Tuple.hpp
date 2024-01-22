@@ -12,7 +12,7 @@ class EdgeMesh;
 class TetMesh;
 namespace attribute {
 template <typename T>
-    class TupleAccessor;
+class TupleAccessor;
 }
 namespace utils {
 class TupleInspector;
@@ -53,12 +53,7 @@ public:
     // friend Mesh::is_ccw(const Tuple& tuple) const;
     // friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
 
-    Tuple(
-        int8_t local_vid,
-        int8_t local_eid,
-        int8_t local_fid,
-        int64_t global_cid,
-        int8_t hash);
+    Tuple(int8_t local_vid, int8_t local_eid, int8_t local_fid, int64_t global_cid, int8_t hash);
 
     //         v2
     //       /    \.

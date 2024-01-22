@@ -6,37 +6,35 @@
 #include <SimpleBVH/BVH.hpp>
 
 namespace wmtk::operations::composite {
+
 ProjectOperation::ProjectOperation(
-    Mesh& m,
     std::shared_ptr<Operation> main_op,
-    const TypedAttributeHandle<double>& coordinates,
-    const TypedAttributeHandle<int64_t>& proj_tag,
-    wmtk::PrimitiveType proj_type,
-    int64_t proj_value)
+    const attribute::MeshAttributeHandle& project_to_mesh,
+    Mesh& m,
+    attribute::MeshAttributeHandle& child_mesh_coordinates)
     : AttributesUpdate(m)
     , m_main_op(main_op)
-    , m_coordinates(coordinates)
-    , m_tag(proj_tag)
-    , m_tag_value(proj_value)
+    , m_coordinates(child_mesh_coordinates.as<double>())
+    , m_child_mesh(child_mesh_coordinates.mesh())
 {
     int64_t count = 0;
     int64_t index = 0;
 
-    ConstAccessor<double> accessor = mesh().create_accessor(m_coordinates);
-    ConstAccessor<int64_t> tag_accessor = mesh().create_accessor(m_tag);
+    ConstAccessor<double> accessor =
+        project_to_mesh.mesh().create_accessor(project_to_mesh.as<double>());
 
-    const std::vector<Tuple>& facest = mesh().get_all(proj_type);
-    const int64_t dim = int64_t(proj_type) + 1;
+    const std::vector<Tuple>& facest =
+        project_to_mesh.mesh().get_all(project_to_mesh.mesh().top_simplex_type());
+
+    const int64_t dim = int64_t(project_to_mesh.mesh().top_simplex_type()) + 1;
 
     Eigen::MatrixXd vertices(dim * facest.size(), accessor.dimension());
     Eigen::MatrixXi faces(facest.size(), dim);
 
     for (const auto& f : facest) {
-        if (tag_accessor.const_scalar_attribute(f) != m_tag_value) continue;
-
         auto tmp = faces_single_dimension_tuples(
-            mesh(),
-            simplex::Simplex(proj_type, f),
+            project_to_mesh.mesh(),
+            simplex::Simplex(project_to_mesh.mesh().top_simplex_type(), f),
             PrimitiveType::Vertex);
 
         assert(tmp.size() == dim);
@@ -49,9 +47,6 @@ ProjectOperation::ProjectOperation(
         }
         ++index;
     }
-    faces.conservativeResize(index, faces.cols());
-    vertices.conservativeResize(2 * index, vertices.cols());
-
 
     m_bvh = std::make_shared<SimpleBVH::BVH>();
     m_bvh->init(vertices, faces, 1e-10);
@@ -59,21 +54,28 @@ ProjectOperation::ProjectOperation(
 
 std::vector<simplex::Simplex> ProjectOperation::execute(const simplex::Simplex& simplex)
 {
+    // mesh has to be the same as the main_op mesh
+    assert(&m_main_op->mesh() == &mesh());
     const auto main_simplices = (*m_main_op)(simplex);
     if (main_simplices.empty()) return {};
     assert(main_simplices.size() == 1);
     const auto main_tup = main_simplices.front().tuple();
 
-    auto tag_accessor = mesh().create_accessor(m_tag);
-    auto accessor = mesh().create_accessor(m_coordinates);
 
-    if (tag_accessor.const_scalar_attribute(main_tup) != m_tag_value) return main_simplices;
+    const std::vector<Tuple> mapped_tuples_after =
+        mesh().map_tuples(m_child_mesh, primitive_type(), {main_tup});
 
-    auto p = accessor.const_vector_attribute(main_tup);
-    SimpleBVH::VectorMax3d nearest_point;
-    double sq_dist;
-    m_bvh->nearest_facet(p, nearest_point, sq_dist);
-    accessor.vector_attribute(main_tup) = nearest_point;
+    if (mapped_tuples_after.empty()) return main_simplices;
+
+    auto accessor = m_child_mesh.create_accessor(m_coordinates);
+
+    for (const auto& t : mapped_tuples_after) {
+        auto p = accessor.const_vector_attribute(t);
+        SimpleBVH::VectorMax3d nearest_point;
+        double sq_dist;
+        m_bvh->nearest_facet(p, nearest_point, sq_dist);
+        accessor.vector_attribute(t) = nearest_point;
+    }
 
     return main_simplices;
 }

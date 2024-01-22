@@ -51,6 +51,8 @@ set(SRC_FILES
 
     SeamlessConstraints.hpp
     SeamlessConstraints.cpp
+    VolumeRemesherTriangleInsertion.hpp
+    VolumeRemesherTriangleInsertion.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

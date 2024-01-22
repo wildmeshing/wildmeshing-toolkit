@@ -92,7 +92,7 @@ void OptimizationSmoothing::WMTKProblem::hessian(const TVector& x, Eigen::Matrix
 
 void OptimizationSmoothing::WMTKProblem::solution_changed(const TVector& new_x)
 {
-    m_accessor.vector_attribute(m_simplex.tuple()) = new_x;
+    // m_accessor.vector_attribute(m_simplex.tuple()) = new_x;
 }
 
 
@@ -165,11 +165,8 @@ std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simp
     }
 
     for (auto s : simplices_to_smooth) {
-        WMTKProblem problem(
-            m_energy->mesh().create_accessor(m_energy->attribute_handle().as<double>()),
-            s,
-            m_invariants,
-            *m_energy);
+        auto accessor = m_energy->mesh().create_accessor(m_energy->attribute_handle().as<double>());
+        WMTKProblem problem(std::move(accessor), s, m_invariants, *m_energy);
 
         auto x = problem.initial_value();
         try {

@@ -76,12 +76,26 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
             for (int k = 0; k < 3; k++) {
                 size_t size = parent_to_child_vertex_map.size();
                 parent_to_child_vertex_map.try_emplace(vs[k], size);
-                tri_mesh_matrix(i, k) = parent_to_child_vertex_map[vs[k]];
+                tri_mesh_matrix(i, k) = parent_to_child_vertex_map.at(vs[k]);
             }
         }
         std::shared_ptr<TriMesh> child_ptr = std::make_shared<TriMesh>();
         auto& child = *child_ptr;
         child.initialize(tri_mesh_matrix);
+
+#ifndef NDEUBG
+        auto face = child.get_all(PrimitiveType::Face);
+        for (int64_t i = 0; i < face.size(); ++i) {
+            const std::array<int64_t, 3> vs = {
+                {child.id(face[i], PrimitiveType::Vertex),
+                 child.id(child.switch_vertex(face[i]), PrimitiveType::Vertex),
+                 child.id(child.switch_vertex(child.switch_edge(face[i])), PrimitiveType::Vertex)}};
+            assert(vs[0] == tri_mesh_matrix(i, 0));
+            assert(vs[1] == tri_mesh_matrix(i, 1));
+            assert(vs[2] == tri_mesh_matrix(i, 2));
+        }
+#endif
+
         return child_ptr;
     };
 

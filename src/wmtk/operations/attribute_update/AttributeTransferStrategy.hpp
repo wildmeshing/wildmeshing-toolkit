@@ -140,6 +140,7 @@ void SingleAttributeTransferStrategy<MyType, ParentType>::run(const simplex::Sim
 
     if (m_functor) {
         auto [parent_data, simps] = read_parent_values(s);
+        if (simps.empty()) return;
         auto acc = mesh().create_accessor(handle().template as<MyType>());
 
         acc.vector_attribute(s.tuple()) = m_functor(parent_data, simps);

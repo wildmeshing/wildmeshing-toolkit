@@ -35,6 +35,8 @@ using Vector3l = Vector<int64_t, 3>;
 using Vector4l = Vector<int64_t, 4>;
 using Vector5l = Vector<int64_t, 5>;
 
+using Vector3d = Vector<double, 3>;
+
 
 using RowVector2d = RowVector<double, 2>;
 using RowVector3d = RowVector<double, 3>;

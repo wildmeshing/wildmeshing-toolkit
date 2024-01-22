@@ -29,13 +29,11 @@ TEST_CASE("wildmeshing", "[components][wildmeshing][.]")
         "passes": 10,
         "input": "mesh",
         "target_edge_length": 0.01,
-        "intermediate_output": false,
+        "intermediate_output": true,
         "attributes": {"position": "vertices"},
         "pass_through": [],
-        "output": "test",
-        "track_boundary_child_mesh": false
+        "output": "test"
         })"_json;
-
 
     CHECK_NOTHROW(wmtk::components::wildmeshing(Paths(), input, cache));
 }
@@ -49,7 +47,8 @@ TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
         {"name", "mesh"},
         // {"input", data_dir / "sphere_coarse_.msh"},
         // {"input", data_dir / "tet.msh"},
-        {"file", data_dir / "sphere_coarse_005_.msh"},
+        // {"file", data_dir / "sphere_coarse_005_.msh"},
+        {"file", data_dir / "cube_2.msh"},
         {"ignore_z", false}};
     wmtk::components::input(Paths(), input_component_json, cache);
 
@@ -58,10 +57,9 @@ TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
     json input = {
         {"passes", 10},
         {"input", "mesh"},
-        {"target_edge_length", 0.1},
-        {"intermediate_output", true},
+        {"target_edge_length", 0.05},
+        {"intermediate_output", false},
         {"output", "test_mm"},
-        {"track_boundary_child_mesh", false},
         {"pass_through", std::vector<int64_t>()},
         {"attributes", attributes}};
 
@@ -89,7 +87,6 @@ TEST_CASE("wildmeshing_3d_multimesh", "[components][wildmeshing][.]")
         {"target_edge_length", 0.1},
         {"intermediate_output", true},
         {"output", "test_multimesh"},
-        {"track_boundary_child_mesh", true},
         {"pass_through", std::vector<int64_t>()},
         {"attributes", attributes}};
 
