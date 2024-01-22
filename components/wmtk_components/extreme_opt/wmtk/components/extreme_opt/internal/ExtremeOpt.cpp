@@ -5,6 +5,7 @@
 #include <wmtk/function/simplex/AMIPS.hpp>
 #include <wmtk/function/simplex/SYMDIR.hpp>
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
+#include <wmtk/function/simplex/TriangleAreaAD.hpp>
 #include <wmtk/invariants/EdgeValenceInvariant.hpp>
 #include <wmtk/invariants/FunctionInvariant.hpp>
 #include <wmtk/invariants/FunctionNumericalInvariant.hpp>
@@ -25,7 +26,6 @@
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-// TODO: lock boundary don't work for uv mesh now
 namespace wmtk::components::internal {
 
 using namespace operations;
@@ -136,14 +136,16 @@ void ExtremeOpt::remeshing(const long iterations)
             m_position_handle,
             m_uv_handle,
             true);
+    std::shared_ptr<function::PerSimplexFunction> triangle_area =
+        std::make_shared<function::TriangleAreaAD>(m_mesh, m_position_handle);
 
-    auto evaluate_energy_sum = [&]() {
-        double energy_sum = 0;
+    auto evaluate_function_sum = [&](std::shared_ptr<function::PerSimplexFunction> f) {
+        double function_sum = 0;
         const auto all_face_tuples = m_uv_mesh_ptr->get_all(PrimitiveType::Face);
         for (const auto& t : all_face_tuples) {
-            energy_sum += symdir_no_diff->get_value(simplex::Simplex::face(t));
+            function_sum += f->get_value(simplex::Simplex::face(t));
         }
-        return energy_sum;
+        return function_sum;
     };
 
     auto uv_accessor = m_uv_mesh_ptr->create_accessor(m_uv_handle.as<double>());
@@ -295,7 +297,10 @@ void ExtremeOpt::remeshing(const long iterations)
     smooth_op->add_invariant(
         std::make_shared<SimplexInversionInvariant>(*m_uv_mesh_ptr, m_uv_handle.as<double>()));
 
-    wmtk::logger().info("Energy sum before: {}", evaluate_energy_sum());
+    double E_sum = evaluate_function_sum(symdir_no_diff);
+    double area_sum = evaluate_function_sum(triangle_area);
+    wmtk::logger().info("Energy sum before: {}", E_sum);
+    wmtk::logger().info("Energy Avg before: {}", E_sum / area_sum);
     if (m_debug_output) {
         write_debug_mesh(0);
     }
@@ -311,7 +316,9 @@ void ExtremeOpt::remeshing(const long iterations)
             m_scheduler.run_operation_on_all(*split_op);
             wmtk::logger().info("Done split {}", i);
             // wmtk::logger().info("Energy max after split: {}", evaluate_energy_max());
-            wmtk::logger().info("Energy sum after split: {}\n", evaluate_energy_sum());
+            E_sum = evaluate_function_sum(symdir_no_diff);
+            wmtk::logger().info("Energy sum after split: {}\n", E_sum);
+            wmtk::logger().info("Energy avg after split: {}\n", E_sum / area_sum);
 
             // debug write
             if (m_debug_output) {
@@ -323,7 +330,10 @@ void ExtremeOpt::remeshing(const long iterations)
             m_scheduler.run_operation_on_all(*collapse_op);
             wmtk::logger().info("Done collapse {}", i);
             // wmtk::logger().info("Energy max after collapse: {}", evaluate_energy_max());
-            wmtk::logger().info("Energy sum after collapse: {}\n", evaluate_energy_sum());
+            E_sum = evaluate_function_sum(symdir_no_diff);
+            area_sum = evaluate_function_sum(triangle_area);
+            wmtk::logger().info("Energy sum after collapse: {}\n", E_sum);
+            wmtk::logger().info("Energy avg after collapse: {}\n", E_sum / area_sum);
 
             // debug write
             if (m_debug_output) {
@@ -335,7 +345,10 @@ void ExtremeOpt::remeshing(const long iterations)
             m_scheduler.run_operation_on_all(*swap_op);
             wmtk::logger().info("Done swap {}", i);
             // wmtk::logger().info("Energy max after swap: {}", evaluate_energy_max());
-            wmtk::logger().info("Energy sum after swap: {}\n", evaluate_energy_sum());
+            E_sum = evaluate_function_sum(symdir_no_diff);
+            area_sum = evaluate_function_sum(triangle_area);
+            wmtk::logger().info("Energy sum after swap: {}\n", E_sum);
+            wmtk::logger().info("Energy avg after swap: {}\n", E_sum / area_sum);
 
             // debug write
             if (m_debug_output) {
@@ -347,7 +360,10 @@ void ExtremeOpt::remeshing(const long iterations)
             m_scheduler.run_operation_on_all(*smooth_op);
             wmtk::logger().info("Done smooth {}", i);
             // wmtk::logger().info("Energy max after smooth: {}", evaluate_energy_max());
-            wmtk::logger().info("Energy sum after smooth: {}\n", evaluate_energy_sum());
+            E_sum = evaluate_function_sum(symdir_no_diff);
+            // area_sum = evaluate_function_sum(triangle_area);
+            wmtk::logger().info("Energy sum after smooth: {}\n", E_sum);
+            wmtk::logger().info("Energy avg after smooth: {}\n", E_sum / area_sum);
             // debug write
             if (m_debug_output) {
                 write_debug_mesh(++cnt);
@@ -355,7 +371,7 @@ void ExtremeOpt::remeshing(const long iterations)
         }
 
         // wmtk::logger().info("Energy max after iter {} : {}", i, evaluate_energy_max());
-        // wmtk::logger().info("Energy sum after iter {} : {}", i, evaluate_energy_sum());
+        // wmtk::logger().info("Energy sum after iter {} : {}", i, evaluate_function_sum());
         // wmtk::logger().info("Energy avg after iter{} : {}\n", i, symdir_sum.get_energy_avg());
     } // end for
 }

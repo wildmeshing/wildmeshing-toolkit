@@ -254,8 +254,9 @@ std::vector<simplex::Simplex> SeamlessSmoothing::execute(const simplex::Simplex&
             }
         }
         //  create problem and use solver to solve its
+        auto accessor = m_energy->mesh().create_accessor(m_energy->attribute_handle().as<double>());
         SeamlessProblem problem(
-            m_energy->mesh().create_accessor(m_energy->attribute_handle().as<double>()),
+            std::move(accessor),
             vs_on_cut_mesh,
             rotation_matrix,
             rotate_to,

@@ -35,7 +35,7 @@ auto triangle_unsigned_2d_area(
     const Eigen::MatrixBase<BDerived>& b,
     const Eigen::MatrixBase<CDerived>& c) -> typename ADerived::Scalar
 {
-    return std::abs(triangle_signed_2d(a, b, c));
+    return std::abs(triangle_signed_2d_area(a, b, c));
 }
 
 // private:
