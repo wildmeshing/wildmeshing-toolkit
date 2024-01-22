@@ -42,7 +42,7 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
     }
 
 
-    if (options.add_box) {
+    if (options.add_box && !options.add_grid) {
         auto center = bbox.center();
         auto r = bbox.diagonal() / 2.;
 
