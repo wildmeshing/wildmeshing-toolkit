@@ -14,7 +14,7 @@ std::shared_ptr<Mesh> make_freudenthal_mesh(const Grid3Options& opt)
 {
     const auto& d = opt.dimensions;
     auto vertex_dimensions = opt.dimensions;
-    for (size_t j = 0; j < 3; ++j) {
+    for (size_t j = 0; j < d.size(); ++j) {
         int64_t& v = vertex_dimensions[j];
         if (!opt.cycles[j]) {
             v++;

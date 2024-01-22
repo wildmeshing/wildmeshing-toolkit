@@ -1,0 +1,37 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "input",
+            "position",
+            "name"
+        ],
+        "optional": [
+            "add_box",
+            "box_scale"
+        ]
+    },
+    {
+        "pointer": "/input",
+        "type": "string"
+    },
+    {
+        "pointer": "/position",
+        "type": "string"
+    },
+    {
+        "pointer": "/name",
+        "type": "string"
+    },
+    {
+        "pointer": "/add_box",
+        "type": "bool",
+        "default": false
+    },
+    {
+        "pointer": "/box_scale",
+        "type": "float",
+        "default": 1
+    }
+]

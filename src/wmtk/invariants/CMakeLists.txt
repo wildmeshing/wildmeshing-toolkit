@@ -51,6 +51,9 @@ set(SRC_FILES
 
     SeamlessCollapseInvariant.hpp
     SeamlessCollapseInvariant.cpp
+    FusionEdgeInvariant.hpp
+    FusionEdgeInvariant.cpp
+
 
     internal/ConstantInvariant.hpp
     internal/ConstantInvariant.cpp

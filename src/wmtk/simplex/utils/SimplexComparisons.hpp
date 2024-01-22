@@ -75,3 +75,4 @@ public:
     static bool less(const Mesh& m, PrimitiveType primitive_type, const Tuple& a, const Tuple& b);
 };
 } // namespace wmtk::simplex::utils
+#include "SimplexComparisons.hxx"

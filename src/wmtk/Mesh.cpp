@@ -27,10 +27,14 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 
 std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted) const
 {
+    std::vector<Tuple> ret;
+
+    if (static_cast<int8_t>(type) > top_cell_dimension()) return ret;
+
+    const int64_t cap = capacity(type);
+
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);
     const attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
-    std::vector<Tuple> ret;
-    int64_t cap = capacity(type);
     ret.reserve(cap);
     for (size_t index = 0; index < cap; ++index) {
         if (flag_accessor_indices.const_scalar_attribute(index) & 1)

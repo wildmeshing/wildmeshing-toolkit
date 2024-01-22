@@ -159,19 +159,17 @@ if(MSVC)
     target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/GL>)
 endif()
 
+if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+    # Unit tests
+    enable_testing()
+endif()
+
+
 add_subdirectory(components)
 
 # ###############################################################################
 # Subdirectories
 # ###############################################################################
-
-# Compile extras only if this is a top-level project
-if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
-    # Unit tests
-    enable_testing()
-
-    add_subdirectory(tests)
-endif()
 
 if(WMTK_BUILD_DOCS)
     # check if Doxygen is installed
@@ -197,18 +195,22 @@ if(WMTK_BUILD_DOCS)
     endif(DOXYGEN_FOUND)
 endif()
 
+
+# Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+    add_subdirectory(tests)
+
+
     add_executable(wmtk_app main.cpp)
+    target_compile_features(wmtk_app PUBLIC cxx_std_17)
 
     # ###############################################################################
     # WMTK JSON APP
     # ###############################################################################
     target_compile_options(wmtk_app PRIVATE "-rdynamic")
     target_link_libraries(wmtk_app PUBLIC
-        wmtk::toolkit
         wmtk::components
         CLI11::CLI11
-        jse::jse
     )
 
 

@@ -133,7 +133,9 @@ std::tuple<std::shared_ptr<wmtk::TetMesh>, std::vector<std::array<bool, 4>>>
 generate_raw_tetmesh_from_input_surface(
     const RowVectors3d& V,
     const RowVectors3l& F,
-    const double eps_target)
+    const double eps_target,
+    const RowVectors3d& bgV,
+    const RowVectors4l& bgT)
 {
     // for predicates
     exactinit();
@@ -157,13 +159,20 @@ generate_raw_tetmesh_from_input_surface(
     // generate background mesh
     RowVectors4l background_TV;
     RowVectors3d background_V;
-    generate_background_mesh(bbox_min, bbox_max, resolution, background_TV, background_V);
+    if (bgV.size() == 0) {
+        generate_background_mesh(bbox_min, bbox_max, resolution, background_TV, background_V);
 
-    wmtk::logger().info(
-        "generated background mesh with resolution {} {} {}",
-        resolution[0],
-        resolution[1],
-        resolution[2]);
+        wmtk::logger().info(
+            "generated background mesh with resolution {} {} {}",
+            resolution[0],
+            resolution[1],
+            resolution[2]);
+    } else {
+        assert(bgT.size() != 0);
+        background_TV = bgT;
+        background_V = bgV;
+    }
+
 
     // prepare data for volume remesher
     // inputs
@@ -382,6 +391,29 @@ generate_raw_tetmesh_from_input_surface(
                 tetra = {{v1, v0, v2, v3}};
             }
 
+            if (orient3d(
+                    v_coords[tetra[0]].data(),
+                    v_coords[tetra[1]].data(),
+                    v_coords[tetra[2]].data(),
+                    v_coords[tetra[3]].data()) <= 0) {
+                Eigen::Matrix3d tmp;
+                tmp.col(0) = v_coords[tetra[1]] - v_coords[tetra[0]];
+                tmp.col(1) = v_coords[tetra[2]] - v_coords[tetra[0]];
+                tmp.col(2) = v_coords[tetra[3]] - v_coords[tetra[0]];
+                log_and_throw_error(
+                    "flipped tet=({},{},{},{}) crash vol={} orient={}",
+                    tetra[0],
+                    tetra[1],
+                    tetra[2],
+                    tetra[3],
+                    tmp.determinant(),
+                    orient3d(
+                        v_coords[tetra[0]].data(),
+                        v_coords[tetra[1]].data(),
+                        v_coords[tetra[2]].data(),
+                        v_coords[tetra[3]].data()));
+            }
+
             // push the tet to final queue;
             tets_final.push_back(tetra);
 
@@ -454,6 +486,34 @@ generate_raw_tetmesh_from_input_surface(
                          centroid_idx}};
                 }
 
+                if (orient3d(
+                        v_coords[tetra[0]].data(),
+                        v_coords[tetra[1]].data(),
+                        v_coords[tetra[2]].data(),
+                        v_coords[tetra[3]].data()) <= 0) {
+                    Eigen::Matrix3d tmp;
+                    tmp.col(0) = v_coords[tetra[1]] - v_coords[tetra[0]];
+                    tmp.col(1) = v_coords[tetra[2]] - v_coords[tetra[0]];
+                    tmp.col(2) = v_coords[tetra[3]] - v_coords[tetra[0]];
+                    log_and_throw_error(
+                        "flipped for poly tet=({},{},{},{}) crash vol={} orient={}. Coords {} {} "
+                        "{} {}",
+                        tetra[0],
+                        tetra[1],
+                        tetra[2],
+                        tetra[3],
+                        tmp.determinant(),
+                        orient3d(
+                            v_coords[tetra[0]].data(),
+                            v_coords[tetra[1]].data(),
+                            v_coords[tetra[2]].data(),
+                            v_coords[tetra[3]].data()),
+                        v_coords[tetra[0]].transpose(),
+                        v_coords[tetra[1]].transpose(),
+                        v_coords[tetra[2]].transpose(),
+                        v_coords[tetra[3]].transpose());
+                }
+
                 tets_final.push_back(tetra);
 
 
@@ -467,7 +527,7 @@ generate_raw_tetmesh_from_input_surface(
 
     // remove unused vertices and map
     std::vector<bool> v_is_used_in_tet(v_coords.size(), false);
-    for (auto t : tets_final) {
+    for (auto& t : tets_final) {
         for (auto v : t) {
             v_is_used_in_tet[v] = true;
         }
@@ -483,7 +543,7 @@ generate_raw_tetmesh_from_input_surface(
     }
 
     // remap tets
-    for (auto t : tets_final) {
+    for (auto& t : tets_final) {
         for (int i = 0; i < 4; ++i) {
             t[i] = v_map[t[i]];
         }
@@ -517,7 +577,9 @@ std::tuple<std::shared_ptr<wmtk::TetMesh>, std::shared_ptr<wmtk::Mesh>>
 generate_raw_tetmesh_with_surface_from_input(
     const RowVectors3d& V,
     const RowVectors3l& F,
-    const double eps_target)
+    const double eps_target,
+    const RowVectors3d& bgV,
+    const RowVectors4l& bgF)
 {
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
@@ -525,7 +587,7 @@ generate_raw_tetmesh_with_surface_from_input(
     constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
 
     auto [tetmesh, tet_face_on_input_surface] =
-        generate_raw_tetmesh_from_input_surface(V, F, eps_target);
+        generate_raw_tetmesh_from_input_surface(V, F, eps_target, bgV, bgF);
 
     auto surface_handle = tetmesh->register_attribute<int64_t>("surface", PrimitiveType::Face, 1);
     auto surface_accessor = tetmesh->create_accessor<int64_t>(surface_handle);

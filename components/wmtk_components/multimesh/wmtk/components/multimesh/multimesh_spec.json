@@ -2,10 +2,46 @@
     {
         "pointer": "/",
         "type": "object",
+        "type_name": "uv",
         "required": [
+            "type",
             "parent",
             "child",
             "name"
+        ]
+    },
+    {
+        "pointer": "/",
+        "type": "object",
+        "type_name": "boundary",
+        "required": [
+            "type",
+            "mesh",
+            "position",
+            "name"
+        ]
+    },
+    {
+        "pointer": "/",
+        "type": "object",
+        "type_name": "tag",
+        "required": [
+            "type",
+            "mesh",
+            "tag",
+            "tag_value",
+            "primitive",
+            "position",
+            "name"
+        ]
+    },
+    {
+        "pointer": "/type",
+        "type": "string",
+        "options": [
+            "uv",
+            "boundary",
+            "tag"
         ]
     },
     {
@@ -13,10 +49,33 @@
         "type": "string"
     },
     {
+        "pointer": "/mesh",
+        "type": "string"
+    },
+    {
+        "pointer": "/position",
+        "type": "string"
+    },
+    {
+        "pointer": "/tag",
+        "type": "string"
+    },
+    {
+        "pointer": "/tag_value",
+        "type": "int"
+    },
+    {
+        "pointer": "/primitive",
+        "type": "int",
+        "min": 0,
+        "max": 4
+    },
+    {
         "pointer": "/parent",
         "type": "string"
     },
     {
+        "type_name": "uv",
         "pointer": "/child",
         "type": "string"
     }

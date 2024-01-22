@@ -13,7 +13,7 @@ template <typename T>
 void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter& writer) const
 {
     auto ptr = get_local_scope_stack_ptr();
-    if (ptr == nullptr) {
+    if (ptr == nullptr || ptr->at_current_scope()) {
         writer.write(name, dim, dimension(), m_data, m_default_value);
     } else {
         std::vector<T> data = m_data;

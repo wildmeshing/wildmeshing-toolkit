@@ -38,6 +38,9 @@ set(SRC_FILES
     primitive_range.hpp
     primitive_range.cpp
 
+    random_seed.hpp
+
+
     MerkleTreeInteriorNode.hpp
     MerkleTreeInteriorNode.cpp
     Hashable.hpp
@@ -53,6 +56,9 @@ set(SRC_FILES
     SeamlessConstraints.cpp
     VolumeRemesherTriangleInsertion.hpp
     VolumeRemesherTriangleInsertion.cpp
+
+    EigenMatrixWriter.hpp
+    EigenMatrixWriter.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

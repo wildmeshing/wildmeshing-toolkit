@@ -2,10 +2,31 @@
     {
         "pointer": "/",
         "type": "object",
+        "type_name": "triangle_fan",
         "required": [
             "name",
-            "mesh_type",
-            "settings"
+            "type",
+            "fan"
+        ]
+    },
+    {
+        "pointer": "/",
+        "type": "object",
+        "type_name": "disk",
+        "required": [
+            "name",
+            "type",
+            "disk"
+        ]
+    },
+    {
+        "pointer": "/",
+        "type": "object",
+        "type_name": "grid",
+        "required": [
+            "name",
+            "type",
+            "grid"
         ]
     },
     {
@@ -13,24 +34,27 @@
         "type": "string"
     },
     {
-        "pointer": "/mesh_type",
+        "pointer": "/type",
         "type": "string",
         "doc": "The type of mesh to generate. The settings are assumed to be for the right type",
-            "options": ["grid", "triangle_fan","disk"]
-
+        "options": [
+            "grid",
+            "triangle_fan",
+            "disk"
+        ]
     },
     {
-        "pointer": "/settings",
+        "pointer": "/grid",
         "type": "include",
         "spec_file": "grid_spec.json"
     },
     {
-        "pointer": "/settings",
+        "pointer": "/fan",
         "type": "include",
         "spec_file": "triangle_fan_spec.json"
     },
     {
-        "pointer": "/settings",
+        "pointer": "/disk",
         "type": "include",
         "spec_file": "disk_spec.json"
     }

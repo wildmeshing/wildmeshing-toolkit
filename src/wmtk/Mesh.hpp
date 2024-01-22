@@ -1,6 +1,5 @@
 #pragma once
 
-#define MTAO_PUBLICIZING_ID
 #include <Eigen/Core>
 
 #include <initializer_list>
@@ -114,6 +113,7 @@ public:
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::RawSimplex;
+    friend class simplex::SimplexCollection;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
     friend class operations::EdgeCollapse;
@@ -771,7 +771,6 @@ public:
         return m_multi_mesh_manager.has_child_mesh_in_dimension(dimension);
     }
 
-private:
     /*
      * @brief returns if the other mesh is part of the same multi-mesh structure
      * @param other the other being mesh being checked
@@ -794,11 +793,8 @@ protected:
                     d-3 -> tetrahedron
         * @return int64_t id of the entity
     */
-#if defined(MTAO_PUBLICIZING_ID)
-public: // TODO remove
-#else
+
 protected:
-#endif
     virtual int64_t id(const Tuple& tuple, PrimitiveType type) const = 0;
     int64_t id(const simplex::Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 

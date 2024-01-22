@@ -17,8 +17,6 @@ bool NoBoundaryCollapseToInteriorInvariant::before(const simplex::Simplex& t) co
     if (v0_on_boundary == v1_on_boundary) {
         return true;
     }
-
-    if (v0_on_boundary) return false;
-    return true;
+    return false;
 }
 } // namespace wmtk::invariants
