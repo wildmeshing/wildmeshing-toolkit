@@ -22,6 +22,7 @@ public:
         const std::vector<int>& rotate_to,
         invariants::InvariantCollection& invariants,
         const wmtk::function::Function& energy);
+    TVector initial_value() const;
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -38,6 +39,7 @@ private:
     const std::vector<simplex::Simplex>& m_simplices;
     const std::vector<Eigen::Matrix<double, 2, 2>>& m_rotation_matrix;
     const std::vector<int>& m_rotate_to;
+    Eigen::Vector2d x_init;
     const wmtk::function::Function& m_energy;
     invariants::InvariantCollection& m_invariants;
 };
@@ -55,7 +57,15 @@ SeamlessSmoothing::SeamlessProblem::SeamlessProblem(
     , m_rotate_to(rotate_to)
     , m_energy(energy)
     , m_invariants(invariants)
-{}
+{
+    x_init = m_accessor.vector_attribute(m_simplices[0].tuple());
+}
+
+SeamlessSmoothing::SeamlessProblem::TVector SeamlessSmoothing::SeamlessProblem::initial_value()
+    const
+{
+    return m_accessor.vector_attribute(m_simplices[0].tuple());
+}
 
 // ok
 double SeamlessSmoothing::SeamlessProblem::value(const TVector& x)
@@ -136,7 +146,7 @@ void SeamlessSmoothing::SeamlessProblem::hessian(const TVector& x, Eigen::Matrix
 // seems to be okay
 void SeamlessSmoothing::SeamlessProblem::solution_changed(const TVector& new_x)
 {
-    TVector cur_dir = new_x;
+    TVector cur_dir = new_x - x_init;
     for (int i = 0; i < m_simplices.size(); ++i) {
         if (i == 0) {
             m_accessor.vector_attribute(m_simplices[0].tuple()) += cur_dir;
@@ -198,8 +208,8 @@ std::vector<simplex::Simplex> SeamlessSmoothing::execute(const simplex::Simplex&
 {
     // map simplex to cut_mesh
     std::vector<simplex::Simplex> vs_on_cut_mesh = mesh().map_to_child(m_cut_mesh, simplex);
-    if (m_cut_mesh.is_boundary(vs_on_cut_mesh[0])) {
-        // if (false) {
+    // if (m_cut_mesh.is_boundary(vs_on_cut_mesh[0])) {
+    if (false) {
         // std::cout << "optimizing on boundary" << std::endl;
         // get all rotation matrices
         auto find_next_bd_edge = [this](const Tuple input_edge_tuple) -> Tuple {
@@ -262,9 +272,9 @@ std::vector<simplex::Simplex> SeamlessSmoothing::execute(const simplex::Simplex&
             rotate_to,
             m_invariants,
             *m_energy);
-        Eigen::VectorXd init_value = Eigen::VectorXd::Zero(2);
         try {
-            m_solver->minimize(problem, init_value);
+            auto x = problem.initial_value();
+            m_solver->minimize(problem, x);
         } catch (const std::exception&) {
             return {};
         }

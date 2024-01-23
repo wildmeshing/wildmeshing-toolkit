@@ -138,7 +138,7 @@ OptimizationSmoothing::OptimizationSmoothing(
 {
     m_linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
     m_nonlinear_solver_params =
-        R"({"solver": "DenseNewton", "max_iterations":10, "allow_out_of_iterations":true})"_json;
+        R"({"solver": "DenseNewton", "max_iterations":1, "allow_out_of_iterations":true})"_json;
 
     create_solver();
 }
