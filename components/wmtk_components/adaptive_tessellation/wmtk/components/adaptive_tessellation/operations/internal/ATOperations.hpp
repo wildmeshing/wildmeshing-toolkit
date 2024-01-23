@@ -30,7 +30,7 @@ public:
     Accessor<double> m_sum_error_accessor;
     Accessor<double> m_barrier_energy_accessor;
     Accessor<double> m_amips_error_accessor;
-    Accessor<double> m_edge_priority_accessor;
+    // Accessor<double> m_edge_priority_accessor;
 
     std::vector<std::shared_ptr<wmtk::operations::Operation>> m_ops;
     std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>

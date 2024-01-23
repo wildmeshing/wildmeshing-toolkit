@@ -184,8 +184,8 @@ void ATData::initialize_handles()
         m_uv_mesh_ptr->register_attribute<double>("amips_error", PrimitiveType::Face, 1, true);
     m_barrier_energy_handle =
         m_uv_mesh_ptr->register_attribute<double>("barrier_energy", PrimitiveType::Face, 1, true);
-    m_edge_priority_handle =
-        m_uv_mesh_ptr->register_attribute<double>("edge_priority", PrimitiveType::Edge, 1, true);
+    // m_edge_priority_handle =
+    //     m_uv_mesh_ptr->register_attribute<double>("edge_priority", PrimitiveType::Edge, 1, true);
 }
 
 const std::array<std::shared_ptr<image::Image>, 3>& ATData::images() const

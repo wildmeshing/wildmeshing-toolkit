@@ -39,6 +39,8 @@
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 
 #include "predicates.h"
+
+#include <fstream>
 namespace wmtk::components::operations::internal {
 using namespace wmtk::operations;
 // using namespace operations::tri_mesh;
@@ -77,8 +79,8 @@ ATOperations::ATOperations(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_barrier_energy_handle.as<double>()))
     , m_amips_error_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_amips_error_handle.as<double>()))
-    , m_edge_priority_accessor(
-          m_atdata.uv_mesh().create_accessor(m_atdata.m_edge_priority_handle.as<double>()))
+// , m_edge_priority_accessor(
+//       m_atdata.uv_mesh().create_accessor(m_atdata.m_edge_priority_handle.as<double>()))
 {
     m_ops.clear();
     if (m_atdata.funcs()[0]) {
@@ -107,14 +109,16 @@ ATOperations::ATOperations(
     // initialize_vertex_xyz();
     // set_edge_length_update_rule();
     // initialize_edge_length();
+    set_distance_error_update_rule();
+    initialize_distance_error();
+
     set_amips_error_update_rule();
     initialize_amips_error();
 
     set_sum_error_update_rule();
     initialize_sum_error();
 
-    set_distance_error_update_rule();
-    initialize_distance_error();
+
     // set_barrier_energy_update_rule();
     // initialize_barrier_energy();
 
@@ -293,6 +297,22 @@ void ATOperations::initialize_distance_error()
         double res = m_distance_weight * m_integral_ptr->get_error_one_triangle_exact(v0, v1, v2);
 
         m_distance_error_accessor.scalar_attribute(f) = res;
+    }
+    if (false) {
+        std::ofstream outputFileposition("AT_box_position_coord.json");
+        outputFileposition << static_cast<wmtk::components::function::utils::TextureIntegral&>(
+                                  *m_integral_ptr)
+                                  .m_jsonData_bary_coord.dump(4);
+        outputFileposition.close();
+        std::cout << "JSON data written to "
+                  << "AT_debug_position_coord.json" << std::endl;
+        std::ofstream outputFiletexcoord("AT_box_tex_coord.json");
+        outputFiletexcoord << static_cast<wmtk::components::function::utils::TextureIntegral&>(
+                                  *m_integral_ptr)
+                                  .m_jsonData_texture_coord.dump(4);
+        outputFiletexcoord.close();
+        std::cout << "JSON data written to "
+                  << "AT_debug_tex_coord.json" << std::endl;
     }
 }
 
