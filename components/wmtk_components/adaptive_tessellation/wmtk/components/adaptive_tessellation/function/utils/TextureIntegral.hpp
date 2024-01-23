@@ -15,6 +15,8 @@
 #include "BarycentricTriangle.hpp"
 #include "IntegralBase.hpp"
 #include "ThreeChannelPositionMapEvaluator.hpp"
+
+#include <nlohmann/json.hpp>
 namespace image = wmtk::components::image;
 namespace wmtk::components {
 namespace function::utils {
@@ -45,8 +47,8 @@ public:
     TextureIntegral& operator=(const TextureIntegral&) = delete; // copy assignment operator
     TextureIntegral& operator=(TextureIntegral&&); // move assignment operator
     ~TextureIntegral(); // destructor
-
     TextureIntegral(const ThreeChannelPositionMapEvaluator& evaluator);
+    TextureIntegral(const ThreeChannelPositionMapEvaluator& evaluator, bool debug);
 
 public:
     double get_error_one_triangle_exact(
@@ -158,9 +160,9 @@ public:
                 }
             }
         }
-        // scaling by jacobian
-        value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);
-        value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
+        // // scaling by jacobian
+        // value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);
+        // value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
         return value;
     }
 
@@ -192,6 +194,11 @@ protected:
 protected:
     const ThreeChannelPositionMapEvaluator& m_three_channel_evaluator;
     std::shared_ptr<Cache> m_cache;
+    bool m_debug;
+
+public:
+    mutable nlohmann::ordered_json m_jsonData_bary_coord,
+        m_jsonData_texture_coord; // this is just for debug
 };
 } // namespace function::utils
 } // namespace wmtk::components

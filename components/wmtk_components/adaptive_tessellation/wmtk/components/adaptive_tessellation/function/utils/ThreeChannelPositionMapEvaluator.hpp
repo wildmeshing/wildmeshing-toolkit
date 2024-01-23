@@ -6,6 +6,9 @@
 #include <wmtk/components/adaptive_tessellation/image/utils/SamplingParameters.hpp>
 #include <wmtk/components/adaptive_tessellation/image/utils/sampling_utils.hpp>
 
+#include <wmtk/utils/Logger.hpp>
+
+#include <cmath>
 namespace image = wmtk::components::image;
 namespace wmtk::components {
 namespace function::utils {
@@ -68,9 +71,8 @@ public:
     {
         int w = m_images[0]->width();
         int h = m_images[0]->height();
-
-        const auto sx = std::clamp(static_cast<int>(uv.x()), 0, w - 1);
-        const auto sy = std::clamp(static_cast<int>(uv.y()), 0, h - 1);
+        const int sx = std::clamp(static_cast<int>(std::round(uv.x() * w)), 0, w - 1);
+        const int sy = std::clamp(static_cast<int>(std::round(uv.y() * h)), 0, h - 1);
         return {sx, sy};
         // auto [xx, yy] = m_images[0]->get_pixel_index(uv.x(), uv.y());
         // return {

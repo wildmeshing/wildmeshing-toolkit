@@ -15,6 +15,18 @@ TextureIntegral::TextureIntegral(const ThreeChannelPositionMapEvaluator& evaluat
     std::cout << "==== TextureIntegral constructor" << std::endl;
 }
 
+TextureIntegral::TextureIntegral(const ThreeChannelPositionMapEvaluator& evaluator, bool debug)
+    : m_three_channel_evaluator(evaluator)
+    , m_cache(std::make_shared<Cache>())
+    , m_debug(debug)
+{
+    if (m_debug) {
+        std::cout << "==== TextureIntegral with debug" << std::endl;
+        m_jsonData_bary_coord = nlohmann::ordered_json();
+        m_jsonData_texture_coord = nlohmann::ordered_json();
+    }
+}
+
 TextureIntegral::~TextureIntegral() = default;
 
 std::pair<int, double> TextureIntegral::pixel_num_size_of_uv_triangle(
@@ -75,7 +87,6 @@ double TextureIntegral::get_error_one_triangle_exact(
     double value = 0.;
     Eigen::AlignedBox2d bbox = uv_triangle_bbox(uv_triangle_RowMajor);
     auto [num_pixels, pixel_size] = pixel_num_size_of_uv_triangle(bbox);
-
     for (auto y = 0; y < num_pixels; ++y) {
         for (auto x = 0; x < num_pixels; ++x) {
             Eigen::AlignedBox2d box;
@@ -95,14 +106,23 @@ double TextureIntegral::get_error_one_triangle_exact(
                 Vector3<double> texture_position =
                     m_three_channel_evaluator.uv_to_position(quad_point_uv);
                 Vector3<double> position = position_triangle_ColMajor * bary.get(quad_point_uv);
+
+                if (m_debug) {
+                    m_jsonData_bary_coord.push_back(
+                        {{"x", position(0)}, {"y", position(1)}, {"z", position(2)}});
+                    m_jsonData_texture_coord.push_back(
+                        {{"x", texture_position(0)},
+                         {"y", texture_position(1)},
+                         {"z", texture_position(2)}});
+                }
                 Vector3<double> diffp = texture_position - position;
                 value += squared_norm_T(diffp) * cache.quad.weights()[i];
             }
         }
     }
-    // scaling by jacobian
-    value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);
-    value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
+    // // scaling by jacobian
+    // value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);
+    // value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
     return value;
 }
 DScalar TextureIntegral::get_error_one_triangle_exact(
