@@ -161,14 +161,14 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
          std::make_shared<image::Image>(500, 500),
          std::make_shared<image::Image>(500, 500)}};
 
-    auto u = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
-    auto v = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
+    auto u_func = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
+    auto v_func = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
     auto height_function = [](const double& u, [[maybe_unused]] const double& v) -> double {
         return exp(-(pow(u - 0.5, 2) + pow(v - 0.5, 2)) / (2 * 0.1 * 0.1));
         // return sin(2 * M_PI * u) * cos(2 * M_PI * v);
     };
-    images[0]->set(u);
-    images[1]->set(v);
+    images[0]->set(u_func);
+    images[1]->set(v_func);
     images[2]->set(height_function);
 
 
@@ -180,11 +180,11 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         options.height_path);
     // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
 
-    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator image_evaluator(
-        images,
-        image::SAMPLING_METHOD::Bicubic,
-        image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
-    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator func_evaluator(funcs);
+    // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator image_evaluator(
+    //     images,
+    //     image::SAMPLING_METHOD::Bicubic,
+    //     image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
+    // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator func_evaluator(funcs);
     // wmtk::components::operations::internal::_debug_sampling(
     //     atdata.uv_mesh_ptr(),
     //     atdata.uv_handle(),
@@ -197,8 +197,6 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     //     image_evaluator,
     //     func_evaluator);
 
-
-    exit(0);
 
     AT::operations::internal::ATOperations at_ops(
         atdata,
@@ -239,13 +237,13 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     // 1.5) FaceSplit
     // at_ops.AT_face_split(at_ops.m_high_distance_faces_first, at_ops.m_distance_nondiff_energy);
     // 1) wmtk::operations::EdgeSplit
-    // at_ops.AT_edge_split(at_ops.m_high_distance_edges_first, at_ops.m_distance_energy);
+    at_ops.AT_edge_split(at_ops.m_high_distance_edges_first, at_ops.m_distance_nondiff_energy);
 
     // 3) EdgeSwap
-    // at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first, at_ops.m_sum_energy);
+    at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first, at_ops.m_distance_nondiff_energy);
 
     // 4) Smoothing
-    // at_ops.AT_smooth_interior(at_ops.m_sum_energy);
+    at_ops.AT_smooth_interior(at_ops.m_sum_energy);
 
 
     // nlohmann::ordered_json FaceErrorJson;

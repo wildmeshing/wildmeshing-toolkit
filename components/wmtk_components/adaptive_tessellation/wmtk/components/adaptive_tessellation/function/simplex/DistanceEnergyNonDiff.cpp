@@ -47,7 +47,6 @@ DistanceEnergyNonDiff::~DistanceEnergyNonDiff() = default;
 double DistanceEnergyNonDiff::get_value(const simplex::Simplex& domain_simplex) const
 {
     assert(embedded_dimension() == 2);
-    assert(coords.size() == 3);
     wmtk::attribute::ConstAccessor<double> accessor =
         mesh().create_const_accessor(attribute_handle().as<double>());
     auto [attrs, index] = utils::get_simplex_attributes(
