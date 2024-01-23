@@ -27,7 +27,7 @@ bool StateChanges::after(
 
     const double before = mesh().parent_scope(sum, top_dimension_tuples_before);
     const double after = sum(top_dimension_tuples_after);
-
-    return (after - before) * (after - before) > 1e-10;
+    if (after == std::numeric_limits<double>::infinity()) return false;
+    return (after - before) * (after - before) > 1e-16;
 }
 } // namespace wmtk::invariants
