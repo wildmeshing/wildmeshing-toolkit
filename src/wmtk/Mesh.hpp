@@ -149,7 +149,7 @@ public:
     Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
-    void serialize(MeshWriter& writer) const;
+    void serialize(MeshWriter& writer, const Mesh* local_root = nullptr) const;
 
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index

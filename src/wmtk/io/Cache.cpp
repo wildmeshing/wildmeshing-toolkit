@@ -173,7 +173,7 @@ void Cache::write_mesh(
     }
 
     HDF5Writer writer(p);
-    m.serialize(writer);
+    m.serialize(writer, &m);
 }
 
 bool Cache::export_cache(const std::filesystem::path& export_location)
