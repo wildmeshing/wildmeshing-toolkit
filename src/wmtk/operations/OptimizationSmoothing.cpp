@@ -7,6 +7,9 @@
 
 #include <polysolve/nonlinear/Solver.hpp>
 
+#include <fstream>
+#include <nlohmann/json.hpp>
+
 namespace wmtk::operations {
 
 class OptimizationSmoothing::WMTKProblem : public polysolve::nonlinear::Problem
@@ -154,9 +157,19 @@ std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simp
     // TODO call get_info
     auto x = problem.initial_value();
     try {
+        reset_sampling_cnt();
         // std::cout << "Solving" << std::endl;
         m_solver->minimize(problem, x);
         // std::cout << "Done " << x << std::endl;
+        nlohmann::json data = m_solver->get_info();
+        // std::ofstream file("solver_info.json");
+
+        // Write the JSON object to the file
+        std::cout << std::setw(4) << data << std::endl;
+        wmtk::operations::Operation::print_sampling_cnt();
+        // // Close the file
+        // file.close();
+
     } catch (const std::exception&) {
         return {};
     }

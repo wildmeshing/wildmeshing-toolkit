@@ -65,6 +65,10 @@ public:
 
     virtual void reserve_enough_simplices();
 
+    static void increase_sampling_cnt();
+    static void reset_sampling_cnt();
+    static void print_sampling_cnt();
+
 protected:
     /**
      * @brief returns an empty vector in case of failure

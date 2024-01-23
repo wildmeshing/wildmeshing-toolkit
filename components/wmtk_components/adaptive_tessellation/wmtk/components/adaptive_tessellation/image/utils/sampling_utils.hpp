@@ -2,6 +2,7 @@
 
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 // #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
+#include <wmtk/operations/Operation.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -202,6 +203,7 @@ Eigen::Vector<T, N> sample_bilinear(const std::array<std::shared_ptr<Image>, N>&
 template <typename T>
 T sample_bicubic(const Image& image, T u, T v)
 {
+    wmtk::operations::Operation::increase_sampling_cnt();
     auto w = image.width();
     auto h = image.height();
     // x, y are between 0 and 1

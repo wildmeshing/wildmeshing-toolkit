@@ -11,6 +11,8 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 
+#include <wmtk/utils/Logger.hpp>
+
 namespace wmtk::operations {
 
 
@@ -22,6 +24,19 @@ Operation::Operation(Mesh& mesh)
 Operation::~Operation() = default;
 
 
+static int sampling_cnt = 0;
+void Operation::increase_sampling_cnt()
+{
+    sampling_cnt++;
+}
+void Operation::reset_sampling_cnt()
+{
+    sampling_cnt = 0;
+}
+void Operation::print_sampling_cnt()
+{
+    wmtk::logger().info("num of smapling called {}", sampling_cnt);
+}
 std::shared_ptr<operations::AttributeTransferStrategyBase> Operation::get_transfer_strategy(
     const attribute::MeshAttributeHandle& attribute)
 {
@@ -60,13 +75,14 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 {
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
-
+    wmtk::operations::Operation::reset_sampling_cnt();
     if (before(simplex)) {
         auto unmods = unmodified_primitives(simplex);
         auto mods = execute(simplex);
         if (!mods.empty()) { // success should be marked here
             apply_attribute_transfer(mods);
             if (after(unmods, mods)) {
+                wmtk::operations::Operation::print_sampling_cnt();
                 return mods; // scope destructor is called
             }
         }
