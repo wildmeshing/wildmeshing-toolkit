@@ -135,12 +135,6 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(std::vector<Vector3
         points_vector.erase(points_vector.begin());
     }
 
-    // debug code
-    // std::cout << "--------" << std::endl;
-    // for (const auto& f : triangulated_faces) {
-    //     std::cout << f[0] << " " << f[1] << " " << f[2] << std::endl;
-    // }
-
     return triangulated_faces;
 }
 
@@ -188,16 +182,6 @@ generate_raw_tetmesh_from_input_surface(
         background_V = bgV;
     }
 
-    // } else {
-    //     generate_background_mesh(bbox_min, bbox_max, resolution, background_TV, background_V);
-
-    //     wmtk::logger().info(
-    //         "generated background mesh with resolution {} {} {}",
-    //         resolution[0],
-    //         resolution[1],
-    //         resolution[2]);
-    // }
-
 
     // prepare data for volume remesher
     // inputs
@@ -222,9 +206,6 @@ generate_raw_tetmesh_from_input_surface(
         tet_vrt_coords[i * 3 + 0] = background_V(i, 0);
         tet_vrt_coords[i * 3 + 1] = background_V(i, 1);
         tet_vrt_coords[i * 3 + 2] = background_V(i, 2);
-
-        // debug code
-        // std::cout << background_V.row(i) << std::endl << std::endl;
     }
 
     for (int64_t i = 0; i < background_TV.rows(); ++i) {
@@ -402,14 +383,6 @@ generate_raw_tetmesh_from_input_surface(
 
             std::array<int64_t, 4> tetra = {{v0, v1, v2, v3}};
 
-            // if inverted then fix the orientation
-            // if (orient3d(
-            //         v_coords[v0].data(),
-            //         v_coords[v1].data(),
-            //         v_coords[v2].data(),
-            //         v_coords[v3].data()) < 0) {
-            //     tetra = {{v1, v0, v2, v3}};
-            // }
 
             Vector3r v0v1 = v_coords[v1] - v_coords[v0];
             Vector3r v0v2 = v_coords[v2] - v_coords[v0];
@@ -418,28 +391,6 @@ generate_raw_tetmesh_from_input_surface(
                 tetra = {{v1, v0, v2, v3}};
             }
 
-            // if (orient3d(
-            //         v_coords[tetra[0]].data(),
-            //         v_coords[tetra[1]].data(),
-            //         v_coords[tetra[2]].data(),
-            //         v_coords[tetra[3]].data()) <= 0) {
-            //     Eigen::Matrix3d tmp;
-            //     tmp.col(0) = v_coords[tetra[1]] - v_coords[tetra[0]];
-            //     tmp.col(1) = v_coords[tetra[2]] - v_coords[tetra[0]];
-            //     tmp.col(2) = v_coords[tetra[3]] - v_coords[tetra[0]];
-            //     log_and_throw_error(
-            //         "flipped tet=({},{},{},{}) crash vol={} orient={}",
-            //         tetra[0],
-            //         tetra[1],
-            //         tetra[2],
-            //         tetra[3],
-            //         tmp.determinant(),
-            //         orient3d(
-            //             v_coords[tetra[0]].data(),
-            //             v_coords[tetra[1]].data(),
-            //             v_coords[tetra[2]].data(),
-            //             v_coords[tetra[3]].data()));
-            // }
 
             // push the tet to final queue;
             tets_final.push_back(tetra);
@@ -500,19 +451,6 @@ generate_raw_tetmesh_from_input_surface(
                      triangulated_faces[t][2],
                      centroid_idx}};
 
-                // check inverted tet and fix
-                // if (orient3d(
-                //         v_coords[tetra[0]].data(),
-                //         v_coords[tetra[1]].data(),
-                //         v_coords[tetra[2]].data(),
-                //         v_coords[tetra[3]].data()) < 0) {
-                //     tetra = {
-                //         {triangulated_faces[t][1],
-                //          triangulated_faces[t][0],
-                //          triangulated_faces[t][2],
-                //          centroid_idx}};
-                // }
-
                 Vector3r v0v1 = v_coords[tetra[1]] - v_coords[tetra[0]];
                 Vector3r v0v2 = v_coords[tetra[2]] - v_coords[tetra[0]];
                 Vector3r v0v3 = v_coords[tetra[3]] - v_coords[tetra[0]];
@@ -523,35 +461,6 @@ generate_raw_tetmesh_from_input_surface(
                          triangulated_faces[t][2],
                          centroid_idx}};
                 }
-
-                // if (orient3d(
-                //         v_coords[tetra[0]].data(),
-                //         v_coords[tetra[1]].data(),
-                //         v_coords[tetra[2]].data(),
-                //         v_coords[tetra[3]].data()) <= 0) {
-                //     Eigen::Matrix3d tmp;
-                //     tmp.col(0) = v_coords[tetra[1]] - v_coords[tetra[0]];
-                //     tmp.col(1) = v_coords[tetra[2]] - v_coords[tetra[0]];
-                //     tmp.col(2) = v_coords[tetra[3]] - v_coords[tetra[0]];
-                //     log_and_throw_error(
-                //         "flipped for poly tet=({},{},{},{}) crash vol={} orient={}. Coords {} {}
-                //         "
-                //         "{} {}",
-                //         tetra[0],
-                //         tetra[1],
-                //         tetra[2],
-                //         tetra[3],
-                //         tmp.determinant(),
-                //         orient3d(
-                //             v_coords[tetra[0]].data(),
-                //             v_coords[tetra[1]].data(),
-                //             v_coords[tetra[2]].data(),
-                //             v_coords[tetra[3]].data()),
-                //         v_coords[tetra[0]].transpose(),
-                //         v_coords[tetra[1]].transpose(),
-                //         v_coords[tetra[2]].transpose(),
-                //         v_coords[tetra[3]].transpose());
-                // }
 
                 tets_final.push_back(tetra);
 
@@ -623,39 +532,6 @@ generate_raw_tetmesh_from_input_surface(
 
     // transfer v_coords_final to V matrix and tets_final to TV matrix
     RowVectors3d V_final(v_coords_final.size(), 3);
-
-
-    // std::vector<bool> duplicated_entry(tets_final.size(), false);
-
-    // // check code
-    // for (int64_t i = 0; i < tets_final.size(); ++i) {
-    //     std::set<int64_t> set1 = {
-    //         tets_final[i][0],
-    //         tets_final[i][1],
-    //         tets_final[i][2],
-    //         tets_final[i][3]};
-    //     for (int64_t j = i + 1; j < tets_final.size(); ++j) {
-    //         std::set<int64_t> set2 = {
-    //             tets_final[j][0],
-    //             tets_final[j][1],
-    //             tets_final[j][2],
-    //             tets_final[j][3]};
-
-    //         if (set1 == set2) {
-    //             std::cout << "duplicated TV" << std::endl;
-    //             // throw std::runtime_error("duplicated TV");
-    //             duplicated_entry[j] = true;
-    //         }
-    //     }
-    // }
-
-    // std::vector<std::array<int64_t, 4>> tets_final_filtered;
-
-    // for (int64_t i = 0; i < tets_final.size(); ++i) {
-    //     if (!duplicated_entry[i]) {
-    //         tets_final_filtered.push_back(tets_final[i]);
-    //     }
-    // }
 
     RowVectors4l TV_final(tets_final.size(), 4);
 

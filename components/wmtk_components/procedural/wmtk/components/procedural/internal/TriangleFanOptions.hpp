@@ -25,7 +25,6 @@ public:
         friend void from_json(const nlohmann::json& nlohmann_json_j, Coordinates& nlohmann_json_t)
         {
             NLOHMANN_JSON_EXPAND(NLOHMANN_JSON_PASTE(NLOHMANN_JSON_FROM, name, radius, center));
-            std::cout << nlohmann_json_j.dump(2) << std::endl;
             assert(nlohmann_json_j.contains("degrees"));
             if (const auto& deg = nlohmann_json_j["degrees"]; deg.is_number()) {
                 nlohmann_json_t.degrees = std::array<double, 2>{{0.0, double(deg)}};

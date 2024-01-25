@@ -143,8 +143,6 @@ std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simp
     auto accessor = mesh().create_accessor(m_energy->attribute_handle().as<double>());
     WMTKProblem problem(std::move(accessor), simplex, m_invariants, *m_energy);
 
-    // std::cout << "smoothing: " << simplex.tuple().m_hash << std::endl;
-
     auto x = problem.initial_value();
     try {
         m_solver->minimize(problem, x);
