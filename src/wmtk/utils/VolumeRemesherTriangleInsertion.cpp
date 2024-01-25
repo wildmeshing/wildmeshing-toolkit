@@ -263,32 +263,19 @@ generate_raw_tetmesh_from_input_surface(
     std::vector<std::array<int64_t, 4>> tets_final; // final tets
     std::vector<std::array<bool, 4>> tet_face_on_input_surface; // tet local face on input surface
 
-    // for (int64_t i = 0; i < embedded_vertices.size() / 3; ++i) {
-    //     v_coords.emplace_back(
-    //         embedded_vertices[i * 3 + 0].get_d(),
-    //         embedded_vertices[i * 3 + 1].get_d(),
-    //         embedded_vertices[i * 3 + 2].get_d());
-    // }
-
     for (int64_t i = 0; i < embedded_vertices.size() / 3; ++i) {
-        v_coords.push_back(Vector3r());
+#ifdef USE_GNU_GMP_CLASSES
+        v_coords.emplace_back();
         v_coords.back()[0].init(embedded_vertices[3 * i + 0].get_mpq_t());
         v_coords.back()[1].init(embedded_vertices[3 * i + 1].get_mpq_t());
         v_coords.back()[2].init(embedded_vertices[3 * i + 2].get_mpq_t());
+#else
+        v_coords.emplace_back();
+        v_coords.back()[0].init_from_binary(embedded_vertices[3 * i + 0].get_str());
+        v_coords.back()[1].init_from_binary(embedded_vertices[3 * i + 1].get_str());
+        v_coords.back()[2].init_from_binary(embedded_vertices[3 * i + 2].get_str());
+#endif
     }
-
-
-    // debug code
-    // for (int64_t i = 0; i < embedded_vertices.size(); ++i) {
-    //     wmtk::Rational v1, v2, v3;
-    //     v1.init(embedded_vertices[i * 3 + 0].get_mpq_t());
-    //     v2.init(embedded_vertices[i * 3 + 1].get_mpq_t());
-    //     v3.init(embedded_vertices[i * 3 + 2].get_mpq_t());
-    //     std::cout << v1.to_double() << " " << v2.to_double() << " " << v3.to_double() << " "
-    //               << std::endl;
-    // }
-    //
-    // return std::make_tuple(nullptr, tet_face_on_input_surface);
 
     for (int64_t i = 0; i < embedded_facets.size(); ++i) {
         int64_t polysize = embedded_facets[i];
