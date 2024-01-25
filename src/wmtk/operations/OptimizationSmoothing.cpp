@@ -171,6 +171,7 @@ std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simp
         auto x = problem.initial_value();
         try {
             m_solver->minimize(problem, x);
+            accessor.vector_attribute(s.tuple()) = x;
         } catch (const std::exception&) {
             return {};
         }
