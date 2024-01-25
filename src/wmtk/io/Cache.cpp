@@ -200,7 +200,7 @@ void Cache::write_mesh(
             const_cast<Mesh&>(m).get_multi_mesh_root().shared_from_this()));
 
     HDF5Writer writer(p);
-    m.serialize(writer);
+    m.serialize(writer, &m);
 }
 
 bool Cache::export_cache(const std::filesystem::path& export_location)

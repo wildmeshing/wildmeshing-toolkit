@@ -1205,10 +1205,10 @@ bool MultiMeshManager::is_child(
     return true;
 }
 
-void MultiMeshManager::serialize(MeshWriter& writer) const
+void MultiMeshManager::serialize(MeshWriter& writer, const Mesh* local_root) const
 {
     for (const auto& c : m_children) {
-        c.mesh->serialize(writer);
+        c.mesh->serialize(writer, local_root);
     }
 }
 
