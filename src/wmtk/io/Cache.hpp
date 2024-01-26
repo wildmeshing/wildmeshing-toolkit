@@ -117,11 +117,7 @@ public:
      */
     bool import_cache(const std::filesystem::path& import_location);
 
-    std::vector<int64_t> absolute_multi_mesh_id(const std::string& name) const
-    {
-        auto mm_name = name.substr(0, name.find('.'));
-        return m_multimeshes.at(mm_name).get_id_from_path(name);
-    }
+    std::vector<int64_t> absolute_multi_mesh_id(const std::string& name) const;
 
     /**
      * @brief Compare two caches for equality.

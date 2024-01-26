@@ -14,6 +14,7 @@
 
 using json = nlohmann::json;
 using namespace wmtk;
+namespace {
 
 bool load_json(const std::string& json_file, json& out)
 {
@@ -23,6 +24,17 @@ bool load_json(const std::string& json_file, json& out)
 
     file >> out;
 
+    return true;
+}
+
+bool contains_results(const json& in_args)
+{
+    const auto& tests = in_args["tests"];
+    for (const auto& type : {"vertices", "edges", "faces", "tetrahedra"}) {
+        if (!(tests.contains(type) && tests[type].is_number())) {
+            return false;
+        }
+    }
     return true;
 }
 
@@ -46,9 +58,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
     in_args["root_path"] = json_file;
 
 
-    if (!compute_validation &&
-        (!in_args["tests"].contains("vertices") || !in_args["tests"].contains("edges") ||
-         !in_args["tests"].contains("faces") || !in_args["tests"].contains("tetrahedra"))) {
+    if (compute_validation && !contains_results(in_args)) {
         spdlog::error("JSON file missing vertices edges faces or tetrahedra or meshes key. Add a * "
                       "to the beginning of filename to allow appends.");
         return 2;
@@ -155,12 +165,14 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
 
     return 0;
 }
-
+} // namespace
+namespace {
 #if defined(NDEBUG)
 std::string tagsrun = "[integration]";
 #else
 std::string tagsrun = "[.][integration]";
 #endif
+} // namespace
 TEST_CASE("integration", tagsrun)
 {
     // Disabled on Windows CI, due to the requirement for Pardiso.

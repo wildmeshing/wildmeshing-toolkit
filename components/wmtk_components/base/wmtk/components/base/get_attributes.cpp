@@ -57,7 +57,6 @@ get_attribute(const io::Cache& cache, const Mesh& m, const nlohmann::json& attri
     } else if (attribute.is_object()) {
         const std::string name = attribute["name"];
         const std::string mesh = attribute["mesh"];
-        const std::string parent = mesh.substr(0, mesh.find("."));
         const auto absolute_multi_mesh_id = cache.absolute_multi_mesh_id(mesh);
 
         // assume that m is the parent!
