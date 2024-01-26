@@ -51,7 +51,8 @@ DScalar SYMDIR::eval(const simplex::Simplex& domain_simplex, const std::vector<D
         ConstAccessor<double> ref_accessor =
             m_ref_mesh.create_const_accessor(m_vertex_attribute_handle.as<double>());
 
-        simplex::Simplex ref_domain_simplex = mesh().map_to_parent(domain_simplex);
+        simplex::Simplex ref_domain_simplex = m_ref_mesh.map(m_ref_mesh, domain_simplex).front();
+        // simplex::Simplex ref_domain_simplex = mesh().map_to_parent(domain_simplex);
 
         // because get coordinates is doing this :)
         if (!m_ref_mesh.is_ccw(ref_domain_simplex.tuple())) {

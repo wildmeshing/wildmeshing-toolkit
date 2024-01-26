@@ -4,6 +4,7 @@
 #include <nlohmann/json.hpp>
 #include <wmtk/components/base/Paths.hpp>
 #include <wmtk/components/extreme_opt/extreme_opt.hpp>
+#include <wmtk/components/extreme_opt/extreme_opt_single.hpp>
 #include <wmtk/components/extreme_opt/internal/ExtremeOptOptions.hpp>
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/io/Cache.hpp>
@@ -54,7 +55,7 @@ int main(int argc, char** argv)
     wmtk::components::input(Paths(), cut_json, cache);
 
 
-    wmtk::components::extreme_opt(Paths(), extremeopt_json, cache);
-
+    // wmtk::components::extreme_opt(Paths(), extremeopt_json, cache);
+    wmtk::components::extreme_opt_single(Paths(), extremeopt_json, cache);
     return 0;
 }
