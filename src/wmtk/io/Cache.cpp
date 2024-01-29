@@ -31,6 +31,7 @@ namespace wmtk::io {
 Cache::Cache(Cache&& o)
     : m_cache_dir(std::move(o.m_cache_dir))
     , m_file_paths(std::move(o.m_file_paths))
+    , m_multimeshes(std::move(o.m_multimeshes))
     , m_delete_cache(o.m_delete_cache)
 {
     // make sure that the other cache doesn't use delete semantics anymore
@@ -40,6 +41,7 @@ Cache& Cache::operator=(Cache&& o)
 {
     m_cache_dir = std::move(o.m_cache_dir);
     m_file_paths = std::move(o.m_file_paths);
+    m_multimeshes = std::move(o.m_multimeshes);
     m_delete_cache = o.m_delete_cache;
     // make sure that the other cache doesn't use delete semantics anymore
     o.m_delete_cache = false;

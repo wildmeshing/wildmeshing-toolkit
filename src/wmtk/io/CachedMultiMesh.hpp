@@ -2,11 +2,10 @@
 
 #include <memory>
 namespace wmtk {
-    class Mesh;
+class Mesh;
 }
 
 namespace wmtk::io {
-
 
 
 // temporary hack for the deadline. In the future meshes need to store their own names if they want
@@ -28,10 +27,14 @@ public:
 
 
     std::shared_ptr<Mesh> get(const std::string& name);
-    std::shared_ptr<Mesh> get_root() ;
+    std::shared_ptr<Mesh> get_root();
 
     const std::vector<int64_t>& get_id(const std::string& name) const;
     const std::vector<int64_t>& get_id_from_path(const std::string& name) const;
+
+
+    CachedMultiMesh(CachedMultiMesh&&) ;
+    CachedMultiMesh& operator=(CachedMultiMesh&&) ;
 
 private:
     std::string m_name;

@@ -33,13 +33,6 @@ public:
 private:
     std::vector<std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>>
         m_new_attr_strategies;
-
-    template <typename MeshType>
-    std::vector<simplex::Simplex> execute_tmpl(MeshType& mesh, const simplex::Simplex& simplex);
-    template <typename MeshType>
-    std::vector<simplex::Simplex> unmodified_primitives_tmpl(
-        const MeshType& mesh,
-        const simplex::Simplex& simplex) const;
 };
 
 } // namespace wmtk::operations

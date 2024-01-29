@@ -15,6 +15,12 @@ CachedMultiMesh::CachedMultiMesh(
 {}
 CachedMultiMesh::~CachedMultiMesh() = default;
 
+
+void CachedMultiMesh::load(const std::filesystem::path& path)
+{
+    load(wmtk::read_mesh(path));
+}
+
 void CachedMultiMesh::load(std::shared_ptr<Mesh> root)
 {
     m_root = root;
@@ -46,15 +52,22 @@ std::shared_ptr<Mesh> CachedMultiMesh::get_root()
 {
     return m_root;
 }
+namespace {
+const static std::vector<int64_t> root_id = {};
+}
 
 const std::vector<int64_t>& CachedMultiMesh::get_id(const std::string& name) const
 {
-        const static std::vector<int64_t> root_id = {};
     if (name.empty()) {
         return root_id;
     }
     if (!name.empty() && m_multimesh_names.find(name) == m_multimesh_names.end()) {
-        throw std::runtime_error(fmt::format("Could not find named multimesh {} in {}. Key {} was not among [{}]", name, m_name, name, "hi"));
+        throw std::runtime_error(fmt::format(
+            "Could not find named multimesh {} in {}. Key {} was not among [{}]",
+            name,
+            m_name,
+            name,
+            "hi"));
     }
     return root_id;
 }
@@ -64,7 +77,7 @@ const std::vector<int64_t>& CachedMultiMesh::get_id_from_path(const std::string&
     // double checks that this starts with //mesh.
     assert(name.substr(0, idx) == m_name);
 
-    if(idx == std::string::npos) {
+    if (idx == std::string::npos) {
         return get_id("");
     }
     const std::string subname = name.substr(idx + 1);
@@ -72,9 +85,7 @@ const std::vector<int64_t>& CachedMultiMesh::get_id_from_path(const std::string&
     return get_id(subname);
 }
 
+CachedMultiMesh::CachedMultiMesh(CachedMultiMesh&&) = default;
+CachedMultiMesh& CachedMultiMesh::operator=(CachedMultiMesh&&) default;
 
-void CachedMultiMesh::load(const std::filesystem::path& path)
-{
-    m_root = wmtk::read_mesh(path);
-}
 } // namespace wmtk::io
