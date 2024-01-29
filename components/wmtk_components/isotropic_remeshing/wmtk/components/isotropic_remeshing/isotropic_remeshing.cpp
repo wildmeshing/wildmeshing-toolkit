@@ -84,6 +84,7 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
     other_positions = base::get_attributes(cache, *mesh_in, options.attributes.other_positions);
 
 
+    spdlog::info("About to call internal!");
     internal::isotropic_remeshing(
         pos_handle,
         pass_through_attributes,
@@ -95,7 +96,9 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
         options.attributes.update_other_positions,
         position_for_inversion);
 
+    spdlog::info("About to write!");
     // output
     cache.write_mesh(*mesh_in, options.output);
+    spdlog::info("Finished writing!");
 }
 } // namespace wmtk::components

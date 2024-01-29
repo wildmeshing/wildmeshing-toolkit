@@ -64,10 +64,10 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
         return 2;
     }
 
-    in_args["settings"] = R"({
-        "log_level": 5,
-        "opt_log_level": 5
-        })"_json;
+    //in_args["settings"] = R"({
+    //    "log_level": 5,
+    //    "opt_log_level": 5
+    //    })"_json;
 
     utils::set_random_seed(0);
     auto cache = wmtk::components::run_components(in_args, true);
@@ -173,6 +173,8 @@ std::string tagsrun = "[integration]";
 std::string tagsrun = "[.][integration]";
 #endif
 } // namespace
+#if !defined(WMTK_COMPONENTS_USE_INDIVIDUAL_INTEGRATION_TESTS)
+
 TEST_CASE("integration", tagsrun)
 {
     // Disabled on Windows CI, due to the requirement for Pardiso.
@@ -198,3 +200,32 @@ TEST_CASE("integration", tagsrun)
         for (auto& t : failing_tests) std::cout << t << std::endl;
     }
 }
+#else
+
+#define WMTK_INTEGRATION(NAME, DO_VALIDATION)\
+TEST_CASE(std::string("integration_") + NAME, tagsrun) \
+{ \
+    std::string path = std::string("unit_test/") + NAME + ".json"; \
+    bool compute_validation = DO_VALIDATION; \
+    spdlog::info("Processing {}", NAME); \
+    auto flag = authenticate_json(WMTK_DATA_DIR "/" + path, compute_validation); \
+    REQUIRE(flag == 0); \
+}
+
+
+
+WMTK_INTEGRATION("input",false);
+WMTK_INTEGRATION("to_points",false);
+WMTK_INTEGRATION("delaunay",false);
+WMTK_INTEGRATION("insertion",false);
+WMTK_INTEGRATION("insertion_open",false);
+WMTK_INTEGRATION("multimesh",false);
+WMTK_INTEGRATION("multimesh_boundary_2d",false);
+WMTK_INTEGRATION("multimesh_boundary_3d",false);
+WMTK_INTEGRATION("isotropic_remeshing",false);
+WMTK_INTEGRATION("isotropic_remeshing_mm",false);
+WMTK_INTEGRATION("disk_fan_mm",false);
+//WMTK_INTEGRATION("grid",false);
+WMTK_INTEGRATION("wildmeshing_2d",false);
+WMTK_INTEGRATION("wildmeshing_3d",false);
+#endif

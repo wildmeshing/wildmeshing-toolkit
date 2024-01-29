@@ -53,16 +53,15 @@ attribute::MeshAttributeHandle
 get_attribute(const io::Cache& cache, const Mesh& m, const nlohmann::json& attribute)
 {
     if (attribute.is_string()) {
+        // TODO: is this appropriate? the mesh passed in should probably be ignored
         return get_attribute(m, attribute.get<std::string>());
     } else if (attribute.is_object()) {
         const std::string name = attribute["name"];
         const std::string mesh = attribute["mesh"];
-        const auto absolute_multi_mesh_id = cache.absolute_multi_mesh_id(mesh);
 
-        // assume that m is the parent!
-        const auto& child = m.get_multi_mesh_mesh(absolute_multi_mesh_id);
+        const auto& child_ptr = cache.read_mesh(mesh);
 
-        return get_attribute(child, name);
+        return get_attribute(*child_ptr, name);
     }
 
     log_and_throw_error("Invalid type for {}.", attribute);
