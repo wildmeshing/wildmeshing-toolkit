@@ -86,6 +86,6 @@ const std::vector<int64_t>& CachedMultiMesh::get_id_from_path(const std::string&
 }
 
 CachedMultiMesh::CachedMultiMesh(CachedMultiMesh&&) = default;
-CachedMultiMesh& CachedMultiMesh::operator=(CachedMultiMesh&&) default;
+CachedMultiMesh& CachedMultiMesh::operator=(CachedMultiMesh&&) = default;
 
 } // namespace wmtk::io

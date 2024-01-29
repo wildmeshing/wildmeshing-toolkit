@@ -173,34 +173,6 @@ std::string tagsrun = "[integration]";
 std::string tagsrun = "[.][integration]";
 #endif
 } // namespace
-#if !defined(WMTK_COMPONENTS_USE_INDIVIDUAL_INTEGRATION_TESTS)
-
-TEST_CASE("integration", tagsrun)
-{
-    // Disabled on Windows CI, due to the requirement for Pardiso.
-    std::ifstream file(WMTK_TEST_DIR "/integration_test_list.txt");
-    std::vector<std::string> failing_tests;
-    std::string line;
-    while (std::getline(file, line)) {
-        bool compute_validation = false;
-        if (line[0] == '#')
-            continue;
-        else if (line[0] == '*') {
-            compute_validation = true;
-            line = line.substr(1);
-        }
-        spdlog::info("Processing {}", line);
-        auto flag = authenticate_json(WMTK_DATA_DIR "/" + line, compute_validation);
-        CAPTURE(line);
-        CHECK(flag == 0);
-        if (flag != 0) failing_tests.push_back(line);
-    }
-    if (failing_tests.size() > 0) {
-        std::cout << "Failing tests:" << std::endl;
-        for (auto& t : failing_tests) std::cout << t << std::endl;
-    }
-}
-#else
 
 #define WMTK_INTEGRATION(NAME, DO_VALIDATION)\
 TEST_CASE(std::string("integration_") + NAME, tagsrun) \
@@ -228,4 +200,3 @@ WMTK_INTEGRATION("disk_fan_mm",false);
 //WMTK_INTEGRATION("grid",false);
 WMTK_INTEGRATION("wildmeshing_2d",false);
 WMTK_INTEGRATION("wildmeshing_3d",false);
-#endif
