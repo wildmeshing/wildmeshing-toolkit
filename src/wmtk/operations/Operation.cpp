@@ -62,12 +62,18 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
 
+    spdlog::error("into before");
     if (before(simplex)) {
+    spdlog::error("unmod");
         auto unmods = unmodified_primitives(simplex);
+    spdlog::error("exec");
         auto mods = execute(simplex);
         if (!mods.empty()) { // success should be marked here
+    spdlog::error("transfer");
             apply_attribute_transfer(mods);
+    spdlog::error("after");
             if (after(unmods, mods)) {
+    spdlog::error("returns");
                 return mods; // scope destructor is called
             }
         }
