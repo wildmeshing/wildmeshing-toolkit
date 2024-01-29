@@ -42,7 +42,9 @@ public:
 
     void add(const SimplexCollection& simplex_collection);
 
-    void add(const PrimitiveType& ptype, const std::vector<Tuple>& tuple_vec);
+    void add(const PrimitiveType ptype, const std::vector<Tuple>& tuple_vec);
+
+    void add(const PrimitiveType ptype, const Tuple& tuple);
     /**
      * @brief Sort simplex vector and remove duplicates.
      */
