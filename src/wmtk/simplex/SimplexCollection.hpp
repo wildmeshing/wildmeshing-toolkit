@@ -97,6 +97,8 @@ public:
 
     inline size_t size() const { return m_simplices.size(); }
 
+    void reserve(const size_t new_cap);
+
 
 protected:
     const Mesh& m_mesh;

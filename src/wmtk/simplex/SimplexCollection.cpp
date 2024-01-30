@@ -168,4 +168,9 @@ bool SimplexCollection::operator==(const SimplexCollection& other) const
     return are_simplex_collections_equal(*this, other);
 }
 
+void SimplexCollection::reserve(const size_t new_cap)
+{
+    m_simplices.reserve(new_cap);
+}
+
 } // namespace wmtk::simplex
