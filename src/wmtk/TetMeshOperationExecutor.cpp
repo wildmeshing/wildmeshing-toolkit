@@ -3,6 +3,7 @@
 #include <wmtk/simplex/boundary.hpp>
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/faces.hpp>
+#include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
@@ -114,8 +115,13 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
 
 
     // get the closed star of the edge
-    const simplex::SimplexCollection edge_link =
+    simplex::SimplexCollection edge_closed_star_vertices =
         simplex::link(m_mesh, simplex::Simplex::edge(operating_tuple));
+
+    simplex::faces_single_dimension(
+        edge_closed_star_vertices,
+        simplex::Simplex::edge(operating_tuple),
+        PrimitiveType::Vertex);
 
     // get all tets incident to the edge
     // TODO: having another implementation, remove this here
@@ -125,7 +131,8 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
 
     // update hash on all tets in the two-ring neighborhood
     simplex::SimplexCollection hash_update_region(m);
-    for (const simplex::Simplex& v : edge_link.simplex_vector(PrimitiveType::Vertex)) {
+    for (const simplex::Simplex& v :
+         edge_closed_star_vertices.simplex_vector(PrimitiveType::Vertex)) {
         simplex::top_dimension_cofaces(hash_update_region, v, false);
     }
     hash_update_region.sort_and_clean();
