@@ -5,8 +5,8 @@
 namespace wmtk::simplex {
 
 void top_dimension_cofaces(
-    SimplexCollection& simplex_collection,
     const Simplex& simplex,
+    SimplexCollection& simplex_collection,
     const bool sort_and_clean = true);
 
 

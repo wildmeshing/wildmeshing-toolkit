@@ -133,7 +133,7 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     simplex::SimplexCollection hash_update_region(m);
     for (const simplex::Simplex& v :
          edge_closed_star_vertices.simplex_vector(PrimitiveType::Vertex)) {
-        simplex::top_dimension_cofaces(hash_update_region, v, false);
+        simplex::top_dimension_cofaces(v, hash_update_region, false);
     }
     hash_update_region.sort_and_clean();
 

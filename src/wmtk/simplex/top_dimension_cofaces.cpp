@@ -347,8 +347,8 @@ void top_dimension_cofaces_tuples_tet(
 } // namespace
 
 void top_dimension_cofaces(
-    SimplexCollection& simplex_collection,
     const Simplex& simplex,
+    SimplexCollection& simplex_collection,
     const bool sort_and_clean)
 {
     const auto& m = simplex_collection.mesh();
