@@ -7,6 +7,7 @@
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/function/simplex/TriangleAreaAD.hpp>
 #include <wmtk/invariants/EdgeValenceInvariant.hpp>
+#include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/FunctionInvariant.hpp>
 #include <wmtk/invariants/FunctionNumericalInvariant.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
@@ -56,6 +57,20 @@ ExtremeOptSingle::ExtremeOptSingle(
     , m_uv_handle{m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex)}
 {}
 
+void ExtremeOptSingle::get_boundary_mesh()
+{
+    int64_t value = 1;
+    PrimitiveType ptype = get_primitive_type_from_id(m_mesh.top_cell_dimension() - 1);
+
+    // get boundary
+    auto is_boundary_handle =
+        m_mesh.register_attribute<int64_t>("is_boundary", PrimitiveType::Edge, 1);
+    auto is_boundary_accessor = m_mesh.create_accessor(is_boundary_handle.as<int64_t>());
+    for (const auto& t : m_mesh.get_all(ptype)) {
+        is_boundary_accessor.scalar_attribute(t) = m_mesh.is_boundary(ptype, t) ? value : 0;
+    }
+}
+
 void ExtremeOptSingle::write_debug_mesh(const long test_id)
 {
     m_mesh.consolidate();
@@ -86,6 +101,8 @@ void ExtremeOptSingle::write_debug_mesh(const long test_id)
 
 void ExtremeOptSingle::remeshing(const long iterations)
 {
+    int num_faces_before = m_mesh.get_all(PrimitiveType::Face).size();
+
     // create energy to optimize
     std::shared_ptr<function::PerSimplexFunction> symdir_no_diff =
         std::make_shared<function::SYMDIR>(m_mesh, m_mesh, m_position_handle, m_uv_handle, true);
@@ -252,7 +269,11 @@ void ExtremeOptSingle::remeshing(const long iterations)
         }
 
         if (m_do_collapse) {
-            m_scheduler.run_operation_on_all(*collapse_op);
+            int n_faces = m_mesh.get_all(PrimitiveType::Face).size();
+            if (n_faces >= num_faces_before / 5) {
+                m_scheduler.run_operation_on_all(*collapse_op);
+            }
+
             wmtk::logger().info("Done collapse {}", i);
             // wmtk::logger().info("Energy max after collapse: {}", evaluate_energy_max());
             E_sum = evaluate_function_sum(symdir_no_diff);
