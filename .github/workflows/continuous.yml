@@ -75,12 +75,11 @@ jobs:
 
   MacOS:
     name: ${{ matrix.name }} (${{ matrix.config }})
-    #runs-on: ${{ matrix.os }}
-    runs-on: [macos-latest, macos-14]
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest]
+        os: [macos-latest, macos-14]
         config: [Debug, Release]
         include:
           - os: macos-latest
@@ -144,6 +143,9 @@ jobs:
         uses: actions/checkout@v4.1.1
         with:
           fetch-depth: 10
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
 
       - name: Dependencies
         run: |
