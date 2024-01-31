@@ -5,6 +5,7 @@
 #include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/simplex/link.hpp>
+#include <wmtk/simplex/link_single_dimension.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -115,13 +116,19 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
 
 
     // get the closed star of the edge
-    simplex::SimplexCollection edge_closed_star_vertices =
-        simplex::link(m_mesh, simplex::Simplex::edge(operating_tuple));
+    simplex::SimplexCollection edge_closed_star_vertices = simplex::link_single_dimension(
+        m_mesh,
+        simplex::Simplex::edge(operating_tuple),
+        PrimitiveType::Vertex);
 
     simplex::faces_single_dimension(
         edge_closed_star_vertices,
         simplex::Simplex::edge(operating_tuple),
         PrimitiveType::Vertex);
+
+    assert(
+        edge_closed_star_vertices.simplex_vector().size() ==
+        edge_closed_star_vertices.simplex_vector(PrimitiveType::Vertex).size());
 
     // get all tets incident to the edge
     // TODO: having another implementation, remove this here
@@ -131,17 +138,16 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
 
     // update hash on all tets in the two-ring neighborhood
     simplex::SimplexCollection hash_update_region(m);
-    for (const simplex::Simplex& v :
-         edge_closed_star_vertices.simplex_vector(PrimitiveType::Vertex)) {
+    for (const simplex::Simplex& v : edge_closed_star_vertices.simplex_vector()) {
         simplex::top_dimension_cofaces(v, hash_update_region, false);
     }
     hash_update_region.sort_and_clean();
 
     global_simplex_ids_with_potentially_modified_hashes.resize(4);
     simplex::SimplexCollection faces(m_mesh);
+    faces.reserve(hash_update_region.simplex_vector().size() * 15);
 
-    for (const simplex::Simplex& t :
-         hash_update_region.simplex_vector(PrimitiveType::Tetrahedron)) {
+    for (const simplex::Simplex& t : hash_update_region.simplex_vector()) {
         cell_ids_to_update_hash.push_back(m_mesh.id(t));
 
         faces.add(wmtk::simplex::faces(m, t, false));
