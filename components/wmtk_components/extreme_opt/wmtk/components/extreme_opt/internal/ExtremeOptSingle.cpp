@@ -20,10 +20,12 @@
 #include <wmtk/invariants/SeamlessCollapseInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
 #include <wmtk/operations/SeamlessSmoothing.hpp>
+#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -69,6 +71,11 @@ void ExtremeOptSingle::get_boundary_mesh()
     for (const auto& t : m_mesh.get_all(ptype)) {
         is_boundary_accessor.scalar_attribute(t) = m_mesh.is_boundary(ptype, t) ? value : 0;
     }
+    auto child_mesh = wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+        m_mesh,
+        "is_boundary",
+        value,
+        ptype);
 }
 
 void ExtremeOptSingle::write_debug_mesh(const long test_id)
@@ -103,6 +110,9 @@ void ExtremeOptSingle::remeshing(const long iterations)
 {
     int num_faces_before = m_mesh.get_all(PrimitiveType::Face).size();
 
+    auto energy_handle = m_mesh.register_attribute<double>("energy", wmtk::PrimitiveType::Face, 1);
+    auto energy_acc = m_mesh.create_accessor(energy_handle.as<double>());
+
     // create energy to optimize
     std::shared_ptr<function::PerSimplexFunction> symdir_no_diff =
         std::make_shared<function::SYMDIR>(m_mesh, m_mesh, m_position_handle, m_uv_handle, true);
@@ -111,11 +121,16 @@ void ExtremeOptSingle::remeshing(const long iterations)
     std::shared_ptr<function::PerSimplexFunction> triangle_area =
         std::make_shared<function::TriangleAreaAD>(m_mesh, m_position_handle);
 
-    auto evaluate_function_sum = [&](std::shared_ptr<function::PerSimplexFunction> f) {
+    auto evaluate_function_sum = [&](std::shared_ptr<function::PerSimplexFunction> f,
+                                     bool update_energy_attribute = false) {
         double function_sum = 0;
         const auto all_face_tuples = m_mesh.get_all(PrimitiveType::Face);
         for (const auto& t : all_face_tuples) {
-            function_sum += f->get_value(simplex::Simplex::face(t));
+            double face_value = f->get_value(simplex::Simplex::face(t));
+            function_sum += face_value;
+            if (update_energy_attribute) {
+                energy_acc.scalar_attribute(t) = face_value;
+            }
         }
         return function_sum;
     };
@@ -162,6 +177,12 @@ void ExtremeOptSingle::remeshing(const long iterations)
             m_uv_handle,
             SplitBasicStrategy::None,
             SplitRibBasicStrategy::Mean);
+
+        // TODO: need this Ffadsfdsfasdf
+        split_op->set_new_attribute_strategy(
+            energy_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
         // long edge first priority
         split_op->set_priority(long_edge_first);
     }
@@ -184,6 +205,13 @@ void ExtremeOptSingle::remeshing(const long iterations)
         // Energy Decrease
         collapse_op->add_invariant(
             std::make_shared<FunctionInvariant>(m_mesh.top_simplex_type(), symdir_no_diff));
+
+        // // add envelope invariant
+        // collapse_op->add_invariant(std::make_shared<EnvelopeInvariant>(
+        //     m_position_handle,
+        //     0.01 * m_length_max,
+        //     m_position_handle));
+
         {
             auto tmp = std::make_shared<CollapseNewAttributeStrategy<double>>(m_uv_handle);
             tmp->set_strategy(CollapseBasicStrategy::CopyOther);
@@ -235,6 +263,12 @@ void ExtremeOptSingle::remeshing(const long iterations)
         swap_op->collapse().set_new_attribute_strategy(
             m_uv_handle,
             CollapseBasicStrategy::CopyOther);
+
+        // TODO: need this to run
+        swap_op->split().set_new_attribute_strategy(
+            energy_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
     }
 
     auto energy =
@@ -243,7 +277,10 @@ void ExtremeOptSingle::remeshing(const long iterations)
     smooth_op->add_invariant(
         std::make_shared<SimplexInversionInvariant>(m_mesh, m_uv_handle.as<double>()));
 
-    double E_sum = evaluate_function_sum(symdir_no_diff);
+    // set to serialize energy in the vtu files
+    bool m_serialize_energy = true;
+
+    double E_sum = evaluate_function_sum(symdir_no_diff, m_serialize_energy);
     double area_sum = evaluate_function_sum(triangle_area);
     wmtk::logger().info("Energy sum before: {}", E_sum);
     wmtk::logger().info("Energy Avg before: {}", E_sum / area_sum);
@@ -258,7 +295,7 @@ void ExtremeOptSingle::remeshing(const long iterations)
             m_scheduler.run_operation_on_all(*split_op);
             wmtk::logger().info("Done split {}", i);
             // wmtk::logger().info("Energy max after split: {}", evaluate_energy_max());
-            E_sum = evaluate_function_sum(symdir_no_diff);
+            E_sum = evaluate_function_sum(symdir_no_diff, m_serialize_energy);
             wmtk::logger().info("Energy sum after split: {}\n", E_sum);
             wmtk::logger().info("Energy avg after split: {}\n", E_sum / area_sum);
 
@@ -270,13 +307,13 @@ void ExtremeOptSingle::remeshing(const long iterations)
 
         if (m_do_collapse) {
             int n_faces = m_mesh.get_all(PrimitiveType::Face).size();
-            if (n_faces >= num_faces_before / 5) {
-                m_scheduler.run_operation_on_all(*collapse_op);
-            }
+            // if (n_faces >= num_faces_before / 5) {
+            //     m_scheduler.run_operation_on_all(*collapse_op);
+            // }
 
             wmtk::logger().info("Done collapse {}", i);
             // wmtk::logger().info("Energy max after collapse: {}", evaluate_energy_max());
-            E_sum = evaluate_function_sum(symdir_no_diff);
+            E_sum = evaluate_function_sum(symdir_no_diff, m_serialize_energy);
             area_sum = evaluate_function_sum(triangle_area);
             wmtk::logger().info("Energy sum after collapse: {}\n", E_sum);
             wmtk::logger().info("Energy avg after collapse: {}\n", E_sum / area_sum);
@@ -291,7 +328,7 @@ void ExtremeOptSingle::remeshing(const long iterations)
             m_scheduler.run_operation_on_all(*swap_op);
             wmtk::logger().info("Done swap {}", i);
             // wmtk::logger().info("Energy max after swap: {}", evaluate_energy_max());
-            E_sum = evaluate_function_sum(symdir_no_diff);
+            E_sum = evaluate_function_sum(symdir_no_diff, m_serialize_energy);
             area_sum = evaluate_function_sum(triangle_area);
             wmtk::logger().info("Energy sum after swap: {}\n", E_sum);
             wmtk::logger().info("Energy avg after swap: {}\n", E_sum / area_sum);
@@ -306,7 +343,7 @@ void ExtremeOptSingle::remeshing(const long iterations)
             m_scheduler.run_operation_on_all(*smooth_op);
             wmtk::logger().info("Done smooth {}", i);
             // wmtk::logger().info("Energy max after smooth: {}", evaluate_energy_max());
-            E_sum = evaluate_function_sum(symdir_no_diff);
+            E_sum = evaluate_function_sum(symdir_no_diff, m_serialize_energy);
             // area_sum = evaluate_function_sum(triangle_area);
             wmtk::logger().info("Energy sum after smooth: {}\n", E_sum);
             wmtk::logger().info("Energy avg after smooth: {}\n", E_sum / area_sum);
@@ -316,6 +353,7 @@ void ExtremeOptSingle::remeshing(const long iterations)
             }
         }
 
+        m_mesh.consolidate();
         // wmtk::logger().info("Energy max after iter {} : {}", i, evaluate_energy_max());
         // wmtk::logger().info("Energy sum after iter {} : {}", i, evaluate_function_sum());
         // wmtk::logger().info("Energy avg after iter{} : {}\n", i, symdir_sum.get_energy_avg());
