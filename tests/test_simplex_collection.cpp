@@ -17,6 +17,7 @@
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/simplex/link_condition.hpp>
 #include <wmtk/simplex/link_iterable.hpp>
+#include <wmtk/simplex/link_single_dimension.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/simplex/open_star_iterable.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
@@ -1255,16 +1256,35 @@ TEST_CASE("simplex_link_trimesh", "[simplex_collection]")
         SimplexCollection os_tri = link(m, simplex::Simplex::vertex(t));
         SimplexCollection os_m = link_slow(m, simplex::Simplex::vertex(t));
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+
+        for (const PrimitiveType pt : wmtk::utils::primitive_below(m.top_simplex_type())) {
+            SimplexCollection single_dim =
+                link_single_dimension(m, simplex::Simplex::vertex(t), pt);
+            SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
+            CHECK(SimplexCollection::are_simplex_collections_equal(single_dim, single_dim_comp));
+        }
     }
     for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
         SimplexCollection os_tri = link(m, simplex::Simplex::edge(t));
         SimplexCollection os_m = link_slow(m, simplex::Simplex::edge(t));
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+
+        for (const PrimitiveType pt : wmtk::utils::primitive_below(m.top_simplex_type())) {
+            SimplexCollection single_dim = link_single_dimension(m, simplex::Simplex::edge(t), pt);
+            SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
+            CHECK(SimplexCollection::are_simplex_collections_equal(single_dim, single_dim_comp));
+        }
     }
     for (const Tuple& t : m.get_all(PrimitiveType::Face)) {
         SimplexCollection os_tri = link(m, simplex::Simplex::face(t));
         SimplexCollection os_m = link_slow(m, simplex::Simplex::face(t));
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+
+        for (const PrimitiveType pt : wmtk::utils::primitive_below(m.top_simplex_type())) {
+            SimplexCollection single_dim = link_single_dimension(m, simplex::Simplex::face(t), pt);
+            SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
+            CHECK(SimplexCollection::are_simplex_collections_equal(single_dim, single_dim_comp));
+        }
     }
 }
 
@@ -1277,21 +1297,47 @@ TEST_CASE("simplex_link_tetmesh", "[simplex_collection]")
         SimplexCollection os_tri = link(m, simplex::Simplex::vertex(t));
         SimplexCollection os_m = link_slow(m, simplex::Simplex::vertex(t));
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+
+        for (const PrimitiveType pt : wmtk::utils::primitive_below(m.top_simplex_type())) {
+            SimplexCollection single_dim =
+                link_single_dimension(m, simplex::Simplex::vertex(t), pt);
+            SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
+            CHECK(SimplexCollection::are_simplex_collections_equal(single_dim, single_dim_comp));
+        }
     }
     for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
         SimplexCollection os_tri = link(m, simplex::Simplex::edge(t));
         SimplexCollection os_m = link_slow(m, simplex::Simplex::edge(t));
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+
+        for (const PrimitiveType pt : wmtk::utils::primitive_below(m.top_simplex_type())) {
+            SimplexCollection single_dim = link_single_dimension(m, simplex::Simplex::edge(t), pt);
+            SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
+            CHECK(SimplexCollection::are_simplex_collections_equal(single_dim, single_dim_comp));
+        }
     }
     for (const Tuple& t : m.get_all(PrimitiveType::Face)) {
         SimplexCollection os_tri = link(m, simplex::Simplex::face(t));
         SimplexCollection os_m = link_slow(m, simplex::Simplex::face(t));
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+
+        for (const PrimitiveType pt : wmtk::utils::primitive_below(m.top_simplex_type())) {
+            SimplexCollection single_dim = link_single_dimension(m, simplex::Simplex::face(t), pt);
+            SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
+            CHECK(SimplexCollection::are_simplex_collections_equal(single_dim, single_dim_comp));
+        }
     }
     for (const Tuple& t : m.get_all(PrimitiveType::Tetrahedron)) {
         SimplexCollection os_tri = link(m, simplex::Simplex::tetrahedron(t));
         SimplexCollection os_m = link_slow(m, simplex::Simplex::tetrahedron(t));
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+
+        for (const PrimitiveType pt : wmtk::utils::primitive_below(m.top_simplex_type())) {
+            SimplexCollection single_dim =
+                link_single_dimension(m, simplex::Simplex::tetrahedron(t), pt);
+            SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
+            CHECK(SimplexCollection::are_simplex_collections_equal(single_dim, single_dim_comp));
+        }
     }
 }
 
