@@ -361,6 +361,14 @@ TEST_CASE("simplex_top_dimension_cofaces_tri", "[simplex_collection]")
         cc2.sort_and_clean();
 
         CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Face, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
     SECTION("vertex_boundary")
     {
@@ -386,6 +394,14 @@ TEST_CASE("simplex_top_dimension_cofaces_tri", "[simplex_collection]")
         cc2.sort_and_clean();
 
         CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Face, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
     SECTION("edge_interior")
     {
@@ -412,6 +428,14 @@ TEST_CASE("simplex_top_dimension_cofaces_tri", "[simplex_collection]")
         cc2.sort_and_clean();
 
         CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Face, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
     SECTION("edge_boundary")
     {
@@ -437,6 +461,14 @@ TEST_CASE("simplex_top_dimension_cofaces_tri", "[simplex_collection]")
         cc2.sort_and_clean();
 
         CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Face, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
     SECTION("face")
     {
@@ -462,6 +494,14 @@ TEST_CASE("simplex_top_dimension_cofaces_tri", "[simplex_collection]")
         cc2.sort_and_clean();
 
         CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Face, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
 }
 
@@ -493,6 +533,14 @@ TEST_CASE("simplex_top_dimension_cofaces_tet", "[simplex_collection]")
         cc2.sort_and_clean();
 
         CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Tetrahedron, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
     SECTION("edge_interior")
     {
@@ -523,6 +571,14 @@ TEST_CASE("simplex_top_dimension_cofaces_tet", "[simplex_collection]")
         cc2.sort_and_clean();
 
         CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Tetrahedron, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
     SECTION("edge_boundary")
     {
@@ -549,6 +605,14 @@ TEST_CASE("simplex_top_dimension_cofaces_tet", "[simplex_collection]")
         cc2.sort_and_clean();
 
         CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Tetrahedron, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
     SECTION("face_interior")
     {
@@ -575,6 +639,14 @@ TEST_CASE("simplex_top_dimension_cofaces_tet", "[simplex_collection]")
         cc2.sort_and_clean();
 
         CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Tetrahedron, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
     SECTION("face_boundary")
     {
@@ -600,6 +672,14 @@ TEST_CASE("simplex_top_dimension_cofaces_tet", "[simplex_collection]")
         cc2.sort_and_clean();
 
         CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Tetrahedron, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
 }
 
