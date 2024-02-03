@@ -1,5 +1,6 @@
 #include "AttributeCache.hpp"
 #include <wmtk/utils/Rational.hpp>
+#include "AccessorBase.hpp"
 
 namespace wmtk::attribute {
 
@@ -22,7 +23,7 @@ auto AttributeCache<T>::load_it(int64_t index) const
         return {it, false};
     } else {
 #if defined(WMTK_ONLY_CACHE_WRITES)
-        return   m_data.try_emplace(index,AttributeCacheData<T>{});
+        return m_data.try_emplace(index, AttributeCacheData<T>{});
 #else
         return m_data.try_emplace(index, false);
 #endif
@@ -64,7 +65,7 @@ void AttributeCache<T>::flush_to(AttributeCache<T>& other)
 #endif
         {
 #if defined(WMTK_FLUSH_ON_FAIL)
-            if(o_data.find(index) == o_data.end()) {
+            if (o_data.find(index) == o_data.end()) {
                 o_data[index] = data;
             }
 

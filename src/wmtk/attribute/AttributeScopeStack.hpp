@@ -26,14 +26,16 @@ template <typename T>
 class AttributeScopeStack
 {
 public:
-    using MapResult = typename AttributeCache<T>::MapResult;
-    using ConstMapResult = typename AttributeCache<T>::ConstMapResult;
+    using MapResult = internal::MapResult<T>;
+    using ConstMapResult = internal::ConstMapResult<T>;
     // stack is implemented by a parent pointing graph, so we track a pointer
     // to the leaf
     AttributeScopeStack();
     ~AttributeScopeStack();
     AttributeScopeStack(const AttributeScopeStack&) = delete;
     AttributeScopeStack& operator=(const AttributeScopeStack&) = delete;
+    AttributeScopeStack(AttributeScopeStack&&) = default;
+    AttributeScopeStack& operator=(AttributeScopeStack&&) = default;
     void emplace();
     void pop(Attribute<T>& attribute, bool apply_updates);
     AttributeScope<T>* active_scope_ptr();
@@ -83,7 +85,8 @@ protected:
 };
 
 template <typename T>
-inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index) -> MapResult
+inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index)
+    -> MapResult
 {
     assert(writing_enabled());
 
@@ -93,12 +96,11 @@ inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, 
     // inserted yet
     auto value = accessor.vector_attribute(index);
     if (bool(m_start)) {
-
         auto& l = m_start->m_data;
-        auto [it, was_inserted] = l.try_emplace(index,AttributeCacheData<T>{});
+        auto [it, was_inserted] = l.try_emplace(index, AttributeCacheData<T>{});
         if (was_inserted) {
             it->second.data = value;
-            if constexpr(!std::is_same_v<T,Rational>) {
+            if constexpr (!std::is_same_v<T, Rational>) {
             }
         }
     }

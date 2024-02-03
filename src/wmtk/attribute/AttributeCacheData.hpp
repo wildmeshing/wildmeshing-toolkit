@@ -24,7 +24,8 @@ public:
     AttributeCacheData(const Eigen::MatrixBase<Derived>& a)
         : data(a)
     {}
-    // for WMTK_ONLY_CACHE_WRITES it's annoying to remove all the bool passed in, easiesr to just let it get elided
+    // for WMTK_ONLY_CACHE_WRITES it's annoying to remove all the bool passed in, easiesr to just
+    // let it get elided
     //
     AttributeCacheData() = default;
 #endif
@@ -42,3 +43,4 @@ public:
 #endif
 };
 } // namespace wmtk
+#include "AttributeCacheData.hxx"

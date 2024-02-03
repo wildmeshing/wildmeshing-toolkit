@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
+#include "PerThreadAttributeScopeStacks.hpp"
+#include "internal/MapTypes.hpp"
 
 namespace wmtk {
 class MeshWriter;
@@ -29,17 +31,8 @@ template <typename T>
 class Attribute : public wmtk::utils::Hashable
 {
 public:
-    // this value is set by CMake
-    constexpr static int MAX_ATTR_SIZE = WMTK_MAX_ATTRIBUTE_DIMENSION;
-    template <int R>
-    using MapResultD =
-        Eigen::Map<Eigen::Matrix<T, R, 1, 0, (R == Eigen::Dynamic ? MAX_ATTR_SIZE : R), 1>>;
-    template <int R>
-    using ConstMapResultD =
-        Eigen::Map<const Eigen::Matrix<T, R, 1, 0, (R == Eigen::Dynamic ? MAX_ATTR_SIZE : R), 1>>;
-
-    using MapResult = MapResultD<Eigen::Dynamic>;
-    using ConstMapResult = ConstMapResultD<Eigen::Dynamic>;
+    using MapResult = internal::MapResult<T>;
+    using ConstMapResult = internal::ConstMapResult<T>;
 
 
     // attribute directly hashes its "children" components so it overrides "child_hashes"
@@ -97,8 +90,8 @@ public:
     void pop_scope(bool apply_updates);
     void clear_current_scope();
 
-    // returns nullptr if no scope exists
-    AttributeScopeStack<T>* get_local_scope_stack_ptr() const;
+    const AttributeScopeStack<T>& get_local_scope_stack() const;
+    AttributeScopeStack<T>& get_local_scope_stack() ;
 
     /**
      * @brief Consolidate the vector, using the new2old map m provided and resizing the vector to
@@ -154,7 +147,7 @@ protected:
 
 private:
     std::vector<T> m_data;
-    std::unique_ptr<PerThreadAttributeScopeStacks<T>> m_scope_stacks;
+    PerThreadAttributeScopeStacks<T> m_scope_stacks;
     int64_t m_dimension = -1;
     T m_default_value = T(0);
 
@@ -253,5 +246,41 @@ inline T& Attribute<T>::scalar_attribute(const int64_t index, const int8_t offse
 }
 
 
+template <typename T>
+inline int64_t Attribute<T>::dimension() const
+{
+    return m_dimension;
+}
+
+template <typename T>
+inline const AttributeScopeStack<T>& Attribute<T>::get_local_scope_stack() const
+{
+        return m_scope_stacks.local();
+}
+template <typename T>
+inline AttributeScopeStack<T>& Attribute<T>::get_local_scope_stack() 
+{
+        return m_scope_stacks.local();
+}
+
+template <typename T>
+inline void Attribute<T>::push_scope()
+{
+        m_scope_stacks.local().emplace();
+}
+template <typename T>
+inline void Attribute<T>::pop_scope(bool apply_updates)
+{
+        m_scope_stacks.local().pop(*this, apply_updates);
+}
+
+template <typename T>
+inline void Attribute<T>::clear_current_scope()
+{
+        m_scope_stacks.local().clear_current_scope(*this);
+}
+
 } // namespace attribute
 } // namespace wmtk
+#include "AccessorBase.hpp"
+#include "AttributeCache.hpp"

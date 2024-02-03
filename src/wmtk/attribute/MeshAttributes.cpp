@@ -75,10 +75,9 @@ template <typename T>
 void MeshAttributes<T>::change_to_parent_scope() const
 {
     for (const auto& attr_ptr : m_attributes) {
-        auto ptr = attr_ptr->get_local_scope_stack_ptr();
-        assert(ptr != nullptr);
+        auto& stack = attr_ptr->get_local_scope_stack();
 
-        ptr->change_to_next_scope();
+        stack.change_to_next_scope();
     }
 }
 
@@ -86,7 +85,7 @@ template <typename T>
 void MeshAttributes<T>::change_to_child_scope() const
 {
     for (const auto& attr_ptr : m_attributes) {
-        attr_ptr->get_local_scope_stack_ptr()->change_to_previous_scope();
+        attr_ptr->get_local_scope_stack().change_to_previous_scope();
     }
 }
 

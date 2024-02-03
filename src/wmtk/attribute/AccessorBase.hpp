@@ -2,10 +2,10 @@
 
 #include <memory>
 #include <type_traits>
-#include "Attribute.hpp"
 #include "MeshAttributeHandle.hpp"
 #include "wmtk/Tuple.hpp"
 #include "wmtk/Types.hpp"
+#include "internal/MapTypes.hpp"
 
 #include <Eigen/Dense>
 
@@ -14,6 +14,8 @@ class AttributeManager;
 }
 namespace wmtk::attribute {
 
+template <typename T>
+class Attribute;
 template <typename T>
 class MeshAttributes;
 template <typename T>
@@ -31,8 +33,8 @@ public:
     using MeshAttributesType = MeshAttributes<T>;
     using AttributeType = Attribute<T>;
 
-    using MapResult = typename Attribute<T>::MapResult;
-    using ConstMapResult = typename Attribute<T>::ConstMapResult;
+    using MapResult = typename internal::MapResult<T>;
+    using ConstMapResult = typename internal::ConstMapResult<T>;
 
 
 public:

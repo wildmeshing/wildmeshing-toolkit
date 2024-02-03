@@ -2,8 +2,8 @@
 #include <Eigen/Core>
 #include <map>
 #include <memory>
-#include "AccessorBase.hpp"
 #include "AttributeCacheData.hpp"
+#include "internal/MapTypes.hpp"
 
 #if defined(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
 #include <memory_resource>
@@ -12,18 +12,26 @@
 
 namespace wmtk::attribute {
 template <typename T>
+class Attribute;
+template <typename T>
+class AccessorBase;
+template <typename T>
 class AttributeCache
 {
 public:
     using Data = AttributeCacheData<T>;
-    using DataStorage = std::map<int64_t, Data, std::less<int64_t>
+    using DataStorage = std::map<
+        int64_t,
+        Data,
+        std::less<int64_t>
 #if defined(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
-        , std::pmr::polymorphic_allocator<std::pair<const int64_t, Data>>
+        ,
+        std::pmr::polymorphic_allocator<std::pair<const int64_t, Data>>
 #endif
         >;
 
-    using MapResult = typename AccessorBase<T>::MapResult;
-    using ConstMapResult = typename AccessorBase<T>::ConstMapResult;
+    using MapResult = internal::MapResult<T>;
+    using ConstMapResult = internal::ConstMapResult<T>;
 
 
     AttributeCache();
@@ -52,4 +60,7 @@ protected:
 #endif
     mutable DataStorage m_data;
 };
+
 } // namespace wmtk::attribute
+
+#include "AttributeCache.hxx"

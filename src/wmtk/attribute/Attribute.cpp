@@ -12,13 +12,13 @@ namespace wmtk::attribute {
 template <typename T>
 void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter& writer) const
 {
-    auto ptr = get_local_scope_stack_ptr();
-    if (ptr == nullptr || ptr->at_current_scope()) {
+    auto& stack = get_local_scope_stack();
+    if (stack.at_current_scope()) {
         writer.write(name, dim, dimension(), m_data, m_default_value);
     } else {
         std::vector<T> data = m_data;
 
-        ptr->flush_changes_to_vector(*this, data);
+        stack.flush_changes_to_vector(*this, data);
         writer.write(name, dim, dimension(), data, m_default_value);
     }
 }
@@ -26,7 +26,7 @@ void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter&
 
 template <typename T>
 Attribute<T>::Attribute(const std::string& name, int64_t dimension, T default_value, int64_t size)
-    : m_scope_stacks(new PerThreadAttributeScopeStacks<T>())
+    : m_scope_stacks(PerThreadAttributeScopeStacks<T>{})
     , m_dimension(dimension)
     , m_default_value(default_value)
     , m_name(name)
@@ -88,11 +88,6 @@ int64_t Attribute<T>::reserved_size(const std::vector<T>& data) const
 {
     return data.size() / m_dimension;
 }
-template <typename T>
-int64_t Attribute<T>::dimension() const
-{
-    return m_dimension;
-}
 
 template <typename T>
 void Attribute<T>::set(std::vector<T> val)
@@ -101,38 +96,6 @@ void Attribute<T>::set(std::vector<T> val)
     assert(val.size() % m_dimension == 0);
     m_data = std::move(val);
 }
-template <typename T>
-AttributeScopeStack<T>* Attribute<T>::get_local_scope_stack_ptr() const
-{
-    if (bool(m_scope_stacks)) {
-        return &m_scope_stacks->local();
-    }
-    return nullptr;
-}
-
-template <typename T>
-void Attribute<T>::push_scope()
-{
-    if (m_scope_stacks) {
-        m_scope_stacks->local().emplace();
-    }
-}
-template <typename T>
-void Attribute<T>::pop_scope(bool apply_updates)
-{
-    if (m_scope_stacks) {
-        m_scope_stacks->local().pop(*this, apply_updates);
-    }
-}
-
-template <typename T>
-void Attribute<T>::clear_current_scope()
-{
-    if (m_scope_stacks) {
-        m_scope_stacks->local().clear_current_scope(*this);
-    }
-}
-
 template <typename T>
 void Attribute<T>::consolidate(const std::vector<int64_t>& new2old)
 {
