@@ -21,7 +21,6 @@ public:
     TetMesh& operator=(const TetMesh& o) = delete;
     TetMesh& operator=(TetMesh&& o);
 
-    int64_t top_cell_dimension() const override { return 3; }
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;

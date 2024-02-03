@@ -35,6 +35,7 @@ Mesh::Mesh(const int64_t& dimension)
 Mesh::Mesh(const int64_t& dimension, const int64_t& max_primitive_type_id, PrimitiveType hash_type)
     : m_attribute_manager(max_primitive_type_id + 1)
     , m_multi_mesh_manager(max_primitive_type_id + 1)
+    , m_top_cell_dimension(dimension)
     , m_cell_hash_handle(register_attribute_typed<int64_t>("hash", hash_type, 1, false, 0))
 {
     m_flag_handles.reserve(max_primitive_type_id + 1);

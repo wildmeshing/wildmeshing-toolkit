@@ -27,7 +27,6 @@ public:
     TriMesh& operator=(TriMesh&& o);
     void make_cached_accessors();
 
-    int64_t top_cell_dimension() const override { return 2; }
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
