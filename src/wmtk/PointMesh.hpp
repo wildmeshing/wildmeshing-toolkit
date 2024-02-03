@@ -10,6 +10,9 @@ namespace wmtk {
 // topologies
 class PointMesh : public Mesh
 {
+public:
+    friend class Mesh;
+
 private:
     Tuple vertex_tuple_from_id(int64_t id) const;
 
@@ -38,7 +41,7 @@ public:
         const override;
 
 protected:
-    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
 
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index

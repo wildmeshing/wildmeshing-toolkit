@@ -795,7 +795,7 @@ protected:
     */
 
 protected:
-    virtual int64_t id(const Tuple& tuple, PrimitiveType type) const = 0;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
     int64_t id(const simplex::Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
 

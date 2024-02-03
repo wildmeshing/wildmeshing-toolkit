@@ -12,6 +12,7 @@ class UpdateEdgeOperationMultiMeshMapFunctor;
 class TetMesh : public Mesh
 {
 public:
+    friend class Mesh;
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
@@ -48,7 +49,7 @@ public:
 
 protected:
     void make_cached_accessors();
-    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
     int64_t id(const simplex::Simplex& simplex) const
     {
         return id(simplex.tuple(), simplex.primitive_type());

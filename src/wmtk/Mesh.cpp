@@ -5,6 +5,11 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/vector_hash.hpp>
 
+#include "EdgeMesh.hpp"
+#include "PointMesh.hpp"
+#include "TetMesh.hpp"
+#include "TriMesh.hpp"
+
 #include "Primitive.hpp"
 
 namespace wmtk {
@@ -47,11 +52,10 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted)
 
 void Mesh::serialize(MeshWriter& writer, const Mesh* local_root) const
 {
-    if(local_root == nullptr) {
-    writer.write_absolute_id(m_multi_mesh_manager.absolute_id());
+    if (local_root == nullptr) {
+        writer.write_absolute_id(m_multi_mesh_manager.absolute_id());
     } else {
-    writer.write_absolute_id(m_multi_mesh_manager.relative_id(*this, *local_root));
-
+        writer.write_absolute_id(m_multi_mesh_manager.relative_id(*this, *local_root));
     }
     writer.write_top_simplex_type(top_simplex_type());
     m_attribute_manager.serialize(writer);
@@ -220,6 +224,18 @@ void Mesh::update_vertex_operation_hashes(const Tuple& vertex, Accessor<int64_t>
 void Mesh::assert_capacity_valid() const
 {
     m_attribute_manager.assert_capacity_valid();
+}
+
+int64_t Mesh::id(const Tuple& tuple, PrimitiveType type) const
+{
+    switch (top_simplex_type()) {
+    case PrimitiveType::Vertex: return static_cast<const PointMesh*>(this)->id(tuple, type);
+    case PrimitiveType::Edge: return static_cast<const EdgeMesh*>(this)->id(tuple, type);
+    case PrimitiveType::Face: return static_cast<const TriMesh*>(this)->id(tuple, type);
+    case PrimitiveType::Tetrahedron: return static_cast<const TetMesh*>(this)->id(tuple, type);
+    case PrimitiveType::HalfEdge:
+    default: assert(false); return -1;
+    }
 }
 
 } // namespace wmtk
