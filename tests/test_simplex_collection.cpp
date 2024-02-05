@@ -1653,7 +1653,6 @@ TEST_CASE("raw_simplex_faces", "[raw_simplex_collection]")
 
         RawSimplex higher_dim_simplex({0, 1, 2, 3, 4});
         CHECK(higher_dim_simplex.dimension() == 4);
-        CHECK_THROWS(higher_dim_simplex.faces());
 
         RawSimplex opp_edge = tet.opposite_face(edge);
         CHECK(opp_edge.dimension() == 1);

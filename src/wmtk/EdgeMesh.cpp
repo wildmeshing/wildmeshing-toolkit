@@ -39,8 +39,8 @@ bool EdgeMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
     case PrimitiveType::Tetrahedron:
     default: break;
     }
-    throw std::runtime_error(
-        "tried to compute the boundary of an edge mesh for an invalid simplex dimension");
+    assert(
+        false); // "tried to compute the boundary of an edge mesh for an invalid simplex dimension"
     return false;
 }
 

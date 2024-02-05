@@ -446,7 +446,6 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         REQUIRE(n_iterations == 1);
         REQUIRE(n_vertices == 9);
 
-        CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
         REQUIRE(mesh.is_valid_slow(v0));
 
@@ -486,7 +485,6 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         REQUIRE(n_iterations == 1);
         REQUIRE(n_vertices == 9);
 
-        CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
         REQUIRE(mesh.is_valid_slow(v0));
 
@@ -512,7 +510,6 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 
         REQUIRE(mesh.get_all(PrimitiveType::Vertex).size() == 9);
 
-        CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 1));
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
         REQUIRE(mesh.is_valid_slow(v0));
 

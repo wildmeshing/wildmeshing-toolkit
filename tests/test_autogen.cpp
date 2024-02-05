@@ -175,9 +175,6 @@ TEST_CASE("tuple_autogen_ptype_local_switch_tuple_equivalent", "[tuple]")
                     edge_mesh::local_switch_tuple(t, pt) ==
                     local_switch_tuple(PrimitiveType::Edge, t, pt));
             }
-            REQUIRE_THROWS(edge_mesh::local_switch_tuple(t, PrimitiveType::Tetrahedron));
-            REQUIRE_THROWS(edge_mesh::local_switch_tuple(t, PrimitiveType::Triangle));
-            REQUIRE_THROWS(edge_mesh::local_switch_tuple(t, PrimitiveType::Edge));
         }
     }
     {
@@ -188,8 +185,6 @@ TEST_CASE("tuple_autogen_ptype_local_switch_tuple_equivalent", "[tuple]")
                     tri_mesh::local_switch_tuple(t, pt) ==
                     local_switch_tuple(PrimitiveType::Triangle, t, pt));
             }
-            REQUIRE_THROWS(tri_mesh::local_switch_tuple(t, PrimitiveType::Tetrahedron));
-            REQUIRE_THROWS(tri_mesh::local_switch_tuple(t, PrimitiveType::Triangle));
         }
     }
 
@@ -201,7 +196,6 @@ TEST_CASE("tuple_autogen_ptype_local_switch_tuple_equivalent", "[tuple]")
                     tet_mesh::local_switch_tuple(t, pt) ==
                     local_switch_tuple(PrimitiveType::Tetrahedron, t, pt));
             }
-            REQUIRE_THROWS(tet_mesh::local_switch_tuple(t, PrimitiveType::Tetrahedron));
         }
     }
 }
