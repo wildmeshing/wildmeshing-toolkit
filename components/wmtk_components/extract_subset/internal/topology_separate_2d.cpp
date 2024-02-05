@@ -27,10 +27,10 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
     4. use the new ids to reconstruct the mesh
     5. return the new mesh
     */
-    long nb_vertex = m.capacity(wmtk::PrimitiveType::Vertex);
-    long nb_tri = m.capacity(wmtk::PrimitiveType::Face);
     std::vector<wmtk::Tuple> faces = m.get_all(wmtk::PrimitiveType::Face);
     std::vector<wmtk::Tuple> vertices = m.get_all(wmtk::PrimitiveType::Vertex);
+    int nb_vertex = vertices.size();
+    int nb_tri = faces.size();
     std::vector<long> vertex_cp(nb_vertex, 1); // how many copies should we make on this vertex
 
     // std::cout << "# of tris = " << nb_tri << std::endl;

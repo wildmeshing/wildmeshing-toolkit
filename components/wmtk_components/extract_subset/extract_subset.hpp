@@ -10,9 +10,11 @@ namespace wmtk {
 
 namespace components {
 
-// wmtk::TriMesh extract_subset(wmtk::TriMesh m, long dimension, std::vector<int>& tag_vec, bool
-// pos);
+/*
+This function provides a unified interface for extracting a subset of a mesh, 2d or 3d, with or
+without preserving geometry.
+*/
 std::unique_ptr<wmtk::Mesh>
-extract_subset(wmtk::Mesh& m, long dimension, std::vector<int>& tag_vec, bool pos);
+extract_subset(wmtk::Mesh& m, const std::vector<int>& tag_vec, bool pos);
 } // namespace components
 } // namespace wmtk

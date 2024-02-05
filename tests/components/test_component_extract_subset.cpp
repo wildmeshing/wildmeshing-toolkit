@@ -315,7 +315,7 @@ void check_new_mesh(
     int edge_count,
     int face_count)
 {
-    std::unique_ptr<wmtk::Mesh> new_tm = wmtk::components::extract_subset(m, 2, data, b);
+    std::unique_ptr<wmtk::Mesh> new_tm = wmtk::components::extract_subset(m, data, b);
     // new_tm.print_vf();
     // CHECK(is_valid_mesh(new_tm));
     // CHECK(is_manifold(new_tm));
@@ -351,7 +351,7 @@ void random_trimesh_test_executor(const wmtk::TriMesh& m, const unsigned long te
         // wmtk::components::extract_subset(tm, 2, tag_vector, false);
 
         std::unique_ptr<wmtk::Mesh> new_tm =
-            wmtk::components::extract_subset(tm, 2, tag_vector, false);
+            wmtk::components::extract_subset(tm, tag_vector, false);
         // std::cout << "\tBefore: manifold = " << is_manifold(new_tm);
         if (wmtk::TriMesh* trimeshPtr = dynamic_cast<wmtk::TriMesh*>(new_tm.get())) {
             wmtk::TriMesh topo_tm = wmtk::components::internal::topology_separate_2d(*trimeshPtr);
@@ -456,7 +456,7 @@ TEST_CASE("component_3+4_test_case", "[components][extract_subset][2D][manual]")
     std::vector<int> id = {0,  1,  2,  3,  5,  6,  7,  8,  10, 11, 12, 25, 26, 29,
                            30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 42, 43, 44, 45};
     for (int i : id) tag_vector[i] = 1;
-    std::unique_ptr<wmtk::Mesh> new_tm = wmtk::components::extract_subset(tm, 2, tag_vector, false);
+    std::unique_ptr<wmtk::Mesh> new_tm = wmtk::components::extract_subset(tm, tag_vector, false);
     CHECK(new_tm->capacity(wmtk::PrimitiveType::Vertex) == 25);
     CHECK(new_tm->capacity(wmtk::PrimitiveType::Face) == 28);
     // new_tm.print_vf();
@@ -555,7 +555,7 @@ TEST_CASE("six_cycle_tets", "[components][extract_subset][3D][manual][6]")
         //     return true;
         // });
         std::unique_ptr<wmtk::Mesh> new_tm =
-            wmtk::components::extract_subset(tm, 3, tag_vector, false);
+            wmtk::components::extract_subset(tm, tag_vector, false);
         if (wmtk::TetMesh* trimeshPtr = dynamic_cast<wmtk::TetMesh*>(new_tm.get())) {
             wmtk::TetMesh topo_tm =
                 wmtk::components::internal::topology_separate_3d_old(*trimeshPtr);

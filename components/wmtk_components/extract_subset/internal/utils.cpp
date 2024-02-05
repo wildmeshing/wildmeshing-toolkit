@@ -186,7 +186,7 @@ std::vector<std::vector<long>> cc_around_vertex(
 {
     // use exactly the same also as finding connected components in the whole mesh to find cc here
     std::vector<std::vector<long>> face_cc_list;
-    std::vector<bool> visited_faces(m.capacity(wmtk::PrimitiveType::Face), false);
+    std::vector<bool> visited_faces(m.get_all(wmtk::PrimitiveType::Face).size(), false);
     auto condition = [](long face, std::vector<long>& candidates) {
         return std::find(candidates.begin(), candidates.end(), face) != candidates.end();
     };
@@ -207,7 +207,7 @@ std::vector<std::vector<long>> tet_cc_around_tuple(
     std::vector<std::vector<long>>& adj_list_tets)
 {
     std::vector<std::vector<long>> tet_cc_list;
-    std::vector<bool> visited_tets(m.capacity(wmtk::PrimitiveType::Tetrahedron), false);
+    std::vector<bool> visited_tets(m.get_all(wmtk::PrimitiveType::Tetrahedron).size(), false);
     auto condition = [](long face, std::vector<long>& candidates) {
         return std::find(candidates.begin(), candidates.end(), face) != candidates.end();
     };

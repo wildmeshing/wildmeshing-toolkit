@@ -8,8 +8,8 @@ extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, b
     wmtk::Accessor<long> tag_acc = m.create_accessor(tag_handle);
     std::vector<wmtk::Tuple> faces = m.get_all(wmtk::PrimitiveType::Face);
     std::vector<wmtk::Tuple> vertices = m.get_all(wmtk::PrimitiveType::Vertex);
-    int nb_vertex = m.capacity(wmtk::PrimitiveType::Vertex);
-    int nb_tri = m.capacity(wmtk::PrimitiveType::Face);
+    int nb_vertex = vertices.size();
+    int nb_tri = faces.size();
 
     // a tag on each "real" vertex, true if tagged inside
     std::map<long, bool> vertices_in_bool;
@@ -25,7 +25,6 @@ extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, b
         switch (tri_tag) {
         // inside: store the temp id of this tri
         case 1:
-            nb_tri_in++;
             tag_tri_index.push_back(i);
             break;
         // outside: do nothing
@@ -34,7 +33,8 @@ extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, b
         default: throw std::runtime_error("illegal tag!");
         }
     }
-    assert(nb_tri_in <= m.capacity(wmtk::PrimitiveType::Face));
+    nb_tri_in = tag_tri_index.size();
+    assert(nb_tri_in <= nb_tri);
     // std::cout << "# of tri inside = " << nb_tri_in << std::endl;
 
     // for the tagged tri, mark their "real" vertices as inside (duplicates handled by boolean)

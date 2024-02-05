@@ -2,9 +2,7 @@
 namespace wmtk {
 namespace components {
 
-
-template <typename T>
-Eigen::VectorX<T>& vector2tag(Eigen::VectorX<T>& ret, std::vector<int> vector)
+Eigen::VectorX<long>& vector2tag(Eigen::VectorX<long>& ret, std::vector<int> vector)
 {
     ret.resize(vector.size());
     for (int i = 0; i < vector.size(); ++i) ret.row(i) << vector[i];
@@ -12,10 +10,11 @@ Eigen::VectorX<T>& vector2tag(Eigen::VectorX<T>& ret, std::vector<int> vector)
 }
 
 std::unique_ptr<wmtk::Mesh>
-extract_subset(wmtk::Mesh& m, long dimension, std::vector<int>& tag_vec, bool pos)
+extract_subset(wmtk::Mesh& m, const std::vector<int>& tag_vec, bool pos)
 {
     wmtk::PrimitiveType topType = m.top_simplex_type();
-    assert(tag_vec.size() == m.capacity(topType));
+    // tag vector must have the same size as the number of simplices in the mesh
+    assert(tag_vec.size() == m.get_all(topType).size());
     if (pos) { // if user asks to preserve geometry, then geometry must be provided
         try {
             m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
@@ -28,29 +27,19 @@ extract_subset(wmtk::Mesh& m, long dimension, std::vector<int>& tag_vec, bool po
     wmtk::MeshAttributeHandle<long> tag_handle =
         wmtk::mesh_utils::set_matrix_attribute(vector2tag(tag, tag_vec), "tag", topType, m);
 
-    switch (dimension) {
-    case 2: {
-        if (wmtk::TriMesh* trimesh = dynamic_cast<wmtk::TriMesh*>(&m)) {
-            std::unique_ptr<wmtk::Mesh> ret = std::make_unique<wmtk::TriMesh>(
-                internal::extract_subset_2d(*trimesh, tag_handle, pos));
-            return ret;
-        }
-        break;
+    if (wmtk::TriMesh* trimesh = dynamic_cast<wmtk::TriMesh*>(&m)) {
+        std::unique_ptr<wmtk::Mesh> ret =
+            std::make_unique<wmtk::TriMesh>(internal::extract_subset_2d(*trimesh, tag_handle, pos));
+        return ret;
         // return internal::topology_separate_2d(ret);
     }
-    case 3: {
-        if (wmtk::TetMesh* tetmesh = dynamic_cast<wmtk::TetMesh*>(&m)) {
-            std::unique_ptr<wmtk::Mesh> ret = std::make_unique<wmtk::TetMesh>(
-                internal::extract_subset_3d(*tetmesh, tag_handle, pos));
-            return ret;
-        }
-        break;
-    }
-    default: {
+    else if (wmtk::TetMesh* tetmesh = dynamic_cast<wmtk::TetMesh*>(&m)) {
+        std::unique_ptr<wmtk::Mesh> ret =
+            std::make_unique<wmtk::TetMesh>(internal::extract_subset_3d(*tetmesh, tag_handle, pos));
+        return ret;
+        // return internal::topology_separate_3d(ret);
+    } else
         throw std::runtime_error("Invalid mesh dimension in extracting subset!");
-    }
-    }
-    throw std::runtime_error("Invalid mesh type for the given dimension in extracting subset!");
 }
 
 } // namespace components

@@ -4,12 +4,13 @@ namespace wmtk::components::internal {
 
 wmtk::TetMesh topology_separate_3d_old(wmtk::TetMesh m)
 {
-    long nb_vertex = m.capacity(wmtk::PrimitiveType::Vertex);
-    long nb_tet = m.capacity(wmtk::PrimitiveType::Tetrahedron);
-    long nb_edge = m.capacity(wmtk::PrimitiveType::Edge);
     std::vector<wmtk::Tuple> edges = m.get_all(wmtk::PrimitiveType::Edge);
     std::vector<wmtk::Tuple> tets = m.get_all(wmtk::PrimitiveType::Tetrahedron);
     std::vector<wmtk::Tuple> vertices = m.get_all(wmtk::PrimitiveType::Vertex);
+    long nb_vertex = vertices.size();
+    long nb_tet = tets.size();
+    long nb_edge = edges.size();
+
     std::vector<long> edge_cp(nb_edge, 1); // how many copies should we make on this edge
     std::vector<long> vertex_cp(nb_vertex, 0); // how many copies should we make on this vertex
 

@@ -7,8 +7,8 @@ extract_subset_3d(wmtk::TetMesh m, wmtk::MeshAttributeHandle<long> taghandle, bo
     wmtk::Accessor<long> tag_acc = m.create_accessor(taghandle);
     std::vector<wmtk::Tuple> tets = m.get_all(wmtk::PrimitiveType::Tetrahedron);
     std::vector<wmtk::Tuple> vertices = m.get_all(wmtk::PrimitiveType::Vertex);
-    int nb_vertex = m.capacity(wmtk::PrimitiveType::Vertex);
-    int nb_tet = m.capacity(wmtk::PrimitiveType::Tetrahedron);
+    int nb_vertex = vertices.size();
+    int nb_tet = tets.size();
 
     std::map<long, bool> vertices_in_bool;
     for (long t = 0; t < nb_vertex; ++t) vertices_in_bool.insert({t, false});
