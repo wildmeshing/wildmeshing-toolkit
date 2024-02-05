@@ -19,14 +19,14 @@ TEST_CASE("test_mesh_boundary", "[mesh]")
     CHECK_THROWS(pm.is_boundary(wmtk::PrimitiveType::Edge, {}));
     CHECK_THROWS(pm.is_boundary(wmtk::PrimitiveType::Face, {}));
     CHECK_THROWS(pm.is_boundary(wmtk::PrimitiveType::Tetrahedron, {}));
-    CHECK_THROWS(pm.is_boundary(wmtk::PrimitiveType::HalfEdge, {}));
+    // CHECK_THROWS(pm.is_boundary(wmtk::PrimitiveType::HalfEdge, {}));
 
     CHECK_THROWS(em.is_boundary(wmtk::PrimitiveType::Face, {}));
     CHECK_THROWS(em.is_boundary(wmtk::PrimitiveType::Tetrahedron, {}));
-    CHECK_THROWS(em.is_boundary(wmtk::PrimitiveType::HalfEdge, {}));
+    // CHECK_THROWS(em.is_boundary(wmtk::PrimitiveType::HalfEdge, {}));
 
     CHECK_THROWS(fm.is_boundary(wmtk::PrimitiveType::Tetrahedron, {}));
-    CHECK_THROWS(fm.is_boundary(wmtk::PrimitiveType::HalfEdge, {}));
+    // CHECK_THROWS(fm.is_boundary(wmtk::PrimitiveType::HalfEdge, {}));
 
-    CHECK_THROWS(tm.is_boundary(wmtk::PrimitiveType::HalfEdge, {}));
+    // CHECK_THROWS(tm.is_boundary(wmtk::PrimitiveType::HalfEdge, {}));
 }

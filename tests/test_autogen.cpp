@@ -104,7 +104,6 @@ TEST_CASE("tuple_autogen_id_inversion", "[tuple]")
                     break;
                 }
                 case PrimitiveType::Vertex:
-                case PrimitiveType::HalfEdge:
                 case PrimitiveType::Edge: break;
                 }
             }
