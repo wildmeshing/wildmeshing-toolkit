@@ -73,15 +73,15 @@ int64_t PointMesh::id(const Tuple& tuple, PrimitiveType type) const
     case PrimitiveType::Edge:
     case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:
-    default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
+    default: assert(false); // "Tuple switch: Invalid primitive type"
     }
+
+    return -1;
 }
 
 Tuple PointMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
 {
-    if (type != PrimitiveType::Vertex) {
-        throw std::runtime_error("Tuple switch: Invalid primitive type");
-    }
+    assert(type == PrimitiveType::Vertex); // "Tuple switch: Invalid primitive type"
     return vertex_tuple_from_id(gid);
 }
 

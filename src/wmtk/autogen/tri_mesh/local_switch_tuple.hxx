@@ -30,7 +30,7 @@ inline Tuple local_switch_tuple(const Tuple& tuple, PrimitiveType pt)
 
     case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:
-    default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
+    default: assert(false); // "Tuple switch: Invalid primitive type"
     }
     return Tuple();
 }

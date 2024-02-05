@@ -168,7 +168,7 @@ std::pair<Tuple, Tuple> EdgeSplit::new_spine_edges(const Mesh& mesh, const Tuple
         break;
     }
     case PrimitiveType::Vertex:
-    default: throw std::runtime_error("Invalid top simplex");
+    default: assert(false); // "Invalid top simplex"
     }
     return ret;
 }

@@ -12,7 +12,7 @@ bool is_ccw(PrimitiveType pt, const Tuple& t)
     case PrimitiveType::Tetrahedron: return tet_mesh::is_ccw(t);
     case PrimitiveType::Edge: return edge_mesh::is_ccw(t);
     case PrimitiveType::Vertex:
-    default: throw std::runtime_error("notimplemented");
+    default: assert(false); // "notimplemented"
     }
     return false;
 }
@@ -25,7 +25,7 @@ bool tuple_is_valid_for_ccw(PrimitiveType pt, const Tuple& t)
     case PrimitiveType::Tetrahedron: return tet_mesh::tuple_is_valid_for_ccw(t);
     case PrimitiveType::Edge: return edge_mesh::tuple_is_valid_for_ccw(t);
     case PrimitiveType::Vertex:
-    default: throw std::runtime_error("notimplemented");
+    default: assert(false); // "notimplemented"
     }
     return false;
 }

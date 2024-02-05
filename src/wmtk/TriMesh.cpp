@@ -66,8 +66,10 @@ int64_t TriMesh::id(const Tuple& tuple, PrimitiveType type) const
         return tuple.m_global_cid;
     }
     case PrimitiveType::Tetrahedron: [[fallthrough]];
-    default: throw std::runtime_error("Tuple id: Invalid primitive type");
+    default: assert(false); // "Tuple id: Invalid primitive type"
     }
+
+    return -1;
 }
 
 bool TriMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
@@ -79,8 +81,8 @@ bool TriMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
     case PrimitiveType::Tetrahedron:
     default: break;
     }
-    throw std::runtime_error(
-        "tried to compute the boundary of an tri mesh for an invalid simplex dimension");
+    assert(
+        false); // "tried to compute the boundary of an tri mesh for an invalid simplex dimension"
     return false;
 }
 
@@ -295,8 +297,9 @@ Tuple TriMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
         throw std::runtime_error("no tet tuple supported for trimesh");
         break;
     }
-    default: throw std::runtime_error("Invalid primitive type"); break;
+    default: assert(false); // "Invalid primitive type"
     }
+    return Tuple();
 }
 
 Tuple TriMesh::vertex_tuple_from_id(int64_t id) const
@@ -318,7 +321,9 @@ Tuple TriMesh::vertex_tuple_from_id(int64_t id) const
             return v_tuple;
         }
     }
-    throw std::runtime_error("vertex_tuple_from_id failed");
+    assert(false); // "vertex_tuple_from_id failed"
+
+    return Tuple();
 }
 
 Tuple TriMesh::edge_tuple_from_id(int64_t id) const
@@ -338,7 +343,9 @@ Tuple TriMesh::edge_tuple_from_id(int64_t id) const
             return e_tuple;
         }
     }
-    throw std::runtime_error("edge_tuple_from_id failed");
+    assert(false); // "edge_tuple_from_id failed"
+
+    return Tuple();
 }
 
 Tuple TriMesh::face_tuple_from_id(int64_t id) const

@@ -1,4 +1,5 @@
 #pragma once
+#include <cassert>
 #include <stdexcept>
 #include <wmtk/utils/TupleInspector.hpp>
 
@@ -20,7 +21,7 @@ inline Tuple local_switch_tuple(const Tuple& tuple, PrimitiveType pt)
     case PrimitiveType::Edge:
     case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:
-    default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
+    default: assert(false); // "Tuple switch: Invalid primitive type"
     }
     return Tuple();
 }

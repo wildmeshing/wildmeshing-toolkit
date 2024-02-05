@@ -98,7 +98,7 @@ std::vector<Tuple> faces_single_dimension_tuples(
     case PrimitiveType::Edge: return edges(mesh, simplex); break;
     case PrimitiveType::Triangle: return faces(mesh, simplex); break;
     case PrimitiveType::Tetrahedron: break;
-    default: throw std::runtime_error("unknown primitive type"); break;
+    default: assert(false); // "unknown primitive type"
     }
 
     return {};

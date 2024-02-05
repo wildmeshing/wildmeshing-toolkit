@@ -997,7 +997,7 @@ void MultiMeshManager::update_vertex_operation_hashes_internal(
         }
         break;
     }
-    default: throw std::runtime_error("Invalid case");
+    default: assert(false); // "Invalid case"
     }
 
 

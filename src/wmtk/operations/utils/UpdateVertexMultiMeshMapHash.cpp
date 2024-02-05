@@ -48,7 +48,7 @@ void update_vertex_operation_hashes(Mesh& m, const Tuple& vertex, Accessor<int64
         }
         break;
     }
-    default: throw std::runtime_error("invalid input");
+    default: assert(false); // "invalid input"
     }
 
 

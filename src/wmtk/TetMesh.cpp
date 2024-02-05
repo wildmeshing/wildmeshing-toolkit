@@ -253,8 +253,10 @@ Tuple TetMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
         return tet_tuple_from_id(gid);
         break;
     }
-    default: throw std::runtime_error("Invalid primitive type");
+    default: assert(false); // "Invalid primitive type"
     }
+
+    return Tuple();
 }
 
 int64_t TetMesh::id(const Tuple& tuple, PrimitiveType type) const
@@ -279,8 +281,10 @@ int64_t TetMesh::id(const Tuple& tuple, PrimitiveType type) const
         return tuple.m_global_cid;
         break;
     }
-    default: throw std::runtime_error("Tuple id: Invalid primitive type");
+    default: assert(false); // "Tuple id: Invalid primitive type"
     }
+
+    return -1;
 }
 
 Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
@@ -376,8 +380,8 @@ bool TetMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
     case PrimitiveType::Tetrahedron:
     default: break;
     }
-    throw std::runtime_error(
-        "tried to compute the boundary of an tet mesh for an invalid simplex dimension");
+    assert(
+        false); // "tried to compute the boundary of an tet mesh for an invalid simplex dimension"
     return false;
 }
 
