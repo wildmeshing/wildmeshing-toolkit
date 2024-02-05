@@ -88,7 +88,7 @@ public:
 
     void push_scope();
     void pop_scope(bool apply_updates);
-    void clear_current_scope();
+    void rollback_current_scope();
 
     const AttributeScopeStack<T>& get_local_scope_stack() const;
     AttributeScopeStack<T>& get_local_scope_stack() ;
@@ -275,9 +275,9 @@ inline void Attribute<T>::pop_scope(bool apply_updates)
 }
 
 template <typename T>
-inline void Attribute<T>::clear_current_scope()
+inline void Attribute<T>::rollback_current_scope()
 {
-        m_scope_stacks.local().clear_current_scope(*this);
+        m_scope_stacks.local().rollback_current_scope(*this);
 }
 
 } // namespace attribute

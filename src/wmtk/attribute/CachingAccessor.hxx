@@ -18,11 +18,7 @@ CachingAccessor<T>::~CachingAccessor() = default;
 template <typename T>
 bool CachingAccessor<T>::has_stack() const
 {
-#if defined(WMTK_FLUSH_ON_FAIL)
     return !m_cache_stack.empty();
-#else
-    return !m_cache_stack.empty() && m_cache_stack.active_scope_ptr();
-#endif
 }
 template <typename T>
 bool CachingAccessor<T>::writing_enabled() const
@@ -33,7 +29,7 @@ bool CachingAccessor<T>::writing_enabled() const
 template <typename T>
 int64_t CachingAccessor<T>::stack_depth() const
 {
-    return m_cache_stack.depth();
+    return m_cache_stack.size();
 }
 
 template <typename T>

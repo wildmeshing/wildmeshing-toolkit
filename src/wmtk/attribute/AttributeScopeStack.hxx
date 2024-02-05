@@ -1,12 +1,16 @@
-#include "AttributeScopeStack.hpp"
 #include <wmtk/utils/Rational.hpp>
 #include "Attribute.hpp"
 #include "AttributeScope.hpp"
+#include "AttributeScopeStack.hpp"
 
 namespace wmtk::attribute {
 
 template <typename T>
-AttributeScopeStack<T>::AttributeScopeStack() = default;
+AttributeScopeStack<T>::AttributeScopeStack()
+{
+    m_scopes.reserve(5);
+    m_active = m_scopes.rend();
+}
 template <typename T>
 AttributeScopeStack<T>::~AttributeScopeStack() = default;
 template <typename T>
@@ -16,153 +20,82 @@ void AttributeScopeStack<T>::emplace()
 
     // create a new leaf that points to the active stack and
     //
-    if(bool(m_start)) {
-    std::unique_ptr<AttributeScope<T>> new_start = std::make_unique<AttributeScope<T>>(std::move(m_start));
-    m_start = std::move(new_start);
-    } else {
-        m_start = std::make_unique<AttributeScope<T>>();
+    if (m_scopes.size() + 1 >= m_scopes.capacity()) {
+        m_scopes.reserve(m_scopes.capacity() + 2);
+        change_to_current_scope();
     }
+    m_scopes.emplace_back();
     change_to_current_scope();
 }
 template <typename T>
-void AttributeScopeStack<T>::pop(Attribute<T>& attribute, bool apply_updates)
+void AttributeScopeStack<T>::pop(Attribute<T>& attribute, bool preserve_changes)
 {
-    // delete myself by setting my parent to be the leaf
-    assert(bool(m_start));
+    assert(at_current_scope()); // must only be called on leaf node
+    if (!preserve_changes) {
+        rollback_current_scope(attribute);
+    }
 
-#if defined(WMTK_FLUSH_ON_FAIL)
-    assert(m_active == nullptr); // must only be called on leaf node
-#else
-    assert(m_active == m_start.get()); // must only be called on leaf node
-#endif
-#if defined(WMTK_ONLY_CACHE_WRITES)
-    if (!apply_updates) {
-#else
-    if (apply_updates) {
-#endif
-        m_start->flush(attribute);
-    }
-#if defined(WMTK_ENABLE_GENERIC_CHECKPOINTS)
-    if (!m_checkpoints.empty()) {
-        while (m_checkpoints.back() == m_start.get()) {
-            m_checkpoints.pop_back();
-        }
-    }
-#endif
-    m_start = m_start->pop_to_next();
     change_to_current_scope();
-}
-
-template <typename T>
-void AttributeScopeStack<T>::flush_changes_to_vector(const Attribute<T>& attr, std::vector<T>& data)
-    const
-{
-    if (m_start) {
-        m_start->flush_changes_to_vector(attr, data);
-    }
 }
 
 
 template <typename T>
 bool AttributeScopeStack<T>::empty() const
 {
-    return !bool(m_start);
+    return m_scopes.empty();
 }
 
+
 template <typename T>
-int64_t AttributeScopeStack<T>::depth() const
+void AttributeScopeStack<T>::apply_last_scope(Attribute<T>& attr)
 {
-    if (bool(m_start)) {
-        return m_start->depth();
-    } else {
-        return 0;
-    }
+    assert(at_current_scope());
+    assert(!empty());
+    apply_scope(m_scopes.back(), attr);
 }
-
 template <typename T>
-AttributeScope<T>* AttributeScopeStack<T>::active_scope_ptr()
+void AttributeScopeStack<T>::apply_scope(const AttributeScope<T>& scope, Attribute<T>& attr)
 {
-    return m_active;
+    scope.apply(attr);
 }
-
 template <typename T>
-const AttributeScope<T>* AttributeScopeStack<T>::active_scope_ptr() const
+void AttributeScopeStack<T>::apply_scope(
+    const AttributeScope<T>& scope,
+    const Attribute<T>& attr,
+    std::vector<T>& data) const
 {
-    return m_active;
+    assert(false);
+    // scope.apply(attr, data);
 }
 
-template <typename T>
-void AttributeScopeStack<T>::clear_current_scope(Attribute<T>& attr)
-{
-    assert(writing_enabled());
 
-    if (bool(m_start)) {
-#if defined(WMTK_FLUSH_ON_FAIL)
-
-
-        m_start->flush(attr);
-#else
-        m_start->clear();
-#endif
-    }
-}
-
-#if defined(WMTK_ENABLE_GENERIC_CHECKPOINTS)
 template <typename T>
-int64_t AttributeScopeStack<T>::add_checkpoint()
-{
-    int64_t r = m_checkpoints.size();
-    m_checkpoints.push_back(m_start.get());
-    return r;
-}
-template <typename T>
-AttributeScope<T> const* AttributeScopeStack<T>::get_checkpoint(int64_t index) const
-{
-    if (m_checkpoints.empty()) {
-        return nullptr;
-    } else {
-        return m_checkpoints.at(index);
-    }
-}
-#endif
-template <typename T>
-void AttributeScopeStack<T>::change_to_previous_scope() const
+void AttributeScopeStack<T>::change_to_previous_scope()
 {
     // if the previous is a nullptr it's fine
-    assert(m_active != nullptr);
-    m_active = m_active->previous();
+    assert(!at_current_scope());
+    m_active--;
 }
 
 template <typename T>
-void AttributeScopeStack<T>::change_to_next_scope() const
+void AttributeScopeStack<T>::change_to_next_scope()
 {
-#if defined(WMTK_FLUSH_ON_FAIL)
-    if (m_active == nullptr) {
+    if (at_current_scope()) {
         assert(!empty());
-        m_active = m_start.get();
+        m_active = m_scopes.rbegin();
         return;
     }
-#endif
-    m_active = m_active->next();
+    m_active++;
 }
 template <typename T>
-void AttributeScopeStack<T>::change_to_current_scope() const
+void AttributeScopeStack<T>::change_to_current_scope()
 {
-#if defined(WMTK_FLUSH_ON_FAIL)
-    m_active = nullptr;
-#else
-    m_active = m_start.get();
-#endif
+    m_active = m_scopes.rend();
 }
 template <typename T>
 bool AttributeScopeStack<T>::at_current_scope() const
 {
-#if defined(WMTK_FLUSH_ON_FAIL)
-    return m_active == nullptr;
-#else
-    // either we do not have a stack or active is the start
-    return !(bool(m_start)) || m_active == m_start.get();
-#endif
+    return m_active == m_scopes.rend();
 }
 template <typename T>
 bool AttributeScopeStack<T>::writing_enabled() const
@@ -171,8 +104,44 @@ bool AttributeScopeStack<T>::writing_enabled() const
 }
 
 
-//template class AttributeScopeStack<int64_t>;
-//template class AttributeScopeStack<double>;
-//template class AttributeScopeStack<char>;
-//template class AttributeScopeStack<Rational>;
+// template <typename T>
+// auto AttributeScope<T>::load_const_cached_scalar_value(
+//     const AccessorBase<T>& accessor,
+//     int64_t index) const -> T
+//{
+//     if (auto it = m_data.find(index); it != m_data.end()) {
+//         const auto& dat = it->second.data;
+//         assert(dat.size() == 1);
+//         return dat(0);
+//     } else if (m_previous) {
+//         return m_previous->load_const_cached_scalar_value(accessor, index);
+//     } else {
+//         return accessor.const_scalar_attribute(index);
+//     }
+// }
+//
+//
+// template <typename T>
+// auto AttributeScope<T>::load_const_cached_vector_value(
+//     const AccessorBase<T>& accessor,
+//     int64_t index) const -> ConstMapResult
+//{
+//     if (auto it = m_data.find(index); it != m_data.end()) {
+//         auto& dat = it->second.data;
+//         auto v = ConstMapResult(dat.data(), dat.size());
+//         return v;
+//     } else if (m_previous) {
+//         auto v = m_previous->load_const_cached_vector_value(accessor, index);
+//         return v;
+//     } else {
+//         auto v = accessor.const_vector_attribute(index);
+//         return v;
+//     }
+// }
+
+
+// template class AttributeScopeStack<int64_t>;
+// template class AttributeScopeStack<double>;
+// template class AttributeScopeStack<char>;
+// template class AttributeScopeStack<Rational>;
 } // namespace wmtk::attribute

@@ -38,27 +38,30 @@ public:
     ~AttributeCache();
     AttributeCache(const AttributeCache&) = delete;
     AttributeCache& operator=(const AttributeCache&) = delete;
+    AttributeCache(AttributeCache&&) = default;
+    AttributeCache& operator=(AttributeCache&&) = default;
 
-    // returns an iterator and if the value was inserted
-    // the returned value may have undetermined state if new oen was inserted
-    std::pair<typename DataStorage::iterator, bool> load_it(int64_t index) const;
 
+    void try_caching(int64_t index, const MapResult& value);
+
+    typename DataStorage::const_iterator find_value(int64_t index) const;
+    bool is_value(const typename DataStorage::const_iterator& it) const;
 
     void clear();
 
-    void flush_to(Attribute<T>& attribute);
-    void flush_to(AttributeCache<T>& other);
+    void apply_to(Attribute<T>& attribute) const;
+    void apply_to(AttributeCache<T>& other) const;
 
-    // flushes to some other buffer that was passed in
-    void flush_to(const Attribute<T>& attribute, std::vector<T>& other) const;
+    // applyes to some other buffer that was passed in
+    void apply_to(const Attribute<T>& attribute, std::vector<T>& other) const;
 
 
 protected:
 #if defined(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
-    mutable std::vector<std::int8_t> m_buffer;
-    mutable std::pmr::monotonic_buffer_resource m_resource;
+    std::vector<std::int8_t> m_buffer;
+    std::pmr::monotonic_buffer_resource m_resource;
 #endif
-    mutable DataStorage m_data;
+    DataStorage m_data;
 };
 
 } // namespace wmtk::attribute

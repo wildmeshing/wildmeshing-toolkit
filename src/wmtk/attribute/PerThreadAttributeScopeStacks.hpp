@@ -16,18 +16,19 @@ public:
     const AttributeScopeStack<T>& local() const;
 
 private:
-    mutable AttributeScopeStack<T> m_stacks;
+    // single stack so far
+    mutable AttributeScopeStack<T> m_stack;
 };
 
 
 template <typename T>
 AttributeScopeStack<T>& PerThreadAttributeScopeStacks<T>::local()
 {
-    return m_stacks;
+    return m_stack;
 }
 template <typename T>
 const AttributeScopeStack<T>& PerThreadAttributeScopeStacks<T>::local() const
 {
-    return m_stacks;
+    return m_stack;
 }
 } // namespace wmtk::attribute

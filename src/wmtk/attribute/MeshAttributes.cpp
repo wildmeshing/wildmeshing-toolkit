@@ -65,10 +65,10 @@ void MeshAttributes<T>::pop_scope(bool apply_updates)
     }
 }
 template <typename T>
-void MeshAttributes<T>::clear_current_scope()
+void MeshAttributes<T>::rollback_current_scope()
 {
     for (auto& attr_ptr : m_attributes) {
-        attr_ptr->clear_current_scope();
+        attr_ptr->rollback_current_scope();
     }
 }
 template <typename T>

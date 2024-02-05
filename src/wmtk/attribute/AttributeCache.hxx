@@ -1,6 +1,6 @@
-#include "AttributeCache.hpp"
 #include <wmtk/utils/Rational.hpp>
 #include "AccessorBase.hpp"
+#include "AttributeCache.hpp"
 
 namespace wmtk::attribute {
 
@@ -15,21 +15,17 @@ AttributeCache<T>::AttributeCache()
 {} //: m_data({m_resource}) {}
 template <typename T>
 AttributeCache<T>::~AttributeCache() = default;
-template <typename T>
-auto AttributeCache<T>::load_it(int64_t index) const
-    -> std::pair<typename DataStorage::iterator, bool>
-{
-    if (const auto& it = m_data.find(index); it != m_data.end()) {
-        return {it, false};
-    } else {
-#if defined(WMTK_ONLY_CACHE_WRITES)
-        return m_data.try_emplace(index, AttributeCacheData<T>{});
-#else
-        return m_data.try_emplace(index, false);
-#endif
-    }
-}
 
+template <typename T>
+auto AttributeCache<T>::find_value(int64_t index) const -> typename DataStorage::const_iterator
+{
+    return m_data.find(index);
+}
+template <typename T>
+bool AttributeCache<T>::is_value(const typename DataStorage::const_iterator& it) const
+{
+    return it != m_data.end();
+}
 
 template <typename T>
 void AttributeCache<T>::clear()
@@ -37,62 +33,47 @@ void AttributeCache<T>::clear()
     m_data.clear();
 }
 
+
 template <typename T>
-void AttributeCache<T>::flush_to(Attribute<T>& attribute)
+void AttributeCache<T>::try_caching(int64_t index, const MapResult& value)
+{
+    auto [it, did_insert] = m_data.try_emplace(index, AttributeCacheData<T>{});
+    if (did_insert) {
+        it->second.data = value;
+    }
+}
+
+
+template <typename T>
+void AttributeCache<T>::apply_to(Attribute<T>& attribute) const
 {
     for (auto& [index, data] : m_data) {
-#if !defined(WMTK_ONLY_CACHE_WRITES)
-        if (data.dirty)
-#endif
         {
             auto a = attribute.vector_attribute(index);
             auto b = data.data;
             a = b;
         }
-#if !defined(WMTK_ONLY_CACHE_WRITES)
-        data.dirty = false;
-#endif
     }
 }
 template <typename T>
-void AttributeCache<T>::flush_to(AttributeCache<T>& other)
+void AttributeCache<T>::apply_to(AttributeCache<T>& other) const
 {
     auto& o_data = other.m_data;
 
     for (auto& [index, data] : m_data) {
-#if !defined(WMTK_ONLY_CACHE_WRITES)
-        if (data.dirty)
-#endif
         {
-#if defined(WMTK_FLUSH_ON_FAIL)
             if (o_data.find(index) == o_data.end()) {
                 o_data[index] = data;
             }
-
-#else
-            o_data[index] = data;
-#endif
         }
-#if !defined(WMTK_ONLY_CACHE_WRITES)
-        data.dirty = false;
-#endif
     }
 }
 
 template <typename T>
-void AttributeCache<T>::flush_to(const Attribute<T>& attribute, std::vector<T>& other) const
+void AttributeCache<T>::apply_to(const Attribute<T>& attribute, std::vector<T>& other) const
 {
     for (auto& [index, data] : m_data) {
-#if !defined(WMTK_ONLY_CACHE_WRITES)
-        if (data.dirty)
-#endif
-        {
-            attribute.vector_attribute(index, other) = data.data;
-        }
+        attribute.vector_attribute(index, other) = data.data;
     }
 }
-template class AttributeCache<int64_t>;
-template class AttributeCache<double>;
-template class AttributeCache<char>;
-template class AttributeCache<Rational>;
 } // namespace wmtk::attribute
