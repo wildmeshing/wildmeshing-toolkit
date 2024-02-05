@@ -981,8 +981,8 @@ void MultiMeshManager::update_vertex_operation_hashes_internal(
         }
         break;
     }
-    case PrimitiveType::Face: {
-        const auto star_faces = star.simplex_vector(PrimitiveType::Face);
+    case PrimitiveType::Triangle: {
+        const auto star_faces = star.simplex_vector(PrimitiveType::Triangle);
         tuples_to_update.reserve(star_faces.size());
         for (const simplex::Simplex& s : star_faces) {
             tuples_to_update.emplace_back(s.tuple());
@@ -1118,7 +1118,8 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
 
         // 4. test switch_top_simplex operation
         // for 4, current code support only mapping between triangle meshes
-        if (map_type == PrimitiveType::Face && my_mesh.top_simplex_type() == PrimitiveType::Face) {
+        if (map_type == PrimitiveType::Triangle &&
+            my_mesh.top_simplex_type() == PrimitiveType::Triangle) {
             Tuple cur_child_tuple = child_tuple_from_child;
             Tuple cur_parent_tuple = parent_tuple_from_child;
 
@@ -1143,7 +1144,8 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
                 cur_parent_tuple = my_mesh.switch_edge(my_mesh.switch_vertex(cur_parent_tuple));
             }
         } else if (
-            map_type == PrimitiveType::Edge && my_mesh.top_simplex_type() == PrimitiveType::Face) {
+            map_type == PrimitiveType::Edge &&
+            my_mesh.top_simplex_type() == PrimitiveType::Triangle) {
             if (!my_mesh.is_boundary(PrimitiveType::Edge, parent_tuple_from_child)) {
                 auto parent_to_child_accessor =
                     my_mesh.create_const_accessor(parent_to_child_handle);

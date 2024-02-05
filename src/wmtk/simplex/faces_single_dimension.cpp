@@ -17,7 +17,7 @@ std::vector<Tuple> vertices(const Mesh& m, const Simplex& simplex)
 
     const Tuple v2 = m.switch_vertex(m.switch_edge(v0));
 
-    if (simplex.primitive_type() == PrimitiveType::Face) {
+    if (simplex.primitive_type() == PrimitiveType::Triangle) {
         return {v0, v1, v2};
     }
 
@@ -41,7 +41,7 @@ std::vector<Tuple> edges(const Mesh& m, const Simplex& simplex)
     const Tuple e1 = m.switch_edge(m.switch_vertex(e0));
     const Tuple e2 = m.switch_vertex(m.switch_edge(e0));
 
-    if (simplex.primitive_type() == PrimitiveType::Face) {
+    if (simplex.primitive_type() == PrimitiveType::Triangle) {
         return {e0, e1, e2};
     }
 
@@ -60,7 +60,7 @@ std::vector<Tuple> faces(const Mesh& m, const Simplex& simplex)
 {
     if (simplex.primitive_type() == PrimitiveType::Vertex ||
         simplex.primitive_type() == PrimitiveType::Edge ||
-        simplex.primitive_type() == PrimitiveType::Face) {
+        simplex.primitive_type() == PrimitiveType::Triangle) {
         return {};
     }
 
@@ -96,7 +96,7 @@ std::vector<Tuple> faces_single_dimension_tuples(
     switch (face_type) {
     case PrimitiveType::Vertex: return vertices(mesh, simplex); break;
     case PrimitiveType::Edge: return edges(mesh, simplex); break;
-    case PrimitiveType::Face: return faces(mesh, simplex); break;
+    case PrimitiveType::Triangle: return faces(mesh, simplex); break;
     case PrimitiveType::Tetrahedron: break;
     default: throw std::runtime_error("unknown primitive type"); break;
     }

@@ -24,7 +24,7 @@ using namespace wmtk::simplex;
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
 {
@@ -139,7 +139,6 @@ TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
         REQUIRE(child2.is_connectivity_valid());
     }
 }
-
 
 
 TEST_CASE("consolidate_multimesh_splits", "[mesh][consolidate_multimesh]")

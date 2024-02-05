@@ -36,7 +36,7 @@ Primitive Primitive::edge(const Tuple& t)
 }
 Primitive Primitive::face(const Tuple& t)
 {
-    return Primitive(PrimitiveType::Face, t);
+    return Primitive(PrimitiveType::Triangle, t);
 }
 Primitive Primitive::tetrahedron(const Tuple& t)
 {

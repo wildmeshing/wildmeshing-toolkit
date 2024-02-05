@@ -32,7 +32,7 @@ struct mesh_type_from_primitive_type<PrimitiveType::Edge>
     using type = EdgeMesh;
 };
 template <>
-struct mesh_type_from_primitive_type<PrimitiveType::Face>
+struct mesh_type_from_primitive_type<PrimitiveType::Triangle>
 {
     using type = TriMesh;
 };

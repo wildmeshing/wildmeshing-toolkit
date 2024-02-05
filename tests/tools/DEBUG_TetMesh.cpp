@@ -245,7 +245,7 @@ const TypedAttributeHandle<int64_t>& DEBUG_TetMesh::t_handle(const PrimitiveType
     switch (type) {
     case PrimitiveType::Vertex: return m_tv_handle;
     case PrimitiveType::Edge: return m_te_handle;
-    case PrimitiveType::Face: return m_tf_handle;
+    case PrimitiveType::Triangle: return m_tf_handle;
     case PrimitiveType::Tetrahedron: return m_tt_handle;
     default: throw std::runtime_error("Invalid PrimitiveType");
     }

@@ -13,7 +13,7 @@ namespace wmtk::simplex {
 SimplexCollection link(const Mesh& mesh, const simplex::Simplex& simplex, const bool sort_and_clean)
 {
     switch (mesh.top_simplex_type()) {
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
         return link(static_cast<const TriMesh&>(mesh), simplex, sort_and_clean);
     case PrimitiveType::Tetrahedron:
         return link(static_cast<const TetMesh&>(mesh), simplex, sort_and_clean);
@@ -51,7 +51,7 @@ link(const TriMesh& mesh, const simplex::Simplex& simplex, const bool sort_and_c
             all_cofaces.emplace_back(Simplex::vertex(t));
         }
         break;
-    case PrimitiveType::Face: break;
+    case PrimitiveType::Triangle: break;
     case PrimitiveType::Tetrahedron:
     default: log_and_throw_error("Unknown primitive type in open_star."); break;
     }
@@ -73,7 +73,7 @@ link(const TetMesh& mesh, const simplex::Simplex& simplex, const bool sort_and_c
 
     constexpr PrimitiveType PV = PrimitiveType::Vertex;
     constexpr PrimitiveType PE = PrimitiveType::Edge;
-    constexpr PrimitiveType PF = PrimitiveType::Face;
+    constexpr PrimitiveType PF = PrimitiveType::Triangle;
     constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
     std::vector<Simplex> all_cofaces;
@@ -105,7 +105,7 @@ link(const TetMesh& mesh, const simplex::Simplex& simplex, const bool sort_and_c
             all_cofaces.emplace_back(Simplex::vertex(mesh.switch_vertex(t)));
         }
         break;
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
         all_cofaces.reserve(cell_tuples.size() * 7);
         for (Tuple t : cell_tuples) {
             t = mesh.switch_tuples(t, {PE, PF, PE, PV});

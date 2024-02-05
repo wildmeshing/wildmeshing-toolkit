@@ -54,7 +54,7 @@ T TupleAccessor<T>::const_topological_scalar_attribute(const Tuple& t, Primitive
         return CachingBaseType::const_scalar_attribute(t.m_global_cid, t.m_local_vid);
     case PrimitiveType::Edge:
         return CachingBaseType::const_scalar_attribute(t.m_global_cid, t.m_local_eid);
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
         return CachingBaseType::const_scalar_attribute(t.m_global_cid, t.m_local_fid);
     case PrimitiveType::Tetrahedron: [[fallthrough]];
     default: return T(0);

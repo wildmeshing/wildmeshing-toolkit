@@ -75,7 +75,7 @@ std::shared_ptr<wmtk::TriMesh> mesh_with_tag_from_image(
     m->initialize(F);
 
     mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, *m);
-    mesh_utils::set_matrix_attribute(tags, tag_name, PrimitiveType::Face, *m);
+    mesh_utils::set_matrix_attribute(tags, tag_name, PrimitiveType::Triangle, *m);
 
     return m;
 }

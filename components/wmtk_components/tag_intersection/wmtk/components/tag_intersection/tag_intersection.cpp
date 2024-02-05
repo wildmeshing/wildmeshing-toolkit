@@ -49,7 +49,7 @@ auto gather_attributes(
 
         auto handle = mesh.get_attribute_handle<int64_t>(
             options.attributes.face_labels[i],
-            PrimitiveType::Face);
+            PrimitiveType::Triangle);
 
         input_tags.emplace_back(std::make_tuple(handle, value));
     }
@@ -92,7 +92,7 @@ auto gather_attributes(
 
         auto handle = mesh.get_attribute_handle<int64_t>(
             options.output_attributes.face_labels[i],
-            PrimitiveType::Face);
+            PrimitiveType::Triangle);
 
         output_tags.emplace_back(std::make_tuple(handle, value));
     }
@@ -141,7 +141,7 @@ void tag_intersection(const base::Paths& paths, const nlohmann::json& j, io::Cac
         gather_attributes(cache, mesh, options);
 
     switch (mesh_in->top_simplex_type()) {
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         TriMesh& m = static_cast<TriMesh&>(*mesh_in);
         wmtk::components::TagIntersection tag_intersection;
         tag_intersection.compute_intersection(m, input_tags, output_tags);

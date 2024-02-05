@@ -172,7 +172,7 @@ void RegularSpace::regularize_tags()
 
             break;
         }
-        case PrimitiveType::Face: { // face split
+        case PrimitiveType::Triangle: { // face split
             composite::TriFaceSplit op_face_split(m_mesh);
             op_face_split.add_invariant(std::make_shared<TodoInvariant>(
                 m_mesh,

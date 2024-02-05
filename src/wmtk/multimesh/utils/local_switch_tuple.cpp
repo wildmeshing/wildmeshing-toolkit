@@ -11,7 +11,8 @@ Tuple local_switch_tuple(
     PrimitiveType primitive_type)
 {
     switch (mesh_primitive_type) {
-    case PrimitiveType::Face: return autogen::tri_mesh::local_switch_tuple(source, primitive_type);
+    case PrimitiveType::Triangle:
+        return autogen::tri_mesh::local_switch_tuple(source, primitive_type);
     case PrimitiveType::Tetrahedron:
         return autogen::tet_mesh::local_switch_tuple(source, primitive_type);
     case PrimitiveType::Edge: return autogen::edge_mesh::local_switch_tuple(source, primitive_type);

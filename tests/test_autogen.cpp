@@ -28,7 +28,7 @@ TEST_CASE("tuple_autogen_sizes", "[tuple]")
     size_t valid_face = 6;
     size_t valid_tet = 24;
 
-    REQUIRE(all_valid_local_tuples(PrimitiveType::Face).size() == valid_face);
+    REQUIRE(all_valid_local_tuples(PrimitiveType::Triangle).size() == valid_face);
     REQUIRE(all_valid_local_tuples(PrimitiveType::Tetrahedron).size() == valid_tet);
 
     auto get_array_range = [](const auto& array) -> std::array<decltype(&array[0]), 2> {
@@ -88,14 +88,14 @@ CHECK(count == valid_face);
 TEST_CASE("tuple_autogen_id_inversion", "[tuple]")
 {
     // when other meshes are available add them here
-    for (PrimitiveType pt : {PrimitiveType::Face, PrimitiveType::Tetrahedron}) {
+    for (PrimitiveType pt : {PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
         for (int64_t idx = 0; idx < max_tuple_count(pt); ++idx) {
             Tuple t = tuple_from_offset_id(pt, idx);
             if (t.is_null()) {
                 continue;
             } else {
                 switch (pt) {
-                case PrimitiveType::Face: {
+                case PrimitiveType::Triangle: {
                     CHECK(idx == tri_mesh::local_id_table_offset(t));
                     break;
                 }
@@ -121,9 +121,9 @@ TEST_CASE("tuple_autogen_ptype_is_ccw_equivalent", "[tuple]")
     }
 
     {
-        auto tuples = all_valid_local_tuples(PrimitiveType::Face);
+        auto tuples = all_valid_local_tuples(PrimitiveType::Triangle);
         for (const auto& t : tuples) {
-            CHECK(tri_mesh::is_ccw(t) == is_ccw(PrimitiveType::Face, t));
+            CHECK(tri_mesh::is_ccw(t) == is_ccw(PrimitiveType::Triangle, t));
         }
     }
 
@@ -140,7 +140,7 @@ TEST_CASE("tuple_autogen_local_id_inversion", "[tuple]")
     // NOTE: this works because we assume the unused ids are = 0; from tuple_from_offset_id
     // above
     {
-        auto tuples = all_valid_local_tuples(PrimitiveType::Face);
+        auto tuples = all_valid_local_tuples(PrimitiveType::Triangle);
         for (const auto& t : tuples) {
             int64_t id = tri_mesh::local_id_table_offset(t);
             auto [lvid, leid] = tri_mesh::lvid_leid_from_table_offset(id);
@@ -176,20 +176,20 @@ TEST_CASE("tuple_autogen_ptype_local_switch_tuple_equivalent", "[tuple]")
                     local_switch_tuple(PrimitiveType::Edge, t, pt));
             }
             REQUIRE_THROWS(edge_mesh::local_switch_tuple(t, PrimitiveType::Tetrahedron));
-            REQUIRE_THROWS(edge_mesh::local_switch_tuple(t, PrimitiveType::Face));
+            REQUIRE_THROWS(edge_mesh::local_switch_tuple(t, PrimitiveType::Triangle));
             REQUIRE_THROWS(edge_mesh::local_switch_tuple(t, PrimitiveType::Edge));
         }
     }
     {
-        auto tuples = all_valid_local_tuples(PrimitiveType::Face);
+        auto tuples = all_valid_local_tuples(PrimitiveType::Triangle);
         for (const auto& t : tuples) {
-            for (PrimitiveType pt : primitives_up_to(PrimitiveType::Face)) {
+            for (PrimitiveType pt : primitives_up_to(PrimitiveType::Triangle)) {
                 CHECK(
                     tri_mesh::local_switch_tuple(t, pt) ==
-                    local_switch_tuple(PrimitiveType::Face, t, pt));
+                    local_switch_tuple(PrimitiveType::Triangle, t, pt));
             }
             REQUIRE_THROWS(tri_mesh::local_switch_tuple(t, PrimitiveType::Tetrahedron));
-            REQUIRE_THROWS(tri_mesh::local_switch_tuple(t, PrimitiveType::Face));
+            REQUIRE_THROWS(tri_mesh::local_switch_tuple(t, PrimitiveType::Triangle));
         }
     }
 
@@ -210,7 +210,7 @@ TEST_CASE("tuple_autogen_ptype_local_switch_tuple_equivalent", "[tuple]")
 TEST_CASE("tuple_autogen_switch_still_valid", "[tuple]")
 {
     // when other meshes are available add them here
-    for (PrimitiveType mesh_type : {PrimitiveType::Face /*, PrimitiveType::Tetrahedron*/}) {
+    for (PrimitiveType mesh_type : {PrimitiveType::Triangle /*, PrimitiveType::Tetrahedron*/}) {
         auto tuples = all_valid_local_tuples(mesh_type);
 
         for (const auto& t : tuples) {

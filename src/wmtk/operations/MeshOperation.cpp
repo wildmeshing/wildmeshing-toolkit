@@ -14,7 +14,7 @@ std::vector<simplex::Simplex> MeshOperation::execute(const simplex::Simplex& sim
 {
     if (mesh().top_simplex_type() == PrimitiveType::Edge)
         return execute_aux(static_cast<EdgeMesh&>(mesh()), simplex);
-    else if (mesh().top_simplex_type() == PrimitiveType::Face)
+    else if (mesh().top_simplex_type() == PrimitiveType::Triangle)
         return execute_aux(static_cast<TriMesh&>(mesh()), simplex);
     else if (mesh().top_simplex_type() == PrimitiveType::Tetrahedron)
         return execute_aux(static_cast<TetMesh&>(mesh()), simplex);
@@ -27,7 +27,7 @@ std::vector<simplex::Simplex> MeshOperation::unmodified_primitives(
 {
     if (mesh().top_simplex_type() == PrimitiveType::Edge)
         return unmodified_primitives_aux(static_cast<const EdgeMesh&>(mesh()), simplex);
-    else if (mesh().top_simplex_type() == PrimitiveType::Face)
+    else if (mesh().top_simplex_type() == PrimitiveType::Triangle)
         return unmodified_primitives_aux(static_cast<const TriMesh&>(mesh()), simplex);
     else if (mesh().top_simplex_type() == PrimitiveType::Tetrahedron)
         return unmodified_primitives_aux(static_cast<const TetMesh&>(mesh()), simplex);

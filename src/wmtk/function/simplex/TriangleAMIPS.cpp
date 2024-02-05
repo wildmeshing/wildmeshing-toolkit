@@ -24,7 +24,7 @@ DScalar TriangleAMIPS::eval(
 {
     assert(coords.size() == 3);
 
-    if (domain_simplex.primitive_type() != PrimitiveType::Face)
+    if (domain_simplex.primitive_type() != PrimitiveType::Triangle)
         throw std::runtime_error("TriangleAMIPS only supports faces meshes");
 
     switch (embedded_dimension()) {

@@ -48,7 +48,7 @@ TEST_CASE("MinIncidentValenceInvariant", "[invariants][2D]")
             }
         }
 
-        CHECK_FALSE(inv.after({}, m.get_all(PrimitiveType::Face)));
+        CHECK_FALSE(inv.after({}, m.get_all(PrimitiveType::Triangle)));
     }
     SECTION("edge_region")
     {
@@ -59,7 +59,7 @@ TEST_CASE("MinIncidentValenceInvariant", "[invariants][2D]")
             CHECK(inv.before(Simplex::edge(t)));
         }
 
-        CHECK(inv.after({}, m.get_all(PrimitiveType::Face)));
+        CHECK(inv.after({}, m.get_all(PrimitiveType::Triangle)));
     }
 }
 
@@ -194,7 +194,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
         m.register_attribute<int64_t>("edge_tag", PrimitiveType::Edge, 1);
 
     const attribute::MeshAttributeHandle face_tag_handle =
-        m.register_attribute<int64_t>("face_tag", PrimitiveType::Face, 1);
+        m.register_attribute<int64_t>("face_tag", PrimitiveType::Triangle, 1);
 
     const int64_t tag_val = 1;
 
@@ -264,7 +264,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
                 for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
                          m,
                          Simplex::edge(e),
-                         PrimitiveType::Face)) {
+                         PrimitiveType::Triangle)) {
                     if (face_tag_acc.const_scalar_attribute(f) == tag_val) {
                         ++n_tagged_faces;
                     }
@@ -297,7 +297,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
                 for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
                          m,
                          Simplex::edge(e),
-                         PrimitiveType::Face)) {
+                         PrimitiveType::Triangle)) {
                     if (face_tag_acc.const_scalar_attribute(f) == tag_val) {
                         ++n_tagged_faces;
                     }
@@ -329,7 +329,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
                 for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
                          m,
                          Simplex::edge(e),
-                         PrimitiveType::Face)) {
+                         PrimitiveType::Triangle)) {
                     if (face_tag_acc.const_scalar_attribute(f) == tag_val) {
                         ++n_tagged_faces;
                     }
@@ -352,7 +352,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
         // mark face(s)
         {
             auto face_tag_acc = m.create_accessor<int64_t>(face_tag_handle);
-            for (const Tuple& t : m.get_all(PrimitiveType::Face)) {
+            for (const Tuple& t : m.get_all(PrimitiveType::Triangle)) {
                 if (m.is_boundary_face(t)) {
                     face_tag_acc.scalar_attribute(t) = 1;
                 }
@@ -380,7 +380,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_3_by_1_tet", "[invari
         m.register_attribute<int64_t>("edge_tag", PrimitiveType::Edge, 1);
 
     const attribute::MeshAttributeHandle face_tag_handle =
-        m.register_attribute<int64_t>("face_tag", PrimitiveType::Face, 1);
+        m.register_attribute<int64_t>("face_tag", PrimitiveType::Triangle, 1);
 
     const int64_t tag_val = 1;
 
@@ -415,7 +415,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_3_by_1_tet", "[invari
             for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
                      m,
                      Simplex::edge(e),
-                     PrimitiveType::Face)) {
+                     PrimitiveType::Triangle)) {
                 if (face_tag_acc.const_scalar_attribute(f) == tag_val) {
                     ++n_tagged_faces;
                 }
@@ -455,7 +455,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_3_by_1_tet", "[invari
             for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
                      m,
                      Simplex::edge(e),
-                     PrimitiveType::Face)) {
+                     PrimitiveType::Triangle)) {
                 if (face_tag_acc.const_scalar_attribute(f) == tag_val) {
                     ++n_tagged_faces;
                 }
@@ -518,7 +518,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_3_by_1_tet", "[invari
             for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
                      m,
                      Simplex::edge(e),
-                     PrimitiveType::Face)) {
+                     PrimitiveType::Triangle)) {
                 if (face_tag_acc.const_scalar_attribute(f) == tag_val) {
                     ++n_tagged_faces;
                 }
@@ -578,7 +578,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_3_by_1_tet", "[invari
             for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
                      m,
                      Simplex::edge(e),
-                     PrimitiveType::Face)) {
+                     PrimitiveType::Triangle)) {
                 if (face_tag_acc.const_scalar_attribute(f) == tag_val) {
                     ++n_tagged_faces;
                 }
@@ -646,7 +646,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_3_by_1_tet", "[invari
             for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
                      m,
                      Simplex::edge(e),
-                     PrimitiveType::Face)) {
+                     PrimitiveType::Triangle)) {
                 if (face_tag_acc.const_scalar_attribute(f) == tag_val) {
                     ++n_tagged_faces;
                 }
@@ -681,7 +681,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_2_by_2_tet", "[invari
         m.register_attribute<int64_t>("edge_tag", PrimitiveType::Edge, 1);
 
     const attribute::MeshAttributeHandle face_tag_handle =
-        m.register_attribute<int64_t>("face_tag", PrimitiveType::Face, 1);
+        m.register_attribute<int64_t>("face_tag", PrimitiveType::Triangle, 1);
 
     const int64_t tag_val = 1;
 
@@ -748,7 +748,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_2_by_2_tet", "[invari
             for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
                      m,
                      Simplex::edge(e),
-                     PrimitiveType::Face)) {
+                     PrimitiveType::Triangle)) {
                 if (face_tag_acc.const_scalar_attribute(f) == tag_val) {
                     ++n_tagged_faces;
                 }

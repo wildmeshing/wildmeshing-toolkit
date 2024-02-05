@@ -11,7 +11,7 @@
 namespace wmtk {
 namespace {
 constexpr static PrimitiveType PE = PrimitiveType::Edge;
-constexpr static PrimitiveType PF = PrimitiveType::Face;
+constexpr static PrimitiveType PF = PrimitiveType::Triangle;
 } // namespace
 
 std::tuple<std::vector<Tuple>, std::vector<Tuple>>
@@ -92,7 +92,7 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     TetMesh& m,
     const Tuple& operating_tuple,
     Accessor<int64_t>& hash_acc)
-    : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Face), m.get_flag_accessor(PrimitiveType::Tetrahedron)}}
+    : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Triangle), m.get_flag_accessor(PrimitiveType::Tetrahedron)}}
     , tt_accessor(m.create_accessor<int64_t>(m.m_tt_handle))
     , tf_accessor(m.create_accessor<int64_t>(m.m_tf_handle))
     , te_accessor(m.create_accessor<int64_t>(m.m_te_handle))
@@ -250,7 +250,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     // create new faces and edges
     std::vector<FaceSplitData> new_incident_face_data;
     for (int64_t i = 0; i < incident_faces.size(); ++i) {
-        std::vector<int64_t> new_fids = this->request_simplex_indices(PrimitiveType::Face, 2);
+        std::vector<int64_t> new_fids = this->request_simplex_indices(PrimitiveType::Triangle, 2);
         std::vector<int64_t> splitting_eids = this->request_simplex_indices(PrimitiveType::Edge, 1);
 
         FaceSplitData fsd;
@@ -273,7 +273,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     for (int64_t i = 0; i < incident_tets.size(); ++i) {
         std::vector<int64_t> new_tids =
             this->request_simplex_indices(PrimitiveType::Tetrahedron, 2);
-        std::vector<int64_t> split_fids = this->request_simplex_indices(PrimitiveType::Face, 1);
+        std::vector<int64_t> split_fids = this->request_simplex_indices(PrimitiveType::Triangle, 1);
 
         IncidentTetData tsd;
         tsd.local_operating_tuple = incident_tets[i];

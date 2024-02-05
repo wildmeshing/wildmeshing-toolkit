@@ -225,11 +225,11 @@ TEST_CASE("cache_equals", "[cache][io]")
     // add some contents
     {
         TriMesh m = tests::single_equilateral_triangle();
-        auto a1 = m.register_attribute<int64_t>("a1", PrimitiveType::Face, 1);
-        auto a2 = m.register_attribute<double>("a2", PrimitiveType::Face, 1);
+        auto a1 = m.register_attribute<int64_t>("a1", PrimitiveType::Triangle, 1);
+        auto a2 = m.register_attribute<double>("a2", PrimitiveType::Triangle, 1);
         auto acc1 = m.create_accessor<int64_t>(a1);
         auto acc2 = m.create_accessor<double>(a2);
-        const auto faces = m.get_all(PrimitiveType::Face);
+        const auto faces = m.get_all(PrimitiveType::Triangle);
         for (size_t i = 0; i < faces.size(); ++i) {
             acc1.scalar_attribute(faces[i]) = i;
             acc2.scalar_attribute(faces[i]) = i * i;
@@ -257,9 +257,9 @@ TEST_CASE("cache_equals", "[cache][io]")
     {
         auto m = c2.read_mesh("equilateral_triangle");
 
-        auto a1 = m->get_attribute_handle<int64_t>("a1", PrimitiveType::Face);
+        auto a1 = m->get_attribute_handle<int64_t>("a1", PrimitiveType::Triangle);
         auto acc1 = m->create_accessor<int64_t>(a1);
-        const auto faces = m->get_all(PrimitiveType::Face);
+        const auto faces = m->get_all(PrimitiveType::Triangle);
         for (size_t i = 0; i < faces.size(); ++i) {
             acc1.scalar_attribute(faces[i]) = i + 1;
         }

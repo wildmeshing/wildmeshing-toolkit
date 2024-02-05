@@ -28,7 +28,7 @@ Eigen::Vector3d compute_vertex_normal(const TriMesh& m, const Accessor<double>& 
         simplex::closed_star(m, simplex::Simplex::vertex(v));
 
     Eigen::Vector3d n = Eigen::Vector3d::Zero();
-    for (const simplex::Simplex& f : closed_star.simplex_vector(PrimitiveType::Face)) {
+    for (const simplex::Simplex& f : closed_star.simplex_vector(PrimitiveType::Triangle)) {
         Tuple t = f.tuple();
         if (!m.is_ccw(t)) {
             t = m.switch_vertex(t);

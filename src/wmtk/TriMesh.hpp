@@ -70,7 +70,7 @@ protected:
 
     int64_t id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
     int64_t id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
-    int64_t id_face(const Tuple& tuple) const { return id(tuple, PrimitiveType::Face); }
+    int64_t id_face(const Tuple& tuple) const { return id(tuple, PrimitiveType::Triangle); }
 
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index

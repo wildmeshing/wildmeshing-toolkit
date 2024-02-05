@@ -11,9 +11,9 @@ TriMesh::TriMesh()
     : Mesh(2)
     , m_vf_handle(register_attribute_typed<int64_t>("m_vf", PrimitiveType::Vertex, 1, false, -1))
     , m_ef_handle(register_attribute_typed<int64_t>("m_ef", PrimitiveType::Edge, 1, false, -1))
-    , m_fv_handle(register_attribute_typed<int64_t>("m_fv", PrimitiveType::Face, 3, false, -1))
-    , m_fe_handle(register_attribute_typed<int64_t>("m_fe", PrimitiveType::Face, 3, false, -1))
-    , m_ff_handle(register_attribute_typed<int64_t>("m_ff", PrimitiveType::Face, 3, false, -1))
+    , m_fv_handle(register_attribute_typed<int64_t>("m_fv", PrimitiveType::Triangle, 3, false, -1))
+    , m_fe_handle(register_attribute_typed<int64_t>("m_fe", PrimitiveType::Triangle, 3, false, -1))
+    , m_ff_handle(register_attribute_typed<int64_t>("m_ff", PrimitiveType::Triangle, 3, false, -1))
 {
     make_cached_accessors();
 }
@@ -62,7 +62,7 @@ int64_t TriMesh::id(const Tuple& tuple, PrimitiveType type) const
         int64_t v = m_fe_accessor->const_topological_scalar_attribute(tuple, PrimitiveType::Edge);
         return v;
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         return tuple.m_global_cid;
     }
     case PrimitiveType::Tetrahedron: [[fallthrough]];
@@ -75,7 +75,7 @@ bool TriMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
     switch (pt) {
     case PrimitiveType::Vertex: return is_boundary_vertex(tuple);
     case PrimitiveType::Edge: return is_boundary_edge(tuple);
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:
     default: break;
     }
@@ -117,10 +117,10 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
     bool ccw = is_ccw(tuple);
 
     switch (type) {
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         const int64_t gvid = id(tuple, PrimitiveType::Vertex);
         const int64_t geid = id(tuple, PrimitiveType::Edge);
-        const int64_t gfid = id(tuple, PrimitiveType::Face);
+        const int64_t gfid = id(tuple, PrimitiveType::Triangle);
 
         auto ff = m_ff_accessor->const_vector_attribute(tuple);
 
@@ -222,10 +222,10 @@ void TriMesh::initialize(
 
     Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
     Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
+    Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
 
     // iterate over the matrices and fill attributes
-    for (int64_t i = 0; i < capacity(PrimitiveType::Face); ++i) {
+    for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
         fv_accessor.index_access().vector_attribute(i) = FV.row(i).transpose();
         fe_accessor.index_access().vector_attribute(i) = FE.row(i).transpose();
         ff_accessor.index_access().vector_attribute(i) = FF.row(i).transpose();
@@ -288,7 +288,7 @@ Tuple TriMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
     case PrimitiveType::Edge: {
         return edge_tuple_from_id(gid);
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         return face_tuple_from_id(gid);
     }
     case PrimitiveType::Tetrahedron: {
@@ -400,7 +400,7 @@ bool TriMesh::is_connectivity_valid() const
     ConstAccessor<int64_t> ef_accessor = create_const_accessor<int64_t>(m_ef_handle);
     ConstAccessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
     ConstAccessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    ConstAccessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
+    ConstAccessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
 
     // EF and FE
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
@@ -458,7 +458,7 @@ bool TriMesh::is_connectivity_valid() const
     }
 
     // FE and EF
-    for (int64_t i = 0; i < capacity(PrimitiveType::Face); ++i) {
+    for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
         if (f_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
             wmtk::logger().debug("Face {} is deleted", i);
             continue;

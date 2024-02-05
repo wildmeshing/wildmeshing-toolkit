@@ -231,7 +231,7 @@ int64_t Mesh::id(const Tuple& tuple, PrimitiveType type) const
     switch (top_simplex_type()) {
     case PrimitiveType::Vertex: return static_cast<const PointMesh*>(this)->id(tuple, type);
     case PrimitiveType::Edge: return static_cast<const EdgeMesh*>(this)->id(tuple, type);
-    case PrimitiveType::Face: return static_cast<const TriMesh*>(this)->id(tuple, type);
+    case PrimitiveType::Triangle: return static_cast<const TriMesh*>(this)->id(tuple, type);
     case PrimitiveType::Tetrahedron: return static_cast<const TetMesh*>(this)->id(tuple, type);
     default: assert(false); return -1;
     }

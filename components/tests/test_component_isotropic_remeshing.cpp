@@ -689,7 +689,7 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D]")
     auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
     pass_through_attributes.emplace_back(
-        mesh.register_attribute<int64_t>("dummy_tag", PrimitiveType::Face, 1));
+        mesh.register_attribute<int64_t>("dummy_tag", PrimitiveType::Triangle, 1));
 
     {
         auto acc = mesh.create_accessor<int64_t>(pass_through_attributes[0]);

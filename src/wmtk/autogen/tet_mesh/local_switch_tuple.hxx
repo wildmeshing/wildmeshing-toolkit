@@ -30,7 +30,7 @@ inline Tuple local_switch_tuple(const Tuple& tuple, PrimitiveType pt)
             auto_3d_table_edge[offset][2],
             global_cid,
             hash);
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
         return Tuple(
             auto_3d_table_face[offset][0],
             auto_3d_table_face[offset][1],

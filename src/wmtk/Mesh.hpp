@@ -944,7 +944,7 @@ inline Tuple Mesh::switch_edge(const Tuple& tuple) const
 }
 inline Tuple Mesh::switch_face(const Tuple& tuple) const
 {
-    return switch_tuple(tuple, PrimitiveType::Face);
+    return switch_tuple(tuple, PrimitiveType::Triangle);
 }
 inline Tuple Mesh::switch_tetrahedron(const Tuple& tuple) const
 {

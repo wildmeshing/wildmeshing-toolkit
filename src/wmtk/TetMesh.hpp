@@ -58,7 +58,7 @@ protected:
 
     int64_t id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
     int64_t id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
-    int64_t id_face(const Tuple& tuple) const { return id(tuple, PrimitiveType::Face); }
+    int64_t id_face(const Tuple& tuple) const { return id(tuple, PrimitiveType::Triangle); }
     int64_t id_tet(const Tuple& tuple) const { return id(tuple, PrimitiveType::Tetrahedron); }
 
     /**

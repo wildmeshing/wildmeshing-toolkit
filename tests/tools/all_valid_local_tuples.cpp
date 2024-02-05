@@ -16,8 +16,8 @@ std::vector<PrimitiveType> primitives_up_to(PrimitiveType pt)
     std::vector<PrimitiveType> r;
 
     switch (pt) {
-    case PrimitiveType::Tetrahedron: r.emplace_back(PrimitiveType::Face); [[fallthrough]];
-    case PrimitiveType::Face: r.emplace_back(PrimitiveType::Edge); [[fallthrough]];
+    case PrimitiveType::Tetrahedron: r.emplace_back(PrimitiveType::Triangle); [[fallthrough]];
+    case PrimitiveType::Triangle: r.emplace_back(PrimitiveType::Edge); [[fallthrough]];
     case PrimitiveType::Edge: r.emplace_back(PrimitiveType::Vertex); [[fallthrough]];
     case PrimitiveType::Vertex:
     default: break;
@@ -29,7 +29,8 @@ std::vector<PrimitiveType> primitives_up_to(PrimitiveType pt)
 int64_t max_tuple_count(PrimitiveType pt)
 {
     switch (pt) {
-    case PrimitiveType::Face: return int64_t(std::size(wmtk::autogen::tri_mesh::auto_2d_table_ccw));
+    case PrimitiveType::Triangle:
+        return int64_t(std::size(wmtk::autogen::tri_mesh::auto_2d_table_ccw));
     case PrimitiveType::Tetrahedron:
         return int64_t(std::size(wmtk::autogen::tet_mesh::auto_3d_table_ccw));
     case PrimitiveType::Edge: return 2;
@@ -43,7 +44,7 @@ Tuple tuple_from_offset_id(PrimitiveType pt, int offset)
     int64_t lvid = 0, leid = 0, lfid = 0, gcid = 0, hash = 0;
 
     switch (pt) {
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         // bug in the standard? tie should work :-(
         auto r = tri_mesh::lvid_leid_from_table_offset(offset);
         lvid = r[0];

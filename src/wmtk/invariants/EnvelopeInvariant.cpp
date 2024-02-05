@@ -26,14 +26,14 @@ EnvelopeInvariant::EnvelopeInvariant(
         envelope_mesh.create_accessor(envelope_mesh_coordinate.as<double>());
 
 
-    if (envelope_mesh.top_simplex_type() == PrimitiveType::Face) {
+    if (envelope_mesh.top_simplex_type() == PrimitiveType::Triangle) {
         std::vector<Eigen::Vector3d> vertices;
         std::vector<Eigen::Vector3i> faces;
 
         int count = 0;
         assert(accessor.dimension() == 3);
 
-        const std::vector<Tuple>& facest = envelope_mesh.get_all(wmtk::PrimitiveType::Face);
+        const std::vector<Tuple>& facest = envelope_mesh.get_all(wmtk::PrimitiveType::Triangle);
         for (const auto& f : facest) {
             Eigen::Vector3d p0 = accessor.const_vector_attribute(f);
             Eigen::Vector3d p1 = accessor.const_vector_attribute(envelope_mesh.switch_vertex(f));
@@ -94,7 +94,7 @@ bool EnvelopeInvariant::after(
 
         std::vector<Tuple> faces;
 
-        if (type == PrimitiveType::Face) {
+        if (type == PrimitiveType::Triangle) {
             std::array<Eigen::Vector3d, 3> triangle;
 
             for (const Tuple& tuple : top_dimension_tuples_after) {

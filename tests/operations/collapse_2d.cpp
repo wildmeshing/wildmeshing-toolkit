@@ -35,7 +35,7 @@ using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 //////////// COLLAPSE TESTS ////////////
 
 TEST_CASE("collapse_edge", "[operations][collapse][2D]")
@@ -45,7 +45,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     DEBUG_TriMesh m = hex_plus_two();
     REQUIRE(m.is_connectivity_valid());
 
-    auto face_flag_accessor = m.get_flag_accessor(PrimitiveType::Face);
+    auto face_flag_accessor = m.get_flag_accessor(PrimitiveType::Triangle);
 
 
     SECTION("interior_edge")

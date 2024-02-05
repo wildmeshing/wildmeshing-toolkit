@@ -67,7 +67,7 @@ std::vector<std::array<Tuple, 2>> EdgeOperationData::split_output_faces(const Tr
     for (const auto& ifd : incident_face_datas()) {
         std::array<Tuple, 2>& r = ret.emplace_back();
         for (size_t j = 0; j < 2; ++j) {
-            r[j] = tuple_from_id(m, PrimitiveType::Face, ifd.split_f[j]);
+            r[j] = tuple_from_id(m, PrimitiveType::Triangle, ifd.split_f[j]);
         }
         // std::swap(r[0],r[1]);
     }

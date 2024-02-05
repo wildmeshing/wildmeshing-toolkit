@@ -38,7 +38,7 @@ std::vector<Tuple> top_dimension_cofaces_tuples_vertex(const TriMesh& mesh, cons
         collection.emplace_back(t);
 
         if (!mesh.is_boundary_edge(t)) {
-            q.push(mesh.switch_tuples(t, {PrimitiveType::Face, PrimitiveType::Edge}));
+            q.push(mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Edge}));
         }
         const Tuple t_other = mesh.switch_edge(t);
         if (!mesh.is_boundary_edge(t_other)) {
@@ -84,7 +84,7 @@ std::vector<Tuple> top_dimension_cofaces_tuples_vertex(const TetMesh& mesh, cons
 
         const Tuple& t1 = t;
         const Tuple t2 = mesh.switch_face(t);
-        const Tuple t3 = mesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Face});
+        const Tuple t3 = mesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Triangle});
 
         if (!mesh.is_boundary_face(t1)) {
             q.push(mesh.switch_tetrahedron(t1));
@@ -122,7 +122,7 @@ std::vector<Tuple> top_dimension_cofaces_tuples_edge(const TetMesh& mesh, const 
         const Tuple t2 = mesh.switch_face(t);
 
         if (!mesh.is_boundary_face(t1)) {
-            q.push(mesh.switch_tuples(t1, {PrimitiveType::Tetrahedron, PrimitiveType::Face}));
+            q.push(mesh.switch_tuples(t1, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle}));
         }
         if (!mesh.is_boundary_face(t2)) {
             q.push(mesh.switch_tetrahedron(t2));
@@ -164,7 +164,7 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const EdgeMesh& mesh, const Simp
         collection.emplace_back(simplex.tuple());
         break;
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         throw std::runtime_error(
             "top_dimension_cofaces_tuples not implemented for Face in EdgeMesh");
         break;
@@ -192,7 +192,7 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const TriMesh& mesh, const Simpl
         collection = top_dimension_cofaces_tuples_edge(mesh, simplex.tuple());
         break;
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         collection = top_dimension_cofaces_tuples_face(mesh, simplex.tuple());
         break;
     }
@@ -218,7 +218,7 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const TetMesh& mesh, const Simpl
         collection = top_dimension_cofaces_tuples_edge(mesh, simplex.tuple());
         break;
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         collection = top_dimension_cofaces_tuples_face(mesh, simplex.tuple());
         break;
     }
@@ -235,7 +235,7 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const TetMesh& mesh, const Simpl
 std::vector<Tuple> top_dimension_cofaces_tuples(const Mesh& mesh, const Simplex& simplex)
 {
     switch (mesh.top_simplex_type()) {
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
         return top_dimension_cofaces_tuples(static_cast<const TriMesh&>(mesh), simplex);
     case PrimitiveType::Tetrahedron:
         return top_dimension_cofaces_tuples(static_cast<const TetMesh&>(mesh), simplex);
@@ -255,7 +255,7 @@ top_dimension_cofaces(const TriMesh& mesh, const Simplex& simplex, const bool so
         mesh,
         utils::tuple_vector_to_homogeneous_simplex_vector(
             top_dimension_cofaces_tuples(mesh, simplex),
-            PrimitiveType::Face));
+            PrimitiveType::Triangle));
     if (sort_and_clean) {
         collection.sort_and_clean();
     }

@@ -34,7 +34,7 @@ using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 
 
 TEST_CASE("swap_edge", "[operations][swap][2D]")
@@ -185,12 +185,14 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //   \ / \ / \ /
         //    7---8---9
         DEBUG_TriMesh m = edge_region_with_position();
-       wmtk::attribute::MeshAttributeHandle pos_handle = m.get_attribute_handle<double>("vertices", PV);
+        wmtk::attribute::MeshAttributeHandle pos_handle =
+            m.get_attribute_handle<double>("vertices", PV);
 
-       wmtk::attribute::MeshAttributeHandle attri_handle =
+        wmtk::attribute::MeshAttributeHandle attri_handle =
             m.register_attribute<int64_t>("test_attribute", PF, 1);
 
-       wmtk::attribute::MeshAttributeHandle v2_handle = m.register_attribute<double>("vertices2", PV, 1);
+        wmtk::attribute::MeshAttributeHandle v2_handle =
+            m.register_attribute<double>("vertices2", PV, 1);
 
         Accessor<int64_t> acc_attri = m.create_accessor<int64_t>(attri_handle);
         for (const Tuple& f : m.get_all(PF)) {
@@ -264,7 +266,8 @@ TEST_CASE("split_face", "[operations][split][2D]")
         // V.row(2) << 0.5, 0.866, 0;
         DEBUG_TriMesh m = single_equilateral_triangle(3);
         Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
-       wmtk::attribute::MeshAttributeHandle pos_handle = m.get_attribute_handle<double>("vertices", PV);
+        wmtk::attribute::MeshAttributeHandle pos_handle =
+            m.get_attribute_handle<double>("vertices", PV);
 
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));

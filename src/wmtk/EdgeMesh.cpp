@@ -22,7 +22,7 @@ int64_t EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
     case PrimitiveType::Edge: {
         return tuple.m_global_cid;
     }
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Tuple id: Invalid primitive type");
     }
@@ -33,7 +33,7 @@ bool EdgeMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
     switch (pt) {
     case PrimitiveType::Vertex: return is_boundary_vertex(tuple);
     case PrimitiveType::Edge:
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:
     default: break;
     }
@@ -100,7 +100,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         assert(is_valid(res, hash_accessor));
         return res;
     }
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
     }
@@ -161,7 +161,7 @@ Tuple EdgeMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
     case PrimitiveType::Edge: {
         return edge_tuple_from_id(gid);
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         throw std::runtime_error("no tet tuple supported for edgemesh");
         break;
     }

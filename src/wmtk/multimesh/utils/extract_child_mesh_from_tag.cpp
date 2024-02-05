@@ -127,7 +127,7 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
         child_mesh_ptr = run_edge();
         break;
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         child_mesh_ptr = run_face();
         break;
     }

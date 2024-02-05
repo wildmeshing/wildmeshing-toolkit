@@ -8,7 +8,7 @@ namespace wmtk::autogen {
 bool is_ccw(PrimitiveType pt, const Tuple& t)
 {
     switch (pt) {
-    case PrimitiveType::Face: return tri_mesh::is_ccw(t);
+    case PrimitiveType::Triangle: return tri_mesh::is_ccw(t);
     case PrimitiveType::Tetrahedron: return tet_mesh::is_ccw(t);
     case PrimitiveType::Edge: return edge_mesh::is_ccw(t);
     case PrimitiveType::Vertex:
@@ -21,7 +21,7 @@ bool is_ccw(PrimitiveType pt, const Tuple& t)
 bool tuple_is_valid_for_ccw(PrimitiveType pt, const Tuple& t)
 {
     switch (pt) {
-    case PrimitiveType::Face: return tri_mesh::tuple_is_valid_for_ccw(t);
+    case PrimitiveType::Triangle: return tri_mesh::tuple_is_valid_for_ccw(t);
     case PrimitiveType::Tetrahedron: return tet_mesh::tuple_is_valid_for_ccw(t);
     case PrimitiveType::Edge: return edge_mesh::tuple_is_valid_for_ccw(t);
     case PrimitiveType::Vertex:
