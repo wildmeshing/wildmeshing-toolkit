@@ -997,8 +997,7 @@ void MultiMeshManager::update_vertex_operation_hashes_internal(
         }
         break;
     }
-    default:
-    case PrimitiveType::HalfEdge: throw std::runtime_error("Invalid case");
+    default: throw std::runtime_error("Invalid case");
     }
 
 

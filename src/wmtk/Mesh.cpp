@@ -233,7 +233,6 @@ int64_t Mesh::id(const Tuple& tuple, PrimitiveType type) const
     case PrimitiveType::Edge: return static_cast<const EdgeMesh*>(this)->id(tuple, type);
     case PrimitiveType::Face: return static_cast<const TriMesh*>(this)->id(tuple, type);
     case PrimitiveType::Tetrahedron: return static_cast<const TetMesh*>(this)->id(tuple, type);
-    case PrimitiveType::HalfEdge:
     default: assert(false); return -1;
     }
 }

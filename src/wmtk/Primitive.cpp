@@ -42,10 +42,6 @@ Primitive Primitive::tetrahedron(const Tuple& t)
 {
     return Primitive(PrimitiveType::Tetrahedron, t);
 }
-Primitive Primitive::halfedge(const Tuple& t)
-{
-    return Primitive(PrimitiveType::HalfEdge, t);
-}
 
 bool Primitive::operator==(const Primitive& o) const
 {

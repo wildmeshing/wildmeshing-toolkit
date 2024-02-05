@@ -135,7 +135,6 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
         child_mesh_ptr = run_tet();
         break;
     }
-    case PrimitiveType::HalfEdge: [[fallthrough]];
     default: throw("invalid child mesh type");
     }
 

@@ -1,6 +1,6 @@
+#include "boundary_with_preserved_face.hpp"
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
-#include "boundary_with_preserved_face.hpp"
 
 namespace wmtk::simplex::internal {
 
@@ -37,7 +37,6 @@ std::vector<Tuple> boundary_with_preserved_face_tuples(
             }
         }
     } break;
-    case PrimitiveType::HalfEdge:
     default:
         throw std::runtime_error("called boundary_with_preserveD_coface_tuples with halfedge");
         break;

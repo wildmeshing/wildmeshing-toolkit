@@ -117,7 +117,6 @@ std::shared_ptr<Mesh> HDF5Reader::read_mesh(h5pp::File& hdf5_file, const std::st
 
     switch (top_simplex_type) {
     case PrimitiveType::Vertex: mesh = std::make_shared<PointMesh>(); break;
-    case PrimitiveType::HalfEdge:
     case PrimitiveType::Edge: mesh = std::make_shared<EdgeMesh>(); break;
     case PrimitiveType::Face: mesh = std::make_shared<TriMesh>(); break;
     case PrimitiveType::Tetrahedron: mesh = std::make_shared<TetMesh>(); break;

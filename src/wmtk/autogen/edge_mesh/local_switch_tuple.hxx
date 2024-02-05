@@ -18,7 +18,6 @@ inline Tuple local_switch_tuple(const Tuple& tuple, PrimitiveType pt)
             hash);
 
     case PrimitiveType::Edge:
-    case PrimitiveType::HalfEdge:
     case PrimitiveType::Face:
     case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;

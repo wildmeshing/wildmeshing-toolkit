@@ -33,7 +33,6 @@ bool PointMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
     case PrimitiveType::Edge:
     case PrimitiveType::Face:
     case PrimitiveType::Tetrahedron:
-    case PrimitiveType::HalfEdge:
     default: break;
     }
     throw std::runtime_error(
@@ -72,7 +71,6 @@ int64_t PointMesh::id(const Tuple& tuple, PrimitiveType type) const
     switch (type) {
     case PrimitiveType::Vertex: return tuple.m_global_cid;
     case PrimitiveType::Edge:
-    case PrimitiveType::HalfEdge:
     case PrimitiveType::Face:
     case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;

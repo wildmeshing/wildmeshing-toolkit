@@ -48,17 +48,15 @@ auto TupleAccessor<T>::topological_scalar_attribute(const Tuple& t) -> T&
 template <typename T>
 T TupleAccessor<T>::const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const
 {
-
     assert(mesh().top_simplex_type() == BaseType::primitive_type());
     switch (pt) {
     case PrimitiveType::Vertex:
-         return CachingBaseType::const_scalar_attribute(t.m_global_cid, t.m_local_vid);
+        return CachingBaseType::const_scalar_attribute(t.m_global_cid, t.m_local_vid);
     case PrimitiveType::Edge:
-         return CachingBaseType::const_scalar_attribute(t.m_global_cid, t.m_local_eid);
+        return CachingBaseType::const_scalar_attribute(t.m_global_cid, t.m_local_eid);
     case PrimitiveType::Face:
-         return CachingBaseType::const_scalar_attribute(t.m_global_cid, t.m_local_fid);
+        return CachingBaseType::const_scalar_attribute(t.m_global_cid, t.m_local_fid);
     case PrimitiveType::Tetrahedron: [[fallthrough]];
-    case PrimitiveType::HalfEdge: [[fallthrough]];
     default: return T(0);
     }
 }

@@ -31,7 +31,6 @@ std::vector<Tuple> boundary_tuples(const Mesh& m, const Tuple& t, PrimitiveType 
             m.switch_tuples(t, {PE, PF}), //
             m.switch_tuples(t, {PV, PE, PF})};
     } break;
-    case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
     return ret;

@@ -253,7 +253,6 @@ Tuple TetMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
         return tet_tuple_from_id(gid);
         break;
     }
-    case PrimitiveType::HalfEdge:
     default: throw std::runtime_error("Invalid primitive type");
     }
 }
@@ -280,7 +279,6 @@ int64_t TetMesh::id(const Tuple& tuple, PrimitiveType type) const
         return tuple.m_global_cid;
         break;
     }
-    case PrimitiveType::HalfEdge:
     default: throw std::runtime_error("Tuple id: Invalid primitive type");
     }
 }
@@ -346,7 +344,6 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
     case PrimitiveType::Edge:
     case PrimitiveType::Face:
     default: return autogen::tet_mesh::local_switch_tuple(tuple, type);
-    case PrimitiveType::HalfEdge: throw std::runtime_error("Tuple id: Invalid primitive type");
     }
 }
 
@@ -377,7 +374,6 @@ bool TetMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
     case PrimitiveType::Edge: return is_boundary_edge(tuple);
     case PrimitiveType::Face: return is_boundary_face(tuple);
     case PrimitiveType::Tetrahedron:
-    case PrimitiveType::HalfEdge:
     default: break;
     }
     throw std::runtime_error(

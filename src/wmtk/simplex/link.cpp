@@ -19,7 +19,6 @@ SimplexCollection link(const Mesh& mesh, const simplex::Simplex& simplex, const 
         return link(static_cast<const TetMesh&>(mesh), simplex, sort_and_clean);
     case PrimitiveType::Vertex:
     case PrimitiveType::Edge:
-    case PrimitiveType::HalfEdge:
     default: return link_slow(mesh, simplex, sort_and_clean); break;
     }
 }
@@ -54,7 +53,6 @@ link(const TriMesh& mesh, const simplex::Simplex& simplex, const bool sort_and_c
         break;
     case PrimitiveType::Face: break;
     case PrimitiveType::Tetrahedron:
-    case PrimitiveType::HalfEdge:
     default: log_and_throw_error("Unknown primitive type in open_star."); break;
     }
 
@@ -116,7 +114,6 @@ link(const TetMesh& mesh, const simplex::Simplex& simplex, const bool sort_and_c
         }
         break;
     case PrimitiveType::Tetrahedron: break;
-    case PrimitiveType::HalfEdge:
     default: log_and_throw_error("Unknown primitive type in open_star."); break;
     }
 

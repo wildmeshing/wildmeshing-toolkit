@@ -170,7 +170,6 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const EdgeMesh& mesh, const Simp
         break;
     }
     case PrimitiveType::Tetrahedron:
-    case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
 
@@ -198,7 +197,6 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const TriMesh& mesh, const Simpl
         break;
     }
     case PrimitiveType::Tetrahedron:
-    case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
 
@@ -228,7 +226,6 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const TetMesh& mesh, const Simpl
         collection = top_dimension_cofaces_tuples_tet(mesh, simplex.tuple());
         break;
     }
-    case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
 
@@ -245,7 +242,6 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const Mesh& mesh, const Simplex&
     case PrimitiveType::Vertex:
     case PrimitiveType::Edge:
         return top_dimension_cofaces_tuples(static_cast<const EdgeMesh&>(mesh), simplex);
-    case PrimitiveType::HalfEdge:
     default:
         assert(false);
         throw std::runtime_error("unknown mesh type in top_dimension_cofaces_tuples");
