@@ -643,12 +643,13 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         json mesh_isotropic_remeshing_json = R"({
         "input": "input_mesh",
         "output": "output_mesh",
-        "attributes": {"position": "vertices", "inversion_position": [], "other_positions": []},
+        "attributes": {"position": "vertices", "inversion_position": [], "other_positions": [], "update_other_positions": false},
         "pass_through": [],
         "iterations": 1,
         "length_abs": 0.003,
         "length_rel": -1,
-        "lock_boundary": true
+        "lock_boundary": true,
+        "use_for_periodic": false
     })"_json;
         REQUIRE_NOTHROW(
             wmtk::components::isotropic_remeshing(Paths(), mesh_isotropic_remeshing_json, cache));
@@ -698,11 +699,11 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D]")
 
 
     CHECK_NOTHROW(wmtk::components::internal::isotropic_remeshing(
-        mesh,
         pos_handle,
         pass_through_attributes,
         0.1,
         true,
+        false,
         10));
 
     {
@@ -732,10 +733,10 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
     SECTION("lock_boundary_false")
     {
         wmtk::components::internal::isotropic_remeshing(
-            mesh,
             pos_handle,
             pass_through_attributes,
             0.5,
+            false,
             false,
             5);
 
@@ -763,11 +764,11 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
     SECTION("lock_boundary_true")
     {
         wmtk::components::internal::isotropic_remeshing(
-            mesh,
             pos_handle,
             pass_through_attributes,
             0.5,
             true,
+            false,
             5);
 
 
@@ -828,11 +829,11 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
 
 
     wmtk::components::internal::isotropic_remeshing(
-        mesh,
         pos_handle,
         pass_through_attributes,
         0.5,
         /*lock_boundary*/ false,
+        true,
         5);
 
     REQUIRE(mesh.is_connectivity_valid());
@@ -903,11 +904,11 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
 
     for (int i = 0; i < 25; i++) {
         wmtk::components::internal::isotropic_remeshing(
-            mesh,
             pos_handle,
             pass_through_attributes,
             0.05,
             false,
+            true,
             1);
         REQUIRE(mesh.is_connectivity_valid());
         mesh.multi_mesh_manager().check_map_valid(mesh);
@@ -995,11 +996,11 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
     // const auto& child_mesh = *child_ptr;
 
     wmtk::components::internal::isotropic_remeshing(
-        mesh,
         pos_handle,
         pass_through_attributes,
         0.5,
         false,
+        true,
         25);
 
     REQUIRE(mesh.is_connectivity_valid());

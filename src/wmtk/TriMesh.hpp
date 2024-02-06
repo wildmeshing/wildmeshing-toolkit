@@ -21,10 +21,11 @@ public:
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     TriMesh();
-    TriMesh(const TriMesh& o);
+    TriMesh(const TriMesh& o) = delete;
+    TriMesh& operator=(const TriMesh& o) = delete;
     TriMesh(TriMesh&& o);
-    TriMesh& operator=(const TriMesh& o);
     TriMesh& operator=(TriMesh&& o);
+    void make_cached_accessors();
 
     int64_t top_cell_dimension() const override { return 2; }
 
@@ -43,7 +44,7 @@ public:
     using Mesh::is_boundary;
     bool is_boundary(PrimitiveType pt, const Tuple& tuple) const override;
     bool is_boundary_vertex(const Tuple& tuple) const;
-    bool is_boundary_edge(const Tuple& tuple) const ;
+    bool is_boundary_edge(const Tuple& tuple) const;
 
     void initialize(
         Eigen::Ref<const RowVectors3l> FV,
@@ -60,11 +61,7 @@ public:
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const override;
 
-#if defined(MTAO_PUBLICIZING_ID)
-public: // TODO remove
-#else
 protected:
-#endif
     int64_t id(const Tuple& tuple, PrimitiveType type) const override;
     int64_t id(const simplex::Simplex& simplex) const
     {
@@ -92,6 +89,13 @@ protected:
     attribute::TypedAttributeHandle<int64_t> m_fv_handle;
     attribute::TypedAttributeHandle<int64_t> m_fe_handle;
     attribute::TypedAttributeHandle<int64_t> m_ff_handle;
+
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_vf_accessor = nullptr;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_ef_accessor = nullptr;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_fv_accessor = nullptr;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_fe_accessor = nullptr;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_ff_accessor = nullptr;
+
 
     Tuple vertex_tuple_from_id(int64_t id) const;
     Tuple edge_tuple_from_id(int64_t id) const;

@@ -28,16 +28,17 @@ tools/DEBUG_Mesh.cpp
 tools/DEBUG_MultiMeshManager.hpp
 tools/DEBUG_MultiMeshManager.cpp
 tools/DEBUG_Tuple.hpp
-tools/DEBUG_Tuple.cpp)
+tools/DEBUG_Tuple.cpp
+)
 add_library(wmtk_test_tools ${TEST_TOOLS})
 target_include_directories(wmtk_test_tools PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-# Dependencies
+## Dependencies
 include(finite-diff)
 
 target_link_libraries(wmtk_test_tools PUBLIC
     wmtk::toolkit
     wmtk::data
-    Catch2::Catch2WithMain
+    Catch2::Catch2
     finitediff::finitediff
 )
 
@@ -61,13 +62,17 @@ set(TEST_SOURCES
     test_3d_operations.cpp
     test_mesh_variant.cpp
     test_variant_metaprogramming.cpp
-    test_autodiff.cpp
     test_tuple_metaprogramming.cpp
+    test_autodiff.cpp
     test_local_switch_search.cpp
     test_primitive.cpp
+    test_performance.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
-target_link_libraries(wmtk_tests PUBLIC wmtk_test_tools)
+target_link_libraries(wmtk_tests PUBLIC wmtk_test_tools
+    Catch2::Catch2WithMain
+    wmtk::toolkit
+    )
 
 FetchContent_GetProperties(catch2)
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)

@@ -180,6 +180,12 @@ public:
         os << mpq_get_d(r.value);
         return os;
     }
+
+    template <typename T>
+    void init(const T& v)
+    {
+        mpq_set(value, v);
+    }
 };
 
 

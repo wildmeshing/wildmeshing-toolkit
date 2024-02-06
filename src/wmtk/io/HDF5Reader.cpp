@@ -91,7 +91,8 @@ std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
             parent_mesh->m_multi_mesh_manager.m_children.emplace_back();
             parent_mesh->m_multi_mesh_manager.m_children.back().mesh = child_mesh;
             parent_mesh->m_multi_mesh_manager.m_children.back().map_handle = parent_to_child_handle;
-
+            parent_mesh->m_multi_mesh_manager
+                .m_has_child_mesh_in_dimension[child_mesh->top_cell_dimension()] = true;
             parent_mesh->assert_capacity_valid();
             child_mesh->assert_capacity_valid();
         }

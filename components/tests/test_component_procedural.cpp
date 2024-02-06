@@ -10,17 +10,16 @@ using json = nlohmann::json;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-TEST_CASE("component_procedural_nocoord", "[components][procedural]")
+TEST_CASE("component_procedural_nocoord", "[components][procedural][.]")
 {
     wmtk::io::Cache cache("wmtk_cache", ".");
 
     // SECTION("grid2")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "grid2"},
-            {"mesh_type", "grid"},
-            {"settings",
+            {"type", "grid"},
+            {"grid",
              {{"tiling", "diagonal"},
               {"dimensions", {5, 5}},
               {"cycles", {false, false}},
@@ -32,10 +31,9 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural]")
     // SECTION("grid3")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "grid3"},
-            {"mesh_type", "grid"},
-            {"settings",
+            {"type", "grid"},
+            {"grid",
              {{"tiling", "freudenthal"},
               {"dimensions", {5, 5, 5}},
               {"cycles", {false, false, false}},
@@ -47,10 +45,9 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural]")
     // SECTION("triangle_fan")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "triangle_fan"},
-            {"mesh_type", "triangle_fan"},
-            {"settings", {{"size", 10}, {"coordinates", nullptr}}}};
+            {"type", "fan"},
+            {"fan", {{"size", 10}, {"coordinates", nullptr}}}};
 
 
         CHECK_NOTHROW(wmtk::components::procedural(Paths(), component_json, cache));
@@ -60,24 +57,23 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural]")
         json component_json = {
             {"type", "procedural"},
             {"name", "disk"},
-            {"mesh_type", "disk"},
-            {"settings", {{"size", 10}, {"coordinates", nullptr}}}};
+            {"type", "disk"},
+            {"disk", {{"size", 10}, {"coordinates", nullptr}}}};
 
 
         CHECK_NOTHROW(wmtk::components::procedural(Paths(), component_json, cache));
     }
 }
-TEST_CASE("component_procedural_coords", "[components][procedural]")
+TEST_CASE("component_procedural_coords", "[components][procedural][.]")
 {
     wmtk::io::Cache cache("wmtk_cache", ".");
 
     // SECTION("grid2")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "grid2"},
-            {"mesh_type", "grid"},
-            {"settings",
+            {"type", "grid"},
+            {"grid",
              {{"tiling", "diagonal"},
               {"dimensions", {5, 5}},
               {"cycles", {false, false}},
@@ -89,10 +85,9 @@ TEST_CASE("component_procedural_coords", "[components][procedural]")
     // SECTION("grid3")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "grid3"},
-            {"mesh_type", "grid"},
-            {"settings",
+            {"type", "grid"},
+            {"grid",
              {{"tiling", "freudenthal"},
               {"dimensions", {5, 5, 5}},
               {"cycles", {false, false, false}},
@@ -104,10 +99,9 @@ TEST_CASE("component_procedural_coords", "[components][procedural]")
     // SECTION("triangle_fan")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "triangle_fan"},
-            {"mesh_type", "triangle_fan"},
-            {"settings",
+            {"type", "fan"},
+            {"fan",
              {{"size", 10},
               {"coordinates",
                {{"name", "vertices"},
@@ -121,10 +115,9 @@ TEST_CASE("component_procedural_coords", "[components][procedural]")
     // SECTION("disk")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "disk"},
-            {"mesh_type", "disk"},
-            {"settings",
+            {"type", "disk"},
+            {"disk",
              {{"size", 10},
               {"coordinates",
                {{"name", "vertices"},
@@ -143,10 +136,9 @@ TEST_CASE("component_procedural_cyclic_grids", "[components][procedural]")
     // SECTION("grid2")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "grid2"},
-            {"mesh_type", "grid"},
-            {"settings",
+            {"type", "grid"},
+            {"grid",
              {{"tiling", "diagonal"},
               {"dimensions", {5, 5}},
               {"cycles", {true, true}},
@@ -158,10 +150,9 @@ TEST_CASE("component_procedural_cyclic_grids", "[components][procedural]")
     // SECTION("grid3")
     {
         json component_json = {
-            {"type", "procedural"},
             {"name", "grid3"},
-            {"mesh_type", "grid"},
-            {"settings",
+            {"type", "grid"},
+            {"grid",
              {{"tiling", "freudenthal"},
               {"dimensions", {5, 5, 5}},
               {"cycles", {true, true, true}},

@@ -64,6 +64,8 @@ public:
     bool is_valid() const;
 
     PrimitiveType primitive_type() const;
+    template <typename T>
+    PrimitiveType primitive_typeT() const;
     // AttributeHandle base_handle() const ;
 
 
@@ -105,8 +107,8 @@ public:
     // ConstAccessor<T> create_const_accessor() const;
     // ConstAccessor<T> create_accessor() const;
 
-    //// return the dimension of the attribute (i.e the number of values stored per simplex)
-    // int64_t dimension() const;
+    // return the dimension of the attribute (i.e the number of values stored per simplex)
+    int64_t dimension() const;
 
     // std::string name() const;
 
@@ -157,5 +159,14 @@ constexpr auto MeshAttributeHandle::held_type_from_primitive() -> HeldType
         return HeldType::Rational;
     }
 }
-} // namespace wmtk::attribute
 
+inline PrimitiveType MeshAttributeHandle::primitive_type() const
+{
+    return std::visit([](const auto& h) { return h.primitive_type(); }, m_handle);
+}
+template <typename T>
+inline PrimitiveType MeshAttributeHandle::primitive_typeT() const
+{
+    return std::get<T>(m_handle).primitive_type();
+}
+} // namespace wmtk::attribute

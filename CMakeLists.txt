@@ -87,6 +87,7 @@ include(predicates)
 include(polysolve)
 include(fast_envelope)
 include(bvh)
+include(volume_mesher)
 
 # Core library
 add_library(wildmeshing_toolkit)
@@ -122,6 +123,20 @@ if(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
     target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
 endif()
 
+option(WMTK_ONLY_CACHE_WRITES "Cache only stores writeable data" ON)
+if(WMTK_ONLY_CACHE_WRITES)
+    target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_ONLY_CACHE_WRITES)
+endif()
+
+option(WMTK_FLUSH_ON_FAIL "Cache where failure " ON)
+if(WMTK_FLUSH_ON_FAIL)
+    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_FLUSH_ON_FAIL)
+endif()
+option(WMTK_ENABLE_GENERIC_CHECKPOINTS "Enable checkpoint selection" OFF)
+if(WMTK_ENABLE_GENERIC_CHECKPOINTS)
+    target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_ENABLE_GENERIC_CHECKPOINTS)
+endif()
+
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
@@ -133,7 +148,21 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     polysolve::polysolve
     FastEnvelope::FastEnvelope
     simple_bvh::simple_bvh
+    VolumeRemesher::VolumeRemesher
+
 )
+
+
+if(MSVC)
+    target_compile_options(wildmeshing_toolkit PUBLIC /MP)
+    target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/GL>)
+endif()
+
+if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+    # Unit tests
+    enable_testing()
+endif()
+
 
 add_subdirectory(components)
 
@@ -141,14 +170,6 @@ add_subdirectory(components)
 # ###############################################################################
 # Subdirectories
 # ###############################################################################
-
-# Compile extras only if this is a top-level project
-if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
-    # Unit tests
-    enable_testing()
-
-    add_subdirectory(tests)
-endif()
 
 if(WMTK_BUILD_DOCS)
     # check if Doxygen is installed
@@ -175,22 +196,29 @@ if(WMTK_BUILD_DOCS)
 endif()
 
 
-
+# Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+    add_subdirectory(tests)
 
 
     add_executable(wmtk_app main.cpp)
+    target_compile_features(wmtk_app PUBLIC cxx_std_17)
 
     # ###############################################################################
     # WMTK JSON APP
     # ###############################################################################
     target_compile_options(wmtk_app PRIVATE "-rdynamic")
     target_link_libraries(wmtk_app PUBLIC
-        wmtk::toolkit
         wmtk::components
         CLI11::CLI11
-        jse::jse
     )
 
-    target_compile_definitions(wmtk_app PUBLIC WMTK_APP_INPUT_SPEC="${CMAKE_SOURCE_DIR}/components/wmtk_spec.json")
+
+    if(MSVC)
+        target_compile_options(wmtk_app PUBLIC /MP)
+        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/GL>)
+        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/LTCG>)
+        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/INCREMENTAL:NO>)
+    endif()
+
 endif()

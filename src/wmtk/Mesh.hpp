@@ -1,6 +1,5 @@
 #pragma once
 
-#define MTAO_PUBLICIZING_ID
 #include <Eigen/Core>
 
 #include <initializer_list>
@@ -114,6 +113,7 @@ public:
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::RawSimplex;
+    friend class simplex::SimplexCollection;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
     friend class operations::EdgeCollapse;
@@ -144,12 +144,12 @@ public:
     // maximum primitive type id for supported attribute primitive locations
     Mesh(const int64_t& dimension, const int64_t& max_primitive_type_id, PrimitiveType hash_type);
     Mesh(Mesh&& other);
-    Mesh(const Mesh& other);
-    Mesh& operator=(const Mesh& other);
+    Mesh(const Mesh& other) = delete;
+    Mesh& operator=(const Mesh& other) = delete;
     Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
-    void serialize(MeshWriter& writer) const;
+    void serialize(MeshWriter& writer, const Mesh* local_root = nullptr) const;
 
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
@@ -195,7 +195,6 @@ public:
         int64_t size,
         bool replace = false,
         T default_value = T(0));
-
 
 
 public:
@@ -772,7 +771,6 @@ public:
         return m_multi_mesh_manager.has_child_mesh_in_dimension(dimension);
     }
 
-private:
     /*
      * @brief returns if the other mesh is part of the same multi-mesh structure
      * @param other the other being mesh being checked
@@ -795,11 +793,8 @@ protected:
                     d-3 -> tetrahedron
         * @return int64_t id of the entity
     */
-#if defined(MTAO_PUBLICIZING_ID)
-public: // TODO remove
-#else
+
 protected:
-#endif
     virtual int64_t id(const Tuple& tuple, PrimitiveType type) const = 0;
     int64_t id(const simplex::Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
@@ -860,23 +855,23 @@ private:
 
 
 template <typename T>
-Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
+inline Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
 {
     return Accessor<T>(*this, handle);
 }
 template <typename T>
-ConstAccessor<T> Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
+inline ConstAccessor<T> Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
 {
     return ConstAccessor<T>(*this, handle);
 }
 template <typename T>
-ConstAccessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle) const
+inline ConstAccessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle) const
 {
     return create_const_accessor(handle);
 }
 
 template <typename T>
-Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
+inline Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());
@@ -884,7 +879,8 @@ Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
 }
 
 template <typename T>
-ConstAccessor<T> Mesh::create_const_accessor(const attribute::MeshAttributeHandle& handle) const
+inline ConstAccessor<T> Mesh::create_const_accessor(
+    const attribute::MeshAttributeHandle& handle) const
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());

@@ -5,6 +5,7 @@
 #include <wmtk/Primitive.hpp>
 #include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/simplex/utils/MeshSimplexComparator.hpp>
 #include <wmtk/utils/mesh_type_from_primitive_type.hpp>
 #include <wmtk/utils/metaprogramming/MeshVariantTraits.hpp>
 #include <wmtk/utils/metaprogramming/ReferenceWrappedFunctorReturnCache.hpp>
@@ -35,10 +36,13 @@ public:
     constexpr static bool HasReturnCache =
         !wmtk::utils::metaprogramming::
             all_return_void_v<NodeFunctor, MeshVariantTraits, simplex::Simplex>;
-    using ReturnDataType = wmtk::utils::metaprogramming::
-        ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, simplex::Simplex>;
-    using CacheType = wmtk::utils::metaprogramming::
-        ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, simplex::Simplex>;
+    using ReturnDataType =
+        wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCacheCustomComparator<
+            NodeFunctor,
+            MeshVariantTraits,
+            wmtk::simplex::utils::MeshSimplexComparator,
+            simplex::Simplex>;
+    using CacheType = ReturnDataType;
 
     using TypeHelper = wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType<
         NodeFunctor,
@@ -146,8 +150,12 @@ public:
     using GetReturnType_t = typename MMVisitor::template GetReturnType_t<T>;
     // template <bool IsConst, typename MeshType>
 
-    using ReturnDataType = wmtk::utils::metaprogramming::
-        ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, simplex::Simplex>;
+    using ReturnDataType =
+        wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCacheCustomComparator<
+            NodeFunctor,
+            MeshVariantTraits,
+            wmtk::simplex::utils::MeshSimplexComparator,
+            simplex::Simplex>;
     constexpr static bool HasReturnCache =
         !wmtk::utils::metaprogramming::
             all_return_void_v<NodeFunctor, MeshVariantTraits, simplex::Simplex>;

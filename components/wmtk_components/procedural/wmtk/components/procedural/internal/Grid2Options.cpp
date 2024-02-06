@@ -10,9 +10,9 @@ const std::array<std::string, 2> Grid2Options::tiling_names = {{"bcc", "diagonal
 namespace {
 std::shared_ptr<Mesh> make_diagonal_mesh(const Grid2Options& opt)
 {
-    const auto& d = opt.dimensions;
+    const auto d = opt.dimensions;
     auto vertex_dimensions = opt.dimensions;
-    for (size_t j = 0; j < 3; ++j) {
+    for (size_t j = 0; j < d.size(); ++j) {
         int64_t& v = vertex_dimensions[j];
         if (!opt.cycles[j]) {
             v++;
@@ -49,7 +49,7 @@ std::shared_ptr<Mesh> make_diagonal_mesh(const Grid2Options& opt)
             int64_t f1_index = f0_index + 1;
 
             FV.row(f0_index) << c[0][0], c[0][1], c[1][0];
-            FV.row(f1_index) << c[1][1], c[0][1], c[1][0];
+            FV.row(f1_index) << c[1][1], c[1][0], c[0][1];
         }
     }
 

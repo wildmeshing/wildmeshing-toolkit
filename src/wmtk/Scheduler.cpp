@@ -4,6 +4,7 @@
 
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/random_seed.hpp>
 
 #include <polysolve/Utils.hpp>
 
@@ -36,14 +37,16 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
     {
         POLYSOLVE_SCOPED_STOPWATCH("Sorting", res.sorting_time, logger());
         if (op.use_random_priority()) {
-            std::random_device rd;
-            std::mt19937 g(rd());
+            std::mt19937 gen(utils::get_random_seed());
 
-            std::shuffle(simplices.begin(), simplices.end(), g);
+            std::shuffle(simplices.begin(), simplices.end(), gen);
         } else {
-            std::sort(simplices.begin(), simplices.end(), [&op](const auto& s_a, const auto& s_b) {
-                return op.priority(s_a) < op.priority(s_b);
-            });
+            std::stable_sort(
+                simplices.begin(),
+                simplices.end(),
+                [&op](const auto& s_a, const auto& s_b) {
+                    return op.priority(s_a) < op.priority(s_b);
+                });
         }
     }
 

@@ -2,33 +2,42 @@
 
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Scheduler.hpp>
+#include <wmtk/invariants/FusionEdgeInvariant.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
+#include <wmtk/multimesh/consolidate.hpp>
 #include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 #include <wmtk/operations/utils/VertexLaplacianSmooth.hpp>
 #include <wmtk/operations/utils/VertexTangentialLaplacianSmooth.hpp>
+
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::components::internal {
 
 void isotropic_remeshing(
-    TriMesh& mesh,
     attribute::MeshAttributeHandle& position,
     std::vector<attribute::MeshAttributeHandle>& pass_through_attributes,
     const double length,
     const bool lock_boundary,
+    const bool use_for_periodic,
     const int64_t iterations,
     const std::vector<attribute::MeshAttributeHandle>& other_positions,
+    bool update_other_positions,
     const std::optional<attribute::MeshAttributeHandle>& position_for_inversion)
 {
+    assert(dynamic_cast<TriMesh*>(&position.mesh()) != nullptr);
+
+    TriMesh& mesh = static_cast<TriMesh&>(position.mesh());
+
     const double length_min = (4. / 5.) * length;
     const double length_max = (4. / 3.) * length;
 
@@ -64,6 +73,20 @@ void isotropic_remeshing(
 
     auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(mesh);
 
+    auto update_position_func = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        return P.col(0);
+    };
+    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
+        update_position;
+
+    if (update_other_positions) {
+        update_position =
+            std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+                other_positions.front(),
+                position,
+                update_position_func);
+    }
+
     using namespace operations;
 
     assert(mesh.is_connectivity_valid());
@@ -73,7 +96,7 @@ void isotropic_remeshing(
     // split
     auto op_split = std::make_shared<EdgeSplit>(mesh);
     op_split->add_invariant(invariant_min_edge_length);
-    if (lock_boundary) {
+    if (lock_boundary && !use_for_periodic) {
         op_split->add_invariant(invariant_interior_edge);
     }
     for (auto& p : positions) {
@@ -99,7 +122,7 @@ void isotropic_remeshing(
     }
     op_collapse->add_invariant(invariant_max_edge_length);
     op_collapse->add_invariant(invariant_mm_map);
-    if (lock_boundary) {
+    if (lock_boundary && !use_for_periodic) {
         op_collapse->add_invariant(invariant_interior_edge);
         // set collapse towards boundary
         for (auto& p : positions) {
@@ -107,6 +130,12 @@ void isotropic_remeshing(
             tmp->set_strategy(CollapseBasicStrategy::Mean);
             tmp->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
             op_collapse->set_new_attribute_strategy(p, tmp);
+        }
+    } else if (use_for_periodic) {
+        op_collapse->add_invariant(
+            std::make_shared<invariants::FusionEdgeInvariant>(mesh, mesh.get_multi_mesh_root()));
+        for (auto& p : positions) {
+            op_collapse->set_new_attribute_strategy(p, CollapseBasicStrategy::Mean);
         }
     } else {
         for (auto& p : positions) {
@@ -123,7 +152,6 @@ void isotropic_remeshing(
     // swap
     auto op_swap = std::make_shared<composite::TriEdgeSwap>(mesh);
     op_swap->add_invariant(invariant_interior_edge);
-    // op_swap->add_invariant(invariant_inversion);
     op_swap->add_invariant(invariant_valence_improve);
     op_swap->collapse().add_invariant(invariant_link_condition);
     op_swap->collapse().add_invariant(invariant_mm_map);
@@ -150,8 +178,12 @@ void isotropic_remeshing(
     //////////////////////////////////////////
     // smooth
     auto op_smooth = std::make_shared<AttributesUpdateWithFunction>(mesh);
-    op_smooth->set_function(VertexTangentialLaplacianSmooth(position));
-    // op_smooth->add_invariant(invariant_inversion);
+    if (position.dimension() == 3) {
+        op_smooth->set_function(VertexTangentialLaplacianSmooth(position));
+    } else {
+        op_smooth->set_function(VertexLaplacianSmooth(position));
+    }
+
     if (lock_boundary) {
         op_smooth->add_invariant(invariant_interior_vertex);
     }
@@ -160,6 +192,7 @@ void isotropic_remeshing(
             position_for_inversion.value().mesh(),
             position_for_inversion.value().as<double>()));
     }
+    if (update_position) op_smooth->add_transfer_strategy(update_position);
     ops.push_back(op_smooth);
 
 
@@ -171,6 +204,8 @@ void isotropic_remeshing(
         SchedulerStats pass_stats;
         for (auto& op : ops) pass_stats += scheduler.run_operation_on_all(*op);
 
+        multimesh::consolidate(mesh);
+
         logger().info(
             "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
             pass_stats.number_of_performed_operations(),
@@ -179,6 +214,8 @@ void isotropic_remeshing(
             pass_stats.collecting_time,
             pass_stats.sorting_time,
             pass_stats.executing_time);
+
+        multimesh::consolidate(mesh);
     }
 }
 

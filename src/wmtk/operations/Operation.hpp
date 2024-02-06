@@ -89,10 +89,6 @@ protected:
         const std::vector<simplex::Simplex>& mods) const;
 
     /// @brief utility for subclasses
-    /// @param cells
-    void update_cell_hashes(const std::vector<Tuple>& cells);
-
-    /// @brief utility for subclasses
     /// @param tuple
     Tuple resurrect_tuple(const Tuple& tuple) const;
 

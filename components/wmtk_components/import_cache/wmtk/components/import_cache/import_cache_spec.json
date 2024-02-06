@@ -1,0 +1,11 @@
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": ["folder"]
+  },
+  {
+    "pointer": "/folder",
+    "type": "string"
+  }
+]

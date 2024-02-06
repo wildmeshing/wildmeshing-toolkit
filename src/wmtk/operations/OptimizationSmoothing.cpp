@@ -98,7 +98,7 @@ void OptimizationSmoothing::WMTKProblem::hessian(const TVector& x, Eigen::Matrix
 
 void OptimizationSmoothing::WMTKProblem::solution_changed(const TVector& new_x)
 {
-    m_accessor.vector_attribute(m_simplex.tuple()) = new_x;
+    // m_accessor.vector_attribute(m_simplex.tuple()) = new_x;
 }
 
 
@@ -147,14 +147,11 @@ void OptimizationSmoothing::create_solver()
 
 std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simplex& simplex)
 {
-    assert(m_energy->attribute_handle().is_valid());
-    WMTKProblem problem(
-        mesh().create_accessor(m_energy->attribute_handle().as<double>()),
-        simplex,
-        m_invariants,
-        *m_energy);
-    assert(problem.is_attr_valid());
-    // TODO call get_info
+    auto accessor = mesh().create_accessor(m_energy->attribute_handle().as<double>());
+    WMTKProblem problem(std::move(accessor), simplex, m_invariants, *m_energy);
+
+    // std::cout << "smoothing: " << simplex.tuple().m_hash << std::endl;
+
     auto x = problem.initial_value();
     try {
         reset_sampling_cnt();
@@ -169,6 +166,8 @@ std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simp
         wmtk::operations::Operation::print_sampling_cnt();
         // // Close the file
         // file.close();
+
+        accessor.vector_attribute(simplex.tuple()) = x;
 
     } catch (const std::exception&) {
         return {};

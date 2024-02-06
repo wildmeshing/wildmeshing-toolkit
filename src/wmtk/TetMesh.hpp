@@ -16,18 +16,18 @@ public:
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     TetMesh();
-    TetMesh(const TetMesh& o);
+    TetMesh(const TetMesh& o) = delete;
     TetMesh(TetMesh&& o);
-    TetMesh& operator=(const TetMesh& o);
+    TetMesh& operator=(const TetMesh& o) = delete;
     TetMesh& operator=(TetMesh&& o);
 
     int64_t top_cell_dimension() const override { return 3; }
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
-    bool is_boundary(PrimitiveType pt, const Tuple& tuple ) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const ;
-    bool is_boundary_edge(const Tuple& tuple) const ;
+    bool is_boundary(PrimitiveType pt, const Tuple& tuple) const override;
+    bool is_boundary_vertex(const Tuple& tuple) const;
+    bool is_boundary_edge(const Tuple& tuple) const;
     bool is_boundary_face(const Tuple& tuple) const;
 
     bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const override;
@@ -48,6 +48,7 @@ public:
         const override;
 
 protected:
+    void make_cached_accessors();
     int64_t id(const Tuple& tuple, PrimitiveType type) const override;
     int64_t id(const simplex::Simplex& simplex) const
     {
@@ -81,6 +82,15 @@ protected:
     TypedAttributeHandle<int64_t> m_te_handle;
     TypedAttributeHandle<int64_t> m_tf_handle;
     TypedAttributeHandle<int64_t> m_tt_handle;
+
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_vt_accessor;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_et_accessor;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_ft_accessor;
+
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_tv_accessor;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_te_accessor;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_tf_accessor;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_tt_accessor;
 
     Tuple vertex_tuple_from_id(int64_t id) const;
     Tuple edge_tuple_from_id(int64_t id) const;

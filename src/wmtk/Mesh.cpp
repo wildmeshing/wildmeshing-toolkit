@@ -27,10 +27,14 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 
 std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted) const
 {
+    std::vector<Tuple> ret;
+
+    if (static_cast<int8_t>(type) > top_cell_dimension()) return ret;
+
+    const int64_t cap = capacity(type);
+
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);
     const attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
-    std::vector<Tuple> ret;
-    int64_t cap = capacity(type);
     ret.reserve(cap);
     for (size_t index = 0; index < cap; ++index) {
         if (flag_accessor_indices.const_scalar_attribute(index) & 1)
@@ -41,13 +45,18 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted)
     return ret;
 }
 
-void Mesh::serialize(MeshWriter& writer) const
+void Mesh::serialize(MeshWriter& writer, const Mesh* local_root) const
 {
+    if(local_root == nullptr) {
     writer.write_absolute_id(m_multi_mesh_manager.absolute_id());
+    } else {
+    writer.write_absolute_id(m_multi_mesh_manager.relative_id(*this, *local_root));
+
+    }
     writer.write_top_simplex_type(top_simplex_type());
     m_attribute_manager.serialize(writer);
 
-    m_multi_mesh_manager.serialize(writer);
+    m_multi_mesh_manager.serialize(writer, local_root);
 }
 
 
@@ -61,7 +70,12 @@ bool Mesh::is_hash_valid(const Tuple& tuple, const ConstAccessor<int64_t>& hash_
 {
     const int64_t cid = tuple.m_global_cid;
 
-    return tuple.m_hash == get_cell_hash(cid, hash_accessor);
+    const int64_t desired_hash = get_cell_hash(cid, hash_accessor);
+    if (tuple.m_hash != desired_hash) {
+        logger().debug("Hash is not valid: {} != {}", tuple.m_hash, desired_hash);
+        return false;
+    }
+    return true;
 }
 
 bool Mesh::is_valid_slow(const Tuple& tuple) const

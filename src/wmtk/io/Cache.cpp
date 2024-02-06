@@ -173,7 +173,7 @@ void Cache::write_mesh(
     }
 
     HDF5Writer writer(p);
-    m.serialize(writer);
+    m.serialize(writer, &m);
 }
 
 bool Cache::export_cache(const std::filesystem::path& export_location)
@@ -202,6 +202,7 @@ bool Cache::export_cache(const std::filesystem::path& export_location)
 
     // delete json
     fs::remove(cache_content_path);
+    m_file_paths.erase(m_cache_content_name);
 
     return true;
 }

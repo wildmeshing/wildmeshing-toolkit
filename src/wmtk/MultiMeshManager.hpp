@@ -5,8 +5,8 @@
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
 // included to make a friend as this requires IDs
-#include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
+#include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 
 
@@ -50,6 +50,7 @@ public:
     // let the visitor object access the internal details
     template <int64_t cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshSimplexVisitor;
+    friend class Mesh;
     template <typename Visitor>
     friend class multimesh::MultiMeshSimplexVisitorExecutor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
@@ -313,7 +314,7 @@ public:
     Mesh& get_root_mesh(Mesh& my_mesh);
     std::vector<std::shared_ptr<Mesh>> get_child_meshes() const;
 
-    void serialize(MeshWriter& writer) const;
+    void serialize(MeshWriter& writer, const Mesh* local_root = nullptr) const;
 
     bool has_child_mesh_in_dimension(int64_t dimension) const
     {
@@ -345,7 +346,6 @@ protected:
     // Child Meshes
     std::vector<ChildData> m_children;
 
-public:
     // indicates which kind of child mesh the parent mesh has
     std::vector<bool> m_has_child_mesh_in_dimension;
 
