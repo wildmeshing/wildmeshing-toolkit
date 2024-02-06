@@ -133,8 +133,15 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
                 spdlog::info("Found a value at {}", std::distance(m_scopes.rbegin(), it));
             }
         }
+        assert(m_active >= m_scopes.rbegin());
+        assert(m_active < m_scopes.rend());
         spdlog::info("Parent scope access");
-        for (auto it = m_active; it >= m_scopes.rend(); ++it) {
+        for (auto it = m_active; it >= m_scopes.rbegin(); it <= m_active; --it) {
+            // for (auto it = m_active; it < m_scopes.rend(); ++it) {
+            spdlog::info(
+                "Accessing scope {} which has {} values",
+                std::distance(m_scopes.rbegin(), it),
+                it->size());
             if (auto mapit = it->find_value(index); it->is_value(mapit)) {
                 const auto& d = mapit->second;
                 spdlog::info("Found old data");
