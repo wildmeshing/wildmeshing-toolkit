@@ -203,13 +203,8 @@ TEST_CASE("test_accessor_caching", "[accessor]")
                 int64_t id = m.id(tup);
                 REQUIRE(int64_t_acc.vector_attribute(tup).size() == 1);
                 REQUIRE(double_acc.vector_attribute(tup).size() == 3);
-#if defined(WMTK_FLUSH_ON_FAIL)
                 CHECK(&int64_t_acc.vector_attribute(tup)(0) == int64_t_ptrs[id]);
                 CHECK(&double_acc.vector_attribute(tup)(0) == double_ptrs[id]);
-#else
-                CHECK(&int64_t_acc.vector_attribute(tup)(0) != int64_t_ptrs[id]);
-                CHECK(&double_acc.vector_attribute(tup)(0) != double_ptrs[id]);
-#endif
             }
         }
 
@@ -228,7 +223,6 @@ TEST_CASE("test_accessor_caching", "[accessor]")
 
 
         for (const wmtk::Tuple& tup : vertices) {
-#if defined(WMTK_FLUSH_ON_FAIL)
             auto check_id = [&](const auto& va, int id) {
                 auto v = va.const_vector_attribute(id);
                 auto x = v.eval();
@@ -242,11 +236,6 @@ TEST_CASE("test_accessor_caching", "[accessor]")
             int64_t id = m.id(tup);
             check_id(immediate_int64_t_acc, id);
             check_id(immediate_double_acc, id);
-#else
-            int64_t id = m.id(tup);
-            CHECK(immediate_int64_t_acc.const_scalar_attribute(id) == 0);
-            CHECK((immediate_double_acc.const_vector_attribute(id).array() == 0).all());
-#endif
         }
     }
     // test that the accessors above unbuffered when they finished scope

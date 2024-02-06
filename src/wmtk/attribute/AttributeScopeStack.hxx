@@ -32,8 +32,16 @@ void AttributeScopeStack<T>::pop(Attribute<T>& attribute, bool preserve_changes)
 {
     assert(at_current_scope()); // must only be called on leaf node
     if (!preserve_changes) {
-        rollback_current_scope(attribute);
+        // rollback_current_scope(attribute);
     }
+
+
+    if (m_scopes.size() >= 2) {
+        auto it = m_scopes.rbegin();
+        auto it2 = it + 1;
+        it->apply_to(*it2);
+    }
+    m_scopes.pop_back();
 
     change_to_current_scope();
 }
@@ -74,7 +82,11 @@ void AttributeScopeStack<T>::change_to_previous_scope()
 {
     // if the previous is a nullptr it's fine
     assert(!at_current_scope());
-    m_active--;
+    if (m_active == m_scopes.rbegin()) {
+        change_to_current_scope();
+    } else {
+        m_active--;
+    }
 }
 
 template <typename T>
@@ -83,9 +95,9 @@ void AttributeScopeStack<T>::change_to_next_scope()
     if (at_current_scope()) {
         assert(!empty());
         m_active = m_scopes.rbegin();
-        return;
+    } else {
+        m_active++;
     }
-    m_active++;
 }
 template <typename T>
 void AttributeScopeStack<T>::change_to_current_scope()

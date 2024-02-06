@@ -28,6 +28,7 @@ public:
     ~AttributeScope();
     AttributeScope(std::unique_ptr<AttributeScope<T>>&& next);
 
+    using AttributeCache<T>::size;
     // flushes cache to previous scope unless there is no previous scope, in which
     // case it flushes data to the underlying attribute storage
     void apply(Attribute<T>& attr) const;

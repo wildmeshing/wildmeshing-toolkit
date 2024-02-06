@@ -1,5 +1,6 @@
 #pragma once
 #include <spdlog/spdlog.h>
+#include <iostream>
 #include <memory>
 #include <vector>
 #include "AttributeCache.hpp"
@@ -84,7 +85,7 @@ private:
 
 protected:
     std::vector<AttributeScope<T>> m_scopes;
-    typename std::vector<AttributeScope<T>>::reverse_iterator m_active;
+    typename std::vector<AttributeScope<T>>::const_reverse_iterator m_active;
     // Mesh& m_mesh;
     // AttributeManager& m_attribute_manager;
     // MeshAttributeHandle<T> m_handle;
@@ -122,10 +123,26 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
     int64_t index) const -> ConstMapResult
 {
     if (!at_current_scope()) {
-        for (auto it = m_active; it >= m_scopes.rbegin(); --it) {
+        spdlog::info(
+            "cache size is {}, at {}",
+            m_scopes.size(),
+            std::distance(m_scopes.rbegin(), m_active));
+        for (auto it = m_scopes.rbegin(); it >= m_scopes.rend(); ++it) {
+            spdlog::info("Cache size is {}", it->size());
+            if (auto mapit = it->find_value(index); it->is_value(mapit)) {
+                spdlog::info("Found a value at {}", std::distance(m_scopes.rbegin(), it));
+            }
+        }
+        spdlog::info("Parent scope access");
+        for (auto it = m_active; it >= m_scopes.rend(); ++it) {
             if (auto mapit = it->find_value(index); it->is_value(mapit)) {
                 const auto& d = mapit->second;
-                return d.data_as_const_map();
+                spdlog::info("Found old data");
+                auto dat = d.data_as_const_map();
+                if constexpr (!std::is_same_v<T, wmtk::Rational>) {
+                    std::cout << dat << std::endl;
+                }
+                return dat;
             }
         }
     }

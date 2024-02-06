@@ -48,6 +48,7 @@ public:
     bool is_value(const typename DataStorage::const_iterator& it) const;
 
     void clear();
+    size_t size() const { return m_data.size(); }
 
     void apply_to(Attribute<T>& attribute) const;
     void apply_to(AttributeCache<T>& other) const;
