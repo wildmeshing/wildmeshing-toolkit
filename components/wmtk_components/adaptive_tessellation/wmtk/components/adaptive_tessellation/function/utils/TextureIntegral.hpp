@@ -190,6 +190,8 @@ protected:
     }
     std::pair<int, double> pixel_num_size_of_uv_triangle(Eigen::AlignedBox2d& bbox) const;
 
+    std::pair<int, double> pixel_size_of_uv_triangle(int pixel_num, Eigen::AlignedBox2d& bbox)
+        const;
 
 protected:
     const ThreeChannelPositionMapEvaluator& m_three_channel_evaluator;

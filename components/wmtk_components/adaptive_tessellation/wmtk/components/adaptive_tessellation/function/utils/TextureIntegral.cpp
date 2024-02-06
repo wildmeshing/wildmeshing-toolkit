@@ -42,6 +42,16 @@ std::pair<int, double> TextureIntegral::pixel_num_size_of_uv_triangle(
     double pixel_size = bbox.diagonal().maxCoeff() / num_pixels;
     return {num_pixels, pixel_size};
 }
+
+std::pair<int, double> TextureIntegral::pixel_size_of_uv_triangle(
+    int pixel_num,
+    Eigen::AlignedBox2d& bbox) const
+{
+    assert(pixel_num > 0);
+    double pixel_size = bbox.diagonal().maxCoeff() / pixel_num;
+    return {pixel_num, pixel_size};
+}
+
 double TextureIntegral::get_error_one_triangle_exact(
     const Vector2<double>& uv0,
     const Vector2<double>& uv1,
@@ -86,7 +96,10 @@ double TextureIntegral::get_error_one_triangle_exact(
     };
     double value = 0.;
     Eigen::AlignedBox2d bbox = uv_triangle_bbox(uv_triangle_RowMajor);
-    auto [num_pixels, pixel_size] = pixel_num_size_of_uv_triangle(bbox);
+    // auto [num_pixels, pixel_size] = pixel_num_size_of_uv_triangle(bbox);
+    auto [num_pixels, pixel_size] = pixel_size_of_uv_triangle(10, bbox);
+
+    wmtk::logger().info("num_pixels {} pixel_size {}", num_pixels, pixel_size);
     for (auto y = 0; y < num_pixels; ++y) {
         for (auto x = 0; x < num_pixels; ++x) {
             Eigen::AlignedBox2d box;
