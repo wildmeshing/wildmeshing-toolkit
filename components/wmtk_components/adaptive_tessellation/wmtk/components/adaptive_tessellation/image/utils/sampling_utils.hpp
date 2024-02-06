@@ -193,6 +193,7 @@ T sample_bilinear(const Image& image, T u, T v)
 template <typename T, size_t N>
 Eigen::Vector<T, N> sample_bilinear(const std::array<std::shared_ptr<Image>, N>& images, T u, T v)
 {
+    wmtk::operations::Operation::increase_sampling_cnt();
     Eigen::Vector<T, N> res;
     for (size_t k = 0; k < N; ++k) {
         res[k] = sample_bilinear(*images[k], u, v);
