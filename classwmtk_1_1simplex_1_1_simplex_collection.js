@@ -1,7 +1,8 @@
 var classwmtk_1_1simplex_1_1_simplex_collection =
 [
     [ "SimplexCollection", "classwmtk_1_1simplex_1_1_simplex_collection.html#ac1b20ed4be1194c41b100eee0455525e", null ],
-    [ "add", "classwmtk_1_1simplex_1_1_simplex_collection.html#a8da326e4c7add8915e47d23d7c7b1d1d", null ],
+    [ "add", "classwmtk_1_1simplex_1_1_simplex_collection.html#a211e941847c4beaeae00dd27bf295825", null ],
+    [ "add", "classwmtk_1_1simplex_1_1_simplex_collection.html#ac7db23c312212a0f24153c0b455a471d", null ],
     [ "add", "classwmtk_1_1simplex_1_1_simplex_collection.html#a1e7079b3b75f70dd28c524556cab76cf", null ],
     [ "add", "classwmtk_1_1simplex_1_1_simplex_collection.html#ad0b05393e58815dc14b2c1d4b7b2670d", null ],
     [ "begin", "classwmtk_1_1simplex_1_1_simplex_collection.html#a82338aad6cf6d613871fdb0d7e375a03", null ],
@@ -13,6 +14,7 @@ var classwmtk_1_1simplex_1_1_simplex_collection =
     [ "end", "classwmtk_1_1simplex_1_1_simplex_collection.html#aea4525770f9b9b0de351c54d72aba874", null ],
     [ "mesh", "classwmtk_1_1simplex_1_1_simplex_collection.html#a0d0c1765c4ed8ffd0f163661111bfb08", null ],
     [ "operator==", "classwmtk_1_1simplex_1_1_simplex_collection.html#a685bd1949491c0f6d61a69d61b2a1235", null ],
+    [ "reserve", "classwmtk_1_1simplex_1_1_simplex_collection.html#a1973c83eede96b64f422049c6fc52976", null ],
     [ "simplex_vector", "classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128", null ],
     [ "simplex_vector", "classwmtk_1_1simplex_1_1_simplex_collection.html#a5f719ceebed01c94aeace9cfbe08183f", null ],
     [ "simplex_vector_tuples", "classwmtk_1_1simplex_1_1_simplex_collection.html#ad76f1f147d2ef6b62c6aff05070464bd", null ],

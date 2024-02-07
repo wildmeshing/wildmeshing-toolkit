@@ -25,6 +25,8 @@ var dir_cbc9327ef122fb9d2e3099bcf15f379f =
     [ "link_condition.hpp", "link__condition_8hpp.html", "link__condition_8hpp" ],
     [ "link_iterable.cpp", "link__iterable_8cpp.html", "link__iterable_8cpp" ],
     [ "link_iterable.hpp", "link__iterable_8hpp.html", "link__iterable_8hpp" ],
+    [ "link_single_dimension.cpp", "link__single__dimension_8cpp.html", "link__single__dimension_8cpp" ],
+    [ "link_single_dimension.hpp", "link__single__dimension_8hpp.html", "link__single__dimension_8hpp" ],
     [ "neighbors_single_dimension.cpp", "neighbors__single__dimension_8cpp.html", "neighbors__single__dimension_8cpp" ],
     [ "neighbors_single_dimension.hpp", "neighbors__single__dimension_8hpp.html", "neighbors__single__dimension_8hpp" ],
     [ "open_star.cpp", "open__star_8cpp.html", "open__star_8cpp" ],

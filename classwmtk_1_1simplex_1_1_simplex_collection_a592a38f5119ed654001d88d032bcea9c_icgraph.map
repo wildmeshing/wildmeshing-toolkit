@@ -1,22 +1,24 @@
 <map id="wmtk::simplex::SimplexCollection::get_intersection" name="wmtk::simplex::SimplexCollection::get_intersection">
-<area shape="rect" id="node1" title="Get intersection of two simplex collections." alt="" coords="1041,192,1287,233"/>
+<area shape="rect" id="node1" title="Get intersection of two simplex collections." alt="" coords="1041,224,1287,265"/>
 <area shape="rect" id="node2" href="$classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0" title="returns an empty vector in case of failure" alt="" coords="764,5,976,47"/>
 <area shape="rect" id="node3" href="$classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a86e6f877419cd3489a5b223b5b8bb094" title="gather all simplices that are deleted in a collapse" alt="" coords="747,71,993,127"/>
 <area shape="rect" id="node4" href="$classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a17977fc07ce1f6618c8dd6e5cef42e6e" title="gather all simplices that are deleted in a collapse" alt="" coords="751,151,989,207"/>
-<area shape="rect" id="node5" href="$namespacewmtk_1_1simplex.html#a428755c0a4c93af10690b6828a3c79f5" title=" " alt="" coords="285,209,484,251"/>
-<area shape="rect" id="node7" href="$namespacewmtk_1_1simplex.html#a3b3266f811539b7df8d85a51552bc1f7" title=" " alt="" coords="287,275,482,316"/>
-<area shape="rect" id="node9" href="$namespacewmtk_1_1simplex.html#a50d0026adbac4883ab00460ada1c1cfe" title=" " alt="" coords="776,409,964,435"/>
-<area shape="rect" id="node6" href="$namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d" title=" " alt="" coords="38,209,189,251"/>
-<area shape="rect" id="node8" href="$namespacewmtk_1_1simplex.html#aad86388bdc8c1685d7d55fad016f0ca2" title=" " alt="" coords="38,275,189,316"/>
-<area shape="rect" id="node10" href="$namespacewmtk_1_1simplex.html#a3260444c136dbe145679b762c52f6a16" title=" " alt="" coords="548,486,699,513"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#a30e554417dfffcaedce3a167b351173b" title=" " alt="" coords="269,719,500,775"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html#a7bafc4a52c4d8cbfadee5edd24cbe01f" title=" " alt="" coords="269,799,500,855"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1invariants_1_1_valence_improvement_invariant.html#ac2f6805f4a5bfc3aba4f0c2169e03a99" title=" " alt="" coords="275,340,494,381"/>
-<area shape="rect" id="node14" href="$classwmtk_1_1function_1_1_edge_valence_energy.html#af25dd9d07e1f9d18c92c7a3395f271c1" title="This function is defined over a simplex (normally a triangle or tetrahedron)." alt="" coords="279,405,490,447"/>
-<area shape="rect" id="node15" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a03c779db7485cb3e628da2c6162af6b1" title=" " alt="" coords="277,471,493,527"/>
-<area shape="rect" id="node18" href="$namespacewmtk_1_1simplex.html#aaf868371b90dc2c2a009e7a6832cd7f9" title=" " alt="" coords="301,551,468,578"/>
-<area shape="rect" id="node19" href="$classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html#a22b68bed2c372520db2e828fcb226797" title=" " alt="" coords="281,603,488,644"/>
-<area shape="rect" id="node20" href="$test__component__isotropic__remeshing_8cpp.html#ac951acaed01f46f17ad5496ddaeccd3f" title=" " alt="" coords="337,669,432,695"/>
-<area shape="rect" id="node16" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a86763a63b94889f8e22cd9c705c84110" title=" " alt="" coords="5,447,221,488"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a75aa725e6ae913b914734b6b4d084a7b" title=" " alt="" coords="5,512,221,553"/>
+<area shape="rect" id="node5" href="$namespacewmtk_1_1simplex.html#a428755c0a4c93af10690b6828a3c79f5" title=" " alt="" coords="285,189,484,231"/>
+<area shape="rect" id="node7" href="$namespacewmtk_1_1simplex.html#a3b3266f811539b7df8d85a51552bc1f7" title=" " alt="" coords="287,255,482,296"/>
+<area shape="rect" id="node9" href="$namespacewmtk_1_1simplex.html#ab9fe71cf495e974936cc882fe96a596e" title=" " alt="" coords="780,460,960,501"/>
+<area shape="rect" id="node11" href="$namespacewmtk_1_1simplex.html#a50d0026adbac4883ab00460ada1c1cfe" title=" " alt="" coords="776,409,964,435"/>
+<area shape="rect" id="node6" href="$namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d" title=" " alt="" coords="38,189,189,231"/>
+<area shape="rect" id="node8" href="$namespacewmtk_1_1simplex.html#aad86388bdc8c1685d7d55fad016f0ca2" title=" " alt="" coords="38,255,189,296"/>
+<area shape="rect" id="node10" href="$namespacewmtk_1_1simplex.html#a867591ecfe758ade38e03561223ac20f" title=" " alt="" coords="548,499,699,540"/>
+<area shape="rect" id="node12" href="$namespacewmtk_1_1simplex.html#a3260444c136dbe145679b762c52f6a16" title=" " alt="" coords="548,447,699,474"/>
+<area shape="rect" id="node13" href="$classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#a30e554417dfffcaedce3a167b351173b" title=" " alt="" coords="269,699,500,755"/>
+<area shape="rect" id="node14" href="$classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html#a7bafc4a52c4d8cbfadee5edd24cbe01f" title=" " alt="" coords="269,779,500,835"/>
+<area shape="rect" id="node15" href="$classwmtk_1_1invariants_1_1_valence_improvement_invariant.html#ac2f6805f4a5bfc3aba4f0c2169e03a99" title=" " alt="" coords="275,320,494,361"/>
+<area shape="rect" id="node16" href="$classwmtk_1_1function_1_1_edge_valence_energy.html#af25dd9d07e1f9d18c92c7a3395f271c1" title="This function is defined over a simplex (normally a triangle or tetrahedron)." alt="" coords="279,385,490,427"/>
+<area shape="rect" id="node17" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a03c779db7485cb3e628da2c6162af6b1" title=" " alt="" coords="277,451,493,507"/>
+<area shape="rect" id="node20" href="$namespacewmtk_1_1simplex.html#aaf868371b90dc2c2a009e7a6832cd7f9" title=" " alt="" coords="301,531,468,558"/>
+<area shape="rect" id="node21" href="$classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html#a22b68bed2c372520db2e828fcb226797" title=" " alt="" coords="281,583,488,624"/>
+<area shape="rect" id="node22" href="$test__component__isotropic__remeshing_8cpp.html#ac951acaed01f46f17ad5496ddaeccd3f" title=" " alt="" coords="337,649,432,675"/>
+<area shape="rect" id="node18" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a86763a63b94889f8e22cd9c705c84110" title=" " alt="" coords="5,427,221,468"/>
+<area shape="rect" id="node19" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a75aa725e6ae913b914734b6b4d084a7b" title=" " alt="" coords="5,492,221,533"/>
 </map>
