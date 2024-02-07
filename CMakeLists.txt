@@ -158,6 +158,8 @@ if(MSVC)
     target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/GL>)
     target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ob2>) # inline whenever suitable
     target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ot>) # favor faster code over binary size
+    target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELEASE>:/GL>)
+    target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELEASE>:/Ot>)
     target_compile_definitions(wildmeshing_toolkit PUBLIC _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS)
 endif()
 
@@ -224,6 +226,10 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
         target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ot>) # favor faster code over binary size
         target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/LTCG>)
         target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/INCREMENTAL:NO>)
+        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELEASE>:/GL>)
+        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELEASE>:/Ot>)
+        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELEASE>:/LTCG>)
+        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELEASE>:/INCREMENTAL:NO>)
     endif()
 
 endif()
