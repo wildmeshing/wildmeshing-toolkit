@@ -2,6 +2,8 @@
 #include <iostream>
 namespace wmtk::components::internal {
 
+// TODO: integrate the function of finding subset simplices into this function
+// don't create 2 internal files, all in one
 // general function to separate topology, regardless of dimension
 std::unique_ptr<wmtk::Mesh> topology_separate(wmtk::Mesh& m)
 {
@@ -45,6 +47,8 @@ std::unique_ptr<wmtk::Mesh> topology_separate(wmtk::Mesh& m)
                 for (wmtk::Simplex adj_simplex : sc) {
                     // tuple for a top dimension simplex would be the same as tuple for the corner
                     wmtk::Tuple adj_corner_tuple = adj_simplex.tuple();
+                    // TODO: determine whether this adj simplex is vertex-connected to the corner
+
                     auto adj_vector = dup_acc.vector_attribute(adj_corner_tuple);
                     long k = adj_corner_tuple.get_local_vid();
                     assert(adj_vector[k] == -1);
