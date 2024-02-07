@@ -1,4 +1,5 @@
 #include <wmtk/utils/Rational.hpp>
+#include <wmtk/Types.hpp>
 #include "AccessorBase.hpp"
 #include "AttributeCache.hpp"
 
@@ -40,6 +41,15 @@ void AttributeCache<T>::try_caching(int64_t index, const MapResult& value)
     auto [it, did_insert] = m_data.try_emplace(index, AttributeCacheData<T>{});
     if (did_insert) {
         it->second.data = value;
+    }
+}
+
+template <typename T>
+void AttributeCache<T>::try_caching(int64_t index, const T& value)
+{
+    auto [it, did_insert] = m_data.try_emplace(index, AttributeCacheData<T>{});
+    if (did_insert) {
+        it->second.data =  VectorX<T>::Constant(1,value);
     }
 }
 

@@ -43,6 +43,7 @@ public:
 
 
     void try_caching(int64_t index, const MapResult& value);
+    void try_caching(int64_t index, const T& value);
 
     typename DataStorage::const_iterator find_value(int64_t index) const;
     bool is_value(const typename DataStorage::const_iterator& it) const;
