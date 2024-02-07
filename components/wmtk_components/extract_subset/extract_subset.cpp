@@ -9,7 +9,7 @@ Eigen::VectorX<long>& vector2tag(Eigen::VectorX<long>& ret, std::vector<int> vec
     return ret;
 }
 
-wmtk::Mesh& extract_subset(wmtk::Mesh& m, const std::vector<int>& tag_vec, bool pos)
+std::unique_ptr<wmtk::Mesh> extract_subset(wmtk::Mesh& m, const std::vector<int>& tag_vec, bool pos)
 {
     wmtk::PrimitiveType topType = m.top_simplex_type();
     // tag vector must have the same size as the number of simplices in the mesh
@@ -26,12 +26,13 @@ wmtk::Mesh& extract_subset(wmtk::Mesh& m, const std::vector<int>& tag_vec, bool 
     wmtk::MeshAttributeHandle<long> tag_handle =
         wmtk::mesh_utils::set_matrix_attribute(vector2tag(tag, tag_vec), "tag", topType, m);
 
-    // std::unique_ptr<wmtk::Mesh> ret;
-    if (m.top_cell_dimension() == 2 || m.top_cell_dimension() == 3) {
-        return internal::generate_submesh(m, tag_handle, pos);
-        // return internal::topology_separate(m);
-    } else
-        throw std::runtime_error("Invalid mesh dimension in extracting subset!");
+    switch (m.top_cell_dimension()) {
+    case 2:
+    case 3:
+        return internal::topology_separate(m, tag_handle, pos);
+        // return std::make_unique<wmtk::TetMesh>(m);
+    default: throw std::runtime_error("Invalid mesh dimension in extracting subset!");
+    }
 }
 
 } // namespace components

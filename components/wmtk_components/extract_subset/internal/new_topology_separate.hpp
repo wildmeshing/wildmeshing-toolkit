@@ -10,5 +10,6 @@
 
 namespace wmtk::components::internal {
 
-std::unique_ptr<wmtk::Mesh> topology_separate(wmtk::Mesh& m);
+std::unique_ptr<wmtk::Mesh>
+topology_separate(wmtk::Mesh& m, const wmtk::MeshAttributeHandle<long>& tag_handle, bool pos);
 } // namespace wmtk::components::internal
