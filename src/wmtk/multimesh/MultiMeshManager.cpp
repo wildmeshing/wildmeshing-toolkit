@@ -17,14 +17,14 @@
 #include "multimesh/utils/transport_tuple.hpp"
 #include "multimesh/utils/tuple_map_attribute_io.hpp"
 
-namespace wmtk {
+namespace wmtk::multimesh {
 
 namespace {} // namespace
 
 Tuple MultiMeshManager::map_tuple_between_meshes(
     const Mesh& source_mesh,
     const Mesh& target_mesh,
-    const ConstAccessor<int64_t>& map_accessor,
+    const attribute::Accessor<int64_t>& map_accessor,
     const Tuple& source_tuple)
 {
     assert(source_mesh.is_valid_slow(source_tuple));
@@ -624,7 +624,7 @@ std::string MultiMeshManager::parent_to_child_map_attribute_name(int64_t index)
 {
     return fmt::format("map_to_child_{}", index);
 }
-std::array<attribute::MutableAccessor<int64_t>, 2> MultiMeshManager::get_map_accessors(
+std::array<attribute::Accessor<int64_t>, 2> MultiMeshManager::get_map_accessors(
     Mesh& my_mesh,
     ChildData& c)
 {
@@ -633,11 +633,11 @@ std::array<attribute::MutableAccessor<int64_t>, 2> MultiMeshManager::get_map_acc
     const auto& parent_to_child_handle = c.map_handle;
 
 
-    return std::array<attribute::MutableAccessor<int64_t>, 2>{
+    return std::array<attribute::Accessor<int64_t>, 2>{
         {my_mesh.create_accessor(parent_to_child_handle),
          child_mesh.create_accessor(child_to_parent_handle)}};
 }
-std::array<attribute::ConstAccessor<int64_t>, 2> MultiMeshManager::get_map_const_accessors(
+std::array<const attribute::Accessor<int64_t>, 2> MultiMeshManager::get_map_const_accessors(
     const Mesh& my_mesh,
     const ChildData& c) const
 {
@@ -646,7 +646,7 @@ std::array<attribute::ConstAccessor<int64_t>, 2> MultiMeshManager::get_map_const
     const auto& parent_to_child_handle = c.map_handle;
 
 
-    return std::array<attribute::ConstAccessor<int64_t>, 2>{
+    return std::array<const attribute::Accessor<int64_t>, 2>{
         {my_mesh.create_const_accessor(parent_to_child_handle),
          child_mesh.create_const_accessor(child_to_parent_handle)}};
 }
@@ -915,7 +915,7 @@ std::optional<Tuple> MultiMeshManager::find_tuple_from_gid(
     }
 }
 int64_t MultiMeshManager::child_global_cid(
-    const attribute::ConstAccessor<int64_t>& parent_to_child,
+    const attribute::Accessor<int64_t>& parent_to_child,
     int64_t parent_gid)
 {
     // look at src/wmtk/multimesh/utils/tuple_map_attribute_io.cpp to see what index global_cid gets mapped to)
@@ -926,7 +926,7 @@ int64_t MultiMeshManager::child_global_cid(
             wmtk::multimesh::utils::TUPLE_SIZE + wmtk::multimesh::utils::GLOBAL_ID_INDEX);
 }
 int64_t MultiMeshManager::parent_global_cid(
-    const attribute::ConstAccessor<int64_t>& child_to_parent,
+    const attribute::Accessor<int64_t>& child_to_parent,
     int64_t child_gid)
 {
     // look at src/wmtk/multimesh/utils/tuple_map_attribute_io.cpp to see what index global_cid gets mapped to)
@@ -938,7 +938,7 @@ int64_t MultiMeshManager::parent_global_cid(
 }
 
 int64_t MultiMeshManager::parent_local_fid(
-    const attribute::ConstAccessor<int64_t>& child_to_parent,
+    const attribute::Accessor<int64_t>& child_to_parent,
     int64_t child_gid)
 {
     // look at src/wmtk/multimesh/utils/tuple_map_attribute_io.cpp to see what index global_cid gets mapped to)

@@ -3,8 +3,14 @@
 
 namespace wmtk {
 class Mesh;
-class TetMesh;
 class TriMesh;
+class TetMesh;
+class TriMeshOperationExecutor;
+class EdgeMesh;
+namespace tests {
+class DEBUG_TriMesh;
+class DEBUG_EdgeMesh;
+} // namespace tests
 } // namespace wmtk
 namespace wmtk::attribute {
 /**
@@ -19,6 +25,9 @@ public:
     friend class wmtk::Mesh;
     friend class wmtk::TetMesh;
     friend class wmtk::TriMesh;
+    friend class wmtk::EdgeMesh;
+    friend class wmtk::PointMesh;
+    friend class wmtk::TriMeshOperationExecutor;
     using Scalar = T;
 
     friend class AttributeCache<T>;
@@ -57,6 +66,8 @@ protected:
     using CachingBaseType::base_type;
     CachingBaseType& caching_base_type() { return *this; }
     const CachingBaseType& caching_base_type() const { return *this; }
+
+    CachingBaseType& index_access() { return caching_base_type(); }
 };
 } // namespace wmtk::attribute
 #include "TupleAccessor.hxx"

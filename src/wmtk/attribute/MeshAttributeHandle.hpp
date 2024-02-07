@@ -8,10 +8,6 @@ class Mesh;
 }
 
 namespace wmtk::attribute {
-template <typename T>
-class MutableAccessor;
-template <typename T>
-class ConstAccessor;
 
 /* @brief Handle that can construct an accessor on its own
  * NOTE: This naming is inconsistent with the existing
