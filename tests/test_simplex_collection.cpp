@@ -1864,26 +1864,21 @@ TEST_CASE("simplex_link_3d", "[simplex_collection][3D]")
         CHECK(m.id(simplices[16]) == 23);
         CHECK(m.id(simplices[17]) == 25);
 
-        for (size_t i = 18; i < 48; ++i) {
+        for (size_t i = 18; i < 18 + 48; ++i) {
             const Simplex& e = simplices[i];
             int id0 = m.id(e.tuple(), PrimitiveType::Vertex);
             int id1 = m.id(m.switch_vertex(e.tuple()), PrimitiveType::Vertex);
             m.face_tuple_from_vids(id0, id1, 13);
         }
 
-        /**************HERE IS A PROBLEM, MAYBE A BUG****************/
         int sum = 0;
-        for (size_t i = 48; i < 98; ++i) {
+        for (size_t i = 18 + 48; i < 98; ++i) {
             const Simplex& f = simplices[i];
             int id0 = m.id(f.tuple(), PrimitiveType::Vertex);
             int id1 = m.id(m.switch_vertex(f.tuple()), PrimitiveType::Vertex);
             int id2 = m.id(m.switch_vertex(m.switch_edge(f.tuple())), PrimitiveType::Vertex);
-            if (id0 == 13 || id1 == 13 || id2 == 13) {
-                sum++;
-            }
-            // m.tet_tuple_from_vids();
+            m.tet_tuple_from_vids(id0, id1, id2, 13);
         }
-        sum;
     }
     SECTION("vertex_boundary")
     {
