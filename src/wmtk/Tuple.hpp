@@ -69,5 +69,10 @@ public:
 
     bool is_null() const;
     Tuple with_updated_hash(long new_hash) const;
+    std::string to_string() const;
+    long get_local_vid() const { return m_local_vid; }
+    long get_local_eid() const { return m_local_eid; }
+    long get_local_fid() const { return m_local_fid; }
+    long get_global_cid() const { return m_global_cid; }
 };
 } // namespace wmtk

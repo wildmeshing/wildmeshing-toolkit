@@ -9,8 +9,7 @@ Eigen::VectorX<long>& vector2tag(Eigen::VectorX<long>& ret, std::vector<int> vec
     return ret;
 }
 
-std::unique_ptr<wmtk::Mesh>
-extract_subset(wmtk::Mesh& m, const std::vector<int>& tag_vec, bool pos)
+wmtk::Mesh& extract_subset(wmtk::Mesh& m, const std::vector<int>& tag_vec, bool pos)
 {
     wmtk::PrimitiveType topType = m.top_simplex_type();
     // tag vector must have the same size as the number of simplices in the mesh
@@ -27,17 +26,10 @@ extract_subset(wmtk::Mesh& m, const std::vector<int>& tag_vec, bool pos)
     wmtk::MeshAttributeHandle<long> tag_handle =
         wmtk::mesh_utils::set_matrix_attribute(vector2tag(tag, tag_vec), "tag", topType, m);
 
-    if (wmtk::TriMesh* trimesh = dynamic_cast<wmtk::TriMesh*>(&m)) {
-        std::unique_ptr<wmtk::Mesh> ret =
-            std::make_unique<wmtk::TriMesh>(internal::extract_subset_2d(*trimesh, tag_handle, pos));
-        return ret;
-        // return internal::topology_separate_2d(ret);
-    }
-    else if (wmtk::TetMesh* tetmesh = dynamic_cast<wmtk::TetMesh*>(&m)) {
-        std::unique_ptr<wmtk::Mesh> ret =
-            std::make_unique<wmtk::TetMesh>(internal::extract_subset_3d(*tetmesh, tag_handle, pos));
-        return ret;
-        // return internal::topology_separate_3d(ret);
+    // std::unique_ptr<wmtk::Mesh> ret;
+    if (m.top_cell_dimension() == 2 || m.top_cell_dimension() == 3) {
+        return internal::generate_submesh(m, tag_handle, pos);
+        // return internal::topology_separate(m);
     } else
         throw std::runtime_error("Invalid mesh dimension in extracting subset!");
 }

@@ -59,4 +59,11 @@ Tuple Tuple::with_updated_hash(long new_hash) const
     return Tuple(m_local_vid, m_local_eid, m_local_fid, m_global_cid, new_hash);
 }
 
+std::string Tuple::to_string() const
+{
+    return std::to_string(m_local_vid) + " " + std::to_string(m_local_eid) + " " +
+           std::to_string(m_local_fid) + " " + std::to_string(m_global_cid) + " " +
+           std::to_string(m_hash);
+}
+
 } // namespace wmtk
