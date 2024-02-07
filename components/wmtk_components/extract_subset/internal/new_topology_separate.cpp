@@ -2,8 +2,6 @@
 #include <iostream>
 namespace wmtk::components::internal {
 
-// TODO: integrate the function of finding subset simplices into this function
-// don't create 2 internal files, all in one
 // general function to separate topology, regardless of dimension
 std::unique_ptr<wmtk::Mesh>
 topology_separate(wmtk::Mesh& m, const wmtk::MeshAttributeHandle<long>& tag_handle, bool pos)
@@ -25,11 +23,13 @@ topology_separate(wmtk::Mesh& m, const wmtk::MeshAttributeHandle<long>& tag_hand
         wmtk::mesh_utils::set_matrix_attribute(dup, "duplicate_index", topType, m);
     wmtk::Accessor<long> dup_acc = m.create_accessor(duplicate_handle);
 
+    std::vector<long> tag_index;
     // second, go over all top dimension simplices and adjust the duplicate index
     for (long i = 0; i < top_simplex_count; ++i) {
         long tri_tag = tag_acc.const_scalar_attribute(top_simplices.at(i));
         // only consider the top simplices with tag 1
         if (tri_tag == 0) continue;
+        tag_index.push_back(i);
         auto v = dup_acc.vector_attribute(top_simplices[i]);
         // Question: Why can't I use the constructor here to build a Simplex?
         Simplex s = (top_simplex_dim == 2) ? Simplex::face(top_simplices[i])
@@ -45,8 +45,7 @@ topology_separate(wmtk::Mesh& m, const wmtk::MeshAttributeHandle<long>& tag_hand
             // find all top simplices sharing the same corner vertex,
             // update duplicate index of theie corner accordingly
 
-            // get all top dimension simplices sharing the corner vertex that are connected by n-1
-            // faces
+            // get all top dimension simplices sharing the vertex and are face-connected
             wmtk::simplex::SimplexCollection sc =
                 wmtk::simplex::top_dimension_cofaces(m, Simplex::vertex(corners[j]));
             for (wmtk::Simplex adj_simplex : sc) {
@@ -61,13 +60,15 @@ topology_separate(wmtk::Mesh& m, const wmtk::MeshAttributeHandle<long>& tag_hand
             counter++;
         }
     }
+    long tag_count = tag_index.size();
 
     // third, create a new mesh and copy the topology
     if (top_simplex_dim == 2) {
         wmtk::TriMesh mesh;
         wmtk::RowVectors3l tris;
-        tris.resize(top_simplex_count, 3);
+        tris.resize(tag_count, 3);
         for (long i = 0; i < top_simplex_count; ++i) {
+            if (tag_acc.const_scalar_attribute(top_simplices.at(i)) == 0) continue;
             Simplex s = Simplex::face(top_simplices[i]);
             auto corners = wmtk::simplex::faces_single_dimension(m, s, PrimitiveType::Vertex);
             for (int j = 0; j < 3; ++j) {
@@ -79,8 +80,9 @@ topology_separate(wmtk::Mesh& m, const wmtk::MeshAttributeHandle<long>& tag_hand
     } else {
         wmtk::TetMesh mesh;
         wmtk::RowVectors4l tets;
-        tets.resize(top_simplex_count, 4);
+        tets.resize(tag_count, 4);
         for (long i = 0; i < top_simplex_count; ++i) {
+            if (tag_acc.const_scalar_attribute(top_simplices.at(i)) == 0) continue;
             Simplex s = Simplex::tetrahedron(top_simplices[i]);
             auto corners = wmtk::simplex::faces_single_dimension(m, s, PrimitiveType::Vertex);
             for (int j = 0; j < 4; ++j) {
