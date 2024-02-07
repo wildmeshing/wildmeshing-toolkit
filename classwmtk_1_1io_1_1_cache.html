@@ -150,6 +150,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae8e0a75e2e3df0e8a1680ab62bbc814e"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">read_mesh</a> (const std::string &amp;name) const</td></tr>
 <tr class="memdesc:ae8e0a75e2e3df0e8a1680ab62bbc814e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load a mesh from cache.  <a href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">More...</a><br /></td></tr>
 <tr class="separator:ae8e0a75e2e3df0e8a1680ab62bbc814e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5338ba0053a8bb7479e759f1e7aafde"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_cache.html#ac5338ba0053a8bb7479e759f1e7aafde">load_multimesh</a> (const std::string &amp;name) const</td></tr>
+<tr class="separator:ac5338ba0053a8bb7479e759f1e7aafde"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a512b2d7adaeb163afee61b194eb802fd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_cache.html#a512b2d7adaeb163afee61b194eb802fd">write_mesh</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const std::string &amp;name, const std::map&lt; std::string, std::vector&lt; int64_t &gt;&gt; &amp;multimesh_names={})</td></tr>
 <tr class="memdesc:a512b2d7adaeb163afee61b194eb802fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write a mesh to cache.  <a href="classwmtk_1_1io_1_1_cache.html#a512b2d7adaeb163afee61b194eb802fd">More...</a><br /></td></tr>
 <tr class="separator:a512b2d7adaeb163afee61b194eb802fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -159,11 +161,14 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ad8ccbc398aaaed31ff53c03fe44c46b5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_cache.html#ad8ccbc398aaaed31ff53c03fe44c46b5">import_cache</a> (const std::filesystem::path &amp;import_location)</td></tr>
 <tr class="memdesc:ad8ccbc398aaaed31ff53c03fe44c46b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Import a cache from the given location.  <a href="classwmtk_1_1io_1_1_cache.html#ad8ccbc398aaaed31ff53c03fe44c46b5">More...</a><br /></td></tr>
 <tr class="separator:ad8ccbc398aaaed31ff53c03fe44c46b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaa8be3b9f7c1e394a4689cd54bff6b29"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_cache.html#aaa8be3b9f7c1e394a4689cd54bff6b29">absolute_multi_mesh_id</a> (const std::string &amp;name) const</td></tr>
-<tr class="separator:aaa8be3b9f7c1e394a4689cd54bff6b29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1610b95df611e8f65d2126afb5dafd7"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_cache.html#ae1610b95df611e8f65d2126afb5dafd7">absolute_multi_mesh_id</a> (const std::string &amp;name) const</td></tr>
+<tr class="separator:ae1610b95df611e8f65d2126afb5dafd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d9002c95cb93e5e4e68eaa6b5083f8c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_cache.html#a6d9002c95cb93e5e4e68eaa6b5083f8c">equals</a> (const <a class="el" href="classwmtk_1_1io_1_1_cache.html">Cache</a> &amp;o)</td></tr>
 <tr class="memdesc:a6d9002c95cb93e5e4e68eaa6b5083f8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compare two caches for equality.  <a href="classwmtk_1_1io_1_1_cache.html#a6d9002c95cb93e5e4e68eaa6b5083f8c">More...</a><br /></td></tr>
 <tr class="separator:a6d9002c95cb93e5e4e68eaa6b5083f8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2bf5a723035212c5aa9c65fb4b6424e9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_cache.html#a2bf5a723035212c5aa9c65fb4b6424e9">flush_multimeshes</a> ()</td></tr>
+<tr class="memdesc:a2bf5a723035212c5aa9c65fb4b6424e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unsets the mesh held by each cached mm - useful for debugging whether cache loading works.  <a href="classwmtk_1_1io_1_1_cache.html#a2bf5a723035212c5aa9c65fb4b6424e9">More...</a><br /></td></tr>
+<tr class="separator:a2bf5a723035212c5aa9c65fb4b6424e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -177,8 +182,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:affff86466804a066815b4ca15c3829bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79ab54ea1a97740313f4746614b32e58"><td class="memItemLeft" align="right" valign="top">std::map&lt; std::string, std::filesystem::path &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_cache.html#a79ab54ea1a97740313f4746614b32e58">m_file_paths</a></td></tr>
 <tr class="separator:a79ab54ea1a97740313f4746614b32e58"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c0a73298c728ff284fcfda84127b5c0"><td class="memItemLeft" align="right" valign="top">std::map&lt; std::string, std::vector&lt; int64_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_cache.html#a4c0a73298c728ff284fcfda84127b5c0">m_multimesh_names</a></td></tr>
-<tr class="separator:a4c0a73298c728ff284fcfda84127b5c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83e3bb9547515bcc9b1b79c071cd3fa7"><td class="memItemLeft" align="right" valign="top">std::map&lt; std::string, <a class="el" href="classwmtk_1_1io_1_1_cached_multi_mesh.html">CachedMultiMesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_cache.html#a83e3bb9547515bcc9b1b79c071cd3fa7">m_multimeshes</a></td></tr>
+<tr class="separator:a83e3bb9547515bcc9b1b79c071cd3fa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a900bcd536a2823deae709838a8ff4839"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_cache.html#a900bcd536a2823deae709838a8ff4839">m_delete_cache</a> = true</td></tr>
 <tr class="separator:a900bcd536a2823deae709838a8ff4839"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -189,7 +194,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="_cache_8hpp_source.html#l00011">11</a> of file <a class="el" href="_cache_8hpp_source.html">Cache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8hpp_source.html#l00012">12</a> of file <a class="el" href="_cache_8hpp_source.html">Cache.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ae067982081d3cae31672319ad678c270"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae067982081d3cae31672319ad678c270">&#9670;&nbsp;</a></span>Cache() <span class="overload">[1/2]</span></h2>
@@ -227,9 +232,9 @@ Static Private Attributes</h2></td></tr>
 <p>The folder is placed under the path given in <code>directory</code> and starts with the <code>prefix</code>. The remainder of the cache name is a hex number representing a timestamp and another one representing the number of tries that were necessary to create the cache folder.</p>
 <p>The cache folder is automatically removed in the destructor of the class if delete_cache is set to be true. If the contents of the cache should be copied out, one can use <code><a class="el" href="classwmtk_1_1io_1_1_cache.html#ae264d81e36515e42718a72469acb3a2a" title="Export the cache to the given location.">export_cache()</a></code>. Once a cache is exported, it can be imported again using <code><a class="el" href="classwmtk_1_1io_1_1_cache.html#ad8ccbc398aaaed31ff53c03fe44c46b5" title="Import a cache from the given location.">import_cache()</a></code>. </p>
 
-<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00070">70</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00072">72</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_cache_8cpp_source.html#l00049">create_unique_directory()</a>, and <a class="el" href="_cache_8hpp_source.html#l00147">m_cache_dir</a>.</p>
+<p class="reference">References <a class="el" href="_cache_8cpp_source.html#l00051">create_unique_directory()</a>, and <a class="el" href="_cache_8hpp_source.html#l00151">m_cache_dir</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -274,9 +279,9 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00077">77</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00079">79</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="_cache_8hpp_source.html#l00147">m_cache_dir</a>, and <a class="el" href="_cache_8hpp_source.html#l00150">m_delete_cache</a>.</p>
+<p class="reference">References <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="_cache_8hpp_source.html#l00151">m_cache_dir</a>, and <a class="el" href="_cache_8hpp_source.html#l00154">m_delete_cache</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -287,33 +292,25 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="aaa8be3b9f7c1e394a4689cd54bff6b29"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa8be3b9f7c1e394a4689cd54bff6b29">&#9670;&nbsp;</a></span>absolute_multi_mesh_id()</h2>
+<a id="ae1610b95df611e8f65d2126afb5dafd7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae1610b95df611e8f65d2126afb5dafd7">&#9670;&nbsp;</a></span>absolute_multi_mesh_id()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;int64_t&gt; wmtk::io::Cache::absolute_multi_mesh_id </td>
+          <td class="memname">std::vector&lt; int64_t &gt; wmtk::io::Cache::absolute_multi_mesh_id </td>
           <td>(</td>
           <td class="paramtype">const std::string &amp;&#160;</td>
           <td class="paramname"><em>name</em></td><td>)</td>
           <td> const</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_cache_8hpp_source.html#l00117">117</a> of file <a class="el" href="_cache_8hpp_source.html">Cache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00149">149</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_cache_8hpp_source.html#l00149">m_multimesh_names</a>.</p>
+<p class="reference">References <a class="el" href="_cache_8hpp_source.html#l00153">m_multimeshes</a>.</p>
 
 </div>
 </div>
@@ -369,11 +366,11 @@ Here is the call graph for this function:</div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00049">49</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00051">51</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_cache_8cpp_source.html#l00017">nanoseconds_timestamp()</a>, and <a class="el" href="_cache_8cpp_source.html#l00024">number_to_hex()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00070">Cache()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00072">Cache()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -430,11 +427,11 @@ Here is the caller graph for this function:</div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00091">91</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00093">93</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_cache_8hpp_source.html#l00147">m_cache_dir</a>, <a class="el" href="_cache_8hpp_source.html#l00148">m_file_paths</a>, <a class="el" href="_cache_8cpp_source.html#l00017">nanoseconds_timestamp()</a>, and <a class="el" href="_cache_8cpp_source.html#l00024">number_to_hex()</a>.</p>
+<p class="reference">References <a class="el" href="_cache_8hpp_source.html#l00151">m_cache_dir</a>, <a class="el" href="_cache_8hpp_source.html#l00152">m_file_paths</a>, <a class="el" href="_cache_8cpp_source.html#l00017">nanoseconds_timestamp()</a>, and <a class="el" href="_cache_8cpp_source.html#l00024">number_to_hex()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00179">export_cache()</a>, <a class="el" href="_cache_8cpp_source.html#l00119">get_file_path()</a>, and <a class="el" href="_cache_8cpp_source.html#l00154">write_mesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00213">export_cache()</a>, <a class="el" href="_cache_8cpp_source.html#l00121">get_file_path()</a>, and <a class="el" href="_cache_8cpp_source.html#l00183">write_mesh()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -469,9 +466,9 @@ Here is the caller graph for this function:</div>
 <p>Compare two caches for equality. </p>
 <p>Only compares meshes registered in the cache. </p>
 
-<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00258">258</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00292">292</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="_cache_8hpp_source.html#l00148">m_file_paths</a>, and <a class="el" href="_mesh_reader_8cpp_source.html#l00012">wmtk::read_mesh()</a>.</p>
+<p class="reference">References <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="_cache_8hpp_source.html#l00152">m_file_paths</a>, and <a class="el" href="_mesh_reader_8cpp_source.html#l00012">wmtk::read_mesh()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="test__component__import__cache_8cpp_source.html#l00013">TEST_CASE()</a>.</p>
 <div class="dynheader">
@@ -509,9 +506,9 @@ Here is the caller graph for this function:</div>
 <p>The location must be a non-existing path. Along with all files, a json file is written that contains the dictionary of names used inside the program and the actual file names relative to the cache folder.</p>
 <p>returns true if export was successful, false otherwise </p>
 
-<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00179">179</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00213">213</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_cache_8cpp_source.html#l00091">create_unique_file()</a>, <a class="el" href="_cache_8hpp_source.html#l00152">m_cache_content_name</a>, <a class="el" href="_cache_8hpp_source.html#l00147">m_cache_dir</a>, and <a class="el" href="_cache_8hpp_source.html#l00148">m_file_paths</a>.</p>
+<p class="reference">References <a class="el" href="_cache_8cpp_source.html#l00093">create_unique_file()</a>, <a class="el" href="_cache_8hpp_source.html#l00156">m_cache_content_name</a>, <a class="el" href="_cache_8hpp_source.html#l00151">m_cache_dir</a>, and <a class="el" href="_cache_8hpp_source.html#l00152">m_file_paths</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="export__cache_8cpp_source.html#l00010">wmtk::components::export_cache()</a>.</p>
 <div class="dynheader">
@@ -524,6 +521,37 @@ Here is the call graph for this function:</div>
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1io_1_1_cache_ae264d81e36515e42718a72469acb3a2a_icgraph.svg" width="576" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a2bf5a723035212c5aa9c65fb4b6424e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2bf5a723035212c5aa9c65fb4b6424e9">&#9670;&nbsp;</a></span>flush_multimeshes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::io::Cache::flush_multimeshes </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Unsets the mesh held by each cached mm - useful for debugging whether cache loading works. </p>
+
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00176">176</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_cache_8hpp_source.html#l00153">m_multimeshes</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="run__components_8cpp_source.html#l00017">wmtk::components::run_components()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1io_1_1_cache_a2bf5a723035212c5aa9c65fb4b6424e9_icgraph.svg" width="402" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -547,9 +575,9 @@ Here is the caller graph for this function:</div>
 <p>Get the path of the cache folder. </p>
 <dl class="section return"><dt>Returns</dt><dd>cache path </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00143">143</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00145">145</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_cache_8hpp_source.html#l00147">m_cache_dir</a>.</p>
+<p class="reference">References <a class="el" href="_cache_8hpp_source.html#l00151">m_cache_dir</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_cache_stack_8cpp_source.html#l00038">wmtk::io::CacheStack::create_sub_cache()</a>, and <a class="el" href="test__component__export__cache_8cpp_source.html#l00012">TEST_CASE()</a>.</p>
 <div class="dynheader">
@@ -581,11 +609,11 @@ Here is the caller graph for this function:</div>
 <p>If a file with this name does not exist yet, it is created using <code>create_unique_file</code>.</p>
 <dl class="section return"><dt>Returns</dt><dd>file path </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00119">119</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00121">121</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_cache_8cpp_source.html#l00091">create_unique_file()</a>, and <a class="el" href="_cache_8hpp_source.html#l00148">m_file_paths</a>.</p>
+<p class="reference">References <a class="el" href="_cache_8cpp_source.html#l00093">create_unique_file()</a>, and <a class="el" href="_cache_8hpp_source.html#l00152">m_file_paths</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00148">read_mesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00155">load_multimesh()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -621,9 +649,9 @@ Here is the caller graph for this function:</div>
 <p>If a file with this name does not exist an error is thrown.</p>
 <dl class="section return"><dt>Returns</dt><dd>file path </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00131">131</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00133">133</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_cache_8hpp_source.html#l00148">m_file_paths</a>.</p>
+<p class="reference">References <a class="el" href="_cache_8hpp_source.html#l00152">m_file_paths</a>.</p>
 
 </div>
 </div>
@@ -647,15 +675,51 @@ Here is the caller graph for this function:</div>
 <p>The location must be cache folder that was previously generated using the <code>export</code> function. The cache must be empty before importing.</p>
 <p>returns true if import was successful, false otherwise </p>
 
-<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00210">210</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00244">244</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_cache_8hpp_source.html#l00152">m_cache_content_name</a>, <a class="el" href="_cache_8hpp_source.html#l00147">m_cache_dir</a>, and <a class="el" href="_cache_8hpp_source.html#l00148">m_file_paths</a>.</p>
+<p class="reference">References <a class="el" href="_cache_8hpp_source.html#l00156">m_cache_content_name</a>, <a class="el" href="_cache_8hpp_source.html#l00151">m_cache_dir</a>, and <a class="el" href="_cache_8hpp_source.html#l00152">m_file_paths</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="import__cache_8cpp_source.html#l00010">wmtk::components::import_cache()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1io_1_1_cache_ad8ccbc398aaaed31ff53c03fe44c46b5_icgraph.svg" width="579" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="ac5338ba0053a8bb7479e759f1e7aafde"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac5338ba0053a8bb7479e759f1e7aafde">&#9670;&nbsp;</a></span>load_multimesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::io::Cache::load_multimesh </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>name</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00155">155</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_cache_8cpp_source.html#l00121">get_file_path()</a>, and <a class="el" href="_cache_8hpp_source.html#l00153">m_multimeshes</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00170">read_mesh()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1io_1_1_cache_ac5338ba0053a8bb7479e759f1e7aafde_cgraph.svg" width="100%" height="366"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1io_1_1_cache_ac5338ba0053a8bb7479e759f1e7aafde_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -677,9 +741,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00039">39</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00040">40</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_cache_8hpp_source.html#l00147">m_cache_dir</a>, <a class="el" href="_cache_8hpp_source.html#l00150">m_delete_cache</a>, and <a class="el" href="_cache_8hpp_source.html#l00148">m_file_paths</a>.</p>
+<p class="reference">References <a class="el" href="_cache_8hpp_source.html#l00151">m_cache_dir</a>, <a class="el" href="_cache_8hpp_source.html#l00154">m_delete_cache</a>, <a class="el" href="_cache_8hpp_source.html#l00152">m_file_paths</a>, and <a class="el" href="_cache_8hpp_source.html#l00153">m_multimeshes</a>.</p>
 
 </div>
 </div>
@@ -708,15 +772,15 @@ Here is the caller graph for this function:</div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>shared pointer to the mesh </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00148">148</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00170">170</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_cache_8cpp_source.html#l00119">get_file_path()</a>, and <a class="el" href="_mesh_reader_8cpp_source.html#l00012">wmtk::read_mesh()</a>.</p>
+<p class="reference">References <a class="el" href="_cache_8cpp_source.html#l00155">load_multimesh()</a>, and <a class="el" href="_cache_8hpp_source.html#l00153">m_multimeshes</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="delaunay_8cpp_source.html#l00035">wmtk::components::delaunay_exec()</a>, <a class="el" href="fusion_8cpp_source.html#l00018">wmtk::components::fusion()</a>, <a class="el" href="get__all__meshes_8cpp_source.html#l00017">wmtk::components::get_all_meshes()</a>, <a class="el" href="isotropic__remeshing_8cpp_source.html#l00032">wmtk::components::isotropic_remeshing()</a>, <a class="el" href="_marching_8cpp_source.html#l00028">wmtk::components::marching()</a>, <a class="el" href="mesh__info_8cpp_source.html#l00011">wmtk::components::mesh_info()</a>, <a class="el" href="multimesh_8cpp_source.html#l00011">wmtk::components::multimesh()</a>, <a class="el" href="output_8cpp_source.html#l00012">wmtk::components::output()</a>, <a class="el" href="regular__space_8cpp_source.html#l00058">wmtk::components::regular_space()</a>, <a class="el" href="tag__intersection_8cpp_source.html#l00115">wmtk::components::tag_intersection()</a>, <a class="el" href="test__component__fusion_8cpp_source.html#l00028">TEST_CASE()</a>, <a class="el" href="to__points_8cpp_source.html#l00014">wmtk::components::to_points()</a>, <a class="el" href="triangle__insertion_8cpp_source.html#l00016">wmtk::components::triangle_insertion()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00112">wmtk::components::wildmeshing()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1io_1_1_cache_ae8e0a75e2e3df0e8a1680ab62bbc814e_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1io_1_1_cache_ae8e0a75e2e3df0e8a1680ab62bbc814e_cgraph.svg" width="100%" height="366"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
@@ -771,9 +835,9 @@ Here is the caller graph for this function:</div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00154">154</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8cpp_source.html#l00183">183</a> of file <a class="el" href="_cache_8cpp_source.html">Cache.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_cache_8cpp_source.html#l00091">create_unique_file()</a>, <a class="el" href="_cache_8hpp_source.html#l00148">m_file_paths</a>, <a class="el" href="_cache_8hpp_source.html#l00149">m_multimesh_names</a>, and <a class="el" href="_mesh_8cpp_source.html#l00048">wmtk::Mesh::serialize()</a>.</p>
+<p class="reference">References <a class="el" href="_cache_8cpp_source.html#l00093">create_unique_file()</a>, <a class="el" href="_cache_8hpp_source.html#l00152">m_file_paths</a>, <a class="el" href="_cache_8hpp_source.html#l00153">m_multimeshes</a>, and <a class="el" href="_mesh_8cpp_source.html#l00048">wmtk::Mesh::serialize()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="delaunay_8cpp_source.html#l00035">wmtk::components::delaunay_exec()</a>, <a class="el" href="fusion_8cpp_source.html#l00018">wmtk::components::fusion()</a>, <a class="el" href="get__all__meshes_8cpp_source.html#l00017">wmtk::components::get_all_meshes()</a>, <a class="el" href="input_8cpp_source.html#l00012">wmtk::components::input()</a>, <a class="el" href="isotropic__remeshing_8cpp_source.html#l00032">wmtk::components::isotropic_remeshing()</a>, <a class="el" href="_marching_8cpp_source.html#l00028">wmtk::components::marching()</a>, <a class="el" href="multimesh_8cpp_source.html#l00011">wmtk::components::multimesh()</a>, <a class="el" href="procedural_8cpp_source.html#l00013">wmtk::components::procedural()</a>, <a class="el" href="regular__space_8cpp_source.html#l00058">wmtk::components::regular_space()</a>, <a class="el" href="tag__intersection_8cpp_source.html#l00115">wmtk::components::tag_intersection()</a>, <a class="el" href="test__component__fusion_8cpp_source.html#l00028">TEST_CASE()</a>, <a class="el" href="to__points_8cpp_source.html#l00014">wmtk::components::to_points()</a>, <a class="el" href="triangle__insertion_8cpp_source.html#l00016">wmtk::components::triangle_insertion()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00112">wmtk::components::wildmeshing()</a>.</p>
 <div class="dynheader">
@@ -814,9 +878,9 @@ Here is the caller graph for this function:</div>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">        <span class="stringliteral">&quot;cache_contents&quot;</span></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="_cache_8hpp_source.html#l00152">152</a> of file <a class="el" href="_cache_8hpp_source.html">Cache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8hpp_source.html#l00156">156</a> of file <a class="el" href="_cache_8hpp_source.html">Cache.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00179">export_cache()</a>, and <a class="el" href="_cache_8cpp_source.html#l00210">import_cache()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00213">export_cache()</a>, and <a class="el" href="_cache_8cpp_source.html#l00244">import_cache()</a>.</p>
 
 </div>
 </div>
@@ -840,9 +904,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_cache_8hpp_source.html#l00147">147</a> of file <a class="el" href="_cache_8hpp_source.html">Cache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8hpp_source.html#l00151">151</a> of file <a class="el" href="_cache_8hpp_source.html">Cache.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00070">Cache()</a>, <a class="el" href="_cache_8cpp_source.html#l00091">create_unique_file()</a>, <a class="el" href="_cache_8cpp_source.html#l00179">export_cache()</a>, <a class="el" href="_cache_8cpp_source.html#l00143">get_cache_path()</a>, <a class="el" href="_cache_8cpp_source.html#l00210">import_cache()</a>, <a class="el" href="_cache_8cpp_source.html#l00039">operator=()</a>, and <a class="el" href="_cache_8cpp_source.html#l00077">~Cache()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00072">Cache()</a>, <a class="el" href="_cache_8cpp_source.html#l00093">create_unique_file()</a>, <a class="el" href="_cache_8cpp_source.html#l00213">export_cache()</a>, <a class="el" href="_cache_8cpp_source.html#l00145">get_cache_path()</a>, <a class="el" href="_cache_8cpp_source.html#l00244">import_cache()</a>, <a class="el" href="_cache_8cpp_source.html#l00040">operator=()</a>, and <a class="el" href="_cache_8cpp_source.html#l00079">~Cache()</a>.</p>
 
 </div>
 </div>
@@ -866,9 +930,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_cache_8hpp_source.html#l00150">150</a> of file <a class="el" href="_cache_8hpp_source.html">Cache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8hpp_source.html#l00154">154</a> of file <a class="el" href="_cache_8hpp_source.html">Cache.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00039">operator=()</a>, and <a class="el" href="_cache_8cpp_source.html#l00077">~Cache()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00040">operator=()</a>, and <a class="el" href="_cache_8cpp_source.html#l00079">~Cache()</a>.</p>
 
 </div>
 </div>
@@ -892,14 +956,14 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_cache_8hpp_source.html#l00148">148</a> of file <a class="el" href="_cache_8hpp_source.html">Cache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8hpp_source.html#l00152">152</a> of file <a class="el" href="_cache_8hpp_source.html">Cache.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00091">create_unique_file()</a>, <a class="el" href="_cache_8cpp_source.html#l00258">equals()</a>, <a class="el" href="_cache_8cpp_source.html#l00179">export_cache()</a>, <a class="el" href="_cache_8cpp_source.html#l00119">get_file_path()</a>, <a class="el" href="_cache_8cpp_source.html#l00210">import_cache()</a>, <a class="el" href="_cache_8cpp_source.html#l00039">operator=()</a>, and <a class="el" href="_cache_8cpp_source.html#l00154">write_mesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00093">create_unique_file()</a>, <a class="el" href="_cache_8cpp_source.html#l00292">equals()</a>, <a class="el" href="_cache_8cpp_source.html#l00213">export_cache()</a>, <a class="el" href="_cache_8cpp_source.html#l00121">get_file_path()</a>, <a class="el" href="_cache_8cpp_source.html#l00244">import_cache()</a>, <a class="el" href="_cache_8cpp_source.html#l00040">operator=()</a>, and <a class="el" href="_cache_8cpp_source.html#l00183">write_mesh()</a>.</p>
 
 </div>
 </div>
-<a id="a4c0a73298c728ff284fcfda84127b5c0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4c0a73298c728ff284fcfda84127b5c0">&#9670;&nbsp;</a></span>m_multimesh_names</h2>
+<a id="a83e3bb9547515bcc9b1b79c071cd3fa7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83e3bb9547515bcc9b1b79c071cd3fa7">&#9670;&nbsp;</a></span>m_multimeshes</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -908,19 +972,19 @@ Here is the caller graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::map&lt;std::string, std::vector&lt;int64_t&gt; &gt; wmtk::io::Cache::m_multimesh_names</td>
+          <td class="memname">std::map&lt;std::string, <a class="el" href="classwmtk_1_1io_1_1_cached_multi_mesh.html">CachedMultiMesh</a>&gt; wmtk::io::Cache::m_multimeshes</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">mutable</span><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_cache_8hpp_source.html#l00149">149</a> of file <a class="el" href="_cache_8hpp_source.html">Cache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_cache_8hpp_source.html#l00153">153</a> of file <a class="el" href="_cache_8hpp_source.html">Cache.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_cache_8hpp_source.html#l00117">absolute_multi_mesh_id()</a>, and <a class="el" href="_cache_8cpp_source.html#l00154">write_mesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_cache_8cpp_source.html#l00149">absolute_multi_mesh_id()</a>, <a class="el" href="_cache_8cpp_source.html#l00176">flush_multimeshes()</a>, <a class="el" href="_cache_8cpp_source.html#l00155">load_multimesh()</a>, <a class="el" href="_cache_8cpp_source.html#l00040">operator=()</a>, <a class="el" href="_cache_8cpp_source.html#l00170">read_mesh()</a>, and <a class="el" href="_cache_8cpp_source.html#l00183">write_mesh()</a>.</p>
 
 </div>
 </div>

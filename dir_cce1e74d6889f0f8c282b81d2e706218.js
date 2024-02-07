@@ -24,10 +24,6 @@ var dir_cce1e74d6889f0f8c282b81d2e706218 =
     [ "EdgeSplit.hpp", "_edge_split_8hpp.html", [
       [ "EdgeSplit", "classwmtk_1_1operations_1_1_edge_split.html", "classwmtk_1_1operations_1_1_edge_split" ]
     ] ],
-    [ "MeshOperation.cpp", "_mesh_operation_8cpp.html", null ],
-    [ "MeshOperation.hpp", "_mesh_operation_8hpp.html", [
-      [ "MeshOperation", "classwmtk_1_1operations_1_1_mesh_operation.html", "classwmtk_1_1operations_1_1_mesh_operation" ]
-    ] ],
     [ "Operation.cpp", "_operation_8cpp.html", null ],
     [ "Operation.hpp", "_operation_8hpp.html", [
       [ "Operation", "classwmtk_1_1operations_1_1_operation.html", "classwmtk_1_1operations_1_1_operation" ]

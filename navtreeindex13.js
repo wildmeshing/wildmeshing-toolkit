@@ -1,6 +1,5 @@
 var NAVTREEINDEX13 =
 {
-"dir_cce1e74d6889f0f8c282b81d2e706218.html":[5,0,2,0,6],
 "dir_d0fc49071c15a633f497508e8420f4e1.html":[5,0,0,1,2,0,0,0,0],
 "dir_d15098bcd22a2d67b4110d65e9aeb85a.html":[5,0,2,0,5,0],
 "dir_d170a5af103cbb1c1f336dd3621341a1.html":[5,0,2,0,6,6],
@@ -115,8 +114,8 @@ var NAVTREEINDEX13 =
 "find__local__switch__sequence_8hpp.html":[5,0,2,0,5,2,6],
 "find__local__switch__sequence_8hpp.html#a99cdf56ec6abe68409d30e0b67f4ce82":[5,0,2,0,5,2,6,0],
 "find__local__switch__sequence_8hpp_source.html":[5,0,2,0,5,2,6],
-"functions.html":[4,3,0,0],
 "functions.html":[4,3,0],
+"functions.html":[4,3,0,0],
 "functions_b.html":[4,3,0,1],
 "functions_c.html":[4,3,0,2],
 "functions_d.html":[4,3,0,3],
@@ -249,5 +248,6 @@ var NAVTREEINDEX13 =
 "index.html#autotoc_md1":[0,0],
 "index.html#autotoc_md10":[0,2,3],
 "index.html#autotoc_md11":[0,2,4],
-"index.html#autotoc_md12":[0,2,5]
+"index.html#autotoc_md12":[0,2,5],
+"index.html#autotoc_md13":[0,2,6]
 };

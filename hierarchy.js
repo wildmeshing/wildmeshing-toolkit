@@ -33,6 +33,7 @@ var hierarchy =
     [ "wmtk::function::utils::AutoDiffRAII", "classwmtk_1_1function_1_1utils_1_1_auto_diff_r_a_i_i.html", null ],
     [ "wmtk::multimesh::BoundaryChecker", "classwmtk_1_1multimesh_1_1_boundary_checker.html", null ],
     [ "wmtk::io::Cache", "classwmtk_1_1io_1_1_cache.html", null ],
+    [ "wmtk::io::CachedMultiMesh", "classwmtk_1_1io_1_1_cached_multi_mesh.html", null ],
     [ "wmtk::io::CacheStack", "classwmtk_1_1io_1_1_cache_stack.html", null ],
     [ "wmtk::Cell", "classwmtk_1_1_cell.html", null ],
     [ "wmtk::utils::metaprogramming::detail::cell_dimension< MeshType >", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1cell__dimension.html", null ],
@@ -226,10 +227,8 @@ var hierarchy =
         [ "wmtk::operations::OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", null ],
         [ "wmtk::operations::composite::ProjectOperation", "classwmtk_1_1operations_1_1composite_1_1_project_operation.html", null ]
       ] ],
-      [ "wmtk::operations::MeshOperation", "classwmtk_1_1operations_1_1_mesh_operation.html", [
-        [ "wmtk::operations::EdgeCollapse", "classwmtk_1_1operations_1_1_edge_collapse.html", null ],
-        [ "wmtk::operations::EdgeSplit", "classwmtk_1_1operations_1_1_edge_split.html", null ]
-      ] ],
+      [ "wmtk::operations::EdgeCollapse", "classwmtk_1_1operations_1_1_edge_collapse.html", null ],
+      [ "wmtk::operations::EdgeSplit", "classwmtk_1_1operations_1_1_edge_split.html", null ],
       [ "wmtk::operations::composite::TetCellSplit", "classwmtk_1_1operations_1_1composite_1_1_tet_cell_split.html", null ],
       [ "wmtk::operations::composite::TetEdgeSwap", "classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html", null ],
       [ "wmtk::operations::composite::TetFaceSwap", "classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html", null ],

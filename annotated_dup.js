@@ -126,6 +126,7 @@ var annotated_dup =
       ] ],
       [ "io", "namespacewmtk_1_1io.html", [
         [ "Cache", "classwmtk_1_1io_1_1_cache.html", "classwmtk_1_1io_1_1_cache" ],
+        [ "CachedMultiMesh", "classwmtk_1_1io_1_1_cached_multi_mesh.html", "classwmtk_1_1io_1_1_cached_multi_mesh" ],
         [ "CacheStack", "classwmtk_1_1io_1_1_cache_stack.html", "classwmtk_1_1io_1_1_cache_stack" ],
         [ "ParaviewWriter", "classwmtk_1_1io_1_1_paraview_writer.html", "classwmtk_1_1io_1_1_paraview_writer" ],
         [ "SubCacheHandle", "classwmtk_1_1io_1_1_sub_cache_handle.html", "classwmtk_1_1io_1_1_sub_cache_handle" ]
@@ -196,7 +197,6 @@ var annotated_dup =
         [ "EdgeCollapse", "classwmtk_1_1operations_1_1_edge_collapse.html", "classwmtk_1_1operations_1_1_edge_collapse" ],
         [ "EdgeOperationData", "classwmtk_1_1operations_1_1_edge_operation_data.html", "classwmtk_1_1operations_1_1_edge_operation_data" ],
         [ "EdgeSplit", "classwmtk_1_1operations_1_1_edge_split.html", "classwmtk_1_1operations_1_1_edge_split" ],
-        [ "MeshOperation", "classwmtk_1_1operations_1_1_mesh_operation.html", "classwmtk_1_1operations_1_1_mesh_operation" ],
         [ "Operation", "classwmtk_1_1operations_1_1_operation.html", "classwmtk_1_1operations_1_1_operation" ],
         [ "OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", "classwmtk_1_1operations_1_1_optimization_smoothing" ],
         [ "VertexLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth" ],

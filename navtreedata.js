@@ -88,7 +88,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "_accessor_8cpp.html",
-"_interior_vertex_invariant_8cpp_source.html",
+"_interior_simplex_invariant_8cpp_source.html",
 "_primitive_type_8cpp.html#a339897f6efeb23a997750141f12892ee",
 "_types_8hpp.html#a82c8a56363b1b6302a662848855d5966",
 "classwmtk_1_1_h_d_f5_reader.html#a2524f46ffeb8b8b9af898e7b2993bc00",
@@ -97,17 +97,17 @@ var NAVTREEINDEX =
 "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a4453cdc564b67a56f1ca2e0aa11a5a6d",
 "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html#a1addb6a0d95a346efb78c7883a060680",
 "classwmtk_1_1invariants_1_1_invariant_collection.html#a498fb14cde31b7caa8d8cb448ac60e96",
-"classwmtk_1_1operations_1_1_attribute_transfer_strategy.html#add6ae343d68cad58dc943adca0139457",
-"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a7916a0a776c2af596d7de941bd677eb1",
-"classwmtk_1_1simplex_1_1_simplex_collection.html#ac1b20ed4be1194c41b100eee0455525e",
-"dir_cce1e74d6889f0f8c282b81d2e706218.html",
-"index.html#autotoc_md13",
-"namespacewmtk.html",
-"namespacewmtk_1_1multimesh_1_1operations.html#ac6bc09f899ec66f20edcbfec8525eaf6",
-"same__simplex__dimension__bijection_8hpp.html#ae9d6749c097baf5c55d25e598ecec6e1",
-"structwmtk_1_1components_1_1internal_1_1_marching_options.html#a311952989da75b2cca4b3b8f541b555c",
-"test__component__isotropic__remeshing_8cpp.html#a19a81e7a94de35f0cf57c82b492c78e8",
-"unique__homogeneous__simplices_8hpp.html"
+"classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a8f5c5468701772a7bd72be07ea1ecf81",
+"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a9a54c74b5fe18c3fa86189775a5e0543",
+"classwmtk_1_1simplex_1_1_simplex_collection.html#ad0b05393e58815dc14b2c1d4b7b2670d",
+"dir_d0fc49071c15a633f497508e8420f4e1.html",
+"index.html#autotoc_md14",
+"namespacemembers_t.html",
+"namespacewmtk_1_1multimesh.html#a75477c4fe069fcdff90f57a76087afe0",
+"resolve__path_8cpp_source.html",
+"structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_options.html#a0e92ee8fdbbdf179bd9feec82b1f6326",
+"test__component__import__cache_8cpp.html#a081b8f9743b3281709466fa4850cfb84",
+"tuple__map__attribute__io_8hpp.html#acff53209923ca86be1f06d03944ee942"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
