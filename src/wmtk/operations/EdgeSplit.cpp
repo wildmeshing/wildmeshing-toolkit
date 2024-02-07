@@ -16,7 +16,7 @@
 namespace wmtk::operations {
 
 EdgeSplit::EdgeSplit(Mesh& m)
-    : MeshOperation(m)
+    : Operation(m)
 {
     auto collect_attrs = [&](auto&& mesh) {
         // can have const variant values here so gotta filter htose out
@@ -38,65 +38,18 @@ EdgeSplit::EdgeSplit(Mesh& m)
     custom_attribute_collector.execute_from_root(m);
 }
 
-///////////////////////////////
-std::vector<simplex::Simplex> EdgeSplit::execute_aux(
-    EdgeMesh& mesh,
-    const simplex::Simplex& simplex)
+std::vector<simplex::Simplex> EdgeSplit::execute(const simplex::Simplex& simplex)
 {
-    auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple(), m_new_attr_strategies);
-
-    const edge_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
-
-    return {simplex::Simplex::vertex(my_data.m_output_tuple)};
-}
-
-std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives_aux(
-    const EdgeMesh& mesh,
+    return utils::multi_mesh_edge_split_with_modified_simplices(
+        mesh(),
+        simplex,
+        m_new_attr_strategies);
+};
+std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives(
     const simplex::Simplex& simplex) const
 {
     return {simplex};
 }
-///////////////////////////////
-
-
-///////////////////////////////
-std::vector<simplex::Simplex> EdgeSplit::execute_aux(TriMesh& mesh, const simplex::Simplex& simplex)
-{
-    auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple(), m_new_attr_strategies);
-
-    const tri_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
-
-    return {simplex::Simplex::vertex(my_data.m_output_tuple)};
-}
-
-std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives_aux(
-    const TriMesh& mesh,
-    const simplex::Simplex& simplex) const
-{
-    return {simplex};
-}
-///////////////////////////////
-
-
-///////////////////////////////
-std::vector<simplex::Simplex> EdgeSplit::execute_aux(TetMesh& mesh, const simplex::Simplex& simplex)
-{
-    auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple(), m_new_attr_strategies);
-
-    wmtk::logger().trace("{}", primitive_type_name(simplex.primitive_type()));
-
-    const tet_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
-
-    return {simplex::Simplex::vertex(my_data.m_output_tuple)};
-}
-
-std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives_aux(
-    const TetMesh& mesh,
-    const simplex::Simplex& simplex) const
-{
-    return {simplex};
-}
-///////////////////////////////
 
 
 std::shared_ptr<operations::BaseSplitNewAttributeStrategy> EdgeSplit::get_new_attribute_strategy(

@@ -81,9 +81,19 @@ faces_single_dimension(const Mesh& mesh, const Simplex& simplex, const Primitive
 {
     SimplexCollection collection(mesh);
 
-    collection.add(face_type, faces_single_dimension_tuples(mesh, simplex, face_type));
+    faces_single_dimension(collection, simplex, face_type);
 
     return collection;
+}
+
+void faces_single_dimension(
+    SimplexCollection& simplex_collection,
+    const Simplex& simplex,
+    const PrimitiveType face_type)
+{
+    simplex_collection.add(
+        face_type,
+        faces_single_dimension_tuples(simplex_collection.mesh(), simplex, face_type));
 }
 
 std::vector<Tuple> faces_single_dimension_tuples(
