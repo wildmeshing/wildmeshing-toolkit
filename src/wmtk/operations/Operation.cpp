@@ -59,17 +59,19 @@ void Operation::add_transfer_strategy(
 
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
+    if (!before(simplex)) {
+        return {};
+    }
+
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
 
-    if (before(simplex)) {
-        auto unmods = unmodified_primitives(simplex);
-        auto mods = execute(simplex);
-        if (!mods.empty()) { // success should be marked here
-            apply_attribute_transfer(mods);
-            if (after(unmods, mods)) {
-                return mods; // scope destructor is called
-            }
+    auto unmods = unmodified_primitives(simplex);
+    auto mods = execute(simplex);
+    if (!mods.empty()) { // success should be marked here
+        apply_attribute_transfer(mods);
+        if (after(unmods, mods)) {
+            return mods; // scope destructor is called
         }
     }
     scope.mark_failed();

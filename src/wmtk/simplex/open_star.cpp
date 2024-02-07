@@ -28,30 +28,28 @@ SimplexCollection open_star(const TriMesh& mesh, const Simplex& simplex, const b
     // make use of the fact that the top dimension coface tuples always contain the simplex itself
     const std::vector<Tuple> cell_tuples = top_dimension_cofaces_tuples(mesh, simplex);
 
-    std::vector<Simplex> all_cofaces;
+    SimplexCollection collection(mesh);
     switch (simplex.primitive_type()) {
     case PrimitiveType::Vertex:
-        all_cofaces.reserve(cell_tuples.size() * 3 + 1);
+        collection.reserve(cell_tuples.size() * 3 + 1);
         for (const Tuple& t : cell_tuples) {
-            all_cofaces.emplace_back(Simplex::face(t));
-            all_cofaces.emplace_back(Simplex::edge(t));
-            all_cofaces.emplace_back(Simplex::edge(mesh.switch_edge(t)));
+            collection.add(Simplex::face(t));
+            collection.add(Simplex::edge(t));
+            collection.add(Simplex::edge(mesh.switch_edge(t)));
         }
         break;
     case PrimitiveType::Edge:
-        all_cofaces.reserve(cell_tuples.size() + 1);
+        collection.reserve(cell_tuples.size() + 1);
         for (const Tuple& t : cell_tuples) {
-            all_cofaces.emplace_back(Simplex::face(t));
+            collection.add(Simplex::face(t));
         }
         break;
-    case PrimitiveType::Face: all_cofaces.reserve(1); break;
+    case PrimitiveType::Face: collection.reserve(1); break;
     case PrimitiveType::Tetrahedron:
     case PrimitiveType::HalfEdge:
     default: break;
     }
-    all_cofaces.emplace_back(simplex);
-
-    SimplexCollection collection(mesh, std::move(all_cofaces));
+    collection.add(simplex);
 
 
     if (sort_and_clean) {
@@ -71,44 +69,42 @@ SimplexCollection open_star(const TetMesh& mesh, const Simplex& simplex, const b
     constexpr PrimitiveType PF = PrimitiveType::Face;
     constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
-    std::vector<Simplex> all_cofaces;
+    SimplexCollection collection(mesh);
     switch (simplex.primitive_type()) {
     case PrimitiveType::Vertex:
-        all_cofaces.reserve(cell_tuples.size() * 7 + 1);
+        collection.reserve(cell_tuples.size() * 7 + 1);
         for (Tuple t : cell_tuples) {
-            all_cofaces.emplace_back(Simplex::tetrahedron(t));
-            all_cofaces.emplace_back(Simplex::face(t));
-            all_cofaces.emplace_back(Simplex::edge(t));
+            collection.add(Simplex::tetrahedron(t));
+            collection.add(Simplex::face(t));
+            collection.add(Simplex::edge(t));
             t = mesh.switch_tuples(t, {PE, PF});
-            all_cofaces.emplace_back(Simplex::face(t));
-            all_cofaces.emplace_back(Simplex::edge(t));
+            collection.add(Simplex::face(t));
+            collection.add(Simplex::edge(t));
             t = mesh.switch_tuples(t, {PE, PF});
-            all_cofaces.emplace_back(Simplex::face(t));
-            all_cofaces.emplace_back(Simplex::edge(t));
+            collection.add(Simplex::face(t));
+            collection.add(Simplex::edge(t));
         }
         break;
     case PrimitiveType::Edge:
-        all_cofaces.reserve(cell_tuples.size() * 3 + 1);
+        collection.reserve(cell_tuples.size() * 3 + 1);
         for (const Tuple& t : cell_tuples) {
-            all_cofaces.emplace_back(Simplex::tetrahedron(t));
-            all_cofaces.emplace_back(Simplex::face(t));
-            all_cofaces.emplace_back(Simplex::face(mesh.switch_face(t)));
+            collection.add(Simplex::tetrahedron(t));
+            collection.add(Simplex::face(t));
+            collection.add(Simplex::face(mesh.switch_face(t)));
         }
         break;
     case PrimitiveType::Face:
-        all_cofaces.reserve(3);
+        collection.reserve(3);
         assert(cell_tuples.size() <= 2);
         for (const Tuple& t : cell_tuples) {
-            all_cofaces.emplace_back(Simplex::tetrahedron(t));
+            collection.add(Simplex::tetrahedron(t));
         }
         break;
-    case PrimitiveType::Tetrahedron: all_cofaces.reserve(1); break;
+    case PrimitiveType::Tetrahedron: collection.reserve(1); break;
     case PrimitiveType::HalfEdge:
     default: log_and_throw_error("Unknown primitive type in open_star."); break;
     }
-    all_cofaces.emplace_back(simplex);
-
-    SimplexCollection collection(mesh, std::move(all_cofaces));
+    collection.add(simplex);
 
 
     if (sort_and_clean) {
