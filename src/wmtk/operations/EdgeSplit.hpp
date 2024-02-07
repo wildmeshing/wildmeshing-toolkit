@@ -1,12 +1,12 @@
 #pragma once
 
-#include "MeshOperation.hpp"
+#include "Operation.hpp"
 
 #include "attribute_new/SplitNewAttributeStrategy.hpp"
 
 namespace wmtk::operations {
 
-class EdgeSplit : public MeshOperation
+class EdgeSplit : public Operation
 {
 public:
     EdgeSplit(Mesh& m);
@@ -30,23 +30,8 @@ public:
         const wmtk::operations::SplitRibBasicStrategy& rib =
             wmtk::operations::SplitRibBasicStrategy::Default);
 
-protected:
-    std::vector<simplex::Simplex> execute_aux(EdgeMesh& mesh, const simplex::Simplex& simplex)
-        override;
-    std::vector<simplex::Simplex> unmodified_primitives_aux(
-        const EdgeMesh& mesh,
-        const simplex::Simplex& simplex) const override;
-
-    std::vector<simplex::Simplex> execute_aux(TriMesh& mesh, const simplex::Simplex& simplex)
-        override;
-    std::vector<simplex::Simplex> unmodified_primitives_aux(
-        const TriMesh& mesh,
-        const simplex::Simplex& simplex) const override;
-
-    std::vector<simplex::Simplex> execute_aux(TetMesh& mesh, const simplex::Simplex& simplex)
-        override;
-    std::vector<simplex::Simplex> unmodified_primitives_aux(
-        const TetMesh& mesh,
+    std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
+    std::vector<simplex::Simplex> unmodified_primitives(
         const simplex::Simplex& simplex) const override;
 
 private:

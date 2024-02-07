@@ -1,10 +1,10 @@
 #pragma once
 
-#include "MeshOperation.hpp"
+#include "Operation.hpp"
 #include "attribute_new/CollapseNewAttributeStrategy.hpp"
 
 namespace wmtk::operations {
-class EdgeCollapse : public MeshOperation
+class EdgeCollapse : public Operation
 {
 public:
     // constructor for default factory pattern construction
@@ -26,23 +26,8 @@ public:
         const wmtk::operations::CollapseBasicStrategy& strategy =
             wmtk::operations::CollapseBasicStrategy::Default);
 
-protected:
-    std::vector<simplex::Simplex> execute_aux(EdgeMesh& mesh, const simplex::Simplex& simplex)
-        override;
-    std::vector<simplex::Simplex> unmodified_primitives_aux(
-        const EdgeMesh& mesh,
-        const simplex::Simplex& simplex) const override;
-
-    std::vector<simplex::Simplex> execute_aux(TriMesh& mesh, const simplex::Simplex& simplex)
-        override;
-    std::vector<simplex::Simplex> unmodified_primitives_aux(
-        const TriMesh& mesh,
-        const simplex::Simplex& simplex) const override;
-
-    std::vector<simplex::Simplex> execute_aux(TetMesh& mesh, const simplex::Simplex& simplex)
-        override;
-    std::vector<simplex::Simplex> unmodified_primitives_aux(
-        const TetMesh& mesh,
+    std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
+    std::vector<simplex::Simplex> unmodified_primitives(
         const simplex::Simplex& simplex) const override;
 
 private:

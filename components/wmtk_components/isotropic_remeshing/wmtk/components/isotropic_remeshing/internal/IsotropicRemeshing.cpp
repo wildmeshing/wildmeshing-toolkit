@@ -202,7 +202,10 @@ void isotropic_remeshing(
         wmtk::logger().info("Iteration {}", i);
 
         SchedulerStats pass_stats;
-        for (auto& op : ops) pass_stats += scheduler.run_operation_on_all(*op);
+        for (size_t j = 0; j < ops.size(); ++j) {
+            const auto& op = ops[j];
+            pass_stats += scheduler.run_operation_on_all(*op);
+        }
 
         multimesh::consolidate(mesh);
 

@@ -148,10 +148,12 @@ TEST_CASE("cache_files", "[cache][io]")
 TEST_CASE("cache_read_write_mesh", "[cache][io]")
 {
     io::Cache cache("wmtk_cache", fs::current_path());
-    TriMesh mesh = tests::single_triangle();
+    std::shared_ptr<TriMesh> mesh_ptr = std::make_shared<TriMesh>(tests::single_triangle());
+    TriMesh& mesh = *mesh_ptr;
 
     const std::string name = "cached_mesh";
     cache.write_mesh(mesh, name);
+    cache.flush_multimeshes();
 
     auto mesh_from_cache = cache.read_mesh(name);
 
@@ -224,7 +226,9 @@ TEST_CASE("cache_equals", "[cache][io]")
 
     // add some contents
     {
-        TriMesh m = tests::single_equilateral_triangle();
+        std::shared_ptr<TriMesh> mptr =
+            std::make_shared<TriMesh>(tests::single_equilateral_triangle());
+        TriMesh& m = *mptr;
         auto a1 = m.register_attribute<int64_t>("a1", PrimitiveType::Face, 1);
         auto a2 = m.register_attribute<double>("a2", PrimitiveType::Face, 1);
         auto acc1 = m.create_accessor<int64_t>(a1);
