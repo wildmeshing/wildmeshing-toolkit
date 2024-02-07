@@ -7,8 +7,8 @@ set(SRC_FILES
     #internal/extract_subset_3d.cpp
     #internal/topology_separate_3d.cpp
     #internal/topology_separate_3d.hpp
-    #internal/utils.hpp
-    #internal/utils.cpp
+    internal/utils.hpp
+    internal/utils.cpp
     #internal/generate_submesh.cpp
     #internal/generate_submesh.hpp
     internal/new_topology_separate.cpp

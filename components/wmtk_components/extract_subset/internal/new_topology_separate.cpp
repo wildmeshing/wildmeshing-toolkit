@@ -63,6 +63,7 @@ topology_separate(wmtk::Mesh& m, const wmtk::MeshAttributeHandle<long>& tag_hand
     long tag_count = tag_index.size();
 
     // third, create a new mesh and copy the topology
+    // TODO: also copy the geometry if asked to do so
     if (top_simplex_dim == 2) {
         wmtk::TriMesh mesh;
         wmtk::RowVectors3l tris;
