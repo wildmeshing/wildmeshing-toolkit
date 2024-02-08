@@ -1,10 +1,8 @@
-#pragma once
-
 #include "generate_submesh.hpp"
 
 namespace wmtk::components::internal {
 
-// TODO: to be abandoned
+// Getting submesh and operate on it is essential because extracting subset will change connectivity
 wmtk::Mesh& generate_submesh(wmtk::Mesh& m, wmtk::MeshAttributeHandle<long> tag_handle, bool pos)
 {
     /*
