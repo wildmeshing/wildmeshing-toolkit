@@ -31,7 +31,6 @@ set(SRC_FILES
 
     AccessorBase.hxx
     AccessorBase.hpp
-    AccessorBase.cpp
 
     CachingAccessor.hxx
     CachingAccessor.hpp

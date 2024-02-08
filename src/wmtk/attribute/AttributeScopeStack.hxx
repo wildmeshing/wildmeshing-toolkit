@@ -95,7 +95,8 @@ void AttributeScopeStack<T>::change_to_next_scope()
 {
     if (at_current_scope()) {
         assert(!empty());
-        assert(m_active == m_scopes.end());// just making sure the definition doesn't change as this should be m_scopes.end()-1
+        assert(m_active == m_scopes.end()); // just making sure the definition doesn't change as
+                                            // this should be m_scopes.end()-1
         m_active--;
     } else {
         m_active--;

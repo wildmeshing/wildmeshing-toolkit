@@ -125,7 +125,7 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
         assert(m_active >= m_scopes.begin());
         assert(m_active < m_scopes.end());
         for (auto it = m_active; it < m_scopes.end(); ++it) {
-        //for (auto it = m_active; it < m_scopes.rend(); ++it) {
+            // for (auto it = m_active; it < m_scopes.rend(); ++it) {
             if (auto mapit = it->find_value(index); it->is_value(mapit)) {
                 const auto& d = mapit->second;
                 auto dat = d.data_as_const_map();
@@ -140,7 +140,7 @@ template <typename T>
 inline auto AttributeScopeStack<T>::scalar_attribute(AccessorBase<T>& accessor, int64_t index) -> T&
 {
     assert(writing_enabled());
-    T& value =  accessor.scalar_attribute(index);
+    T& value = accessor.scalar_attribute(index);
     if (!empty()) {
         m_scopes.back().try_caching(index, value);
     }
