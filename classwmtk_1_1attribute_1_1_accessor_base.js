@@ -28,6 +28,7 @@ var classwmtk_1_1attribute_1_1_accessor_base =
     [ "typed_handle", "classwmtk_1_1attribute_1_1_accessor_base.html#ae593ba5f29485a4ae42ba81153f30c94", null ],
     [ "vector_attribute", "classwmtk_1_1attribute_1_1_accessor_base.html#a825c3075ad5dcddd0e49418fa88892ad", null ],
     [ "AccessorCache< T >", "classwmtk_1_1attribute_1_1_accessor_base.html#ad5fe767ce099664f32a2f39912ae93fa", null ],
+    [ "m_attribute", "classwmtk_1_1attribute_1_1_accessor_base.html#af0e1e1793cd386b34d47950578eadd4a", null ],
     [ "m_handle", "classwmtk_1_1attribute_1_1_accessor_base.html#ab382d5dea9897aa5c00ecf944c0d8469", null ],
     [ "m_mesh", "classwmtk_1_1attribute_1_1_accessor_base.html#a9e62d9e7f94c35b1591ff708c79023e0", null ]
 ];

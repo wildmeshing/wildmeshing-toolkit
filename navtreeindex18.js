@@ -1,5 +1,6 @@
 var NAVTREEINDEX18 =
 {
+"structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a530eb32a4b9c1c76ee08970d034d1172":[4,0,2,1,2,0,0],
 "structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a637d65071f6091ccb69b30d02b006cb0":[4,0,2,1,2,0,2],
 "structwmtk_1_1components_1_1internal_1_1_disk_options_1_1_coordinates.html":[4,0,2,1,2,14,0],
 "structwmtk_1_1components_1_1internal_1_1_disk_options_1_1_coordinates.html#a8515ad5f5e5552c08fc2023f9314fe37":[4,0,2,1,2,14,0,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX18 =
 "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html#aa9bc35fcc9014e67713c85269787e6ec":[4,0,2,8,0,3,0],
 "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4.html":[4,0,2,8,0,4],
 "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4.html#a676fc2b5fe63c025971c63dff338d36f":[4,0,2,8,0,4,0],
-"tag__intersection_8cpp.html":[5,0,0,1,16,0,0,0,1],
-"tag__intersection_8cpp.html#a0271fbc50dba277ddd2d1d3e32d1fb3d":[5,0,0,1,16,0,0,0,1,0]
+"tag__intersection_8cpp.html":[5,0,0,1,16,0,0,0,1]
 };
