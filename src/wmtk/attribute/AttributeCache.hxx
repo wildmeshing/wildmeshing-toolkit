@@ -38,6 +38,7 @@ void AttributeCache<T>::clear()
 template <typename T>
 void AttributeCache<T>::try_caching(int64_t index, const MapResult& value)
 {
+    // basically try_emplace but optimizes to avoid accessing the pointed-to value
     auto [it, did_insert] = m_data.try_emplace(index, AttributeCacheData<T>{});
     if (did_insert) {
         it->second.data = value;
@@ -47,6 +48,7 @@ void AttributeCache<T>::try_caching(int64_t index, const MapResult& value)
 template <typename T>
 void AttributeCache<T>::try_caching(int64_t index, const T& value)
 {
+    // basically try_emplace but optimizes to avoid accessing the pointed-to value
     auto [it, did_insert] = m_data.try_emplace(index, AttributeCacheData<T>{});
     if (did_insert) {
         it->second.data =  VectorX<T>::Constant(1,value);
@@ -57,7 +59,7 @@ void AttributeCache<T>::try_caching(int64_t index, const T& value)
 template <typename T>
 void AttributeCache<T>::apply_to(Attribute<T>& attribute) const
 {
-    for (auto& [index, data] : m_data) {
+    for (const auto& [index, data] : m_data) {
         {
             auto a = attribute.vector_attribute(index);
             auto b = data.data;
@@ -70,7 +72,7 @@ void AttributeCache<T>::apply_to(AttributeCache<T>& other) const
 {
     auto& o_data = other.m_data;
 
-    for (auto& [index, data] : m_data) {
+    for (const auto& [index, data] : m_data) {
         {
             if (o_data.find(index) == o_data.end()) {
                 o_data[index] = data;

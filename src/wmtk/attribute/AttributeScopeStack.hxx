@@ -8,6 +8,7 @@ namespace wmtk::attribute {
 template <typename T>
 AttributeScopeStack<T>::AttributeScopeStack()
 {
+    // a random value that's more than 2ish
     m_scopes.reserve(5);
     m_active = m_scopes.end();
 }
@@ -21,7 +22,7 @@ void AttributeScopeStack<T>::emplace()
     // create a new leaf that points to the active stack and
     //
     if (m_scopes.size() + 1 >= m_scopes.capacity()) {
-        m_scopes.reserve(m_scopes.capacity() + 2);
+        m_scopes.reserve(m_scopes.capacity() + 3);
         change_to_current_scope();
     }
     m_scopes.emplace_back();
@@ -116,45 +117,4 @@ bool AttributeScopeStack<T>::writing_enabled() const
     return at_current_scope();
 }
 
-
-// template <typename T>
-// auto AttributeScope<T>::load_const_cached_scalar_value(
-//     const AccessorBase<T>& accessor,
-//     int64_t index) const -> T
-//{
-//     if (auto it = m_data.find(index); it != m_data.end()) {
-//         const auto& dat = it->second.data;
-//         assert(dat.size() == 1);
-//         return dat(0);
-//     } else if (m_previous) {
-//         return m_previous->load_const_cached_scalar_value(accessor, index);
-//     } else {
-//         return accessor.const_scalar_attribute(index);
-//     }
-// }
-//
-//
-// template <typename T>
-// auto AttributeScope<T>::load_const_cached_vector_value(
-//     const AccessorBase<T>& accessor,
-//     int64_t index) const -> ConstMapResult
-//{
-//     if (auto it = m_data.find(index); it != m_data.end()) {
-//         auto& dat = it->second.data;
-//         auto v = ConstMapResult(dat.data(), dat.size());
-//         return v;
-//     } else if (m_previous) {
-//         auto v = m_previous->load_const_cached_vector_value(accessor, index);
-//         return v;
-//     } else {
-//         auto v = accessor.const_vector_attribute(index);
-//         return v;
-//     }
-// }
-
-
-// template class AttributeScopeStack<int64_t>;
-// template class AttributeScopeStack<double>;
-// template class AttributeScopeStack<char>;
-// template class AttributeScopeStack<Rational>;
 } // namespace wmtk::attribute
