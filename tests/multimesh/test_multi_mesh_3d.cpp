@@ -21,7 +21,7 @@ using namespace wmtk::simplex;
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
 TEST_CASE("test_split_multi_mesh_2D_3D", "[multimesh][2D][3D]")
@@ -35,7 +35,7 @@ TEST_CASE("test_split_multi_mesh_2D_3D", "[multimesh][2D][3D]")
     auto child_1_tag_accessor = parent.create_accessor(child_1_tag_handle);
 
     for (const auto& f : parent.get_all(PF)) {
-        if (parent.is_boundary( PF, f)) {
+        if (parent.is_boundary(PF, f)) {
             child_0_tag_accessor.scalar_attribute(f) = 1;
         }
     }
@@ -303,7 +303,7 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
 
     // child 1 full surface
     for (const auto& f : parent.get_all(PF)) {
-        if (parent.is_boundary( PF, f)) {
+        if (parent.is_boundary(PF, f)) {
             child_1_tag_accessor.scalar_attribute(f) = 1;
         }
     }

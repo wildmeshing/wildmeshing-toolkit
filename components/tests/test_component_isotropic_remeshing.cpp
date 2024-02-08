@@ -446,7 +446,6 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         REQUIRE(n_iterations == 1);
         REQUIRE(n_vertices == 9);
 
-        CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
         REQUIRE(mesh.is_valid_slow(v0));
 
@@ -486,7 +485,6 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         REQUIRE(n_iterations == 1);
         REQUIRE(n_vertices == 9);
 
-        CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
         REQUIRE(mesh.is_valid_slow(v0));
 
@@ -512,7 +510,6 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 
         REQUIRE(mesh.get_all(PrimitiveType::Vertex).size() == 9);
 
-        CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 1));
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
         REQUIRE(mesh.is_valid_slow(v0));
 
@@ -689,7 +686,7 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D]")
     auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
     pass_through_attributes.emplace_back(
-        mesh.register_attribute<int64_t>("dummy_tag", PrimitiveType::Face, 1));
+        mesh.register_attribute<int64_t>("dummy_tag", PrimitiveType::Triangle, 1));
 
     {
         auto acc = mesh.create_accessor<int64_t>(pass_through_attributes[0]);

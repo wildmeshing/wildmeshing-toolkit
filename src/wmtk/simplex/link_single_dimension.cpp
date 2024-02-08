@@ -17,7 +17,7 @@ SimplexCollection link_single_dimension(
     const bool sort_and_clean)
 {
     switch (mesh.top_simplex_type()) {
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
         return link_single_dimension(
             static_cast<const TriMesh&>(mesh),
             simplex,
@@ -31,7 +31,6 @@ SimplexCollection link_single_dimension(
             sort_and_clean);
     case PrimitiveType::Vertex:
     case PrimitiveType::Edge:
-    case PrimitiveType::HalfEdge:
     default: return link_single_dimension_slow(mesh, simplex, link_type, sort_and_clean); break;
     }
 }
@@ -76,9 +75,8 @@ SimplexCollection link_single_dimension(
             }
         }
         break;
-    case PrimitiveType::Face: break;
+    case PrimitiveType::Triangle: break;
     case PrimitiveType::Tetrahedron:
-    case PrimitiveType::HalfEdge:
     default: log_and_throw_error("Unknown primitive type in link_single_dimension."); break;
     }
 
@@ -102,7 +100,7 @@ SimplexCollection link_single_dimension(
 
     constexpr PrimitiveType PV = PrimitiveType::Vertex;
     constexpr PrimitiveType PE = PrimitiveType::Edge;
-    constexpr PrimitiveType PF = PrimitiveType::Face;
+    constexpr PrimitiveType PF = PrimitiveType::Triangle;
     constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
     std::vector<Simplex> all_cofaces;
@@ -129,7 +127,7 @@ SimplexCollection link_single_dimension(
                 all_cofaces.emplace_back(Simplex::edge(t));
             }
         }
-        if (link_type == PrimitiveType::Face) {
+        if (link_type == PrimitiveType::Triangle) {
             all_cofaces.reserve(cell_tuples.size());
             for (Tuple t : cell_tuples) {
                 t = mesh.switch_tuples(t, {PV, PE, PF});
@@ -154,7 +152,7 @@ SimplexCollection link_single_dimension(
             }
         }
         break;
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
         if (link_type == PrimitiveType::Vertex) {
             all_cofaces.reserve(cell_tuples.size());
             for (Tuple t : cell_tuples) {
@@ -164,7 +162,6 @@ SimplexCollection link_single_dimension(
         }
         break;
     case PrimitiveType::Tetrahedron: break;
-    case PrimitiveType::HalfEdge:
     default: log_and_throw_error("Unknown primitive type in link_single_dimension."); break;
     }
 

@@ -21,9 +21,8 @@ SimplexCollection closed_star(const Mesh& mesh, const Simplex& simplex, const bo
     switch (mesh.top_simplex_type()) {
     case PrimitiveType::Vertex: break;
     case PrimitiveType::Edge: collection.reserve(n_top_dimension_cofaces * 3 + 1); break;
-    case PrimitiveType::Face: collection.reserve(n_top_dimension_cofaces * 7 + 1); break;
+    case PrimitiveType::Triangle: collection.reserve(n_top_dimension_cofaces * 7 + 1); break;
     case PrimitiveType::Tetrahedron: collection.reserve(n_top_dimension_cofaces * 15 + 1); break;
-    case PrimitiveType::HalfEdge:
     default: log_and_throw_error("unknown mesh type in top_dimension_cofaces_tuples");
     }
 

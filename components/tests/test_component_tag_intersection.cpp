@@ -57,8 +57,8 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
 
     SECTION("two_face_tags_edgeintersection")
     {
-        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Face, 1, 0);
-        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Face, 1, 0);
+        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Triangle, 1, 0);
+        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Triangle, 1, 0);
 
         {
             auto tag1_acc = m.create_accessor<int64_t>(tag1);
@@ -92,8 +92,8 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
 
     SECTION("two_face_tags_vertexintersection")
     {
-        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Face, 1, 0);
-        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Face, 1, 0);
+        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Triangle, 1, 0);
+        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Triangle, 1, 0);
 
         {
             auto tag1_acc = m.create_accessor<int64_t>(tag1);
@@ -130,10 +130,10 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
 
     SECTION("four_blocks_tags_edgeintersection")
     {
-        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Face, 1, 0);
-        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Face, 1, 0);
-        auto tag3 = m.register_attribute<int64_t>("tag3", PrimitiveType::Face, 1, 0);
-        auto tag4 = m.register_attribute<int64_t>("tag4", PrimitiveType::Face, 1, 0);
+        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Triangle, 1, 0);
+        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Triangle, 1, 0);
+        auto tag3 = m.register_attribute<int64_t>("tag3", PrimitiveType::Triangle, 1, 0);
+        auto tag4 = m.register_attribute<int64_t>("tag4", PrimitiveType::Triangle, 1, 0);
 
         {
             auto tag1_acc = m.create_accessor<int64_t>(tag1);
@@ -255,8 +255,8 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
     }
     SECTION("two_overlap_blocks")
     {
-        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Face, 1, 0);
-        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Face, 1, 0);
+        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Triangle, 1, 0);
+        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Triangle, 1, 0);
 
         {
             auto tag1_acc = m.create_accessor<int64_t>(tag1);
@@ -269,7 +269,7 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
 
         auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
         auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
-        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
+        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Triangle, 1, 0);
 
         std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
             {tag1, 1},
@@ -324,7 +324,7 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
 
         auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
         auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
-        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
+        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Triangle, 1, 0);
         auto t_otag = m.register_attribute<int64_t>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
 
         std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
@@ -350,7 +350,7 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
         }
 
         auto f_otag_acc = m.create_accessor<int64_t>(f_otag);
-        for (const Tuple& f : m.get_all(PrimitiveType::Face)) {
+        for (const Tuple& f : m.get_all(PrimitiveType::Triangle)) {
             CHECK(f_otag_acc.const_scalar_attribute(f) == 0);
         }
 
@@ -377,7 +377,7 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
 
         auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
         auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
-        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
+        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Triangle, 1, 0);
         auto t_otag = m.register_attribute<int64_t>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
 
         std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
@@ -412,7 +412,7 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
         CHECK(e_otag_acc.const_scalar_attribute(m.edge_tuple_from_vids(0, 1)) == 0);
 
         auto f_otag_acc = m.create_accessor<int64_t>(f_otag);
-        for (const Tuple& f : m.get_all(PrimitiveType::Face)) {
+        for (const Tuple& f : m.get_all(PrimitiveType::Triangle)) {
             CHECK(f_otag_acc.const_scalar_attribute(f) == 0);
         }
 
@@ -437,7 +437,7 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
 
         auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
         auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
-        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
+        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Triangle, 1, 0);
         auto t_otag = m.register_attribute<int64_t>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
 
         std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
@@ -478,7 +478,7 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
 
         auto f_otag_acc = m.create_accessor<int64_t>(f_otag);
         sum = 0;
-        for (const Tuple& f : m.get_all(PrimitiveType::Face)) {
+        for (const Tuple& f : m.get_all(PrimitiveType::Triangle)) {
             if (f_otag_acc.const_scalar_attribute(f) == 1) {
                 ++sum;
             }
@@ -508,7 +508,7 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
 
         auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
         auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
-        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
+        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Triangle, 1, 0);
         auto t_otag = m.register_attribute<int64_t>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
 
         std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
@@ -553,7 +553,7 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
 
         auto f_otag_acc = m.create_accessor<int64_t>(f_otag);
         sum = 0;
-        for (const Tuple& f : m.get_all(PrimitiveType::Face)) {
+        for (const Tuple& f : m.get_all(PrimitiveType::Triangle)) {
             if (f_otag_acc.const_scalar_attribute(f) == 1) {
                 ++sum;
             }
@@ -594,7 +594,7 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
 
         auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
         auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
-        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
+        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Triangle, 1, 0);
         auto t_otag = m.register_attribute<int64_t>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
 
         std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
@@ -633,7 +633,7 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
 
         auto f_otag_acc = m.create_accessor<int64_t>(f_otag);
         sum = 0;
-        for (const Tuple& f : m.get_all(PrimitiveType::Face)) {
+        for (const Tuple& f : m.get_all(PrimitiveType::Triangle)) {
             if (f_otag_acc.const_scalar_attribute(f) == 1) {
                 ++sum;
             }

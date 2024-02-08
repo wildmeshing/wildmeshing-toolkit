@@ -40,7 +40,7 @@ void top_dimension_cofaces_tuples_vertex(
         collection.emplace_back(t);
 
         if (!mesh.is_boundary_edge(t)) {
-            q.push(mesh.switch_tuples(t, {PrimitiveType::Face, PrimitiveType::Edge}));
+            q.push(mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Edge}));
         }
         const Tuple t_other = mesh.switch_edge(t);
         if (!mesh.is_boundary_edge(t_other)) {
@@ -90,7 +90,7 @@ void top_dimension_cofaces_tuples_vertex(
 
         const Tuple& t1 = t;
         const Tuple t2 = mesh.switch_face(t);
-        const Tuple t3 = mesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Face});
+        const Tuple t3 = mesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Triangle});
 
         if (!mesh.is_boundary_face(t1)) {
             q.push(mesh.switch_tetrahedron(t1));
@@ -129,7 +129,7 @@ void top_dimension_cofaces_tuples_edge(
         const Tuple t2 = mesh.switch_face(t);
 
         if (!mesh.is_boundary_face(t1)) {
-            q.push(mesh.switch_tuples(t1, {PrimitiveType::Tetrahedron, PrimitiveType::Face}));
+            q.push(mesh.switch_tuples(t1, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle}));
         }
         if (!mesh.is_boundary_face(t2)) {
             q.push(mesh.switch_tetrahedron(t2));
@@ -225,10 +225,10 @@ void top_dimension_cofaces_tuples_vertex(
                 continue;
             }
         }
-        collection.add(PrimitiveType::Face, t);
+        collection.add(PrimitiveType::Triangle, t);
 
         if (!mesh.is_boundary_edge(t)) {
-            q.push(mesh.switch_tuples(t, {PrimitiveType::Face, PrimitiveType::Edge}));
+            q.push(mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Edge}));
         }
         const Tuple t_other = mesh.switch_edge(t);
         if (!mesh.is_boundary_edge(t_other)) {
@@ -241,9 +241,9 @@ void top_dimension_cofaces_tuples_edge(
     const Tuple& t,
     SimplexCollection& collection)
 {
-    collection.add(PrimitiveType::Face, t);
+    collection.add(PrimitiveType::Triangle, t);
     if (!mesh.is_boundary_edge(t)) {
-        collection.add(PrimitiveType::Face, mesh.switch_face(t));
+        collection.add(PrimitiveType::Triangle, mesh.switch_face(t));
     }
 }
 void top_dimension_cofaces_tuples_face(
@@ -251,7 +251,7 @@ void top_dimension_cofaces_tuples_face(
     const Tuple& t,
     SimplexCollection& collection)
 {
-    collection.add(PrimitiveType::Face, t);
+    collection.add(PrimitiveType::Triangle, t);
 }
 
 void top_dimension_cofaces_tuples_vertex(
@@ -278,7 +278,7 @@ void top_dimension_cofaces_tuples_vertex(
 
         const Tuple& t1 = t;
         const Tuple t2 = mesh.switch_face(t);
-        const Tuple t3 = mesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Face});
+        const Tuple t3 = mesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Triangle});
 
         if (!mesh.is_boundary_face(t1)) {
             q.push(mesh.switch_tetrahedron(t1));
@@ -317,7 +317,7 @@ void top_dimension_cofaces_tuples_edge(
         const Tuple t2 = mesh.switch_face(t);
 
         if (!mesh.is_boundary_face(t1)) {
-            q.push(mesh.switch_tuples(t1, {PrimitiveType::Tetrahedron, PrimitiveType::Face}));
+            q.push(mesh.switch_tuples(t1, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle}));
         }
         if (!mesh.is_boundary_face(t2)) {
             q.push(mesh.switch_tetrahedron(t2));
@@ -375,11 +375,10 @@ void top_dimension_cofaces_tuples(
         collection.add(simplex);
         break;
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         log_and_throw_error("top_dimension_cofaces_tuples not implemented for Face in EdgeMesh");
     }
     case PrimitiveType::Tetrahedron:
-    case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
 }
@@ -398,12 +397,11 @@ void top_dimension_cofaces_tuples(
         top_dimension_cofaces_tuples_edge(mesh, simplex.tuple(), collection);
         break;
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         top_dimension_cofaces_tuples_face(mesh, simplex.tuple(), collection);
         break;
     }
     case PrimitiveType::Tetrahedron:
-    case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
 }
@@ -422,7 +420,7 @@ void top_dimension_cofaces_tuples(
         top_dimension_cofaces_tuples_edge(mesh, simplex.tuple(), collection);
         break;
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         top_dimension_cofaces_tuples_face(mesh, simplex.tuple(), collection);
         break;
     }
@@ -430,7 +428,6 @@ void top_dimension_cofaces_tuples(
         top_dimension_cofaces_tuples_tet(mesh, simplex.tuple(), collection);
         break;
     }
-    case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
 }
@@ -441,7 +438,7 @@ void top_dimension_cofaces_tuples(
     SimplexCollection& collection)
 {
     switch (mesh.top_simplex_type()) {
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
         top_dimension_cofaces_tuples(static_cast<const TriMesh&>(mesh), simplex, collection);
         break;
     case PrimitiveType::Tetrahedron:
@@ -451,7 +448,6 @@ void top_dimension_cofaces_tuples(
     case PrimitiveType::Edge:
         top_dimension_cofaces_tuples(static_cast<const EdgeMesh&>(mesh), simplex, collection);
         break;
-    case PrimitiveType::HalfEdge:
     default: log_and_throw_error("unknown mesh type in top_dimension_cofaces_tuples");
     }
 }
@@ -474,13 +470,12 @@ void top_dimension_cofaces_tuples(
         collection.emplace_back(simplex.tuple());
         break;
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         throw std::runtime_error(
             "top_dimension_cofaces_tuples not implemented for Face in EdgeMesh");
         break;
     }
     case PrimitiveType::Tetrahedron:
-    case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
 }
@@ -499,12 +494,11 @@ void top_dimension_cofaces_tuples(
         collection = top_dimension_cofaces_tuples_edge(mesh, simplex.tuple());
         break;
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         collection = top_dimension_cofaces_tuples_face(mesh, simplex.tuple());
         break;
     }
     case PrimitiveType::Tetrahedron:
-    case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
 }
@@ -523,7 +517,7 @@ void top_dimension_cofaces_tuples(
         collection = top_dimension_cofaces_tuples_edge(mesh, simplex.tuple());
         break;
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         collection = top_dimension_cofaces_tuples_face(mesh, simplex.tuple());
         break;
     }
@@ -531,7 +525,6 @@ void top_dimension_cofaces_tuples(
         collection = top_dimension_cofaces_tuples_tet(mesh, simplex.tuple());
         break;
     }
-    case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
 }
@@ -542,7 +535,7 @@ void top_dimension_cofaces_tuples(
     std::vector<Tuple>& tuples)
 {
     switch (mesh.top_simplex_type()) {
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
         top_dimension_cofaces_tuples(static_cast<const TriMesh&>(mesh), simplex, tuples);
         break;
     case PrimitiveType::Tetrahedron:
@@ -552,8 +545,7 @@ void top_dimension_cofaces_tuples(
     case PrimitiveType::Edge:
         top_dimension_cofaces_tuples(static_cast<const EdgeMesh&>(mesh), simplex, tuples);
         break;
-    case PrimitiveType::HalfEdge:
-    default: log_and_throw_error("unknown mesh type in top_dimension_cofaces_tuples");
+    default: assert(false); //"unknown mesh type in top_dimension_cofaces_tuples"
     }
 }
 
@@ -565,7 +557,7 @@ top_dimension_cofaces(const TriMesh& mesh, const Simplex& simplex, const bool so
         mesh,
         utils::tuple_vector_to_homogeneous_simplex_vector(
             top_dimension_cofaces_tuples(mesh, simplex),
-            PrimitiveType::Face));
+            PrimitiveType::Triangle));
     if (sort_and_clean) {
         collection.sort_and_clean();
     }
@@ -628,14 +620,13 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const TetMesh& mesh, const Simpl
 std::vector<Tuple> top_dimension_cofaces_tuples(const Mesh& mesh, const Simplex& simplex)
 {
     switch (mesh.top_simplex_type()) {
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
         return top_dimension_cofaces_tuples(static_cast<const TriMesh&>(mesh), simplex);
     case PrimitiveType::Tetrahedron:
         return top_dimension_cofaces_tuples(static_cast<const TetMesh&>(mesh), simplex);
     case PrimitiveType::Vertex:
     case PrimitiveType::Edge:
         return top_dimension_cofaces_tuples(static_cast<const EdgeMesh&>(mesh), simplex);
-    case PrimitiveType::HalfEdge:
     default:
         assert(false);
         throw std::runtime_error("unknown mesh type in top_dimension_cofaces_tuples");

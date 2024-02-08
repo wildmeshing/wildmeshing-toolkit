@@ -16,7 +16,7 @@ using namespace wmtk::tests_3d;
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
 TEST_CASE("test_extract_child_point_mesh", "[multimesh][extract_childmesh]")
@@ -135,7 +135,7 @@ TEST_CASE("test_extract_child_face_mesh", "[multimesh][extract_childmesh]")
     {
         DEBUG_TriMesh parent = single_triangle();
         auto tag_handle =
-            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Face, 1)
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Triangle, 1)
                 .as<int64_t>();
         auto tag_accessor = parent.create_accessor(tag_handle);
 
@@ -162,7 +162,7 @@ TEST_CASE("test_extract_child_face_mesh", "[multimesh][extract_childmesh]")
     {
         DEBUG_TriMesh parent = two_neighbors();
         auto tag_handle =
-            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Face, 1)
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Triangle, 1)
                 .as<int64_t>();
         auto tag_accessor = parent.create_accessor(tag_handle);
 
@@ -208,7 +208,7 @@ TEST_CASE("test_extract_child_face_mesh_3d", "[multimesh][extract_childmesh]")
     {
         DEBUG_TetMesh parent = single_tet();
         auto tag_handle =
-            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Face, 1)
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Triangle, 1)
                 .as<int64_t>();
         ;
         auto tag_accessor = parent.create_accessor(tag_handle);
@@ -251,7 +251,7 @@ TEST_CASE("test_extract_child_face_mesh_3d", "[multimesh][extract_childmesh]")
     {
         DEBUG_TetMesh parent = six_cycle_tets();
         auto tag_handle =
-            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Face, 1)
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Triangle, 1)
                 .as<int64_t>();
         ;
         auto tag_accessor = parent.create_accessor(tag_handle);

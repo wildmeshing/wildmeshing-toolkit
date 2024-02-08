@@ -43,7 +43,7 @@ TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2
     wmtk::attribute::MeshAttributeHandle edge_tag_handle =
         m.register_attribute<int64_t>("edge_tag", wmtk::PrimitiveType::Edge, 1);
     wmtk::attribute::MeshAttributeHandle face_tag_handle =
-        m.register_attribute<int64_t>("face_tag", wmtk::PrimitiveType::Face, 1);
+        m.register_attribute<int64_t>("face_tag", wmtk::PrimitiveType::Triangle, 1);
 
     std::vector<wmtk::attribute::MeshAttributeHandle> label_attributes;
     label_attributes.emplace_back(face_tag_handle);
@@ -129,7 +129,7 @@ TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2
             pass_through_attributes);
         rs.regularize_tags();
 
-        CHECK(m.get_all(PrimitiveType::Face).size() == 17);
+        CHECK(m.get_all(PrimitiveType::Triangle).size() == 17);
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 15);
 
         if (false) {

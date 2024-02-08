@@ -8,7 +8,7 @@ TEST_CASE("primitive_range", "[primitive]")
     for (PrimitiveType pt :
          {PrimitiveType::Vertex,
           PrimitiveType::Edge,
-          PrimitiveType::Face,
+          PrimitiveType::Triangle,
           PrimitiveType::Tetrahedron}) {
         {
             auto a = wmtk::utils::primitive_range(pt, PrimitiveType::Tetrahedron);
@@ -31,13 +31,13 @@ TEST_CASE("primitive_range", "[primitive]")
         CHECK(a == b);
     }
     {
-        auto a = wmtk::utils::primitive_range(PrimitiveType::Face, PrimitiveType::Face);
-        std::vector<PrimitiveType> b{PrimitiveType::Face};
+        auto a = wmtk::utils::primitive_range(PrimitiveType::Triangle, PrimitiveType::Triangle);
+        std::vector<PrimitiveType> b{PrimitiveType::Triangle};
         CHECK(a == b);
     }
     {
-        auto a = wmtk::utils::primitive_range(PrimitiveType::Edge, PrimitiveType::Face);
-        std::vector<PrimitiveType> b{PrimitiveType::Edge, PrimitiveType::Face};
+        auto a = wmtk::utils::primitive_range(PrimitiveType::Edge, PrimitiveType::Triangle);
+        std::vector<PrimitiveType> b{PrimitiveType::Edge, PrimitiveType::Triangle};
         CHECK(a == b);
     }
 }
@@ -49,15 +49,15 @@ TEST_CASE("primitive_above", "[primitive]")
         CHECK(a == b);
     }
     {
-        auto a = wmtk::utils::primitive_above(PrimitiveType::Face);
-        std::vector<PrimitiveType> b{PrimitiveType::Face, PrimitiveType::Tetrahedron};
+        auto a = wmtk::utils::primitive_above(PrimitiveType::Triangle);
+        std::vector<PrimitiveType> b{PrimitiveType::Triangle, PrimitiveType::Tetrahedron};
         CHECK(a == b);
     }
     {
         auto a = wmtk::utils::primitive_above(PrimitiveType::Edge);
         std::vector<PrimitiveType> b{
             PrimitiveType::Edge,
-            PrimitiveType::Face,
+            PrimitiveType::Triangle,
             PrimitiveType::Tetrahedron,
         };
         CHECK(a == b);
@@ -67,7 +67,7 @@ TEST_CASE("primitive_above", "[primitive]")
         std::vector<PrimitiveType> b{
             PrimitiveType::Vertex,
             PrimitiveType::Edge,
-            PrimitiveType::Face,
+            PrimitiveType::Triangle,
             PrimitiveType::Tetrahedron};
         CHECK(a == b);
     }
@@ -78,16 +78,16 @@ TEST_CASE("primitive_below", "[primitive]")
         auto a = wmtk::utils::primitive_below(PrimitiveType::Tetrahedron);
         std::vector<PrimitiveType> b{
             PrimitiveType::Tetrahedron,
-            PrimitiveType::Face,
+            PrimitiveType::Triangle,
             PrimitiveType::Edge,
             PrimitiveType::Vertex,
         };
         CHECK(a == b);
     }
     {
-        auto a = wmtk::utils::primitive_below(PrimitiveType::Face);
+        auto a = wmtk::utils::primitive_below(PrimitiveType::Triangle);
         std::vector<PrimitiveType> b{
-            PrimitiveType::Face,
+            PrimitiveType::Triangle,
             PrimitiveType::Edge,
             PrimitiveType::Vertex,
         };

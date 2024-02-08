@@ -71,7 +71,7 @@ public:
     void reserve_more_attributes(const std::vector<int64_t>& sizes);
 
 
-    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
     int64_t id(const simplex::Simplex& s) const;
     /**
      * @brief returns the TriMeshOperationExecutor

@@ -21,7 +21,7 @@ void mesh_info(const base::Paths& paths, const nlohmann::json& j, io::Cache& cac
     wmtk::logger().info("The information given in this component is very limited for now. Sorry.");
 
     const auto v_tuples = mesh.get_all(PrimitiveType::Vertex);
-    const auto f_tuples = mesh.get_all(PrimitiveType::Face);
+    const auto f_tuples = mesh.get_all(PrimitiveType::Triangle);
 
     wmtk::logger().info("Mesh: {}", options.input);
     wmtk::logger().info("Vertices: {}", v_tuples.size());

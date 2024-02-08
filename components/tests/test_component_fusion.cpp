@@ -99,8 +99,8 @@ TEST_CASE("fusion_2d", "[components][fusion][.]")
         auto childs = periodic_mesh.get_child_meshes();
         CHECK(childs.size() == 1);
         CHECK(
-            childs[0]->get_all(PrimitiveType::Face).size() ==
-            periodic_mesh.get_all(PrimitiveType::Face).size());
+            childs[0]->get_all(PrimitiveType::Triangle).size() ==
+            periodic_mesh.get_all(PrimitiveType::Triangle).size());
         CHECK(periodic_mesh.get_all(PrimitiveType::Vertex).size() == 12);
         CHECK(childs[0]->get_all(PrimitiveType::Vertex).size() == 15);
 
@@ -145,8 +145,8 @@ TEST_CASE("fusion_2d", "[components][fusion][.]")
         auto childs = periodic_mesh.get_child_meshes();
         CHECK(childs.size() == 1);
         CHECK(
-            childs[0]->get_all(PrimitiveType::Face).size() ==
-            periodic_mesh.get_all(PrimitiveType::Face).size());
+            childs[0]->get_all(PrimitiveType::Triangle).size() ==
+            periodic_mesh.get_all(PrimitiveType::Triangle).size());
     }
     SECTION("all")
     {
@@ -177,8 +177,8 @@ TEST_CASE("fusion_2d", "[components][fusion][.]")
         auto childs = periodic_mesh.get_child_meshes();
         CHECK(childs.size() == 1);
         CHECK(
-            childs[0]->get_all(PrimitiveType::Face).size() ==
-            periodic_mesh.get_all(PrimitiveType::Face).size());
+            childs[0]->get_all(PrimitiveType::Triangle).size() ==
+            periodic_mesh.get_all(PrimitiveType::Triangle).size());
     }
 }
 

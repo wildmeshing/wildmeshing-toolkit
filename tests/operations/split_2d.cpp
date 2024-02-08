@@ -34,7 +34,7 @@ using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 
 TEST_CASE("get_split_simplices_to_delete", "[operations][split][2D]")
 {

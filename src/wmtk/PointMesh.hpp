@@ -10,6 +10,9 @@ namespace wmtk {
 // topologies
 class PointMesh : public Mesh
 {
+public:
+    friend class Mesh;
+
 private:
     Tuple vertex_tuple_from_id(int64_t id) const;
 
@@ -21,7 +24,6 @@ public:
     PointMesh& operator=(const PointMesh& o) = delete;
     PointMesh& operator=(PointMesh&& o) = default;
 
-    int64_t top_cell_dimension() const override { return 0; }
     [[noreturn]] Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
@@ -39,7 +41,7 @@ public:
         const override;
 
 protected:
-    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
 
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
