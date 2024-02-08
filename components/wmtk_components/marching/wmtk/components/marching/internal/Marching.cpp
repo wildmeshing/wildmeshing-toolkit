@@ -96,7 +96,7 @@ void Marching::process()
 
     // vertex_label
     {
-        // /**************************edge tag******************************/
+        /**************************edge tag******************************/
         // auto compute_edge_label = [this](const Eigen::MatrixXi& labels) -> Eigen::VectorXi {
         //     assert(labels.cols() == 2);
         //     if (labels(0, 0) == m_output_value && labels(1, 0) == m_output_value)

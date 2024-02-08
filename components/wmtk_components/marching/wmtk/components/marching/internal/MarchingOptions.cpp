@@ -23,7 +23,7 @@ void from_json(const nlohmann::json& j, MarchingOptions& o)
     o.attributes = j.at("attributes");
     j.at("input_values").get_to(o.input_values);
     o.output_value = j.at("output_value");
-    j.at("filter_values").get_to(o.input_values);
+    j.at("filter_values").get_to(o.filter_values);
     j.at("pass_through").get_to(o.pass_through);
 
     if (o.filter_values.size() != o.attributes.filter_labels.size()) {

@@ -9,7 +9,10 @@
       "input_values",
       "output_value"
     ],
-    "optional": ["pass_through", "filter_values"]
+    "optional": [
+      "pass_through",
+      "filter_values"
+    ]
   },
   {
     "pointer": "/input",
@@ -24,7 +27,7 @@
   {
     "pointer": "/attributes",
     "type": "object",
-    "required": "input_label",
+    "required": "vertex_label",
     "optional": "filter_labels",
     "doc": "all attributes required for this component"
   },
@@ -44,13 +47,17 @@
     "type": "string",
     "doc": "Name of the edge int64_t attribute that is used as filter."
   },
-
   {
     "pointer": "/input_values",
     "type": "list",
     "doc": "List of vertex labels that are considered in the split",
     "min": 1,
     "max": 2
+  },
+  {
+    "pointer": "/input_values/*",
+    "type": "int",
+    "doc": "input value"
   },
   {
     "pointer": "/output_value",
@@ -60,6 +67,7 @@
   {
     "pointer": "/filter_values",
     "type": "list",
+    "default": [],
     "doc": "Values for the edge filters. Each value corresponds to one edge filter"
   },
   {
