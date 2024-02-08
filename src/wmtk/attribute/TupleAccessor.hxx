@@ -5,48 +5,49 @@
 namespace wmtk::attribute {
 
 template <typename T>
-auto TupleAccessor<T>::const_vector_attribute(const Tuple& t) const -> ConstMapResult
+inline auto TupleAccessor<T>::const_vector_attribute(const Tuple& t) const -> ConstMapResult
 {
     const int64_t idx = index(t);
     return CachingBaseType::const_vector_attribute(idx);
 }
 
 template <typename T>
-auto TupleAccessor<T>::vector_attribute(const Tuple& t) -> MapResult
+inline auto TupleAccessor<T>::vector_attribute(const Tuple& t) -> MapResult
 {
     const int64_t idx = index(t);
     return CachingBaseType::vector_attribute(idx);
 }
 
 template <typename T>
-auto TupleAccessor<T>::scalar_attribute(const Tuple& t) -> T&
+inline auto TupleAccessor<T>::scalar_attribute(const Tuple& t) -> T&
 {
     const int64_t idx = index(t);
     return CachingBaseType::scalar_attribute(idx);
 }
 
 template <typename T>
-T TupleAccessor<T>::const_scalar_attribute(const Tuple& t) const
+inline T TupleAccessor<T>::const_scalar_attribute(const Tuple& t) const
 {
     const int64_t idx = index(t);
     return CachingBaseType::const_scalar_attribute(idx);
 }
 template <typename T>
-int64_t TupleAccessor<T>::index(const Tuple& t) const
+inline int64_t TupleAccessor<T>::index(const Tuple& t) const
 {
     assert(mesh().is_valid_slow(t));
     return mesh().id(t, BaseType::typed_handle().primitive_type());
 }
 
 template <typename T>
-auto TupleAccessor<T>::topological_scalar_attribute(const Tuple& t) -> T&
+inline auto TupleAccessor<T>::topological_scalar_attribute(const Tuple& t) -> T&
 {
     const int64_t idx = index(t);
     return CachingBaseType::scalar_attribute(idx);
 }
 
 template <typename T>
-T TupleAccessor<T>::const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const
+inline T TupleAccessor<T>::const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt)
+    const
 {
     assert(mesh().top_simplex_type() == BaseType::primitive_type());
     switch (pt) {
