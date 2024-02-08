@@ -54,7 +54,8 @@ public:
         Eigen::Ref<const VectorXl> EF);
     void initialize(Eigen::Ref<const RowVectors3l> F);
 
-    bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const override;
+    bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+        const override;
 
     bool is_connectivity_valid() const override;
 
@@ -90,11 +91,11 @@ protected:
     attribute::TypedAttributeHandle<int64_t> m_fe_handle;
     attribute::TypedAttributeHandle<int64_t> m_ff_handle;
 
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_vf_accessor = nullptr;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_ef_accessor = nullptr;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_fv_accessor = nullptr;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_fe_accessor = nullptr;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_ff_accessor = nullptr;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_vf_accessor = nullptr;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_ef_accessor = nullptr;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_fv_accessor = nullptr;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_fe_accessor = nullptr;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_ff_accessor = nullptr;
 
 
     Tuple vertex_tuple_from_id(int64_t id) const;

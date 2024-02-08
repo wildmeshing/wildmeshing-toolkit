@@ -958,7 +958,7 @@ int64_t MultiMeshManager::parent_local_fid(
 void MultiMeshManager::update_vertex_operation_hashes_internal(
     Mesh& m,
     const Tuple& vertex,
-    Accessor<int64_t>& hash_accessor)
+    attribute::Accessor<int64_t>& hash_accessor)
 {
     const PrimitiveType pt = m.top_simplex_type();
     const simplex::SimplexCollection star =
@@ -1013,7 +1013,7 @@ void MultiMeshManager::update_vertex_operation_hashes_internal(
 void MultiMeshManager::update_vertex_operation_multimesh_map_hash_internal(
     Mesh& m,
     const simplex::SimplexCollection& vertex_closed_star,
-    Accessor<int64_t>& parent_hash_accessor)
+   attribute::Accessor<int64_t>& parent_hash_accessor)
 {
     auto& mm_manager = m.m_multi_mesh_manager;
 

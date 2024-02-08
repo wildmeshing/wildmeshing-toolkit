@@ -20,11 +20,11 @@ TriMesh::TriMesh()
 
 void TriMesh::make_cached_accessors()
 {
-    m_vf_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_vf_handle);
-    m_ef_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_ef_handle);
-    m_fv_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_fv_handle);
-    m_fe_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_fe_handle);
-    m_ff_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_ff_handle);
+    m_vf_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_vf_handle);
+    m_ef_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_ef_handle);
+    m_fv_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_fv_handle);
+    m_fe_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_fe_handle);
+    m_ff_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_ff_handle);
 }
 
 TriMesh::TriMesh(TriMesh&& o)
@@ -170,7 +170,7 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         assert(lvid_new != -1);
         assert(leid_new != -1);
 
-        ConstAccessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
+        const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
 
         const Tuple res(
             lvid_new,
@@ -335,7 +335,7 @@ Tuple TriMesh::edge_tuple_from_id(int64_t id) const
             assert(autogen::tri_mesh::auto_2d_table_complete_edge[i][1] == i);
             const int64_t lvid = autogen::tri_mesh::auto_2d_table_complete_edge[i][0];
 
-            ConstAccessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
+            const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
 
             Tuple e_tuple = Tuple(lvid, i, -1, f, get_cell_hash(f, hash_accessor));
             assert(is_ccw(e_tuple));
@@ -364,7 +364,7 @@ Tuple TriMesh::face_tuple_from_id(int64_t id) const
     return f_tuple;
 }
 
-bool TriMesh::is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const
+bool TriMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const
 {
     if (tuple.is_null()) {
         logger().debug("Tuple was null and therefore not valid");
@@ -400,14 +400,14 @@ bool TriMesh::is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor
 bool TriMesh::is_connectivity_valid() const
 {
     // get Accessors for topology
-    ConstAccessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
-    ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
-    ConstAccessor<int64_t> ff_accessor = create_const_accessor<int64_t>(m_ff_handle);
-    ConstAccessor<int64_t> vf_accessor = create_const_accessor<int64_t>(m_vf_handle);
-    ConstAccessor<int64_t> ef_accessor = create_const_accessor<int64_t>(m_ef_handle);
-    ConstAccessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
-    ConstAccessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    ConstAccessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
+    const attribute::Accessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
+    const attribute::Accessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
+    const attribute::Accessor<int64_t> ff_accessor = create_const_accessor<int64_t>(m_ff_handle);
+    const attribute::Accessor<int64_t> vf_accessor = create_const_accessor<int64_t>(m_vf_handle);
+    const attribute::Accessor<int64_t> ef_accessor = create_const_accessor<int64_t>(m_ef_handle);
+    const attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    const attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    const attribute::Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
 
     // EF and FE
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {

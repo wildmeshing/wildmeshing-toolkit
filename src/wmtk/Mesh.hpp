@@ -858,7 +858,7 @@ private:
 template <typename T>
 inline attribute::Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
 {
-    return Accessor<T>(*this, handle);
+    return attribute::Accessor<T>(*this, handle);
 }
 template <typename T>
 inline const attribute::Accessor<T> Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const

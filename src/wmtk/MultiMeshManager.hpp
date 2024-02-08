@@ -5,6 +5,8 @@
 
 
 namespace wmtk {
-    class MultiMeshManager: public MultiMeshManager {};
-}
+class MultiMeshManager : public multimesh::MultiMeshManager
+{
+};
+} // namespace wmtk
 
