@@ -2,7 +2,7 @@
 set(SRC_FILES
     Attribute.hpp
     Attribute.cpp
-    AttributeCache.cpp
+    AttributeCache.hxx
     AttributeCache.hpp
     AttributeScope.hpp
     AttributeScope.hxx
@@ -11,7 +11,7 @@ set(SRC_FILES
     AttributeScopeStack.hpp
     AttributeScopeStack.hxx
     AttributeCacheData.hpp
-    AttributeCacheData.cpp
+    AttributeCacheData.hxx
     AttributeManager.hpp
     AttributeManager.cpp
     PerThreadAttributeScopeStacks.hpp
@@ -35,7 +35,7 @@ set(SRC_FILES
 
     CachingAccessor.hxx
     CachingAccessor.hpp
-    
+    #
     TupleAccessor.hxx
     TupleAccessor.hpp
 

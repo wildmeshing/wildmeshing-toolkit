@@ -1,6 +1,7 @@
-#include "AttributeCacheData.hpp"
+#pragma once
 #include <wmtk/utils/Rational.hpp>
-namespace wmtk {
+#include "AttributeCacheData.hpp"
+namespace wmtk::attribute {
 template <typename T>
 auto AttributeCacheData<T>::data_as_map() -> typename Vector::MapType
 {
@@ -12,8 +13,4 @@ auto AttributeCacheData<T>::data_as_const_map() const -> typename Vector::ConstM
     return typename Vector::ConstMapType(data.data(), data.size());
 }
 
-template class AttributeCacheData<int64_t>;
-template class AttributeCacheData<double>;
-template class AttributeCacheData<char>;
-template class AttributeCacheData<Rational>;
-} // namespace wmtk
+} // namespace wmtk::attribute
