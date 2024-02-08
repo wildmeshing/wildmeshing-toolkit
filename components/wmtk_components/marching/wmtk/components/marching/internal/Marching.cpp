@@ -6,6 +6,7 @@
 #include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 
 namespace wmtk::components::internal {
 
@@ -95,6 +96,53 @@ void Marching::process()
 
     // vertex_label
     {
+        // /**************************edge tag******************************/
+        // auto compute_edge_label = [this](const Eigen::MatrixXi& labels) -> Eigen::VectorXi {
+        //     assert(labels.cols() == 2);
+        //     if (labels(0, 0) == m_output_value && labels(1, 0) == m_output_value)
+        //         return Eigen::VectorXi::Constant(1, m_output_value);
+        //     return Eigen::VectorXi::Constant(1, 0);
+        // };
+
+        // // get edge_handle
+        // auto edge_tag_handle = m_mesh.register_attribute_typed<int64_t>(
+        //     "edge_tag_handle",
+        //     wmtk::PrimitiveType::Edge,
+        //     1);
+
+        // std::shared_ptr etag_strategy =
+        //     std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<int64_t,
+        //     int64_t>>(
+        //         edge_tag_handle,
+        //         m_vertex_label,
+        //         compute_edge_label);
+
+        // op_split.add_transfer_strategy(etag_strategy);
+
+        // /**************************face tag******************************/
+        // auto compute_face_label = [this](const Eigen::MatrixXi& labels) -> Eigen::VectorXi {
+        //     assert(labels.cols() == 3);
+        //     if (labels(0, 0) == m_output_value && labels(0, 0) == m_output_value &&
+        //         labels(0, 0) == m_output_value)
+        //         return Eigen::VectorXi::Constant(1, m_output_value);
+        //     return Eigen::VectorXi::Constant(1, 0);
+        // };
+
+        // // get face_handle
+        // auto face_tag_handle = m_mesh.register_attribute_typed<int64_t>(
+        //     "face_tag_handle",
+        //     wmtk::PrimitiveType::Face,
+        //     1);
+
+        // std::shared_ptr ftag_strategy =
+        //     std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<int64_t,
+        //     int64_t>>(
+        //         face_tag_handle,
+        //         edge_tag_handle,
+        //         compute_face_label);
+
+        // op_split.add_transfer_strategy(ftag_strategy);
+
         auto tmp = std::make_shared<SplitNewAttributeStrategy<int64_t>>(m_vertex_label);
         tmp->set_strategy(SplitBasicStrategy::None);
         tmp->set_rib_strategy(
@@ -105,6 +153,7 @@ void Marching::process()
             });
         op_split.set_new_attribute_strategy(m_vertex_label, tmp);
     }
+
     // filters
     for (const auto& edge_filter_handle : m_filter_labels) {
         op_split.set_new_attribute_strategy(
