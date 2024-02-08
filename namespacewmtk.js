@@ -87,9 +87,8 @@ var namespacewmtk =
     [ "PrimitiveType", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345", [
       [ "Vertex", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6", null ],
       [ "Edge", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e", null ],
-      [ "Face", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a8af5861002f3c157f9ba842bba10aa3f", null ],
-      [ "Tetrahedron", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80", null ],
-      [ "HalfEdge", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a3568e227a2a6b7e8cf8322633d0991f9", null ]
+      [ "Triangle", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b", null ],
+      [ "Tetrahedron", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80", null ]
     ] ],
     [ "edgemesh_topology_initialization", "namespacewmtk.html#adf595e35ecb28937978ce5e794bb041e", null ],
     [ "find_invariant_in_collection_by_type", "namespacewmtk.html#ae975d72ae7f4a759f36108e53d2c144d", null ],

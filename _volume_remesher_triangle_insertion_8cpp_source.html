@@ -700,48 +700,49 @@ $(document).ready(function(){initNavTree('_volume_remesher_triangle_insertion_8c
 <div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160;{</div>
 <div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160;    constexpr <span class="keyword">static</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> PV = <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>;</div>
 <div class="line"><a name="l00585"></a><span class="lineno">  585</span>&#160;    constexpr <span class="keyword">static</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> PE = <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>;</div>
-<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;    constexpr <span class="keyword">static</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> PF = <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a8af5861002f3c157f9ba842bba10aa3f">PrimitiveType::Face</a>;</div>
+<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;    constexpr <span class="keyword">static</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> PF = <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>;</div>
 <div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;    constexpr <span class="keyword">static</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> PT = <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>;</div>
 <div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160; </div>
 <div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;    <span class="keyword">auto</span> [tetmesh, tet_face_on_input_surface] =</div>
 <div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;        <a class="code" href="namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456">generate_raw_tetmesh_from_input_surface</a>(V, F, eps_target, bgV, bgF);</div>
 <div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160; </div>
-<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;    <span class="keyword">auto</span> surface_handle = tetmesh-&gt;register_attribute&lt;int64_t&gt;(<span class="stringliteral">&quot;surface&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a8af5861002f3c157f9ba842bba10aa3f">PrimitiveType::Face</a>, 1);</div>
-<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;    <span class="keyword">auto</span> surface_accessor = tetmesh-&gt;create_accessor&lt;int64_t&gt;(surface_handle);</div>
-<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160; </div>
-<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span>&amp; tets = tetmesh-&gt;get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>);</div>
-<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;    assert(tets.size() == tet_face_on_input_surface.size());</div>
-<div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160; </div>
-<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; tets.size(); ++i) {</div>
-<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; t = tets[i]; <span class="comment">// local face 2</span></div>
-<div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160;        std::array&lt;Tuple, 4&gt; fs = {</div>
-<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;            {tetmesh-&gt;switch_tuples(t, {PV, PE, PF}),</div>
-<div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;             tetmesh-&gt;switch_tuples(t, {PE, PF}),</div>
-<div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160;             t,</div>
-<div class="line"><a name="l00604"></a><span class="lineno">  604</span>&#160;             tetmesh-&gt;switch_tuples(t, {PF})}};</div>
-<div class="line"><a name="l00605"></a><span class="lineno">  605</span>&#160; </div>
-<div class="line"><a name="l00606"></a><span class="lineno">  606</span>&#160;        <span class="keywordflow">for</span> (int64_t j = 0; j &lt; 4; ++j) {</div>
-<div class="line"><a name="l00607"></a><span class="lineno">  607</span>&#160;            <span class="keywordflow">if</span> (tet_face_on_input_surface[i][j]) {</div>
-<div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160;                surface_accessor.scalar_attribute(fs[j]) = 1;</div>
-<div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160;            } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;                surface_accessor.scalar_attribute(fs[j]) = 0;</div>
-<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;            }</div>
-<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;        }</div>
-<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;    }</div>
-<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160; </div>
-<div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160;    <span class="keyword">auto</span> child_ptr = <a class="code" href="namespacewmtk_1_1multimesh_1_1utils.html#a9349b24597b61459c9d98753ae5234f1">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag</a>(</div>
-<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;        *tetmesh,</div>
-<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;        <span class="stringliteral">&quot;surface&quot;</span>,</div>
-<div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160;        1,</div>
-<div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160;        PF);</div>
-<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160; </div>
-<div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;registered surface child mesh to tetmesh. Tetmesh has face attribute with &quot;</span></div>
-<div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160;                        <span class="stringliteral">&quot;name \&quot;surface\&quot;&quot;</span>);</div>
-<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160; </div>
-<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;    <span class="keywordflow">return</span> std::make_tuple(tetmesh, child_ptr);</div>
-<div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;}</div>
-<div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160; </div>
-<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;} <span class="comment">// namespace wmtk::utils</span></div>
+<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;    <span class="keyword">auto</span> surface_handle =</div>
+<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;        tetmesh-&gt;register_attribute&lt;int64_t&gt;(<span class="stringliteral">&quot;surface&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>, 1);</div>
+<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;    <span class="keyword">auto</span> surface_accessor = tetmesh-&gt;create_accessor&lt;int64_t&gt;(surface_handle);</div>
+<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160; </div>
+<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span>&amp; tets = tetmesh-&gt;get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>);</div>
+<div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;    assert(tets.size() == tet_face_on_input_surface.size());</div>
+<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160; </div>
+<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; tets.size(); ++i) {</div>
+<div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; t = tets[i]; <span class="comment">// local face 2</span></div>
+<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;        std::array&lt;Tuple, 4&gt; fs = {</div>
+<div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;            {tetmesh-&gt;switch_tuples(t, {PV, PE, PF}),</div>
+<div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160;             tetmesh-&gt;switch_tuples(t, {PE, PF}),</div>
+<div class="line"><a name="l00604"></a><span class="lineno">  604</span>&#160;             t,</div>
+<div class="line"><a name="l00605"></a><span class="lineno">  605</span>&#160;             tetmesh-&gt;switch_tuples(t, {PF})}};</div>
+<div class="line"><a name="l00606"></a><span class="lineno">  606</span>&#160; </div>
+<div class="line"><a name="l00607"></a><span class="lineno">  607</span>&#160;        <span class="keywordflow">for</span> (int64_t j = 0; j &lt; 4; ++j) {</div>
+<div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160;            <span class="keywordflow">if</span> (tet_face_on_input_surface[i][j]) {</div>
+<div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160;                surface_accessor.scalar_attribute(fs[j]) = 1;</div>
+<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;            } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;                surface_accessor.scalar_attribute(fs[j]) = 0;</div>
+<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;            }</div>
+<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;        }</div>
+<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;    }</div>
+<div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160; </div>
+<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;    <span class="keyword">auto</span> child_ptr = <a class="code" href="namespacewmtk_1_1multimesh_1_1utils.html#a9349b24597b61459c9d98753ae5234f1">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag</a>(</div>
+<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;        *tetmesh,</div>
+<div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160;        <span class="stringliteral">&quot;surface&quot;</span>,</div>
+<div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160;        1,</div>
+<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;        PF);</div>
+<div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160; </div>
+<div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;registered surface child mesh to tetmesh. Tetmesh has face attribute with &quot;</span></div>
+<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;                        <span class="stringliteral">&quot;name \&quot;surface\&quot;&quot;</span>);</div>
+<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160; </div>
+<div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;    <span class="keywordflow">return</span> std::make_tuple(tetmesh, child_ptr);</div>
+<div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;}</div>
+<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160; </div>
+<div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;} <span class="comment">// namespace wmtk::utils</span></div>
 <div class="ttc" id="a_logger_8hpp_html"><div class="ttname"><a href="_logger_8hpp.html">Logger.hpp</a></div></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="a_rational_8hpp_html"><div class="ttname"><a href="_rational_8hpp.html">Rational.hpp</a></div></div>
@@ -750,7 +751,7 @@ $(document).ready(function(){initNavTree('_volume_remesher_triangle_insertion_8c
 <div class="ttc" id="aextract__child__mesh__from__tag_8hpp_html"><div class="ttname"><a href="extract__child__mesh__from__tag_8hpp.html">extract_child_mesh_from_tag.hpp</a></div></div>
 <div class="ttc" id="amesh__utils_8hpp_html"><div class="ttname"><a href="mesh__utils_8hpp.html">mesh_utils.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1mesh__utils_html_ad92eb4095d516f6a20e25587f9effe80"><div class="ttname"><a href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">wmtk::mesh_utils::set_matrix_attribute</a></div><div class="ttdeci">attribute::MeshAttributeHandle set_matrix_attribute(const Mat &amp;data, const std::string &amp;name, const PrimitiveType &amp;type, Mesh &amp;mesh)</div><div class="ttdef"><b>Definition:</b> <a href="mesh__utils_8hpp_source.html#l00009">mesh_utils.hpp:9</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1multimesh_1_1utils_html_a9349b24597b61459c9d98753ae5234f1"><div class="ttname"><a href="namespacewmtk_1_1multimesh_1_1utils.html#a9349b24597b61459c9d98753ae5234f1">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; extract_and_register_child_mesh_from_tag(Mesh &amp;m, const std::string &amp;tag, const int64_t tag_value, const PrimitiveType pt)</div><div class="ttdoc">extract a child mesh based on the given tag and tag value, and register it to the input (parent) mesh</div><div class="ttdef"><b>Definition:</b> <a href="extract__child__mesh__from__tag_8cpp_source.html#l00158">extract_child_mesh_from_tag.cpp:158</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1multimesh_1_1utils_html_a9349b24597b61459c9d98753ae5234f1"><div class="ttname"><a href="namespacewmtk_1_1multimesh_1_1utils.html#a9349b24597b61459c9d98753ae5234f1">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; extract_and_register_child_mesh_from_tag(Mesh &amp;m, const std::string &amp;tag, const int64_t tag_value, const PrimitiveType pt)</div><div class="ttdoc">extract a child mesh based on the given tag and tag value, and register it to the input (parent) mesh</div><div class="ttdef"><b>Definition:</b> <a href="extract__child__mesh__from__tag_8cpp_source.html#l00157">extract_child_mesh_from_tag.cpp:157</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1utils_html"><div class="ttname"><a href="namespacewmtk_1_1utils.html">wmtk::utils</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00017">Tuple.hpp:17</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1utils_html_a092fbbebc775373c2abaeb5cd43716de"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a092fbbebc775373c2abaeb5cd43716de">wmtk::utils::triangulate_polygon_face</a></div><div class="ttdeci">std::vector&lt; std::array&lt; int64_t, 3 &gt; &gt; triangulate_polygon_face(std::vector&lt; Vector3d &gt; points)</div><div class="ttdef"><b>Definition:</b> <a href="_volume_remesher_triangle_insertion_8cpp_source.html#l00084">VolumeRemesherTriangleInsertion.cpp:84</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1utils_html_a4ea0d7c148b4066c6692a8e31c7b7b7a"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a4ea0d7c148b4066c6692a8e31c7b7b7a">wmtk::utils::generate_raw_tetmesh_with_surface_from_input</a></div><div class="ttdeci">std::tuple&lt; std::shared_ptr&lt; wmtk::TetMesh &gt;, std::shared_ptr&lt; wmtk::Mesh &gt; &gt; generate_raw_tetmesh_with_surface_from_input(const RowVectors3d &amp;V, const RowVectors3l &amp;F, const double eps_target, const RowVectors3d &amp;bgV, const RowVectors4l &amp;bgF)</div><div class="ttdef"><b>Definition:</b> <a href="_volume_remesher_triangle_insertion_8cpp_source.html#l00577">VolumeRemesherTriangleInsertion.cpp:577</a></div></div>
@@ -765,7 +766,7 @@ $(document).ready(function(){initNavTree('_volume_remesher_triangle_insertion_8c
 <div class="ttc" id="anamespacewmtk_html_a8f74118e77f6f9bce5ebc12a1be515f3"><div class="ttname"><a href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">wmtk::Vector3d</a></div><div class="ttdeci">Vector&lt; double, 3 &gt; Vector3d</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00038">Types.hpp:38</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_a9726dab4eead2fc65c8d06890a5ee8fd"><div class="ttname"><a href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">wmtk::RowVectors3d</a></div><div class="ttdeci">RowVectors&lt; double, 3 &gt; RowVectors3d</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00048">Types.hpp:48</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">wmtk::PrimitiveType</a></div><div class="ttdeci">PrimitiveType</div><div class="ttdef"><b>Definition:</b> <a href="_primitive_type_8hpp_source.html#l00009">PrimitiveType.hpp:9</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345a8af5861002f3c157f9ba842bba10aa3f"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a8af5861002f3c157f9ba842bba10aa3f">wmtk::PrimitiveType::Face</a></div><div class="ttdeci">@ Face</div></div>
+<div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::PrimitiveType::Triangle</a></div><div class="ttdeci">@ Triangle</div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a></div><div class="ttdeci">@ Vertex</div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::PrimitiveType::Tetrahedron</a></div><div class="ttdeci">@ Tetrahedron</div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::PrimitiveType::Edge</a></div><div class="ttdeci">@ Edge</div></div>

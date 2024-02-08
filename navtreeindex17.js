@@ -1,6 +1,5 @@
 var NAVTREEINDEX17 =
 {
-"primitive__range_8cpp.html":[5,0,2,0,8,20],
 "primitive__range_8cpp.html#a2f4fed1ebdeb2d5c03a59b1760a30f61":[5,0,2,0,8,20,0],
 "primitive__range_8cpp.html#a8dab5bd8df4c7c658413914f37210244":[5,0,2,0,8,20,2],
 "primitive__range_8cpp.html#ad4153e2c24f98b817e39406defdc9f7e":[5,0,2,0,8,20,1],
@@ -249,5 +248,6 @@ var NAVTREEINDEX17 =
 "structwmtk_1_1components_1_1base_1_1_component_options_base.html#aecebd0bbb62a32362c50c8ba9fed8b80":[4,0,2,1,1,0,0],
 "structwmtk_1_1components_1_1internal_1_1_delaunay_options.html":[4,0,2,1,2,0],
 "structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a1ebc35b7bb83c8b238ef550cf4e2b57d":[4,0,2,1,2,0,3],
-"structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a31df5573bebe7a210f91e8a3e3630ecc":[4,0,2,1,2,0,1]
+"structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a31df5573bebe7a210f91e8a3e3630ecc":[4,0,2,1,2,0,1],
+"structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a530eb32a4b9c1c76ee08970d034d1172":[4,0,2,1,2,0,0]
 };

@@ -55,7 +55,7 @@ var classwmtk_1_1_mesh =
     [ "has_attribute", "classwmtk_1_1_mesh.html#a89b735bef9cbf8d5ab955d23f787b70f", null ],
     [ "has_child_mesh_in_dimension", "classwmtk_1_1_mesh.html#af84dd968af1e92c3fd30a7e58c0949bc", null ],
     [ "id", "classwmtk_1_1_mesh.html#a0cf48d7a310f12aa3b9e26ed93216081", null ],
-    [ "id", "classwmtk_1_1_mesh.html#a1077cc1500921012261f86ed88ce2841", null ],
+    [ "id", "classwmtk_1_1_mesh.html#a58243712dc3e0d258ad645e7b08870db", null ],
     [ "is_boundary", "classwmtk_1_1_mesh.html#a58bdbbfa0cd7bd9263241f6501db182a", null ],
     [ "is_boundary", "classwmtk_1_1_mesh.html#a24e1e157ff89e7898a48ce737bb4b23a", null ],
     [ "is_ccw", "classwmtk_1_1_mesh.html#a56d57041196b23cfa33661c9488c9c4b", null ],
@@ -107,7 +107,7 @@ var classwmtk_1_1_mesh =
     [ "switch_tuples_unsafe", "classwmtk_1_1_mesh.html#a072ba17f33381b00b9dec76cb3d986af", null ],
     [ "switch_tuples_unsafe", "classwmtk_1_1_mesh.html#ad9c0300690901b7a477823daddd393f1", null ],
     [ "switch_vertex", "classwmtk_1_1_mesh.html#aed90cad0755b0052b0ca4502e401bcd3", null ],
-    [ "top_cell_dimension", "classwmtk_1_1_mesh.html#ac1e12857f52985bd548a968a4c819659", null ],
+    [ "top_cell_dimension", "classwmtk_1_1_mesh.html#a933f681cf24a63b155c9462280385200", null ],
     [ "top_simplex_type", "classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9", null ],
     [ "tuple_from_id", "classwmtk_1_1_mesh.html#a60165ceb4c2db2731df90e4ac100637d", null ],
     [ "update_cell_hash", "classwmtk_1_1_mesh.html#a3841dcb4a25206fba4547d8043f43dbf", null ],
@@ -142,5 +142,6 @@ var classwmtk_1_1_mesh =
     [ "m_attribute_manager", "classwmtk_1_1_mesh.html#af64daf6aaf6ffd14ce791695d6428cbc", null ],
     [ "m_cell_hash_handle", "classwmtk_1_1_mesh.html#ac45dc1bfd5afaafccdaab3b9ff476345", null ],
     [ "m_flag_handles", "classwmtk_1_1_mesh.html#a41ec501e2bd3fdb51fcc7ab7615ffb30", null ],
-    [ "m_multi_mesh_manager", "classwmtk_1_1_mesh.html#af67ee2baeee30f785211e781d4b814eb", null ]
+    [ "m_multi_mesh_manager", "classwmtk_1_1_mesh.html#af67ee2baeee30f785211e781d4b814eb", null ],
+    [ "m_top_cell_dimension", "classwmtk_1_1_mesh.html#ab6b247bf032f8d237179fec51f08fa2a", null ]
 ];

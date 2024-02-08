@@ -5,7 +5,7 @@ var classwmtk_1_1_point_mesh =
     [ "PointMesh", "classwmtk_1_1_point_mesh.html#a6c0360ab8ded4739f03a92a2b712db7f", null ],
     [ "PointMesh", "classwmtk_1_1_point_mesh.html#a5f83f6c3b15def317996412459972a3e", null ],
     [ "connectivity_attributes", "classwmtk_1_1_point_mesh.html#ab53e3abfc3b6ed6552b6359ac953b23b", null ],
-    [ "id", "classwmtk_1_1_point_mesh.html#abc968b974c5c278ad10a8769162bf759", null ],
+    [ "id", "classwmtk_1_1_point_mesh.html#acbfad6349636bc18dfa2589b7a2c3c2b", null ],
     [ "initialize", "classwmtk_1_1_point_mesh.html#af2a8d977bbf881485efb9843f5348918", null ],
     [ "is_boundary", "classwmtk_1_1_point_mesh.html#a58bdbbfa0cd7bd9263241f6501db182a", null ],
     [ "is_boundary", "classwmtk_1_1_point_mesh.html#a5aa797efdd71f41117e0976bdc52f8d0", null ],
@@ -17,7 +17,7 @@ var classwmtk_1_1_point_mesh =
     [ "operator=", "classwmtk_1_1_point_mesh.html#a2f74a68f9d805cf6b51c26582d691d59", null ],
     [ "operator=", "classwmtk_1_1_point_mesh.html#ae6c9962d2287bdc133bd6bdb3bef859c", null ],
     [ "switch_tuple", "classwmtk_1_1_point_mesh.html#a66bcea03adca55331c31f915260f6174", null ],
-    [ "top_cell_dimension", "classwmtk_1_1_point_mesh.html#ac6b5cf60889aac8a0fb828bdf247c096", null ],
     [ "tuple_from_id", "classwmtk_1_1_point_mesh.html#a4abbd043be4c328d48bcdd1428e1cb55", null ],
-    [ "vertex_tuple_from_id", "classwmtk_1_1_point_mesh.html#a328c437cf1ce08e7ecd16555840e16c4", null ]
+    [ "vertex_tuple_from_id", "classwmtk_1_1_point_mesh.html#a328c437cf1ce08e7ecd16555840e16c4", null ],
+    [ "Mesh", "classwmtk_1_1_point_mesh.html#aa41a130f156b145bffb3f4b5172c4c93", null ]
 ];
