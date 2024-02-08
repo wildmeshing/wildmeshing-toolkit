@@ -22,12 +22,12 @@ private:
 
 
 template <typename T>
-AttributeScopeStack<T>& PerThreadAttributeScopeStacks<T>::local()
+inline AttributeScopeStack<T>& PerThreadAttributeScopeStacks<T>::local()
 {
     return m_stack;
 }
 template <typename T>
-const AttributeScopeStack<T>& PerThreadAttributeScopeStacks<T>::local() const
+inline const AttributeScopeStack<T>& PerThreadAttributeScopeStacks<T>::local() const
 {
     return m_stack;
 }

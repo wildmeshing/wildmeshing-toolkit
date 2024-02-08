@@ -41,7 +41,6 @@ set(SRC_FILES
     ConstAccessor.hxx
     ConstAccessor.hpp
 
-    MutableAccessor.hxx
     MutableAccessor.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

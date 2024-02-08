@@ -90,13 +90,13 @@ protected:
     // MeshAttributeHandle<T> m_handle;
 };
 template <typename T>
-int64_t AttributeScopeStack<T>::size() const
+inline int64_t AttributeScopeStack<T>::size() const
 {
     return m_scopes.size();
 }
 
 template <typename T>
-void AttributeScopeStack<T>::rollback_current_scope(Attribute<T>& attr)
+inline void AttributeScopeStack<T>::rollback_current_scope(Attribute<T>& attr)
 {
     assert(!empty());
     assert(at_current_scope());

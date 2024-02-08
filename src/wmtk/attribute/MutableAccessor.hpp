@@ -64,4 +64,3 @@ MutableAccessor<T> MeshAttributeHandle<T>::create_accessor()
 }
 */
 } // namespace wmtk::attribute
-#include "MutableAccessor.hxx"
