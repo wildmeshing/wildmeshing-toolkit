@@ -19,6 +19,12 @@ class ExtremeOptSingle
     bool m_do_smooth;
     bool m_debug_output;
 
+
+    // TODO: put envelope parameters to json options
+    bool m_use_envelope = false;
+    double m_envelope_eps = 0.01;
+
+
     attribute::MeshAttributeHandle m_position_handle;
     attribute::MeshAttributeHandle m_uv_handle;
 
