@@ -73,6 +73,7 @@ public:
 protected:
     TypedAttributeHandle<T> m_handle;
     Mesh& m_mesh;
+    Attribute<T>& m_attribute;
 
     const AttributeManager& attribute_manager() const;
     AttributeManager& attribute_manager();

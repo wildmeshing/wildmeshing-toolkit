@@ -35,7 +35,7 @@ template <typename T>
 int64_t TupleAccessor<T>::index(const Tuple& t) const
 {
     assert(mesh().is_valid_slow(t));
-    return mesh().id(t, BaseType::handle().primitive_type());
+    return mesh().id(t, BaseType::typed_handle().primitive_type());
 }
 
 template <typename T>
