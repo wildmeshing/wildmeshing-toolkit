@@ -1,5 +1,6 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <fmt/format.h>
 
 #include "CachedMultiMesh.hpp"
 namespace wmtk::io {
