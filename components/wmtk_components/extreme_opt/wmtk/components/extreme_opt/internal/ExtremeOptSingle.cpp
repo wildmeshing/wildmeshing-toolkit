@@ -417,6 +417,10 @@ void ExtremeOptSingle::remeshing_amips(const long iterations)
             m_length_min * m_length_min));
         split_op->add_invariant(
             std::make_shared<FunctionNumericalInvariant>(m_mesh.top_simplex_type(), amips));
+
+        // Energy Decrease
+        split_op->add_invariant(
+            std::make_shared<FunctionInvariant>(m_mesh.top_simplex_type(), amips));
         // Position and uv coordinate update
         split_op->set_new_attribute_strategy(
             m_position_handle,
