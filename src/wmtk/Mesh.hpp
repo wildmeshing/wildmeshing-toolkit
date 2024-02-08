@@ -131,7 +131,7 @@ public:
         attribute::Accessor<int64_t>& hash_accessor);
 
 
-    virtual int64_t top_cell_dimension() const = 0;
+    int64_t top_cell_dimension() const;
     PrimitiveType top_simplex_type() const;
 
     // attribute directly hashes its "children" components so it overrides "child_hashes"
@@ -795,7 +795,7 @@ protected:
     */
 
 protected:
-    virtual int64_t id(const Tuple& tuple, PrimitiveType type) const = 0;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
     int64_t id(const simplex::Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
 
@@ -820,6 +820,7 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     MultiMeshManager m_multi_mesh_manager;
 
+    int64_t m_top_cell_dimension = -1;
 
 private:
     // PImpl'd manager of per-thread update stacks
@@ -943,7 +944,7 @@ inline Tuple Mesh::switch_edge(const Tuple& tuple) const
 }
 inline Tuple Mesh::switch_face(const Tuple& tuple) const
 {
-    return switch_tuple(tuple, PrimitiveType::Face);
+    return switch_tuple(tuple, PrimitiveType::Triangle);
 }
 inline Tuple Mesh::switch_tetrahedron(const Tuple& tuple) const
 {
@@ -973,6 +974,11 @@ Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequence) con
         r = switch_tuple(r, primitive);
     }
     return r;
+}
+
+inline int64_t Mesh::top_cell_dimension() const
+{
+    return m_top_cell_dimension;
 }
 
 #if defined(__cpp_concepts)

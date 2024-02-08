@@ -27,7 +27,7 @@ using namespace wmtk::tests;
 TEST_CASE("tuple_autogen_find_all_local_switches", "[tuple]")
 {
     for (wmtk::PrimitiveType pt :
-         {PrimitiveType::Edge, PrimitiveType::Face, PrimitiveType::Tetrahedron}) {
+         {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
         auto all = all_valid_local_tuples(pt);
         for (const Tuple& a : all) {
             for (const Tuple& b : all) {

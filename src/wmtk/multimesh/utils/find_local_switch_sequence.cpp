@@ -39,7 +39,7 @@ std::optional<std::vector<PrimitiveType>> find_local_switch_sequence_on_triangle
     const Tuple& source,
     const Tuple& target)
 {
-    assert(mesh_pt >= PrimitiveType::Face);
+    assert(mesh_pt >= PrimitiveType::Triangle);
 
     Tuple cur_tuple = source;
     std::vector<PrimitiveType> switches;
@@ -96,7 +96,7 @@ std::optional<std::vector<PrimitiveType>> find_local_switch_sequence_on_tet(
             return triangle_local_operations.value();
         }
     }
-    switches.emplace_back(PrimitiveType::Face);
+    switches.emplace_back(PrimitiveType::Triangle);
     cur_tuple = local_switch_tuples(mesh_pt, source, switches);
     {
         const auto triangle_local_operations =
@@ -158,9 +158,9 @@ find_local_switch_sequence(const Tuple& source, const Tuple& target, PrimitiveTy
         }
         return operations.value();
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         const auto operations =
-            find_local_switch_sequence_on_triangle(PrimitiveType::Face, source, target);
+            find_local_switch_sequence_on_triangle(PrimitiveType::Triangle, source, target);
         if (!operations.has_value()) {
             throw std::runtime_error(
                 "switch sequence was unable to find a sequence of switches to match tuples");
@@ -177,7 +177,6 @@ find_local_switch_sequence(const Tuple& source, const Tuple& target, PrimitiveTy
         return operations.value();
     }
     case PrimitiveType::Vertex: return {};
-    case PrimitiveType::HalfEdge:
     default: return {};
     }
 }

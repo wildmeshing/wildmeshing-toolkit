@@ -31,14 +31,12 @@ bool PointMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
     switch (pt) {
     case PrimitiveType::Vertex: return is_boundary_vertex(tuple);
     case PrimitiveType::Edge:
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:
-    case PrimitiveType::HalfEdge:
     default: break;
     }
-    throw std::runtime_error(
-        "tried to compute the boundary of an point mesh for an invalid simplex dimension");
-    return false;
+    assert(
+        false); // "tried to compute the boundary of a point mesh for an invalid simplex dimension"
     // every point is on the interior as it has no boundary simplices
     return false;
 }
@@ -72,18 +70,17 @@ int64_t PointMesh::id(const Tuple& tuple, PrimitiveType type) const
     switch (type) {
     case PrimitiveType::Vertex: return tuple.m_global_cid;
     case PrimitiveType::Edge:
-    case PrimitiveType::HalfEdge:
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:
-    default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
+    default: assert(false); // "Tuple switch: Invalid primitive type"
     }
+
+    return -1;
 }
 
 Tuple PointMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
 {
-    if (type != PrimitiveType::Vertex) {
-        throw std::runtime_error("Tuple switch: Invalid primitive type");
-    }
+    assert(type == PrimitiveType::Vertex); // "Tuple switch: Invalid primitive type"
     return vertex_tuple_from_id(gid);
 }
 

@@ -32,7 +32,7 @@ struct PrintTypeSizeFunctor
     {
         logger().trace(
             "TriMesh: {} (path: {})",
-            m.capacity(PrimitiveType::Face),
+            m.capacity(PrimitiveType::Triangle),
             m.absolute_multi_mesh_id());
         return 0.0;
     }
@@ -45,7 +45,7 @@ struct GetTypeSizeFunctorWithReturn
     {
         return fmt::format(
             "[TriMesh: {} (path: {})]",
-            m.capacity(PrimitiveType::Face),
+            m.capacity(PrimitiveType::Triangle),
             m.absolute_multi_mesh_id());
     }
 };
@@ -73,7 +73,7 @@ using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 
 
 TEST_CASE("test_multi_mesh_print_visitor", "[multimesh][2D]")
@@ -99,7 +99,7 @@ TEST_CASE("test_multi_mesh_print_visitor", "[multimesh][2D]")
 
     multimesh::MultiMeshSimplexVisitor print_type_visitor(PrintTypeSizeFunctor{});
 
-    auto tups = parent.get_all(PrimitiveType::Face);
+    auto tups = parent.get_all(PrimitiveType::Triangle);
     for (const auto& t : tups) {
         print_type_visitor.execute_from_root(static_cast<TriMesh&>(parent), Simplex(PF, t));
     }

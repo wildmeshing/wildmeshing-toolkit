@@ -12,7 +12,7 @@ std::vector<simplex::Simplex> TetFaceSwap::execute(const simplex::Simplex& simpl
 {
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
-    constexpr static PrimitiveType PF = PrimitiveType::Face;
+    constexpr static PrimitiveType PF = PrimitiveType::Triangle;
     constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
 
     // first split, split the edge of the input tuple

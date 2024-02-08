@@ -18,7 +18,7 @@ TetMesh::TetMesh()
     : Mesh(3)
     , m_vt_handle(register_attribute_typed<int64_t>("m_vt", PrimitiveType::Vertex, 1, false, -1))
     , m_et_handle(register_attribute_typed<int64_t>("m_et", PrimitiveType::Edge, 1, false, -1))
-    , m_ft_handle(register_attribute_typed<int64_t>("m_ft", PrimitiveType::Face, 1, false, -1))
+    , m_ft_handle(register_attribute_typed<int64_t>("m_ft", PrimitiveType::Triangle, 1, false, -1))
     , m_tv_handle(
           register_attribute_typed<int64_t>("m_tv", PrimitiveType::Tetrahedron, 4, false, -1))
     , m_te_handle(
@@ -105,7 +105,7 @@ void TetMesh::initialize(
 
     Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
     Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
+    Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
     Accessor<char> t_flag_accessor = get_flag_accessor(PrimitiveType::Tetrahedron);
 
     // iterate over the matrices and fill attributes
@@ -127,7 +127,7 @@ void TetMesh::initialize(
         e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
     // m_ft
-    for (int64_t i = 0; i < capacity(PrimitiveType::Face); ++i) {
+    for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
         ft_accessor.index_access().scalar_attribute(i) = FT(i);
         f_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
@@ -245,7 +245,7 @@ Tuple TetMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
         return edge_tuple_from_id(gid);
         break;
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         return face_tuple_from_id(gid);
         break;
     }
@@ -253,9 +253,10 @@ Tuple TetMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
         return tet_tuple_from_id(gid);
         break;
     }
-    case PrimitiveType::HalfEdge:
-    default: throw std::runtime_error("Invalid primitive type");
+    default: assert(false); // "Invalid primitive type"
     }
+
+    return Tuple();
 }
 
 int64_t TetMesh::id(const Tuple& tuple, PrimitiveType type) const
@@ -271,7 +272,7 @@ int64_t TetMesh::id(const Tuple& tuple, PrimitiveType type) const
         return te(tuple.m_local_eid);
         break;
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         auto tf = m_tf_accessor->const_vector_attribute(tuple);
         return tf(tuple.m_local_fid);
         break;
@@ -280,9 +281,10 @@ int64_t TetMesh::id(const Tuple& tuple, PrimitiveType type) const
         return tuple.m_global_cid;
         break;
     }
-    case PrimitiveType::HalfEdge:
-    default: throw std::runtime_error("Tuple id: Invalid primitive type");
+    default: assert(false); // "Tuple id: Invalid primitive type"
     }
+
+    return -1;
 }
 
 Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
@@ -295,7 +297,7 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         // need test
         const int64_t gvid = id(tuple, PrimitiveType::Vertex);
         const int64_t geid = id(tuple, PrimitiveType::Edge);
-        const int64_t gfid = id(tuple, PrimitiveType::Face);
+        const int64_t gfid = id(tuple, PrimitiveType::Triangle);
 
         auto tt = m_tt_accessor->const_vector_attribute(tuple);
 
@@ -344,9 +346,8 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
     }
     case PrimitiveType::Vertex:
     case PrimitiveType::Edge:
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
     default: return autogen::tet_mesh::local_switch_tuple(tuple, type);
-    case PrimitiveType::HalfEdge: throw std::runtime_error("Tuple id: Invalid primitive type");
     }
 }
 
@@ -375,13 +376,12 @@ bool TetMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
     switch (pt) {
     case PrimitiveType::Vertex: return is_boundary_vertex(tuple);
     case PrimitiveType::Edge: return is_boundary_edge(tuple);
-    case PrimitiveType::Face: return is_boundary_face(tuple);
+    case PrimitiveType::Triangle: return is_boundary_face(tuple);
     case PrimitiveType::Tetrahedron:
-    case PrimitiveType::HalfEdge:
     default: break;
     }
-    throw std::runtime_error(
-        "tried to compute the boundary of an tet mesh for an invalid simplex dimension");
+    assert(
+        false); // "tried to compute the boundary of an tet mesh for an invalid simplex dimension"
     return false;
 }
 
@@ -397,7 +397,7 @@ bool TetMesh::is_boundary_edge(const Tuple& edge) const
     for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
              *this,
              simplex::Simplex::edge(edge),
-             PrimitiveType::Face)) {
+             PrimitiveType::Triangle)) {
         if (is_boundary_face(f)) {
             return true;
         }
@@ -409,7 +409,7 @@ bool TetMesh::is_boundary_vertex(const Tuple& vertex) const
     // go through all faces and check if they are boundary
     const simplex::SimplexCollection neigh =
         wmtk::simplex::open_star(*this, simplex::Simplex::vertex(vertex));
-    for (const simplex::Simplex& s : neigh.simplex_vector(PrimitiveType::Face)) {
+    for (const simplex::Simplex& s : neigh.simplex_vector(PrimitiveType::Triangle)) {
         if (is_boundary(s)) {
             return true;
         }
@@ -430,7 +430,7 @@ bool TetMesh::is_connectivity_valid() const
     ConstAccessor<int64_t> ft_accessor = create_const_accessor<int64_t>(m_ft_handle);
     ConstAccessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
     ConstAccessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    ConstAccessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
+    ConstAccessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
     ConstAccessor<char> t_flag_accessor = get_flag_accessor(PrimitiveType::Tetrahedron);
 
     // VT and TV
@@ -472,7 +472,7 @@ bool TetMesh::is_connectivity_valid() const
     }
 
     // FT and TF
-    for (int64_t i = 0; i < capacity(PrimitiveType::Face); ++i) {
+    for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
         if (f_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
             wmtk::logger().debug("Face {} is deleted", i);
             continue;

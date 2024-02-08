@@ -90,7 +90,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     TriMesh& m,
     const Tuple& operating_tuple,
     Accessor<int64_t>& hash_acc)
-    : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Face)}}
+    : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Triangle)}}
     , ff_accessor(m.create_accessor<int64_t>(m.m_ff_handle))
     , fe_accessor(m.create_accessor<int64_t>(m.m_fe_handle))
     , fv_accessor(m.create_accessor<int64_t>(m.m_fv_handle))
@@ -111,7 +111,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
         simplex::closed_star(m_mesh, simplex::Simplex::edge(operating_tuple));
 
     // get all faces incident to the edge
-    for (const simplex::Simplex& f : edge_closed_star.simplex_vector(PrimitiveType::Face)) {
+    for (const simplex::Simplex& f : edge_closed_star.simplex_vector(PrimitiveType::Triangle)) {
         m_incident_face_datas.emplace_back(get_incident_face_data(f.tuple()));
     }
 
@@ -132,7 +132,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     global_simplex_ids_with_potentially_modified_hashes.resize(3);
     simplex::SimplexCollection faces(m_mesh);
 
-    for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Face)) {
+    for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
         cell_ids_to_update_hash.push_back(m_mesh.id(f));
 
         faces.add(wmtk::simplex::faces(m, f, false));
@@ -312,10 +312,10 @@ void TriMesh::TriMeshOperationExecutor::connect_faces_across_spine()
     const int64_t f1_bottom = m_incident_face_datas[1].split_f[1];
     auto ff_old_top = ff_accessor.index_access().vector_attribute(f_old_top);
     auto ff_old_bottom = ff_accessor.index_access().vector_attribute(f_old_bottom);
-    assert(m_mesh.capacity(PrimitiveType::Face) > f0_top);
-    assert(m_mesh.capacity(PrimitiveType::Face) > f1_top);
-    assert(m_mesh.capacity(PrimitiveType::Face) > f0_bottom);
-    assert(m_mesh.capacity(PrimitiveType::Face) > f1_bottom);
+    assert(m_mesh.capacity(PrimitiveType::Triangle) > f0_top);
+    assert(m_mesh.capacity(PrimitiveType::Triangle) > f1_top);
+    assert(m_mesh.capacity(PrimitiveType::Triangle) > f0_bottom);
+    assert(m_mesh.capacity(PrimitiveType::Triangle) > f1_bottom);
 
     // local edge ids are the same for both, f1 and f2
     int64_t local_eid_top = -1;
@@ -340,7 +340,7 @@ void TriMesh::TriMeshOperationExecutor::connect_faces_across_spine()
 void TriMesh::TriMeshOperationExecutor::replace_incident_face(IncidentFaceData& face_data)
 {
     // create new faces
-    std::vector<int64_t> new_fids = this->request_simplex_indices(PrimitiveType::Face, 2);
+    std::vector<int64_t> new_fids = this->request_simplex_indices(PrimitiveType::Triangle, 2);
     assert(new_fids.size() == 2);
 
     std::copy(new_fids.begin(), new_fids.end(), face_data.split_f.begin());
@@ -502,7 +502,7 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
     const int64_t& v1 = m_spine_vids[1];
 
     // replace v0 by v1 in incident faces
-    for (const simplex::Simplex& f : v0_star.simplex_vector(PrimitiveType::Face)) {
+    for (const simplex::Simplex& f : v0_star.simplex_vector(PrimitiveType::Triangle)) {
         const int64_t fid = m_mesh.id(f);
         bool is_fid_deleted = false;
         for (int64_t i = 0; i < m_incident_face_datas.size(); ++i) {

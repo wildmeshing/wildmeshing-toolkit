@@ -156,7 +156,7 @@ RawSimplexCollection RawSimplex::faces()
         faces.emplace_back(RawSimplex({v[1], v[2], v[3]}));
         break;
     }
-    default: throw std::runtime_error("Unexpected dimension in RawSimplex."); break;
+    default: assert(false); // "Unexpected dimension in RawSimplex."
     }
 
     return RawSimplexCollection(std::move(faces));

@@ -40,7 +40,7 @@ bool SimplexInversionInvariant::after(
 
         return true;
 
-    } else if (mesh().top_simplex_type() == PrimitiveType::Face) {
+    } else if (mesh().top_simplex_type() == PrimitiveType::Triangle) {
         assert(accessor.dimension() == 2);
 
         for (const Tuple& tuple : top_dimension_tuples_after) {

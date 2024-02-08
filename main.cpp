@@ -1,4 +1,5 @@
 #include <CLI/CLI.hpp>
+#include <chrono>
 #include <filesystem>
 #include <wmtk/components/run_components.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -36,7 +37,13 @@ int main(int argc, char** argv)
     }
     if (!spec_json.contains("root_path")) spec_json["root_path"] = json_input_file;
 
+    const auto start = std::chrono::high_resolution_clock::now();
+
     wmtk::components::run_components(spec_json, is_strict);
+
+    const auto stop = std::chrono::high_resolution_clock::now();
+    const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+    wmtk::logger().info("Wildmeshing runtime: {} ms", duration.count());
 
     return EXIT_SUCCESS;
 }

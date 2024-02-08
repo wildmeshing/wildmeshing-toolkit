@@ -11,9 +11,9 @@ TriMesh::TriMesh()
     : Mesh(2)
     , m_vf_handle(register_attribute_typed<int64_t>("m_vf", PrimitiveType::Vertex, 1, false, -1))
     , m_ef_handle(register_attribute_typed<int64_t>("m_ef", PrimitiveType::Edge, 1, false, -1))
-    , m_fv_handle(register_attribute_typed<int64_t>("m_fv", PrimitiveType::Face, 3, false, -1))
-    , m_fe_handle(register_attribute_typed<int64_t>("m_fe", PrimitiveType::Face, 3, false, -1))
-    , m_ff_handle(register_attribute_typed<int64_t>("m_ff", PrimitiveType::Face, 3, false, -1))
+    , m_fv_handle(register_attribute_typed<int64_t>("m_fv", PrimitiveType::Triangle, 3, false, -1))
+    , m_fe_handle(register_attribute_typed<int64_t>("m_fe", PrimitiveType::Triangle, 3, false, -1))
+    , m_ff_handle(register_attribute_typed<int64_t>("m_ff", PrimitiveType::Triangle, 3, false, -1))
 {
     make_cached_accessors();
 }
@@ -62,13 +62,14 @@ int64_t TriMesh::id(const Tuple& tuple, PrimitiveType type) const
         int64_t v = m_fe_accessor->const_topological_scalar_attribute(tuple, PrimitiveType::Edge);
         return v;
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         return tuple.m_global_cid;
     }
-    case PrimitiveType::HalfEdge: [[fallthrough]];
     case PrimitiveType::Tetrahedron: [[fallthrough]];
-    default: throw std::runtime_error("Tuple id: Invalid primitive type");
+    default: assert(false); // "Tuple id: Invalid primitive type"
     }
+
+    return -1;
 }
 
 bool TriMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
@@ -76,13 +77,12 @@ bool TriMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
     switch (pt) {
     case PrimitiveType::Vertex: return is_boundary_vertex(tuple);
     case PrimitiveType::Edge: return is_boundary_edge(tuple);
-    case PrimitiveType::Face:
+    case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:
-    case PrimitiveType::HalfEdge:
     default: break;
     }
-    throw std::runtime_error(
-        "tried to compute the boundary of an tri mesh for an invalid simplex dimension");
+    assert(
+        false); // "tried to compute the boundary of an tri mesh for an invalid simplex dimension"
     return false;
 }
 
@@ -119,10 +119,10 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
     bool ccw = is_ccw(tuple);
 
     switch (type) {
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         const int64_t gvid = id(tuple, PrimitiveType::Vertex);
         const int64_t geid = id(tuple, PrimitiveType::Edge);
-        const int64_t gfid = id(tuple, PrimitiveType::Face);
+        const int64_t gfid = id(tuple, PrimitiveType::Triangle);
 
         auto ff = m_ff_accessor->const_vector_attribute(tuple);
 
@@ -184,7 +184,6 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
     case PrimitiveType::Vertex:
     case PrimitiveType::Edge: return autogen::tri_mesh::local_switch_tuple(tuple, type);
     case PrimitiveType::Tetrahedron:
-    case PrimitiveType::HalfEdge:
     default: {
         assert(false);
         return autogen::tri_mesh::local_switch_tuple(tuple, type);
@@ -225,10 +224,10 @@ void TriMesh::initialize(
 
     Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
     Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
+    Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
 
     // iterate over the matrices and fill attributes
-    for (int64_t i = 0; i < capacity(PrimitiveType::Face); ++i) {
+    for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
         fv_accessor.index_access().vector_attribute(i) = FV.row(i).transpose();
         fe_accessor.index_access().vector_attribute(i) = FE.row(i).transpose();
         ff_accessor.index_access().vector_attribute(i) = FF.row(i).transpose();
@@ -291,16 +290,16 @@ Tuple TriMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
     case PrimitiveType::Edge: {
         return edge_tuple_from_id(gid);
     }
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         return face_tuple_from_id(gid);
     }
-    case PrimitiveType::HalfEdge:
     case PrimitiveType::Tetrahedron: {
         throw std::runtime_error("no tet tuple supported for trimesh");
         break;
     }
-    default: throw std::runtime_error("Invalid primitive type"); break;
+    default: assert(false); // "Invalid primitive type"
     }
+    return Tuple();
 }
 
 Tuple TriMesh::vertex_tuple_from_id(int64_t id) const
@@ -322,7 +321,9 @@ Tuple TriMesh::vertex_tuple_from_id(int64_t id) const
             return v_tuple;
         }
     }
-    throw std::runtime_error("vertex_tuple_from_id failed");
+    assert(false); // "vertex_tuple_from_id failed"
+
+    return Tuple();
 }
 
 Tuple TriMesh::edge_tuple_from_id(int64_t id) const
@@ -342,7 +343,9 @@ Tuple TriMesh::edge_tuple_from_id(int64_t id) const
             return e_tuple;
         }
     }
-    throw std::runtime_error("edge_tuple_from_id failed");
+    assert(false); // "edge_tuple_from_id failed"
+
+    return Tuple();
 }
 
 Tuple TriMesh::face_tuple_from_id(int64_t id) const
@@ -404,7 +407,7 @@ bool TriMesh::is_connectivity_valid() const
     ConstAccessor<int64_t> ef_accessor = create_const_accessor<int64_t>(m_ef_handle);
     ConstAccessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
     ConstAccessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    ConstAccessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
+    ConstAccessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
 
     // EF and FE
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
@@ -462,7 +465,7 @@ bool TriMesh::is_connectivity_valid() const
     }
 
     // FE and EF
-    for (int64_t i = 0; i < capacity(PrimitiveType::Face); ++i) {
+    for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {
         if (f_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
             wmtk::logger().debug("Face {} is deleted", i);
             continue;

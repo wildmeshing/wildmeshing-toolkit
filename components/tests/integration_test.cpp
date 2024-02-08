@@ -104,7 +104,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
 
             const int64_t n_vertices = mesh->get_all(PrimitiveType::Vertex).size();
             const int64_t n_edges = mesh->get_all(PrimitiveType::Edge).size();
-            const int64_t n_faces = mesh->get_all(PrimitiveType::Face).size();
+            const int64_t n_faces = mesh->get_all(PrimitiveType::Triangle).size();
             const int64_t n_tetrahedra = mesh->get_all(PrimitiveType::Tetrahedron).size();
 
             if (n_vertices != expected_vertices) {
@@ -143,7 +143,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
 
             const int64_t n_vertices = mesh->get_all(PrimitiveType::Vertex).size();
             const int64_t n_edges = mesh->get_all(PrimitiveType::Edge).size();
-            const int64_t n_faces = mesh->get_all(PrimitiveType::Face).size();
+            const int64_t n_faces = mesh->get_all(PrimitiveType::Triangle).size();
             const int64_t n_tetrahedra = mesh->get_all(PrimitiveType::Tetrahedron).size();
 
             expected_vertices.push_back(n_vertices);
