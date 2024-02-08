@@ -31,7 +31,7 @@ using TMOE = decltype(std::declval<DEBUG_TetMesh>().get_tmoe(
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
 TEST_CASE("tet_get_split_simplices_to_delete", "[operations][split][3d]")
@@ -389,7 +389,7 @@ TEST_CASE("tet_edge_split", "[operations][split][3d]")
         CHECK(!res.empty());
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
         CHECK(m.get_all(PrimitiveType::Edge).size() == 9);
-        CHECK(m.get_all(PrimitiveType::Face).size() == 7);
+        CHECK(m.get_all(PrimitiveType::Triangle).size() == 7);
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
 
         const auto res_tuple = res.front().tuple();
@@ -431,7 +431,7 @@ TEST_CASE("tet_edge_split", "[operations][split][3d]")
         auto res_tuple = res.front().tuple();
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 7);
         CHECK(m.get_all(PrimitiveType::Edge).size() == 15);
-        CHECK(m.get_all(PrimitiveType::Face).size() == 13);
+        CHECK(m.get_all(PrimitiveType::Triangle).size() == 13);
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
         CHECK(m.id(res_tuple, PrimitiveType::Vertex) == 6);
         CHECK(
@@ -474,7 +474,7 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
         CHECK(!res.empty());
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
         CHECK(m.get_all(PrimitiveType::Edge).size() == 9);
-        CHECK(m.get_all(PrimitiveType::Face).size() == 7);
+        CHECK(m.get_all(PrimitiveType::Triangle).size() == 7);
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
         auto res_tuple = res.front().tuple();
         CHECK(m.id(res_tuple, PrimitiveType::Vertex) == 2);
@@ -504,7 +504,7 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
         CHECK(!res.empty());
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
         CHECK(m.get_all(PrimitiveType::Edge).size() == 9);
-        CHECK(m.get_all(PrimitiveType::Face).size() == 7);
+        CHECK(m.get_all(PrimitiveType::Triangle).size() == 7);
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
         auto res_tuple = res.front().tuple();
         CHECK(m.id(res_tuple, PrimitiveType::Vertex) == 4);

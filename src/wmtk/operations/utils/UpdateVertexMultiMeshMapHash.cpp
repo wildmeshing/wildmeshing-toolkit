@@ -32,8 +32,8 @@ void update_vertex_operation_hashes(Mesh& m, const Tuple& vertex, Accessor<int64
         }
         break;
     }
-    case PrimitiveType::Face: {
-        const auto star_faces = star.simplex_vector(PrimitiveType::Face);
+    case PrimitiveType::Triangle: {
+        const auto star_faces = star.simplex_vector(PrimitiveType::Triangle);
         tuples_to_update.reserve(star_faces.size());
         for (const simplex::Simplex& s : star_faces) {
             tuples_to_update.emplace_back(s.tuple());
@@ -48,8 +48,7 @@ void update_vertex_operation_hashes(Mesh& m, const Tuple& vertex, Accessor<int64
         }
         break;
     }
-    default:
-    case PrimitiveType::HalfEdge: throw std::runtime_error("invalid input");
+    default: assert(false); // "invalid input"
     }
 
 

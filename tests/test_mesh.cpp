@@ -21,7 +21,7 @@ using namespace operations;
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
 TEST_CASE("test_mesh_virtuals", "[mesh]")
@@ -38,7 +38,7 @@ TEST_CASE("test_mesh_virtuals", "[mesh]")
 
     REQUIRE(pm.top_simplex_type() == wmtk::PrimitiveType::Vertex);
     REQUIRE(em.top_simplex_type() == wmtk::PrimitiveType::Edge);
-    REQUIRE(fm.top_simplex_type() == wmtk::PrimitiveType::Face);
+    REQUIRE(fm.top_simplex_type() == wmtk::PrimitiveType::Triangle);
     REQUIRE(tm.top_simplex_type() == wmtk::PrimitiveType::Tetrahedron);
 }
 

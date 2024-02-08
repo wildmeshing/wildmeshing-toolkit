@@ -82,7 +82,7 @@ const TypedAttributeHandle<int64_t>& DEBUG_EdgeMesh::e_handle(const PrimitiveTyp
     switch (type) {
     case PrimitiveType::Vertex: return m_ev_handle;
     case PrimitiveType::Edge: return m_ee_handle;
-    case PrimitiveType::Face:;
+    case PrimitiveType::Triangle:;
     default: throw std::runtime_error("Invalid PrimitiveType");
     }
 }

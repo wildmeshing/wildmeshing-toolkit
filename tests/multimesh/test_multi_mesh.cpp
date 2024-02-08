@@ -23,7 +23,7 @@ using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 
 
 namespace {} // namespace
@@ -280,19 +280,19 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
     {
         // try the tuples that should succeed
         for (const auto& [ct, pt] : child0_map) {
-            auto ncts = parent.map_to_child_tuples(child0, Simplex(PrimitiveType::Face, pt));
+            auto ncts = parent.map_to_child_tuples(child0, Simplex(PrimitiveType::Triangle, pt));
             REQUIRE(ncts.size() == 1);
             auto nct = ncts[0];
-            auto npt = child0.map_to_parent_tuple(Simplex(PrimitiveType::Face, ct));
+            auto npt = child0.map_to_parent_tuple(Simplex(PrimitiveType::Triangle, ct));
 
             CHECK(nct == ct);
             CHECK(npt == pt);
         }
         for (const auto& [ct, pt] : child1_map) {
-            auto ncts = parent.map_to_child_tuples(child1, Simplex(PrimitiveType::Face, pt));
+            auto ncts = parent.map_to_child_tuples(child1, Simplex(PrimitiveType::Triangle, pt));
             REQUIRE(ncts.size() == 1);
             auto nct = ncts[0];
-            auto npt = child1.map_to_parent_tuple(Simplex(PrimitiveType::Face, ct));
+            auto npt = child1.map_to_parent_tuple(Simplex(PrimitiveType::Triangle, ct));
 
             CHECK(nct == ct);
             CHECK(npt == pt);
@@ -302,12 +302,12 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
         // go through simplex indices that aren't available in the map
         for (int64_t index = 0; index < 2; ++index) {
             auto pt = parent.tuple_from_id(PF, index);
-            auto ncts = parent.map_to_child(child0, Simplex(PrimitiveType::Face, pt));
+            auto ncts = parent.map_to_child(child0, Simplex(PrimitiveType::Triangle, pt));
             CHECK(ncts.size() == 0);
         }
         for (int64_t index = 2; index < 3; ++index) {
             auto pt = parent.tuple_from_id(PF, index);
-            auto ncts = parent.map_to_child(child1, Simplex(PrimitiveType::Face, pt));
+            auto ncts = parent.map_to_child(child1, Simplex(PrimitiveType::Triangle, pt));
             CHECK(ncts.size() == 0);
         }
     }

@@ -26,7 +26,7 @@ public:
 
     static Simplex vertex(const Tuple& t) { return Simplex(PrimitiveType::Vertex, t); }
     static Simplex edge(const Tuple& t) { return Simplex(PrimitiveType::Edge, t); }
-    static Simplex face(const Tuple& t) { return Simplex(PrimitiveType::Face, t); }
+    static Simplex face(const Tuple& t) { return Simplex(PrimitiveType::Triangle, t); }
     static Simplex tetrahedron(const Tuple& t) { return Simplex(PrimitiveType::Tetrahedron, t); }
 
     bool operator==(const Simplex& o) const;

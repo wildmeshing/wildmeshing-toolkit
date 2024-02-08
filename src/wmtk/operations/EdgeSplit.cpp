@@ -102,7 +102,7 @@ std::pair<Tuple, Tuple> EdgeSplit::new_spine_edges(const Mesh& mesh, const Tuple
     // * PF -> other face
     // * PE -> other spine edge
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
-    constexpr static PrimitiveType PF = PrimitiveType::Face;
+    constexpr static PrimitiveType PF = PrimitiveType::Triangle;
     constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
 
     std::pair<Tuple, Tuple> ret;
@@ -121,8 +121,7 @@ std::pair<Tuple, Tuple> EdgeSplit::new_spine_edges(const Mesh& mesh, const Tuple
         break;
     }
     case PrimitiveType::Vertex:
-    case PrimitiveType::HalfEdge:
-    default: throw std::runtime_error("Invalid top simplex");
+    default: assert(false); // "Invalid top simplex"
     }
     return ret;
 }

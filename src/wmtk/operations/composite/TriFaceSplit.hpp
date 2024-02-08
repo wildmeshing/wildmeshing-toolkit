@@ -22,7 +22,7 @@ class TriFaceSplit : public Operation
 public:
     TriFaceSplit(Mesh& m);
 
-    PrimitiveType primitive_type() const override { return PrimitiveType::Face; }
+    PrimitiveType primitive_type() const override { return PrimitiveType::Triangle; }
 
     inline EdgeSplit& split() { return m_split; }
     inline EdgeCollapse& collapse() { return m_collapse; }

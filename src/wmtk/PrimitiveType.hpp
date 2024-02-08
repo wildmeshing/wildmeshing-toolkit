@@ -6,7 +6,7 @@
 
 namespace wmtk {
 
-enum class PrimitiveType : int8_t { Vertex = 0, Edge = 1, Face = 2, Tetrahedron = 3, HalfEdge = 4 };
+enum class PrimitiveType : int8_t { Vertex = 0, Edge = 1, Triangle = 2, Tetrahedron = 3 };
 
 /**
  * @brief Get a unique integer id corresponding to each primitive type

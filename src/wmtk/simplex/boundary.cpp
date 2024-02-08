@@ -9,7 +9,7 @@ std::vector<Tuple> boundary_tuples(const Mesh& m, const Tuple& t, PrimitiveType 
     std::vector<Tuple> ret;
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
-    constexpr static PrimitiveType PF = PrimitiveType::Face;
+    constexpr static PrimitiveType PF = PrimitiveType::Triangle;
     constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
     switch (pt) {
     case PrimitiveType::Vertex: {
@@ -18,7 +18,7 @@ std::vector<Tuple> boundary_tuples(const Mesh& m, const Tuple& t, PrimitiveType 
     case PrimitiveType::Edge: {
         ret = {t, m.switch_vertex(t)};
     } break;
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         ret = {
             t, //
             m.switch_tuples(t, {PE}),
@@ -31,7 +31,6 @@ std::vector<Tuple> boundary_tuples(const Mesh& m, const Tuple& t, PrimitiveType 
             m.switch_tuples(t, {PE, PF}), //
             m.switch_tuples(t, {PV, PE, PF})};
     } break;
-    case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
     return ret;

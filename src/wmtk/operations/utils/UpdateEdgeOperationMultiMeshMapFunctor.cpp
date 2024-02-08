@@ -17,7 +17,7 @@ namespace wmtk::operations::utils {
 namespace {
 constexpr static PrimitiveType PV = PrimitiveType::Vertex;
 constexpr static PrimitiveType PE = PrimitiveType::Edge;
-constexpr static PrimitiveType PF = PrimitiveType::Face;
+constexpr static PrimitiveType PF = PrimitiveType::Triangle;
 constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
 } // namespace
 void UpdateEdgeOperationMultiMeshMapFunctor::update_all_hashes(
@@ -218,7 +218,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         child_ptr->create_accessor(child_to_parent_handle);
                     auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
                     auto child_cell_flag_accessor =
-                        child_ptr->get_const_flag_accessor(PrimitiveType::Face);
+                        child_ptr->get_const_flag_accessor(PrimitiveType::Triangle);
 
                     const int64_t parent_ear_fid_old = parent_data.ears[ear_index].fid;
                     const int64_t parent_merged_fid = parent_data.new_face_id;
@@ -574,7 +574,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     // update_hash on neighboring cells. use only 2 to get the cell types on either case
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
-    constexpr static PrimitiveType PF = PrimitiveType::Face;
+    constexpr static PrimitiveType PF = PrimitiveType::Triangle;
 
     // NOTE: this is purpuosely verbose to show a point
     // We have to select with PrimitiveTypes are supported as children for each type of mesh
