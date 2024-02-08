@@ -360,4 +360,244 @@ void ExtremeOptSingle::remeshing(const long iterations)
     } // end for
 }
 
+void ExtremeOptSingle::remeshing_amips(const long iterations)
+{
+    int num_faces_before = m_mesh.get_all(PrimitiveType::Face).size();
+
+    auto energy_handle = m_mesh.register_attribute<double>("energy", wmtk::PrimitiveType::Face, 1);
+    auto energy_acc = m_mesh.create_accessor(energy_handle.as<double>());
+
+    // create energy to optimize
+    std::shared_ptr<function::PerSimplexFunction> amips =
+        std::make_shared<function::AMIPS>(m_mesh, m_uv_handle);
+
+    auto evaluate_function_sum = [&](std::shared_ptr<function::PerSimplexFunction> f,
+                                     bool update_energy_attribute = false) {
+        double function_sum = 0;
+        const auto all_face_tuples = m_mesh.get_all(PrimitiveType::Face);
+        for (const auto& t : all_face_tuples) {
+            double face_value = f->get_value(simplex::Simplex::face(t));
+            function_sum += face_value;
+            if (update_energy_attribute) {
+                energy_acc.scalar_attribute(t) = face_value;
+            }
+        }
+        return function_sum;
+    };
+
+    auto uv_accessor = m_mesh.create_accessor(m_uv_handle.as<double>());
+
+
+    // create lambdas for priority
+    auto get_length = [&](const simplex::Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        const auto uv0 = uv_accessor.vector_attribute(s.tuple());
+        const auto uv1 = uv_accessor.vector_attribute(m_mesh.switch_vertex(s.tuple()));
+        return (uv0 - uv1).norm();
+    };
+    auto long_edge_first = [&](const simplex::Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        return std::vector<double>({-get_length(s)});
+    };
+    auto short_edges_first = [&](const simplex::Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        return std::vector<double>({get_length(s)});
+    };
+
+    /////////////////////////////////
+    // Creation of the 4ops
+    /////////////////////////////////
+    // 1) EdgeSplit
+    auto split_op = std::make_shared<EdgeSplit>(m_mesh);
+    {
+        // MinEdgeLengthInvariant
+        split_op->add_invariant(std::make_shared<MinEdgeLengthInvariant>(
+            m_mesh,
+            m_uv_handle.as<double>(),
+            m_length_min * m_length_min));
+        split_op->add_invariant(
+            std::make_shared<FunctionNumericalInvariant>(m_mesh.top_simplex_type(), amips));
+        // Position and uv coordinate update
+        split_op->set_new_attribute_strategy(
+            m_position_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+        split_op->set_new_attribute_strategy(
+            m_uv_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+
+        split_op->set_new_attribute_strategy(
+            energy_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+        // long edge first priority
+        split_op->set_priority(long_edge_first);
+    }
+
+    // 2) EdgeCollapse
+    auto collapse_op = std::make_shared<EdgeCollapse>(m_mesh);
+    {
+        // LinkConditionInvariant
+        collapse_op->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh));
+        // InversionInvariant
+        collapse_op->add_invariant(
+            std::make_shared<SimplexInversionInvariant>(m_mesh, m_position_handle.as<double>()));
+        collapse_op->add_invariant(
+            std::make_shared<SimplexInversionInvariant>(m_mesh, m_uv_handle.as<double>()));
+        // MinEdgeLengthInvariant
+        collapse_op->add_invariant(std::make_shared<MaxEdgeLengthInvariant>(
+            m_mesh,
+            m_uv_handle.as<double>(),
+            m_length_max * m_length_max));
+        // Energy Decrease
+        collapse_op->add_invariant(
+            std::make_shared<FunctionInvariant>(m_mesh.top_simplex_type(), amips));
+
+        {
+            auto tmp = std::make_shared<CollapseNewAttributeStrategy<double>>(m_uv_handle);
+            tmp->set_strategy(CollapseBasicStrategy::CopyOther);
+            tmp->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+            collapse_op->set_new_attribute_strategy(m_uv_handle, tmp);
+        }
+        {
+            auto tmp = std::make_shared<CollapseNewAttributeStrategy<double>>(m_position_handle);
+            tmp->set_strategy(CollapseBasicStrategy::CopyOther);
+            tmp->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+            collapse_op->set_new_attribute_strategy(m_position_handle, tmp);
+        }
+
+
+        // short edge first priority
+        collapse_op->set_priority(short_edges_first);
+    }
+
+    // 3) TriEdgeSwap
+    auto swap_op = std::make_shared<composite::TriEdgeSwap>(m_mesh);
+    {
+        // link condition for collpase op in swap
+        swap_op->collapse().add_invariant(
+            std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh));
+        // Interior Edge in uv_mesh
+        swap_op->add_invariant(std::make_shared<InteriorEdgeInvariant>(m_mesh));
+        // no inversion on uv_mesh
+        swap_op->add_invariant(
+            std::make_shared<SimplexInversionInvariant>(m_mesh, m_uv_handle.as<double>()));
+        // Energy Decrease
+        swap_op->add_invariant(
+            std::make_shared<FunctionInvariant>(m_mesh.top_simplex_type(), amips));
+
+        // long edge first priority
+        swap_op->set_priority(long_edge_first);
+
+        // set default attribute strategy
+        swap_op->split().set_new_attribute_strategy(
+            m_position_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+        swap_op->collapse().set_new_attribute_strategy(
+            m_position_handle,
+            CollapseBasicStrategy::CopyOther);
+        swap_op->split().set_new_attribute_strategy(
+            m_uv_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+        swap_op->collapse().set_new_attribute_strategy(
+            m_uv_handle,
+            CollapseBasicStrategy::CopyOther);
+
+        // TODO: need this to run
+        swap_op->split().set_new_attribute_strategy(
+            energy_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+    }
+
+    auto energy =
+        std::make_shared<function::LocalNeighborsSumFunction>(m_mesh, m_uv_handle, *amips);
+    auto smooth_op = std::make_shared<OptimizationSmoothing>(m_mesh, energy);
+    smooth_op->add_invariant(
+        std::make_shared<SimplexInversionInvariant>(m_mesh, m_uv_handle.as<double>()));
+
+    // set to serialize energy in the vtu files
+    bool m_serialize_energy = true;
+
+    double E_sum = evaluate_function_sum(amips, m_serialize_energy);
+    double area_sum = (double)m_mesh.get_all(PrimitiveType::Face).size();
+
+    wmtk::logger().info("Energy sum before: {}", E_sum);
+    wmtk::logger().info("Energy Avg before: {}", E_sum / area_sum);
+    if (m_debug_output) {
+        write_debug_mesh(0);
+    }
+    long cnt = 0;
+    for (long i = 0; i < iterations; ++i) {
+        wmtk::logger().info("Iteration {}", i);
+
+        if (m_do_split) {
+            m_scheduler.run_operation_on_all(*split_op);
+            wmtk::logger().info("Done split {}", i);
+            // wmtk::logger().info("Energy max after split: {}", evaluate_energy_max());
+            E_sum = evaluate_function_sum(amips, m_serialize_energy);
+            area_sum = (double)m_mesh.get_all(PrimitiveType::Face).size();
+            wmtk::logger().info("Energy sum after split: {}\n", E_sum);
+            wmtk::logger().info("Energy avg after split: {}\n", E_sum / area_sum);
+
+            // debug write
+            if (m_debug_output) {
+                write_debug_mesh(++cnt);
+            }
+        }
+
+        if (m_do_collapse) {
+            int n_faces = m_mesh.get_all(PrimitiveType::Face).size();
+            if (n_faces >= num_faces_before / 5) {
+                m_scheduler.run_operation_on_all(*collapse_op);
+            }
+
+            wmtk::logger().info("Done collapse {}", i);
+            // wmtk::logger().info("Energy max after collapse: {}", evaluate_energy_max());
+            E_sum = evaluate_function_sum(amips, m_serialize_energy);
+            area_sum = (double)m_mesh.get_all(PrimitiveType::Face).size();
+            wmtk::logger().info("Energy sum after collapse: {}\n", E_sum);
+            wmtk::logger().info("Energy avg after collapse: {}\n", E_sum / area_sum);
+
+            // debug write
+            if (m_debug_output) {
+                write_debug_mesh(++cnt);
+            }
+        }
+
+        if (m_do_swap) {
+            m_scheduler.run_operation_on_all(*swap_op);
+            wmtk::logger().info("Done swap {}", i);
+            // wmtk::logger().info("Energy max after swap: {}", evaluate_energy_max());
+            E_sum = evaluate_function_sum(amips, m_serialize_energy);
+            area_sum = (double)m_mesh.get_all(PrimitiveType::Face).size();
+            wmtk::logger().info("Energy sum after swap: {}\n", E_sum);
+            wmtk::logger().info("Energy avg after swap: {}\n", E_sum / area_sum);
+
+            // debug write
+            if (m_debug_output) {
+                write_debug_mesh(++cnt);
+            }
+        }
+
+        if (m_do_smooth) {
+            m_scheduler.run_operation_on_all(*smooth_op);
+            wmtk::logger().info("Done smooth {}", i);
+            // wmtk::logger().info("Energy max after smooth: {}", evaluate_energy_max());
+            E_sum = evaluate_function_sum(amips, m_serialize_energy);
+            // area_sum = evaluate_function_sum(triangle_area);
+            wmtk::logger().info("Energy sum after smooth: {}\n", E_sum);
+            wmtk::logger().info("Energy avg after smooth: {}\n", E_sum / area_sum);
+            // debug write
+            if (m_debug_output) {
+                write_debug_mesh(++cnt);
+            }
+        }
+
+        m_mesh.consolidate();
+    } // end for
+}
 } // namespace wmtk::components::internal

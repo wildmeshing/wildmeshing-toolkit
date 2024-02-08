@@ -44,6 +44,7 @@ public:
 
     void get_boundary_mesh();
     void remeshing(const long iterations);
+    void remeshing_amips(const long iterations);
     void write_debug_mesh(const long test_id);
 };
 

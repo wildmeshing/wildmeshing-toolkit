@@ -75,7 +75,9 @@ void extreme_opt_single(const base::Paths& paths, const nlohmann::json& j, io::C
         options.do_smooth,
         options.debug_output);
 
-    extreme_opt_single.remeshing(options.iterations);
+    // extreme_opt_single.remeshing(options.iterations);
+    // TODO: test on amimps energy
+    extreme_opt_single.remeshing_amips(options.iterations);
     std::cout << "finish remeshing" << std::endl;
 
 
