@@ -1,14 +1,11 @@
 var classwmtk_1_1attribute_1_1_attribute =
 [
-    [ "ConstMapResult", "classwmtk_1_1attribute_1_1_attribute.html#a6ca0dd58158449eacfe8f12652ebb4f9", null ],
-    [ "ConstMapResultD", "classwmtk_1_1attribute_1_1_attribute.html#a4a34472fc177b5d4adfea8083ff35dc4", null ],
-    [ "MapResult", "classwmtk_1_1attribute_1_1_attribute.html#a7e94ea922bf6c808ec8a833b7fb505e3", null ],
-    [ "MapResultD", "classwmtk_1_1attribute_1_1_attribute.html#a867a2fa02006494fb41f0a34d8e252c8", null ],
+    [ "ConstMapResult", "classwmtk_1_1attribute_1_1_attribute.html#ada86cd7a5c178c8ff38bdc749516ef01", null ],
+    [ "MapResult", "classwmtk_1_1attribute_1_1_attribute.html#a526bb8cbbf11887d9f6b081974f8c877", null ],
     [ "Attribute", "classwmtk_1_1attribute_1_1_attribute.html#a156720686b0e59cfc3c5e4dd0ff04e41", null ],
     [ "Attribute", "classwmtk_1_1attribute_1_1_attribute.html#a905a25dbb885af859180f8a8d5f7a788", null ],
     [ "~Attribute", "classwmtk_1_1attribute_1_1_attribute.html#ac896350897d0776a396e8c7833e69046", null ],
     [ "child_hashes", "classwmtk_1_1attribute_1_1_attribute.html#af4e2ee79105f21583036f4dd92446d60", null ],
-    [ "clear_current_scope", "classwmtk_1_1attribute_1_1_attribute.html#ad0a1b010a5eba0e8a9f2f006db6ec8b4", null ],
     [ "consolidate", "classwmtk_1_1attribute_1_1_attribute.html#ab554ffe9df06f7b2deb699b31eadf31a", null ],
     [ "const_scalar_attribute", "classwmtk_1_1attribute_1_1_attribute.html#afb01f3bc19d91ec8fa00b30b942e9d93", null ],
     [ "const_scalar_attribute", "classwmtk_1_1attribute_1_1_attribute.html#a926d8bb3ce352529ee58b75eff58a488", null ],
@@ -17,7 +14,8 @@ var classwmtk_1_1attribute_1_1_attribute =
     [ "const_vector_attribute", "classwmtk_1_1attribute_1_1_attribute.html#a0a1f0b47e4c8ead7f20c06380e0ec464", null ],
     [ "const_vector_attribute", "classwmtk_1_1attribute_1_1_attribute.html#a9a5be36a586a6775622ac9ce93b2c873", null ],
     [ "dimension", "classwmtk_1_1attribute_1_1_attribute.html#a505bc996591f0476e092f572515ab9fd", null ],
-    [ "get_local_scope_stack_ptr", "classwmtk_1_1attribute_1_1_attribute.html#a93e216e02de0ed9c205cdff715555358", null ],
+    [ "get_local_scope_stack", "classwmtk_1_1attribute_1_1_attribute.html#a2863fc77ae6b7c429c2607158c88a7cf", null ],
+    [ "get_local_scope_stack", "classwmtk_1_1attribute_1_1_attribute.html#a403d6f523f054dda6a4ccf5120a1ac46", null ],
     [ "index_remap", "classwmtk_1_1attribute_1_1_attribute.html#a1e347aa313eb681f44a5102d52c0f177", null ],
     [ "index_remap", "classwmtk_1_1attribute_1_1_attribute.html#a9f9f2dedd450ce4756f54d1ec54613aa", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_attribute.html#a0be737f3a9176ca76a4ab7e23dd14b5c", null ],
@@ -27,6 +25,7 @@ var classwmtk_1_1attribute_1_1_attribute =
     [ "reserve", "classwmtk_1_1attribute_1_1_attribute.html#aa930803304f88a3c306932312daf3ac2", null ],
     [ "reserved_size", "classwmtk_1_1attribute_1_1_attribute.html#ab5d7082840a61f401aee12f82db0b805", null ],
     [ "reserved_size", "classwmtk_1_1attribute_1_1_attribute.html#a7a09104f1077da862f732e28da092903", null ],
+    [ "rollback_current_scope", "classwmtk_1_1attribute_1_1_attribute.html#a71c4a3eabf303b9ff3f9bd1656ec8061", null ],
     [ "scalar_attribute", "classwmtk_1_1attribute_1_1_attribute.html#a54a0f1a318e8ee28844c041daf3357ad", null ],
     [ "scalar_attribute", "classwmtk_1_1attribute_1_1_attribute.html#aac65b284d0e94837834fa15a7a8e40ea", null ],
     [ "scalar_attribute", "classwmtk_1_1attribute_1_1_attribute.html#a205ffc7d7824f398c6b1edacefd70919", null ],
@@ -41,5 +40,5 @@ var classwmtk_1_1attribute_1_1_attribute =
     [ "m_default_value", "classwmtk_1_1attribute_1_1_attribute.html#a03af7f23d69aacf3f0fba85fa19d5646", null ],
     [ "m_dimension", "classwmtk_1_1attribute_1_1_attribute.html#a3d2b408cca634ef9ab1a93106514d4f2", null ],
     [ "m_name", "classwmtk_1_1attribute_1_1_attribute.html#ac4daf81bf9c387665b75f7c85c35a6b7", null ],
-    [ "m_scope_stacks", "classwmtk_1_1attribute_1_1_attribute.html#a41f8f2737b4b676378ab583d8b0aac84", null ]
+    [ "m_scope_stacks", "classwmtk_1_1attribute_1_1_attribute.html#a462ebb49e16279b160d8c562d304059b", null ]
 ];

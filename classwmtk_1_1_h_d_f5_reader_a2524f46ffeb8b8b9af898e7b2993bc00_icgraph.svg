@@ -112,17 +112,17 @@ var sectionId = 'dynsection-0';
 <g id="node11" class="node">
 <title>Node11</title>
 <g id="a_node11"><a xlink:href="classwmtk_1_1io_1_1_cached_multi_mesh.html#aa33ef463beccbfc46f941380e988765c" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="663,-70.44 663,-100.44 815,-100.44 815,-70.44 663,-70.44"/>
-<text text-anchor="start" x="671" y="-88.44" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::io::CachedMultiMesh</text>
-<text text-anchor="middle" x="739" y="-77.44" font-family="Helvetica,sans-Serif" font-size="10.00">::load</text>
+<polygon fill="none" stroke="black" points="663,-52.44 663,-82.44 815,-82.44 815,-52.44 663,-52.44"/>
+<text text-anchor="start" x="671" y="-70.44" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::io::CachedMultiMesh</text>
+<text text-anchor="middle" x="739" y="-59.44" font-family="Helvetica,sans-Serif" font-size="10.00">::load</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node11 -->
 <g id="edge13" class="edge">
 <title>Node2&#45;&gt;Node11</title>
-<path fill="none" stroke="midnightblue" d="M857.2,-117.28C838.09,-112.09 815.61,-105.98 795.47,-100.51"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="856.28,-120.65 866.85,-119.9 858.12,-113.9 856.28,-120.65"/>
+<path fill="none" stroke="midnightblue" d="M867.66,-116.3C841.86,-106.43 806.47,-92.88 779.5,-82.56"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="866.45,-119.59 877.04,-119.89 868.95,-113.05 866.45,-119.59"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
@@ -239,6 +239,12 @@ var sectionId = 'dynsection-0';
 <title>Node9&#45;&gt;Node7</title>
 <path fill="none" stroke="midnightblue" d="M219.34,-62.41C205.17,-65.91 190.63,-69.5 176.69,-72.93"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="220.21,-65.81 229.08,-60.01 218.53,-59.01 220.21,-65.81"/>
+</g>
+<!-- Node11&#45;&gt;Node11 -->
+<g id="edge14" class="edge">
+<title>Node11&#45;&gt;Node11</title>
+<path fill="none" stroke="midnightblue" d="M768.14,-92.9C764.52,-97.62 754.81,-100.94 739,-100.94 713.05,-100.94 703.53,-92 710.42,-82.6"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="771.62,-92.4 767.58,-82.6 764.63,-92.78 771.62,-92.4"/>
 </g>
 </g>
 </svg>

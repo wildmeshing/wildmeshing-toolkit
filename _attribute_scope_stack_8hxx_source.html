@@ -115,205 +115,145 @@ $(document).ready(function(){initNavTree('_attribute_scope_stack_8hxx_source.htm
 <div class="title">AttributeScopeStack.hxx</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="_attribute_scope_stack_8hxx.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_attribute_scope_stack_8hpp.html">AttributeScopeStack.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_rational_8hpp.html">wmtk/utils/Rational.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_attribute_8hpp.html">Attribute.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_attribute_scope_8hpp.html">AttributeScope.hpp</a>&quot;</span></div>
+<a href="_attribute_scope_stack_8hxx.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_rational_8hpp.html">wmtk/utils/Rational.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_attribute_8hpp.html">Attribute.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_attribute_scope_8hpp.html">AttributeScope.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_attribute_scope_stack_8hpp.html">AttributeScopeStack.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1attribute.html">wmtk::attribute</a> {</div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ab5f7821839d803e79951251242bf3157">AttributeScopeStack&lt;T&gt;::AttributeScopeStack</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ac5986ed2e3bac508e313e91aaba5ec14">AttributeScopeStack&lt;T&gt;::~AttributeScopeStack</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00013"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a1ccfe737c6de906709364cce23bc7b6b">   13</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a1ccfe737c6de906709364cce23bc7b6b">AttributeScopeStack&lt;T&gt;::emplace</a>()</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;{</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    assert(at_current_scope()); <span class="comment">// must only be called on leaf node</span></div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="comment">// create a new leaf that points to the active stack and</span></div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keywordflow">if</span>(<span class="keywordtype">bool</span>(m_start)) {</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    std::unique_ptr&lt;AttributeScope&lt;T&gt;&gt; new_start = std::make_unique&lt;AttributeScope&lt;T&gt;&gt;(std::move(m_start));</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    m_start = std::move(new_start);</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        m_start = std::make_unique&lt;AttributeScope&lt;T&gt;&gt;();</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    }</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    change_to_current_scope();</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;}</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a54f12a705b67a04bdc61260f3ee424bf">   28</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a54f12a705b67a04bdc61260f3ee424bf">AttributeScopeStack&lt;T&gt;::pop</a>(<a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute&lt;T&gt;</a>&amp; attribute, <span class="keywordtype">bool</span> apply_updates)</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;{</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="comment">// delete myself by setting my parent to be the leaf</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    assert(<span class="keywordtype">bool</span>(m_start));</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#if defined(WMTK_FLUSH_ON_FAIL)</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    assert(m_active == <span class="keyword">nullptr</span>); <span class="comment">// must only be called on leaf node</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#else</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    assert(m_active == m_start.get()); <span class="comment">// must only be called on leaf node</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="preprocessor">#if defined(WMTK_ONLY_CACHE_WRITES)</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keywordflow">if</span> (!apply_updates) {</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="preprocessor">#else</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keywordflow">if</span> (apply_updates) {</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        m_start-&gt;flush(attribute);</div>
+<div class="line"><a name="l00009"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ab5f7821839d803e79951251242bf3157">    9</a></span>&#160;<a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ab5f7821839d803e79951251242bf3157">AttributeScopeStack&lt;T&gt;::AttributeScopeStack</a>()</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;{</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    <span class="comment">// a random value that&#39;s more than 2ish</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    m_scopes.reserve(5);</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    m_active = m_scopes.end();</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;}</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ac5986ed2e3bac508e313e91aaba5ec14">AttributeScopeStack&lt;T&gt;::~AttributeScopeStack</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00018"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a1ccfe737c6de906709364cce23bc7b6b">   18</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a1ccfe737c6de906709364cce23bc7b6b">AttributeScopeStack&lt;T&gt;::emplace</a>()</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;{</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    assert(at_current_scope()); <span class="comment">// must only be called on leaf node</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="comment">// create a new leaf that points to the active stack and</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keywordflow">if</span> (m_scopes.size() + 1 &gt;= m_scopes.capacity()) {</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        m_scopes.reserve(m_scopes.capacity() + 3);</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        change_to_current_scope();</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    }</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    m_scopes.emplace_back();</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    change_to_current_scope();</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;}</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a212528c5949c2e97dd09d31ce38aa73a">   32</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a212528c5949c2e97dd09d31ce38aa73a">AttributeScopeStack&lt;T&gt;::pop</a>(<a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute&lt;T&gt;</a>&amp; attribute, <span class="keywordtype">bool</span> preserve_changes)</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;{</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    assert(at_current_scope()); <span class="comment">// must only be called on leaf node</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keywordflow">if</span> (!preserve_changes) {</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="comment">// rollback_current_scope(attribute);</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    }</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keywordflow">if</span> (m_scopes.size() &gt;= 2) {</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="keyword">auto</span> it = m_scopes.rbegin();</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keyword">auto</span> it2 = it + 1;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        it-&gt;apply_to(*it2);</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    }</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLE_GENERIC_CHECKPOINTS)</span></div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keywordflow">if</span> (!m_checkpoints.empty()) {</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="keywordflow">while</span> (m_checkpoints.back() == m_start.get()) {</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            m_checkpoints.pop_back();</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        }</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    }</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    m_start = m_start-&gt;pop_to_next();</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    change_to_current_scope();</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;}</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ae18947bef8614b41d75a7f0ef9b19d17">   57</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ae18947bef8614b41d75a7f0ef9b19d17">AttributeScopeStack&lt;T&gt;::flush_changes_to_vector</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute&lt;T&gt;</a>&amp; attr, std::vector&lt;T&gt;&amp; data)<span class="keyword"></span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="keyword">    const</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keywordflow">if</span> (m_start) {</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        m_start-&gt;flush_changes_to_vector(attr, data);</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    }</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;}</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a4453cdc564b67a56f1ca2e0aa11a5a6d">   67</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a4453cdc564b67a56f1ca2e0aa11a5a6d">AttributeScopeStack&lt;T&gt;::empty</a>()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordflow">return</span> !bool(m_start);</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;}</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00073"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#afd0c17101b4ba71dac41dcbf446cc939">   73</a></span>&#160;int64_t <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#afd0c17101b4ba71dac41dcbf446cc939">AttributeScopeStack&lt;T&gt;::depth</a>()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keywordflow">if</span> (<span class="keywordtype">bool</span>(m_start)) {</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <span class="keywordflow">return</span> m_start-&gt;depth();</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="keywordflow">return</span> 0;</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    }</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;}</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00083"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#aa0323f2d57d9bb0db54a3e365c707cb9">   83</a></span>&#160;<a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope&lt;T&gt;</a>* <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#aa0323f2d57d9bb0db54a3e365c707cb9">AttributeScopeStack&lt;T&gt;::active_scope_ptr</a>()</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;{</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keywordflow">return</span> m_active;</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;}</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00089"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a8bfd80a90af4a0321a478d121628a1ac">   89</a></span>&#160;<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope&lt;T&gt;</a>* <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#aa0323f2d57d9bb0db54a3e365c707cb9">AttributeScopeStack&lt;T&gt;::active_scope_ptr</a>()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keywordflow">return</span> m_active;</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;}</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00095"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#aff3318713a37cac24e9dd9c653cd76a9">   95</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#aff3318713a37cac24e9dd9c653cd76a9">AttributeScopeStack&lt;T&gt;::clear_current_scope</a>(<a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute&lt;T&gt;</a>&amp; attr)</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;{</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    assert(writing_enabled());</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keywordflow">if</span> (<span class="keywordtype">bool</span>(m_start)) {</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="preprocessor">#if defined(WMTK_FLUSH_ON_FAIL)</span></div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        m_start-&gt;flush(attr);</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="preprocessor">#else</span></div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        m_start-&gt;clear();</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    }</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    m_scopes.pop_back();</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    change_to_current_scope();</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;}</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a4453cdc564b67a56f1ca2e0aa11a5a6d">   52</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a4453cdc564b67a56f1ca2e0aa11a5a6d">AttributeScopeStack&lt;T&gt;::empty</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordflow">return</span> m_scopes.empty();</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;}</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00059"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#af1ed5ecb07d1ee69707ab581ff4c2b8f">   59</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#af1ed5ecb07d1ee69707ab581ff4c2b8f">AttributeScopeStack&lt;T&gt;::apply_last_scope</a>(<a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute&lt;T&gt;</a>&amp; attr)</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;{</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    assert(at_current_scope());</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    assert(!empty());</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    apply_scope(m_scopes.back(), attr);</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;}</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00066"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a78504700a244c9898d53d9924ee42e21">   66</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a78504700a244c9898d53d9924ee42e21">AttributeScopeStack&lt;T&gt;::apply_scope</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope&lt;T&gt;</a>&amp; scope, <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute&lt;T&gt;</a>&amp; attr)</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;{</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    scope.<a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope.html#ac538298fbdb6cb6db1b40d9a68d87337">apply</a>(attr);</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;}</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00071"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#aafd66956eff151f6e5f2a9b7525fb9a7">   71</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a78504700a244c9898d53d9924ee42e21">AttributeScopeStack&lt;T&gt;::apply_scope</a>(</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope&lt;T&gt;</a>&amp; scope,</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute&lt;T&gt;</a>&amp; attr,</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    std::vector&lt;T&gt;&amp; data)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    assert(<span class="keyword">false</span>);</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="comment">// scope.apply(attr, data);</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;}</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00082"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a01d9d64f2517530dfd2326ab2bd10a68">   82</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a01d9d64f2517530dfd2326ab2bd10a68">AttributeScopeStack&lt;T&gt;::change_to_previous_scope</a>()</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;{</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="comment">// if the previous is a nullptr it&#39;s fine</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    assert(!at_current_scope());</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keywordflow">if</span> (m_active == m_scopes.end()) {</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        change_to_current_scope();</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        m_active++;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    }</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;}</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00094"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#adae9a87118d387fdb9b425ad809728c7">   94</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#adae9a87118d387fdb9b425ad809728c7">AttributeScopeStack&lt;T&gt;::change_to_next_scope</a>()</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;{</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keywordflow">if</span> (at_current_scope()) {</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        assert(!empty());</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        assert(m_active == m_scopes.end());<span class="comment">// just making sure the definition doesn&#39;t change as this should be m_scopes.end()-1</span></div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        m_active--;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        m_active--;</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    }</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;}</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00105"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ab916c07daccef271fc610a61f85e733a">  105</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ab916c07daccef271fc610a61f85e733a">AttributeScopeStack&lt;T&gt;::change_to_current_scope</a>()</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;{</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    m_active = m_scopes.end();</div>
 <div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;}</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLE_GENERIC_CHECKPOINTS)</span></div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;int64_t <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">AttributeScopeStack&lt;T&gt;::add_checkpoint</a>()</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;{</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    int64_t r = m_checkpoints.size();</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    m_checkpoints.push_back(m_start.get());</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <span class="keywordflow">return</span> r;</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;}</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;AttributeScope&lt;T&gt; <span class="keyword">const</span>* AttributeScopeStack&lt;T&gt;::get_checkpoint(int64_t index)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keywordflow">if</span> (m_checkpoints.empty()) {</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        <span class="keywordflow">return</span> m_checkpoints.at(index);</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    }</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;}</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00129"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a5af3352fededf4c78258a478bfdcacef">  129</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a5af3352fededf4c78258a478bfdcacef">AttributeScopeStack&lt;T&gt;::change_to_previous_scope</a>()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    <span class="comment">// if the previous is a nullptr it&#39;s fine</span></div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    assert(m_active != <span class="keyword">nullptr</span>);</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    m_active = m_active-&gt;previous();</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;}</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160; </div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00137"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a8e1de90db8d22c2cbd076f871707ca0c">  137</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a8e1de90db8d22c2cbd076f871707ca0c">AttributeScopeStack&lt;T&gt;::change_to_next_scope</a>()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;<span class="preprocessor">#if defined(WMTK_FLUSH_ON_FAIL)</span></div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="keywordflow">if</span> (m_active == <span class="keyword">nullptr</span>) {</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;        assert(!empty());</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;        m_active = m_start.get();</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;        <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    }</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    m_active = m_active-&gt;next();</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;}</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00149"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a89c60ac3e5426110c13f7a052ce980ab">  149</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a89c60ac3e5426110c13f7a052ce980ab">AttributeScopeStack&lt;T&gt;::change_to_current_scope</a>()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;<span class="preprocessor">#if defined(WMTK_FLUSH_ON_FAIL)</span></div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    m_active = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;<span class="preprocessor">#else</span></div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    m_active = m_start.get();</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;}</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00158"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a93f32c7b0682fe609c4b5c047c49c1dc">  158</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a93f32c7b0682fe609c4b5c047c49c1dc">AttributeScopeStack&lt;T&gt;::at_current_scope</a>()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;<span class="preprocessor">#if defined(WMTK_FLUSH_ON_FAIL)</span></div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    <span class="keywordflow">return</span> m_active == <span class="keyword">nullptr</span>;</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;<span class="preprocessor">#else</span></div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    <span class="comment">// either we do not have a stack or active is the start</span></div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;    <span class="keywordflow">return</span> !(bool(m_start)) || m_active == m_start.get();</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;}</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00168"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a3a158d2405c4b872d3ba0083debdf345">  168</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a3a158d2405c4b872d3ba0083debdf345">AttributeScopeStack&lt;T&gt;::writing_enabled</a>()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    <span class="keywordflow">return</span> at_current_scope();</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;}</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160; </div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160; </div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;<span class="comment">//template class AttributeScopeStack&lt;int64_t&gt;;</span></div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;<span class="comment">//template class AttributeScopeStack&lt;double&gt;;</span></div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;<span class="comment">//template class AttributeScopeStack&lt;char&gt;;</span></div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;<span class="comment">//template class AttributeScopeStack&lt;Rational&gt;;</span></div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;} <span class="comment">// namespace wmtk::attribute</span></div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00110"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a93f32c7b0682fe609c4b5c047c49c1dc">  110</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a93f32c7b0682fe609c4b5c047c49c1dc">AttributeScopeStack&lt;T&gt;::at_current_scope</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="keywordflow">return</span> m_active == m_scopes.end();</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;}</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00115"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a3a158d2405c4b872d3ba0083debdf345">  115</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a3a158d2405c4b872d3ba0083debdf345">AttributeScopeStack&lt;T&gt;::writing_enabled</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="keywordflow">return</span> at_current_scope();</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;}</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160; </div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;} <span class="comment">// namespace wmtk::attribute</span></div>
 <div class="ttc" id="a_attribute_8hpp_html"><div class="ttname"><a href="_attribute_8hpp.html">Attribute.hpp</a></div></div>
 <div class="ttc" id="a_attribute_scope_8hpp_html"><div class="ttname"><a href="_attribute_scope_8hpp.html">AttributeScope.hpp</a></div></div>
 <div class="ttc" id="a_attribute_scope_stack_8hpp_html"><div class="ttname"><a href="_attribute_scope_stack_8hpp.html">AttributeScopeStack.hpp</a></div></div>
 <div class="ttc" id="a_rational_8hpp_html"><div class="ttname"><a href="_rational_8hpp.html">Rational.hpp</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a></div><div class="ttdoc">This class stores data of type T in a vector.</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_8hpp_source.html#l00029">Attribute.hpp:30</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a></div><div class="ttdoc">This class stores data of type T in a vector.</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_8hpp_source.html#l00031">Attribute.hpp:32</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope.html">wmtk::attribute::AttributeScope</a></div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_8hpp_source.html#l00018">AttributeScope.hpp:19</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">wmtk::attribute::AttributeScopeStack</a></div><div class="ttdoc">A stack of changes applied to an Attribute.</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hpp_source.html#l00026">AttributeScopeStack.hpp:27</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_a1ccfe737c6de906709364cce23bc7b6b"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a1ccfe737c6de906709364cce23bc7b6b">wmtk::attribute::AttributeScopeStack::emplace</a></div><div class="ttdeci">void emplace()</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00013">AttributeScopeStack.hxx:13</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_a3a158d2405c4b872d3ba0083debdf345"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a3a158d2405c4b872d3ba0083debdf345">wmtk::attribute::AttributeScopeStack::writing_enabled</a></div><div class="ttdeci">bool writing_enabled() const</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00168">AttributeScopeStack.hxx:168</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_a4453cdc564b67a56f1ca2e0aa11a5a6d"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a4453cdc564b67a56f1ca2e0aa11a5a6d">wmtk::attribute::AttributeScopeStack::empty</a></div><div class="ttdeci">bool empty() const</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00067">AttributeScopeStack.hxx:67</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_a54f12a705b67a04bdc61260f3ee424bf"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a54f12a705b67a04bdc61260f3ee424bf">wmtk::attribute::AttributeScopeStack::pop</a></div><div class="ttdeci">void pop(Attribute&lt; T &gt; &amp;attribute, bool apply_updates)</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00028">AttributeScopeStack.hxx:28</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_a5af3352fededf4c78258a478bfdcacef"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a5af3352fededf4c78258a478bfdcacef">wmtk::attribute::AttributeScopeStack::change_to_previous_scope</a></div><div class="ttdeci">void change_to_previous_scope() const</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00129">AttributeScopeStack.hxx:129</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_a89c60ac3e5426110c13f7a052ce980ab"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a89c60ac3e5426110c13f7a052ce980ab">wmtk::attribute::AttributeScopeStack::change_to_current_scope</a></div><div class="ttdeci">void change_to_current_scope() const</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00149">AttributeScopeStack.hxx:149</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_a8e1de90db8d22c2cbd076f871707ca0c"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a8e1de90db8d22c2cbd076f871707ca0c">wmtk::attribute::AttributeScopeStack::change_to_next_scope</a></div><div class="ttdeci">void change_to_next_scope() const</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00137">AttributeScopeStack.hxx:137</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_a93f32c7b0682fe609c4b5c047c49c1dc"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a93f32c7b0682fe609c4b5c047c49c1dc">wmtk::attribute::AttributeScopeStack::at_current_scope</a></div><div class="ttdeci">bool at_current_scope() const</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00158">AttributeScopeStack.hxx:158</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_aa0323f2d57d9bb0db54a3e365c707cb9"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#aa0323f2d57d9bb0db54a3e365c707cb9">wmtk::attribute::AttributeScopeStack::active_scope_ptr</a></div><div class="ttdeci">AttributeScope&lt; T &gt; * active_scope_ptr()</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00083">AttributeScopeStack.hxx:83</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_ab5f7821839d803e79951251242bf3157"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ab5f7821839d803e79951251242bf3157">wmtk::attribute::AttributeScopeStack::AttributeScopeStack</a></div><div class="ttdeci">AttributeScopeStack()</div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_html_ac538298fbdb6cb6db1b40d9a68d87337"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope.html#ac538298fbdb6cb6db1b40d9a68d87337">wmtk::attribute::AttributeScope::apply</a></div><div class="ttdeci">void apply(Attribute&lt; T &gt; &amp;attr) const</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_8hxx_source.html#l00017">AttributeScope.hxx:17</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_a01d9d64f2517530dfd2326ab2bd10a68"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a01d9d64f2517530dfd2326ab2bd10a68">wmtk::attribute::AttributeScopeStack::change_to_previous_scope</a></div><div class="ttdeci">void change_to_previous_scope()</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00082">AttributeScopeStack.hxx:82</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_a1ccfe737c6de906709364cce23bc7b6b"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a1ccfe737c6de906709364cce23bc7b6b">wmtk::attribute::AttributeScopeStack::emplace</a></div><div class="ttdeci">void emplace()</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00018">AttributeScopeStack.hxx:18</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_a212528c5949c2e97dd09d31ce38aa73a"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a212528c5949c2e97dd09d31ce38aa73a">wmtk::attribute::AttributeScopeStack::pop</a></div><div class="ttdeci">void pop(Attribute&lt; T &gt; &amp;attribute, bool preserve_changes)</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00032">AttributeScopeStack.hxx:32</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_a3a158d2405c4b872d3ba0083debdf345"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a3a158d2405c4b872d3ba0083debdf345">wmtk::attribute::AttributeScopeStack::writing_enabled</a></div><div class="ttdeci">bool writing_enabled() const</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00115">AttributeScopeStack.hxx:115</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_a4453cdc564b67a56f1ca2e0aa11a5a6d"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a4453cdc564b67a56f1ca2e0aa11a5a6d">wmtk::attribute::AttributeScopeStack::empty</a></div><div class="ttdeci">bool empty() const</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00052">AttributeScopeStack.hxx:52</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_a78504700a244c9898d53d9924ee42e21"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a78504700a244c9898d53d9924ee42e21">wmtk::attribute::AttributeScopeStack::apply_scope</a></div><div class="ttdeci">void apply_scope(const AttributeScope&lt; T &gt; &amp;scope, Attribute&lt; T &gt; &amp;attr)</div><div class="ttdoc">apply a particular scope to the current attribute</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00066">AttributeScopeStack.hxx:66</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_a93f32c7b0682fe609c4b5c047c49c1dc"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a93f32c7b0682fe609c4b5c047c49c1dc">wmtk::attribute::AttributeScopeStack::at_current_scope</a></div><div class="ttdeci">bool at_current_scope() const</div><div class="ttdoc">checks that we are viewing the active state of the attribute</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00110">AttributeScopeStack.hxx:110</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_ab5f7821839d803e79951251242bf3157"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ab5f7821839d803e79951251242bf3157">wmtk::attribute::AttributeScopeStack::AttributeScopeStack</a></div><div class="ttdeci">AttributeScopeStack()</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00009">AttributeScopeStack.hxx:9</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_ab916c07daccef271fc610a61f85e733a"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ab916c07daccef271fc610a61f85e733a">wmtk::attribute::AttributeScopeStack::change_to_current_scope</a></div><div class="ttdeci">void change_to_current_scope()</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00105">AttributeScopeStack.hxx:105</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_ac5986ed2e3bac508e313e91aaba5ec14"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ac5986ed2e3bac508e313e91aaba5ec14">wmtk::attribute::AttributeScopeStack::~AttributeScopeStack</a></div><div class="ttdeci">~AttributeScopeStack()</div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_ae18947bef8614b41d75a7f0ef9b19d17"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ae18947bef8614b41d75a7f0ef9b19d17">wmtk::attribute::AttributeScopeStack::flush_changes_to_vector</a></div><div class="ttdeci">void flush_changes_to_vector(const Attribute&lt; T &gt; &amp;attr, std::vector&lt; T &gt; &amp;data) const</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00057">AttributeScopeStack.hxx:57</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_afd0c17101b4ba71dac41dcbf446cc939"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#afd0c17101b4ba71dac41dcbf446cc939">wmtk::attribute::AttributeScopeStack::depth</a></div><div class="ttdeci">int64_t depth() const</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00073">AttributeScopeStack.hxx:73</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_aff3318713a37cac24e9dd9c653cd76a9"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#aff3318713a37cac24e9dd9c653cd76a9">wmtk::attribute::AttributeScopeStack::clear_current_scope</a></div><div class="ttdeci">void clear_current_scope(Attribute&lt; T &gt; &amp;attr)</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00095">AttributeScopeStack.hxx:95</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_adae9a87118d387fdb9b425ad809728c7"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#adae9a87118d387fdb9b425ad809728c7">wmtk::attribute::AttributeScopeStack::change_to_next_scope</a></div><div class="ttdeci">void change_to_next_scope()</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00094">AttributeScopeStack.hxx:94</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html_af1ed5ecb07d1ee69707ab581ff4c2b8f"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#af1ed5ecb07d1ee69707ab581ff4c2b8f">wmtk::attribute::AttributeScopeStack::apply_last_scope</a></div><div class="ttdeci">void apply_last_scope(Attribute&lt; T &gt; &amp;attr)</div><div class="ttdoc">applies the diffs from the last scope to the current attribute</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_scope_stack_8hxx_source.html#l00059">AttributeScopeStack.hxx:59</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1attribute_html"><div class="ttname"><a href="namespacewmtk_1_1attribute.html">wmtk::attribute</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_base_8cpp_source.html#l00008">AccessorBase.cpp:8</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

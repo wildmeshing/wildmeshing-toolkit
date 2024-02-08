@@ -144,9 +144,6 @@ $(document).ready(function(){initNavTree('functions.html',''); initResizable(); 
 : <a class="el" href="struct_d_scalar1.html#ad794b635f54b860d5adc4d0efb76d83d">DScalar1&lt; _Scalar, _Gradient &gt;</a>
 , <a class="el" href="struct_d_scalar2.html#a613d16702f3528bb0bb4c71d7381ec36">DScalar2&lt; _Scalar, _Gradient, _Hessian &gt;</a>
 </li>
-<li>active_scope_ptr()
-: <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#aa0323f2d57d9bb0db54a3e365c707cb9">wmtk::attribute::AttributeScopeStack&lt; T &gt;</a>
-</li>
 <li>add()
 : <a class="el" href="classwmtk_1_1invariants_1_1_invariant_collection.html#a17c51789c88fea75126d3d35ac1421ab">wmtk::invariants::InvariantCollection</a>
 , <a class="el" href="classwmtk_1_1multimesh_1_1_mappable_container.html#a66d9a01ae547705ed6e3c4d7298bd4ae">wmtk::multimesh::MappableContainer</a>
@@ -194,10 +191,20 @@ $(document).ready(function(){initNavTree('functions.html',''); initResizable(); 
 : <a class="el" href="classwmtk_1_1function_1_1_a_m_i_p_s.html#a445e420261d3e8e8f2541993bd87fa95">wmtk::function::AMIPS</a>
 </li>
 <li>apply()
-: <a class="el" href="classwmtk_1_1multimesh_1_1attribute_1_1_new_simplex_value_applicator.html#ae65eba04410c8baef73e8514e436cef9">wmtk::multimesh::attribute::NewSimplexValueApplicator</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html#ac538298fbdb6cb6db1b40d9a68d87337">wmtk::attribute::AttributeScope&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1multimesh_1_1attribute_1_1_new_simplex_value_applicator.html#ae65eba04410c8baef73e8514e436cef9">wmtk::multimesh::attribute::NewSimplexValueApplicator</a>
 </li>
 <li>apply_attribute_transfer()
 : <a class="el" href="classwmtk_1_1operations_1_1_operation.html#af181d255eb0ef5297646e0dc9dc817a7">wmtk::operations::Operation</a>
+</li>
+<li>apply_last_scope()
+: <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#af1ed5ecb07d1ee69707ab581ff4c2b8f">wmtk::attribute::AttributeScopeStack&lt; T &gt;</a>
+</li>
+<li>apply_scope()
+: <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#aafd66956eff151f6e5f2a9b7525fb9a7">wmtk::attribute::AttributeScopeStack&lt; T &gt;</a>
+</li>
+<li>apply_to()
+: <a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache.html#a7b0eceec9a65c84d39d1124d4f6514ca">wmtk::attribute::AttributeCache&lt; T &gt;</a>
 </li>
 <li>are_simplex_collections_equal()
 : <a class="el" href="classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a0025f07627de350121c040451e7e94a3">wmtk::simplex::RawSimplexCollection</a>
@@ -238,7 +245,7 @@ $(document).ready(function(){initNavTree('functions.html',''); initResizable(); 
 , <a class="el" href="struct_d_scalar2.html#a1c97d20fc1add73b2236dbaae48f8158">DScalar2&lt; _Scalar, _Gradient, _Hessian &gt;</a>
 </li>
 <li>attribute()
-: <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#a7d79b6640c27b53c1f370501c84b29b6">wmtk::attribute::AccessorBase&lt; _T &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#a9b7dbc76e6741e4930974afdc4035642">wmtk::attribute::AccessorBase&lt; _T &gt;</a>
 </li>
 <li>Attribute()
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a156720686b0e59cfc3c5e4dd0ff04e41">wmtk::attribute::Attribute&lt; T &gt;</a>
@@ -283,7 +290,7 @@ $(document).ready(function(){initNavTree('functions.html',''); initResizable(); 
 , <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#aa64f80146e88c4d60aa0e3ff360c4ebb">wmtk::attribute::TupleAccessor&lt; T &gt;</a>
 </li>
 <li>AttributeCacheData()
-: <a class="el" href="classwmtk_1_1_attribute_cache_data.html#ab492a523cb0d9c0b2be6ef7cef545549">wmtk::AttributeCacheData&lt; T &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache_data.html#a75ee9e918a10b8aed50f462b23f896d2">wmtk::attribute::AttributeCacheData&lt; T &gt;</a>
 </li>
 <li>AttributeHandle()
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_handle.html#a1da40262865fe4e669b9c3ffba43fc53">wmtk::attribute::AttributeHandle</a>
@@ -307,7 +314,7 @@ $(document).ready(function(){initNavTree('functions.html',''); initResizable(); 
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html#ac0a9002fd07f3fed2a184879e6a505af">wmtk::attribute::AttributeScope&lt; T &gt;</a>
 </li>
 <li>AttributeScopeHandle()
-: <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html#a9eb2e61253835f391fed9621e1340515">wmtk::attribute::AttributeScopeHandle</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html#aa5f32bfaf1eb4596e9400b44f3038035">wmtk::attribute::AttributeScopeHandle</a>
 , <a class="el" href="classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle.html#af38818a7497c3c3694d8a050c63ffbb5">wmtk::multimesh::attribute::AttributeScopeHandle</a>
 </li>
 <li>AttributeScopeStack()

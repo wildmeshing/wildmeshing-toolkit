@@ -20,7 +20,7 @@ var hierarchy =
     [ "wmtk::attribute::AttributeCache< T >", "classwmtk_1_1attribute_1_1_attribute_cache.html", [
       [ "wmtk::attribute::AttributeScope< T >", "classwmtk_1_1attribute_1_1_attribute_scope.html", null ]
     ] ],
-    [ "wmtk::AttributeCacheData< T >", "classwmtk_1_1_attribute_cache_data.html", null ],
+    [ "wmtk::attribute::AttributeCacheData< T >", "classwmtk_1_1attribute_1_1_attribute_cache_data.html", null ],
     [ "wmtk::attribute::AttributeHandle", "classwmtk_1_1attribute_1_1_attribute_handle.html", null ],
     [ "wmtk::attribute::AttributeScopeHandle", "classwmtk_1_1attribute_1_1_attribute_scope_handle.html", null ],
     [ "wmtk::multimesh::attribute::AttributeScopeHandle", "classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle.html", null ],

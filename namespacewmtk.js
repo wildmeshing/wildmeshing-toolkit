@@ -18,7 +18,6 @@ var namespacewmtk =
     [ "simplex", "namespacewmtk_1_1simplex.html", "namespacewmtk_1_1simplex" ],
     [ "tests", "namespacewmtk_1_1tests.html", null ],
     [ "utils", "namespacewmtk_1_1utils.html", "namespacewmtk_1_1utils" ],
-    [ "AttributeCacheData", "classwmtk_1_1_attribute_cache_data.html", "classwmtk_1_1_attribute_cache_data" ],
     [ "hash", "classwmtk_1_1hash.html", null ],
     [ "hash< wmtk::attribute::AttributeHandle >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4" ],
     [ "hash< wmtk::attribute::TypedAttributeHandle< T > >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01_t_01_4_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01_t_01_4_01_4" ],

@@ -12,14 +12,14 @@ var dir_f2a03d151d5632e9cfdfcc5fe4223b5a =
       [ "Attribute", "classwmtk_1_1attribute_1_1_attribute.html", "classwmtk_1_1attribute_1_1_attribute" ]
     ] ],
     [ "AttributeAccessMode.hpp", "_attribute_access_mode_8hpp.html", "_attribute_access_mode_8hpp" ],
-    [ "AttributeCache.cpp", "_attribute_cache_8cpp.html", null ],
     [ "AttributeCache.hpp", "_attribute_cache_8hpp.html", [
       [ "AttributeCache", "classwmtk_1_1attribute_1_1_attribute_cache.html", "classwmtk_1_1attribute_1_1_attribute_cache" ]
     ] ],
-    [ "AttributeCacheData.cpp", "_attribute_cache_data_8cpp.html", null ],
+    [ "AttributeCache.hxx", "_attribute_cache_8hxx.html", null ],
     [ "AttributeCacheData.hpp", "_attribute_cache_data_8hpp.html", [
-      [ "AttributeCacheData", "classwmtk_1_1_attribute_cache_data.html", "classwmtk_1_1_attribute_cache_data" ]
+      [ "AttributeCacheData", "classwmtk_1_1attribute_1_1_attribute_cache_data.html", "classwmtk_1_1attribute_1_1_attribute_cache_data" ]
     ] ],
+    [ "AttributeCacheData.hxx", "_attribute_cache_data_8hxx.html", null ],
     [ "AttributeHandle.hpp", "_attribute_handle_8hpp.html", "_attribute_handle_8hpp" ],
     [ "AttributeManager.cpp", "_attribute_manager_8cpp.html", null ],
     [ "AttributeManager.hpp", "_attribute_manager_8hpp.html", [
