@@ -84,7 +84,7 @@ private:
 
 protected:
     std::vector<AttributeScope<T>> m_scopes;
-    typename std::vector<AttributeScope<T>>::const_reverse_iterator m_active;
+    typename std::vector<AttributeScope<T>>::const_iterator m_active;
     // Mesh& m_mesh;
     // AttributeManager& m_attribute_manager;
     // MeshAttributeHandle<T> m_handle;
@@ -122,9 +122,9 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
     int64_t index) const -> ConstMapResult
 {
     if (!at_current_scope()) {
-        assert(m_active >= m_scopes.rbegin());
-        assert(m_active < m_scopes.rend());
-        for (auto it = m_active; it >= m_scopes.rbegin(); --it) {
+        assert(m_active >= m_scopes.begin());
+        assert(m_active < m_scopes.end());
+        for (auto it = m_active; it < m_scopes.end(); ++it) {
         //for (auto it = m_active; it < m_scopes.rend(); ++it) {
             if (auto mapit = it->find_value(index); it->is_value(mapit)) {
                 const auto& d = mapit->second;

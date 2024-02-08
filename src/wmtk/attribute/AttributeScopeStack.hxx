@@ -9,7 +9,7 @@ template <typename T>
 AttributeScopeStack<T>::AttributeScopeStack()
 {
     m_scopes.reserve(5);
-    m_active = m_scopes.rend();
+    m_active = m_scopes.end();
 }
 template <typename T>
 AttributeScopeStack<T>::~AttributeScopeStack() = default;
@@ -82,10 +82,10 @@ void AttributeScopeStack<T>::change_to_previous_scope()
 {
     // if the previous is a nullptr it's fine
     assert(!at_current_scope());
-    if (m_active == m_scopes.rbegin()) {
+    if (m_active == m_scopes.end()) {
         change_to_current_scope();
     } else {
-        m_active--;
+        m_active++;
     }
 }
 
@@ -94,20 +94,21 @@ void AttributeScopeStack<T>::change_to_next_scope()
 {
     if (at_current_scope()) {
         assert(!empty());
-        m_active = m_scopes.rbegin();
+        assert(m_active == m_scopes.end());// just making sure the definition doesn't change as this should be m_scopes.end()-1
+        m_active--;
     } else {
-        m_active++;
+        m_active--;
     }
 }
 template <typename T>
 void AttributeScopeStack<T>::change_to_current_scope()
 {
-    m_active = m_scopes.rend();
+    m_active = m_scopes.end();
 }
 template <typename T>
 bool AttributeScopeStack<T>::at_current_scope() const
 {
-    return m_active == m_scopes.rend();
+    return m_active == m_scopes.end();
 }
 template <typename T>
 bool AttributeScopeStack<T>::writing_enabled() const
