@@ -889,7 +889,7 @@ inline ConstAccessor<T> Mesh::create_const_accessor(
 }
 
 template <typename T>
-attribute::MeshAttributeHandle Mesh::get_attribute_handle(
+inline attribute::MeshAttributeHandle Mesh::get_attribute_handle(
     const std::string& name,
     const PrimitiveType ptype) const
 {
@@ -899,7 +899,7 @@ attribute::MeshAttributeHandle Mesh::get_attribute_handle(
 }
 
 template <typename T>
-attribute::TypedAttributeHandle<T> Mesh::get_attribute_handle_typed(
+inline attribute::TypedAttributeHandle<T> Mesh::get_attribute_handle_typed(
     const std::string& name,
     const PrimitiveType ptype) const
 {
@@ -909,19 +909,19 @@ attribute::TypedAttributeHandle<T> Mesh::get_attribute_handle_typed(
     return h;
 }
 template <typename T>
-bool Mesh::has_attribute(const std::string& name, const PrimitiveType ptype) const
+inline bool Mesh::has_attribute(const std::string& name, const PrimitiveType ptype) const
 {
     return m_attribute_manager.get<T>(ptype).has_attribute(name);
 }
 
 template <typename T>
-int64_t Mesh::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
+inline int64_t Mesh::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
 {
     return m_attribute_manager.get_attribute_dimension(handle);
 }
 
 template <typename T>
-std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) const
+inline std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) const
 {
     return m_attribute_manager.get_name(handle);
 }
@@ -955,7 +955,7 @@ template <std::forward_iterator ContainerType>
 #else
 template <typename ContainerType>
 #endif
-Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequence) const
+inline Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequence) const
 {
     static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
     Tuple r = tuple;
@@ -986,7 +986,7 @@ template <std::forward_iterator ContainerType>
 #else
 template <typename ContainerType>
 #endif
-Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType& sequence) const
+inline Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType& sequence) const
 {
     static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
     Tuple r = tuple;
