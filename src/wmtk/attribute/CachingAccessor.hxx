@@ -12,6 +12,11 @@ CachingAccessor<T>::CachingAccessor(Mesh& mesh_in, const TypedAttributeHandle<T>
     : BaseType(mesh_in, handle)
     , m_cache_stack(attribute().get_local_scope_stack())
 {}
+template <typename T>
+CachingAccessor<T>::CachingAccessor(const Mesh& mesh_in, const TypedAttributeHandle<T>& handle)
+    : BaseType(mesh_in, handle)
+    , m_cache_stack(attribute().get_local_scope_stack())
+{}
 
 template <typename T>
 CachingAccessor<T>::~CachingAccessor() = default;

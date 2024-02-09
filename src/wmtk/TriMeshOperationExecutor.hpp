@@ -9,7 +9,7 @@ namespace wmtk {
 class TriMesh::TriMeshOperationExecutor : public operations::tri_mesh::EdgeOperationData
 {
 public:
-    TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple, Accessor<int64_t>& hash_acc);
+    TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple, attribute::Accessor<int64_t>& hash_acc);
     void delete_simplices();
     void update_cell_hash();
 

@@ -12,6 +12,8 @@
 
 namespace wmtk {
 
+    class Mesh;
+    class HDF5Reader;
 namespace operations::utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
@@ -52,7 +54,7 @@ public:
     // let the visitor object access the internal details
     template <int64_t cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshSimplexVisitor;
-    friend class Mesh;
+    friend class wmtk::Mesh;
     template <typename Visitor>
     friend class multimesh::MultiMeshSimplexVisitorExecutor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
@@ -64,7 +66,7 @@ public:
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
-    friend class HDF5Reader;
+    friend class wmtk::HDF5Reader;
 
 
     // @param the max dimension of the mesh we will get passed

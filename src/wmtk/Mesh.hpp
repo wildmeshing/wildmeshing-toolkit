@@ -99,7 +99,7 @@ public:
     friend class io::ParaviewWriter;
     friend class HDF5Reader;
     friend class multimesh::attribute::UseParentScopeRAII;
-    friend class MultiMeshManager;
+    friend class multimesh::MultiMeshManager;
     friend class attribute::AttributeManager;
     template <int64_t cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshSimplexVisitor;
@@ -216,6 +216,8 @@ public:
 
     template <typename T>
     attribute::Accessor<T> create_accessor(const attribute::MeshAttributeHandle& handle);
+    template <typename T>
+    const attribute::Accessor<T> create_const_accessor(const attribute::MeshAttributeHandle& handle);
 
     template <typename T>
     const attribute::Accessor<T> create_const_accessor(const attribute::MeshAttributeHandle& handle) const;
@@ -225,8 +227,6 @@ public:
 
     template <typename T>
     const attribute::Accessor<T> create_const_accessor(const TypedAttributeHandle<T>& handle) const;
-    template <typename T>
-    const attribute::Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
     int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
@@ -818,7 +818,7 @@ protected: // THese are protected so unit tests can access - do not use manually
            // classes?
     attribute::AttributeManager m_attribute_manager;
 
-    MultiMeshManager m_multi_mesh_manager;
+    multimesh::MultiMeshManager m_multi_mesh_manager;
 
     int64_t m_top_cell_dimension = -1;
 
@@ -865,11 +865,6 @@ inline const attribute::Accessor<T> Mesh::create_const_accessor(const TypedAttri
 {
     return attribute::Accessor<T>(*this, handle);
 }
-template <typename T>
-inline const attribute::Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle) const
-{
-    return create_const_accessor(handle);
-}
 
 template <typename T>
 inline attribute::Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
@@ -877,6 +872,14 @@ inline attribute::Accessor<T> Mesh::create_accessor(const attribute::MeshAttribu
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());
     return create_accessor(handle.as<T>());
+}
+
+template <typename T>
+inline const attribute::Accessor<T> Mesh::create_const_accessor(const attribute::MeshAttributeHandle& handle)
+{
+    assert(&handle.mesh() == this);
+    assert(handle.holds<T>());
+    return create_const_accessor(handle.as<T>());
 }
 
 template <typename T>

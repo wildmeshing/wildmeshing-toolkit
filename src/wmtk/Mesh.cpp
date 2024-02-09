@@ -97,7 +97,7 @@ const attribute::Accessor<char> Mesh::get_const_flag_accessor(PrimitiveType type
 {
     return create_const_accessor(m_flag_handles.at(get_primitive_type_id(type)));
 }
-Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
+attribute::Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
 {
     return create_accessor(m_flag_handles.at(get_primitive_type_id(type)));
 }
@@ -111,7 +111,7 @@ const attribute::Accessor<int64_t> Mesh::get_cell_hash_accessor() const
 {
     return get_const_cell_hash_accessor();
 }
-Accessor<int64_t> Mesh::get_cell_hash_accessor()
+attribute::Accessor<int64_t> Mesh::get_cell_hash_accessor()
 {
     return create_accessor(m_cell_hash_handle);
 }

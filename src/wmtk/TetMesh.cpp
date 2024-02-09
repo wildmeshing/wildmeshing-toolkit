@@ -156,7 +156,7 @@ Tuple TetMesh::vertex_tuple_from_id(int64_t id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("vertex_tuple_from_id failed");
 
-    ConstAccessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
+    const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
 
     Tuple v_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
     assert(is_ccw(v_tuple));
@@ -183,7 +183,7 @@ Tuple TetMesh::edge_tuple_from_id(int64_t id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("edge_tuple_from_id failed");
 
-    ConstAccessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
+    const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
 
     Tuple e_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
     assert(is_ccw(e_tuple));
@@ -210,7 +210,7 @@ Tuple TetMesh::face_tuple_from_id(int64_t id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("face_tuple_from_id failed");
 
-    ConstAccessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
+    const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
 
     Tuple f_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
     assert(is_ccw(f_tuple));
@@ -224,7 +224,7 @@ Tuple TetMesh::tet_tuple_from_id(int64_t id) const
     const auto [nlvid, leid, lfid] = autogen::tet_mesh::auto_3d_table_complete_vertex[lvid];
     assert(lvid == nlvid);
 
-    ConstAccessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
+    const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
 
     Tuple t_tuple = Tuple(lvid, leid, lfid, id, get_cell_hash(id, hash_accessor));
     assert(is_ccw(t_tuple));
@@ -386,7 +386,7 @@ bool TetMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 
 bool TetMesh::is_boundary_face(const Tuple& tuple) const
 {
-    const attribute::Accessor<int64_t> tt_accessor = create_accessor<int64_t>(m_tt_handle);
+    const attribute::Accessor<int64_t> tt_accessor = create_const_accessor<int64_t>(m_tt_handle);
     return tt_accessor.const_vector_attribute(tuple)(tuple.m_local_fid) < 0;
 }
 

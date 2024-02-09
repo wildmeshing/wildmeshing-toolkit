@@ -216,15 +216,15 @@ void TriMesh::initialize(
 
 
     // get Accessors for topology
-    Accessor<int64_t> fv_accessor = create_accessor<int64_t>(m_fv_handle);
-    Accessor<int64_t> fe_accessor = create_accessor<int64_t>(m_fe_handle);
-    Accessor<int64_t> ff_accessor = create_accessor<int64_t>(m_ff_handle);
-    Accessor<int64_t> vf_accessor = create_accessor<int64_t>(m_vf_handle);
-    Accessor<int64_t> ef_accessor = create_accessor<int64_t>(m_ef_handle);
+    attribute::Accessor<int64_t> fv_accessor = create_accessor<int64_t>(m_fv_handle);
+    attribute::Accessor<int64_t> fe_accessor = create_accessor<int64_t>(m_fe_handle);
+    attribute::Accessor<int64_t> ff_accessor = create_accessor<int64_t>(m_ff_handle);
+    attribute::Accessor<int64_t> vf_accessor = create_accessor<int64_t>(m_vf_handle);
+    attribute::Accessor<int64_t> ef_accessor = create_accessor<int64_t>(m_ef_handle);
 
-    Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
-    Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
+    attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    attribute::Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
 
     // iterate over the matrices and fill attributes
     for (int64_t i = 0; i < capacity(PrimitiveType::Triangle); ++i) {

@@ -39,10 +39,10 @@ public:
 
     using CachingBaseType::CachingBaseType;
 
-    TupleAccessor(TupleAccessor&&) = default;
-    TupleAccessor& operator=(TupleAccessor&&) = default;
-    TupleAccessor(const TupleAccessor&) = delete;
-    TupleAccessor& operator=(const TupleAccessor&) = delete;
+    //TupleAccessor(TupleAccessor&&) = default;
+    //TupleAccessor& operator=(TupleAccessor&&) = default;
+    //TupleAccessor(const TupleAccessor&) = delete;
+    //TupleAccessor& operator=(const TupleAccessor&) = delete;
 
     T const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const;
     T& topological_scalar_attribute(const Tuple& t);
@@ -68,6 +68,7 @@ protected:
     const CachingBaseType& caching_base_type() const { return *this; }
 
     CachingBaseType& index_access() { return caching_base_type(); }
+    const CachingBaseType& index_access() const { return caching_base_type(); }
 };
 } // namespace wmtk::attribute
 #include "TupleAccessor.hxx"
