@@ -97,11 +97,11 @@ void TetMesh::initialize(
     attribute::Accessor<int64_t> vt_accessor = create_accessor<int64_t>(m_vt_handle);
     attribute::Accessor<int64_t> et_accessor = create_accessor<int64_t>(m_et_handle);
     attribute::Accessor<int64_t> ft_accessor = create_accessor<int64_t>(m_ft_handle);
-    attribute::attribute::Accessor<int64_t> tv_accessor = create_accessor<int64_t>(m_tv_handle);
+    attribute::Accessor<int64_t> tv_accessor = create_accessor<int64_t>(m_tv_handle);
     attribute::Accessor<int64_t> te_accessor = create_accessor<int64_t>(m_te_handle);
     attribute::Accessor<int64_t> tf_accessor = create_accessor<int64_t>(m_tf_handle);
     attribute::Accessor<int64_t> tt_accessor = create_accessor<int64_t>(m_tt_handle);
-    attribute::attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
     attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
     attribute::Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
     attribute::Accessor<char> t_flag_accessor = get_flag_accessor(PrimitiveType::Tetrahedron);

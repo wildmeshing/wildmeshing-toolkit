@@ -13,13 +13,13 @@ public:
     void delete_simplices();
     void update_cell_hash();
 
-    std::array<Accessor<char>, 3> flag_accessors;
-    Accessor<int64_t> ff_accessor;
-    Accessor<int64_t> fe_accessor;
-    Accessor<int64_t> fv_accessor;
-    Accessor<int64_t> vf_accessor;
-    Accessor<int64_t> ef_accessor;
-    Accessor<int64_t>& hash_accessor;
+    std::array<attribute::Accessor<char>, 3> flag_accessors;
+    attribute::Accessor<int64_t> ff_accessor;
+    attribute::Accessor<int64_t> fe_accessor;
+    attribute::Accessor<int64_t> fv_accessor;
+    attribute::Accessor<int64_t> vf_accessor;
+    attribute::Accessor<int64_t> ef_accessor;
+    attribute::Accessor<int64_t>& hash_accessor;
 
 
     /**

@@ -33,7 +33,7 @@ public:
     void initialize(int64_t count);
 
 
-    bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const override;
+    bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const override;
 
     bool is_connectivity_valid() const override { return true; }
 

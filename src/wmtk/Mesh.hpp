@@ -473,7 +473,7 @@ public:
      * @return true if is valid
      * @return false
      */
-    virtual bool is_valid(const Tuple& tuple, attribute::Accessor<int64_t>& hash_accessor) const = 0;
+    virtual bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const = 0;
     bool is_valid_slow(const Tuple& tuple) const;
 
 
