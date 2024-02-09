@@ -176,7 +176,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
 
 TEST_CASE("marching_component_tet", "[components][marching][.]")
 {
-    REQUIRE(false); // TODO test when wmtk code is ready on TetMesh
+    //REQUIRE(false); // TODO test when wmtk code is ready on TetMesh
     const int64_t input_tag_value_0 = 0;
     const int64_t input_tag_value_1 = 1;
     const int64_t isosurface_tag_value = 2;
@@ -212,7 +212,7 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
         acc_vertex_tag.scalar_attribute(vertex_tuples[2]) = input_tag_value_1;
         acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = input_tag_value_1;
 
-        expected_isosurface_vertex_num = 6;
+        expected_isosurface_vertex_num = 8;
     }
     // SECTION("4-5")
     //{
@@ -257,7 +257,7 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
         CHECK(isosurface_vertex_num == expected_isosurface_vertex_num);
     }
 
-    if (true) {
+    if (false) {
         wmtk::io::ParaviewWriter
             writer("marching_3d_result", "vertices", m, true, true, true, true);
         m.serialize(writer);

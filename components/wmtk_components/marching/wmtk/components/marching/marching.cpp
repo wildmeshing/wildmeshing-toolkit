@@ -3,8 +3,6 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/components/base/get_attributes.hpp>
 #include <wmtk/components/base/resolve_path.hpp>
-#include <wmtk/io/HDF5Writer.hpp>
-#include <wmtk/io/MeshReader.hpp>
 
 #include "internal/Marching.hpp"
 #include "internal/MarchingOptions.hpp"
@@ -33,14 +31,6 @@ void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cach
     using namespace internal;
 
     MarchingOptions options = j.get<MarchingOptions>();
-    // MarchingOptions options;
-    // from_json(j, options);
-
-    // std::string file = wmtk::components::base::resolve_path(options.input, paths.root_path);
-
-    // if (!std::filesystem::exists(file)) {
-    //     throw std::runtime_error(std::string("file") + file + " not found");
-    // }
 
     // input
     std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
@@ -89,8 +79,6 @@ void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cach
     }
 
     cache.write_mesh(*mesh_in, options.output);
-    // HDF5Writer writer(options.output);
-    // mesh.serialize(writer, &mesh);
 }
 
 } // namespace wmtk::components
