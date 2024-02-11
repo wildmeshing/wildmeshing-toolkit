@@ -82,9 +82,9 @@ public:
 
     using TetMesh::tuple_from_id;
 
-    Accessor<int64_t> get_cell_hash_accessor();
+    attribute::Accessor<int64_t> get_cell_hash_accessor();
 
-    TetMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<int64_t>& hash_accessor);
+    TetMeshOperationExecutor get_tmoe(const Tuple& t, attribute::Accessor<int64_t>& hash_accessor);
 
     int64_t valid_primitive_count(PrimitiveType type) const;
 

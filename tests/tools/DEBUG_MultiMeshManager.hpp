@@ -3,7 +3,7 @@
 
 namespace wmtk::tests {
 
-class DEBUG_MultiMeshManager : public MultiMeshManager
+class DEBUG_MultiMeshManager : public multimesh::MultiMeshManager
 {
 public:
     using MultiMeshManager::child_to_parent_map_attribute_name;

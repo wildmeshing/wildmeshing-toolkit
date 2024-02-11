@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <numeric>
 #include <set>
-#include <wmtk/Accessor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
@@ -31,7 +31,7 @@ using TM = TriMesh;
 using MapResult = typename Eigen::Matrix<int64_t, Eigen::Dynamic, 1>::MapType;
 using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
     wmtk::Tuple(),
-    std::declval<Accessor<int64_t>&>()));
+    std::declval<attribute::Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -51,7 +51,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     SECTION("interior_edge")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeCollapse collapse(m);
         collapse(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
@@ -72,7 +72,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     SECTION("edge_to_boundary")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 0, 0);
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeCollapse collapse(m);
         collapse(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
@@ -113,7 +113,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     SECTION("boundary_edge")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         op(Simplex::edge(edge));
@@ -153,7 +153,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
 {
     DEBUG_TriMesh m = edge_region();
-    Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+    wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
     SECTION("interior")
     {
         REQUIRE(m.is_connectivity_valid());
@@ -294,9 +294,9 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
 
     SECTION("interior_todo_with_tags")
     {
-        wmtk::Accessor<int64_t> acc_todo = m.create_accessor<int64_t>(todo_handle);
-        wmtk::Accessor<int64_t> acc_tag_e = m.create_accessor<int64_t>(edge_tag_handle);
-        wmtk::Accessor<int64_t> acc_tag_v = m.create_accessor<int64_t>(vertex_tag_handle);
+        wmtk::attribute::Accessor<int64_t> acc_todo = m.create_accessor<int64_t>(todo_handle);
+        wmtk::attribute::Accessor<int64_t> acc_tag_e = m.create_accessor<int64_t>(edge_tag_handle);
+        wmtk::attribute::Accessor<int64_t> acc_tag_v = m.create_accessor<int64_t>(vertex_tag_handle);
         for (const Tuple& e : m.get_all(PE)) {
             if (!m.is_boundary_edge(e)) {
                 acc_tag_e.scalar_attribute(e) = 1;

@@ -18,7 +18,7 @@ namespace components {
 class TagAttribute
 {
 public:
-    Accessor<int64_t> m_tag_accessor; // access primitives' tag value
+    attribute::Accessor<int64_t> m_tag_accessor; // access primitives' tag value
     PrimitiveType m_ptype; // record this tag attribute's primitivetype
     int64_t m_tag_val; // a given tagvalue used to check or tag the attributes
 
@@ -47,7 +47,7 @@ public:
         if (s.primitive_type() != m_ptype) {
             return false;
         }
-        return m_tag_accessor.scalar_attribute(s.tuple()) == m_tag_val;
+        return m_tag_accessor.const_scalar_attribute(s.tuple()) == m_tag_val;
     }
 
     /**

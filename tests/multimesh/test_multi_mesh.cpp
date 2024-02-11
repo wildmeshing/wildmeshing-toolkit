@@ -19,7 +19,7 @@ using namespace wmtk::simplex;
 using TM = TriMesh;
 using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
     wmtk::Tuple(),
-    std::declval<Accessor<int64_t>&>()));
+    std::declval<wmtk::attribute::Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -35,7 +35,7 @@ void print_tuple_map(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManager& 
     for (auto& child_data : p_mul_manager.children()) {
         std::cout << "child_id = " << child_id++ << std::endl;
         PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
-        auto parent_to_child_accessor = parent.create_accessor(child_data.map_handle);
+        auto parent_to_child_accessor = parent.create_const_accessor(child_data.map_handle);
         for (int64_t parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
             auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
                 parent.tuple_from_id(map_ptype, parent_gid));

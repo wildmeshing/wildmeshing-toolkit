@@ -67,6 +67,7 @@ protected:
     CachingBaseType& caching_base_type() { return *this; }
     const CachingBaseType& caching_base_type() const { return *this; }
 
+public:
     CachingBaseType& index_access() { return caching_base_type(); }
     const CachingBaseType& index_access() const { return caching_base_type(); }
 };

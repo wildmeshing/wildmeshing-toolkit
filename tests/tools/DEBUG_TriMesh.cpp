@@ -56,7 +56,7 @@ void DEBUG_TriMesh::reserve_more_attributes(const std::vector<int64_t>& sizes)
 auto DEBUG_TriMesh::edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2, const int64_t fid)
     const -> Tuple
 {
-    ConstAccessor<int64_t> fv = create_accessor<int64_t>(m_fv_handle);
+    const attribute::Accessor<int64_t> fv = create_const_accessor<int64_t>(m_fv_handle);
     auto fv_base = create_base_accessor<int64_t>(m_fv_handle);
     Tuple face = face_tuple_from_id(fid);
     auto fv0 = fv.const_vector_attribute(face);
@@ -75,7 +75,7 @@ auto DEBUG_TriMesh::edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2,
 
 auto DEBUG_TriMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple
 {
-    ConstAccessor<int64_t> fv = create_accessor<int64_t>(m_fv_handle);
+    const attribute::Accessor<int64_t> fv = create_const_accessor<int64_t>(m_fv_handle);
     auto fv_base = create_base_accessor<int64_t>(m_fv_handle);
     for (int64_t fid = 0; fid < capacity(PrimitiveType::Triangle); ++fid) {
         Tuple face = face_tuple_from_id(fid);
@@ -104,7 +104,7 @@ auto DEBUG_TriMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) con
 auto DEBUG_TriMesh::face_tuple_from_vids(const int64_t v1, const int64_t v2, const int64_t v3) const
     -> Tuple
 {
-    ConstAccessor<int64_t> fv = create_accessor<int64_t>(m_fv_handle);
+    const attribute::Accessor<int64_t> fv = create_const_accessor<int64_t>(m_fv_handle);
     auto fv_base = create_base_accessor<int64_t>(m_fv_handle);
     for (int64_t fid = 0; fid < capacity(PrimitiveType::Triangle); ++fid) {
         Tuple face = face_tuple_from_id(fid);
@@ -169,14 +169,14 @@ int64_t DEBUG_TriMesh::id(const simplex::Simplex& s) const
 {
     return id(s.tuple(), s.primitive_type());
 }
-Accessor<int64_t> DEBUG_TriMesh::get_cell_hash_accessor()
+attribute::Accessor<int64_t> DEBUG_TriMesh::get_cell_hash_accessor()
 {
     return TriMesh::get_cell_hash_accessor();
 }
 /**
  * @brief returns the TriMeshOperationExecutor
  */
-auto DEBUG_TriMesh::get_tmoe(const Tuple& t, Accessor<int64_t>& hash_accessor)
+auto DEBUG_TriMesh::get_tmoe(const Tuple& t, wmtk::attribute::Accessor<int64_t>& hash_accessor)
     -> TriMeshOperationExecutor
 {
     return TriMeshOperationExecutor(*this, t, hash_accessor);

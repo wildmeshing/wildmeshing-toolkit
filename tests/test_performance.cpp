@@ -84,7 +84,7 @@ TEST_CASE("accessor_performance", "[accessor][.]")
     auto pp_acc = pm.create_accessor<double>(pph);
     {
         const auto vv = pm.get_all(PrimitiveType::Vertex);
-        POLYSOLVE_SCOPED_STOPWATCH("PointMesh Accessors", logger());
+        POLYSOLVE_SCOPED_STOPWATCH("PointMesh wmtk::attribute::Accessors", logger());
         double sum = 0;
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (const Tuple& t : vv) {
@@ -101,7 +101,7 @@ TEST_CASE("accessor_performance", "[accessor][.]")
     }
 
     //{
-    //    POLYSOLVE_SCOPED_STOPWATCH("TriMesh Accessors", logger());
+    //    POLYSOLVE_SCOPED_STOPWATCH("TriMesh wmtk::attribute::Accessors", logger());
     //    double sum = 0;
     //    for (size_t i = 0; i < n_repetitions; ++i) {
     //        for (const Tuple& t : vertices) {

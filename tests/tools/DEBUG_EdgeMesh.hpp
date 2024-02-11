@@ -64,9 +64,9 @@ public:
      */
     using EdgeMesh::tuple_from_id;
 
-    Accessor<int64_t> get_cell_hash_accessor();
+    attribute::Accessor<int64_t> get_cell_hash_accessor();
 
-    EdgeMeshOperationExecutor get_emoe(const Tuple& t, Accessor<int64_t>& hash_accessor);
+    EdgeMeshOperationExecutor get_emoe(const Tuple& t, attribute::Accessor<int64_t>& hash_accessor);
 
     bool is_simplex_deleted(PrimitiveType type, const int64_t id) const;
 };

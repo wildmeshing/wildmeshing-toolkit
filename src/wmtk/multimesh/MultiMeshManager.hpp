@@ -61,7 +61,7 @@ public:
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
         const simplex::SimplexCollection& vertex_closed_star,
-        attribute::Accessor<int64_t>& parent_hash_accessor);
+        wmtk::attribute::Accessor<int64_t>& parent_hash_accessor);
     template <typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
@@ -382,7 +382,7 @@ protected: // protected to enable unit testing
     static Tuple map_tuple_between_meshes(
         const Mesh& source_mesh,
         const Mesh& target_mesh,
-        const attribute::Accessor<int64_t>& source_to_target_map_accessor,
+        const wmtk::attribute::Accessor<int64_t>& source_to_target_map_accessor,
         const Tuple& source_tuple);
 
     const std::vector<ChildData>& children() const { return m_children; }
@@ -396,11 +396,11 @@ protected: // protected to enable unit testing
     static std::string child_to_parent_map_attribute_name();
 
     // returns {parent_to_child, child_to_parent} accessors
-    std::array<attribute::Accessor<int64_t>, 2> get_map_accessors(
+    std::array<wmtk::attribute::Accessor<int64_t>, 2> get_map_accessors(
         Mesh& my_mesh,
         ChildData& c);
     // returns {parent_to_child, child_to_parent} accessors
-    std::array<const attribute::Accessor<int64_t>, 2> get_map_const_accessors(
+    std::array<const wmtk::attribute::Accessor<int64_t>, 2> get_map_const_accessors(
         const Mesh& my_mesh,
         const ChildData& c) const;
 
@@ -462,15 +462,15 @@ protected: // protected to enable unit testing
 
     // helper for updating multimap used in the update multimesh edge functor
     static int64_t child_global_cid(
-        const attribute::Accessor<int64_t>& parent_to_child,
+        const wmtk::attribute::Accessor<int64_t>& parent_to_child,
         int64_t parent_gid);
     // helper for updating multimap used in the update multimesh edge functor
     static int64_t parent_global_cid(
-        const attribute::Accessor<int64_t>& child_to_parent,
+        const wmtk::attribute::Accessor<int64_t>& child_to_parent,
         int64_t child_gid);
     // helper for updating multimap used in the update multimesh edge functor
     static int64_t parent_local_fid(
-        const attribute::Accessor<int64_t>& child_to_parent,
+        const wmtk::attribute::Accessor<int64_t>& child_to_parent,
         int64_t child_gid);
 
 
@@ -521,11 +521,11 @@ public:
     static void update_vertex_operation_hashes_internal(
         Mesh& m,
         const Tuple& vertex,
-        attribute::Accessor<int64_t>& hash_accessor);
+        wmtk::attribute::Accessor<int64_t>& hash_accessor);
     static void update_vertex_operation_multimesh_map_hash_internal(
         Mesh& m,
         const simplex::SimplexCollection& vertex_closed_star,
-        attribute::Accessor<int64_t>& parent_hash_accessor);
+        wmtk::attribute::Accessor<int64_t>& parent_hash_accessor);
 
 public:
     // remove after bug fix

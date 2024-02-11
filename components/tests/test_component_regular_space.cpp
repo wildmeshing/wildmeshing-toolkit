@@ -66,7 +66,7 @@ TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2
         // set 0 1 4 5 6
         {
             const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-            Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+            attribute::Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
             acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[1]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = tag_value;
@@ -106,7 +106,7 @@ TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2
         // set edge 4-5 5-1 1-4 4-7 7-3
         {
             const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-            Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+            attribute::Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
             acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[1]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = tag_value;
@@ -114,7 +114,7 @@ TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2
             acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[6]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[7]) = tag_value;
-            Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
+            attribute::Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
             acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(4, 5, 2)) = tag_value;
             acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(5, 1, 2)) = tag_value;
             acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 4, 2)) = tag_value;
@@ -191,7 +191,7 @@ TEST_CASE("regular_space_component_tet", "[components][regular_space][tetmesh][3
     {
         {
             const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-            Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+            attribute::Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
             acc_vertex_tag.scalar_attribute(vertex_tuples[1]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[2]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = tag_value;
@@ -221,14 +221,14 @@ TEST_CASE("regular_space_component_tet", "[components][regular_space][tetmesh][3
     {
         {
             const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-            Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+            attribute::Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
             acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[1]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[2]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[7]) = tag_value;
-            Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
+            attribute::Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
             acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = tag_value;
             acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 2, 0)) = tag_value;
             acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 3, 0)) = tag_value;

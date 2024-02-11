@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <numeric>
 #include <set>
-#include <wmtk/Accessor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
@@ -30,7 +30,7 @@ using TM = TriMesh;
 using MapResult = typename Eigen::Matrix<int64_t, Eigen::Dynamic, 1>::MapType;
 using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
     wmtk::Tuple(),
-    std::declval<Accessor<int64_t>&>()));
+    std::declval<attribute::Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -194,7 +194,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         wmtk::attribute::MeshAttributeHandle v2_handle =
             m.register_attribute<double>("vertices2", PV, 1);
 
-        Accessor<int64_t> acc_attri = m.create_accessor<int64_t>(attri_handle);
+        wmtk::attribute::Accessor<int64_t> acc_attri = m.create_accessor<int64_t>(attri_handle);
         for (const Tuple& f : m.get_all(PF)) {
             acc_attri.scalar_attribute(f) = 1;
         }
@@ -290,7 +290,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         CHECK(
             simplex::link(m, Simplex::vertex(ret)).simplex_vector(PrimitiveType::Vertex).size() ==
             3);
-        Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
+        wmtk::attribute::Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
         CHECK(acc_pos.vector_attribute(ret).x() == 0.375);
         CHECK(acc_pos.vector_attribute(m.switch_vertex(ret)).x() == 1);
     }
@@ -307,7 +307,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         wmtk::attribute::MeshAttributeHandle todo_handle =
             m.register_attribute<int64_t>("todo_face", PF, 1);
 
-        Accessor<int64_t> acc_todo = m.create_accessor<int64_t>(todo_handle);
+        wmtk::attribute::Accessor<int64_t> acc_todo = m.create_accessor<int64_t>(todo_handle);
         acc_todo.scalar_attribute(f) = 1;
 
         composite::TriFaceSplit op(m);
@@ -338,9 +338,9 @@ TEST_CASE("split_face", "[operations][split][2D]")
             m.register_attribute<int64_t>("edge_tag", PE, 1);
         wmtk::attribute::MeshAttributeHandle vertex_tag_handle =
             m.register_attribute<int64_t>("vertex_tag", PV, 1);
-        Accessor<int64_t> acc_todo = m.create_accessor<int64_t>(todo_handle);
-        Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
-        Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+        wmtk::attribute::Accessor<int64_t> acc_todo = m.create_accessor<int64_t>(todo_handle);
+        wmtk::attribute::Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
+        wmtk::attribute::Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
         acc_todo.scalar_attribute(f) = 1;
 
         acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = 1;

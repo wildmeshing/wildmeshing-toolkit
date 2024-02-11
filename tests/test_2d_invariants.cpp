@@ -390,8 +390,8 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_3_by_1_tet", "[invari
         edge_tag_handle.as<int64_t>(),
         tag_val);
 
-    Accessor<int64_t> edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
-    Accessor<int64_t> face_tag_acc = m.create_accessor<int64_t>(face_tag_handle);
+    wmtk::attribute::Accessor<int64_t> edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
+    wmtk::attribute::Accessor<int64_t> face_tag_acc = m.create_accessor<int64_t>(face_tag_handle);
 
     SECTION("bottom_plane_plus_face_1-7-18")
     {
@@ -691,8 +691,8 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_2_by_2_tet", "[invari
         edge_tag_handle.as<int64_t>(),
         tag_val);
 
-    Accessor<int64_t> edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
-    Accessor<int64_t> face_tag_acc = m.create_accessor<int64_t>(face_tag_handle);
+    wmtk::attribute::Accessor<int64_t> edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
+    wmtk::attribute::Accessor<int64_t> face_tag_acc = m.create_accessor<int64_t>(face_tag_handle);
     SECTION("one_bar_on_another")
     {
         //    _ _ _ _      24_25_26

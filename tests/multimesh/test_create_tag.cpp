@@ -34,11 +34,11 @@ TEST_CASE("test_create_tags")
     // get attribute handle
     attribute::TypedAttributeHandle<int64_t> edge_tag_handle =
         parent.get_attribute_handle<int64_t>("edge_tag", PrimitiveType::Edge).as<int64_t>();
-    attribute::ConstAccessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
+    const wmtk::attribute::Accessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
 
     attribute::TypedAttributeHandle<int64_t> vertex_tag_handle =
         parent.get_attribute_handle<int64_t>("vertex_tag", PrimitiveType::Vertex).as<int64_t>();
-    attribute::ConstAccessor vertex_tag_accessor = parent.create_const_accessor(vertex_tag_handle);
+    const wmtk::attribute::Accessor vertex_tag_accessor = parent.create_const_accessor(vertex_tag_handle);
 
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
     for (const Tuple& e : e_tuples) {
@@ -86,13 +86,13 @@ TEST_CASE("create_tags_2")
     // get attribute handle
     attribute::TypedAttributeHandle<int64_t> edge_tag_handle =
         parent.get_attribute_handle<int64_t>("edge_tag", PrimitiveType::Edge).as<int64_t>();
-    attribute::ConstAccessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
+    const wmtk::attribute::Accessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
 
 
     // get attribute handle
     attribute::TypedAttributeHandle<int64_t> vertex_tag_handle =
         parent.get_attribute_handle<int64_t>("vertex_tag", PrimitiveType::Vertex).as<int64_t>();
-    attribute::ConstAccessor vertex_tag_accessor = parent.create_const_accessor(vertex_tag_handle);
+    const wmtk::attribute::Accessor vertex_tag_accessor = parent.create_const_accessor(vertex_tag_handle);
 
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
 
@@ -152,7 +152,7 @@ TEST_CASE("no_critical_point")
 
     attribute::TypedAttributeHandle<int64_t> edge_tag_handle =
         parent.get_attribute_handle<int64_t>("edge_tag", PrimitiveType::Edge).as<int64_t>();
-    attribute::ConstAccessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
+    const wmtk::attribute::Accessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
     for (const Tuple& e : e_tuples) {
         if (parent.is_boundary(PrimitiveType::Edge, e)) {
@@ -181,7 +181,7 @@ TEST_CASE("one_critical_point")
     REQUIRE(tags.size() == 1);
     attribute::TypedAttributeHandle<int64_t> edge_tag_handle =
         parent.get_attribute_handle<int64_t>("edge_tag", PrimitiveType::Edge).as<int64_t>();
-    attribute::ConstAccessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
+    const wmtk::attribute::Accessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
 
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
     for (const Tuple& e : e_tuples) {

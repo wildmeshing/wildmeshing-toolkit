@@ -22,8 +22,8 @@ EnvelopeInvariant::EnvelopeInvariant(
     , m_envelope_size(envelope_size)
 {
     const auto& envelope_mesh = envelope_mesh_coordinate.mesh();
-    ConstAccessor<double> accessor =
-        envelope_mesh.create_accessor(envelope_mesh_coordinate.as<double>());
+    const attribute::Accessor<double> accessor =
+        envelope_mesh.create_const_accessor(envelope_mesh_coordinate.as<double>());
 
 
     if (envelope_mesh.top_simplex_type() == PrimitiveType::Triangle) {
@@ -86,7 +86,7 @@ bool EnvelopeInvariant::after(
 {
     if (top_dimension_tuples_after.empty()) return true;
 
-    ConstAccessor<double> accessor = mesh().create_accessor(m_coordinate_handle);
+    const attribute::Accessor<double> accessor = mesh().create_const_accessor(m_coordinate_handle);
     const auto type = mesh().top_simplex_type();
 
     if (m_envelope) {

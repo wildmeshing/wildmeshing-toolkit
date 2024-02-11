@@ -24,7 +24,9 @@ namespace utils {
 // for identifying unique top level simplices between tuples
 class TupleCellLessThan;
 } // namespace utils
+namespace multimesh {
 class MultiMeshManager;
+}
 
 class Tuple
 {
@@ -43,7 +45,7 @@ public:
     friend class EdgeMesh;
     friend class TriMesh;
     friend class TetMesh;
-    friend class MultiMeshManager;
+    friend class multimesh::MultiMeshManager;
     template <typename T>
     friend class attribute::TupleAccessor;
     friend class operations::Operation;
