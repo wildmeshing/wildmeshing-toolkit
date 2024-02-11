@@ -3,8 +3,7 @@
 namespace wmtk::components::internal {
 
 // general function to separate topology, regardless of dimension
-std::unique_ptr<wmtk::Mesh>
-topology_separate(wmtk::Mesh& m, const wmtk::MeshAttributeHandle<long>& tag_handle, bool pos)
+std::unique_ptr<wmtk::Mesh> topology_separate(wmtk::Mesh& m, bool pos)
 {
     // First extract the non-manifold submesh, then execute the following algo
     /*Algo outline:
