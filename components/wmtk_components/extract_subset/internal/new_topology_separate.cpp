@@ -42,7 +42,7 @@ topology_separate(wmtk::Mesh& m, const wmtk::MeshAttributeHandle<long>& tag_hand
     }
     nb_cell_in = tag_simplex_index.size();
     assert(nb_cell_in <= top_simplex_count);
-    // std::cout << "# of cell inside = " << nb_cell_in << std::endl;
+    std::cout << "# of cell inside = " << nb_cell_in << std::endl;
 
     // TODO: improve the algorithm to achieve O(N)
     for (size_t i = 0; i < nb_cell_in; ++i) {
@@ -63,7 +63,7 @@ topology_separate(wmtk::Mesh& m, const wmtk::MeshAttributeHandle<long>& tag_hand
             nb_vertex_in++;
         }
     }
-    // std::cout << "nb_vertex_in = " << nb_vertex_in << std::endl;
+    std::cout << "nb_vertex_in = " << nb_vertex_in << std::endl;
 
     wmtk::TriMesh tri_ext_mesh;
     wmtk::RowVectors3l tri_exts;
@@ -81,12 +81,10 @@ topology_separate(wmtk::Mesh& m, const wmtk::MeshAttributeHandle<long>& tag_hand
                 data[index] = old2new[find_vertex_index(m, list[index])];
             tri_exts.row(i) << data[0], data[1], data[2];
         }
-        std::cout << "tri_exts = " << tri_exts << std::endl;
+        // std::cout << "tri_exts = " << tri_exts << std::endl;
         tri_ext_mesh.initialize(tri_exts);
         assert(tri_ext_mesh.get_all(topType).size() == nb_cell_in);
-        std::cout << "tri_ext_mesh.get_all(topType).size() = "
-                  << tri_ext_mesh.get_all(topType).size() << std::endl;
-        return std::make_unique<wmtk::TriMesh>(tri_ext_mesh);
+        if (!pos) return std::make_unique<wmtk::TriMesh>(tri_ext_mesh);
     } else if (top_simplex_dim == 3) {
         tet_exts.resize(nb_cell_in, m.top_cell_dimension() + 1);
         for (size_t i = 0; i < nb_cell_in; ++i) {
@@ -100,9 +98,42 @@ topology_separate(wmtk::Mesh& m, const wmtk::MeshAttributeHandle<long>& tag_hand
         }
         tet_ext_mesh.initialize(tet_exts);
         assert(tet_ext_mesh.get_all(topType).size() == nb_cell_in);
-        return std::make_unique<wmtk::TetMesh>(tet_ext_mesh);
+        if (!pos) return std::make_unique<wmtk::TetMesh>(tet_ext_mesh);
     }
 
+    // if told to, extract and preserve the coordinates
+    if (pos) {
+        Eigen::MatrixXd points_in;
+        points_in.resize(nb_vertex_in, m.top_cell_dimension());
+        wmtk::MeshAttributeHandle<double> pos_handle =
+            m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        wmtk::ConstAccessor<double> pos_acc = m.create_const_accessor(pos_handle);
+        for (const Tuple& t : vertices) {
+            // ignore the outside vertices
+            long old_index = find_vertex_index(m, t);
+            if (vertices_in_bool[old_index]) {
+                points_in.row(old2new[old_index]) = pos_acc.const_vector_attribute(t);
+            }
+            // call the set_matrix_attribute function according to the top dimension
+            switch (m.top_cell_dimension()) {
+            case 2:
+                wmtk::mesh_utils::set_matrix_attribute(
+                    points_in,
+                    "position",
+                    wmtk::PrimitiveType::Vertex,
+                    tri_ext_mesh);
+                return std::make_unique<wmtk::TriMesh>(tri_ext_mesh);
+            case 3:
+                wmtk::mesh_utils::set_matrix_attribute(
+                    points_in,
+                    "position",
+                    wmtk::PrimitiveType::Vertex,
+                    tet_ext_mesh);
+                return std::make_unique<wmtk::TetMesh>(tet_ext_mesh);
+            default: throw std::runtime_error("Invalid top dimension in separating topology!");
+            }
+        }
+    }
 
     // first, register a vector attribute to store the corner ids for each top dimension simplex
     wmtk::RowVectors4l dup;
