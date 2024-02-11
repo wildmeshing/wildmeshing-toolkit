@@ -105,7 +105,8 @@ std::unique_ptr<wmtk::Mesh> topology_separate(wmtk::Mesh& m, bool pos)
         }
     }
 
-    if (top_simplex_dim == 2) {
+    switch (m.top_cell_dimension()) {
+    case 2: {
         wmtk::TriMesh mesh;
         wmtk::RowVectors3l tris;
         tris.resize(top_simplex_count, 3);
@@ -122,7 +123,8 @@ std::unique_ptr<wmtk::Mesh> topology_separate(wmtk::Mesh& m, bool pos)
                 mesh);
         }
         return std::make_unique<wmtk::TriMesh>(mesh);
-    } else {
+    }
+    case 3: {
         wmtk::TetMesh mesh;
         wmtk::RowVectors4l tets;
         tets.resize(top_simplex_count, 4);
@@ -139,6 +141,8 @@ std::unique_ptr<wmtk::Mesh> topology_separate(wmtk::Mesh& m, bool pos)
                 mesh);
         }
         return std::make_unique<wmtk::TetMesh>(mesh);
+    }
+    default: throw std::runtime_error("Invalid mesh dimension in separating topology!");
     }
 }
 } // namespace wmtk::components::internal
