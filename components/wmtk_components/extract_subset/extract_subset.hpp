@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wmtk/TriMesh.hpp>
+#include "internal/generate_submesh.hpp"
 #include "internal/new_topology_separate.hpp"
 namespace wmtk {
 
