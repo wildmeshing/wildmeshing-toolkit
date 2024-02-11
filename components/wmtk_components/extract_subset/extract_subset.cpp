@@ -34,6 +34,7 @@ std::unique_ptr<wmtk::Mesh> extract_subset(wmtk::Mesh& m, const std::vector<int>
             m,
             tag_handle,
             pos); // Assign the value inside the switch statement
+        return submesh;
         return internal::topology_separate(*(submesh.get()), pos);
     default: throw std::runtime_error("Invalid mesh dimension in extracting subset!");
     }
