@@ -30,7 +30,10 @@ std::unique_ptr<wmtk::Mesh> extract_subset(wmtk::Mesh& m, const std::vector<int>
     switch (m.top_cell_dimension()) {
     case 2:
     case 3:
-        submesh =  internal::generate_submesh(m, tag_handle, pos); // Assign the value inside the switch statement
+        submesh = internal::generate_submesh(
+            m,
+            tag_handle,
+            pos); // Assign the value inside the switch statement
         // return submesh;
         // std::cout << "Extracting subset of dimension " << m.top_cell_dimension() << std::endl;
         return internal::topology_separate(*(submesh.get()), tag_handle, pos);

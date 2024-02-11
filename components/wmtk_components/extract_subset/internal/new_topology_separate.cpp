@@ -83,7 +83,29 @@ topology_separate(wmtk::Mesh& m, const wmtk::MeshAttributeHandle<long>& tag_hand
     }
 
     // third, create a new mesh and copy the topology
-    // TODO: also copy the geometry if asked to do so
+    Eigen::MatrixXd points_in;
+    if (pos) {
+        std::map<long, bool> vertices_pos_visited;
+        for (long t = 0; t < counter + 1; ++t) vertices_pos_visited.insert({t, false});
+        points_in.resize(counter + 1, top_simplex_dim);
+        wmtk::MeshAttributeHandle<double> pos_handle =
+            m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        wmtk::ConstAccessor<double> pos_acc = m.create_const_accessor(pos_handle);
+        for (int i = 0; i < top_simplex_count; ++i) {
+            Simplex s = (top_simplex_dim == 2) ? Simplex::face(top_simplices[i])
+                                               : Simplex::tetrahedron(top_simplices[i]);
+            std::vector<wmtk::Tuple> corners =
+                wmtk::simplex::faces_single_dimension(m, s, PrimitiveType::Vertex);
+            for (int j = 0; j < top_simplex_dim + 1; ++j) {
+                long index = dup_acc.vector_attribute(top_simplices[i])[j];
+                if (!vertices_pos_visited[index]) {
+                    points_in.row(index) = pos_acc.const_vector_attribute(corners[j]);
+                    vertices_pos_visited[index] = true;
+                }
+            }
+        }
+    }
+
     if (top_simplex_dim == 2) {
         wmtk::TriMesh mesh;
         wmtk::RowVectors3l tris;
@@ -93,6 +115,13 @@ topology_separate(wmtk::Mesh& m, const wmtk::MeshAttributeHandle<long>& tag_hand
             tris.row(i) << v[0], v[1], v[2];
         }
         mesh.initialize(tris);
+        if (pos) {
+            wmtk::mesh_utils::set_matrix_attribute(
+                points_in,
+                "position",
+                wmtk::PrimitiveType::Vertex,
+                mesh);
+        }
         return std::make_unique<wmtk::TriMesh>(mesh);
     } else {
         wmtk::TetMesh mesh;
@@ -103,6 +132,13 @@ topology_separate(wmtk::Mesh& m, const wmtk::MeshAttributeHandle<long>& tag_hand
             tets.row(i) << v[0], v[1], v[2], v[3];
         }
         mesh.initialize(tets);
+        if (pos) {
+            wmtk::mesh_utils::set_matrix_attribute(
+                points_in,
+                "position",
+                wmtk::PrimitiveType::Vertex,
+                mesh);
+        }
         return std::make_unique<wmtk::TetMesh>(mesh);
     }
 }

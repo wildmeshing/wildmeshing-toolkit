@@ -118,26 +118,26 @@ generate_submesh(wmtk::Mesh& m, wmtk::MeshAttributeHandle<long> tag_handle, bool
             if (vertices_in_bool[old_index]) {
                 points_in.row(old2new[old_index]) = pos_acc.const_vector_attribute(t);
             }
-            // call the set_matrix_attribute function according to the top dimension
-            switch (m.top_cell_dimension()) {
-            case 2:
-                wmtk::mesh_utils::set_matrix_attribute(
-                    points_in,
-                    "position",
-                    wmtk::PrimitiveType::Vertex,
-                    tri_ext_mesh);
-                top_simplices = tri_ext_mesh.get_all(topType);
-                return std::make_unique<wmtk::TriMesh>(tri_ext_mesh);
-            case 3:
-                wmtk::mesh_utils::set_matrix_attribute(
-                    points_in,
-                    "position",
-                    wmtk::PrimitiveType::Vertex,
-                    tet_ext_mesh);
-                top_simplices = tet_ext_mesh.get_all(topType);
-                return std::make_unique<wmtk::TetMesh>(tet_ext_mesh);
-            default: throw std::runtime_error("Invalid top dimension in separating topology!");
-            }
+        }
+        // call the set_matrix_attribute function according to the top dimension
+        switch (m.top_cell_dimension()) {
+        case 2:
+            wmtk::mesh_utils::set_matrix_attribute(
+                points_in,
+                "position",
+                wmtk::PrimitiveType::Vertex,
+                tri_ext_mesh);
+            top_simplices = tri_ext_mesh.get_all(topType);
+            return std::make_unique<wmtk::TriMesh>(tri_ext_mesh);
+        case 3:
+            wmtk::mesh_utils::set_matrix_attribute(
+                points_in,
+                "position",
+                wmtk::PrimitiveType::Vertex,
+                tet_ext_mesh);
+            top_simplices = tet_ext_mesh.get_all(topType);
+            return std::make_unique<wmtk::TetMesh>(tet_ext_mesh);
+        default: throw std::runtime_error("Invalid top dimension in separating topology!");
         }
     }
     throw std::runtime_error("Should not reach here!");
