@@ -30,6 +30,7 @@ std::unique_ptr<wmtk::Mesh> extract_subset(wmtk::Mesh& m, const std::vector<int>
     case 2:
     case 3:
         // return internal::generate_submesh(m, tag_handle, pos);
+        std::cout << "Extracting subset of dimension " << m.top_cell_dimension() << std::endl;
         return internal::topology_separate(m, tag_handle, pos);
         // return std::make_unique<wmtk::TetMesh>(m);
     default: throw std::runtime_error("Invalid mesh dimension in extracting subset!");

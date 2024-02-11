@@ -7,6 +7,7 @@
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
+#include "utils.hpp"
 
 namespace wmtk::components::internal {
 

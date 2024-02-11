@@ -452,6 +452,8 @@ TEST_CASE("component_3+4_test_case", "[components][extract_subset][2D][manual]")
     std::vector<int> id = {0,  1,  2,  3,  5,  6,  7,  8,  10, 11, 12, 25, 26, 29,
                            30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 42, 43, 44, 45};
     for (int i : id) tag_vector[i] = 1;
+    std::cout << "Before: nb_vertex = " << tm.capacity(wmtk::PrimitiveType::Vertex) << std::endl; // 30 -> 25
+    std::cout << "Before: nb_face = " << tm.capacity(wmtk::PrimitiveType::Face) << std::endl; // 46 -> 28
     std::unique_ptr<wmtk::Mesh> new_tm = wmtk::components::extract_subset(tm, tag_vector, false);
 
     CHECK(is_valid_mesh(*dynamic_cast<wmtk::TriMesh*>(new_tm.get())));
