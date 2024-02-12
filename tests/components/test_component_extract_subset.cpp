@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <map>
+#include <paraviewo/VTUWriter.hpp>
 #include <random>
 #include <set>
 #include <stack>
@@ -11,7 +12,7 @@
 #include "../tools/TetMesh_examples.hpp"
 #include "../tools/TriMesh_examples.hpp"
 #include "wmtk_components/delaunay/internal/delaunay_2d.hpp"
-
+#include "wmtk_components/delaunay/internal/delaunay_3d.hpp"
 // #include <wmtk/io/ParaviewWriter.hpp>
 // #include <wmtk/utils/mesh_utils.hpp>
 
@@ -242,12 +243,12 @@ bool is_disk(const wmtk::TetMesh& tm, std::set<long> index_set)
             edge_indexs_in_link.insert(wmtk::components::internal::find_edge_index(tm, edge));
         }
     }
-    std::cout << "vertex_indexs_in_link.size() = " << vertex_indexs_in_link.size() << std::endl;
-    std::cout << "edge_indexs_in_link.size() = " << edge_indexs_in_link.size() << std::endl;
-    std::cout << "index_set.size() = " << index_set.size() << std::endl;
+    // std::cout << "vertex_indexs_in_link.size() = " << vertex_indexs_in_link.size() << std::endl;
+    // std::cout << "edge_indexs_in_link.size() = " << edge_indexs_in_link.size() << std::endl;
+    // std::cout << "index_set.size() = " << index_set.size() << std::endl;
     long euler_char =
         vertex_indexs_in_link.size() - edge_indexs_in_link.size() + index_set.size() + 1;
-    std::cout << "euler_char = " << euler_char << std::endl;
+    // std::cout << "euler_char = " << euler_char << std::endl;
     if (euler_char != 2) return false;
     bool isRing = all_of(connections.begin(), connections.end(), [](auto& nodes) {
         return nodes.second.size() >= 2;
@@ -316,8 +317,8 @@ bool is_manifold_3d(const wmtk::TetMesh& tm)
             // });
             // std::cout << std::endl;
             if (!is_disk(tm, faceSet)) {
-                std::cout << "Vertex " << vid << " on the boundary doesn't have a disk link."
-                          << std::endl;
+                // std::cout << "Vertex " << vid << " on the boundary doesn't have a disk link."
+                //           << std::endl;
                 return false;
             }
         }
@@ -337,25 +338,6 @@ bool is_manifold_3d(const wmtk::TetMesh& tm)
     }
     return true;
 }
-
-// void check_new_mesh(
-//     wmtk::tests::DEBUG_TriMesh& m,
-//     std::vector<int> data,
-//     bool b,
-//     int vertex_count,
-//     int edge_count,
-//     int face_count)
-// {
-//     std::unique_ptr<wmtk::Mesh> new_tm = wmtk::components::extract_subset(m, data, b);
-//     // new_tm.print_vf();
-//     // CHECK(is_valid_mesh(new_tm));
-//     // CHECK(is_manifold(new_tm));
-//     CHECK(new_tm->capacity(wmtk::PrimitiveType::Vertex) == vertex_count);
-//     CHECK(new_tm->capacity(wmtk::PrimitiveType::Edge) == edge_count);
-//     CHECK(new_tm->capacity(wmtk::PrimitiveType::Face) == face_count);
-//     // wmtk::ParaviewWriter writer("mesh_smooth", "vertices", new_tm, true, true, true, false);
-//     // new_tm.serialize(writer);
-// }
 
 void random_trimesh_test_executor(const wmtk::TriMesh& m, const unsigned long test_size)
 {
@@ -387,31 +369,40 @@ void random_trimesh_test_executor(const wmtk::TriMesh& m, const unsigned long te
     }
 }
 
-// // Should not test on 2d tetrahedron, because it's not enbeddable in 2d
-// /*
-// TEST_CASE("2d_tetrahedron_test_case", "[components][extract_subset][2D]")
-// {
-//     wmtk::tests::DEBUG_TriMesh tm = wmtk::tests::tetrahedron_with_position();
-//     for (int i1 = 0; i1 < 2; ++i1) {
-//         for (int i2 = 0; i2 < 2; ++i2) {
-//             for (int i3 = 0; i3 < 2; ++i3) {
-//                 for (int i4 = 0; i4 < 2; ++i4) {
-//                     std::vector<int> tag_vector = {i1, i2, i3, i4};
-//                     // std::cout << i1 + i2 + i3 + i4 << std::endl;
-//                     switch (i1 + i2 + i3 + i4) {
-//                     // TODO: what to return if none of the faces are tagged? NULL?
-//                     // Maybe construct a trimesh with 0 vertices
-//                     case 1: check_new_mesh(tm, tag_vector, true, 3, 3, 1); break;
-//                     case 2: check_new_mesh(tm, tag_vector, true, 4, 5, 2); break;
-//                     case 3: check_new_mesh(tm, tag_vector, true, 4, 6, 3); break;
-//                     case 4: check_new_mesh(tm, tag_vector, true, 4, 6, 4); break;
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
-// */
+long random_tetmesh_test_executor(const wmtk::TetMesh& m, const unsigned long test_size)
+{
+    wmtk::TetMesh tm = m;
+    long top_dimen_count = m.get_all(m.top_simplex_type()).size();
+    std::vector<int> tag_vector(top_dimen_count, 0);
+    for (size_t i = 0; i < test_size; ++i) {
+        std::random_device rd{};
+        std::mt19937 mt{rd()};
+        std::uniform_int_distribution tag{0, 1};
+        for (int j = 0; j < tag_vector.size(); ++j) {
+            tag_vector[j] = tag(mt);
+        }
+        if (std::reduce(tag_vector.begin(), tag_vector.end()) == 0) {
+            std::fill(tag_vector.begin(), tag_vector.end(), 0);
+            continue;
+        }
+        // std::cout << "Tag: ";
+        // std::all_of(tag_vector.begin(), tag_vector.end(), [](int i) {
+        //     std::cout << i;
+        //     return true;
+        // });
+        std::unique_ptr<wmtk::Mesh> new_tm = wmtk::components::extract_subset(tm, tag_vector, true);
+        bool after = is_manifold_3d(*dynamic_cast<wmtk::TetMesh*>(new_tm.get()));
+        // std::cout << "After: manifold = " << after << std::endl;
+        CHECK(after);
+        if (!after) {
+            paraviewo::VTUWriter writer;
+            // writer.write_mesh("man_ext_3d_random.vtu", vertices, faces);
+            return -1;
+        }
+    }
+    std::fill(tag_vector.begin(), tag_vector.end(), 0);
+    return 0;
+}
 
 TEST_CASE("2d_9tri_with_a_hole_test_case", "[components][extract_subset][2D]")
 {
@@ -493,8 +484,7 @@ TEST_CASE("component_3+4_test_case", "[components][extract_subset][2D][manual]")
     // new_tm.print_vf();
 }
 
-
-TEST_CASE("random_test_from_manext_branch", "[components][extract_subset][2D][random]")
+TEST_CASE("random_2D_test_from_manext_branch", "[components][extract_subset][2D][random]")
 {
     unsigned int nb_points = 20; // 20
     double range = 10.0;
@@ -604,5 +594,55 @@ TEST_CASE("six_cycle_tets", "[components][extract_subset][3D][manual][6]")
         std::cout << "After: manifold = " << after << std::endl;
         CHECK(after);
         std::fill(tag_vector.begin(), tag_vector.end(), 0);
+    }
+}
+
+TEST_CASE("random_3D_test", "[components][extract_subset][2D][random]")
+{
+    std::cout << "Random 3D test" << std::endl;
+    unsigned int nb_points = 7; // 20
+    double range = 10.0;
+    long tagass_loop = 40; // 100
+    const size_t pntgen_loop = 5; // 10
+    const double prob = 0.2;
+
+    // test for 10 iterations, each with 10 more vertices, so 10~100
+    for (size_t i = 0; i < pntgen_loop; ++i) {
+        wmtk::TetMesh tm;
+        wmtk::RowVectors4l tets;
+        wmtk::RowVectors3d points(nb_points, 3);
+        std::random_device rd{};
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<double> dis(0, range);
+        for (size_t j = 0; j < nb_points; ++j) {
+            // generate 3 random doubles between 0 and the given range
+            points.row(j) << dis(gen), dis(gen), dis(gen);
+        }
+
+        Eigen::MatrixXd vertices;
+        Eigen::MatrixXi cells;
+        std::tie(vertices, cells) = wmtk::components::internal::delaunay_3d(points);
+        unsigned int nb_tets = cells.rows();
+        unsigned int nb_vertices = vertices.rows();
+        std::cout << "Man-ext 3D test: total tet num=" << nb_tets << "\n";
+        tets.resize(nb_tets, 4);
+        for (unsigned int j = 0; j < nb_tets; ++j) {
+            tets.row(j) << cells(j, 0), cells(j, 1), cells(j, 2), cells(j, 3);
+        }
+        tm.initialize(tets);
+        wmtk::mesh_utils::set_matrix_attribute(
+            vertices,
+            "position",
+            wmtk::PrimitiveType::Vertex,
+            tm);
+        tagass_loop = test_size_calculation(nb_tets);
+        long ret = random_tetmesh_test_executor(tm, tagass_loop);
+        if (ret == -1) {
+            paraviewo::VTUWriter writer;
+            writer.write_mesh("man_ext_3d_random.vtu", vertices, cells);
+            throw std::runtime_error("Manifold test failed!");
+        }
+        // nb_points += 10;
+        range += 10.0;
     }
 }
