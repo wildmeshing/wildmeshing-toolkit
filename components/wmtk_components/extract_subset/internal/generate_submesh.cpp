@@ -7,8 +7,7 @@ std::unique_ptr<wmtk::Mesh>
 generate_submesh(wmtk::Mesh& m, wmtk::MeshAttributeHandle<long> tag_handle, bool pos)
 {
     /*
-    [I didn't implement the algo listed here, I just restored the prev dumb version]
-    (Incorrect) Algo:
+    new Algo for this first part of plainly getting a subset from the original mesh:
     1. register a new attribute to each vertex and init as -1
     2. store all the indices of tagged top simplices
     3. for each tagged top dim simplex, for each vertex of the simplex,
@@ -172,23 +171,34 @@ generate_submesh(wmtk::Mesh& m, wmtk::MeshAttributeHandle<long> tag_handle, bool
         }
     }
     nb_cell_in = tag_simplex_index.size();
+    std::cout << "# of cell inside = " << nb_cell_in << std::endl;
+    // std::cout << "index of cells inside = " << tag_simplex_index << std::endl;
     assert(nb_cell_in <= top_simplex_count);
 
     // Step 3.1: for each tagged top dim simplex
     for (size_t index : tag_simplex_index) {
+        // std::cout << "index = " << index;
+        // std::cout << "tag = " << tag_acc.const_scalar_attribute(top_simplices.at(index))
+        //           << std::endl;
         Simplex s = (top_simplex_dim == 2) ? Simplex::face(top_simplices[index])
                                            : Simplex::tetrahedron(top_simplices[index]);
         std::vector<wmtk::Tuple> vertices_in_simplex =
             wmtk::simplex::faces_single_dimension(m, s, PrimitiveType::Vertex);
         // for each vertex of the simplex
         for (wmtk::Tuple t : vertices_in_simplex) {
+            // std::cout << "current vertex id = " << find_vertex_index(m, t) << std::endl;
+            // std::cout << "before: attribute = " << new_ver_index_acc.scalar_attribute(t)
+            //           << std::endl;
             // Step 3.2: if the vertex has attribute -1, then assign it a new index,
             if (new_ver_index_acc.scalar_attribute(t) == -1) {
                 new_ver_index_acc.scalar_attribute(t) = nb_vertex_in;
                 nb_vertex_in++;
             }
+            // std::cout << "after: attribute = " << new_ver_index_acc.scalar_attribute(t)
+            //           << std::endl;
         }
     }
+    std::cout << "nb_vertex_in = " << nb_vertex_in << std::endl;
 
     wmtk::TriMesh tri_ext_mesh;
     wmtk::RowVectors3l tri_exts;
@@ -197,13 +207,16 @@ generate_submesh(wmtk::Mesh& m, wmtk::MeshAttributeHandle<long> tag_handle, bool
     if (top_simplex_dim == 2) {
         tri_exts.resize(nb_cell_in, 3);
         for (int i = 0; i < nb_cell_in; ++i) {
-            if (tag_acc.const_scalar_attribute(top_simplices.at(i)) == 0) continue;
+            if (tag_acc.const_scalar_attribute(top_simplices.at(tag_simplex_index[i])) == 0)
+                continue;
             Simplex s = Simplex::face(top_simplices[tag_simplex_index[i]]);
             std::vector<wmtk::Tuple> list =
                 wmtk::simplex::faces_single_dimension(m, s, PrimitiveType::Vertex);
             std::vector<long> data(3, -1);
-            for (int index = 0; index < 3; ++index)
+            for (int index = 0; index < 3; ++index) {
                 data[index] = new_ver_index_acc.scalar_attribute(list[index]);
+                // std::cout << "data[" << index << "] = " << data[index] << std::endl;
+            }
             tri_exts.row(i) << data[0], data[1], data[2];
         }
         // std::cout << "tri_exts = " << tri_exts << std::endl;
@@ -213,7 +226,8 @@ generate_submesh(wmtk::Mesh& m, wmtk::MeshAttributeHandle<long> tag_handle, bool
     } else if (top_simplex_dim == 3) {
         tet_exts.resize(nb_cell_in, 4);
         for (size_t i = 0; i < nb_cell_in; ++i) {
-            if (tag_acc.const_scalar_attribute(top_simplices.at(i)) == 0) continue;
+            if (tag_acc.const_scalar_attribute(top_simplices.at(tag_simplex_index[i])) == 0)
+                continue;
             Simplex s = Simplex::tetrahedron(top_simplices[tag_simplex_index[i]]);
             std::vector<wmtk::Tuple> list =
                 wmtk::simplex::faces_single_dimension(m, s, PrimitiveType::Vertex);
