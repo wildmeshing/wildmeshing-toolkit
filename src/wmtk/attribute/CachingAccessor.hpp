@@ -29,8 +29,10 @@ public:
     friend class AttributeCache<T>;
     using BaseType = AccessorBase<T>;
 
-    using ConstMapResult = typename BaseType::ConstMapResult; // Eigen::Map<const VectorX<T>>
-    using MapResult = typename BaseType::MapResult; // Eigen::Map<VectorX<T>>
+    template <int D = Eigen::Dynamic>
+    using ConstMapResult = typename BaseType::ConstMapResult<D>; // Eigen::Map<const VectorX<T>>
+    template <int D = Eigen::Dynamic>
+    using MapResult = typename BaseType::MapResult<D>; // Eigen::Map<VectorX<T>>
 
 
     CachingAccessor(Mesh& m, const TypedAttributeHandle<T>& handle);
@@ -55,18 +57,20 @@ public:
 
     bool has_stack() const;
 
-    ConstMapResult const_vector_attribute(const int64_t index) const;
+    template <int D = Eigen::Dynamic>
+    ConstMapResult<D> const_vector_attribute(const int64_t index) const;
 
     T const_scalar_attribute(const int64_t index) const;
     T const_scalar_attribute(const int64_t index, const int8_t offset) const;
 
-    MapResult vector_attribute(const int64_t index);
+    template <int D = Eigen::Dynamic>
+    MapResult<D> vector_attribute(const int64_t index) ;
 
     T& scalar_attribute(const int64_t index);
     T& scalar_attribute(const int64_t index, const int8_t offset);
 
     // deprecated because we should be more explicit in const/nonconst on internal interfaces
-    ConstMapResult vector_attribute(const int64_t index) const;
+    ConstMapResult<> vector_attribute(const int64_t index) const;
     // deprecated because we should be more explicit in const/nonconst on internal interfaces
     T scalar_attribute(const int64_t index) const;
 

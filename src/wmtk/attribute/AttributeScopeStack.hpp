@@ -27,8 +27,10 @@ template <typename T>
 class AttributeScopeStack
 {
 public:
-    using MapResult = internal::MapResult<T>;
-    using ConstMapResult = internal::ConstMapResult<T>;
+    template <int D = Eigen::Dynamic>
+    using MapResult = internal::MapResult<T,D>;
+    template <int D = Eigen::Dynamic>
+    using ConstMapResult = internal::ConstMapResult<T,D>;
     // stack is implemented by a parent pointing graph, so we track a pointer
     // to the leaf
     AttributeScopeStack();
@@ -46,16 +48,19 @@ public:
 
 
     /// default mutable vector access
-    MapResult vector_attribute(AccessorBase<T>& accessor, int64_t index);
+    template <int D = Eigen::Dynamic>
+    MapResult<D> vector_attribute(AccessorBase<T>& accessor, int64_t index);
     /// default immutable vector access
 
-    ConstMapResult const_vector_attribute(const AccessorBase<T>& accessor, int64_t index) const;
+    template <int D = Eigen::Dynamic>
+    ConstMapResult<D> const_vector_attribute(const AccessorBase<T>& accessor, int64_t index) const;
     /// default mutable scalar access
     T& scalar_attribute(AccessorBase<T>& accessor, int64_t index);
 
     /// default immutable scalar access
     T const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index) const;
 
+    template <int D = Eigen::Dynamic>
     /// specialized immutable scalar access useful for topological operations
     T const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index, int8_t offset) const;
 
@@ -104,12 +109,13 @@ void AttributeScopeStack<T>::rollback_current_scope(Attribute<T>& attr)
 }
 
 template <typename T>
+template <int D>
 inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index)
-    -> MapResult
+    -> MapResult<D>
 {
     assert(writing_enabled());
 
-    auto data = accessor.vector_attribute(index);
+    auto data = accessor.template vector_attribute<D>(index);
     if (!empty()) {
         m_scopes.back().try_caching(index, data);
     }
@@ -117,9 +123,10 @@ inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, 
 }
 
 template <typename T>
+template <int D>
 inline auto AttributeScopeStack<T>::const_vector_attribute(
     const AccessorBase<T>& accessor,
-    int64_t index) const -> ConstMapResult
+    int64_t index) const -> ConstMapResult<D>
 {
     if (!at_current_scope()) {
         assert(m_active >= m_scopes.begin());
@@ -128,12 +135,12 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
         //for (auto it = m_active; it < m_scopes.rend(); ++it) {
             if (auto mapit = it->find_value(index); it->is_value(mapit)) {
                 const auto& d = mapit->second;
-                auto dat = d.data_as_const_map();
+                auto dat = d.template data_as_const_map<D>();
                 return dat;
             }
         }
     }
-    return accessor.const_vector_attribute(index);
+    return accessor.template const_vector_attribute<D>(index);
 }
 
 template <typename T>
@@ -152,16 +159,17 @@ inline auto AttributeScopeStack<T>::const_scalar_attribute(
     const AccessorBase<T>& accessor,
     int64_t index) const -> T
 {
-    return const_vector_attribute(accessor, index)(0);
+    return const_vector_attribute<1>(accessor, index)(0);
 }
 template <typename T>
+template <int D>
 inline auto AttributeScopeStack<T>::const_scalar_attribute(
     const AccessorBase<T>& accessor,
     int64_t index,
     int8_t offset) const -> T
 {
     if (!at_current_scope()) {
-        return const_vector_attribute(accessor, index)(offset);
+        return const_vector_attribute<D>(accessor, index)(offset);
     } else {
         return accessor.const_scalar_attribute(index, offset);
     }

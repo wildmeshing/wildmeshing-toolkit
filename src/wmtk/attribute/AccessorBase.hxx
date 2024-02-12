@@ -95,17 +95,19 @@ PrimitiveType AccessorBase<T>::primitive_type() const
 }
 
 template <typename T>
-auto AccessorBase<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult
+template <int D>
+auto AccessorBase<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult<D>
 {
-    auto buffer = attribute().const_vector_attribute(index);
+    auto buffer = attribute().template const_vector_attribute<D>(index);
     return buffer;
 }
 
 template <typename T>
-auto AccessorBase<T>::vector_attribute(const int64_t index) -> MapResult
+template <int D>
+auto AccessorBase<T>::vector_attribute(const int64_t index) -> MapResult<D>
 {
     auto& attr = attribute();
-    auto buffer = attr.vector_attribute(index);
+    auto buffer = attr.template vector_attribute<D>(index);
 
     return buffer;
 }

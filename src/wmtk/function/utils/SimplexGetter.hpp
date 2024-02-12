@@ -23,7 +23,7 @@ template <typename T>
  * @return a pair containing a vector of Vectors one for each attribute (eg 3 for a triangle) and an
  * index poiting to the attr corresponding to the vertex_marker (-1 if not specified)
  */
-std::tuple<std::vector<std::decay_t<typename attribute::internal::ConstMapResult<T>>>, int64_t>
+std::tuple<std::vector<std::decay_t<typename attribute::ConstMapResult<T>>>, int64_t>
 get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<T>& accessor,

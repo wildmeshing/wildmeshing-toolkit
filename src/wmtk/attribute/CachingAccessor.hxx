@@ -38,7 +38,8 @@ int64_t CachingAccessor<T>::stack_depth() const
 }
 
 template <typename T>
-auto CachingAccessor<T>::vector_attribute(const int64_t index) -> MapResult
+template <int D>
+auto CachingAccessor<T>::vector_attribute(const int64_t index) -> MapResult<D>
 {
     return m_cache_stack.vector_attribute(*this, index);
 }
@@ -51,7 +52,8 @@ auto CachingAccessor<T>::scalar_attribute(const int64_t index) -> T&
 }
 
 template <typename T>
-auto CachingAccessor<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult
+template <int D>
+auto CachingAccessor<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult<D>
 {
     return m_cache_stack.const_vector_attribute(*this, index);
 }
@@ -64,7 +66,7 @@ auto CachingAccessor<T>::const_scalar_attribute(const int64_t index) const -> T
 }
 
 template <typename T>
-auto CachingAccessor<T>::vector_attribute(const int64_t index) const -> ConstMapResult
+auto CachingAccessor<T>::vector_attribute(const int64_t index) const -> ConstMapResult<>
 {
     return const_vector_attribute(index);
 }
