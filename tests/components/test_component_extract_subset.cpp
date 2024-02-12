@@ -509,6 +509,22 @@ TEST_CASE("random_test_from_manext_branch", "[components][extract_subset][2D][ra
     }
 }
 
+TEST_CASE("2_non_manifold_vertices", "[components][extract_subset][3D][manual][3]")
+{
+    wmtk::TetMesh tm;
+    wmtk::RowVectors<long, 4> tets;
+    tets.resize(3, 4);
+    tets.row(0) << 0, 1, 2, 3;
+    tets.row(1) << 0, 2, 3, 4;
+    tets.row(2) << 1, 4, 5, 6;
+    tm.initialize(tets);
+    std::cout << "Before: manifold = " << is_manifold_3d(tm);
+    std::vector<int> tag_vector = {1, 1, 1};
+    std::unique_ptr<wmtk::Mesh> topo_tm = wmtk::components::extract_subset(tm, tag_vector, false);
+    bool after = is_manifold_3d(*dynamic_cast<wmtk::TetMesh*>(topo_tm.get()));
+    std::cout << "; After: manifold = " << after << std::endl;
+    CHECK(after);
+}
 
 TEST_CASE("2_non_manifold_edges", "[components][extract_subset][3D][manual][3]")
 {
