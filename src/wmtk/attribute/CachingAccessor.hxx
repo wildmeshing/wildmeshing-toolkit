@@ -41,7 +41,7 @@ template <typename T>
 template <int D>
 auto CachingAccessor<T>::vector_attribute(const int64_t index) -> MapResult<D>
 {
-    return m_cache_stack.vector_attribute(*this, index);
+    return m_cache_stack.template vector_attribute<D>(*this, index);
 }
 
 
@@ -55,7 +55,7 @@ template <typename T>
 template <int D>
 auto CachingAccessor<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult<D>
 {
-    return m_cache_stack.const_vector_attribute(*this, index);
+    return m_cache_stack.template const_vector_attribute<D>(*this, index);
 }
 
 
