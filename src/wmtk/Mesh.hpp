@@ -112,6 +112,7 @@ public:
     friend class multimesh::attribute::AttributeScopeHandle;
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
+    friend class simplex::Simplex;
     friend class simplex::RawSimplex;
     friend class simplex::SimplexCollection;
     friend class simplex::utils::SimplexComparisons;
@@ -157,6 +158,8 @@ public:
      * @return vector of Tuples referring to each type
      */
     std::vector<Tuple> get_all(PrimitiveType type) const;
+
+    std::vector<simplex::Simplex> get_all_simplices(PrimitiveType type) const;
 
     /**
      * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding

@@ -6,6 +6,8 @@
 
 namespace wmtk::simplex::utils {
 std::vector<Simplex> tuple_vector_to_homogeneous_simplex_vector(
+    const Mesh& mesh,
     const std::vector<Tuple>&,
     PrimitiveType primitive);
-}
+
+} // namespace wmtk::simplex::utils

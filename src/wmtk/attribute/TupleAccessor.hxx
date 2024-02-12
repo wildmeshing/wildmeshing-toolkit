@@ -19,7 +19,15 @@ auto TupleAccessor<T>::vector_attribute(const Tuple& t) -> MapResult
 }
 
 template <typename T>
-auto TupleAccessor<T>::scalar_attribute(const Tuple& t) -> T&
+inline auto TupleAccessor<T>::const_vector_attribute(const simplex::Simplex& s) const
+    -> ConstMapResult
+{
+    // const int64_t idx = index(s.tuple());
+    return CachingBaseType::vector_attribute(s.id());
+}
+
+template <typename T>
+inline auto TupleAccessor<T>::scalar_attribute(const Tuple& t) -> T&
 {
     const int64_t idx = index(t);
     return CachingBaseType::scalar_attribute(idx);

@@ -118,12 +118,12 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     // get the closed star of the edge
     simplex::SimplexCollection edge_closed_star_vertices = simplex::link_single_dimension(
         m_mesh,
-        simplex::Simplex::edge(operating_tuple),
+        simplex::Simplex::edge(m_mesh, operating_tuple),
         PrimitiveType::Vertex);
 
     simplex::faces_single_dimension(
         edge_closed_star_vertices,
-        simplex::Simplex::edge(operating_tuple),
+        simplex::Simplex::edge(m_mesh, operating_tuple),
         PrimitiveType::Vertex);
 
     assert(
@@ -184,7 +184,7 @@ TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete(
     const Tuple& tuple,
     const TetMesh& m)
 {
-    const simplex::SimplexCollection sc = simplex::open_star(m, simplex::Simplex::edge(tuple));
+    const simplex::SimplexCollection sc = simplex::open_star(m, simplex::Simplex::edge(m, tuple));
     std::array<std::vector<int64_t>, 4> ids;
     for (const simplex::Simplex& s : sc) {
         ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
@@ -199,9 +199,9 @@ TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete(
     const TetMesh& m)
 {
     const simplex::SimplexCollection vertex_open_star =
-        simplex::open_star(m, simplex::Simplex::vertex(tuple));
+        simplex::open_star(m, simplex::Simplex::vertex(m, tuple));
     const simplex::SimplexCollection edge_closed_star =
-        simplex::closed_star(m, simplex::Simplex::edge(tuple));
+        simplex::closed_star(m, simplex::Simplex::edge(m, tuple));
 
     const simplex::SimplexCollection sc =
         simplex::SimplexCollection::get_intersection(vertex_open_star, edge_closed_star);
@@ -752,11 +752,11 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 
     logger().trace(
         "split fid is {}",
-        m_mesh.id(simplex::Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))));
+        m_mesh.id(simplex::Simplex::face(m_mesh, m_mesh.switch_tuples(m_output_tuple, {PE, PF}))));
     // assert(m_mesh.id(simplex::Simplex::edge(m_mesh.switch_tuples(m_output_tuple, {PE}))) =
     // return_face_spine_eid);
     assert(
-        m_mesh.id(simplex::Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))) ==
+        m_mesh.id(simplex::Simplex::face(m_mesh, m_mesh.switch_tuples(m_output_tuple, {PE, PF}))) ==
         return_split_fid);
     assert(!m_mesh.is_boundary_face(m_mesh.switch_tuples(m_output_tuple, {PE, PF})));
 }
@@ -769,7 +769,7 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
     // collect star before changing connectivity
     // update all tv's after other updates
     const simplex::SimplexCollection v0_star =
-        simplex::closed_star(m_mesh, simplex::Simplex::vertex(m_operating_tuple));
+        simplex::closed_star(m_mesh, simplex::Simplex::vertex(m_mesh, m_operating_tuple));
 
     // collect incident tets and their ears
     // loop case and boundary case

@@ -21,9 +21,9 @@ bool FusionEdgeInvariant::before(const simplex::Simplex& s) const
         }
     } else {
         std::array<wmtk::simplex::Simplex, 2> periodic_v = {
-            {mesh().map_to_parent(wmtk::simplex::Simplex::vertex(s.tuple())),
+            {mesh().map_to_parent(wmtk::simplex::Simplex::vertex(mesh(), s.tuple())),
              mesh().map_to_parent(
-                 wmtk::simplex::Simplex::vertex(mesh().switch_vertex(s.tuple())))}};
+                 wmtk::simplex::Simplex::vertex(mesh(), mesh().switch_vertex(s.tuple())))}};
 
         // check periodic vertex is on the the periodic mesh boundary, if is, return false
         // only allow operation on edges that are not on the boudnary of the periodic mesh

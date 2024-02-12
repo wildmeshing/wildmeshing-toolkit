@@ -1,49 +1,128 @@
 #include <CLI/CLI.hpp>
 #include <chrono>
 #include <filesystem>
+#include <nlohmann/json.hpp>
+#include <wmtk/PointMesh.hpp>
+#include <wmtk/TriMesh.hpp>
 #include <wmtk/components/run_components.hpp>
+#include <wmtk/io/MeshReader.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/mesh_utils.hpp>
+
+#include <polysolve/Utils.hpp>
 
 using json = nlohmann::json;
+using namespace wmtk;
+
+const std::filesystem::path data_dir = "C:/Projects/wmtk-daniel-zint/data";
 
 int main(int argc, char** argv)
 {
-    using path = std::filesystem::path;
+    const std::filesystem::path meshfile = data_dir / "armadillo.msh";
 
-    CLI::App app{argv[0]};
+    logger().set_level(spdlog::level::trace);
 
-    app.ignore_case();
+    auto mesh_in = wmtk::read_mesh(meshfile);
+    Mesh& m = *mesh_in;
 
-    path json_input_file;
-    app.add_option("-j, --json", json_input_file, "json specification file")->required(true);
-    bool is_strict = true;
-    // app.add_flag("--ns", is_strict, "Disables strict validation of input JSON");
+    auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto pos_acc = m.create_accessor<double>(pos_handle);
 
+    const size_t n_repetitions = 50000;
 
-    CLI11_PARSE(app, argc, argv);
-    if (!std::filesystem::exists(json_input_file)) {
-        wmtk::logger().critical("File `{}` does not exist.", json_input_file);
-        return EXIT_FAILURE;
+    const auto vertices = m.get_all_simplices(PrimitiveType::Vertex);
+
+    // create matrix of positions
+    Eigen::MatrixXd positions;
+    positions.resize(vertices.size(), 3);
+    for (size_t i = 0; i < vertices.size(); ++i) {
+        positions.row(i) = pos_acc.const_vector_attribute(vertices[i]);
     }
 
-    json spec_json;
+    PointMesh pm(vertices.size());
+    auto pph = mesh_utils::set_matrix_attribute(positions, "vertices", PrimitiveType::Vertex, pm);
+    auto pp_acc = pm.create_accessor<double>(pph);
+
     {
-        std::ifstream f(json_input_file);
-        if (!f.is_open()) {
-            wmtk::logger().error("Could not open json file: {}", json_input_file.string());
-            return EXIT_FAILURE;
+        const auto vv = pm.get_all_simplices(PrimitiveType::Vertex);
+        POLYSOLVE_SCOPED_STOPWATCH("Direct", logger());
+        double sum = 0;
+        // for (size_t i = 0; i < n_repetitions; ++i) {
+        for (size_t i = 0; i < vertices.size(); ++i) {
+            for (size_t n = 0; n < n_repetitions; ++n) {
+                sum += positions(i, 0);
+            }
         }
-        spec_json = json::parse(f);
+        for (size_t i = 0; i < vertices.size(); ++i) {
+            for (size_t n = 0; n < n_repetitions; ++n) {
+                sum += positions(i, 1);
+            }
+        }
+        for (size_t i = 0; i < vertices.size(); ++i) {
+            for (size_t n = 0; n < n_repetitions; ++n) {
+                sum += positions(i, 2);
+            }
+        }
+
+        // for (const simplex::Simplex& t : vv) {
+        //     int64_t id = t.id();
+        //     sum += positions(id, 0);
+        // }
+        // for (const simplex::Simplex& t : vv) {
+        //     int64_t id = t.id();
+        //     sum += positions(id, 1);
+        // }
+        // for (const simplex::Simplex& t : vv) {
+        //     int64_t id = t.id();
+        //     sum += positions(id, 2);
+        // }
+        //}
+        std::cout << "sum = " << sum << std::endl;
     }
-    if (!spec_json.contains("root_path")) spec_json["root_path"] = json_input_file;
+    {
+        const auto vv = pm.get_all_simplices(PrimitiveType::Vertex);
+        POLYSOLVE_SCOPED_STOPWATCH("PointMesh Accessors", logger());
+        double sum = 0;
+        // for (size_t i = 0; i < n_repetitions; ++i) {
+        for (const simplex::Simplex& t : vv) {
+            for (size_t n = 0; n < n_repetitions; ++n) {
+                sum += pp_acc.const_vector_attribute(t)[0];
+            }
+        }
+        for (const simplex::Simplex& t : vv) {
+            for (size_t n = 0; n < n_repetitions; ++n) {
+                sum += pp_acc.const_vector_attribute(t)[1];
+            }
+        }
+        for (const simplex::Simplex& t : vv) {
+            for (size_t n = 0; n < n_repetitions; ++n) {
+                sum += pp_acc.const_vector_attribute(t)[2];
+            }
+        }
+        //}
+        std::cout << "sum = " << sum << std::endl;
+    }
 
-    const auto start = std::chrono::high_resolution_clock::now();
-
-    wmtk::components::run_components(spec_json, is_strict);
-
-    const auto stop = std::chrono::high_resolution_clock::now();
-    const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-    wmtk::logger().info("Wildmeshing runtime: {} ms", duration.count());
-
-    return EXIT_SUCCESS;
+    {
+        POLYSOLVE_SCOPED_STOPWATCH("TriMesh Accessors", logger());
+        double sum = 0;
+        // for (size_t i = 0; i < n_repetitions; ++i) {
+        for (const simplex::Simplex& t : vertices) {
+            for (size_t n = 0; n < n_repetitions; ++n) {
+                sum += pos_acc.const_vector_attribute(t)[0];
+            }
+        }
+        for (const simplex::Simplex& t : vertices) {
+            for (size_t n = 0; n < n_repetitions; ++n) {
+                sum += pos_acc.const_vector_attribute(t)[1];
+            }
+        }
+        for (const simplex::Simplex& t : vertices) {
+            for (size_t n = 0; n < n_repetitions; ++n) {
+                sum += pos_acc.const_vector_attribute(t)[2];
+            }
+        }
+        //}
+        std::cout << "sum = " << sum << std::endl;
+    }
 }

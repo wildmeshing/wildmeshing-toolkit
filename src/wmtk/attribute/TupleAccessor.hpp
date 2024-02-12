@@ -44,6 +44,8 @@ public:
     ConstMapResult const_vector_attribute(const Tuple& t) const;
     MapResult vector_attribute(const Tuple& t);
 
+    ConstMapResult const_vector_attribute(const simplex::Simplex& s) const;
+
     int64_t index(const Tuple& t) const;
     using BaseType::dimension; // const() -> int64_t
     using BaseType::reserved_size; // const() -> int64_t

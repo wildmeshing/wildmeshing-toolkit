@@ -962,7 +962,7 @@ void MultiMeshManager::update_vertex_operation_hashes_internal(
 {
     const PrimitiveType pt = m.top_simplex_type();
     const simplex::SimplexCollection star =
-        simplex::closed_star(m, simplex::Simplex::vertex(vertex));
+        simplex::closed_star(m, simplex::Simplex::vertex(m, vertex));
     std::vector<Tuple> tuples_to_update;
     switch (pt) {
     case PrimitiveType::Vertex: {

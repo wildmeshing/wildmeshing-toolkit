@@ -2,6 +2,7 @@
 #include <numeric>
 
 #include <wmtk/io/MeshWriter.hpp>
+#include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/vector_hash.hpp>
 
@@ -27,6 +28,11 @@ PrimitiveType Mesh::top_simplex_type() const
 std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 {
     return get_all(type, false);
+}
+
+std::vector<simplex::Simplex> Mesh::get_all_simplices(PrimitiveType type) const
+{
+    return simplex::utils::tuple_vector_to_homogeneous_simplex_vector(*this, get_all(type), type);
 }
 
 
