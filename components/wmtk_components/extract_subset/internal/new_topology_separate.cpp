@@ -51,16 +51,16 @@ std::unique_ptr<wmtk::Mesh> topology_separate(wmtk::Mesh& m, bool pos)
         // std::cout << "Hello1, # of corners = " << corners.size() << std::endl;
         for (long j = 0; j < corners.size(); ++j) {
             // check whether it has been visited
-            std::cout << "local_vid = " << corners[j].get_local_vid()
-                      << ", gid = " << find_vertex_index(m, corners[j])
-                      << ", v[local_vid] = " << v[corners[j].get_local_vid()] << std::endl;
+            // std::cout << "local_vid = " << corners[j].get_local_vid()
+            //           << ", gid = " << find_vertex_index(m, corners[j])
+            //           << ", v[local_vid] = " << v[corners[j].get_local_vid()] << std::endl;
             // BE CAREFUL: the vertex id is not the same as the index of the corner in the simplex
             if (v[corners[j].get_local_vid()] != -1) continue;
             // if the corner has not been assigned a duplicate index, assign it
             v[corners[j].get_local_vid()] = counter;
-            std::cout << "verify: v[j] = "
-                      << dup_acc.vector_attribute(top_simplices[i])[corners[j].get_local_vid()]
-                      << std::endl;
+            // std::cout << "verify: v[j] = "
+            //           << dup_acc.vector_attribute(top_simplices[i])[corners[j].get_local_vid()]
+            //           << std::endl;
 
             // find all top simplices sharing the same corner vertex,
             // update duplicate index of theie corner accordingly
@@ -68,21 +68,23 @@ std::unique_ptr<wmtk::Mesh> topology_separate(wmtk::Mesh& m, bool pos)
             // get all top dimension simplices sharing the vertex and are face-connected
             wmtk::simplex::SimplexCollection sc =
                 wmtk::simplex::top_dimension_cofaces(m, Simplex::vertex(corners[j]));
-            std::cout << "# of adj corners simplices = " << sc.simplex_vector().size() << std::endl;
+            // std::cout << "# of adj corners simplices = " << sc.simplex_vector().size() <<
+            // std::endl;
             for (wmtk::Simplex adj_simplex : sc) {
-                // std::cout << "dimension = " << adj_simplex.dimension() << std::endl;
                 // tuple for a top dimension simplex would be the same as tuple for the corner
                 wmtk::Tuple adj_corner_tuple = adj_simplex.tuple();
-                std::cout << "vertex id = " << find_vertex_index(m, adj_corner_tuple) << std::endl;
+                // std::cout << "vertex id = " << find_vertex_index(m, adj_corner_tuple) <<
+                // std::endl;
                 auto adj_vector = dup_acc.vector_attribute(adj_corner_tuple);
                 long k = adj_corner_tuple.get_local_vid();
-                std::cout << "before adjusting = " << adj_vector[k] << std::endl;
+                // std::cout << "before adjusting = " << adj_vector[k] << std::endl;
                 if (adj_vector[k] == counter) continue;
                 if (adj_vector[k] != -1 && adj_vector[k] != counter)
                     throw std::runtime_error("Duplicate index conflict!");
                 adj_vector[k] = counter;
-                std::cout << "after adjusting = " << dup_acc.vector_attribute(adj_corner_tuple)[k]
-                          << std::endl;
+                // std::cout << "after adjusting = " <<
+                // dup_acc.vector_attribute(adj_corner_tuple)[k]
+                //           << std::endl;
             }
             // finally, increment the counter
             counter++;

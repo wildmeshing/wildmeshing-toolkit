@@ -543,42 +543,30 @@ TEST_CASE("2_non_manifold_edges", "[components][extract_subset][3D][manual][3]")
     CHECK(after);
 }
 
-// TEST_CASE("six_cycle_tets", "[components][extract_subset][3D][manual][6]")
-// {
-//     wmtk::TetMesh tm = wmtk::tests_3d::six_cycle_tets();
-//     const unsigned long test_size = 10; // total cases
-//     std::vector<int> tag_vector(tm.capacity(wmtk::PrimitiveType::Tetrahedron), 0);
-//     for (size_t i = 0; i < test_size; ++i) {
-//         std::mt19937 mt{i};
-//         std::uniform_int_distribution tag{0, 1};
-//         for (int j = 0; j < tag_vector.size(); ++j) {
-//             tag_vector[j] = tag(mt);
-//         }
-//         if (std::reduce(tag_vector.begin(), tag_vector.end()) == 0) {
-//             std::fill(tag_vector.begin(), tag_vector.end(), 0);
-//             continue;
-//         }
-//         // std::all_of(tag_vector.begin(), tag_vector.end(), [](int i) {
-//         //     std::cout << i << " ";
-//         //     return true;
-//         // });
-//         std::unique_ptr<wmtk::Mesh> new_tm =
-//             wmtk::components::extract_subset(tm, tag_vector, false);
-//         if (wmtk::TetMesh* trimeshPtr = dynamic_cast<wmtk::TetMesh*>(new_tm.get())) {
-//             wmtk::TetMesh topo_tm =
-//                 wmtk::components::internal::topology_separate_3d_old(*trimeshPtr);
-//             // wmtk::TriMesh topo_tm = wmtk::components::internal::topology_separate_2d(new_tm);
-//             bool after = is_manifold_3d(topo_tm);
-//             // std::cout << "; After: manifold = " << after << std::endl;
-//             CHECK(after);
-//         } else {
-//             throw std::runtime_error("Invalid mesh type");
-//         }
-//         // std::cout << "\tBefore: manifold = " << is_manifold_3d(new_tm);
-//         // wmtk::TetMesh topo_tm = wmtk::components::internal::topology_separate_3d_old(new_tm);
-//         // bool after = is_manifold_3d(topo_tm);
-//         // std::cout << "; After: manifold = " << after << std::endl;
-//         // CHECK(after);
-//         std::fill(tag_vector.begin(), tag_vector.end(), 0);
-//     }
-// }
+TEST_CASE("six_cycle_tets", "[components][extract_subset][3D][manual][6]")
+{
+    wmtk::TetMesh tm = wmtk::tests_3d::six_cycle_tets();
+    const unsigned long test_size = 10; // total cases
+    std::vector<int> tag_vector(tm.capacity(wmtk::PrimitiveType::Tetrahedron), 0);
+    for (size_t i = 0; i < test_size; ++i) {
+        std::mt19937 mt{i};
+        std::uniform_int_distribution tag{0, 1};
+        for (int j = 0; j < tag_vector.size(); ++j) {
+            tag_vector[j] = tag(mt);
+        }
+        if (std::reduce(tag_vector.begin(), tag_vector.end()) == 0) {
+            std::fill(tag_vector.begin(), tag_vector.end(), 0);
+            continue;
+        }
+        // std::all_of(tag_vector.begin(), tag_vector.end(), [](int i) {
+        //     std::cout << i << " ";
+        //     return true;
+        // });
+        std::unique_ptr<wmtk::Mesh> topo_tm =
+            wmtk::components::extract_subset(tm, tag_vector, false);
+        bool after = is_manifold_3d(*(dynamic_cast<wmtk::TetMesh*>(topo_tm.get())));
+        // std::cout << "; After: manifold = " << after << std::endl;
+        CHECK(after);
+        std::fill(tag_vector.begin(), tag_vector.end(), 0);
+    }
+}

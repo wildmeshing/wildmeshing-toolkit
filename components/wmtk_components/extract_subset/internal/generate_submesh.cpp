@@ -171,7 +171,7 @@ generate_submesh(wmtk::Mesh& m, wmtk::MeshAttributeHandle<long> tag_handle, bool
         }
     }
     nb_cell_in = tag_simplex_index.size();
-    std::cout << "# of cell inside = " << nb_cell_in << std::endl;
+    // std::cout << "# of cell inside = " << nb_cell_in << std::endl;
     // std::cout << "index of cells inside = " << tag_simplex_index << std::endl;
     assert(nb_cell_in <= top_simplex_count);
 
@@ -198,7 +198,7 @@ generate_submesh(wmtk::Mesh& m, wmtk::MeshAttributeHandle<long> tag_handle, bool
             //           << std::endl;
         }
     }
-    std::cout << "nb_vertex_in = " << nb_vertex_in << std::endl;
+    // std::cout << "nb_vertex_in = " << nb_vertex_in << std::endl;
 
     wmtk::TriMesh tri_ext_mesh;
     wmtk::RowVectors3l tri_exts;
