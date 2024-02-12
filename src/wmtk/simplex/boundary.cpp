@@ -46,6 +46,7 @@ SimplexCollection boundary(const Mesh& mesh, const Simplex& simplex, const bool 
     SimplexCollection collection(
         mesh,
         utils::tuple_vector_to_homogeneous_simplex_vector(
+            mesh,
             boundary_tuples(mesh, simplex),
 
             get_primitive_type_from_id(get_primitive_type_id(simplex.primitive_type()) - 1)));

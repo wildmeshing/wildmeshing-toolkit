@@ -46,7 +46,7 @@ std::vector<simplex::Simplex> TriEdgeSwap::execute(const simplex::Simplex& simpl
     //   \ | /
     //    \|/
     const auto collapse_simplicies =
-        m_collapse(simplex::Simplex(m_collapse.primitive_type(), collapse_input_tuple));
+        m_collapse(simplex::Simplex(mesh(), m_collapse.primitive_type(), collapse_input_tuple));
     if (collapse_simplicies.empty()) return {};
     assert(collapse_simplicies.size() == 1);
 
@@ -63,7 +63,7 @@ std::vector<simplex::Simplex> TriEdgeSwap::execute(const simplex::Simplex& simpl
     const Tuple output_tuple =
         mesh().switch_vertex(mesh().switch_edge(collapse_simplicies.front().tuple()));
 
-    return {simplex::Simplex::edge(output_tuple)};
+    return {simplex::Simplex::edge(mesh(), output_tuple)};
 }
 
 

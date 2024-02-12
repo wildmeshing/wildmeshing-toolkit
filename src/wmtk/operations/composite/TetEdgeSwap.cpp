@@ -43,14 +43,16 @@ std::vector<simplex::Simplex> TetEdgeSwap::execute(const simplex::Simplex& simpl
 
     // auto edges_generated_by_split = m_split.new_edge_tuples();
     const auto split_tuple_open_star =
-        simplex::open_star(mesh(), simplex::Simplex::vertex(split_ret));
+        simplex::open_star(mesh(), simplex::Simplex::vertex(mesh(), split_ret));
     std::array<std::vector<simplex::Simplex>, 4> simplices_generated_by_split;
     for (const simplex::Simplex& s : split_tuple_open_star.simplex_vector()) {
         simplices_generated_by_split[get_primitive_type_id(s.primitive_type())].emplace_back(s);
     }
 
-    const auto v_open_star = simplex::open_star(mesh(), simplex::Simplex::vertex(collapse_tuple));
-    const auto e_closed_star = simplex::closed_star(mesh(), simplex::Simplex::edge(collapse_tuple));
+    const auto v_open_star =
+        simplex::open_star(mesh(), simplex::Simplex::vertex(mesh(), collapse_tuple));
+    const auto e_closed_star =
+        simplex::closed_star(mesh(), simplex::Simplex::edge(mesh(), collapse_tuple));
     const auto sc = simplex::SimplexCollection::get_intersection(v_open_star, e_closed_star);
 
     std::array<std::vector<simplex::Simplex>, 4> simplices_deleted_by_collapse;
@@ -125,21 +127,21 @@ std::vector<simplex::Simplex> TetEdgeSwap::execute(const simplex::Simplex& simpl
 
     // do collapse
     const auto collapse_simplicies =
-        m_collapse(simplex::Simplex(m_collapse.primitive_type(), collapse_tuple));
+        m_collapse(simplex::Simplex(mesh(), m_collapse.primitive_type(), collapse_tuple));
     if (collapse_simplicies.empty()) return {};
     assert(collapse_simplicies.size() == 1);
 
     if (able_to_return_edges) {
         for (int64_t i = 0; i < edges_generated_by_swap.size(); ++i) {
             edges_generated_by_swap[i] =
-                simplex::Simplex::edge(resurrect_tuple(edges_generated_by_swap[i].tuple()));
+                simplex::Simplex::edge(mesh(), resurrect_tuple(edges_generated_by_swap[i].tuple()));
         }
 
         return edges_generated_by_swap;
     } else {
         for (int64_t i = 0; i < faces_generated_by_swap.size(); ++i) {
             faces_generated_by_swap[i] =
-                simplex::Simplex::edge(resurrect_tuple(faces_generated_by_swap[i].tuple()));
+                simplex::Simplex::edge(mesh(), resurrect_tuple(faces_generated_by_swap[i].tuple()));
         }
 
         return faces_generated_by_swap;

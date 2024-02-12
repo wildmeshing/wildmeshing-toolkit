@@ -15,10 +15,10 @@ AttributeTransferStrategyBase::~AttributeTransferStrategyBase() = default;
 void AttributeTransferStrategyBase::run_on_all()
 {
     const PrimitiveType pt = m_handle.primitive_type();
-    auto tuples = m_handle.mesh().get_all(pt);
+    auto simplices = m_handle.mesh().get_all_simplices(pt);
 
-    for (const Tuple& t : tuples) {
-        run(simplex::Simplex(pt, t));
+    for (const simplex::Simplex& s : simplices) {
+        run(s);
     }
 }
 

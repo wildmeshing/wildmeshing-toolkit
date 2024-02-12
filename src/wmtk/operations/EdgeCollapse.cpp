@@ -46,8 +46,9 @@ std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives(
     const simplex::Simplex& simplex) const
 {
     return mesh().parent_scope([&]() -> std::vector<simplex::Simplex> {
-        const simplex::Simplex v0 = simplex::Simplex::vertex(simplex.tuple());
-        const simplex::Simplex v1 = simplex::Simplex::vertex(mesh().switch_vertex(simplex.tuple()));
+        const simplex::Simplex v0 = simplex::Simplex::vertex(mesh(), simplex.tuple());
+        const simplex::Simplex v1 =
+            simplex::Simplex::vertex(mesh(), mesh().switch_vertex(simplex.tuple()));
         return {v0, v1};
     });
 }

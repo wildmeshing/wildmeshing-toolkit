@@ -38,7 +38,7 @@ ProjectOperation::ProjectOperation(
         for (const auto& f : facest) {
             auto tmp = faces_single_dimension_tuples(
                 pair.first.mesh(),
-                simplex::Simplex(pair.first.mesh().top_simplex_type(), f),
+                simplex::Simplex(pair.first.mesh(), pair.first.mesh().top_simplex_type(), f),
                 PrimitiveType::Vertex);
 
             assert(tmp.size() == dim);

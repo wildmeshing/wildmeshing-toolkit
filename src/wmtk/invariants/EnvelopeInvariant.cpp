@@ -100,7 +100,7 @@ bool EnvelopeInvariant::after(
             for (const Tuple& tuple : top_dimension_tuples_after) {
                 faces = faces_single_dimension_tuples(
                     mesh(),
-                    simplex::Simplex(type, tuple),
+                    simplex::Simplex(mesh(), type, tuple),
                     PrimitiveType::Vertex);
 
                 triangle[0] = accessor.const_vector_attribute(faces[0]);
@@ -115,7 +115,7 @@ bool EnvelopeInvariant::after(
             for (const Tuple& tuple : top_dimension_tuples_after) {
                 faces = faces_single_dimension_tuples(
                     mesh(),
-                    simplex::Simplex(type, tuple),
+                    simplex::Simplex(mesh(), type, tuple),
                     PrimitiveType::Vertex);
 
                 Eigen::Vector3d p0 = accessor.const_vector_attribute(faces[0]);

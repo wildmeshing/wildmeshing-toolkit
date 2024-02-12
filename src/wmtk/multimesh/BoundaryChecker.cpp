@@ -31,7 +31,7 @@ bool BoundaryChecker::is_boundary(
     const wmtk::PrimitiveType pt,
     const wmtk::Tuple& simplex) const
 {
-    return is_boundary(mesh, wmtk::simplex::Simplex(pt, simplex));
+    return is_boundary(mesh, wmtk::simplex::Simplex(mesh, pt, simplex));
 }
 void BoundaryChecker::add_mesh(const Mesh& m)
 {

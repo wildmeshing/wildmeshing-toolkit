@@ -38,17 +38,17 @@ link(const TriMesh& mesh, const simplex::Simplex& simplex, const bool sort_and_c
         all_cofaces.reserve(cell_tuples.size() * 7);
         for (Tuple t : cell_tuples) {
             t = mesh.switch_tuples(t, {PV, PE});
-            all_cofaces.emplace_back(Simplex::edge(t));
-            all_cofaces.emplace_back(Simplex::vertex(t));
+            all_cofaces.emplace_back(Simplex::edge(mesh, t));
+            all_cofaces.emplace_back(Simplex::vertex(mesh, t));
             t = mesh.switch_tuples(t, {PV});
-            all_cofaces.emplace_back(Simplex::vertex(t));
+            all_cofaces.emplace_back(Simplex::vertex(mesh, t));
         }
         break;
     case PrimitiveType::Edge:
         all_cofaces.reserve(cell_tuples.size() * 3);
         for (Tuple t : cell_tuples) {
             t = mesh.switch_tuples(t, {PE, PV});
-            all_cofaces.emplace_back(Simplex::vertex(t));
+            all_cofaces.emplace_back(Simplex::vertex(mesh, t));
         }
         break;
     case PrimitiveType::Triangle: break;
@@ -83,16 +83,16 @@ link(const TetMesh& mesh, const simplex::Simplex& simplex, const bool sort_and_c
         for (Tuple t : cell_tuples) {
             t = mesh.switch_tuples(t, {PV, PE, PF});
 
-            all_cofaces.emplace_back(Simplex::face(t));
+            all_cofaces.emplace_back(Simplex::face(mesh, t));
 
-            all_cofaces.emplace_back(Simplex::edge(t));
-            all_cofaces.emplace_back(Simplex::vertex(t));
+            all_cofaces.emplace_back(Simplex::edge(mesh, t));
+            all_cofaces.emplace_back(Simplex::vertex(mesh, t));
             t = mesh.switch_tuples(t, {PV, PE});
-            all_cofaces.emplace_back(Simplex::edge(t));
-            all_cofaces.emplace_back(Simplex::vertex(t));
+            all_cofaces.emplace_back(Simplex::edge(mesh, t));
+            all_cofaces.emplace_back(Simplex::vertex(mesh, t));
             t = mesh.switch_tuples(t, {PV, PE});
-            all_cofaces.emplace_back(Simplex::edge(t));
-            all_cofaces.emplace_back(Simplex::vertex(t));
+            all_cofaces.emplace_back(Simplex::edge(mesh, t));
+            all_cofaces.emplace_back(Simplex::vertex(mesh, t));
         }
         break;
     case PrimitiveType::Edge:
@@ -100,9 +100,9 @@ link(const TetMesh& mesh, const simplex::Simplex& simplex, const bool sort_and_c
         for (Tuple t : cell_tuples) {
             t = mesh.switch_tuples(t, {PE, PV, PF, PE});
 
-            all_cofaces.emplace_back(Simplex::edge(t));
-            all_cofaces.emplace_back(Simplex::vertex(t));
-            all_cofaces.emplace_back(Simplex::vertex(mesh.switch_vertex(t)));
+            all_cofaces.emplace_back(Simplex::edge(mesh, t));
+            all_cofaces.emplace_back(Simplex::vertex(mesh, t));
+            all_cofaces.emplace_back(Simplex::vertex(mesh, mesh.switch_vertex(t)));
         }
         break;
     case PrimitiveType::Triangle:
@@ -110,7 +110,7 @@ link(const TetMesh& mesh, const simplex::Simplex& simplex, const bool sort_and_c
         for (Tuple t : cell_tuples) {
             t = mesh.switch_tuples(t, {PE, PF, PE, PV});
 
-            all_cofaces.emplace_back(Simplex::vertex(t));
+            all_cofaces.emplace_back(Simplex::vertex(mesh, t));
         }
         break;
     case PrimitiveType::Tetrahedron: break;

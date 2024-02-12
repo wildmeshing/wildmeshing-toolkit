@@ -36,7 +36,7 @@ std::vector<simplex::Simplex> AttributesUpdate::execute(const simplex::Simplex& 
     auto new_tuple = resurrect_tuple(simplex.tuple());
     assert(mesh().is_valid_slow(new_tuple));
 
-    return {simplex::Simplex(primitive_type(), new_tuple)};
+    return {simplex::Simplex(mesh(), primitive_type(), new_tuple)};
 }
 
 AttributesUpdateWithFunction::AttributesUpdateWithFunction(Mesh& m)

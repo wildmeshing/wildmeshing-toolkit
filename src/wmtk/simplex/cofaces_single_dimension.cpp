@@ -73,6 +73,7 @@ std::vector<Simplex> cofaces_single_dimension_simplices(
     PrimitiveType cofaces_type)
 {
     return utils::tuple_vector_to_homogeneous_simplex_vector(
+        mesh,
         cofaces_single_dimension_tuples(mesh, simplex, cofaces_type),
         cofaces_type);
 }

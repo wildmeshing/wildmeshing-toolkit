@@ -32,15 +32,15 @@ SimplexCollection open_star(const TriMesh& mesh, const Simplex& simplex, const b
     case PrimitiveType::Vertex:
         all_cofaces.reserve(cell_tuples.size() * 3 + 1);
         for (const Tuple& t : cell_tuples) {
-            all_cofaces.emplace_back(Simplex::face(t));
-            all_cofaces.emplace_back(Simplex::edge(t));
-            all_cofaces.emplace_back(Simplex::edge(mesh.switch_edge(t)));
+            all_cofaces.emplace_back(Simplex::face(mesh, t));
+            all_cofaces.emplace_back(Simplex::edge(mesh, t));
+            all_cofaces.emplace_back(Simplex::edge(mesh, mesh.switch_edge(t)));
         }
         break;
     case PrimitiveType::Edge:
         all_cofaces.reserve(cell_tuples.size() + 1);
         for (const Tuple& t : cell_tuples) {
-            all_cofaces.emplace_back(Simplex::face(t));
+            all_cofaces.emplace_back(Simplex::face(mesh, t));
         }
         break;
     case PrimitiveType::Triangle: all_cofaces.reserve(1); break;
@@ -74,30 +74,30 @@ SimplexCollection open_star(const TetMesh& mesh, const Simplex& simplex, const b
     case PrimitiveType::Vertex:
         all_cofaces.reserve(cell_tuples.size() * 7 + 1);
         for (Tuple t : cell_tuples) {
-            all_cofaces.emplace_back(Simplex::tetrahedron(t));
-            all_cofaces.emplace_back(Simplex::face(t));
-            all_cofaces.emplace_back(Simplex::edge(t));
+            all_cofaces.emplace_back(Simplex::tetrahedron(mesh, t));
+            all_cofaces.emplace_back(Simplex::face(mesh, t));
+            all_cofaces.emplace_back(Simplex::edge(mesh, t));
             t = mesh.switch_tuples(t, {PE, PF});
-            all_cofaces.emplace_back(Simplex::face(t));
-            all_cofaces.emplace_back(Simplex::edge(t));
+            all_cofaces.emplace_back(Simplex::face(mesh, t));
+            all_cofaces.emplace_back(Simplex::edge(mesh, t));
             t = mesh.switch_tuples(t, {PE, PF});
-            all_cofaces.emplace_back(Simplex::face(t));
-            all_cofaces.emplace_back(Simplex::edge(t));
+            all_cofaces.emplace_back(Simplex::face(mesh, t));
+            all_cofaces.emplace_back(Simplex::edge(mesh, t));
         }
         break;
     case PrimitiveType::Edge:
         all_cofaces.reserve(cell_tuples.size() * 3 + 1);
         for (const Tuple& t : cell_tuples) {
-            all_cofaces.emplace_back(Simplex::tetrahedron(t));
-            all_cofaces.emplace_back(Simplex::face(t));
-            all_cofaces.emplace_back(Simplex::face(mesh.switch_face(t)));
+            all_cofaces.emplace_back(Simplex::tetrahedron(mesh, t));
+            all_cofaces.emplace_back(Simplex::face(mesh, t));
+            all_cofaces.emplace_back(Simplex::face(mesh, mesh.switch_face(t)));
         }
         break;
     case PrimitiveType::Triangle:
         all_cofaces.reserve(3);
         assert(cell_tuples.size() <= 2);
         for (const Tuple& t : cell_tuples) {
-            all_cofaces.emplace_back(Simplex::tetrahedron(t));
+            all_cofaces.emplace_back(Simplex::tetrahedron(mesh, t));
         }
         break;
     case PrimitiveType::Tetrahedron: all_cofaces.reserve(1); break;

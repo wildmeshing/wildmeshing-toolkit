@@ -42,7 +42,7 @@ std::bitset<2> NewAttributeStrategy::evaluate_predicate(
         std::bitset<2> pred(0);
         if (bool(m_simplex_predicate)) {
             for (size_t j = 0; j < 2; ++j) {
-                pred[j] = m_simplex_predicate(simplex::Simplex(pt, simplices[j]));
+                pred[j] = m_simplex_predicate(simplex::Simplex(mesh(), pt, simplices[j]));
             }
         }
         return pred;

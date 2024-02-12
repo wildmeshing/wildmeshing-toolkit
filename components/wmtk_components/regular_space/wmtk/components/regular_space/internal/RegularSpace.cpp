@@ -89,7 +89,7 @@ void RegularSpace::regularize_tags()
                 get_primitive_type_from_id(get_primitive_type_id(ta.m_ptype) - 1);
             const auto faces = simplex::faces_single_dimension_tuples(
                 m_mesh,
-                simplex::Simplex(ta.m_ptype, t),
+                simplex::Simplex(m_mesh, ta.m_ptype, t),
                 face_ptype);
 
             TagAttribute& face_ta = tag_attributes[attr_it + 1];
@@ -115,7 +115,7 @@ void RegularSpace::regularize_tags()
                 get_primitive_type_from_id(get_primitive_type_id(ta.m_ptype) - 1);
             const auto faces = simplex::faces_single_dimension_tuples(
                 m_mesh,
-                simplex::Simplex(ta.m_ptype, t),
+                simplex::Simplex(m_mesh, ta.m_ptype, t),
                 face_ptype);
 
             const TagAttribute& face_ta = tag_attributes[attr_it + 1];
