@@ -62,38 +62,46 @@ TEST_CASE("accessor_performance", "[accessor][.]")
         positions.row(i) = pos_acc.const_vector_attribute(vertices[i]);
     }
 
+    PointMesh pm(vertices.size());
+    auto pph = mesh_utils::set_matrix_attribute(positions, "vertices", PrimitiveType::Vertex, pm);
+    auto pp_acc = pm.create_accessor<double>(pph);
+
     {
         POLYSOLVE_SCOPED_STOPWATCH("Direct", logger());
         double sum = 0;
-        for (size_t i = 0; i < n_repetitions; ++i) {
-            for (size_t i = 0; i < vertices.size(); ++i) {
+        for (size_t i = 0; i < vertices.size(); ++i) {
+            for (size_t n = 0; n < n_repetitions; ++n) {
                 sum += positions(i, 0);
             }
-            for (size_t i = 0; i < vertices.size(); ++i) {
+        }
+        for (size_t i = 0; i < vertices.size(); ++i) {
+            for (size_t n = 0; n < n_repetitions; ++n) {
                 sum += positions(i, 1);
             }
-            for (size_t i = 0; i < vertices.size(); ++i) {
+        }
+        for (size_t i = 0; i < vertices.size(); ++i) {
+            for (size_t n = 0; n < n_repetitions; ++n) {
                 sum += positions(i, 2);
             }
         }
         std::cout << "sum = " << sum << std::endl;
     }
-
-    PointMesh pm(vertices.size());
-    auto pph = mesh_utils::set_matrix_attribute(positions, "vertices", PrimitiveType::Vertex, pm);
-    auto pp_acc = pm.create_accessor<double>(pph);
     {
         const auto vv = pm.get_all(PrimitiveType::Vertex);
         POLYSOLVE_SCOPED_STOPWATCH("PointMesh Accessors", logger());
         double sum = 0;
-        for (size_t i = 0; i < n_repetitions; ++i) {
-            for (const Tuple& t : vv) {
+        for (const auto& t : vv) {
+            for (size_t n = 0; n < n_repetitions; ++n) {
                 sum += pp_acc.const_vector_attribute(t)[0];
             }
-            for (const Tuple& t : vv) {
+        }
+        for (const auto& t : vv) {
+            for (size_t n = 0; n < n_repetitions; ++n) {
                 sum += pp_acc.const_vector_attribute(t)[1];
             }
-            for (const Tuple& t : vv) {
+        }
+        for (const auto& t : vv) {
+            for (size_t n = 0; n < n_repetitions; ++n) {
                 sum += pp_acc.const_vector_attribute(t)[2];
             }
         }
@@ -103,14 +111,18 @@ TEST_CASE("accessor_performance", "[accessor][.]")
     //{
     //    POLYSOLVE_SCOPED_STOPWATCH("TriMesh Accessors", logger());
     //    double sum = 0;
-    //    for (size_t i = 0; i < n_repetitions; ++i) {
-    //        for (const Tuple& t : vertices) {
+    //    for (const auto& t : vertices) {
+    //        for (size_t n = 0; n < n_repetitions; ++n) {
     //            sum += pos_acc.const_vector_attribute(t)[0];
     //        }
-    //        for (const Tuple& t : vertices) {
+    //    }
+    //    for (const auto& t : vertices) {
+    //        for (size_t n = 0; n < n_repetitions; ++n) {
     //            sum += pos_acc.const_vector_attribute(t)[1];
     //        }
-    //        for (const Tuple& t : vertices) {
+    //    }
+    //    for (const auto& t : vertices) {
+    //        for (size_t n = 0; n < n_repetitions; ++n) {
     //            sum += pos_acc.const_vector_attribute(t)[2];
     //        }
     //    }
