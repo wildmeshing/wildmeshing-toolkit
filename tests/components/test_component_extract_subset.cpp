@@ -10,10 +10,10 @@
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TetMesh_examples.hpp"
 #include "../tools/TriMesh_examples.hpp"
+#include "wmtk_components/delaunay/internal/delaunay_2d.hpp"
 
 // #include <wmtk/io/ParaviewWriter.hpp>
 // #include <wmtk/utils/mesh_utils.hpp>
-// #include <wmtk_components/delaunay/internal/delaunay_2d.hpp>
 
 long test_size_calculation(long n)
 {
@@ -88,30 +88,29 @@ std::map<long, std::set<long>> get_connection(const wmtk::TriMesh& tm, std::set<
     return connections;
 }
 
-// std::map<long, std::set<long>> get_connection_3d(const wmtk::TetMesh& tm, std::set<long>&
-// index_set)
-// {
-//     std::vector<wmtk::Tuple> faces = tm.get_all(wmtk::PrimitiveType::Face);
-//     std::map<long, std::set<long>> connections;
-//     for (long faceindex : index_set) {
-//         wmtk::Tuple faceTuple = faces[faceindex];
-//         std::vector<wmtk::Tuple> faceVertexList = wmtk::simplex::faces_single_dimension(
-//             tm,
-//             wmtk::Simplex::face(faceTuple),
-//             wmtk::PrimitiveType::Vertex);
-//         std::vector<long> vertex_index;
-//         vertex_index.reserve(3);
-//         for (wmtk::Tuple t : faceVertexList) {
-//             vertex_index.push_back(wmtk::components::internal::find_vertex_index(tm, t));
-//         }
-//         for (int i = 0; i < 3; ++i) {
-//             for (int j = 0; j < 3; ++j) {
-//                 if (i != j) connections[vertex_index[i]].insert(vertex_index[j]);
-//             }
-//         }
-//     }
-//     return connections;
-// }
+std::map<long, std::set<long>> get_connection_3d(const wmtk::TetMesh& tm, std::set<long>& index_set)
+{
+    std::vector<wmtk::Tuple> faces = tm.get_all(wmtk::PrimitiveType::Face);
+    std::map<long, std::set<long>> connections;
+    for (long faceindex : index_set) {
+        wmtk::Tuple faceTuple = faces[faceindex];
+        std::vector<wmtk::Tuple> faceVertexList = wmtk::simplex::faces_single_dimension(
+            tm,
+            wmtk::Simplex::face(faceTuple),
+            wmtk::PrimitiveType::Vertex);
+        std::vector<long> vertex_index;
+        vertex_index.reserve(3);
+        for (wmtk::Tuple t : faceVertexList) {
+            vertex_index.push_back(wmtk::components::internal::find_vertex_index(tm, t));
+        }
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                if (i != j) connections[vertex_index[i]].insert(vertex_index[j]);
+            }
+        }
+    }
+    return connections;
+}
 
 // Reference: https://www.geeksforgeeks.org/determining-topology-formed-in-a-graph/
 bool is_circle(const wmtk::TriMesh& tm, std::set<long> index_set)
@@ -143,27 +142,27 @@ bool is_line(const wmtk::TriMesh& tm, std::set<long> index_set)
     return deg1 == 2 && deg2 == connections.size() - 2;
 }
 
-// bool is_disk(const wmtk::TetMesh& tm, std::set<long> index_set)
-// {
-//     std::map<long, std::set<long>> connections = get_connection_3d(tm, index_set);
+bool is_disk(const wmtk::TetMesh& tm, std::set<long> index_set)
+{
+    std::map<long, std::set<long>> connections = get_connection_3d(tm, index_set);
 
-//     // display all items in connections
-//     // std::cout << "Items in connections:" << std::endl;
-//     // for (const auto& pair : connections) {
-//     //     std::cout << "Key: " << pair.first << ", Values: ";
-//     //     for (const auto& value : pair.second) {
-//     //         std::cout << value << " ";
-//     //     }
-//     //     std::cout << std::endl;
-//     // }
+    // display all items in connections
+    // std::cout << "Items in connections:" << std::endl;
+    // for (const auto& pair : connections) {
+    //     std::cout << "Key: " << pair.first << ", Values: ";
+    //     for (const auto& value : pair.second) {
+    //         std::cout << value << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
 
-//     bool isRing = all_of(connections.begin(), connections.end(), [](auto& nodes) {
-//         return nodes.second.size() >= 2;
-//     });
-//     bool connected = is_connected(connections);
-//     // std::cout << "isRIng = " << isRing << ", connected = " << connected << std::endl;
-//     return isRing && connected;
-// }
+    bool isRing = all_of(connections.begin(), connections.end(), [](auto& nodes) {
+        return nodes.second.size() >= 2;
+    });
+    bool connected = is_connected(connections);
+    // std::cout << "isRIng = " << isRing << ", connected = " << connected << std::endl;
+    return isRing && connected;
+}
 
 // bool is_sphere(const wmtk::TetMesh& tm, std::set<long> index_set)
 // {
@@ -248,69 +247,68 @@ bool is_manifold_2d(const wmtk::TriMesh& tm)
     return true;
 }
 
-// bool is_manifold_3d(const wmtk::TetMesh& tm)
-// {
-//     std::map<long, std::set<long>> vertexLinkFaces;
-//     std::vector<wmtk::Tuple> tets = tm.get_all(wmtk::PrimitiveType::Tetrahedron);
-//     std::vector<wmtk::Tuple> faces = tm.get_all(wmtk::PrimitiveType::Face);
-//     std::vector<wmtk::Tuple> vertices = tm.get_all(wmtk::PrimitiveType::Vertex);
-//     for (long vid = 0; vid < tm.capacity(wmtk::PrimitiveType::Vertex); ++vid) {
-//         std::vector<long> adj_tets = wmtk::components::internal::adj_tets_of_vertex(tm, vid);
-//         for (long fid : adj_tets) {
-//             wmtk::Tuple tetTuple = tets[fid];
-//             std::vector<wmtk::Tuple> faceList = wmtk::simplex::faces_single_dimension(
-//                 tm,
-//                 wmtk::Simplex::tetrahedron(tetTuple),
-//                 wmtk::PrimitiveType::Face);
-//             for (wmtk::Tuple faceTuple : faceList) {
-//                 std::vector<wmtk::Tuple> faceVertexList = wmtk::simplex::faces_single_dimension(
-//                     tm,
-//                     wmtk::Simplex::face(faceTuple),
-//                     wmtk::PrimitiveType::Vertex);
-//                 if (std::none_of(faceVertexList.begin(), faceVertexList.end(), [&](wmtk::Tuple t)
-//                 {
-//                         return tm.simplices_are_equal(
-//                             wmtk::Simplex::vertex(t),
-//                             wmtk::Simplex::vertex(vertices[vid]));
-//                     })) {
-//                     vertexLinkFaces[vid].insert(
-//                         wmtk::components::internal::find_face_index(tm, faceTuple));
-//                 }
-//             }
-//         }
-//     }
+bool is_manifold_3d(const wmtk::TetMesh& tm)
+{
+    std::map<long, std::set<long>> vertexLinkFaces;
+    std::vector<wmtk::Tuple> tets = tm.get_all(wmtk::PrimitiveType::Tetrahedron);
+    std::vector<wmtk::Tuple> faces = tm.get_all(wmtk::PrimitiveType::Face);
+    std::vector<wmtk::Tuple> vertices = tm.get_all(wmtk::PrimitiveType::Vertex);
+    for (long vid = 0; vid < tm.capacity(wmtk::PrimitiveType::Vertex); ++vid) {
+        std::vector<long> adj_tets = wmtk::components::internal::adj_tets_of_vertex(tm, vid);
+        for (long fid : adj_tets) {
+            wmtk::Tuple tetTuple = tets[fid];
+            std::vector<wmtk::Tuple> faceList = wmtk::simplex::faces_single_dimension(
+                tm,
+                wmtk::Simplex::tetrahedron(tetTuple),
+                wmtk::PrimitiveType::Face);
+            for (wmtk::Tuple faceTuple : faceList) {
+                std::vector<wmtk::Tuple> faceVertexList = wmtk::simplex::faces_single_dimension(
+                    tm,
+                    wmtk::Simplex::face(faceTuple),
+                    wmtk::PrimitiveType::Vertex);
+                if (std::none_of(faceVertexList.begin(), faceVertexList.end(), [&](wmtk::Tuple t) {
+                        return tm.simplices_are_equal(
+                            wmtk::Simplex::vertex(t),
+                            wmtk::Simplex::vertex(vertices[vid]));
+                    })) {
+                    vertexLinkFaces[vid].insert(
+                        wmtk::components::internal::find_face_index(tm, faceTuple));
+                }
+            }
+        }
+    }
 
-//     for (auto& [vid, faceSet] : vertexLinkFaces) {
-//         // for vertices on the boundary, the link needs to be a 2-ball, which is a disk
-//         // if (tm.is_boundary(vertices[vid], wmtk::PrimitiveType::Vertex)) {
-//         if (tm.is_boundary(vertices[vid], wmtk::PrimitiveType::Vertex)) {
-//             // std::cout << "Vertex " << vid << " is on the boundary." << std::endl;
-//             // std::all_of(faceSet.begin(), faceSet.end(), [](long e) {
-//             //     std::cout << e << " ";
-//             //     return true;
-//             // });
-//             // std::cout << std::endl;
-//             // if (!is_disk(tm, faceSet)) {
-//             //     std::cout << "Vertex " << vid << " doesn't have a disk link." << std::endl;
-//             //     return false;
-//             // }
-//         }
-//         // for vertices inside the mesh, the link needs to be a 1-sphere, which is a circle
-//         else {
-//             // std::cout << "Vertex " << vid << " is not on the boundary." << std::endl;
-//             // std::all_of(faceSet.begin(), faceSet.end(), [](long e) {
-//             //     std::cout << e << " ";
-//             //     return true;
-//             // });
-//             // std::cout << std::endl;
-//             // if (!is_sphere(tm, faceSet)) {
-//             //     std::cout << "Vertex " << vid << " doesn't have a sphere link." << std::endl;
-//             //     return false;
-//             // }
-//         }
-//     }
-//     return true;
-// }
+    for (auto& [vid, faceSet] : vertexLinkFaces) {
+        // for vertices on the boundary, the link needs to be a 2-ball, which is a disk
+        // if (tm.is_boundary(vertices[vid], wmtk::PrimitiveType::Vertex)) {
+        if (tm.is_boundary(vertices[vid], wmtk::PrimitiveType::Vertex)) {
+            // std::cout << "Vertex " << vid << " is on the boundary." << std::endl;
+            // std::all_of(faceSet.begin(), faceSet.end(), [](long e) {
+            //     std::cout << e << " ";
+            //     return true;
+            // });
+            // std::cout << std::endl;
+            if (!is_disk(tm, faceSet)) {
+                std::cout << "Vertex " << vid << " doesn't have a disk link." << std::endl;
+                return false;
+            }
+        }
+        // for vertices inside the mesh, the link needs to be a 1-sphere, which is a circle
+        else {
+            // std::cout << "Vertex " << vid << " is not on the boundary." << std::endl;
+            // std::all_of(faceSet.begin(), faceSet.end(), [](long e) {
+            //     std::cout << e << " ";
+            //     return true;
+            // });
+            // std::cout << std::endl;
+            // if (!is_sphere(tm, faceSet)) {
+            //     std::cout << "Vertex " << vid << " doesn't have a sphere link." << std::endl;
+            //     return false;
+            // }
+        }
+    }
+    return true;
+}
 
 // void check_new_mesh(
 //     wmtk::tests::DEBUG_TriMesh& m,
@@ -468,65 +466,66 @@ TEST_CASE("component_3+4_test_case", "[components][extract_subset][2D][manual]")
 }
 
 
-// TEST_CASE("random_test_from_manext_branch", "[components][extract_subset][2D][random]")
-// {
-//     unsigned int nb_points = 20; // 20
-//     double range = 10.0;
-//     const size_t tagass_loop = 100; // 100
-//     const size_t pntgen_loop = 6; // 10
-//     const double prob = 0.2;
+TEST_CASE("random_test_from_manext_branch", "[components][extract_subset][2D][random]")
+{
+    unsigned int nb_points = 20; // 20
+    double range = 10.0;
+    const size_t tagass_loop = 100; // 100
+    const size_t pntgen_loop = 6; // 10
+    const double prob = 0.2;
 
-//     // test for 10 iterations, each with 10 more vertices, so 10~100
-//     for (size_t i = 0; i < pntgen_loop; ++i) {
-//         wmtk::TriMesh tm;
-//         wmtk::RowVectors3l tris;
-//         wmtk::RowVectors2d points(nb_points, 2);
-//         std::random_device rd{};
-//         std::mt19937 gen(rd());
-//         std::uniform_real_distribution<double> dis(0, range);
-//         for (size_t j = 0; j < nb_points; ++j) {
-//             // generate 2 random doubles between 0 and the given range
-//             points.row(j) << dis(gen), dis(gen);
-//         }
+    // test for 10 iterations, each with 10 more vertices, so 10~100
+    for (size_t i = 0; i < pntgen_loop; ++i) {
+        wmtk::TriMesh tm;
+        wmtk::RowVectors3l tris;
+        wmtk::RowVectors2d points(nb_points, 2);
+        std::random_device rd{};
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<double> dis(0, range);
+        for (size_t j = 0; j < nb_points; ++j) {
+            // generate 2 random doubles between 0 and the given range
+            points.row(j) << dis(gen), dis(gen);
+        }
 
-//         Eigen::MatrixXd vertices;
-//         Eigen::MatrixXi faces;
-//         std::tie(vertices, faces) = wmtk::components::internal::delaunay_2d(points);
-//         unsigned int nb_triangles = faces.rows();
-//         unsigned int nb_vertices = vertices.rows();
-//         std::cout << "Man-ext 2D test: total tri num=" << nb_triangles << "\n";
-//         tris.resize(nb_triangles, 3);
-//         for (unsigned int j = 0; j < nb_triangles; ++j) {
-//             tris.row(j) << faces(j, 0), faces(j, 1), faces(j, 2);
-//         }
-//         tm.initialize(tris);
-//         wmtk::mesh_utils::set_matrix_attribute(
-//             vertices,
-//             "position",
-//             wmtk::PrimitiveType::Vertex,
-//             tm);
-//         random_trimesh_test_executor(tm, tagass_loop);
-//         nb_points += 10;
-//         range += 10.0;
-//     }
-// }
+        Eigen::MatrixXd vertices;
+        Eigen::MatrixXi faces;
+        std::tie(vertices, faces) = wmtk::components::internal::delaunay_2d(points);
+        unsigned int nb_triangles = faces.rows();
+        unsigned int nb_vertices = vertices.rows();
+        std::cout << "Man-ext 2D test: total tri num=" << nb_triangles << "\n";
+        tris.resize(nb_triangles, 3);
+        for (unsigned int j = 0; j < nb_triangles; ++j) {
+            tris.row(j) << faces(j, 0), faces(j, 1), faces(j, 2);
+        }
+        tm.initialize(tris);
+        wmtk::mesh_utils::set_matrix_attribute(
+            vertices,
+            "position",
+            wmtk::PrimitiveType::Vertex,
+            tm);
+        random_trimesh_test_executor(tm, tagass_loop);
+        nb_points += 10;
+        range += 10.0;
+    }
+}
 
 
-// TEST_CASE("2_non_manifold_edges", "[components][extract_subset][3D][manual][3]")
-// {
-//     wmtk::TetMesh tm;
-//     wmtk::RowVectors<long, 4> tets;
-//     tets.resize(3, 4);
-//     tets.row(0) << 0, 1, 2, 3;
-//     tets.row(1) << 0, 2, 3, 4;
-//     tets.row(2) << 1, 3, 4, 5;
-//     tm.initialize(tets);
-//     std::cout << "Before: manifold = " << is_manifold_3d(tm);
-//     wmtk::TetMesh topo_tm = wmtk::components::internal::topology_separate_3d_old(tm);
-//     bool after = is_manifold_3d(topo_tm);
-//     std::cout << "; After: manifold = " << after << std::endl;
-//     CHECK(after);
-// }
+TEST_CASE("2_non_manifold_edges", "[components][extract_subset][3D][manual][3]")
+{
+    wmtk::TetMesh tm;
+    wmtk::RowVectors<long, 4> tets;
+    tets.resize(3, 4);
+    tets.row(0) << 0, 1, 2, 3;
+    tets.row(1) << 0, 2, 3, 4;
+    tets.row(2) << 1, 3, 4, 5;
+    tm.initialize(tets);
+    std::cout << "Before: manifold = " << is_manifold_3d(tm);
+    std::vector<int> tag_vector = {1, 1, 1};
+    std::unique_ptr<wmtk::Mesh> topo_tm = wmtk::components::extract_subset(tm, tag_vector, false);
+    bool after = is_manifold_3d(*dynamic_cast<wmtk::TetMesh*>(topo_tm.get()));
+    std::cout << "; After: manifold = " << after << std::endl;
+    CHECK(after);
+}
 
 // TEST_CASE("six_cycle_tets", "[components][extract_subset][3D][manual][6]")
 // {

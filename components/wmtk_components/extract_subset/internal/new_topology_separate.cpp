@@ -50,8 +50,8 @@ std::unique_ptr<wmtk::Mesh> topology_separate(wmtk::Mesh& m, bool pos)
         // std::cout << "Hello1, # of corners = " << corners.size() << std::endl;
         for (long j = 0; j < corners.size(); ++j) {
             // check whether it has been visited
-            // std::cout << "j = " << j << ", vertex id = " << find_vertex_index(m, corners[j])
-            //           << ", v[j] = " << v[j] << std::endl;
+            std::cout << "j = " << j << ", vertex id = " << find_vertex_index(m, corners[j])
+                      << ", v[j] = " << v[j] << std::endl;
             if (v[j] != -1) continue;
             // if the corner has not been assigned a duplicate index, assign it
             v[j] = counter;
@@ -62,19 +62,19 @@ std::unique_ptr<wmtk::Mesh> topology_separate(wmtk::Mesh& m, bool pos)
             // get all top dimension simplices sharing the vertex and are face-connected
             wmtk::simplex::SimplexCollection sc =
                 wmtk::simplex::top_dimension_cofaces(m, Simplex::vertex(corners[j]));
+            std::cout << "# of adj corners simplices = " << sc.simplex_vector().size() << std::endl;
             for (wmtk::Simplex adj_simplex : sc) {
                 // tuple for a top dimension simplex would be the same as tuple for the corner
                 wmtk::Tuple adj_corner_tuple = adj_simplex.tuple();
                 auto adj_vector = dup_acc.vector_attribute(adj_corner_tuple);
                 long k = adj_corner_tuple.get_local_vid();
-                // std::cout << "before adjusting, = " << adj_vector[k] << std::endl;
+                std::cout << "before adjusting, = " << adj_vector[k] << std::endl;
                 if (adj_vector[k] == counter) continue;
                 if (adj_vector[k] != -1 && adj_vector[k] != counter)
                     throw std::runtime_error("Duplicate index conflict!");
                 adj_vector[k] = counter;
-                // std::cout << "after adjusting, = " <<
-                // dup_acc.vector_attribute(adj_corner_tuple)[k]
-                //           << std::endl;
+                std::cout << "after adjusting, = " << dup_acc.vector_attribute(adj_corner_tuple)[k]
+                          << std::endl;
             }
             // finally, increment the counter
             counter++;
