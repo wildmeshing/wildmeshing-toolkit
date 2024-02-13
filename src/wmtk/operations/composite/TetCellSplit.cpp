@@ -18,14 +18,13 @@ std::vector<simplex::Simplex> TetCellSplit::execute(const simplex::Simplex& simp
     assert(first_split_simplicies.size() == 1);
     const Tuple first_split_ret = first_split_simplicies.front().tuple();
 
-    const Tuple second_split_input = mesh().switch_edge(mesh().switch_vertex(first_split_ret));
+    const Tuple second_split_input = mesh().switch_tuples(first_split_ret, {PrimitiveType::Vertex, PrimitiveType::Edge});
     const auto second_split_simplicies = m_split(simplex::Simplex::edge(second_split_input));
     if (second_split_simplicies.empty()) return {};
     assert(second_split_simplicies.size() == 1);
     const Tuple second_split_ret = second_split_simplicies.front().tuple();
 
-    const Tuple third_split_input =
-        mesh().switch_edge(mesh().switch_vertex(mesh().switch_face(second_split_ret)));
+    const Tuple third_split_input = mesh().switch_tuples(second_split_ret, {PrimitiveType::Triangle, PrimitiveType::Vertex, PrimitiveType::Edge});
     const auto third_split_simplicies = m_split(simplex::Simplex::edge(third_split_input));
     if (third_split_simplicies.empty()) return {};
     assert(third_split_simplicies.size() == 1);

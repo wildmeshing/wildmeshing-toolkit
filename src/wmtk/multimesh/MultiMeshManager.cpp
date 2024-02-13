@@ -1140,8 +1140,8 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
                                                 child_tuple_opp));
 #endif
                 }
-                cur_child_tuple = child_mesh.switch_edge(child_mesh.switch_vertex(cur_child_tuple));
-                cur_parent_tuple = my_mesh.switch_edge(my_mesh.switch_vertex(cur_parent_tuple));
+                cur_child_tuple = child_mesh.switch_tuples(cur_child_tuple, {PrimitiveType::Vertex, PrimitiveType::Edge});
+                cur_parent_tuple = my_mesh.switch_tuples(cur_parent_tuple, {PrimitiveType::Vertex, PrimitiveType::Edge});
             }
         } else if (
             map_type == PrimitiveType::Edge &&
@@ -1150,7 +1150,7 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
                 auto parent_to_child_accessor =
                     my_mesh.create_const_accessor(parent_to_child_handle);
 #ifndef NDEBUG
-                const Tuple parent_tuple_opp = my_mesh.switch_face(parent_tuple_from_child);
+                const Tuple parent_tuple_opp = my_mesh.switch_tuple(parent_tuple_from_child, PrimitiveType::Face);
                 assert(
                     child_tuple_from_child == map_tuple_between_meshes(
                                                   my_mesh,

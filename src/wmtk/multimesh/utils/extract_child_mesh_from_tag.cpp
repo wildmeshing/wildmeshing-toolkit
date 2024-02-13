@@ -42,7 +42,7 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
         for (size_t i = 0; i < tagged_tuples.size(); ++i) {
             const std::array<int64_t, 2> vs = {
                 {m.id(tagged_tuples[i], PrimitiveType::Vertex),
-                 m.id(m.switch_vertex(tagged_tuples[i]), PrimitiveType::Vertex)}};
+                 m.id(m.switch_tuple(tagged_tuples[i], PrimitiveType::Vertex), PrimitiveType::Vertex)}};
 
 
             // check and add v0, v1 to the vertex map
@@ -69,8 +69,8 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
             // TODO: check if this break the orientation of the map
             const std::array<int64_t, 3> vs = {
                 {m.id(tagged_tuples[i], PrimitiveType::Vertex),
-                 m.id(m.switch_vertex(tagged_tuples[i]), PrimitiveType::Vertex),
-                 m.id(m.switch_vertex(m.switch_edge(tagged_tuples[i])), PrimitiveType::Vertex)}};
+                 m.id(m.switch_tuple(tagged_tuples[i], PrimitiveType::Vertex), PrimitiveType::Vertex),
+                 m.id(m.switch_tuples(tagged_tuples[i], {PrimitiveType::Edge, PrimitiveType::Vertex}), PrimitiveType::Vertex)}};
 
             // check and add v0, v1, v2 to the vertex map
             for (int k = 0; k < 3; k++) {
@@ -96,11 +96,11 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
         for (int64_t i = 0; i < tagged_tuples.size(); ++i) {
             const std::array<int64_t, 4> vs = {
                 {m.id(tagged_tuples[i], PrimitiveType::Vertex),
-                 m.id(m.switch_vertex(tagged_tuples[i]), PrimitiveType::Vertex),
+                 m.id(m.switch_tuple(tagged_tuples[i], PrimitiveType::Vertex), PrimitiveType::Vertex),
                  m.id(
-                     m.switch_vertex(m.switch_edge(m.switch_face(tagged_tuples[i]))),
+                     m.switch_tuples(tagged_tuples[i], {PrimitiveType::Triangle, PrimitiveType::Edge, PrimitiveType::Vertex}),
                      PrimitiveType::Vertex),
-                 m.id(m.switch_vertex(m.switch_edge(tagged_tuples[i])), PrimitiveType::Vertex)}};
+                 m.id(m.switch_tuples(tagged_tuples[i], {PrimitiveType::Edge, PrimitiveType::Vertex}), PrimitiveType::Vertex)}};
 
             for (int k = 0; k < 4; ++k) {
                 size_t size = parent_to_child_vertex_map.size();

@@ -26,6 +26,10 @@
 
 namespace wmtk {
 
+    constexpr static PrimitiveType PV = PrimitiveType::Vertex;
+    constexpr static PrimitiveType PE = PrimitiveType::Edge;
+    Tuple TriMesh::TriMeshOperationExecutor::next_edge(const Tuple& tuple) const { return m_mesh.switch_tuples(tuple,{PV,PE}); }
+    Tuple TriMesh::TriMeshOperationExecutor::prev_edge(const Tuple& tuple) const { return m_mesh.switch_tuples(tuple,{PE,PV}); }
 auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> IncidentFaceData
 {
     /*         / \
@@ -43,7 +47,7 @@ auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> Incid
                 simplex::Simplex::edge(m_operating_tuple))) {
             break;
         }
-        t = m_mesh.next_edge(t);
+        t = next_edge(t);
     }
     assert(simplex::utils::SimplexComparisons::equal(
         m_mesh,
