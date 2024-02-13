@@ -83,7 +83,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
         if (!mods.empty()) { // success should be marked here
             apply_attribute_transfer(mods);
             if (after(unmods, mods)) {
-                wmtk::operations::Operation::print_sampling_cnt();
+                // std::cout << "passed after " << std::endl;
+                // wmtk::operations::Operation::print_sampling_cnt();
                 return mods; // scope destructor is called
             }
         }

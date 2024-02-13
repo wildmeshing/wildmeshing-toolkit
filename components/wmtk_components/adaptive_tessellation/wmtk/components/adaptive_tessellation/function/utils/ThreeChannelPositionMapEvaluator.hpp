@@ -17,7 +17,7 @@ class ThreeChannelPositionMapEvaluator
 {
 protected:
     const std::array<std::shared_ptr<image::Image>, 3> m_images;
-    const std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> m_analytical_funcs;
+    const std::array<std::shared_ptr<image::Sampling>, 3> m_analytical_funcs;
     const image::SAMPLING_METHOD m_sampling_method = image::SAMPLING_METHOD::Bicubic;
     const image::IMAGE_WRAPPING_MODE m_wrapping_mode = image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT;
 
@@ -37,7 +37,7 @@ public:
         const image::IMAGE_WRAPPING_MODE wrapping_mode = image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
 
     ThreeChannelPositionMapEvaluator(
-        const std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> funcs,
+        const std::array<std::shared_ptr<image::Sampling>, 3> funcs,
         const image::SAMPLING_METHOD sampling_method = image::SAMPLING_METHOD::Analytical);
 
     int width() const;
@@ -57,7 +57,7 @@ public:
         } else if (m_sampling_method == image::SAMPLING_METHOD::Analytical) {
             Eigen::Vector<T, 3> res;
             for (size_t k = 0; k < 3; ++k) {
-                res[k] = m_analytical_funcs[k]->evaluate(uv.x(), uv.y());
+                res[k] = m_analytical_funcs[k]->sample(uv);
             }
             return res;
         } else {

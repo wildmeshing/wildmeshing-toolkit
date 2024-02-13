@@ -86,6 +86,9 @@ public:
     void AT_edge_split(
         std::function<std::vector<double>(const Simplex&)>& priority,
         std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
+    void AT_boundary_edge_split(
+        std::function<std::vector<double>(const Simplex&)>& priority,
+        std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
     void AT_face_split(
         std::function<std::vector<double>(const Simplex&)>& priority,
         std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);

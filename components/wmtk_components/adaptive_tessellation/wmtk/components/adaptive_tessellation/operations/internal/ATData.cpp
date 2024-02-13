@@ -154,7 +154,7 @@ ATData::ATData(
 ATData::ATData(
     std::shared_ptr<Mesh> position_mesh_ptr,
     std::shared_ptr<Mesh> uv_mesh_ptr,
-    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs)
+    std::array<std::shared_ptr<image::Sampling>, 3>& funcs)
     : m_position_mesh_ptr(position_mesh_ptr)
     , m_uv_mesh_ptr(uv_mesh_ptr)
     , m_funcs(funcs)
@@ -192,7 +192,7 @@ const std::array<std::shared_ptr<image::Image>, 3>& ATData::images() const
 {
     return m_images;
 }
-const std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& ATData::funcs() const
+const std::array<std::shared_ptr<image::Sampling>, 3>& ATData::funcs() const
 {
     return m_funcs;
 }

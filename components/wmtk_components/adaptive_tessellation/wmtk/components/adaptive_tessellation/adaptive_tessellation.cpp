@@ -132,7 +132,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
     //////////////////////////////////
     // Storing edge lengths
-    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> funcs = {
+    std::array<std::shared_ptr<image::Sampling>, 3> funcs = {
         {std::make_shared<image::SamplingAnalyticFunction>(
              image::SamplingAnalyticFunction_FunctionType::Linear,
              1,
@@ -143,19 +143,22 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
              0,
              1,
              0.),
+         // std::make_shared<image::SamplingAnalyticFunction>(
+         //     image::SamplingAnalyticFunction_FunctionType::Periodic,
+         //     2,
+         //     2,
+         //     1.)
          //  std::make_shared<image::SamplingAnalyticFunction>(
-         //      image::SamplingAnalyticFunction_FunctionType::Periodic,
-         //      2,
-         //      2,
+         //      image::SamplingAnalyticFunction_FunctionType::Gaussian,
+         //      0.5,
+         //      0.5,
          //      1.)
-         std::make_shared<image::SamplingAnalyticFunction>(
-             image::SamplingAnalyticFunction_FunctionType::Gaussian,
-             0.5,
-             0.5,
-             1.)
+         std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
 
         }};
 
+    // std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
+    //     ->convert_to_exr(512, 512);
     std::array<std::shared_ptr<image::Image>, 3> images = {
         {std::make_shared<image::Image>(500, 500),
          std::make_shared<image::Image>(500, 500),
@@ -172,13 +175,14 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     images[2]->set(height_function);
 
 
-    AT::operations::internal::ATData atdata(
-        position_mesh_ptr,
-        uv_mesh_ptr,
-        options.position_path,
-        options.normal_path,
-        options.height_path);
+    // AT::operations::internal::ATData atdata(
+    //     position_mesh_ptr,
+    //     uv_mesh_ptr,
+    //     options.position_path,
+    //     options.normal_path,
+    //     options.height_path);
     // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
+    AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, funcs);
 
     // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator image_evaluator(
     //     images,
@@ -237,13 +241,21 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     // 1.5) FaceSplit
     // at_ops.AT_face_split(at_ops.m_high_distance_faces_first, at_ops.m_distance_nondiff_energy);
     // 1) wmtk::operations::EdgeSplit
-    at_ops.AT_edge_split(at_ops.m_high_distance_edges_first, at_ops.m_distance_nondiff_energy);
-
+    // at_ops.AT_edge_split(at_ops.m_high_distance_edges_first, at_ops.m_distance_nondiff_energy);
+    // at_ops.AT_boundary_edge_split(
+    //     at_ops.m_high_distance_edges_first,
+    //     at_ops.m_distance_nondiff_energy);
     // 3) EdgeSwap
-    at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first, at_ops.m_distance_nondiff_energy);
+    // at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first, at_ops.m_distance_nondiff_energy);
 
     // 4) Smoothing
-    at_ops.AT_smooth_interior(at_ops.m_sum_energy);
+    // at_ops.AT_smooth_interior(at_ops.m_distance_energy);
+
+    /// split on amips error
+
+    // at_ops.AT_edge_split(at_ops.m_high_amips_edges_first, at_ops.m_3d_amips_energy);
+    // at_ops.AT_boundary_edge_split(at_ops.m_high_amips_edges_first, at_ops.m_3d_amips_energy);
+    // at_ops.AT_smooth_interior(at_ops.m_3d_amips_energy);
 
 
     // nlohmann::ordered_json FaceErrorJson;

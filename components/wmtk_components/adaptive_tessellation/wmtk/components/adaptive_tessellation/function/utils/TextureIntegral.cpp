@@ -96,8 +96,8 @@ double TextureIntegral::get_error_one_triangle_exact(
     };
     double value = 0.;
     Eigen::AlignedBox2d bbox = uv_triangle_bbox(uv_triangle_RowMajor);
-    // auto [num_pixels, pixel_size] = pixel_num_size_of_uv_triangle(bbox);
-    auto [num_pixels, pixel_size] = pixel_size_of_uv_triangle(10, bbox);
+    auto [num_pixels, pixel_size] = pixel_num_size_of_uv_triangle(bbox);
+    // auto [num_pixels, pixel_size] = pixel_size_of_uv_triangle(3, bbox);
 
     wmtk::logger().info("num_pixels {} pixel_size {}", num_pixels, pixel_size);
     for (auto y = 0; y < num_pixels; ++y) {

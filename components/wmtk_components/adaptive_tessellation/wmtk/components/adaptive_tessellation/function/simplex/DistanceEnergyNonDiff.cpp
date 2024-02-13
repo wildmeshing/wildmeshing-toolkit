@@ -9,7 +9,7 @@
 namespace wmtk::function::utils {
 template <int64_t NV, int64_t DIM>
 std::array<double, NV * DIM> unbox(
-    const std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>>& data,
+    const std::vector<typename attribute::AccessorBase<double>::ConstMapResult>& data,
     const int64_t index)
 {
     std::array<double, NV * DIM> res;

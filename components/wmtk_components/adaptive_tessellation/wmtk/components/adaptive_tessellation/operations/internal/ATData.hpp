@@ -26,8 +26,7 @@ class ATData
     std::vector<std::shared_ptr<Mesh>> m_edge_mesh_ptrs;
     std::map<Mesh*, Mesh*> m_sibling_meshes_map;
     std::array<std::shared_ptr<image::Image>, 3> m_images = {{nullptr, nullptr, nullptr}};
-    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> m_funcs = {
-        {nullptr, nullptr, nullptr}};
+    std::array<std::shared_ptr<image::Sampling>, 3> m_funcs = {{nullptr, nullptr, nullptr}};
 
 public:
     // Tnvariants are dependant on the input mesh where the operation is defined one (interior
@@ -74,7 +73,7 @@ public:
     ATData(
         std::shared_ptr<Mesh> position_mesh_ptr,
         std::shared_ptr<Mesh> uv_mesh,
-        std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs);
+        std::array<std::shared_ptr<image::Sampling>, 3>& funcs);
 
 
     void initialize_handles();
@@ -88,7 +87,7 @@ public:
     Mesh* sibling_edge_mesh_ptr(Mesh* my_edge_mesh_ptr);
     Simplex sibling_edge(Mesh* my_edge_mesh_ptr, const Simplex& s);
     const std::array<std::shared_ptr<image::Image>, 3>& images() const;
-    const std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs() const;
+    const std::array<std::shared_ptr<image::Sampling>, 3>& funcs() const;
 
     void _debug_sampling(
         wmtk::components::function::utils::ThreeChannelPositionMapEvaluator& image_sampling,

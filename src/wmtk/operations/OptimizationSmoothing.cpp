@@ -150,7 +150,7 @@ std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simp
     auto accessor = mesh().create_accessor(m_energy->attribute_handle().as<double>());
     WMTKProblem problem(std::move(accessor), simplex, m_invariants, *m_energy);
 
-    // std::cout << "smoothing: " << simplex.tuple().m_hash << std::endl;
+    // std::cout << "smoothing: " << std::endl;
 
     auto x = problem.initial_value();
     try {
@@ -158,12 +158,12 @@ std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simp
         // std::cout << "Solving" << std::endl;
         m_solver->minimize(problem, x);
         // std::cout << "Done " << x << std::endl;
-        nlohmann::json data = m_solver->get_info();
+        // nlohmann::json data = m_solver->get_info();
         // std::ofstream file("solver_info.json");
 
         // Write the JSON object to the file
-        std::cout << std::setw(4) << data << std::endl;
-        wmtk::operations::Operation::print_sampling_cnt();
+        // std::cout << std::setw(4) << data << std::endl;
+        // wmtk::operations::Operation::print_sampling_cnt();
         // // Close the file
         // file.close();
 
