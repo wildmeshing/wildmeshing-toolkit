@@ -16,13 +16,12 @@ class AttributeManager;
 
 class MeshAttributeHandle;
 
-/* @brief Handle that represents attributes for some mesh
+/** @brief Handle that represents attributes for some mesh
  *
  * In conjunction with the mesh that constructed it, specifies a particular attribute.
  * NOTE: with multimesh around, you ideally want to store a
- * SmartAttributeHandle, Explicitly storing MeshAttribteHandle is
- * deprecated.
- */
+ * MeshAttribteHandle, which also hides the templating used here.
+ **/
 template <typename T>
 class TypedAttributeHandle
 {
