@@ -43,7 +43,7 @@ namespace wmtk {
 namespace attribute {
 class AttributeManager;
 template <typename T>
-class TupleAccessor;
+class Accessor;
 
 } // namespace attribute
 namespace operations {
@@ -95,7 +95,7 @@ public:
     template <typename T>
     friend class attribute::AccessorBase;
     template <typename T>
-    friend class attribute::TupleAccessor;
+    friend class attribute::Accessor;
     friend class io::ParaviewWriter;
     friend class HDF5Reader;
     friend class multimesh::attribute::UseParentScopeRAII;

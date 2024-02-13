@@ -11,7 +11,7 @@ class MeshAttributes;
 template <typename T>
 class AccessorBase;
 template <typename T>
-class TupleAccessor;
+class Accessor;
 class AttributeManager;
 
 class MeshAttributeHandle;
@@ -33,7 +33,7 @@ private:
     friend class wmtk::Mesh;
     friend class MeshAttributes<T>;
     friend class AccessorBase<T>;
-    friend class TupleAccessor<T>;
+    friend class Accessor<T>;
     friend class AttributeManager;
     friend class wmtk::hash<TypedAttributeHandle<T>>;
     AttributeHandle m_base_handle;

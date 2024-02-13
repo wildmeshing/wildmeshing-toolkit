@@ -1,7 +1,7 @@
 #pragma once
 
 #include <wmtk/Tuple.hpp>
-#include <wmtk/attribute/ConstAccessor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <optional>
 
 namespace wmtk::function::utils {
@@ -26,7 +26,7 @@ template <typename T>
 std::tuple<std::vector<std::decay_t<typename attribute::ConstMapResult<T>>>, int64_t>
 get_simplex_attributes(
     const Mesh& mesh,
-    const wmtk::attribute::ConstAccessor<T>& accessor,
+    const wmtk::attribute::Accessor<T>& accessor,
     const PrimitiveType primitive_type,
     const simplex::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker = {});

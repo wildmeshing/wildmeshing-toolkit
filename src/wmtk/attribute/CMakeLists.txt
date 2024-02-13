@@ -36,10 +36,9 @@ set(SRC_FILES
     CachingAccessor.hxx
     CachingAccessor.hpp
     #
-    TupleAccessor.hxx
-    TupleAccessor.hpp
-
+    Accessor.hxx
     Accessor.hpp
+
     
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

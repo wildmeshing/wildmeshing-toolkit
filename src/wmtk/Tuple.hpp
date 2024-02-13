@@ -12,7 +12,7 @@ class EdgeMesh;
 class TetMesh;
 namespace attribute {
 template <typename T>
-class TupleAccessor;
+class Accessor;
 }
 namespace utils {
 class TupleInspector;
@@ -47,7 +47,7 @@ public:
     friend class TetMesh;
     friend class multimesh::MultiMeshManager;
     template <typename T>
-    friend class attribute::TupleAccessor;
+    friend class attribute::Accessor;
     friend class operations::Operation;
     friend class utils::TupleCellLessThan;
     friend class utils::TupleInspector;
