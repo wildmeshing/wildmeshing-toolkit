@@ -16,7 +16,7 @@ std::vector<Tuple> boundary_tuples(const Mesh& m, const Tuple& t, PrimitiveType 
         // vertex does not have a boundary
     } break;
     case PrimitiveType::Edge: {
-        ret = {t, m.switch_vertex(t)};
+        ret = {t, m.switch_tuple(t,PV)};
     } break;
     case PrimitiveType::Triangle: {
         ret = {

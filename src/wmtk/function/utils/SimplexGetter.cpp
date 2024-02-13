@@ -16,7 +16,7 @@ get_simplex_attributes(
     const simplex::Simplex simplex =
         mesh.is_ccw(simplex_in.tuple())
             ? simplex_in
-            : simplex::Simplex(simplex_in.primitive_type(), mesh.switch_vertex(simplex_in.tuple()));
+            : simplex::Simplex(simplex_in.primitive_type(), mesh.switch_tuple(simplex_in.tuple(), PrimitiveType::Vertex));
 
     assert(mesh.is_ccw(simplex.tuple()));
     const std::vector<Tuple> faces =

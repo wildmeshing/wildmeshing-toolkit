@@ -21,6 +21,14 @@ public:
     attribute::Accessor<int64_t> ef_accessor;
     attribute::Accessor<int64_t>& hash_accessor;
 
+    /**
+     * @brief jump to the next edge
+     */
+    Tuple next_edge(const Tuple& tuple) const;
+    /**
+     * @brief jump to the previous edge
+     */
+    Tuple prev_edge(const Tuple& tuple) const;
 
     /**
      * @brief gather all simplices that are deleted in a split

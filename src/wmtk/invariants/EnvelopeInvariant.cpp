@@ -11,6 +11,11 @@
 #include <SimpleBVH/BVH.hpp>
 
 
+namespace wmtk {
+
+constexpr PrimitiveType PV = PrimitiveType::Vertex;
+constexpr PrimitiveType PE = PrimitiveType::Edge;
+} // namespace wmtk
 namespace wmtk::invariants {
 
 EnvelopeInvariant::EnvelopeInvariant(
@@ -36,9 +41,9 @@ EnvelopeInvariant::EnvelopeInvariant(
         const std::vector<Tuple>& facest = envelope_mesh.get_all(wmtk::PrimitiveType::Triangle);
         for (const auto& f : facest) {
             Eigen::Vector3d p0 = accessor.const_vector_attribute(f);
-            Eigen::Vector3d p1 = accessor.const_vector_attribute(envelope_mesh.switch_vertex(f));
-            Eigen::Vector3d p2 = accessor.const_vector_attribute(
-                envelope_mesh.switch_vertex(envelope_mesh.switch_edge(f)));
+            Eigen::Vector3d p1 = accessor.const_vector_attribute(envelope_mesh.switch_tuple(f, PV));
+            Eigen::Vector3d p2 =
+                accessor.const_vector_attribute(envelope_mesh.switch_tuples(f, {PE, PV}));
 
             faces.emplace_back(count, count + 1, count + 2);
             vertices.push_back(p0);
@@ -63,7 +68,7 @@ EnvelopeInvariant::EnvelopeInvariant(
 
         for (const auto& e : edgest) {
             auto p0 = accessor.const_vector_attribute(e);
-            auto p1 = accessor.const_vector_attribute(envelope_mesh.switch_vertex(e));
+            auto p1 = accessor.const_vector_attribute(envelope_mesh.switch_tuple(e, PV));
 
             edges.row(index) << count, count + 1;
             vertices.row(2 * index) = p0;
@@ -153,7 +158,7 @@ bool EnvelopeInvariant::after(
             for (const Tuple& tuple : top_dimension_tuples_after) {
                 SimpleBVH::VectorMax3d p0 = accessor.const_vector_attribute(tuple);
                 SimpleBVH::VectorMax3d p1 =
-                    accessor.const_vector_attribute(mesh().switch_vertex(tuple));
+                    accessor.const_vector_attribute(mesh().switch_tuple(tuple, PV));
 
                 const int64_t N = (p0 - p1).norm() / d + 1;
                 pts.reserve(pts.size() + N);

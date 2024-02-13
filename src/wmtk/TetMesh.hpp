@@ -47,6 +47,12 @@ public:
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const override;
 
+    Tuple switch_vertex(const Tuple& tuple) const;
+    Tuple switch_edge(const Tuple& tuple) const;
+    Tuple switch_face(const Tuple& tuple) const;
+    Tuple switch_tetrahedron(const Tuple& tuple) const;
+
+
 protected:
     void make_cached_accessors();
     int64_t id(const Tuple& tuple, PrimitiveType type) const;
@@ -97,5 +103,22 @@ protected:
     Tuple face_tuple_from_id(int64_t id) const;
     Tuple tet_tuple_from_id(int64_t id) const;
 };
+
+inline Tuple TetMesh::switch_vertex(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Vertex);
+}
+inline Tuple TetMesh::switch_edge(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Edge);
+}
+inline Tuple TetMesh::switch_face(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Triangle);
+}
+inline Tuple TetMesh::switch_tetrahedron(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Tetrahedron);
+}
 
 } // namespace wmtk

@@ -31,14 +31,6 @@ public:
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
-    /**
-     * @brief jump to the next edge by performing a switch of vertex and edge
-     */
-    Tuple next_edge(const Tuple& tuple) const { return switch_edge(switch_vertex(tuple)); }
-    /**
-     * @brief jump to the previous edge by performing a switch of edge and vertex
-     */
-    Tuple prev_edge(const Tuple& tuple) const { return switch_vertex(switch_edge(tuple)); }
 
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
@@ -62,6 +54,9 @@ public:
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const override;
 
+    Tuple switch_vertex(const Tuple& tuple) const;
+    Tuple switch_edge(const Tuple& tuple) const;
+    Tuple switch_face(const Tuple& tuple) const;
 protected:
     int64_t id(const Tuple& tuple, PrimitiveType type) const;
     int64_t id(const simplex::Simplex& simplex) const
@@ -107,4 +102,16 @@ protected:
     static Tuple with_different_cid(const Tuple& t, int64_t cid);
 };
 
+inline Tuple TriMesh::switch_vertex(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Vertex);
+}
+inline Tuple TriMesh::switch_edge(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Edge);
+}
+inline Tuple TriMesh::switch_face(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Triangle);
+}
 } // namespace wmtk
