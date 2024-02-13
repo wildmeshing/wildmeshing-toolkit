@@ -110,7 +110,7 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
                                                 child_tuple_opp));
                 }
                 cur_child_tuple = child_mesh.switch_tuples(cur_child_tuple, {PrimitiveType::Vertex,PrimitiveType::Edge});
-                cur_parent_tuple = my_mesh.switch_tuples(cur_child_tuple, {PrimitiveType::Vertex,PrimitiveType::Edge});
+                cur_parent_tuple = my_mesh.switch_tuples(cur_parent_tuple, {PrimitiveType::Vertex,PrimitiveType::Edge});
             }
         } else if (
             map_type == PrimitiveType::Edge &&
