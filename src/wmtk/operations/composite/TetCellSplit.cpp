@@ -31,7 +31,7 @@ std::vector<simplex::Simplex> TetCellSplit::execute(const simplex::Simplex& simp
     const Tuple third_split_ret = third_split_simplicies.front().tuple();
 
 
-    const Tuple first_collapse_input = mesh().switch_face(mesh().switch_edge(third_split_ret));
+    const Tuple first_collapse_input = mesh().switch_tuples(third_split_ret, {PrimitiveType::Edge, PrimitiveType::Triangle});
     const auto first_collapse_simplicies = m_collapse(simplex::Simplex::edge(first_collapse_input));
     if (first_collapse_simplicies.empty()) return {};
     assert(first_collapse_simplicies.size() == 1);
@@ -44,7 +44,7 @@ std::vector<simplex::Simplex> TetCellSplit::execute(const simplex::Simplex& simp
     assert(second_collapse_simplicies.size() == 1);
     const Tuple second_collapse_ret = second_collapse_simplicies.front().tuple();
 
-    const Tuple output_tuple = mesh().switch_face(mesh().switch_tetrahedron(second_collapse_ret));
+    const Tuple output_tuple = mesh().switch_tuples(second_collapse_ret, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle});
 
     return {simplex::Simplex::vertex(output_tuple)};
 }

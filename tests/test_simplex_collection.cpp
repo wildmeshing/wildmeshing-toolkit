@@ -971,7 +971,7 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
 
         for (size_t i = 7; i < 19; ++i) {
             const Simplex& e = simplices[i];
-            const Tuple center = m.switch_vertex(m.next_edge(e.tuple()));
+            const Tuple center = m.switch_tuples(e.tuple(), {PV, PE, PV});
             CHECK(
                 (faces(m, e).contains(v) ||
                  simplex::utils::SimplexComparisons::equal(m, v, Simplex::vertex(center))));
@@ -1004,7 +1004,7 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
 
         for (size_t i = 4; i < 9; ++i) {
             const Simplex& e = simplices[i];
-            const Tuple center = m.switch_vertex(m.next_edge(e.tuple()));
+            const Tuple center = m.switch_tuples(e.tuple(), {PV, PE, PV});
             CHECK(
                 (faces(m, e).contains(v) ||
                  simplex::utils::SimplexComparisons::equal(m, v, Simplex::vertex(center))));
@@ -1181,7 +1181,7 @@ TEST_CASE("simplex_link_2d", "[simplex_collection][2D]")
 
         for (size_t i = 6; i < 12; ++i) {
             const Simplex& e = simplices[i];
-            const Tuple center = m.switch_vertex(m.next_edge(e.tuple()));
+            const Tuple center = m.switch_tuples(e.tuple(), {PV, PE, PV});
             CHECK(simplex::utils::SimplexComparisons::equal(m, v, Simplex::vertex(center)));
         }
     }
@@ -1204,7 +1204,7 @@ TEST_CASE("simplex_link_2d", "[simplex_collection][2D]")
 
         for (size_t i = 3; i < 5; ++i) {
             const Simplex& e = simplices[i];
-            const Tuple center = m.switch_vertex(m.next_edge(e.tuple()));
+            const Tuple center = m.switch_tuples(e.tuple(), {PV, PE, PV});
             CHECK(simplex::utils::SimplexComparisons::equal(m, v, Simplex::vertex(center)));
         }
     }

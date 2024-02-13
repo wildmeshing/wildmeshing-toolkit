@@ -3,6 +3,7 @@
 #include <wmtk/utils/vector_hash.hpp>
 //#include <fmt/ranges.h>
 #include <functional>
+#include <wmtk/Mesh.hpp>
 #include <wmtk/attribute/internal/hash.hpp>
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
@@ -12,7 +13,6 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 #include <wmtk/utils/vector_hash.hpp>
-#include <wmtk/Mesh.hpp>
 #include "utils/local_switch_tuple.hpp"
 #include "utils/transport_tuple.hpp"
 #include "utils/tuple_map_attribute_io.hpp"
@@ -46,6 +46,7 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
 
 
     if (source_mesh_base_tuple.m_global_cid != source_mesh_target_tuple.m_global_cid) {
+        // guarantee that the source and target tuples refer to the same simplex
         assert(source_mesh_primitive_type > target_mesh_primitive_type);
         const std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(
             source_mesh,
@@ -59,7 +60,8 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
                         source_mesh_target_tuple = t;
                         break;
                     } else {
-                        source_mesh_target_tuple = source_mesh.switch_face(t);
+                        source_mesh_target_tuple =
+                            source_mesh.switch_tuple(t, PrimitiveType::Triangle);
                         break;
                     }
                 } else {
@@ -1013,7 +1015,7 @@ void MultiMeshManager::update_vertex_operation_hashes_internal(
 void MultiMeshManager::update_vertex_operation_multimesh_map_hash_internal(
     Mesh& m,
     const simplex::SimplexCollection& vertex_closed_star,
-   wmtk::attribute::Accessor<int64_t>& parent_hash_accessor)
+    wmtk::attribute::Accessor<int64_t>& parent_hash_accessor)
 {
     auto& mm_manager = m.m_multi_mesh_manager;
 
@@ -1130,8 +1132,10 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
                     assert(!my_mesh.is_boundary(PrimitiveType::Edge, cur_parent_tuple));
 
 #ifndef NDEBUG
-                    Tuple child_tuple_opp = child_mesh.switch_face(cur_child_tuple);
-                    Tuple parent_tuple_opp = my_mesh.switch_face(cur_parent_tuple);
+                    Tuple child_tuple_opp =
+                        child_mesh.switch_tuple(cur_child_tuple, PrimitiveType::Triangle);
+                    Tuple parent_tuple_opp =
+                        my_mesh.switch_tuple(cur_parent_tuple, PrimitiveType::Triangle);
                     assert(
                         parent_tuple_opp == map_tuple_between_meshes(
                                                 child_mesh,
@@ -1140,8 +1144,12 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
                                                 child_tuple_opp));
 #endif
                 }
-                cur_child_tuple = child_mesh.switch_tuples(cur_child_tuple, {PrimitiveType::Vertex, PrimitiveType::Edge});
-                cur_parent_tuple = my_mesh.switch_tuples(cur_parent_tuple, {PrimitiveType::Vertex, PrimitiveType::Edge});
+                cur_child_tuple = child_mesh.switch_tuples(
+                    cur_child_tuple,
+                    {PrimitiveType::Vertex, PrimitiveType::Edge});
+                cur_parent_tuple = my_mesh.switch_tuples(
+                    cur_parent_tuple,
+                    {PrimitiveType::Vertex, PrimitiveType::Edge});
             }
         } else if (
             map_type == PrimitiveType::Edge &&
@@ -1150,7 +1158,8 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
                 auto parent_to_child_accessor =
                     my_mesh.create_const_accessor(parent_to_child_handle);
 #ifndef NDEBUG
-                const Tuple parent_tuple_opp = my_mesh.switch_tuple(parent_tuple_from_child, PrimitiveType::Face);
+                const Tuple parent_tuple_opp =
+                    my_mesh.switch_tuple(parent_tuple_from_child, PrimitiveType::Triangle);
                 assert(
                     child_tuple_from_child == map_tuple_between_meshes(
                                                   my_mesh,
@@ -1243,4 +1252,4 @@ bool MultiMeshManager::can_map_child(
     return !root_ref.m_multi_mesh_manager.map_down_relative_tuples(root_ref, simplex, other_id)
                 .empty();
 }
-} // namespace wmtk
+} // namespace wmtk::multimesh
