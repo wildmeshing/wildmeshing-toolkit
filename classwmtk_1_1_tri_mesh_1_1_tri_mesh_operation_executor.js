@@ -7,6 +7,8 @@ var classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor =
     [ "connect_faces_across_spine", "classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ac345870292a6f98fe63dcbdffe56bae9", null ],
     [ "delete_simplices", "classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a1a30577b22daadfe571a2ea49699e363", null ],
     [ "get_incident_face_data", "classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a15a37c1d8c6556c11d387fbf78060f4e", null ],
+    [ "next_edge", "classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a400efff4f802a87f2e32914190ec7b3b", null ],
+    [ "prev_edge", "classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a8aaccd059935a5ec25b0680df485da96", null ],
     [ "replace_incident_face", "classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a998d9ebaf1507d842fb01db91e044644", null ],
     [ "request_simplex_indices", "classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a49846c8a03b7ccae44fd042ee5ba18d4", null ],
     [ "split_edge", "classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ab634365fab3fdd82e567cb433b54ed33", null ],

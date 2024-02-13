@@ -157,16 +157,16 @@ var sectionId = 'dynsection-2';
 <!-- Node1&#45;&gt;Node11 -->
 <g id="edge10" class="edge">
 <title>Node1&#45;&gt;Node11</title>
-<path fill="none" stroke="midnightblue" d="M113.15,-147.32C137.54,-131.44 177.86,-106.49 215,-89.5 219.9,-87.26 225.07,-85.1 230.29,-83.07"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="231.58,-86.32 239.72,-79.54 229.13,-79.77 231.58,-86.32"/>
+<path fill="none" stroke="midnightblue" d="M112.63,-147.3C136.91,-131.12 177.45,-105.54 215,-88.5 219.1,-86.64 223.38,-84.86 227.74,-83.16"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="229.18,-86.36 237.33,-79.59 226.74,-79.8 229.18,-86.36"/>
 </g>
 <!-- Node12 -->
 <g id="node12" class="node">
 <title>Node12</title>
-<g id="a_node12"><a xlink:href="classwmtk_1_1_mesh.html#aed90cad0755b0052b0ca4502e401bcd3" target="_top" xlink:title=" ">
+<g id="a_node12"><a xlink:href="classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7" target="_top" xlink:title="switch the orientation of the Tuple of the given dimension">
 <polygon fill="none" stroke="black" points="232.5,-0.5 232.5,-30.5 346.5,-30.5 346.5,-0.5 232.5,-0.5"/>
 <text text-anchor="start" x="240.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::switch</text>
-<text text-anchor="middle" x="289.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex</text>
+<text text-anchor="middle" x="289.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_tuple</text>
 </a>
 </g>
 </g>
@@ -240,22 +240,6 @@ var sectionId = 'dynsection-2';
 <title>Node9&#45;&gt;Node10</title>
 <path fill="none" stroke="midnightblue" d="M349.67,-112.58C369.37,-112.27 391.51,-111.92 411.98,-111.6"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="412.25,-115.1 422.2,-111.44 412.14,-108.1 412.25,-115.1"/>
-</g>
-<!-- Node13 -->
-<g id="node13" class="node">
-<title>Node13</title>
-<g id="a_node13"><a xlink:href="classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7" target="_top" xlink:title="switch the orientation of the Tuple of the given dimension">
-<polygon fill="none" stroke="black" points="426.5,-0.5 426.5,-30.5 540.5,-30.5 540.5,-0.5 426.5,-0.5"/>
-<text text-anchor="start" x="434.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::switch</text>
-<text text-anchor="middle" x="483.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_tuple</text>
-</a>
-</g>
-</g>
-<!-- Node12&#45;&gt;Node13 -->
-<g id="edge12" class="edge">
-<title>Node12&#45;&gt;Node13</title>
-<path fill="none" stroke="midnightblue" d="M346.55,-15.5C368.34,-15.5 393.47,-15.5 416.15,-15.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="416.38,-19 426.38,-15.5 416.38,-12 416.38,-19"/>
 </g>
 </g>
 </svg>

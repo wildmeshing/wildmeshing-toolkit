@@ -5,7 +5,7 @@ var dir_5421ed8c8fde3f7a08a046a47d931eae =
     [ "EdgeValenceInvariant.hpp", "_edge_valence_invariant_8hpp.html", [
       [ "EdgeValenceInvariant", "classwmtk_1_1invariants_1_1_edge_valence_invariant.html", "classwmtk_1_1invariants_1_1_edge_valence_invariant" ]
     ] ],
-    [ "EnvelopeInvariant.cpp", "_envelope_invariant_8cpp.html", null ],
+    [ "EnvelopeInvariant.cpp", "_envelope_invariant_8cpp.html", "_envelope_invariant_8cpp" ],
     [ "EnvelopeInvariant.hpp", "_envelope_invariant_8hpp.html", [
       [ "EnvelopeInvariant", "classwmtk_1_1invariants_1_1_envelope_invariant.html", "classwmtk_1_1invariants_1_1_envelope_invariant" ]
     ] ],

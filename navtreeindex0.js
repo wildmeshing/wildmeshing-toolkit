@@ -161,6 +161,8 @@ var NAVTREEINDEX0 =
 "_eigen_matrix_writer_8hpp.html":[5,0,2,0,8,4],
 "_eigen_matrix_writer_8hpp_source.html":[5,0,2,0,8,4],
 "_envelope_invariant_8cpp.html":[5,0,2,0,3,3],
+"_envelope_invariant_8cpp.html#a58dd3fc1aea35c1d3871f975a5517df9":[5,0,2,0,3,3,1],
+"_envelope_invariant_8cpp.html#aa59092a2882e8bac80b672e28353f6d1":[5,0,2,0,3,3,0],
 "_envelope_invariant_8cpp_source.html":[5,0,2,0,3,3],
 "_envelope_invariant_8hpp.html":[5,0,2,0,3,4],
 "_envelope_invariant_8hpp_source.html":[5,0,2,0,3,4],
@@ -247,7 +249,5 @@ var NAVTREEINDEX0 =
 "_interior_simplex_invariant_8cpp_source.html":[5,0,2,0,3,12],
 "_interior_simplex_invariant_8hpp.html":[5,0,2,0,3,13],
 "_interior_simplex_invariant_8hpp_source.html":[5,0,2,0,3,13],
-"_interior_vertex_invariant_8cpp.html":[5,0,2,0,3,14],
-"_interior_vertex_invariant_8cpp_source.html":[5,0,2,0,3,14],
-"_interior_vertex_invariant_8hpp.html":[5,0,2,0,3,15]
+"_interior_vertex_invariant_8cpp.html":[5,0,2,0,3,14]
 };

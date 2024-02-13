@@ -110,5 +110,7 @@ var namespacewmtk =
     [ "set_logger", "namespacewmtk.html#a3daa7951a5f8b78cf4600dc047fcc180", null ],
     [ "set_opt_logger", "namespacewmtk.html#a07c0763251462f47de92300937f82374", null ],
     [ "tetmesh_topology_initialization", "namespacewmtk.html#aac234519fdba455df7cd063360b24a44", null ],
-    [ "trimesh_topology_initialization", "namespacewmtk.html#ad580b7a4b3be1aeee939a7623ef3862e", null ]
+    [ "trimesh_topology_initialization", "namespacewmtk.html#ad580b7a4b3be1aeee939a7623ef3862e", null ],
+    [ "PE", "namespacewmtk.html#aa59092a2882e8bac80b672e28353f6d1", null ],
+    [ "PV", "namespacewmtk.html#a58dd3fc1aea35c1d3871f975a5517df9", null ]
 ];
