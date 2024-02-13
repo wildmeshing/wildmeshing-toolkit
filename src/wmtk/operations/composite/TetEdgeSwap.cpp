@@ -26,8 +26,8 @@ std::vector<simplex::Simplex> TetEdgeSwap::execute(const simplex::Simplex& simpl
     auto iter_tuple = split_ret;
     std::vector<Tuple> candidate_edge_tuples;
     while (true) {
-        candidate_edge_tuples.push_back(mesh().switch_edge(iter_tuple));
-        iter_tuple = mesh().switch_tetrahedron(mesh().switch_face(iter_tuple));
+        candidate_edge_tuples.push_back(mesh().switch_tuple(iter_tuple, PrimitiveType::Edge));
+        iter_tuple = mesh().switch_tuples(iter_tuple, {PrimitiveType::Triangle, PrimitiveType::Tetrahedron});
         if (iter_tuple == split_ret) {
             break;
         }
