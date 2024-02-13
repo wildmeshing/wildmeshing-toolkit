@@ -39,10 +39,6 @@ public:
 
     using CachingBaseType::CachingBaseType;
 
-    //TupleAccessor(TupleAccessor&&) = default;
-    //TupleAccessor& operator=(TupleAccessor&&) = default;
-    //TupleAccessor(const TupleAccessor&) = delete;
-    //TupleAccessor& operator=(const TupleAccessor&) = delete;
 
     T const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const;
     T& topological_scalar_attribute(const Tuple& t);
@@ -52,6 +48,8 @@ public:
 
     ConstMapResult const_vector_attribute(const Tuple& t) const;
     MapResult vector_attribute(const Tuple& t);
+
+protected:
 
     int64_t index(const Tuple& t) const;
     using BaseType::dimension; // const() -> int64_t

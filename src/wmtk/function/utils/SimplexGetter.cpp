@@ -8,7 +8,7 @@ template <typename T>
 std::tuple<std::vector<std::decay_t<typename attribute::internal::ConstMapResult<T>>>, int64_t>
 get_simplex_attributes(
     const Mesh& mesh,
-    const wmtk::attribute::ConstAccessor<T>& accessor,
+    const wmtk::attribute::Accessor<T>& accessor,
     const PrimitiveType primitive_type,
     const simplex::Simplex& simplex_in,
     const std::optional<wmtk::Tuple>& vertex_marker)
@@ -58,7 +58,7 @@ get_simplex_attributes(
 template std::tuple<std::vector<std::decay_t<typename attribute::AccessorBase<char>::ConstMapResult>>, int64_t>
 get_simplex_attributes(
     const Mesh& mesh,
-    const wmtk::attribute::ConstAccessor<char>& accessor,
+    const wmtk::attribute::Accessor<char>& accessor,
     const PrimitiveType primitive_type,
     const simplex::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker);
@@ -66,7 +66,7 @@ get_simplex_attributes(
 template std::tuple<std::vector<std::decay_t<typename attribute::AccessorBase<int64_t>::ConstMapResult>>, int64_t>
 get_simplex_attributes(
     const Mesh& mesh,
-    const wmtk::attribute::ConstAccessor<int64_t>& accessor,
+    const wmtk::attribute::Accessor<int64_t>& accessor,
     const PrimitiveType primitive_type,
     const simplex::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker);
@@ -74,7 +74,7 @@ get_simplex_attributes(
 template std::tuple<std::vector<std::decay_t<typename attribute::AccessorBase<double>::ConstMapResult>>, int64_t>
 get_simplex_attributes(
     const Mesh& mesh,
-    const wmtk::attribute::ConstAccessor<double>& accessor,
+    const wmtk::attribute::Accessor<double>& accessor,
     const PrimitiveType primitive_type,
     const simplex::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker);
@@ -83,7 +83,7 @@ template std::
     tuple<std::vector<std::decay_t<typename attribute::AccessorBase<Rational>::ConstMapResult>>, int64_t>
     get_simplex_attributes(
         const Mesh& mesh,
-        const wmtk::attribute::ConstAccessor<Rational>& accessor,
+        const wmtk::attribute::Accessor<Rational>& accessor,
         const PrimitiveType primitive_type,
         const simplex::Simplex& simplex,
         const std::optional<wmtk::Tuple>& vertex_marker);
