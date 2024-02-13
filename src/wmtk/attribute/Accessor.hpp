@@ -19,7 +19,7 @@ namespace wmtk::attribute {
  * to map from a tuple to the global simplex id.
  */
 template <typename T>
-class TupleAccessor : protected CachingAccessor<T>
+class Accessor : protected CachingAccessor<T>
 {
 public:
     friend class wmtk::Mesh;
@@ -27,7 +27,6 @@ public:
     friend class wmtk::TriMesh;
     friend class wmtk::EdgeMesh;
     friend class wmtk::PointMesh;
-    friend class wmtk::TriMeshOperationExecutor;
     using Scalar = T;
 
     friend class AttributeCache<T>;
@@ -49,9 +48,7 @@ public:
     ConstMapResult const_vector_attribute(const Tuple& t) const;
     MapResult vector_attribute(const Tuple& t);
 
-protected:
 
-    int64_t index(const Tuple& t) const;
     using BaseType::dimension; // const() -> int64_t
     using BaseType::reserved_size; // const() -> int64_t
 
@@ -61,6 +58,7 @@ protected:
     using CachingBaseType::stack_depth;
 
 protected:
+    int64_t index(const Tuple& t) const;
     using CachingBaseType::base_type;
     CachingBaseType& caching_base_type() { return *this; }
     const CachingBaseType& caching_base_type() const { return *this; }
@@ -70,4 +68,4 @@ public:
     const CachingBaseType& index_access() const { return caching_base_type(); }
 };
 } // namespace wmtk::attribute
-#include "TupleAccessor.hxx"
+#include "Accessor.hxx"
