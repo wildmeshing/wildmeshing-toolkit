@@ -18,7 +18,7 @@ var classwmtk_1_1_edge_mesh =
     [ "is_boundary_vertex", "classwmtk_1_1_edge_mesh.html#a534952cf2729f1509a380e3e9afb65b7", null ],
     [ "is_ccw", "classwmtk_1_1_edge_mesh.html#a83db0c93833dacdfb169807d8ba4b6ca", null ],
     [ "is_connectivity_valid", "classwmtk_1_1_edge_mesh.html#a3bf6f960d630d1e3a79a09c71a43100f", null ],
-    [ "is_valid", "classwmtk_1_1_edge_mesh.html#aaa973d1028770ea659e08051a19d1087", null ],
+    [ "is_valid", "classwmtk_1_1_edge_mesh.html#a566cd5b0f3adad310bd9818f14c99127", null ],
     [ "operator=", "classwmtk_1_1_edge_mesh.html#ac9bfcfafdf681af977bb9e65dbd9df72", null ],
     [ "operator=", "classwmtk_1_1_edge_mesh.html#a4343b21145559b1f9ce3e3c6606a599d", null ],
     [ "switch_tuple", "classwmtk_1_1_edge_mesh.html#a46725851b572b51a356450adc30c14ed", null ],

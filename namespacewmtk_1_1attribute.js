@@ -5,6 +5,7 @@ var namespacewmtk_1_1attribute =
     [ "utils", "namespacewmtk_1_1attribute_1_1utils.html", [
       [ "variant_comparison", "namespacewmtk_1_1attribute_1_1utils.html#a6be616511f9aab8df651eedc02e313c3", null ]
     ] ],
+    [ "Accessor", "classwmtk_1_1attribute_1_1_accessor.html", "classwmtk_1_1attribute_1_1_accessor" ],
     [ "Attribute", "classwmtk_1_1attribute_1_1_attribute.html", "classwmtk_1_1attribute_1_1_attribute" ],
     [ "MeshAttributes", "classwmtk_1_1attribute_1_1_mesh_attributes.html", "classwmtk_1_1attribute_1_1_mesh_attributes" ],
     [ "AccessorCache", "classwmtk_1_1attribute_1_1_accessor_cache.html", null ],
@@ -13,15 +14,12 @@ var namespacewmtk_1_1attribute =
     [ "AttributeScopeStack", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html", "classwmtk_1_1attribute_1_1_attribute_scope_stack" ],
     [ "AttributeCache", "classwmtk_1_1attribute_1_1_attribute_cache.html", "classwmtk_1_1attribute_1_1_attribute_cache" ],
     [ "AttributeCacheData", "classwmtk_1_1attribute_1_1_attribute_cache_data.html", "classwmtk_1_1attribute_1_1_attribute_cache_data" ],
-    [ "TupleAccessor", "classwmtk_1_1attribute_1_1_tuple_accessor.html", "classwmtk_1_1attribute_1_1_tuple_accessor" ],
     [ "TypedAttributeHandle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", "classwmtk_1_1attribute_1_1_typed_attribute_handle" ],
     [ "AttributeHandle", "classwmtk_1_1attribute_1_1_attribute_handle.html", "classwmtk_1_1attribute_1_1_attribute_handle" ],
     [ "AttributeManager", "classwmtk_1_1attribute_1_1_attribute_manager.html", "classwmtk_1_1attribute_1_1_attribute_manager" ],
     [ "CachingAccessor", "classwmtk_1_1attribute_1_1_caching_accessor.html", "classwmtk_1_1attribute_1_1_caching_accessor" ],
     [ "AttributeScope", "classwmtk_1_1attribute_1_1_attribute_scope.html", "classwmtk_1_1attribute_1_1_attribute_scope" ],
     [ "AttributeScopeHandle", "classwmtk_1_1attribute_1_1_attribute_scope_handle.html", "classwmtk_1_1attribute_1_1_attribute_scope_handle" ],
-    [ "ConstAccessor", "classwmtk_1_1attribute_1_1_const_accessor.html", "classwmtk_1_1attribute_1_1_const_accessor" ],
-    [ "MutableAccessor", "classwmtk_1_1attribute_1_1_mutable_accessor.html", "classwmtk_1_1attribute_1_1_mutable_accessor" ],
     [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", "classwmtk_1_1attribute_1_1_mesh_attribute_handle" ],
     [ "TypedAttributeHandleVariant", "namespacewmtk_1_1attribute.html#a2a97cd6d5cc8e135301c4304414cf24d", null ]
 ];

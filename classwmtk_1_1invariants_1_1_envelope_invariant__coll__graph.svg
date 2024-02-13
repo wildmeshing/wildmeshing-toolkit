@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 1541;
+var viewWidth = 1552;
 var viewHeight = 274;
 var sectionId = 'dynsection-1';
 </script>
@@ -58,9 +58,9 @@ var sectionId = 'dynsection-1';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="1383,-11.5 1383,-41.5 1533,-41.5 1533,-11.5 1383,-11.5"/>
-<text text-anchor="start" x="1391" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::invariants::Envelope</text>
-<text text-anchor="middle" x="1458" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">Invariant</text>
+<polygon fill="#bfbfbf" stroke="black" points="1394,-11.5 1394,-41.5 1544,-41.5 1544,-11.5 1394,-11.5"/>
+<text text-anchor="start" x="1402" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::invariants::Envelope</text>
+<text text-anchor="middle" x="1469" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">Invariant</text>
 </a>
 </g>
 </g>
@@ -68,16 +68,16 @@ var sectionId = 'dynsection-1';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classwmtk_1_1invariants_1_1_invariant.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="1197,-195 1197,-214 1346,-214 1346,-195 1197,-195"/>
-<text text-anchor="middle" x="1271.5" y="-202" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::invariants::Invariant</text>
+<polygon fill="none" stroke="black" points="1202.5,-196 1202.5,-215 1351.5,-215 1351.5,-196 1202.5,-196"/>
+<text text-anchor="middle" x="1277" y="-203" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::invariants::Invariant</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M1297.77,-189.6C1312.52,-180.36 1331.1,-167.75 1346,-154.5 1386.88,-118.14 1426.95,-67.05 1445.81,-41.82"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="1295.84,-186.68 1289.15,-194.9 1299.5,-192.65 1295.84,-186.68"/>
+<path fill="none" stroke="midnightblue" d="M1306.89,-190.9C1322.54,-182.29 1341.74,-170.53 1357,-157.5 1399.61,-121.1 1439.5,-67.51 1457.69,-41.61"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="1304.83,-188.03 1297.67,-195.84 1308.14,-194.2 1304.83,-188.03"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
@@ -91,24 +91,25 @@ var sectionId = 'dynsection-1';
 <!-- Node3&#45;&gt;Node2 -->
 <g id="edge2" class="edge">
 <title>Node3&#45;&gt;Node2</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M1027.42,-195.17C1036.24,-196.5 1045.38,-197.69 1054,-198.5 1101.36,-202.95 1154.78,-204.47 1196.7,-204.86"/>
-<polygon fill="#9a32cd" stroke="#9a32cd" points="1027.7,-191.67 1017.28,-193.58 1026.61,-198.59 1027.7,-191.67"/>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M1027.42,-195.15C1036.24,-196.47 1045.38,-197.67 1054,-198.5 1103.32,-203.23 1159.07,-204.98 1202.36,-205.54"/>
+<polygon fill="#9a32cd" stroke="#9a32cd" points="1027.7,-191.65 1017.28,-193.55 1026.61,-198.56 1027.7,-191.65"/>
 <text text-anchor="middle" x="1116.5" y="-207.5" font-family="Helvetica,sans-Serif" font-size="10.00"> m_mesh</text>
 </g>
 <!-- Node11 -->
 <g id="node11" class="node">
 <title>Node11</title>
-<g id="a_node11"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html" target="_top" xlink:title="Implementation details for how the Mesh class implements multiple meshes.">
-<polygon fill="none" stroke="black" points="1199.5,-126 1199.5,-145 1343.5,-145 1343.5,-126 1199.5,-126"/>
-<text text-anchor="middle" x="1271.5" y="-133" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
+<g id="a_node11"><a xlink:href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html" target="_top" xlink:title="Implementation details for how the Mesh class implements multiple meshes.">
+<polygon fill="none" stroke="black" points="1197,-118.5 1197,-148.5 1357,-148.5 1357,-118.5 1197,-118.5"/>
+<text text-anchor="start" x="1205" y="-136.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::MultiMesh</text>
+<text text-anchor="middle" x="1277" y="-125.5" font-family="Helvetica,sans-Serif" font-size="10.00">Manager</text>
 </a>
 </g>
 </g>
 <!-- Node3&#45;&gt;Node11 -->
 <g id="edge14" class="edge">
 <title>Node3&#45;&gt;Node11</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M1004.44,-171.97C1018.52,-164.5 1036.7,-156.04 1054,-151.5 1101.39,-139.07 1156.48,-135.14 1199.23,-134.28"/>
-<polygon fill="#9a32cd" stroke="#9a32cd" points="1002.5,-169.04 995.42,-176.92 1005.87,-175.18 1002.5,-169.04"/>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M1004.46,-172.02C1018.53,-164.56 1036.72,-156.1 1054,-151.5 1100.34,-139.17 1153.87,-134.56 1196.76,-133.09"/>
+<polygon fill="#9a32cd" stroke="#9a32cd" points="1002.52,-169.08 995.43,-176.95 1005.88,-175.23 1002.52,-169.08"/>
 <text text-anchor="middle" x="1116.5" y="-154.5" font-family="Helvetica,sans-Serif" font-size="10.00"> m_parent</text>
 </g>
 <!-- Node4 -->
@@ -161,7 +162,7 @@ var sectionId = 'dynsection-1';
 <!-- Node5&#45;&gt;Node11 -->
 <g id="edge12" class="edge">
 <title>Node5&#45;&gt;Node11</title>
-<path fill="none" stroke="midnightblue" d="M459.15,-152.77C596.07,-146.87 842.87,-137.12 1054,-133.5 1109.55,-132.55 1123.45,-132.89 1179,-133.5 1185.51,-133.57 1192.29,-133.67 1199.07,-133.79"/>
+<path fill="none" stroke="midnightblue" d="M459.15,-152.77C596.07,-146.87 842.87,-137.12 1054,-133.5 1101.4,-132.69 1154.5,-132.66 1196.88,-132.84"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="458.92,-149.28 449.08,-153.21 459.22,-156.27 458.92,-149.28"/>
 </g>
 <!-- Node6 -->
@@ -206,9 +207,9 @@ var sectionId = 'dynsection-1';
 <!-- Node8&#45;&gt;Node11 -->
 <g id="edge13" class="edge">
 <title>Node8&#45;&gt;Node11</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M725.16,-60.8C835.21,-62.86 1022.23,-71.67 1179,-105.5 1202.2,-110.51 1227.82,-119.19 1246.03,-125.93"/>
-<polygon fill="#9a32cd" stroke="#9a32cd" points="725.14,-57.3 715.08,-60.63 725.02,-64.3 725.14,-57.3"/>
-<text text-anchor="middle" x="978.5" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00"> map_to_parent_handle</text>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M725.43,-61.81C835.35,-64.82 1021.88,-74.52 1179,-105.5 1195.85,-108.82 1214.02,-113.7 1230.02,-118.46"/>
+<polygon fill="#9a32cd" stroke="#9a32cd" points="725.45,-58.31 715.37,-61.55 725.27,-65.31 725.45,-58.31"/>
+<text text-anchor="middle" x="978.5" y="-86.5" font-family="Helvetica,sans-Serif" font-size="10.00"> map_to_parent_handle</text>
 </g>
 <!-- Node9 -->
 <g id="node9" class="node">
@@ -264,15 +265,15 @@ var sectionId = 'dynsection-1';
 <!-- Node11&#45;&gt;Node3 -->
 <g id="edge11" class="edge">
 <title>Node11&#45;&gt;Node3</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M1234.92,-148.58C1218.16,-154.27 1197.77,-160.53 1179,-164.5 1123.43,-176.25 1057.75,-181.96 1017.36,-184.55"/>
-<polygon fill="#9a32cd" stroke="#9a32cd" points="1236.54,-151.72 1244.83,-145.13 1234.24,-145.11 1236.54,-151.72"/>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M1225.04,-151.89C1210.34,-156.62 1194.17,-161.27 1179,-164.5 1123.44,-176.32 1057.76,-182 1017.36,-184.58"/>
+<polygon fill="#9a32cd" stroke="#9a32cd" points="1226.55,-155.08 1234.95,-148.62 1224.36,-148.43 1226.55,-155.08"/>
 <text text-anchor="middle" x="1116.5" y="-185.5" font-family="Helvetica,sans-Serif" font-size="10.00"> m_multi_mesh_manager</text>
 </g>
 <!-- Node12&#45;&gt;Node1 -->
 <g id="edge15" class="edge">
 <title>Node12&#45;&gt;Node1</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M913.22,-17.12C1040.88,-19.33 1266.21,-23.21 1382.67,-25.22"/>
-<polygon fill="#9a32cd" stroke="#9a32cd" points="913.12,-13.62 903.06,-16.95 913,-20.62 913.12,-13.62"/>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M913.52,-17.1C1043.56,-19.31 1274.98,-23.23 1393.51,-25.24"/>
+<polygon fill="#9a32cd" stroke="#9a32cd" points="913.24,-13.6 903.18,-16.93 913.12,-20.6 913.24,-13.6"/>
 <text text-anchor="middle" x="1116.5" y="-25.5" font-family="Helvetica,sans-Serif" font-size="10.00"> m_coordinate_handle</text>
 </g>
 </g>

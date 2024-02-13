@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 1288;
+var viewWidth = 1304;
 var viewHeight = 198;
 var sectionId = 'dynsection-1';
 </script>
@@ -66,16 +66,17 @@ var sectionId = 'dynsection-1';
 <!-- Node9 -->
 <g id="node9" class="node">
 <title>Node9</title>
-<g id="a_node9"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html" target="_top" xlink:title="Implementation details for how the Mesh class implements multiple meshes.">
-<polygon fill="none" stroke="black" points="1136,-86 1136,-105 1280,-105 1280,-86 1136,-86"/>
-<text text-anchor="middle" x="1208" y="-93" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
+<g id="a_node9"><a xlink:href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html" target="_top" xlink:title="Implementation details for how the Mesh class implements multiple meshes.">
+<polygon fill="none" stroke="black" points="1136,-80.5 1136,-110.5 1296,-110.5 1296,-80.5 1136,-80.5"/>
+<text text-anchor="start" x="1144" y="-98.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::MultiMesh</text>
+<text text-anchor="middle" x="1216" y="-87.5" font-family="Helvetica,sans-Serif" font-size="10.00">Manager</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node9 -->
 <g id="edge12" class="edge">
 <title>Node1&#45;&gt;Node9</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M966.04,-84.47C974.95,-82.82 984.22,-81.37 993,-80.5 1048.28,-74.99 1062.64,-75.87 1118,-80.5 1131.43,-81.62 1145.88,-83.69 1159.15,-85.93"/>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M966.04,-84.47C974.95,-82.82 984.22,-81.37 993,-80.5 1048.28,-74.99 1062.61,-76.24 1118,-80.5 1123.86,-80.95 1129.91,-81.55 1135.97,-82.26"/>
 <polygon fill="#9a32cd" stroke="#9a32cd" points="965.32,-81.04 956.18,-86.4 966.67,-87.91 965.32,-81.04"/>
 <text text-anchor="middle" x="1055.5" y="-83.5" font-family="Helvetica,sans-Serif" font-size="10.00"> m_parent</text>
 </g>
@@ -129,7 +130,7 @@ var sectionId = 'dynsection-1';
 <!-- Node3&#45;&gt;Node9 -->
 <g id="edge10" class="edge">
 <title>Node3&#45;&gt;Node9</title>
-<path fill="none" stroke="midnightblue" d="M382.53,-122.36C419.14,-139.3 485.07,-167.01 545,-177.5 788.55,-220.14 1086.31,-134.63 1178.46,-105.06"/>
+<path fill="none" stroke="midnightblue" d="M382.53,-122.36C419.14,-139.3 485.07,-167.01 545,-177.5 777.59,-218.23 1059.13,-144.04 1168.46,-110.6"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="383.99,-119.18 373.45,-118.1 381.02,-125.52 383.99,-119.18"/>
 </g>
 <!-- Node4 -->
@@ -174,7 +175,7 @@ var sectionId = 'dynsection-1';
 <!-- Node6&#45;&gt;Node9 -->
 <g id="edge11" class="edge">
 <title>Node6&#45;&gt;Node9</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M725.24,-19.97C761.76,-22.17 803.89,-25.28 842,-29.5 965.39,-43.18 996.42,-47.38 1118,-72.5 1136.44,-76.31 1156.79,-81.49 1173.37,-85.98"/>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M725.24,-19.97C761.76,-22.17 803.89,-25.28 842,-29.5 965.39,-43.18 996.17,-48.6 1118,-72.5 1129.97,-74.85 1142.71,-77.65 1154.88,-80.47"/>
 <polygon fill="#9a32cd" stroke="#9a32cd" points="725.28,-16.47 715.09,-19.37 724.87,-23.45 725.28,-16.47"/>
 <text text-anchor="middle" x="917.5" y="-49.5" font-family="Helvetica,sans-Serif" font-size="10.00"> map_to_parent_handle</text>
 </g>
@@ -215,8 +216,8 @@ var sectionId = 'dynsection-1';
 <!-- Node9&#45;&gt;Node1 -->
 <g id="edge9" class="edge">
 <title>Node9&#45;&gt;Node1</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M1125.57,-95.5C1070.01,-95.5 998.99,-95.5 956.22,-95.5"/>
-<polygon fill="#9a32cd" stroke="#9a32cd" points="1125.76,-99 1135.76,-95.5 1125.76,-92 1125.76,-99"/>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M1125.69,-95.5C1068.95,-95.5 998.46,-95.5 956.05,-95.5"/>
+<polygon fill="#9a32cd" stroke="#9a32cd" points="1125.75,-99 1135.75,-95.5 1125.75,-92 1125.75,-99"/>
 <text text-anchor="middle" x="1055.5" y="-98.5" font-family="Helvetica,sans-Serif" font-size="10.00"> m_multi_mesh_manager</text>
 </g>
 </g>

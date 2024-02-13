@@ -70,16 +70,17 @@
 <!-- Node12 -->
 <g id="node12" class="node">
 <title>Node12</title>
-<g id="a_node12"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html" target="_top" xlink:title="Implementation details for how the Mesh class implements multiple meshes.">
-<polygon fill="none" stroke="black" points="1147.5,-125 1147.5,-144 1291.5,-144 1291.5,-125 1147.5,-125"/>
-<text text-anchor="middle" x="1219.5" y="-132" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
+<g id="a_node12"><a xlink:href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html" target="_top" xlink:title="Implementation details for how the Mesh class implements multiple meshes.">
+<polygon fill="none" stroke="black" points="1139.5,-119.5 1139.5,-149.5 1299.5,-149.5 1299.5,-119.5 1139.5,-119.5"/>
+<text text-anchor="start" x="1147.5" y="-137.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::MultiMesh</text>
+<text text-anchor="middle" x="1219.5" y="-126.5" font-family="Helvetica,sans-Serif" font-size="10.00">Manager</text>
 </a>
 </g>
 </g>
 <!-- Node4&#45;&gt;Node12 -->
 <g id="edge15" class="edge">
 <title>Node4&#45;&gt;Node12</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M966.13,-81.28C1006.97,-77.36 1067.08,-74.97 1118,-86.5 1150.62,-93.89 1185.05,-113.21 1203.95,-124.97"/>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M966.13,-81.28C1006.97,-77.36 1067.08,-74.97 1118,-86.5 1145.91,-92.82 1175.14,-107.88 1194.83,-119.46"/>
 <polygon fill="#9a32cd" stroke="#9a32cd" points="965.77,-77.8 956.18,-82.3 966.49,-84.76 965.77,-77.8"/>
 <text text-anchor="middle" x="1055.5" y="-89.5" font-family="Helvetica,sans-Serif" font-size="10.00"> m_parent</text>
 </g>
@@ -133,7 +134,7 @@
 <!-- Node6&#45;&gt;Node12 -->
 <g id="edge13" class="edge">
 <title>Node6&#45;&gt;Node12</title>
-<path fill="none" stroke="midnightblue" d="M422.73,-114.51C459,-119.8 504.29,-125.62 545,-128.5 763.99,-144 1024.02,-139.99 1147.11,-136.75"/>
+<path fill="none" stroke="midnightblue" d="M422.73,-114.51C459,-119.8 504.29,-125.62 545,-128.5 759.47,-143.68 1013.31,-140.15 1139.32,-136.95"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="423.16,-111.03 412.76,-113.03 422.14,-117.96 423.16,-111.03"/>
 </g>
 <!-- Node7 -->
@@ -178,7 +179,7 @@
 <!-- Node9&#45;&gt;Node12 -->
 <g id="edge14" class="edge">
 <title>Node9&#45;&gt;Node12</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M725.41,-196.54C823.99,-193.27 982.78,-184.59 1118,-161.5 1142.22,-157.36 1169.07,-150 1188.92,-144.01"/>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M725.41,-196.54C823.99,-193.27 982.78,-184.59 1118,-161.5 1135.1,-158.58 1153.5,-154.05 1169.83,-149.54"/>
 <polygon fill="#9a32cd" stroke="#9a32cd" points="725.05,-193.05 715.17,-196.86 725.28,-200.04 725.05,-193.05"/>
 <text text-anchor="middle" x="917.5" y="-192.5" font-family="Helvetica,sans-Serif" font-size="10.00"> map_to_parent_handle</text>
 </g>
@@ -219,8 +220,8 @@
 <!-- Node12&#45;&gt;Node4 -->
 <g id="edge12" class="edge">
 <title>Node12&#45;&gt;Node4</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M1146.19,-123.38C1101.94,-116.56 1044.19,-107.59 993,-99.5 980.97,-97.6 967.84,-95.49 956.01,-93.59"/>
-<polygon fill="#9a32cd" stroke="#9a32cd" points="1145.85,-126.87 1156.27,-124.94 1146.92,-119.96 1145.85,-126.87"/>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M1129.36,-120.78C1087.89,-114.37 1037.92,-106.6 993,-99.5 980.97,-97.6 967.84,-95.49 956.01,-93.59"/>
+<polygon fill="#9a32cd" stroke="#9a32cd" points="1129.01,-124.27 1139.43,-122.34 1130.08,-117.35 1129.01,-124.27"/>
 <text text-anchor="middle" x="1055.5" y="-121.5" font-family="Helvetica,sans-Serif" font-size="10.00"> m_multi_mesh_manager</text>
 </g>
 </g>

@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: src/wmtk/Accessor.hpp File Reference</title>
+<title>Wildmeshing Toolkit: src/wmtk/attribute/Accessor.hpp File Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -112,15 +112,14 @@ $(document).ready(function(){initNavTree('_accessor_8hpp.html',''); initResizabl
 
 <div class="header">
   <div class="summary">
-<a href="#namespaces">Namespaces</a> &#124;
-<a href="#typedef-members">Typedefs</a>  </div>
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#namespaces">Namespaces</a>  </div>
   <div class="headertitle">
 <div class="title">Accessor.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &quot;<a class="el" href="_const_accessor_8hpp_source.html">attribute/ConstAccessor.hpp</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="_mutable_accessor_8hpp_source.html">attribute/MutableAccessor.hpp</a>&quot;</code><br />
-<code>#include &lt;Eigen/Dense&gt;</code><br />
+<div class="textblock"><code>#include &quot;<a class="el" href="_caching_accessor_8hpp_source.html">CachingAccessor.hpp</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="_accessor_8hxx_source.html">Accessor.hxx</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for Accessor.hpp:</div>
 <div class="dyncontent">
@@ -130,25 +129,26 @@ Include dependency graph for Accessor.hpp:</div>
 </div><div class="textblock"><div class="dynheader">
 This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="_accessor_8hpp__dep__incl.svg" width="100%" height="551"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="_accessor_8hpp__dep__incl.svg" width="100%" height="562"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 </div>
 <p><a href="_accessor_8hpp_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor&lt; T &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html" title="An accessor for cached attribute values.">CachingAccessor</a> that uses tuples for accessing attributes instead of indices.  <a href="classwmtk_1_1attribute_1_1_accessor.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespacewmtk"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html">wmtk</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
-Typedefs</h2></td></tr>
-<tr class="memitem:a5a432444d747beb39551fbf5a9adb5c8"><td class="memTemplParams" colspan="2">template&lt;typename T , bool IsConst = false&gt; </td></tr>
-<tr class="memitem:a5a432444d747beb39551fbf5a9adb5c8"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">wmtk::Accessor</a> = std::conditional_t&lt; IsConst, attribute::ConstAccessor&lt; T &gt;, attribute::MutableAccessor&lt; T &gt; &gt;</td></tr>
-<tr class="separator:a5a432444d747beb39551fbf5a9adb5c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a055d7d636c926ff4ce67816f0bd6b501"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a055d7d636c926ff4ce67816f0bd6b501"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">wmtk::ConstAccessor</a> = Accessor&lt; T, true &gt;</td></tr>
-<tr class="separator:a055d7d636c926ff4ce67816f0bd6b501"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespacewmtk_1_1tests"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1tests.html">wmtk::tests</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespacewmtk_1_1attribute"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute.html">wmtk::attribute</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -156,7 +156,7 @@ Typedefs</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="_accessor_8hpp.html">Accessor.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_f2a03d151d5632e9cfdfcc5fe4223b5a.html">attribute</a></li><li class="navelem"><a class="el" href="_accessor_8hpp.html">Accessor.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

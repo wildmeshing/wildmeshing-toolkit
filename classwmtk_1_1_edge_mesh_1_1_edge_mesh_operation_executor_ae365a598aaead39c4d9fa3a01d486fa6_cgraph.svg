@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 506;
+var viewWidth = 684;
 var viewHeight = 78;
 var sectionId = 'dynsection-5';
 </script>
@@ -80,19 +80,19 @@ var sectionId = 'dynsection-5';
 <path fill="none" stroke="midnightblue" d="M165.02,-46.99C173.57,-47.98 182.26,-49 190.81,-49.99"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="190.42,-53.47 200.76,-51.15 191.23,-46.52 190.42,-53.47"/>
 </g>
-<!-- Node4 -->
-<g id="node4" class="node">
-<title>Node4</title>
-<g id="a_node4"><a xlink:href="classwmtk_1_1_edge_mesh.html#a90181e4a8ae3981f82ac6620fe978fc5" target="_top" xlink:title=" ">
+<!-- Node5 -->
+<g id="node5" class="node">
+<title>Node5</title>
+<g id="a_node5"><a xlink:href="classwmtk_1_1_edge_mesh.html#a90181e4a8ae3981f82ac6620fe978fc5" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="215.5,-0.5 215.5,-30.5 331.5,-30.5 331.5,-0.5 215.5,-0.5"/>
 <text text-anchor="start" x="223.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::EdgeMesh::id</text>
 <text text-anchor="middle" x="273.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex</text>
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node4 -->
-<g id="edge3" class="edge">
-<title>Node1&#45;&gt;Node4</title>
+<!-- Node1&#45;&gt;Node5 -->
+<g id="edge4" class="edge">
+<title>Node1&#45;&gt;Node5</title>
 <path fill="none" stroke="midnightblue" d="M165.02,-28.01C178.43,-26.45 192.18,-24.85 205.19,-23.34"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="205.91,-26.78 215.44,-22.14 205.1,-19.82 205.91,-26.78"/>
 </g>
@@ -111,9 +111,25 @@ var sectionId = 'dynsection-5';
 <path fill="none" stroke="midnightblue" d="M345.7,-49.98C354.37,-48.82 363.21,-47.64 371.83,-46.48"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="372.36,-49.94 381.81,-45.15 371.43,-43.01 372.36,-49.94"/>
 </g>
-<!-- Node4&#45;&gt;Node3 -->
-<g id="edge4" class="edge">
-<title>Node4&#45;&gt;Node3</title>
+<!-- Node4 -->
+<g id="node4" class="node">
+<title>Node4</title>
+<g id="a_node4"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#a3383f6fb2e0708b23af38a9e53445b19" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="534,-22.5 534,-52.5 676,-52.5 676,-22.5 534,-22.5"/>
+<text text-anchor="start" x="542" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
+<text text-anchor="middle" x="605" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">::const_vector_attribute</text>
+</a>
+</g>
+</g>
+<!-- Node3&#45;&gt;Node4 -->
+<g id="edge3" class="edge">
+<title>Node3&#45;&gt;Node4</title>
+<path fill="none" stroke="midnightblue" d="M498.01,-37.5C506.32,-37.5 515.01,-37.5 523.68,-37.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="523.83,-41 533.83,-37.5 523.83,-34 523.83,-41"/>
+</g>
+<!-- Node5&#45;&gt;Node3 -->
+<g id="edge5" class="edge">
+<title>Node5&#45;&gt;Node3</title>
 <path fill="none" stroke="midnightblue" d="M331.57,-23.13C344.51,-24.86 358.37,-26.72 371.69,-28.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="371.37,-31.99 381.75,-29.84 372.3,-25.05 371.37,-31.99"/>
 </g>

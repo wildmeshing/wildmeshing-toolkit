@@ -101,7 +101,7 @@
 <!-- Node8 -->
 <g id="node8" class="node">
 <title>Node8</title>
-<g id="a_node8"><a xlink:href="namespacewmtk_1_1mesh__utils.html#ac2823af971ffb1bcc214f81559d8a584" target="_top" xlink:title="compute the normalized vertex normal from the incident area weighted face normals">
+<g id="a_node8"><a xlink:href="namespacewmtk_1_1mesh__utils.html#ace9d707a188783f870a878d0623418d0" target="_top" xlink:title="compute the normalized vertex normal from the incident area weighted face normals">
 <polygon fill="none" stroke="black" points="385.5,-1029 385.5,-1059 537.5,-1059 537.5,-1029 385.5,-1029"/>
 <text text-anchor="start" x="393.5" y="-1047" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::mesh_utils::compute</text>
 <text text-anchor="middle" x="461.5" y="-1036" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex_normal</text>
@@ -408,7 +408,7 @@
 <!-- Node36 -->
 <g id="node36" class="node">
 <title>Node36</title>
-<g id="a_node36"><a xlink:href="namespacewmtk_1_1operations_1_1utils.html#a02d04aef5d974c2e0f204ed036773e88" target="_top" xlink:title=" ">
+<g id="a_node36"><a xlink:href="namespacewmtk_1_1operations_1_1utils.html#a62fab811bf86bb7a2702f63304574002" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="389,-60.5 389,-101.5 534,-101.5 534,-60.5 389,-60.5"/>
 <text text-anchor="start" x="397" y="-89.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::utils</text>
 <text text-anchor="start" x="397" y="-78.5" font-family="Helvetica,sans-Serif" font-size="10.00">::update_vertex_operation</text>
@@ -425,18 +425,18 @@
 <!-- Node37 -->
 <g id="node37" class="node">
 <title>Node37</title>
-<g id="a_node37"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a4f75c13c6e1e4531f605e1cae19a86c0" target="_top" xlink:title="update all the hashes of the top&#45;simplces of the parent mesh around a vertex hashes of the parent tup...">
-<polygon fill="none" stroke="black" points="389,-0.5 389,-41.5 534,-41.5 534,-0.5 389,-0.5"/>
-<text text-anchor="start" x="397" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
-<text text-anchor="start" x="397" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">::update_vertex_operation</text>
-<text text-anchor="middle" x="461.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_hashes_internal</text>
+<g id="a_node37"><a xlink:href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#af971c830121bdd645f1bf3fc28aa76dd" target="_top" xlink:title="update all the hashes of the top&#45;simplces of the parent mesh around a vertex hashes of the parent tup...">
+<polygon fill="none" stroke="black" points="381.5,-0.5 381.5,-41.5 541.5,-41.5 541.5,-0.5 381.5,-0.5"/>
+<text text-anchor="start" x="389.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::MultiMesh</text>
+<text text-anchor="start" x="389.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">Manager::update_vertex</text>
+<text text-anchor="middle" x="461.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_operation_hashes_internal</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node37 -->
 <g id="edge37" class="edge">
 <title>Node1&#45;&gt;Node37</title>
-<path fill="none" stroke="midnightblue" d="M663.65,-627.85C659.67,-525.16 639.69,-138.99 562,-51 554.48,-42.48 544.63,-36.34 534.06,-31.91"/>
+<path fill="none" stroke="midnightblue" d="M663.65,-627.85C659.67,-525.16 639.69,-138.99 562,-51 556.39,-44.64 549.48,-39.61 541.95,-35.63"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="660.15,-628.05 664.02,-637.91 667.15,-627.79 660.15,-628.05"/>
 </g>
 <!-- Node5 -->
@@ -610,7 +610,7 @@
 <!-- Node38 -->
 <g id="node38" class="node">
 <title>Node38</title>
-<g id="a_node38"><a xlink:href="classwmtk_1_1_mesh.html#ad303dff226282b38e9110fb6d1c4c853" target="_top" xlink:title="wrapper function to update hashes (for parent mesh *this and its child meshes) after vertex operation...">
+<g id="a_node38"><a xlink:href="classwmtk_1_1_mesh.html#a0b6f79f2dffa07d93a342306abd28b7e" target="_top" xlink:title="wrapper function to update hashes (for parent mesh *this and its child meshes) after vertex operation...">
 <polygon fill="none" stroke="black" points="164.5,-6 164.5,-36 309.5,-36 309.5,-6 164.5,-6"/>
 <text text-anchor="start" x="172.5" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::update</text>
 <text text-anchor="middle" x="237" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex_operation_hashes</text>
@@ -620,8 +620,8 @@
 <!-- Node37&#45;&gt;Node38 -->
 <g id="edge38" class="edge">
 <title>Node37&#45;&gt;Node38</title>
-<path fill="none" stroke="midnightblue" d="M378.65,-21C356.1,-21 331.81,-21 309.87,-21"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="378.87,-24.5 388.87,-21 378.87,-17.5 378.87,-24.5"/>
+<path fill="none" stroke="midnightblue" d="M371.18,-21C350.77,-21 329.34,-21 309.77,-21"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="371.43,-24.5 381.43,-21 371.43,-17.5 371.43,-24.5"/>
 </g>
 </g>
 </svg>

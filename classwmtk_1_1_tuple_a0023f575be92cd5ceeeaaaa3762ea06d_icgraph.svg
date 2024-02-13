@@ -66,7 +66,7 @@ var sectionId = 'dynsection-1';
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="classwmtk_1_1_edge_mesh.html#aaa973d1028770ea659e08051a19d1087" target="_top" xlink:title="check validity of tuple including its hash">
+<g id="a_node2"><a xlink:href="classwmtk_1_1_edge_mesh.html#a566cd5b0f3adad310bd9818f14c99127" target="_top" xlink:title="check validity of tuple including its hash">
 <polygon fill="none" stroke="black" points="697,-370 697,-400 812,-400 812,-370 697,-370"/>
 <text text-anchor="start" x="705" y="-388" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::EdgeMesh::is</text>
 <text text-anchor="middle" x="754.5" y="-377" font-family="Helvetica,sans-Serif" font-size="10.00">_valid</text>
@@ -82,7 +82,7 @@ var sectionId = 'dynsection-1';
 <!-- Node10 -->
 <g id="node10" class="node">
 <title>Node10</title>
-<g id="a_node10"><a xlink:href="classwmtk_1_1_point_mesh.html#a3a914e84ad61b92d0474427329bbb0fb" target="_top" xlink:title="check validity of tuple including its hash">
+<g id="a_node10"><a xlink:href="classwmtk_1_1_point_mesh.html#a0980f13437ffde9fb6b7d4e471cd7c43" target="_top" xlink:title="check validity of tuple including its hash">
 <polygon fill="none" stroke="black" points="696.5,-270 696.5,-300 812.5,-300 812.5,-270 696.5,-270"/>
 <text text-anchor="start" x="704.5" y="-288" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::PointMesh::is</text>
 <text text-anchor="middle" x="754.5" y="-277" font-family="Helvetica,sans-Serif" font-size="10.00">_valid</text>
@@ -98,7 +98,7 @@ var sectionId = 'dynsection-1';
 <!-- Node11 -->
 <g id="node11" class="node">
 <title>Node11</title>
-<g id="a_node11"><a xlink:href="classwmtk_1_1_tet_mesh.html#ac021ae8290eda4fbad7ab4b742072084" target="_top" xlink:title="check validity of tuple including its hash">
+<g id="a_node11"><a xlink:href="classwmtk_1_1_tet_mesh.html#a00f58e4c8511772b9579da1ffecbe28d" target="_top" xlink:title="check validity of tuple including its hash">
 <polygon fill="none" stroke="black" points="687.5,-231.5 687.5,-250.5 821.5,-250.5 821.5,-231.5 687.5,-231.5"/>
 <text text-anchor="middle" x="754.5" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::is_valid</text>
 </a>
@@ -113,7 +113,7 @@ var sectionId = 'dynsection-1';
 <!-- Node17 -->
 <g id="node17" class="node">
 <title>Node17</title>
-<g id="a_node17"><a xlink:href="classwmtk_1_1_tri_mesh.html#aed8cb26ee1436707bf26d811aa5e12c6" target="_top" xlink:title="check validity of tuple including its hash">
+<g id="a_node17"><a xlink:href="classwmtk_1_1_tri_mesh.html#a19371b398882cd97e736b811487b566a" target="_top" xlink:title="check validity of tuple including its hash">
 <polygon fill="none" stroke="black" points="689,-158.5 689,-177.5 820,-177.5 820,-158.5 689,-158.5"/>
 <text text-anchor="middle" x="754.5" y="-165.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TriMesh::is_valid</text>
 </a>
@@ -145,10 +145,10 @@ var sectionId = 'dynsection-1';
 <!-- Node28 -->
 <g id="node28" class="node">
 <title>Node28</title>
-<g id="a_node28"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a26c3aa0f1dc8a6e3462ad447053836cf" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="678,-21 678,-51 831,-51 831,-21 678,-21"/>
-<text text-anchor="start" x="686" y="-39" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
-<text text-anchor="middle" x="754.5" y="-28" font-family="Helvetica,sans-Serif" font-size="10.00">::update_map_tuple_hashes</text>
+<g id="a_node28"><a xlink:href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#abe80ff5ed63ac45969a4d7d087a5ffd8" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="656.5,-21 656.5,-51 852.5,-51 852.5,-21 656.5,-21"/>
+<text text-anchor="start" x="664.5" y="-39" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::MultiMesh</text>
+<text text-anchor="middle" x="754.5" y="-28" font-family="Helvetica,sans-Serif" font-size="10.00">Manager::update_map_tuple_hashes</text>
 </a>
 </g>
 </g>
@@ -538,8 +538,8 @@ var sectionId = 'dynsection-1';
 <!-- Node28&#45;&gt;Node29 -->
 <g id="edge32" class="edge">
 <title>Node28&#45;&gt;Node29</title>
-<path fill="none" stroke="midnightblue" d="M667.95,-31.44C651.7,-30.57 634.65,-29.66 618.27,-28.79"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="667.78,-34.93 677.95,-31.97 668.15,-27.94 667.78,-34.93"/>
+<path fill="none" stroke="midnightblue" d="M646.26,-30.28C636.85,-29.78 627.38,-29.27 618.13,-28.78"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="646.27,-33.79 656.45,-30.82 646.65,-26.8 646.27,-33.79"/>
 </g>
 <!-- Node29&#45;&gt;Node27 -->
 <g id="edge33" class="edge">

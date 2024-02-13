@@ -48,7 +48,7 @@ if (edges && edges.length) {
 <script type="text/javascript">
 var viewWidth = 1006;
 var viewHeight = 1107;
-var sectionId = 'dynsection-139';
+var sectionId = 'dynsection-141';
 </script>
 <script xlink:href="svgpan.js"/>
 <svg id="graph" class="graph">
@@ -115,10 +115,10 @@ var sectionId = 'dynsection-139';
 <!-- Node7 -->
 <g id="node7" class="node">
 <title>Node7</title>
-<g id="a_node7"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a8b976bb8988f1222287c54e10e4366de" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="686.5,-921.5 686.5,-951.5 830.5,-951.5 830.5,-921.5 686.5,-921.5"/>
-<text text-anchor="start" x="694.5" y="-939.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
-<text text-anchor="middle" x="758.5" y="-928.5" font-family="Helvetica,sans-Serif" font-size="10.00">::check_child_map_valid</text>
+<g id="a_node7"><a xlink:href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ad1b3fcd12c4e092d9e92f2aa7db224bf" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="669,-921.5 669,-951.5 848,-951.5 848,-921.5 669,-921.5"/>
+<text text-anchor="start" x="677" y="-939.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::MultiMesh</text>
+<text text-anchor="middle" x="758.5" y="-928.5" font-family="Helvetica,sans-Serif" font-size="10.00">Manager::check_child_map_valid</text>
 </a>
 </g>
 </g>
@@ -131,7 +131,7 @@ var sectionId = 'dynsection-139';
 <!-- Node9 -->
 <g id="node9" class="node">
 <title>Node9</title>
-<g id="a_node9"><a xlink:href="namespacewmtk_1_1mesh__utils.html#a0b26ec4de523eb55599dfedbf85cb063" target="_top" xlink:title="compute area vector of face">
+<g id="a_node9"><a xlink:href="namespacewmtk_1_1mesh__utils.html#a07c6f8b4fe4d3bf868a521ac66aee027" target="_top" xlink:title="compute area vector of face">
 <polygon fill="none" stroke="black" points="678.5,-822.5 678.5,-852.5 838.5,-852.5 838.5,-822.5 678.5,-822.5"/>
 <text text-anchor="start" x="686.5" y="-840.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::mesh_utils::compute</text>
 <text text-anchor="middle" x="758.5" y="-829.5" font-family="Helvetica,sans-Serif" font-size="10.00">_face_normal_area_weighted</text>
@@ -147,7 +147,7 @@ var sectionId = 'dynsection-139';
 <!-- Node11 -->
 <g id="node11" class="node">
 <title>Node11</title>
-<g id="a_node11"><a xlink:href="namespacewmtk_1_1mesh__utils.html#ac2823af971ffb1bcc214f81559d8a584" target="_top" xlink:title="compute the normalized vertex normal from the incident area weighted face normals">
+<g id="a_node11"><a xlink:href="namespacewmtk_1_1mesh__utils.html#ace9d707a188783f870a878d0623418d0" target="_top" xlink:title="compute the normalized vertex normal from the incident area weighted face normals">
 <polygon fill="none" stroke="black" points="462.5,-784.5 462.5,-814.5 614.5,-814.5 614.5,-784.5 462.5,-784.5"/>
 <text text-anchor="start" x="470.5" y="-802.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::mesh_utils::compute</text>
 <text text-anchor="middle" x="538.5" y="-791.5" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex_normal</text>
@@ -195,7 +195,7 @@ var sectionId = 'dynsection-139';
 <!-- Node22 -->
 <g id="node22" class="node">
 <title>Node22</title>
-<g id="a_node22"><a xlink:href="namespacewmtk_1_1function_1_1utils.html#acfb83068ca74c3dbb9fd38a369220875" target="_top" xlink:title="get attributes from a simplex">
+<g id="a_node22"><a xlink:href="namespacewmtk_1_1function_1_1utils.html#a414ace6ff8b86a145a136650863a3952" target="_top" xlink:title="get attributes from a simplex">
 <polygon fill="none" stroke="black" points="244.5,-801.5 244.5,-831.5 379.5,-831.5 379.5,-801.5 244.5,-801.5"/>
 <text text-anchor="start" x="252.5" y="-819.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::utils</text>
 <text text-anchor="middle" x="312" y="-808.5" font-family="Helvetica,sans-Serif" font-size="10.00">::get_simplex_attributes</text>
@@ -463,23 +463,23 @@ var sectionId = 'dynsection-139';
 <!-- Node8 -->
 <g id="node8" class="node">
 <title>Node8</title>
-<g id="a_node8"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a6a85ae5901f9c5b6a383bc072f182a57" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="466.5,-921.5 466.5,-951.5 610.5,-951.5 610.5,-921.5 466.5,-921.5"/>
-<text text-anchor="start" x="474.5" y="-939.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
-<text text-anchor="middle" x="538.5" y="-928.5" font-family="Helvetica,sans-Serif" font-size="10.00">::check_map_valid</text>
+<g id="a_node8"><a xlink:href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a01d41f4e6fd9e1c07166ac2470068eaf" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="458.5,-921.5 458.5,-951.5 618.5,-951.5 618.5,-921.5 458.5,-921.5"/>
+<text text-anchor="start" x="466.5" y="-939.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::MultiMesh</text>
+<text text-anchor="middle" x="538.5" y="-928.5" font-family="Helvetica,sans-Serif" font-size="10.00">Manager::check_map_valid</text>
 </a>
 </g>
 </g>
 <!-- Node7&#45;&gt;Node8 -->
 <g id="edge7" class="edge">
 <title>Node7&#45;&gt;Node8</title>
-<path fill="none" stroke="midnightblue" d="M676.34,-936.5C654.84,-936.5 631.79,-936.5 610.86,-936.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="676.42,-940 686.42,-936.5 676.42,-933 676.42,-940"/>
+<path fill="none" stroke="midnightblue" d="M658.64,-936.5C645.23,-936.5 631.62,-936.5 618.63,-936.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="658.83,-940 668.83,-936.5 658.83,-933 658.83,-940"/>
 </g>
 <!-- Node10 -->
 <g id="node10" class="node">
 <title>Node10</title>
-<g id="a_node10"><a xlink:href="namespacewmtk_1_1mesh__utils.html#a963562e4c9266a9c9d7ed226ddcd9c81" target="_top" xlink:title="compute the normalized face normal based on the vertex positions">
+<g id="a_node10"><a xlink:href="namespacewmtk_1_1mesh__utils.html#a05b2e8377c52bd2da29a3b2c38bef90d" target="_top" xlink:title="compute the normalized face normal based on the vertex positions">
 <polygon fill="none" stroke="black" points="462.5,-833.5 462.5,-863.5 614.5,-863.5 614.5,-833.5 462.5,-833.5"/>
 <text text-anchor="start" x="470.5" y="-851.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::mesh_utils::compute</text>
 <text text-anchor="middle" x="538.5" y="-840.5" font-family="Helvetica,sans-Serif" font-size="10.00">_face_normal</text>
@@ -659,7 +659,7 @@ var sectionId = 'dynsection-139';
 <!-- Node23 -->
 <g id="node23" class="node">
 <title>Node23</title>
-<g id="a_node23"><a xlink:href="classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#af8302c72d52af67baf819ca0ffff24f6" target="_top" xlink:title=" ">
+<g id="a_node23"><a xlink:href="classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a2925164a2ef8ed1f86a9c07075972967" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="0,-825.5 0,-855.5 180,-855.5 180,-825.5 0,-825.5"/>
 <text text-anchor="start" x="8" y="-843.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
 <text text-anchor="middle" x="90" y="-832.5" font-family="Helvetica,sans-Serif" font-size="10.00">AutodiffFunction::get_coordinates</text>

@@ -129,7 +129,7 @@
 <!-- Node39 -->
 <g id="node37" class="node">
 <title>Node39</title>
-<g id="a_node37"><a xlink:href="namespacewmtk_1_1function_1_1utils.html#acfb83068ca74c3dbb9fd38a369220875" target="_top" xlink:title="get attributes from a simplex">
+<g id="a_node37"><a xlink:href="namespacewmtk_1_1function_1_1utils.html#a414ace6ff8b86a145a136650863a3952" target="_top" xlink:title="get attributes from a simplex">
 <polygon fill="none" stroke="black" points="661,-98.5 661,-128.5 796,-128.5 796,-98.5 661,-98.5"/>
 <text text-anchor="start" x="669" y="-116.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::utils</text>
 <text text-anchor="middle" x="728.5" y="-105.5" font-family="Helvetica,sans-Serif" font-size="10.00">::get_simplex_attributes</text>
@@ -256,7 +256,7 @@
 <!-- Node9 -->
 <g id="node9" class="node">
 <title>Node9</title>
-<g id="a_node9"><a xlink:href="namespacewmtk_1_1mesh__utils.html#ac2823af971ffb1bcc214f81559d8a584" target="_top" xlink:title="compute the normalized vertex normal from the incident area weighted face normals">
+<g id="a_node9"><a xlink:href="namespacewmtk_1_1mesh__utils.html#ace9d707a188783f870a878d0623418d0" target="_top" xlink:title="compute the normalized vertex normal from the incident area weighted face normals">
 <polygon fill="none" stroke="black" points="652.5,-846.5 652.5,-876.5 804.5,-876.5 804.5,-846.5 652.5,-846.5"/>
 <text text-anchor="start" x="660.5" y="-864.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::mesh_utils::compute</text>
 <text text-anchor="middle" x="728.5" y="-853.5" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex_normal</text>
@@ -334,7 +334,7 @@
 <!-- Node32 -->
 <g id="node30" class="node">
 <title>Node32</title>
-<g id="a_node30"><a xlink:href="namespacewmtk_1_1operations_1_1utils.html#a02d04aef5d974c2e0f204ed036773e88" target="_top" xlink:title=" ">
+<g id="a_node30"><a xlink:href="namespacewmtk_1_1operations_1_1utils.html#a62fab811bf86bb7a2702f63304574002" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="656,-710 656,-751 801,-751 801,-710 656,-710"/>
 <text text-anchor="start" x="664" y="-739" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::utils</text>
 <text text-anchor="start" x="664" y="-728" font-family="Helvetica,sans-Serif" font-size="10.00">::update_vertex_operation</text>
@@ -351,18 +351,18 @@
 <!-- Node33 -->
 <g id="node31" class="node">
 <title>Node33</title>
-<g id="a_node31"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a4f75c13c6e1e4531f605e1cae19a86c0" target="_top" xlink:title="update all the hashes of the top&#45;simplces of the parent mesh around a vertex hashes of the parent tup...">
-<polygon fill="none" stroke="black" points="656,-1043 656,-1084 801,-1084 801,-1043 656,-1043"/>
-<text text-anchor="start" x="664" y="-1072" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
-<text text-anchor="start" x="664" y="-1061" font-family="Helvetica,sans-Serif" font-size="10.00">::update_vertex_operation</text>
-<text text-anchor="middle" x="728.5" y="-1050" font-family="Helvetica,sans-Serif" font-size="10.00">_hashes_internal</text>
+<g id="a_node31"><a xlink:href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#af971c830121bdd645f1bf3fc28aa76dd" target="_top" xlink:title="update all the hashes of the top&#45;simplces of the parent mesh around a vertex hashes of the parent tup...">
+<polygon fill="none" stroke="black" points="648.5,-1043 648.5,-1084 808.5,-1084 808.5,-1043 648.5,-1043"/>
+<text text-anchor="start" x="656.5" y="-1072" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::MultiMesh</text>
+<text text-anchor="start" x="656.5" y="-1061" font-family="Helvetica,sans-Serif" font-size="10.00">Manager::update_vertex</text>
+<text text-anchor="middle" x="728.5" y="-1050" font-family="Helvetica,sans-Serif" font-size="10.00">_operation_hashes_internal</text>
 </a>
 </g>
 </g>
 <!-- Node3&#45;&gt;Node33 -->
 <g id="edge30" class="edge">
 <title>Node3&#45;&gt;Node33</title>
-<path fill="none" stroke="midnightblue" d="M948.28,-858.07C923.9,-901.73 861.98,-1009.08 829,-1033.5 820.66,-1039.67 811.05,-1044.59 801.16,-1048.5"/>
+<path fill="none" stroke="midnightblue" d="M948.28,-858.07C923.9,-901.73 861.98,-1009.08 829,-1033.5 822.77,-1038.12 815.82,-1042.03 808.57,-1045.35"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="951.34,-859.76 953.13,-849.32 945.22,-856.36 951.34,-859.76"/>
 </g>
 <!-- Node5 -->
@@ -642,7 +642,7 @@
 <!-- Node34 -->
 <g id="node32" class="node">
 <title>Node34</title>
-<g id="a_node32"><a xlink:href="classwmtk_1_1_mesh.html#ad303dff226282b38e9110fb6d1c4c853" target="_top" xlink:title="wrapper function to update hashes (for parent mesh *this and its child meshes) after vertex operation...">
+<g id="a_node32"><a xlink:href="classwmtk_1_1_mesh.html#a0b6f79f2dffa07d93a342306abd28b7e" target="_top" xlink:title="wrapper function to update hashes (for parent mesh *this and its child meshes) after vertex operation...">
 <polygon fill="none" stroke="black" points="427,-1048.5 427,-1078.5 572,-1078.5 572,-1048.5 427,-1048.5"/>
 <text text-anchor="start" x="435" y="-1066.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::update</text>
 <text text-anchor="middle" x="499.5" y="-1055.5" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex_operation_hashes</text>
@@ -652,8 +652,8 @@
 <!-- Node33&#45;&gt;Node34 -->
 <g id="edge31" class="edge">
 <title>Node33&#45;&gt;Node34</title>
-<path fill="none" stroke="midnightblue" d="M645.79,-1063.5C621.67,-1063.5 595.47,-1063.5 572.04,-1063.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="645.99,-1067 655.99,-1063.5 645.99,-1060 645.99,-1067"/>
+<path fill="none" stroke="midnightblue" d="M638.42,-1063.5C616.42,-1063.5 593.13,-1063.5 572.08,-1063.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="638.43,-1067 648.43,-1063.5 638.43,-1060 638.43,-1067"/>
 </g>
 <!-- Node37&#45;&gt;Node2 -->
 <g id="edge35" class="edge">
@@ -744,7 +744,7 @@
 <!-- Node40 -->
 <g id="node38" class="node">
 <title>Node40</title>
-<g id="a_node38"><a xlink:href="classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#af8302c72d52af67baf819ca0ffff24f6" target="_top" xlink:title=" ">
+<g id="a_node38"><a xlink:href="classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a2925164a2ef8ed1f86a9c07075972967" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="409.5,-122.5 409.5,-152.5 589.5,-152.5 589.5,-122.5 409.5,-122.5"/>
 <text text-anchor="start" x="417.5" y="-140.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
 <text text-anchor="middle" x="499.5" y="-129.5" font-family="Helvetica,sans-Serif" font-size="10.00">AutodiffFunction::get_coordinates</text>

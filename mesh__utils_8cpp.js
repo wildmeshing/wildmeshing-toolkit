@@ -1,6 +1,6 @@
 var mesh__utils_8cpp =
 [
-    [ "compute_face_normal", "mesh__utils_8cpp.html#a963562e4c9266a9c9d7ed226ddcd9c81", null ],
-    [ "compute_face_normal_area_weighted", "mesh__utils_8cpp.html#a0b26ec4de523eb55599dfedbf85cb063", null ],
-    [ "compute_vertex_normal", "mesh__utils_8cpp.html#ac2823af971ffb1bcc214f81559d8a584", null ]
+    [ "compute_face_normal", "mesh__utils_8cpp.html#a05b2e8377c52bd2da29a3b2c38bef90d", null ],
+    [ "compute_face_normal_area_weighted", "mesh__utils_8cpp.html#a07c6f8b4fe4d3bf868a521ac66aee027", null ],
+    [ "compute_vertex_normal", "mesh__utils_8cpp.html#ace9d707a188783f870a878d0623418d0", null ]
 ];

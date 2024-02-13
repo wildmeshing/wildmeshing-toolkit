@@ -9,8 +9,6 @@ var dir_f7a95b7257057fa18adfa4b3aabbe846 =
     [ "operations", "dir_cce1e74d6889f0f8c282b81d2e706218.html", "dir_cce1e74d6889f0f8c282b81d2e706218" ],
     [ "simplex", "dir_cbc9327ef122fb9d2e3099bcf15f379f.html", "dir_cbc9327ef122fb9d2e3099bcf15f379f" ],
     [ "utils", "dir_9f42d488f21f30bdc75c62948fa574ea.html", "dir_9f42d488f21f30bdc75c62948fa574ea" ],
-    [ "Accessor.cpp", "_accessor_8cpp.html", null ],
-    [ "Accessor.hpp", "_accessor_8hpp.html", "_accessor_8hpp" ],
     [ "Cell.cpp", "_cell_8cpp.html", null ],
     [ "Cell.hpp", "_cell_8hpp.html", [
       [ "Cell", "classwmtk_1_1_cell.html", "classwmtk_1_1_cell" ]
@@ -31,10 +29,8 @@ var dir_f7a95b7257057fa18adfa4b3aabbe846 =
     [ "Mesh_construction.cpp", "_mesh__construction_8cpp.html", null ],
     [ "Mesh_hash.cpp", "_mesh__hash_8cpp.html", null ],
     [ "Mesh_multimesh.cpp", "_mesh__multimesh_8cpp.html", null ],
-    [ "MultiMeshManager.cpp", "_multi_mesh_manager_8cpp.html", null ],
     [ "MultiMeshManager.hpp", "_multi_mesh_manager_8hpp.html", [
-      [ "MultiMeshManager", "classwmtk_1_1_multi_mesh_manager.html", "classwmtk_1_1_multi_mesh_manager" ],
-      [ "ChildData", "structwmtk_1_1_multi_mesh_manager_1_1_child_data.html", "structwmtk_1_1_multi_mesh_manager_1_1_child_data" ]
+      [ "MultiMeshManager", "classwmtk_1_1_multi_mesh_manager.html", null ]
     ] ],
     [ "PointMesh.cpp", "_point_mesh_8cpp.html", null ],
     [ "PointMesh.hpp", "_point_mesh_8hpp.html", [

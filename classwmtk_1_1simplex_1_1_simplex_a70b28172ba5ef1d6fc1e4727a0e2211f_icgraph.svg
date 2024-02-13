@@ -816,7 +816,7 @@ var sectionId = 'dynsection-1';
 <!-- Node42 -->
 <g id="node42" class="node">
 <title>Node42</title>
-<g id="a_node42"><a xlink:href="namespacewmtk_1_1mesh__utils.html#ac2823af971ffb1bcc214f81559d8a584" target="_top" xlink:title="compute the normalized vertex normal from the incident area weighted face normals">
+<g id="a_node42"><a xlink:href="namespacewmtk_1_1mesh__utils.html#ace9d707a188783f870a878d0623418d0" target="_top" xlink:title="compute the normalized vertex normal from the incident area weighted face normals">
 <polygon fill="none" stroke="red" points="385.5,-0.5 385.5,-30.5 537.5,-30.5 537.5,-0.5 385.5,-0.5"/>
 <text text-anchor="start" x="393.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::mesh_utils::compute</text>
 <text text-anchor="middle" x="461.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex_normal</text>
@@ -929,7 +929,7 @@ var sectionId = 'dynsection-1';
 <!-- Node52 -->
 <g id="node49" class="node">
 <title>Node52</title>
-<g id="a_node49"><a xlink:href="namespacewmtk_1_1operations_1_1utils.html#a02d04aef5d974c2e0f204ed036773e88" target="_top" xlink:title=" ">
+<g id="a_node49"><a xlink:href="namespacewmtk_1_1operations_1_1utils.html#a62fab811bf86bb7a2702f63304574002" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="389,-257 389,-298 534,-298 534,-257 389,-257"/>
 <text text-anchor="start" x="397" y="-286" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::utils</text>
 <text text-anchor="start" x="397" y="-275" font-family="Helvetica,sans-Serif" font-size="10.00">::update_vertex_operation</text>
@@ -946,18 +946,18 @@ var sectionId = 'dynsection-1';
 <!-- Node53 -->
 <g id="node50" class="node">
 <title>Node53</title>
-<g id="a_node50"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a4f75c13c6e1e4531f605e1cae19a86c0" target="_top" xlink:title="update all the hashes of the top&#45;simplces of the parent mesh around a vertex hashes of the parent tup...">
-<polygon fill="none" stroke="red" points="389,-197 389,-238 534,-238 534,-197 389,-197"/>
-<text text-anchor="start" x="397" y="-226" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
-<text text-anchor="start" x="397" y="-215" font-family="Helvetica,sans-Serif" font-size="10.00">::update_vertex_operation</text>
-<text text-anchor="middle" x="461.5" y="-204" font-family="Helvetica,sans-Serif" font-size="10.00">_hashes_internal</text>
+<g id="a_node50"><a xlink:href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#af971c830121bdd645f1bf3fc28aa76dd" target="_top" xlink:title="update all the hashes of the top&#45;simplces of the parent mesh around a vertex hashes of the parent tup...">
+<polygon fill="none" stroke="red" points="381.5,-197 381.5,-238 541.5,-238 541.5,-197 381.5,-197"/>
+<text text-anchor="start" x="389.5" y="-226" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::MultiMesh</text>
+<text text-anchor="start" x="389.5" y="-215" font-family="Helvetica,sans-Serif" font-size="10.00">Manager::update_vertex</text>
+<text text-anchor="middle" x="461.5" y="-204" font-family="Helvetica,sans-Serif" font-size="10.00">_operation_hashes_internal</text>
 </a>
 </g>
 </g>
 <!-- Node37&#45;&gt;Node53 -->
 <g id="edge71" class="edge">
 <title>Node37&#45;&gt;Node53</title>
-<path fill="none" stroke="midnightblue" d="M661.9,-662.07C652.8,-577.73 619.7,-309.02 562,-247.5 554.35,-239.34 544.56,-233.37 534.13,-229.02"/>
+<path fill="none" stroke="midnightblue" d="M661.9,-662.07C652.8,-577.73 619.7,-309.02 562,-247.5 556.2,-241.32 549.17,-236.39 541.57,-232.47"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="658.43,-662.5 662.96,-672.07 665.39,-661.76 658.43,-662.5"/>
 </g>
 <!-- Node40 -->

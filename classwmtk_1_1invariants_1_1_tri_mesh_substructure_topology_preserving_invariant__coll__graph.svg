@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 1503;
+var viewWidth = 1514;
 var viewHeight = 237;
 var sectionId = 'dynsection-1';
 </script>
@@ -58,10 +58,10 @@ var sectionId = 'dynsection-1';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="1322,-0.5 1322,-41.5 1495,-41.5 1495,-0.5 1322,-0.5"/>
-<text text-anchor="start" x="1330" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::invariants::TriMesh</text>
-<text text-anchor="start" x="1330" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">SubstructureTopologyPreserving</text>
-<text text-anchor="middle" x="1408.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">Invariant</text>
+<polygon fill="#bfbfbf" stroke="black" points="1333,-0.5 1333,-41.5 1506,-41.5 1506,-0.5 1333,-0.5"/>
+<text text-anchor="start" x="1341" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::invariants::TriMesh</text>
+<text text-anchor="start" x="1341" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">SubstructureTopologyPreserving</text>
+<text text-anchor="middle" x="1419.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">Invariant</text>
 </a>
 </g>
 </g>
@@ -69,16 +69,16 @@ var sectionId = 'dynsection-1';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classwmtk_1_1invariants_1_1_invariant.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="1136,-70.5 1136,-89.5 1285,-89.5 1285,-70.5 1136,-70.5"/>
-<text text-anchor="middle" x="1210.5" y="-77.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::invariants::Invariant</text>
+<polygon fill="none" stroke="black" points="1141.5,-67.5 1141.5,-86.5 1290.5,-86.5 1290.5,-67.5 1141.5,-67.5"/>
+<text text-anchor="middle" x="1216" y="-74.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::invariants::Invariant</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M1253.28,-67.42C1278.2,-59.92 1310.45,-50.21 1339.01,-41.62"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="1251.99,-64.16 1243.43,-70.39 1254.01,-70.86 1251.99,-64.16"/>
+<path fill="none" stroke="midnightblue" d="M1261.34,-64.68C1285.77,-57.89 1316.73,-49.28 1344.7,-41.51"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="1260.34,-61.32 1251.64,-67.37 1262.21,-68.07 1260.34,-61.32"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
@@ -92,23 +92,24 @@ var sectionId = 'dynsection-1';
 <!-- Node3&#45;&gt;Node2 -->
 <g id="edge2" class="edge">
 <title>Node3&#45;&gt;Node2</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M966.1,-110.32C975,-108.37 984.26,-106.5 993,-105 1040.18,-96.92 1093.59,-90.72 1135.56,-86.52"/>
-<polygon fill="#9a32cd" stroke="#9a32cd" points="965.23,-106.93 956.24,-112.55 966.76,-113.76 965.23,-106.93"/>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M966.11,-110.4C975.02,-108.44 984.27,-106.54 993,-105 1042.25,-96.3 1098.12,-89.27 1141.48,-84.43"/>
+<polygon fill="#9a32cd" stroke="#9a32cd" points="965.24,-107.01 956.25,-112.62 966.78,-113.84 965.24,-107.01"/>
 <text text-anchor="middle" x="1055.5" y="-108" font-family="Helvetica,sans-Serif" font-size="10.00"> m_mesh</text>
 </g>
 <!-- Node11 -->
 <g id="node11" class="node">
 <title>Node11</title>
-<g id="a_node11"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html" target="_top" xlink:title="Implementation details for how the Mesh class implements multiple meshes.">
-<polygon fill="none" stroke="black" points="1138.5,-120.5 1138.5,-139.5 1282.5,-139.5 1282.5,-120.5 1138.5,-120.5"/>
-<text text-anchor="middle" x="1210.5" y="-127.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
+<g id="a_node11"><a xlink:href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html" target="_top" xlink:title="Implementation details for how the Mesh class implements multiple meshes.">
+<polygon fill="none" stroke="black" points="1136,-117 1136,-147 1296,-147 1296,-117 1136,-117"/>
+<text text-anchor="start" x="1144" y="-135" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::MultiMesh</text>
+<text text-anchor="middle" x="1216" y="-124" font-family="Helvetica,sans-Serif" font-size="10.00">Manager</text>
 </a>
 </g>
 </g>
 <!-- Node3&#45;&gt;Node11 -->
 <g id="edge14" class="edge">
 <title>Node3&#45;&gt;Node11</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M966.25,-121.26C975.14,-121.15 984.35,-121.06 993,-121 1048.55,-120.63 1062.51,-118.28 1118,-121 1124.54,-121.32 1131.33,-121.77 1138.12,-122.3"/>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M966.25,-121.26C975.14,-121.15 984.35,-121.06 993,-121 1048.55,-120.63 1062.53,-117.87 1118,-121 1123.84,-121.33 1129.86,-121.77 1135.92,-122.29"/>
 <polygon fill="#9a32cd" stroke="#9a32cd" points="965.97,-117.77 956.02,-121.4 966.06,-124.77 965.97,-117.77"/>
 <text text-anchor="middle" x="1055.5" y="-124" font-family="Helvetica,sans-Serif" font-size="10.00"> m_parent</text>
 </g>
@@ -162,7 +163,7 @@ var sectionId = 'dynsection-1';
 <!-- Node5&#45;&gt;Node11 -->
 <g id="edge12" class="edge">
 <title>Node5&#45;&gt;Node11</title>
-<path fill="none" stroke="midnightblue" d="M382.53,-161.86C419.14,-178.8 485.07,-206.51 545,-217 790.83,-260.04 1091.22,-169.88 1182.15,-139.51"/>
+<path fill="none" stroke="midnightblue" d="M382.53,-161.86C419.14,-178.8 485.07,-206.51 545,-217 778.59,-257.9 1061.28,-181.12 1169.69,-147.08"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="383.99,-158.68 373.45,-157.6 381.02,-165.02 383.99,-158.68"/>
 </g>
 <!-- Node6 -->
@@ -200,10 +201,10 @@ var sectionId = 'dynsection-1';
 <!-- Node8&#45;&gt;Node1 -->
 <g id="edge15" class="edge">
 <title>Node8&#45;&gt;Node1</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M719.59,-38.6C724.12,-38 728.61,-37.46 733,-37 943.71,-14.87 1193.38,-16.03 1321.77,-18.61"/>
-<polygon fill="#9a32cd" stroke="#9a32cd" points="719.06,-35.14 709.64,-39.99 720.03,-42.07 719.06,-35.14"/>
-<text text-anchor="start" x="1001" y="-35" font-family="Helvetica,sans-Serif" font-size="10.00"> m_substructure_edge</text>
-<text text-anchor="middle" x="1055.5" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">_tag_handle</text>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M725.31,-40.76C727.9,-40.49 730.47,-40.23 733,-40 948.17,-20.1 1202.81,-18.87 1332.79,-19.83"/>
+<polygon fill="#9a32cd" stroke="#9a32cd" points="724.79,-37.3 715.24,-41.89 725.57,-44.25 724.79,-37.3"/>
+<text text-anchor="start" x="1001" y="-39" font-family="Helvetica,sans-Serif" font-size="10.00"> m_substructure_edge</text>
+<text text-anchor="middle" x="1055.5" y="-28" font-family="Helvetica,sans-Serif" font-size="10.00">_tag_handle</text>
 </g>
 <!-- Node8&#45;&gt;Node3 -->
 <g id="edge8" class="edge">
@@ -215,9 +216,9 @@ var sectionId = 'dynsection-1';
 <!-- Node8&#45;&gt;Node11 -->
 <g id="edge13" class="edge">
 <title>Node8&#45;&gt;Node11</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M725.26,-44.73C825.95,-37.38 988.53,-36.08 1118,-85 1127.48,-88.58 1127.26,-93.88 1136,-99 1150.58,-107.54 1167.95,-114.98 1182.15,-120.43"/>
-<polygon fill="#9a32cd" stroke="#9a32cd" points="724.81,-41.25 715.11,-45.51 725.35,-48.23 724.81,-41.25"/>
-<text text-anchor="middle" x="917.5" y="-54" font-family="Helvetica,sans-Serif" font-size="10.00"> map_to_parent_handle</text>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M725.47,-46.3C825.66,-40.33 987.19,-40.11 1118,-84 1127.12,-87.06 1127.6,-91.32 1136,-96 1149.57,-103.55 1165,-110.85 1178.61,-116.88"/>
+<polygon fill="#9a32cd" stroke="#9a32cd" points="725.13,-42.82 715.37,-46.94 725.57,-49.8 725.13,-42.82"/>
+<text text-anchor="middle" x="917.5" y="-56" font-family="Helvetica,sans-Serif" font-size="10.00"> map_to_parent_handle</text>
 </g>
 <!-- Node9 -->
 <g id="node9" class="node">
@@ -256,9 +257,9 @@ var sectionId = 'dynsection-1';
 <!-- Node11&#45;&gt;Node3 -->
 <g id="edge11" class="edge">
 <title>Node11&#45;&gt;Node3</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M1128.09,-135.28C1087.44,-136.96 1037.56,-137.57 993,-134 980.99,-133.04 967.99,-131.22 956.26,-129.28"/>
-<polygon fill="#9a32cd" stroke="#9a32cd" points="1128.37,-138.77 1138.21,-134.83 1128.07,-131.78 1128.37,-138.77"/>
-<text text-anchor="middle" x="1055.5" y="-140" font-family="Helvetica,sans-Serif" font-size="10.00"> m_multi_mesh_manager</text>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M1125.64,-136.42C1085.09,-137.49 1036.57,-137.49 993,-134 980.99,-133.04 967.99,-131.22 956.26,-129.28"/>
+<polygon fill="#9a32cd" stroke="#9a32cd" points="1125.87,-139.91 1135.77,-136.12 1125.67,-132.91 1125.87,-139.91"/>
+<text text-anchor="middle" x="1055.5" y="-141" font-family="Helvetica,sans-Serif" font-size="10.00"> m_multi_mesh_manager</text>
 </g>
 </g>
 </svg>

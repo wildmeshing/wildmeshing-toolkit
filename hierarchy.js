@@ -3,12 +3,9 @@ var hierarchy =
     [ "wmtk::attribute::AccessorBase< _T >", "classwmtk_1_1attribute_1_1_accessor_base.html", null ],
     [ "wmtk::attribute::AccessorBase< T >", "classwmtk_1_1attribute_1_1_accessor_base.html", [
       [ "wmtk::attribute::CachingAccessor< T >", "classwmtk_1_1attribute_1_1_caching_accessor.html", [
-        [ "wmtk::attribute::TupleAccessor< T >", "classwmtk_1_1attribute_1_1_tuple_accessor.html", [
-          [ "wmtk::attribute::ConstAccessor< T >", "classwmtk_1_1attribute_1_1_const_accessor.html", [
-            [ "wmtk::attribute::MutableAccessor< double >", "classwmtk_1_1attribute_1_1_mutable_accessor.html", null ],
-            [ "wmtk::attribute::MutableAccessor< T >", "classwmtk_1_1attribute_1_1_mutable_accessor.html", null ]
-          ] ]
-        ] ]
+        [ "wmtk::attribute::Accessor< int64_t >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
+        [ "wmtk::attribute::Accessor< double >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
+        [ "wmtk::attribute::Accessor< T >", "classwmtk_1_1attribute_1_1_accessor.html", null ]
       ] ]
     ] ],
     [ "wmtk::attribute::AccessorCache< T >", "classwmtk_1_1attribute_1_1_accessor_cache.html", null ],
@@ -42,7 +39,7 @@ var hierarchy =
     [ "wmtk::utils::metaprogramming::detail::cell_dimension< TetMesh >", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1cell__dimension_3_01_tet_mesh_01_4.html", null ],
     [ "wmtk::utils::metaprogramming::detail::cell_dimension< TriMesh >", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1cell__dimension_3_01_tri_mesh_01_4.html", null ],
     [ "wmtk::attribute::internal::CheckpointScope", "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope.html", null ],
-    [ "wmtk::MultiMeshManager::ChildData", "structwmtk_1_1_multi_mesh_manager_1_1_child_data.html", null ],
+    [ "wmtk::multimesh::MultiMeshManager::ChildData", "structwmtk_1_1multimesh_1_1_multi_mesh_manager_1_1_child_data.html", null ],
     [ "wmtk::simplex::ClosedStarIterable", "classwmtk_1_1simplex_1_1_closed_star_iterable.html", null ],
     [ "wmtk::operations::CollapseNewAttributeTopoInfo", "classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html", [
       [ "wmtk::operations::edge_mesh::CollapseNewAttributeTopoInfo", "classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_topo_info.html", null ],
@@ -134,9 +131,11 @@ var hierarchy =
       [ "wmtk::attribute::Attribute< T >", "classwmtk_1_1attribute_1_1_attribute.html", null ],
       [ "wmtk::utils::MerkleTreeInteriorNode", "classwmtk_1_1utils_1_1_merkle_tree_interior_node.html", [
         [ "wmtk::Mesh", "classwmtk_1_1_mesh.html", null ],
-        [ "wmtk::MultiMeshManager", "classwmtk_1_1_multi_mesh_manager.html", null ],
         [ "wmtk::attribute::AttributeManager", "classwmtk_1_1attribute_1_1_attribute_manager.html", null ],
-        [ "wmtk::attribute::MeshAttributes< T >", "classwmtk_1_1attribute_1_1_mesh_attributes.html", null ]
+        [ "wmtk::attribute::MeshAttributes< T >", "classwmtk_1_1attribute_1_1_mesh_attributes.html", null ],
+        [ "wmtk::multimesh::MultiMeshManager", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html", [
+          [ "wmtk::MultiMeshManager", "classwmtk_1_1_multi_mesh_manager.html", null ]
+        ] ]
       ] ]
     ] ],
     [ "wmtk::HDF5Reader", "classwmtk_1_1_h_d_f5_reader.html", null ],

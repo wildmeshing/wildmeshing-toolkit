@@ -153,18 +153,18 @@ var sectionId = 'dynsection-0';
 <!-- Node7 -->
 <g id="node7" class="node">
 <title>Node7</title>
-<g id="a_node7"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a10b58d0d287321a1b422f9b945421eda" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="400,-0.5 400,-30.5 544,-30.5 544,-0.5 400,-0.5"/>
-<text text-anchor="start" x="408" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
-<text text-anchor="middle" x="472" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">::get_root_mesh</text>
+<g id="a_node7"><a xlink:href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a434e74f6b295055a45914d41a784124a" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="392,-0.5 392,-30.5 552,-30.5 552,-0.5 392,-0.5"/>
+<text text-anchor="start" x="400" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::MultiMesh</text>
+<text text-anchor="middle" x="472" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">Manager::get_root_mesh</text>
 </a>
 </g>
 </g>
 <!-- Node6&#45;&gt;Node7 -->
 <g id="edge7" class="edge">
 <title>Node6&#45;&gt;Node7</title>
-<path fill="none" stroke="midnightblue" d="M340.52,-21.55C356.26,-20.82 373.34,-20.03 389.8,-19.27"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="390.12,-22.76 399.95,-18.8 389.8,-15.76 390.12,-22.76"/>
+<path fill="none" stroke="midnightblue" d="M340.52,-21.55C353.68,-20.94 367.78,-20.29 381.67,-19.64"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="381.9,-23.14 391.73,-19.18 381.57,-16.14 381.9,-23.14"/>
 </g>
 <!-- Node7&#45;&gt;Node7 -->
 <g id="edge8" class="edge">
@@ -175,18 +175,18 @@ var sectionId = 'dynsection-0';
 <!-- Node8 -->
 <g id="node8" class="node">
 <title>Node8</title>
-<g id="a_node8"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a5a5a2de96e603563ab7054e8666395b7" target="_top" xlink:title="Specifies whether this structure is the root of a multi&#45;mesh tree.">
-<polygon fill="none" stroke="black" points="596,-0.5 596,-30.5 740,-30.5 740,-0.5 596,-0.5"/>
-<text text-anchor="start" x="604" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
-<text text-anchor="middle" x="668" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">::is_root</text>
+<g id="a_node8"><a xlink:href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a7d39339adb56b1798fe817d81bfcc67c" target="_top" xlink:title="Specifies whether this structure is the root of a multi&#45;mesh tree.">
+<polygon fill="none" stroke="black" points="588,-0.5 588,-30.5 748,-30.5 748,-0.5 588,-0.5"/>
+<text text-anchor="start" x="596" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::MultiMesh</text>
+<text text-anchor="middle" x="668" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">Manager::is_root</text>
 </a>
 </g>
 </g>
 <!-- Node7&#45;&gt;Node8 -->
 <g id="edge9" class="edge">
 <title>Node7&#45;&gt;Node8</title>
-<path fill="none" stroke="midnightblue" d="M544.14,-15.5C557.58,-15.5 571.74,-15.5 585.47,-15.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="585.87,-19 595.87,-15.5 585.87,-12 585.87,-19"/>
+<path fill="none" stroke="midnightblue" d="M552.19,-15.5C560.53,-15.5 569.05,-15.5 577.5,-15.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="577.75,-19 587.75,-15.5 577.75,-12 577.75,-19"/>
 </g>
 </g>
 </svg>

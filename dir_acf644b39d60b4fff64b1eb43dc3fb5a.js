@@ -16,6 +16,11 @@ var dir_acf644b39d60b4fff64b1eb43dc3fb5a =
     [ "MappableContainer.hpp", "_mappable_container_8hpp.html", [
       [ "MappableContainer", "classwmtk_1_1multimesh_1_1_mappable_container.html", "classwmtk_1_1multimesh_1_1_mappable_container" ]
     ] ],
+    [ "MultiMeshManager.cpp", "_multi_mesh_manager_8cpp.html", null ],
+    [ "MultiMeshManager.hpp", "multimesh_2_multi_mesh_manager_8hpp.html", [
+      [ "MultiMeshManager", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html", "classwmtk_1_1multimesh_1_1_multi_mesh_manager" ],
+      [ "ChildData", "structwmtk_1_1multimesh_1_1_multi_mesh_manager_1_1_child_data.html", "structwmtk_1_1multimesh_1_1_multi_mesh_manager_1_1_child_data" ]
+    ] ],
     [ "MultiMeshSimplexEventVisitor.hpp", "_multi_mesh_simplex_event_visitor_8hpp.html", "_multi_mesh_simplex_event_visitor_8hpp" ],
     [ "MultiMeshSimplexVisitor.hpp", "_multi_mesh_simplex_visitor_8hpp.html", "_multi_mesh_simplex_visitor_8hpp" ],
     [ "MultiMeshVisitor.hpp", "_multi_mesh_visitor_8hpp.html", "_multi_mesh_visitor_8hpp" ],

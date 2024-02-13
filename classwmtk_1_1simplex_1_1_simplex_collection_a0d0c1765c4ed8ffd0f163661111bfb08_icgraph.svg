@@ -210,7 +210,7 @@ var sectionId = 'dynsection-9';
 <!-- Node11 -->
 <g id="node11" class="node">
 <title>Node11</title>
-<g id="a_node11"><a xlink:href="namespacewmtk_1_1mesh__utils.html#ac2823af971ffb1bcc214f81559d8a584" target="_top" xlink:title="compute the normalized vertex normal from the incident area weighted face normals">
+<g id="a_node11"><a xlink:href="namespacewmtk_1_1mesh__utils.html#ace9d707a188783f870a878d0623418d0" target="_top" xlink:title="compute the normalized vertex normal from the incident area weighted face normals">
 <polygon fill="none" stroke="black" points="676.5,-568.5 676.5,-598.5 828.5,-598.5 828.5,-568.5 676.5,-568.5"/>
 <text text-anchor="start" x="684.5" y="-586.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::mesh_utils::compute</text>
 <text text-anchor="middle" x="752.5" y="-575.5" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex_normal</text>
@@ -307,7 +307,7 @@ var sectionId = 'dynsection-9';
 <!-- Node34 -->
 <g id="node34" class="node">
 <title>Node34</title>
-<g id="a_node34"><a xlink:href="namespacewmtk_1_1operations_1_1utils.html#a02d04aef5d974c2e0f204ed036773e88" target="_top" xlink:title=" ">
+<g id="a_node34"><a xlink:href="namespacewmtk_1_1operations_1_1utils.html#a62fab811bf86bb7a2702f63304574002" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="680,-667 680,-708 825,-708 825,-667 680,-667"/>
 <text text-anchor="start" x="688" y="-696" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::utils</text>
 <text text-anchor="start" x="688" y="-685" font-family="Helvetica,sans-Serif" font-size="10.00">::update_vertex_operation</text>
@@ -324,18 +324,18 @@ var sectionId = 'dynsection-9';
 <!-- Node35 -->
 <g id="node35" class="node">
 <title>Node35</title>
-<g id="a_node35"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a4f75c13c6e1e4531f605e1cae19a86c0" target="_top" xlink:title="update all the hashes of the top&#45;simplces of the parent mesh around a vertex hashes of the parent tup...">
-<polygon fill="none" stroke="black" points="680,-777 680,-818 825,-818 825,-777 680,-777"/>
-<text text-anchor="start" x="688" y="-806" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
-<text text-anchor="start" x="688" y="-795" font-family="Helvetica,sans-Serif" font-size="10.00">::update_vertex_operation</text>
-<text text-anchor="middle" x="752.5" y="-784" font-family="Helvetica,sans-Serif" font-size="10.00">_hashes_internal</text>
+<g id="a_node35"><a xlink:href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#af971c830121bdd645f1bf3fc28aa76dd" target="_top" xlink:title="update all the hashes of the top&#45;simplces of the parent mesh around a vertex hashes of the parent tup...">
+<polygon fill="none" stroke="black" points="672.5,-777 672.5,-818 832.5,-818 832.5,-777 672.5,-777"/>
+<text text-anchor="start" x="680.5" y="-806" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::MultiMesh</text>
+<text text-anchor="start" x="680.5" y="-795" font-family="Helvetica,sans-Serif" font-size="10.00">Manager::update_vertex</text>
+<text text-anchor="middle" x="752.5" y="-784" font-family="Helvetica,sans-Serif" font-size="10.00">_operation_hashes_internal</text>
 </a>
 </g>
 </g>
 <!-- Node5&#45;&gt;Node35 -->
 <g id="edge34" class="edge">
 <title>Node5&#45;&gt;Node35</title>
-<path fill="none" stroke="midnightblue" d="M964.03,-529.15C955.71,-577.19 927.73,-701.45 853,-767.5 844.96,-774.61 835.28,-780.03 825.16,-784.17"/>
+<path fill="none" stroke="midnightblue" d="M964.03,-529.15C955.71,-577.19 927.73,-701.45 853,-767.5 847.05,-772.76 840.21,-777.09 832.95,-780.67"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="967.5,-529.57 965.66,-519.14 960.59,-528.44 967.5,-529.57"/>
 </g>
 <!-- Node7 -->
@@ -647,7 +647,7 @@ var sectionId = 'dynsection-9';
 <!-- Node36 -->
 <g id="node36" class="node">
 <title>Node36</title>
-<g id="a_node36"><a xlink:href="classwmtk_1_1_mesh.html#ad303dff226282b38e9110fb6d1c4c853" target="_top" xlink:title="wrapper function to update hashes (for parent mesh *this and its child meshes) after vertex operation...">
+<g id="a_node36"><a xlink:href="classwmtk_1_1_mesh.html#a0b6f79f2dffa07d93a342306abd28b7e" target="_top" xlink:title="wrapper function to update hashes (for parent mesh *this and its child meshes) after vertex operation...">
 <polygon fill="none" stroke="black" points="448,-782.5 448,-812.5 593,-812.5 593,-782.5 448,-782.5"/>
 <text text-anchor="start" x="456" y="-800.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::update</text>
 <text text-anchor="middle" x="520.5" y="-789.5" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex_operation_hashes</text>
@@ -657,8 +657,8 @@ var sectionId = 'dynsection-9';
 <!-- Node35&#45;&gt;Node36 -->
 <g id="edge35" class="edge">
 <title>Node35&#45;&gt;Node36</title>
-<path fill="none" stroke="midnightblue" d="M669.82,-797.5C644.86,-797.5 617.62,-797.5 593.36,-797.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="669.99,-801 679.99,-797.5 669.99,-794 669.99,-801"/>
+<path fill="none" stroke="midnightblue" d="M662.28,-797.5C639.35,-797.5 614.99,-797.5 593.09,-797.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="662.35,-801 672.35,-797.5 662.35,-794 662.35,-801"/>
 </g>
 <!-- Node38 -->
 <g id="node38" class="node">

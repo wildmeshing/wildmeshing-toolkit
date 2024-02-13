@@ -123,11 +123,14 @@ $(document).ready(function(){initNavTree('functions.html',''); initResizable(); 
 , <a class="el" href="classwmtk_1_1_rational.html#acc2fa6361a71d15d662c09aad27b67bf">wmtk::Rational</a>
 </li>
 <li>absolute_id()
-: <a class="el" href="classwmtk_1_1_multi_mesh_manager.html#a4858de0134bb52c525db4a99d341fa86">wmtk::MultiMeshManager</a>
+: <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a812e0992812b2c48a889e10ae9e50758">wmtk::multimesh::MultiMeshManager</a>
 </li>
 <li>absolute_multi_mesh_id()
 : <a class="el" href="classwmtk_1_1io_1_1_cache.html#ae1610b95df611e8f65d2126afb5dafd7">wmtk::io::Cache</a>
 , <a class="el" href="classwmtk_1_1_mesh.html#a2102fdea06a0c543437e67d77aeb2013">wmtk::Mesh</a>
+</li>
+<li>Accessor&lt; T &gt;
+: <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ab773677635dbcb528adae220cabb639e">wmtk::attribute::TypedAttributeHandle&lt; T &gt;</a>
 </li>
 <li>AccessorBase()
 : <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#add09e0a2ec3997f804a0f18dd0a812b7">wmtk::attribute::AccessorBase&lt; _T &gt;</a>
@@ -201,7 +204,7 @@ $(document).ready(function(){initNavTree('functions.html',''); initResizable(); 
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#af1ed5ecb07d1ee69707ab581ff4c2b8f">wmtk::attribute::AttributeScopeStack&lt; T &gt;</a>
 </li>
 <li>apply_scope()
-: <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#aafd66956eff151f6e5f2a9b7525fb9a7">wmtk::attribute::AttributeScopeStack&lt; T &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a78504700a244c9898d53d9924ee42e21">wmtk::attribute::AttributeScopeStack&lt; T &gt;</a>
 </li>
 <li>apply_to()
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache.html#a7b0eceec9a65c84d39d1124d4f6514ca">wmtk::attribute::AttributeCache&lt; T &gt;</a>
@@ -253,15 +256,15 @@ $(document).ready(function(){initNavTree('functions.html',''); initResizable(); 
 <li>attribute()
 : <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#ad92ac78acac9a159db32c3922d203dde">wmtk::attribute::MeshAttributes&lt; T &gt;</a>
 </li>
+<li>attribute::Accessor
+: <a class="el" href="classwmtk_1_1_mesh.html#a03f828415bca4acfdc142ee54dc0793c">wmtk::Mesh</a>
+, <a class="el" href="classwmtk_1_1_tuple.html#a03f828415bca4acfdc142ee54dc0793c">wmtk::Tuple</a>
+</li>
 <li>attribute::AccessorBase
 : <a class="el" href="classwmtk_1_1_mesh.html#a453bfa4c9f420534b768690a9aaf0c5f">wmtk::Mesh</a>
 </li>
 <li>attribute::AttributeManager
 : <a class="el" href="classwmtk_1_1_mesh.html#adcb29934d46621cdb44e5f6f3ab2e84e">wmtk::Mesh</a>
-</li>
-<li>attribute::TupleAccessor
-: <a class="el" href="classwmtk_1_1_mesh.html#a04adec229d19f4fb31dab0b562f79b74">wmtk::Mesh</a>
-, <a class="el" href="classwmtk_1_1_tuple.html#a04adec229d19f4fb31dab0b562f79b74">wmtk::Tuple</a>
 </li>
 <li>attribute_count()
 : <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a782df93785c46a1a906984f7d519ffd5">wmtk::attribute::MeshAttributes&lt; T &gt;</a>
@@ -272,7 +275,7 @@ $(document).ready(function(){initNavTree('functions.html',''); initResizable(); 
 , <a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#a0df382a56885d99b8f1c480f016387e1">wmtk::function::PerSimplexFunction</a>
 </li>
 <li>attribute_manager()
-: <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#aedc0b17e32201bebe6377fd65f6283e7">wmtk::attribute::AccessorBase&lt; _T &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#a6851807186f4a1cfab5f76d40aa09c8f">wmtk::attribute::AccessorBase&lt; _T &gt;</a>
 </li>
 <li>attribute_size()
 : <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a02af4d5c9eae479efdb66ad7847b92ff">wmtk::attribute::MeshAttributes&lt; T &gt;</a>
@@ -284,10 +287,9 @@ $(document).ready(function(){initNavTree('functions.html',''); initResizable(); 
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache.html#af3a591eec8ca7e5aebd6adc44faa8b48">wmtk::attribute::AttributeCache&lt; T &gt;</a>
 </li>
 <li>AttributeCache&lt; T &gt;
-: <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#aa64f80146e88c4d60aa0e3ff360c4ebb">wmtk::attribute::Attribute&lt; T &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#aa64f80146e88c4d60aa0e3ff360c4ebb">wmtk::attribute::Accessor&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#aa64f80146e88c4d60aa0e3ff360c4ebb">wmtk::attribute::Attribute&lt; T &gt;</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#aa64f80146e88c4d60aa0e3ff360c4ebb">wmtk::attribute::CachingAccessor&lt; T &gt;</a>
-, <a class="el" href="classwmtk_1_1attribute_1_1_const_accessor.html#aa64f80146e88c4d60aa0e3ff360c4ebb">wmtk::attribute::ConstAccessor&lt; T &gt;</a>
-, <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#aa64f80146e88c4d60aa0e3ff360c4ebb">wmtk::attribute::TupleAccessor&lt; T &gt;</a>
 </li>
 <li>AttributeCacheData()
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache_data.html#a75ee9e918a10b8aed50f462b23f896d2">wmtk::attribute::AttributeCacheData&lt; T &gt;</a>
