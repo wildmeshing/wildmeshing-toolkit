@@ -30,7 +30,7 @@ public:
     bool is_boundary_edge(const Tuple& tuple) const;
     bool is_boundary_face(const Tuple& tuple) const;
 
-    bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const override;
+    bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const override;
 
     void initialize(
         Eigen::Ref<const RowVectors4l> TV,
@@ -83,14 +83,14 @@ protected:
     TypedAttributeHandle<int64_t> m_tf_handle;
     TypedAttributeHandle<int64_t> m_tt_handle;
 
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_vt_accessor;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_et_accessor;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_ft_accessor;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_vt_accessor;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_et_accessor;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_ft_accessor;
 
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_tv_accessor;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_te_accessor;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_tf_accessor;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_tt_accessor;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_tv_accessor;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_te_accessor;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_tf_accessor;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_tt_accessor;
 
     Tuple vertex_tuple_from_id(int64_t id) const;
     Tuple edge_tuple_from_id(int64_t id) const;

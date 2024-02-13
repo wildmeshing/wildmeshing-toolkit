@@ -13,6 +13,8 @@ AccessorBase<T>::AccessorBase(Mesh& m, const TypedAttributeHandle<T>& handle)
     , m_mesh(m)
       , m_attribute(mesh().m_attribute_manager.get(m_handle).attribute(m_handle.m_base_handle))
 {}
+template <typename T>
+AccessorBase<T>::AccessorBase(const Mesh& m, const TypedAttributeHandle<T>& handle): AccessorBase(const_cast<Mesh&>(m), handle) {}
 
 
 template <typename T>

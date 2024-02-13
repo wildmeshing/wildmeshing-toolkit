@@ -63,14 +63,14 @@ TetMesh& TetMesh::operator=(TetMesh&& o)
 
 void TetMesh::make_cached_accessors()
 {
-    m_vt_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_vt_handle);
-    m_et_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_et_handle);
-    m_ft_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_ft_handle);
+    m_vt_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_vt_handle);
+    m_et_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_et_handle);
+    m_ft_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_ft_handle);
 
-    m_tv_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_tv_handle);
-    m_te_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_te_handle);
-    m_tf_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_tf_handle);
-    m_tt_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_tt_handle);
+    m_tv_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_tv_handle);
+    m_te_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_te_handle);
+    m_tf_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_tf_handle);
+    m_tt_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_tt_handle);
 }
 
 
@@ -94,19 +94,17 @@ void TetMesh::initialize(
     set_capacities(cap);
 
     // get Accessors for topology
-    Accessor<int64_t> vt_accessor = create_accessor<int64_t>(m_vt_handle);
-    Accessor<int64_t> et_accessor = create_accessor<int64_t>(m_et_handle);
-    Accessor<int64_t> ft_accessor = create_accessor<int64_t>(m_ft_handle);
-
-    Accessor<int64_t> tv_accessor = create_accessor<int64_t>(m_tv_handle);
-    Accessor<int64_t> te_accessor = create_accessor<int64_t>(m_te_handle);
-    Accessor<int64_t> tf_accessor = create_accessor<int64_t>(m_tf_handle);
-    Accessor<int64_t> tt_accessor = create_accessor<int64_t>(m_tt_handle);
-
-    Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
-    Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
-    Accessor<char> t_flag_accessor = get_flag_accessor(PrimitiveType::Tetrahedron);
+    attribute::Accessor<int64_t> vt_accessor = create_accessor<int64_t>(m_vt_handle);
+    attribute::Accessor<int64_t> et_accessor = create_accessor<int64_t>(m_et_handle);
+    attribute::Accessor<int64_t> ft_accessor = create_accessor<int64_t>(m_ft_handle);
+    attribute::Accessor<int64_t> tv_accessor = create_accessor<int64_t>(m_tv_handle);
+    attribute::Accessor<int64_t> te_accessor = create_accessor<int64_t>(m_te_handle);
+    attribute::Accessor<int64_t> tf_accessor = create_accessor<int64_t>(m_tf_handle);
+    attribute::Accessor<int64_t> tt_accessor = create_accessor<int64_t>(m_tt_handle);
+    attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    attribute::Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
+    attribute::Accessor<char> t_flag_accessor = get_flag_accessor(PrimitiveType::Tetrahedron);
 
     // iterate over the matrices and fill attributes
     for (int64_t i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
@@ -158,7 +156,7 @@ Tuple TetMesh::vertex_tuple_from_id(int64_t id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("vertex_tuple_from_id failed");
 
-    ConstAccessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
+    const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
 
     Tuple v_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
     assert(is_ccw(v_tuple));
@@ -185,7 +183,7 @@ Tuple TetMesh::edge_tuple_from_id(int64_t id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("edge_tuple_from_id failed");
 
-    ConstAccessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
+    const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
 
     Tuple e_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
     assert(is_ccw(e_tuple));
@@ -212,7 +210,7 @@ Tuple TetMesh::face_tuple_from_id(int64_t id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("face_tuple_from_id failed");
 
-    ConstAccessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
+    const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
 
     Tuple f_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
     assert(is_ccw(f_tuple));
@@ -226,7 +224,7 @@ Tuple TetMesh::tet_tuple_from_id(int64_t id) const
     const auto [nlvid, leid, lfid] = autogen::tet_mesh::auto_3d_table_complete_vertex[lvid];
     assert(lvid == nlvid);
 
-    ConstAccessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
+    const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
 
     Tuple t_tuple = Tuple(lvid, leid, lfid, id, get_cell_hash(id, hash_accessor));
     assert(is_ccw(t_tuple));
@@ -357,7 +355,7 @@ bool TetMesh::is_ccw(const Tuple& tuple) const
     return autogen::tet_mesh::is_ccw(tuple);
 }
 
-bool TetMesh::is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const
+bool TetMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const
 {
     if (tuple.is_null()) return false;
     const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
@@ -388,7 +386,7 @@ bool TetMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 
 bool TetMesh::is_boundary_face(const Tuple& tuple) const
 {
-    ConstAccessor<int64_t> tt_accessor = create_accessor<int64_t>(m_tt_handle);
+    const attribute::Accessor<int64_t> tt_accessor = create_const_accessor<int64_t>(m_tt_handle);
     return tt_accessor.const_vector_attribute(tuple)(tuple.m_local_fid) < 0;
 }
 
@@ -421,17 +419,17 @@ bool TetMesh::is_boundary_vertex(const Tuple& vertex) const
 bool TetMesh::is_connectivity_valid() const
 {
     // get Accessors for topology
-    ConstAccessor<int64_t> tv_accessor = create_const_accessor<int64_t>(m_tv_handle);
-    ConstAccessor<int64_t> te_accessor = create_const_accessor<int64_t>(m_te_handle);
-    ConstAccessor<int64_t> tf_accessor = create_const_accessor<int64_t>(m_tf_handle);
-    ConstAccessor<int64_t> tt_accessor = create_const_accessor<int64_t>(m_tt_handle);
-    ConstAccessor<int64_t> vt_accessor = create_const_accessor<int64_t>(m_vt_handle);
-    ConstAccessor<int64_t> et_accessor = create_const_accessor<int64_t>(m_et_handle);
-    ConstAccessor<int64_t> ft_accessor = create_const_accessor<int64_t>(m_ft_handle);
-    ConstAccessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
-    ConstAccessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
-    ConstAccessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
-    ConstAccessor<char> t_flag_accessor = get_flag_accessor(PrimitiveType::Tetrahedron);
+    const attribute::Accessor<int64_t> tv_accessor = create_const_accessor<int64_t>(m_tv_handle);
+    const attribute::Accessor<int64_t> te_accessor = create_const_accessor<int64_t>(m_te_handle);
+    const attribute::Accessor<int64_t> tf_accessor = create_const_accessor<int64_t>(m_tf_handle);
+    const attribute::Accessor<int64_t> tt_accessor = create_const_accessor<int64_t>(m_tt_handle);
+    const attribute::Accessor<int64_t> vt_accessor = create_const_accessor<int64_t>(m_vt_handle);
+    const attribute::Accessor<int64_t> et_accessor = create_const_accessor<int64_t>(m_et_handle);
+    const attribute::Accessor<int64_t> ft_accessor = create_const_accessor<int64_t>(m_ft_handle);
+    const attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    const attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    const attribute::Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);
+    const attribute::Accessor<char> t_flag_accessor = get_flag_accessor(PrimitiveType::Tetrahedron);
 
     // VT and TV
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {

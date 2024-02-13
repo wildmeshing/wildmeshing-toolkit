@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wmtk/Accessor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 // #include <wmtk/EdgeMesh.hpp>
 // #include <wmtk/Mesh.hpp>
 // #include <wmtk/PointMesh.hpp>
@@ -22,11 +22,11 @@ class SimplexCollection;
 
 namespace wmtk::operations::utils {
 
-void update_vertex_operation_hashes(Mesh& m, const Tuple& vertex, Accessor<int64_t>& hash_accessor);
+void update_vertex_operation_hashes(Mesh& m, const Tuple& vertex, attribute::Accessor<int64_t>& hash_accessor);
 
 void update_vertex_operation_multimesh_map_hash(
     Mesh& m,
     const simplex::SimplexCollection& vertex_closed_star,
-    Accessor<int64_t>& parent_hash_accessor);
+    attribute::Accessor<int64_t>& parent_hash_accessor);
 
 } // namespace wmtk::operations::utils

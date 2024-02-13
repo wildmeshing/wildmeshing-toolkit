@@ -63,6 +63,7 @@ public:
 
     ~AccessorBase();
     AccessorBase(Mesh& m, const TypedAttributeHandle<T>& handle);
+    AccessorBase(const Mesh& m, const TypedAttributeHandle<T>& handle);
 
     MeshAttributeHandle handle() const;
     const TypedAttributeHandle<T>& typed_handle() const;

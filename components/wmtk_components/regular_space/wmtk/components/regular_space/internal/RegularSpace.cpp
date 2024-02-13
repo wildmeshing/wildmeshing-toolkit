@@ -17,7 +17,7 @@ namespace wmtk::components::internal {
 class TagAttribute
 {
 public:
-    Accessor<int64_t> m_accessor;
+    wmtk::attribute::Accessor<int64_t> m_accessor;
     PrimitiveType m_ptype;
     int64_t m_val;
 

@@ -89,7 +89,7 @@ auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> Incid
 TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     TriMesh& m,
     const Tuple& operating_tuple,
-    Accessor<int64_t>& hash_acc)
+    attribute::Accessor<int64_t>& hash_acc)
     : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Triangle)}}
     , ff_accessor(m.create_accessor<int64_t>(m.m_ff_handle))
     , fe_accessor(m.create_accessor<int64_t>(m.m_fe_handle))

@@ -11,7 +11,7 @@
 
 
 // need to return this header
-#include "Accessor.hpp"
+#include "attribute/Accessor.hpp"
 
 // is a member of the Mesh class
 #include "MultiMeshManager.hpp"
@@ -43,7 +43,7 @@ namespace wmtk {
 namespace attribute {
 class AttributeManager;
 template <typename T>
-class TupleAccessor;
+class Accessor;
 
 } // namespace attribute
 namespace operations {
@@ -95,11 +95,11 @@ public:
     template <typename T>
     friend class attribute::AccessorBase;
     template <typename T>
-    friend class attribute::TupleAccessor;
+    friend class attribute::Accessor;
     friend class io::ParaviewWriter;
     friend class HDF5Reader;
     friend class multimesh::attribute::UseParentScopeRAII;
-    friend class MultiMeshManager;
+    friend class multimesh::MultiMeshManager;
     friend class attribute::AttributeManager;
     template <int64_t cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshSimplexVisitor;
@@ -123,12 +123,12 @@ public:
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
         const simplex::SimplexCollection& vertex_closed_star,
-        Accessor<int64_t>& parent_hash_accessor);
+        attribute::Accessor<int64_t>& parent_hash_accessor);
 
     friend void operations::utils::update_vertex_operation_hashes(
         Mesh& m,
         const Tuple& vertex,
-        Accessor<int64_t>& hash_accessor);
+        attribute::Accessor<int64_t>& hash_accessor);
 
 
     int64_t top_cell_dimension() const;
@@ -215,18 +215,18 @@ public:
 
 
     template <typename T>
-    Accessor<T> create_accessor(const attribute::MeshAttributeHandle& handle);
+    attribute::Accessor<T> create_accessor(const attribute::MeshAttributeHandle& handle);
+    template <typename T>
+    const attribute::Accessor<T> create_const_accessor(const attribute::MeshAttributeHandle& handle);
 
     template <typename T>
-    ConstAccessor<T> create_const_accessor(const attribute::MeshAttributeHandle& handle) const;
+    const attribute::Accessor<T> create_const_accessor(const attribute::MeshAttributeHandle& handle) const;
 
     template <typename T>
-    Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
+    attribute::Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
 
     template <typename T>
-    ConstAccessor<T> create_const_accessor(const TypedAttributeHandle<T>& handle) const;
-    template <typename T>
-    ConstAccessor<T> create_accessor(const TypedAttributeHandle<T>& handle) const;
+    const attribute::Accessor<T> create_const_accessor(const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
     int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
@@ -263,13 +263,13 @@ public:
     decltype(auto) parent_scope(Functor&& f, Args&&... args) const;
 
 
-    ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
-    ConstAccessor<int64_t> get_cell_hash_accessor() const;
-    ConstAccessor<char> get_const_flag_accessor(PrimitiveType type) const;
-    ConstAccessor<int64_t> get_const_cell_hash_accessor() const;
+    const attribute::Accessor<char> get_flag_accessor(PrimitiveType type) const;
+    const attribute::Accessor<int64_t> get_cell_hash_accessor() const;
+    const attribute::Accessor<char> get_const_flag_accessor(PrimitiveType type) const;
+    const attribute::Accessor<int64_t> get_const_cell_hash_accessor() const;
 
 
-    int64_t get_cell_hash(int64_t cell_index, const ConstAccessor<int64_t>& hash_accessor) const;
+    int64_t get_cell_hash(int64_t cell_index, const attribute::Accessor<int64_t>& hash_accessor) const;
     // utility function for getting a cell's hash - slow because it creates a new accessor
     int64_t get_cell_hash_slow(int64_t cell_index) const;
 
@@ -280,8 +280,8 @@ public:
     virtual bool is_connectivity_valid() const = 0;
 
 protected: // member functions
-    Accessor<char> get_flag_accessor(PrimitiveType type);
-    Accessor<int64_t> get_cell_hash_accessor();
+    attribute::Accessor<char> get_flag_accessor(PrimitiveType type);
+    attribute::Accessor<int64_t> get_cell_hash_accessor();
 
     /**
      * @brief update hash in given cell
@@ -289,7 +289,7 @@ protected: // member functions
      * @param cell tuple in which the hash should be updated
      * @param hash_accessor hash accessor
      */
-    void update_cell_hash(const Tuple& cell, Accessor<int64_t>& hash_accessor);
+    void update_cell_hash(const Tuple& cell, attribute::Accessor<int64_t>& hash_accessor);
 
     /**
      * @brief update hashes in given cells
@@ -297,7 +297,7 @@ protected: // member functions
      * @param cells vector of tuples in which the hash should be updated
      * @param hash_accessor hash accessor
      */
-    void update_cell_hashes(const std::vector<Tuple>& cells, Accessor<int64_t>& hash_accessor);
+    void update_cell_hashes(const std::vector<Tuple>& cells, attribute::Accessor<int64_t>& hash_accessor);
     /**
      * @brief same as `update_cell_hashes` but slow because it creates a new accessor
      */
@@ -307,7 +307,7 @@ protected: // member functions
      * @param cell tuple in which the hash should be updated
      * @param hash_accessor hash accessor
      */
-    void update_cell_hash(const int64_t cell_index, Accessor<int64_t>& hash_accessor);
+    void update_cell_hash(const int64_t cell_index, attribute::Accessor<int64_t>& hash_accessor);
 
     /**
      * @brief update hashes in given cells
@@ -317,7 +317,7 @@ protected: // member functions
      */
     void update_cell_hashes(
         const std::vector<int64_t>& cell_indices,
-        Accessor<int64_t>& hash_accessor);
+        attribute::Accessor<int64_t>& hash_accessor);
 
     void update_cell_hashes_slow(const std::vector<Tuple>& cells);
 
@@ -331,7 +331,7 @@ protected: // member functions
      * @param hash_accessor hash accessor
      * @return tuple with updated hash
      */
-    Tuple resurrect_tuple(const Tuple& tuple, const ConstAccessor<int64_t>& hash_accessor) const;
+    Tuple resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const;
 
     /**
      * @brief same as `resurrect_tuple` but slow because it creates a new accessor
@@ -462,7 +462,7 @@ public:
     virtual bool is_boundary(PrimitiveType, const Tuple& tuple) const = 0;
 
 
-    bool is_hash_valid(const Tuple& tuple, const ConstAccessor<int64_t>& hash_accessor) const;
+    bool is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const;
 
     /**
      * @brief check validity of tuple including its hash
@@ -473,7 +473,7 @@ public:
      * @return true if is valid
      * @return false
      */
-    virtual bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const = 0;
+    virtual bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const = 0;
     bool is_valid_slow(const Tuple& tuple) const;
 
 
@@ -756,7 +756,7 @@ public:
      * @param vertex operating vertex tuple
      * @param hash_accessor hash accesor of the parent mesh (*this)
      */
-    void update_vertex_operation_hashes(const Tuple& vertex, Accessor<int64_t>& hash_accessor);
+    void update_vertex_operation_hashes(const Tuple& vertex, attribute::Accessor<int64_t>& hash_accessor);
 
 
     /**
@@ -800,12 +800,12 @@ protected:
 
 
     template <typename T>
-    static auto& get_index_access(attribute::MutableAccessor<T>& attr)
+    static auto& get_index_access(attribute::Accessor<T>& attr)
     {
         return attr.index_access();
     }
     template <typename T>
-    static auto& get_index_access(const attribute::ConstAccessor<T>& attr)
+    static auto& get_index_access(const attribute::Accessor<T>& attr)
     {
         return attr.index_access();
     }
@@ -818,7 +818,7 @@ protected: // THese are protected so unit tests can access - do not use manually
            // classes?
     attribute::AttributeManager m_attribute_manager;
 
-    MultiMeshManager m_multi_mesh_manager;
+    multimesh::MultiMeshManager m_multi_mesh_manager;
 
     int64_t m_top_cell_dimension = -1;
 
@@ -856,23 +856,18 @@ private:
 
 
 template <typename T>
-inline Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
+inline attribute::Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
 {
-    return Accessor<T>(*this, handle);
+    return attribute::Accessor<T>(*this, handle);
 }
 template <typename T>
-inline ConstAccessor<T> Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
+inline const attribute::Accessor<T> Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
 {
-    return ConstAccessor<T>(*this, handle);
-}
-template <typename T>
-inline ConstAccessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle) const
-{
-    return create_const_accessor(handle);
+    return attribute::Accessor<T>(*this, handle);
 }
 
 template <typename T>
-inline Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
+inline attribute::Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());
@@ -880,7 +875,15 @@ inline Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& h
 }
 
 template <typename T>
-inline ConstAccessor<T> Mesh::create_const_accessor(
+inline const attribute::Accessor<T> Mesh::create_const_accessor(const attribute::MeshAttributeHandle& handle)
+{
+    assert(&handle.mesh() == this);
+    assert(handle.holds<T>());
+    return create_const_accessor(handle.as<T>());
+}
+
+template <typename T>
+inline const attribute::Accessor<T> Mesh::create_const_accessor(
     const attribute::MeshAttributeHandle& handle) const
 {
     assert(&handle.mesh() == this);

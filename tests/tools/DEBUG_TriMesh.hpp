@@ -80,9 +80,9 @@ public:
 
     using TriMesh::custom_attributes;
 
-    Accessor<int64_t> get_cell_hash_accessor();
+    wmtk::attribute::Accessor<int64_t> get_cell_hash_accessor();
 
-    TriMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<int64_t>& hash_accessor);
+    TriMeshOperationExecutor get_tmoe(const Tuple& t, attribute::Accessor<int64_t>& hash_accessor);
 };
 
 } // namespace wmtk::tests

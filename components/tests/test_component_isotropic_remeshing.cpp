@@ -48,7 +48,7 @@ void print_tuple_map_iso(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManag
     int64_t child_id = 0;
     for (auto& child_data : p_mul_manager.children()) {
         PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
-        auto parent_to_child_accessor = parent.create_accessor<int64_t>(child_data.map_handle);
+        auto parent_to_child_accessor = parent.create_const_accessor<int64_t>(child_data.map_handle);
         for (int64_t parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
             auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
                 parent.tuple_from_id(map_ptype, parent_gid));

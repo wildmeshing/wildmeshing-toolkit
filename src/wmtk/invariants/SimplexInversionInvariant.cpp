@@ -16,7 +16,7 @@ bool SimplexInversionInvariant::after(
     const std::vector<Tuple>&,
     const std::vector<Tuple>& top_dimension_tuples_after) const
 {
-    ConstAccessor<double> accessor = mesh().create_accessor(m_coordinate_handle);
+    const attribute::Accessor<double> accessor = mesh().create_const_accessor(m_coordinate_handle);
 
     if (mesh().top_simplex_type() == PrimitiveType::Tetrahedron) {
         assert(accessor.dimension() == 3);

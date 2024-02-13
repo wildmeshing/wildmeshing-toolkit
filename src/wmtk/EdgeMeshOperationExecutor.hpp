@@ -10,15 +10,15 @@ public:
     EdgeMeshOperationExecutor(
         EdgeMesh& m,
         const Tuple& operating_tuple,
-        Accessor<int64_t>& hash_acc);
+        attribute::Accessor<int64_t>& hash_acc);
     void delete_simplices();
     void update_cell_hash();
 
-    std::array<Accessor<char>, 2> flag_accessors;
-    Accessor<int64_t> ee_accessor;
-    Accessor<int64_t> ev_accessor;
-    Accessor<int64_t> ve_accessor;
-    Accessor<int64_t>& hash_accessor;
+    std::array<attribute::Accessor<char>, 2> flag_accessors;
+    attribute::Accessor<int64_t> ee_accessor;
+    attribute::Accessor<int64_t> ev_accessor;
+    attribute::Accessor<int64_t> ve_accessor;
+    attribute::Accessor<int64_t>& hash_accessor;
 
     /**
      * @brief gather all simplices that are deleted in a split

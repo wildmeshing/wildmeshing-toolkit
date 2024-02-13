@@ -34,6 +34,7 @@ public:
 
 
     CachingAccessor(Mesh& m, const TypedAttributeHandle<T>& handle);
+    CachingAccessor(const Mesh& m, const TypedAttributeHandle<T>& handle);
 
         ~CachingAccessor();
     CachingAccessor(const CachingAccessor&) = delete;

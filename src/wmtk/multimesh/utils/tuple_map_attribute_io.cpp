@@ -84,8 +84,8 @@ TwoTupleVector tuples_to_vectors(const Tuple& a, const Tuple& b)
 
 
 void symmetric_write_tuple_map_attributes(
-    Accessor<int64_t>& a_to_b,
-    Accessor<int64_t>& b_to_a,
+    wmtk::attribute::Accessor<int64_t>& a_to_b,
+    wmtk::attribute::Accessor<int64_t>& b_to_a,
     const Tuple& a_tuple,
     const Tuple& b_tuple)
 {
@@ -99,7 +99,7 @@ void symmetric_write_tuple_map_attributes(
     write_tuple_map_attribute(b_to_a, b_tuple, a_tuple);
 }
 void write_tuple_map_attribute(
-    Accessor<int64_t>& map_accessor,
+    wmtk::attribute::Accessor<int64_t>& map_accessor,
     const Tuple& source_tuple,
     const Tuple& target_tuple)
 {
@@ -120,7 +120,7 @@ void write_tuple_map_attribute_slow(
 }
 
 std::tuple<Tuple, Tuple> read_tuple_map_attribute(
-    const ConstAccessor<int64_t>& map_accessor,
+    const wmtk::attribute::Accessor<int64_t>& map_accessor,
     const Tuple& source_tuple)
 {
     auto map = map_accessor.const_vector_attribute(source_tuple);

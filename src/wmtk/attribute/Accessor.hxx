@@ -1,52 +1,52 @@
 #pragma once
 #include <wmtk/utils/Rational.hpp>
-#include "TupleAccessor.hpp"
+#include "Accessor.hpp"
 
 namespace wmtk::attribute {
 
 template <typename T>
-auto TupleAccessor<T>::const_vector_attribute(const Tuple& t) const -> ConstMapResult
+auto Accessor<T>::const_vector_attribute(const Tuple& t) const -> ConstMapResult
 {
     const int64_t idx = index(t);
     return CachingBaseType::const_vector_attribute(idx);
 }
 
 template <typename T>
-auto TupleAccessor<T>::vector_attribute(const Tuple& t) -> MapResult
+auto Accessor<T>::vector_attribute(const Tuple& t) -> MapResult
 {
     const int64_t idx = index(t);
     return CachingBaseType::vector_attribute(idx);
 }
 
 template <typename T>
-auto TupleAccessor<T>::scalar_attribute(const Tuple& t) -> T&
+auto Accessor<T>::scalar_attribute(const Tuple& t) -> T&
 {
     const int64_t idx = index(t);
     return CachingBaseType::scalar_attribute(idx);
 }
 
 template <typename T>
-T TupleAccessor<T>::const_scalar_attribute(const Tuple& t) const
+T Accessor<T>::const_scalar_attribute(const Tuple& t) const
 {
     const int64_t idx = index(t);
     return CachingBaseType::const_scalar_attribute(idx);
 }
 template <typename T>
-int64_t TupleAccessor<T>::index(const Tuple& t) const
+int64_t Accessor<T>::index(const Tuple& t) const
 {
     assert(mesh().is_valid_slow(t));
     return mesh().id(t, BaseType::typed_handle().primitive_type());
 }
 
 template <typename T>
-auto TupleAccessor<T>::topological_scalar_attribute(const Tuple& t) -> T&
+auto Accessor<T>::topological_scalar_attribute(const Tuple& t) -> T&
 {
     const int64_t idx = index(t);
     return CachingBaseType::scalar_attribute(idx);
 }
 
 template <typename T>
-T TupleAccessor<T>::const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const
+T Accessor<T>::const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const
 {
     assert(mesh().top_simplex_type() == BaseType::primitive_type());
     switch (pt) {
@@ -60,8 +60,8 @@ T TupleAccessor<T>::const_topological_scalar_attribute(const Tuple& t, Primitive
     default: return T(0);
     }
 }
-// template class TupleAccessor<char>;
-// template class TupleAccessor<int64_t>;
-// template class TupleAccessor<double>;
-// template class TupleAccessor<Rational>;
+// template class Accessor<char>;
+// template class Accessor<int64_t>;
+// template class Accessor<double>;
+// template class Accessor<Rational>;
 } // namespace wmtk::attribute
