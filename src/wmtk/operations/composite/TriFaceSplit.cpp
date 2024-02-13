@@ -95,7 +95,7 @@ std::vector<simplex::Simplex> TriFaceSplit::execute(const simplex::Simplex& simp
     //     \  /
     // return new vertex's tuple
     const Tuple output_tuple =
-        mesh().switch_tuples(col1_ret, {PrimitiveType::Edge, PrimitiveType::Vertex});
+        mesh().switch_tuples(col1_ret, {PrimitiveType::Vertex, PrimitiveType::Edge});
 
     return {simplex::Simplex::vertex(output_tuple)};
 }

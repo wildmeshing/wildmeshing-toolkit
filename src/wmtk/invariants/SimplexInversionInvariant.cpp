@@ -49,7 +49,7 @@ bool SimplexInversionInvariant::after(
                 ccw_tuple = mesh().switch_tuple(tuple,PrimitiveType::Vertex);
             }
             Eigen::Vector2d p0 = accessor.const_vector_attribute(ccw_tuple);
-            Eigen::Vector2d p1 = accessor.const_vector_attribute(mesh().switch_tuple(ccw_tuple, PrimitiveType::Triangle));
+            Eigen::Vector2d p1 = accessor.const_vector_attribute(mesh().switch_tuple(ccw_tuple, PrimitiveType::Vertex));
             Eigen::Vector2d p2 = accessor.const_vector_attribute(
                     mesh().switch_tuples(ccw_tuple, {PrimitiveType::Edge,  PrimitiveType::Vertex}));
 
