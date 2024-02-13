@@ -30,9 +30,9 @@ public:
     using BaseType = AccessorBase<T>;
 
     template <int D = Eigen::Dynamic>
-    using ConstMapResult = typename BaseType::ConstMapResult<D>; // Eigen::Map<const VectorX<T>>
+    using ConstMapResult = typename BaseType::template ConstMapResult<D>; // Eigen::Map<const VectorX<T>>
     template <int D = Eigen::Dynamic>
-    using MapResult = typename BaseType::MapResult<D>; // Eigen::Map<VectorX<T>>
+    using MapResult = typename BaseType::template MapResult<D>; // Eigen::Map<VectorX<T>>
 
 
     CachingAccessor(Mesh& m, const TypedAttributeHandle<T>& handle);
