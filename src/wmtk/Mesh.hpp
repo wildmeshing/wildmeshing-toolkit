@@ -217,10 +217,12 @@ public:
     template <typename T>
     attribute::Accessor<T> create_accessor(const attribute::MeshAttributeHandle& handle);
     template <typename T>
-    const attribute::Accessor<T> create_const_accessor(const attribute::MeshAttributeHandle& handle);
+    const attribute::Accessor<T> create_const_accessor(
+        const attribute::MeshAttributeHandle& handle);
 
     template <typename T>
-    const attribute::Accessor<T> create_const_accessor(const attribute::MeshAttributeHandle& handle) const;
+    const attribute::Accessor<T> create_const_accessor(
+        const attribute::MeshAttributeHandle& handle) const;
 
     template <typename T>
     attribute::Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
@@ -269,7 +271,8 @@ public:
     const attribute::Accessor<int64_t> get_const_cell_hash_accessor() const;
 
 
-    int64_t get_cell_hash(int64_t cell_index, const attribute::Accessor<int64_t>& hash_accessor) const;
+    int64_t get_cell_hash(int64_t cell_index, const attribute::Accessor<int64_t>& hash_accessor)
+        const;
     // utility function for getting a cell's hash - slow because it creates a new accessor
     int64_t get_cell_hash_slow(int64_t cell_index) const;
 
@@ -297,7 +300,9 @@ protected: // member functions
      * @param cells vector of tuples in which the hash should be updated
      * @param hash_accessor hash accessor
      */
-    void update_cell_hashes(const std::vector<Tuple>& cells, attribute::Accessor<int64_t>& hash_accessor);
+    void update_cell_hashes(
+        const std::vector<Tuple>& cells,
+        attribute::Accessor<int64_t>& hash_accessor);
     /**
      * @brief same as `update_cell_hashes` but slow because it creates a new accessor
      */
@@ -331,7 +336,8 @@ protected: // member functions
      * @param hash_accessor hash accessor
      * @return tuple with updated hash
      */
-    Tuple resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const;
+    Tuple resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+        const;
 
     /**
      * @brief same as `resurrect_tuple` but slow because it creates a new accessor
@@ -470,7 +476,8 @@ public:
      * @return true if is valid
      * @return false
      */
-    virtual bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const = 0;
+    virtual bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+        const = 0;
     bool is_valid_slow(const Tuple& tuple) const;
 
 
@@ -753,7 +760,9 @@ public:
      * @param vertex operating vertex tuple
      * @param hash_accessor hash accesor of the parent mesh (*this)
      */
-    void update_vertex_operation_hashes(const Tuple& vertex, attribute::Accessor<int64_t>& hash_accessor);
+    void update_vertex_operation_hashes(
+        const Tuple& vertex,
+        attribute::Accessor<int64_t>& hash_accessor);
 
 
     /**
@@ -793,7 +802,7 @@ protected:
 
 protected:
     int64_t id(const Tuple& tuple, PrimitiveType type) const;
-    int64_t id(const simplex::Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
+    int64_t id(const simplex::Simplex& s) const;
 
 
     template <typename T>
@@ -858,7 +867,8 @@ inline attribute::Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T
     return attribute::Accessor<T>(*this, handle);
 }
 template <typename T>
-inline const attribute::Accessor<T> Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
+inline const attribute::Accessor<T> Mesh::create_const_accessor(
+    const TypedAttributeHandle<T>& handle) const
 {
     return attribute::Accessor<T>(*this, handle);
 }
@@ -872,7 +882,8 @@ inline attribute::Accessor<T> Mesh::create_accessor(const attribute::MeshAttribu
 }
 
 template <typename T>
-inline const attribute::Accessor<T> Mesh::create_const_accessor(const attribute::MeshAttributeHandle& handle)
+inline const attribute::Accessor<T> Mesh::create_const_accessor(
+    const attribute::MeshAttributeHandle& handle)
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());
@@ -980,4 +991,11 @@ Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType& sequen
     return r;
 }
 
+inline int64_t Mesh::id(const simplex::Simplex& s) const
+{
+    if (s.m_index == -1) {
+        s.m_index = id(s.tuple(), s.primitive_type());
+    }
+    return s.m_index;
+}
 } // namespace wmtk
