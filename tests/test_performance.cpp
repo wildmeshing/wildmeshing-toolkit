@@ -3,7 +3,9 @@
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
