@@ -1,8 +1,13 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 #include <wmtk/PointMesh.hpp>
+#include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <wmtk/operations/EdgeCollapse.hpp>
+#include <wmtk/operations/EdgeSplit.hpp>
+#include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
@@ -39,7 +44,7 @@ TEST_CASE("Read_only", "[performance][.]")
     std::cout << "sum = " << sum << std::endl;
 }
 
-TEST_CASE("accessor_performance", "[accessor][.]")
+TEST_CASE("accessor_performance", "[accessor][performance][.]")
 {
     const std::filesystem::path meshfile = data_dir / "armadillo.msh";
 
@@ -116,4 +121,114 @@ TEST_CASE("accessor_performance", "[accessor][.]")
     //    }
     //    std::cout << "sum = " << sum << std::endl;
     //}
+}
+
+TEST_CASE("split_with_attributes", "[performance][.]")
+{
+    using namespace operations;
+
+    const std::filesystem::path meshfile = data_dir / "armadillo.msh";
+    const int64_t iterations = 5;
+
+    auto mesh_in = wmtk::read_mesh(meshfile);
+    Mesh& m = *mesh_in;
+
+    auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+
+
+    std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
+    pass_through_attributes.emplace_back(pos_handle);
+
+    std::string test_name;
+    SECTION("pos")
+    {
+        test_name = "[pos]";
+    }
+    SECTION("pos_double3")
+    {
+        test_name = "[pos,d3]";
+        pass_through_attributes.emplace_back(
+            m.register_attribute<double>("double_attr", PrimitiveType::Vertex, 3));
+    }
+    SECTION("many_doubles")
+    {
+        test_name = "[pos,d3]";
+        pass_through_attributes.emplace_back(
+            m.register_attribute<double>("double_attr1", PrimitiveType::Vertex, 3));
+        pass_through_attributes.emplace_back(
+            m.register_attribute<double>("double_attr2", PrimitiveType::Vertex, 3));
+        pass_through_attributes.emplace_back(
+            m.register_attribute<double>("double_attr3", PrimitiveType::Vertex, 3));
+        pass_through_attributes.emplace_back(
+            m.register_attribute<double>("double_attr4", PrimitiveType::Vertex, 3));
+        pass_through_attributes.emplace_back(
+            m.register_attribute<double>("double_attr5", PrimitiveType::Vertex, 3));
+        pass_through_attributes.emplace_back(
+            m.register_attribute<double>("double_attr6", PrimitiveType::Vertex, 3));
+        pass_through_attributes.emplace_back(
+            m.register_attribute<double>("double_attr7", PrimitiveType::Vertex, 3));
+        pass_through_attributes.emplace_back(
+            m.register_attribute<double>("double_attr8", PrimitiveType::Vertex, 3));
+        pass_through_attributes.emplace_back(
+            m.register_attribute<double>("double_attr9", PrimitiveType::Vertex, 3));
+    }
+
+    // split
+    auto op_split = std::make_shared<EdgeSplit>(m);
+
+    for (const auto& attr : pass_through_attributes) {
+        op_split->set_new_attribute_strategy(attr);
+    }
+
+
+    {
+        logger().set_level(spdlog::level::off);
+        POLYSOLVE_SCOPED_STOPWATCH(test_name, logger());
+        Scheduler scheduler;
+        SchedulerStats pass_stats;
+        for (long i = 0; i < iterations; ++i) {
+            pass_stats += scheduler.run_operation_on_all(*op_split);
+        }
+        logger().set_level(spdlog::level::trace);
+        logger().info("#performed operations : {}", pass_stats.number_of_performed_operations());
+        logger().info("#successful operations: {}", pass_stats.number_of_successful_operations());
+    }
+}
+
+TEST_CASE("collapse_performance", "[performance][.]")
+{
+    using namespace operations;
+
+    const std::filesystem::path meshfile = data_dir / "armadillo.msh";
+    const int64_t iterations = 5;
+
+    auto mesh_in = wmtk::read_mesh(meshfile);
+    Mesh& m = *mesh_in;
+
+    auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+
+
+    std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
+    pass_through_attributes.emplace_back(pos_handle);
+
+    auto invariant_link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(m);
+
+    //////////////////////////////////////////
+    // collapse
+    auto op_collapse = std::make_shared<EdgeCollapse>(m);
+    op_collapse->add_invariant(invariant_link_condition);
+    op_collapse->set_new_attribute_strategy(pos_handle);
+
+    {
+        logger().set_level(spdlog::level::off);
+        POLYSOLVE_SCOPED_STOPWATCH("Collapse", logger());
+        Scheduler scheduler;
+        SchedulerStats pass_stats;
+        for (long i = 0; i < iterations; ++i) {
+            pass_stats += scheduler.run_operation_on_all(*op_collapse);
+        }
+        logger().set_level(spdlog::level::trace);
+        logger().info("#performed operations : {}", pass_stats.number_of_performed_operations());
+        logger().info("#successful operations: {}", pass_stats.number_of_successful_operations());
+    }
 }

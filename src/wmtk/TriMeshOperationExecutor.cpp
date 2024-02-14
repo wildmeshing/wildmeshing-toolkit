@@ -128,7 +128,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     // update hash on all faces in the two-ring neighborhood
     simplex::SimplexCollection hash_update_region(m);
     for (const simplex::Simplex& v : edge_closed_star.simplex_vector(PrimitiveType::Vertex)) {
-        const simplex::SimplexCollection v_closed_star = simplex::closed_star(m_mesh, v);
+        const simplex::SimplexCollection v_closed_star = simplex::top_dimension_cofaces(m_mesh, v);
         hash_update_region.add(v_closed_star);
     }
     hash_update_region.sort_and_clean();
