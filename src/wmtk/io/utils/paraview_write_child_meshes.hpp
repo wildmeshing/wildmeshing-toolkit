@@ -1,5 +1,5 @@
-#include <wmtk/Accessor.hpp>
 #include <wmtk/Mesh.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 using namespace wmtk;
