@@ -30,7 +30,8 @@ std::pair<int64_t, int64_t> ValenceImprovementInvariant::valence_change(
         return std::make_pair(0, 0);
     }
     const simplex::Simplex f0 = simplex::Simplex::face(t);
-    const simplex::Simplex f1 = simplex::Simplex::face(mesh.switch_face(t));
+    const simplex::Simplex f1 =
+        simplex::Simplex::face(mesh.switch_tuple(t, PrimitiveType::Triangle));
     const std::vector<Tuple> vertices_t0 =
         simplex::faces_single_dimension_tuples(mesh, f0, PrimitiveType::Vertex);
     const std::vector<Tuple> vertices_t1 =

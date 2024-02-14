@@ -2,7 +2,6 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <wmtk/Primitive.hpp>
-#include <wmtk/attribute/MutableAccessor.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/multimesh/utils/edge_meshes_parameterization.hpp>
