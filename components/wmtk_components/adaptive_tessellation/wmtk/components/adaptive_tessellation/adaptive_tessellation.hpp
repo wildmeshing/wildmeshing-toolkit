@@ -1,7 +1,7 @@
 #pragma once
-#include <wmtk/Accessor.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATData.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
