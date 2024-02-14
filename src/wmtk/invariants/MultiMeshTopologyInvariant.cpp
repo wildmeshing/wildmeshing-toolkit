@@ -20,7 +20,7 @@ MultiMeshEdgeTopologyInvariant::MultiMeshEdgeTopologyInvariant(
 bool MultiMeshEdgeTopologyInvariant::before(const simplex::Simplex& t) const
 {
     const Tuple v1 = t.tuple();
-    const Tuple v2 = mesh().switch_vertex(t.tuple());
+    const Tuple v2 = mesh().switch_tuple(t.tuple(), PrimitiveType::Vertex);
 
     // if the edge is in the child mesh, return true
     if (mesh()

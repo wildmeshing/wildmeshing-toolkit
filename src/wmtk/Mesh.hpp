@@ -395,10 +395,7 @@ public:
     */
     virtual Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const = 0;
 
-    Tuple switch_vertex(const Tuple& tuple) const;
-    Tuple switch_edge(const Tuple& tuple) const;
-    Tuple switch_face(const Tuple& tuple) const;
-    Tuple switch_tetrahedron(const Tuple& tuple) const;
+    // NOTE: adding per-simplex utility functions here is _wrong_ and will be removed
 
 
     // Performs a sequence of switch_tuple operations in the order specified in op_sequence.
@@ -937,22 +934,6 @@ inline decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args) const
     return std::invoke(std::forward<Functor>(f), std::forward<Args>(args)...);
 }
 
-inline Tuple Mesh::switch_vertex(const Tuple& tuple) const
-{
-    return switch_tuple(tuple, PrimitiveType::Vertex);
-}
-inline Tuple Mesh::switch_edge(const Tuple& tuple) const
-{
-    return switch_tuple(tuple, PrimitiveType::Edge);
-}
-inline Tuple Mesh::switch_face(const Tuple& tuple) const
-{
-    return switch_tuple(tuple, PrimitiveType::Triangle);
-}
-inline Tuple Mesh::switch_tetrahedron(const Tuple& tuple) const
-{
-    return switch_tuple(tuple, PrimitiveType::Tetrahedron);
-}
 #if defined(__cpp_concepts)
 template <std::forward_iterator ContainerType>
 #else

@@ -5,7 +5,7 @@
 namespace wmtk::function::utils {
 
 template <typename T>
-std::tuple<std::vector<std::decay_t<typename attribute::internal::ConstMapResult<T>>>, int64_t>
+std::tuple<std::vector<std::decay_t<typename attribute::ConstMapResult<T>>>, int64_t>
 get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::Accessor<T>& accessor,
@@ -16,14 +16,14 @@ get_simplex_attributes(
     const simplex::Simplex simplex =
         mesh.is_ccw(simplex_in.tuple())
             ? simplex_in
-            : simplex::Simplex(simplex_in.primitive_type(), mesh.switch_vertex(simplex_in.tuple()));
+            : simplex::Simplex(simplex_in.primitive_type(), mesh.switch_tuple(simplex_in.tuple(), PrimitiveType::Vertex));
 
     assert(mesh.is_ccw(simplex.tuple()));
     const std::vector<Tuple> faces =
         wmtk::simplex::faces_single_dimension_tuples(mesh, simplex, primitive_type);
 
 
-    std::vector<std::decay_t<typename attribute::AccessorBase<T>::ConstMapResult>> ret;
+    std::vector<std::decay_t<typename attribute::ConstMapResult<T>>> ret;
     ret.reserve(faces.size());
     int64_t vertex_marker_index = -1;
 
@@ -55,7 +55,7 @@ get_simplex_attributes(
     return {ret, vertex_marker_index};
 }
 
-template std::tuple<std::vector<std::decay_t<typename attribute::AccessorBase<char>::ConstMapResult>>, int64_t>
+template std::tuple<std::vector<std::decay_t<typename attribute::ConstMapResult<char>>>, int64_t>
 get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::Accessor<char>& accessor,
@@ -63,7 +63,7 @@ get_simplex_attributes(
     const simplex::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker);
 
-template std::tuple<std::vector<std::decay_t<typename attribute::AccessorBase<int64_t>::ConstMapResult>>, int64_t>
+template std::tuple<std::vector<std::decay_t<typename attribute::ConstMapResult<int64_t>>>, int64_t>
 get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::Accessor<int64_t>& accessor,
@@ -71,7 +71,7 @@ get_simplex_attributes(
     const simplex::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker);
 
-template std::tuple<std::vector<std::decay_t<typename attribute::AccessorBase<double>::ConstMapResult>>, int64_t>
+template std::tuple<std::vector<std::decay_t<typename attribute::ConstMapResult<double>>>, int64_t>
 get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::Accessor<double>& accessor,
@@ -80,7 +80,7 @@ get_simplex_attributes(
     const std::optional<wmtk::Tuple>& vertex_marker);
 
 template std::
-    tuple<std::vector<std::decay_t<typename attribute::AccessorBase<Rational>::ConstMapResult>>, int64_t>
+    tuple<std::vector<std::decay_t<typename attribute::ConstMapResult<Rational>>>, int64_t>
     get_simplex_attributes(
         const Mesh& mesh,
         const wmtk::attribute::Accessor<Rational>& accessor,

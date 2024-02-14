@@ -83,7 +83,7 @@ void Marching::process()
         }
 
         const int64_t vt0 = acc_vertex_tag.scalar_attribute(edge);
-        const int64_t vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(edge));
+        const int64_t vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_tuple(edge,PrimitiveType::Vertex));
         if ((vt0 == vertex_tag_0 && vt1 == vertex_tag_1) ||
             (vt1 == vertex_tag_0 && vt0 == vertex_tag_1)) {
             acc_todo.scalar_attribute(edge) = 1;

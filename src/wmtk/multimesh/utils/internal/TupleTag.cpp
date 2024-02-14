@@ -48,7 +48,7 @@ std::set<int64_t> TupleTag::run()
     for (const Tuple& e : e_tuples) {
         if (mesh().is_boundary(PrimitiveType::Edge, e)) {
             Tuple v1 = e;
-            Tuple v2 = mesh().switch_vertex(e);
+            Tuple v2 = mesh().switch_tuple(e, PrimitiveType::Vertex);
             // both vertices are critical points
             if (is_critical_vertex(v1) && is_critical_vertex(v2)) {
                 set_edge_tag(e, edge_tag + vid_max);
@@ -156,7 +156,7 @@ void TupleTag::vertex_sets_unify(const Tuple& v1, const Tuple& v2)
 void TupleTag::run(const Tuple& e)
 {
     Tuple v1 = e;
-    Tuple v2 = mesh().switch_vertex(e);
+    Tuple v2 = mesh().switch_tuple(e, PrimitiveType::Vertex);
     int64_t vid1 = vid(v1);
     int64_t vid2 = vid(v2);
     // both vertices are critical points

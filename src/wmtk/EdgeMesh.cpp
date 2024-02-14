@@ -16,7 +16,7 @@ int64_t EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
     switch (type) {
     case PrimitiveType::Vertex: {
         const attribute::Accessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
-        auto ev = ev_accessor.const_vector_attribute(tuple);
+        auto ev = ev_accessor.const_vector_attribute<2>(tuple);
         return ev(tuple.m_local_vid);
     }
     case PrimitiveType::Edge: {
@@ -48,7 +48,7 @@ bool EdgeMesh::is_boundary_vertex(const Tuple& tuple) const
 {
     assert(is_valid_slow(tuple));
     const attribute::Accessor<int64_t> ee_accessor = create_const_accessor<int64_t>(m_ee_handle);
-    return ee_accessor.const_vector_attribute(tuple)(tuple.m_local_vid) < 0;
+    return ee_accessor.const_vector_attribute<2>(tuple)(tuple.m_local_vid) < 0;
 }
 
 Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
@@ -68,7 +68,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         const int64_t gvid = id(tuple, PrimitiveType::Vertex);
 
         const attribute::Accessor<int64_t> ee_accessor = create_const_accessor<int64_t>(m_ee_handle);
-        auto ee = ee_accessor.const_vector_attribute(tuple);
+        auto ee = ee_accessor.const_vector_attribute<2>(tuple);
 
         int64_t gcid_new = ee(tuple.m_local_vid);
 
@@ -81,7 +81,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         int64_t lvid_new = -1;
 
         const attribute::Accessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
-        auto ev = ev_accessor.index_access().const_vector_attribute(gcid_new);
+        auto ev = ev_accessor.index_access().const_vector_attribute<2>(gcid_new);
 
         for (int64_t i = 0; i < 2; ++i) {
             if (ev(i) == gvid) {
@@ -138,8 +138,8 @@ void EdgeMesh::initialize(
     // iterate over the matrices and fill attributes
 
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
-        ev_accessor.index_access().vector_attribute(i) = EV.row(i).transpose();
-        ee_accessor.index_access().vector_attribute(i) = EE.row(i).transpose();
+        ev_accessor.index_access().vector_attribute<2>(i) = EV.row(i).transpose();
+        ee_accessor.index_access().vector_attribute<2>(i) = EE.row(i).transpose();
 
         e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
@@ -184,7 +184,7 @@ Tuple EdgeMesh::vertex_tuple_from_id(int64_t id) const
     const attribute::Accessor<int64_t> ve_accessor = create_const_accessor<int64_t>(m_ve_handle);
     auto e = ve_accessor.index_access().const_scalar_attribute(id);
     const attribute::Accessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
-    auto ev = ev_accessor.index_access().const_vector_attribute(e);
+    auto ev = ev_accessor.index_access().const_vector_attribute<2>(e);
     for (int64_t i = 0; i < 2; ++i) {
         if (ev(i) == id) {
             Tuple v_tuple = Tuple(i, -1, -1, e, get_cell_hash_slow(e));
@@ -207,7 +207,7 @@ Tuple EdgeMesh::edge_tuple_from_id(int64_t id) const
 Tuple EdgeMesh::tuple_from_global_ids(int64_t eid, int64_t vid) const
 {
     const attribute::Accessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
-    auto ev = ev_accessor.index_access().const_vector_attribute(eid);
+    auto ev = ev_accessor.index_access().const_vector_attribute<2>(eid);
 
     int64_t lvid = -1;
 
@@ -253,7 +253,7 @@ bool EdgeMesh::is_connectivity_valid() const
         }
         int cnt = 0;
         for (int64_t j = 0; j < 2; ++j) {
-            if (ev_accessor.index_access().const_vector_attribute(
+            if (ev_accessor.index_access().const_vector_attribute<2>(
                     ve_accessor.index_access().const_scalar_attribute(i))[j] == i) {
                 cnt++;
             }
