@@ -3,12 +3,17 @@
 #include <wmtk/PrimitiveType.hpp>
 #include <wmtk/Tuple.hpp>
 
+namespace wmtk {
+    class Mesh;
+}
 namespace wmtk::simplex {
 
 class Simplex
 {
     PrimitiveType m_primitive_type;
     Tuple m_tuple;
+    mutable int64_t m_index = -1;
+    friend class wmtk::Mesh;
 
 public:
     Simplex(const PrimitiveType& ptype, const Tuple& t)
