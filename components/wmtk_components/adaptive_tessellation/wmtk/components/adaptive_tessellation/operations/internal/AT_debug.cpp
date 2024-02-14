@@ -51,19 +51,20 @@ void _debug_texture_integral(
 {
     Accessor<double> m_uv_accessor = mesh->create_accessor(m_uv_handle.as<double>());
     wmtk::attribute::MeshAttributeHandle image_res_handle =
-        mesh->register_attribute<double>("image_res", PrimitiveType::Face, 1);
+        mesh->register_attribute<double>("image_res", PrimitiveType::Triangle, 1);
     Accessor<double> image_res_accessor = mesh->create_accessor(image_res_handle.as<double>());
     wmtk::attribute::MeshAttributeHandle func_res_handle =
-        mesh->register_attribute<double>("func_res", PrimitiveType::Face, 1);
+        mesh->register_attribute<double>("func_res", PrimitiveType::Triangle, 1);
     Accessor<double> func_res_accessor = mesh->create_accessor(func_res_handle.as<double>());
-    for (auto& f : mesh->get_all(PrimitiveType::Face)) {
+    for (auto& f : mesh->get_all(PrimitiveType::Triangle)) {
         if (!mesh->is_ccw(f)) {
-            f = mesh->switch_vertex(f);
+            f = mesh->switch_tuple(f, PrimitiveType::Vertex);
         }
         const Eigen::Vector2d uv0 = m_uv_accessor.vector_attribute(f);
-        const Eigen::Vector2d uv1 = m_uv_accessor.vector_attribute(mesh->switch_vertex(f));
-        const Eigen::Vector2d uv2 =
-            m_uv_accessor.vector_attribute(mesh->switch_vertex(mesh->switch_edge(f)));
+        const Eigen::Vector2d uv1 =
+            m_uv_accessor.vector_attribute(mesh->switch_tuple(f, PrimitiveType::Vertex));
+        const Eigen::Vector2d uv2 = m_uv_accessor.vector_attribute(
+            mesh->switch_tuple(mesh->switch_tuple(f, PrimitiveType::Edge), PrimitiveType::Vertex));
 
         wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
             analytical_quadrature(func_evaluator);

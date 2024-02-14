@@ -21,13 +21,13 @@ public:
     double m_amips_weight;
     bool m_area_weighted_amips;
 
-    Accessor<double> m_uv_accessor;
-    Accessor<double> m_uvmesh_xyz_accessor;
-    Accessor<double> m_distance_error_accessor;
-    Accessor<double> m_sum_error_accessor;
-    Accessor<double> m_barrier_energy_accessor;
-    Accessor<double> m_amips_error_accessor;
-    Accessor<double> m_3d_edge_length_accessor;
+    wmtk::attribute::Accessor<double> m_uv_accessor;
+    wmtk::attribute::Accessor<double> m_uvmesh_xyz_accessor;
+    wmtk::attribute::Accessor<double> m_distance_error_accessor;
+    wmtk::attribute::Accessor<double> m_sum_error_accessor;
+    wmtk::attribute::Accessor<double> m_barrier_energy_accessor;
+    wmtk::attribute::Accessor<double> m_amips_error_accessor;
+    wmtk::attribute::Accessor<double> m_3d_edge_length_accessor;
 
     std::vector<std::shared_ptr<wmtk::operations::Operation>> m_ops;
     std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>

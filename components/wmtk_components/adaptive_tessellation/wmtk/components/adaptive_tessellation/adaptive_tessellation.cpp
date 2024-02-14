@@ -91,14 +91,14 @@ void write(
 }
 void write_face_attr(
     const std::shared_ptr<Mesh>& mesh,
-    const Accessor<double>& face_error_accessor,
+    wmtk::attribute::Accessor<double>& face_error_accessor,
     nlohmann::ordered_json& jsonData,
     const int64_t index,
     const std::string& filename)
 {
     // Create an array under the key "data"
     jsonData["itr_" + std::to_string(index)] = nlohmann::json::array();
-    for (auto& f : mesh->get_all(PrimitiveType::Face)) {
+    for (auto& f : mesh->get_all(PrimitiveType::Triangle)) {
         double res = face_error_accessor.scalar_attribute(f);
         jsonData["itr_" + std::to_string(index)].push_back(res);
     }

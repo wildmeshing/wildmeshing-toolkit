@@ -103,15 +103,17 @@ void ATOperations::set_distance_error_update_rule()
 void ATOperations::initialize_distance_error()
 {
     // initialize distance error values
-    for (auto& f : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Face)) {
+    for (auto& f : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Triangle)) {
         if (!m_atdata.uv_mesh_ptr()->is_ccw(f)) {
-            f = m_atdata.uv_mesh_ptr()->switch_vertex(f);
+            f = m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Vertex);
         }
         const Eigen::Vector2d v0 = m_uv_accessor.vector_attribute(f);
-        const Eigen::Vector2d v1 =
-            m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_vertex(f));
-        const Eigen::Vector2d v2 = m_uv_accessor.vector_attribute(
-            m_atdata.uv_mesh_ptr()->switch_vertex(m_atdata.uv_mesh_ptr()->switch_edge(f)));
+        const Eigen::Vector2d v1 = m_uv_accessor.vector_attribute(
+            m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Vertex));
+        const Eigen::Vector2d v2 =
+            m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_tuple(
+                m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Edge),
+                PrimitiveType::Vertex));
 
         double res = m_integral_ptr->get_error_one_triangle_exact(v0, v1, v2);
 
@@ -156,15 +158,17 @@ void ATOperations::set_amips_error_update_rule()
 void ATOperations::initialize_amips_error()
 {
     // initialize face error values
-    for (auto& f : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Face)) {
+    for (auto& f : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Triangle)) {
         if (!m_atdata.uv_mesh_ptr()->is_ccw(f)) {
-            f = m_atdata.uv_mesh_ptr()->switch_vertex(f);
+            f = m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Vertex);
         }
         const Eigen::Vector2d uv0 = m_uv_accessor.vector_attribute(f);
-        const Eigen::Vector2d uv1 =
-            m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_vertex(f));
-        const Eigen::Vector2d uv2 = m_uv_accessor.vector_attribute(
-            m_atdata.uv_mesh_ptr()->switch_vertex(m_atdata.uv_mesh_ptr()->switch_edge(f)));
+        const Eigen::Vector2d uv1 = m_uv_accessor.vector_attribute(
+            m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Vertex));
+        const Eigen::Vector2d uv2 =
+            m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_tuple(
+                m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Edge),
+                PrimitiveType::Vertex));
         auto p0 = m_evaluator_ptr->uv_to_position(uv0);
         auto p1 = m_evaluator_ptr->uv_to_position(uv1);
         auto p2 = m_evaluator_ptr->uv_to_position(uv2);
@@ -220,15 +224,17 @@ void ATOperations::set_sum_error_update_rule()
 void ATOperations::initialize_sum_error()
 {
     // initialize face error values
-    for (auto& f : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Face)) {
+    for (auto& f : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Triangle)) {
         if (!m_atdata.uv_mesh_ptr()->is_ccw(f)) {
-            f = m_atdata.uv_mesh_ptr()->switch_vertex(f);
+            f = m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Vertex);
         }
         const Eigen::Vector2d uv0 = m_uv_accessor.vector_attribute(f);
-        const Eigen::Vector2d uv1 =
-            m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_vertex(f));
-        const Eigen::Vector2d uv2 = m_uv_accessor.vector_attribute(
-            m_atdata.uv_mesh_ptr()->switch_vertex(m_atdata.uv_mesh_ptr()->switch_edge(f)));
+        const Eigen::Vector2d uv1 = m_uv_accessor.vector_attribute(
+            m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Vertex));
+        const Eigen::Vector2d uv2 =
+            m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_tuple(
+                m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Edge),
+                PrimitiveType::Vertex));
         auto p0 = m_evaluator_ptr->uv_to_position(uv0);
         auto p1 = m_evaluator_ptr->uv_to_position(uv1);
         auto p2 = m_evaluator_ptr->uv_to_position(uv2);
@@ -271,15 +277,17 @@ void ATOperations::set_barrier_energy_update_rule()
 
 void ATOperations::initialize_barrier_energy()
 { // initialize face error values
-    for (auto& f : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Face)) {
+    for (auto& f : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Triangle)) {
         if (!m_atdata.uv_mesh_ptr()->is_ccw(f)) {
-            f = m_atdata.uv_mesh_ptr()->switch_vertex(f);
+            f = m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Vertex);
         }
         const Eigen::Vector2d uv0 = m_uv_accessor.vector_attribute(f);
-        const Eigen::Vector2d uv1 =
-            m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_vertex(f));
-        const Eigen::Vector2d uv2 = m_uv_accessor.vector_attribute(
-            m_atdata.uv_mesh_ptr()->switch_vertex(m_atdata.uv_mesh_ptr()->switch_edge(f)));
+        const Eigen::Vector2d uv1 = m_uv_accessor.vector_attribute(
+            m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Vertex));
+        const Eigen::Vector2d uv2 =
+            m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_tuple(
+                m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Edge),
+                PrimitiveType::Vertex));
         auto res = wmtk::function::utils::area_barrier(uv0, uv1, uv2, m_barrier_triangle_area);
         m_barrier_energy_accessor.scalar_attribute(f) = res;
     }
@@ -307,8 +315,8 @@ void ATOperations::initialize_3d_edge_length()
     // initialize edge length values
     for (auto& e : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Edge)) {
         const auto p0 = m_uvmesh_xyz_accessor.vector_attribute(e);
-        const auto p1 =
-            m_uvmesh_xyz_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_vertex(e));
+        const auto p1 = m_uvmesh_xyz_accessor.vector_attribute(
+            m_atdata.uv_mesh_ptr()->switch_tuple(e, PrimitiveType::Vertex));
         m_3d_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
     }
 }

@@ -9,7 +9,7 @@
 namespace wmtk::function::utils {
 template <int64_t NV, int64_t DIM>
 std::array<double, NV * DIM> unbox(
-    const std::vector<typename attribute::AccessorBase<double>::ConstMapResult>& data,
+    const std::vector<std::decay_t<typename attribute::ConstMapResult<double>>>& data,
     const int64_t index)
 {
     std::array<double, NV * DIM> res;
@@ -47,7 +47,7 @@ DistanceEnergyNonDiff::~DistanceEnergyNonDiff() = default;
 double DistanceEnergyNonDiff::get_value(const simplex::Simplex& domain_simplex) const
 {
     assert(embedded_dimension() == 2);
-    wmtk::attribute::ConstAccessor<double> accessor =
+    wmtk::attribute::Accessor<double> accessor =
         mesh().create_const_accessor(attribute_handle().as<double>());
     auto [attrs, index] = utils::get_simplex_attributes(
         mesh(),

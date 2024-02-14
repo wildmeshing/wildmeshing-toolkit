@@ -138,20 +138,20 @@ ATOperations::ATOperations(
         return std::vector<double>(
             {-(m_sum_error_accessor.scalar_attribute(s.tuple()) +
                m_sum_error_accessor.scalar_attribute(
-                   m_atdata.uv_mesh_ptr()->switch_face(s.tuple())))});
+                   m_atdata.uv_mesh_ptr()->switch_tuple(s.tuple(), PrimitiveType::Triangle)))});
     };
     m_high_distance_edges_first = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         if (m_atdata.uv_mesh_ptr()->is_boundary(s)) {
             return std::vector<double>({-m_distance_error_accessor.scalar_attribute(s.tuple())});
         }
-        auto other_face = m_atdata.uv_mesh_ptr()->switch_face(s.tuple());
+        auto other_face = m_atdata.uv_mesh_ptr()->switch_tuple(s.tuple(), PrimitiveType::Triangle);
         return std::vector<double>(
             {-(m_distance_error_accessor.scalar_attribute(s.tuple()) +
                m_distance_error_accessor.scalar_attribute(other_face))});
     };
     m_high_distance_faces_first = [&](const Simplex& s) {
-        assert(s.primitive_type() == PrimitiveType::Face);
+        assert(s.primitive_type() == PrimitiveType::Triangle);
         return std::vector<double>({-m_distance_error_accessor.scalar_attribute(s.tuple())});
     };
 
@@ -163,7 +163,7 @@ ATOperations::ATOperations(
         return std::vector<double>(
             {-(m_amips_error_accessor.scalar_attribute(s.tuple()) +
                m_amips_error_accessor.scalar_attribute(
-                   m_atdata.uv_mesh_ptr()->switch_face(s.tuple())))});
+                   m_atdata.uv_mesh_ptr()->switch_tuple(s.tuple(), PrimitiveType::Triangle)))});
     };
     m_long_edges_first = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);

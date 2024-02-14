@@ -172,13 +172,19 @@ void ATData::initialize_handles()
     m_uvmesh_xyz_handle =
         m_uv_mesh_ptr->register_attribute<double>("positions", PrimitiveType::Vertex, 3, true);
     m_sum_error_handle =
-        m_uv_mesh_ptr->register_attribute<double>("sum_error", PrimitiveType::Face, 1, true);
-    m_distance_error_handle =
-        m_uv_mesh_ptr->register_attribute<double>("distance_error", PrimitiveType::Face, 1, true);
+        m_uv_mesh_ptr->register_attribute<double>("sum_error", PrimitiveType::Triangle, 1, true);
+    m_distance_error_handle = m_uv_mesh_ptr->register_attribute<double>(
+        "distance_error",
+        PrimitiveType::Triangle,
+        1,
+        true);
     m_amips_error_handle =
-        m_uv_mesh_ptr->register_attribute<double>("amips_error", PrimitiveType::Face, 1, true);
-    m_barrier_energy_handle =
-        m_uv_mesh_ptr->register_attribute<double>("barrier_energy", PrimitiveType::Face, 1, true);
+        m_uv_mesh_ptr->register_attribute<double>("amips_error", PrimitiveType::Triangle, 1, true);
+    m_barrier_energy_handle = m_uv_mesh_ptr->register_attribute<double>(
+        "barrier_energy",
+        PrimitiveType::Triangle,
+        1,
+        true);
     m_3d_edge_length_handle =
         m_uv_mesh_ptr->register_attribute<double>("3d_edge_length", PrimitiveType::Edge, 1, true);
 }
