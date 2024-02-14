@@ -253,9 +253,9 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
     /// split on amips error
 
-    // at_ops.AT_edge_split(at_ops.m_high_amips_edges_first, at_ops.m_3d_amips_energy);
-    // at_ops.AT_boundary_edge_split(at_ops.m_high_amips_edges_first, at_ops.m_3d_amips_energy);
-    // at_ops.AT_smooth_interior(at_ops.m_3d_amips_energy);
+    at_ops.AT_edge_split(at_ops.m_long_edges_first, at_ops.m_3d_amips_energy);
+    at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first, at_ops.m_3d_amips_energy);
+    at_ops.AT_smooth_interior(at_ops.m_3d_amips_energy);
 
 
     // nlohmann::ordered_json FaceErrorJson;
