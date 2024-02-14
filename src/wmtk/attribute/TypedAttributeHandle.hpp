@@ -10,8 +10,9 @@ template <typename T>
 class MeshAttributes;
 template <typename T>
 class AccessorBase;
-template <typename T>
+template <typename T, typename MeshType>
 class Accessor;
+
 class AttributeManager;
 
 class MeshAttributeHandle;
@@ -33,7 +34,8 @@ private:
     friend class wmtk::Mesh;
     friend class MeshAttributes<T>;
     friend class AccessorBase<T>;
-    friend class Accessor<T>;
+    template <typename U, typename MeshType>
+    friend class Accessor;
     friend class AttributeManager;
     friend class wmtk::hash<TypedAttributeHandle<T>>;
     AttributeHandle m_base_handle;

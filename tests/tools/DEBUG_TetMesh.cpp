@@ -271,14 +271,6 @@ void DEBUG_TetMesh::reserve_attributes(PrimitiveType type, int64_t size)
     Mesh::reserve_attributes(type, size);
 }
 
-int64_t DEBUG_TetMesh::id(const Tuple& tuple, PrimitiveType type) const
-{
-    return TetMesh::id(tuple, type);
-}
-int64_t DEBUG_TetMesh::id(const simplex::Simplex& s) const
-{
-    return id(s.tuple(), s.primitive_type());
-}
 
 attribute::Accessor<int64_t> DEBUG_TetMesh::get_cell_hash_accessor()
 {

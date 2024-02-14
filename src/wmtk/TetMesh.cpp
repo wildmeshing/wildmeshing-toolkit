@@ -15,7 +15,7 @@ namespace wmtk {
 using namespace autogen;
 
 TetMesh::TetMesh()
-    : Mesh(3)
+    : MeshCRTP<TetMesh>(3)
     , m_vt_handle(register_attribute_typed<int64_t>("m_vt", PrimitiveType::Vertex, 1, false, -1))
     , m_et_handle(register_attribute_typed<int64_t>("m_et", PrimitiveType::Edge, 1, false, -1))
     , m_ft_handle(register_attribute_typed<int64_t>("m_ft", PrimitiveType::Triangle, 1, false, -1))
@@ -33,7 +33,7 @@ TetMesh::TetMesh()
 
 
 TetMesh::TetMesh(TetMesh&& o)
-    : Mesh(std::move(o))
+    : MeshCRTP<TetMesh>(std::move(o))
 {
     m_vt_handle = o.m_vt_handle;
     m_et_handle = o.m_et_handle;
@@ -63,14 +63,14 @@ TetMesh& TetMesh::operator=(TetMesh&& o)
 
 void TetMesh::make_cached_accessors()
 {
-    m_vt_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_vt_handle);
-    m_et_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_et_handle);
-    m_ft_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_ft_handle);
+    m_vt_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_vt_handle);
+    m_et_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_et_handle);
+    m_ft_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_ft_handle);
 
-    m_tv_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_tv_handle);
-    m_te_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_te_handle);
-    m_tf_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_tf_handle);
-    m_tt_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_tt_handle);
+    m_tv_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_tv_handle);
+    m_te_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_te_handle);
+    m_tf_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_tf_handle);
+    m_tt_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_tt_handle);
 }
 
 
@@ -94,13 +94,13 @@ void TetMesh::initialize(
     set_capacities(cap);
 
     // get Accessors for topology
-    attribute::Accessor<int64_t> vt_accessor = create_accessor<int64_t>(m_vt_handle);
-    attribute::Accessor<int64_t> et_accessor = create_accessor<int64_t>(m_et_handle);
-    attribute::Accessor<int64_t> ft_accessor = create_accessor<int64_t>(m_ft_handle);
-    attribute::Accessor<int64_t> tv_accessor = create_accessor<int64_t>(m_tv_handle);
-    attribute::Accessor<int64_t> te_accessor = create_accessor<int64_t>(m_te_handle);
-    attribute::Accessor<int64_t> tf_accessor = create_accessor<int64_t>(m_tf_handle);
-    attribute::Accessor<int64_t> tt_accessor = create_accessor<int64_t>(m_tt_handle);
+    auto vt_accessor = create_accessor<int64_t>(m_vt_handle);
+    auto et_accessor = create_accessor<int64_t>(m_et_handle);
+    auto ft_accessor = create_accessor<int64_t>(m_ft_handle);
+    auto tv_accessor = create_accessor<int64_t>(m_tv_handle);
+    auto te_accessor = create_accessor<int64_t>(m_te_handle);
+    auto tf_accessor = create_accessor<int64_t>(m_tf_handle);
+    auto tt_accessor = create_accessor<int64_t>(m_tt_handle);
     attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
     attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
     attribute::Accessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Triangle);

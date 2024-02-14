@@ -18,7 +18,7 @@ namespace wmtk::attribute {
  * As global simplex ids should not be publicly available, this accessor uses the Mesh.id() function
  * to map from a tuple to the global simplex id.
  */
-template <typename T>
+template <typename T, typename MeshType = Mesh>
 class Accessor : protected CachingAccessor<T>
 {
 public:
@@ -35,12 +35,17 @@ public:
 
     // Eigen::Map<VectorX<T>>
     template <int D = Eigen::Dynamic>
-    using MapResult = internal::MapResult<T,D>;
+    using MapResult = internal::MapResult<T, D>;
     // Eigen::Map<const VectorX<T>>
     template <int D = Eigen::Dynamic>
-    using ConstMapResult = internal::ConstMapResult<T,D>;
+    using ConstMapResult = internal::ConstMapResult<T, D>;
 
-    using CachingBaseType::CachingBaseType;
+
+    Accessor(MeshType& m, const TypedAttributeHandle<T>& handle);
+    Accessor(const MeshType& m, const TypedAttributeHandle<T>& handle);
+
+    template <typename OMType>
+    Accessor(const Accessor<T, OMType>& o);
 
 
     T const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const;
@@ -59,6 +64,8 @@ public:
     using BaseType::reserved_size; // const() -> int64_t
 
     using BaseType::attribute; // access to Attribute object being used here
+    using BaseType::handle;
+    using BaseType::mesh;
     using CachingBaseType::has_stack;
     using CachingBaseType::mesh;
     using CachingBaseType::stack_depth;
