@@ -4,21 +4,28 @@
 #include <wmtk/Tuple.hpp>
 
 namespace wmtk {
-    class Mesh;
+class Mesh;
 }
 namespace wmtk::simplex {
 
 class Simplex
 {
+    friend class wmtk::Mesh;
     PrimitiveType m_primitive_type;
     Tuple m_tuple;
+    // the mesh class can use this index value to cache/accelerate operations
     mutable int64_t m_index = -1;
-    friend class wmtk::Mesh;
+
+    // private constructor mesh might want to use if it knows the ids beforehand
+    Simplex(const PrimitiveType& ptype, const Tuple& t, int64_t index)
+        : m_primitive_type{ptype}
+        , m_tuple{t}
+        , m_index(index)
+    {}
 
 public:
     Simplex(const PrimitiveType& ptype, const Tuple& t)
-        : m_primitive_type{ptype}
-        , m_tuple{t}
+        : Simplex(ptype, t, -1)
     {}
     Simplex(const Simplex&) = default;
     Simplex(Simplex&&) = default;
