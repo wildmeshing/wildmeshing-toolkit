@@ -31,6 +31,7 @@ namespace wmtk::io {
 Cache::Cache(Cache&& o)
     : m_cache_dir(std::move(o.m_cache_dir))
     , m_file_paths(std::move(o.m_file_paths))
+    , m_multimeshes(std::move(o.m_multimeshes))
     , m_delete_cache(o.m_delete_cache)
 {
     // make sure that the other cache doesn't use delete semantics anymore
@@ -40,6 +41,7 @@ Cache& Cache::operator=(Cache&& o)
 {
     m_cache_dir = std::move(o.m_cache_dir);
     m_file_paths = std::move(o.m_file_paths);
+    m_multimeshes = std::move(o.m_multimeshes);
     m_delete_cache = o.m_delete_cache;
     // make sure that the other cache doesn't use delete semantics anymore
     o.m_delete_cache = false;
@@ -144,11 +146,38 @@ std::filesystem::path Cache::get_cache_path() const
 {
     return m_cache_dir;
 }
+std::vector<int64_t> Cache::absolute_multi_mesh_id(const std::string& name) const
+{
+    auto mm_name = name.substr(0, name.find('.'));
+    return m_multimeshes.at(mm_name).get_id_from_path(name);
+}
+
+void Cache::load_multimesh(const std::string& name) const
+{
+    auto mm_name = name.substr(0, name.find('.'));
+    if (m_multimeshes.find(mm_name) == m_multimeshes.end()) {
+        m_multimeshes.emplace(
+            mm_name,
+            CachedMultiMesh(mm_name, std::map<std::string, std::vector<int64_t>>{}));
+    }
+    auto& cmm = m_multimeshes.at(mm_name);
+    if (!bool(cmm.get_root())) {
+        const fs::path p = get_file_path(mm_name);
+        cmm.load(p);
+    }
+}
 
 std::shared_ptr<Mesh> Cache::read_mesh(const std::string& name) const
 {
-    const fs::path p = get_file_path(name);
-    return wmtk::read_mesh(p);
+    auto mm_name = name.substr(0, name.find('.'));
+    load_multimesh(mm_name);
+    return m_multimeshes.at(mm_name).get_from_path(name);
+}
+void Cache::flush_multimeshes()
+{
+    for (auto& pr : m_multimeshes) {
+        pr.second.flush();
+    }
 }
 
 void Cache::write_mesh(
@@ -168,9 +197,14 @@ void Cache::write_mesh(
         p = it->second;
     }
 
-    for (const auto& v : multimesh_names) {
-        m_multimesh_names[name + "." + v.first] = v.second;
-    }
+    std::map<std::string, std::vector<int64_t>> mm_names = multimesh_names;
+
+    m_multimeshes.emplace(
+        name,
+        CachedMultiMesh(
+            name,
+            multimesh_names,
+            const_cast<Mesh&>(m).get_multi_mesh_root().shared_from_this()));
 
     HDF5Writer writer(p);
     m.serialize(writer, &m);

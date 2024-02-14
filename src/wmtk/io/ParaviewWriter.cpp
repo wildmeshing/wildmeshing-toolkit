@@ -112,7 +112,7 @@ ParaviewWriter::ParaviewWriter(
                         cells[i](j, 2) = mesh.id(t2, PrimitiveType::Vertex);
                     }
                     if (i > 2) {
-                        auto t1 = mesh.switch_tuple(t, PrimitiveType::Face);
+                        auto t1 = mesh.switch_tuple(t, PrimitiveType::Triangle);
                         auto t2 = mesh.switch_tuple(t1, PrimitiveType::Edge);
                         auto t3 = mesh.switch_tuple(t2, PrimitiveType::Vertex);
 

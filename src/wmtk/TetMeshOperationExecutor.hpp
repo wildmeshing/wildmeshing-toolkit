@@ -7,19 +7,19 @@ namespace wmtk {
 class TetMesh::TetMeshOperationExecutor : public operations::tet_mesh::EdgeOperationData
 {
 public:
-    TetMeshOperationExecutor(TetMesh& m, const Tuple& operating_tuple, Accessor<int64_t>& hash_acc);
+    TetMeshOperationExecutor(TetMesh& m, const Tuple& operating_tuple, attribute::Accessor<int64_t>& hash_acc);
     void delete_simplices();
     void update_cell_hash();
 
-    std::array<Accessor<char>, 4> flag_accessors;
-    Accessor<int64_t> tt_accessor;
-    Accessor<int64_t> tf_accessor;
-    Accessor<int64_t> te_accessor;
-    Accessor<int64_t> tv_accessor;
-    Accessor<int64_t> vt_accessor;
-    Accessor<int64_t> et_accessor;
-    Accessor<int64_t> ft_accessor;
-    Accessor<int64_t>& hash_accessor;
+    std::array<attribute::Accessor<char>, 4> flag_accessors;
+    attribute::Accessor<int64_t> tt_accessor;
+    attribute::Accessor<int64_t> tf_accessor;
+    attribute::Accessor<int64_t> te_accessor;
+    attribute::Accessor<int64_t> tv_accessor;
+    attribute::Accessor<int64_t> vt_accessor;
+    attribute::Accessor<int64_t> et_accessor;
+    attribute::Accessor<int64_t> ft_accessor;
+    attribute::Accessor<int64_t>& hash_accessor;
 
 
     /**

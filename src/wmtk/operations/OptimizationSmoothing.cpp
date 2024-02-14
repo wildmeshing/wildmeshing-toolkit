@@ -2,7 +2,7 @@
 
 #include <polysolve/nonlinear/Problem.hpp>
 #include <wmtk/Mesh.hpp>
-#include <wmtk/attribute/MutableAccessor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <polysolve/nonlinear/Solver.hpp>
@@ -20,7 +20,7 @@ public:
     using typename polysolve::nonlinear::Problem::TVector;
 
     WMTKProblem(
-        attribute::MutableAccessor<double>&& handle,
+        attribute::Accessor<double>&& handle,
         const simplex::Simplex& simplex,
         invariants::InvariantCollection& invariants,
         const wmtk::function::Function& energy);
@@ -41,7 +41,7 @@ public:
     bool is_attr_valid() const { return m_energy.attribute_handle().is_valid(); }
 
 private:
-    attribute::MutableAccessor<double> m_accessor;
+    attribute::Accessor<double> m_accessor;
     const simplex::Simplex& m_simplex;
     const wmtk::function::Function& m_energy;
 
@@ -49,7 +49,7 @@ private:
 };
 
 OptimizationSmoothing::WMTKProblem::WMTKProblem(
-    attribute::MutableAccessor<double>&& accessor,
+    attribute::Accessor<double>&& accessor,
     const simplex::Simplex& simplex,
     invariants::InvariantCollection& invariants,
     const wmtk::function::Function& energy)
@@ -62,8 +62,7 @@ OptimizationSmoothing::WMTKProblem::WMTKProblem(
 OptimizationSmoothing::WMTKProblem::TVector OptimizationSmoothing::WMTKProblem::initial_value()
     const
 {
-    assert(is_attr_valid());
-    return m_accessor.vector_attribute(m_simplex.tuple());
+    return m_accessor.const_vector_attribute(m_simplex.tuple());
 }
 
 double OptimizationSmoothing::WMTKProblem::value(const TVector& x)

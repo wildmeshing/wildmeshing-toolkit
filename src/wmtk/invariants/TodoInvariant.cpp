@@ -14,7 +14,7 @@ TodoInvariant::TodoInvariant(
 bool TodoInvariant::before(const simplex::Simplex& t) const
 {
     assert(t.primitive_type() == m_todo_handle.primitive_type());
-    ConstAccessor<int64_t> split_todo_accessor = mesh().create_accessor<int64_t>(m_todo_handle);
+    const attribute::Accessor<int64_t> split_todo_accessor = mesh().create_const_accessor<int64_t>(m_todo_handle);
     return split_todo_accessor.const_scalar_attribute(t.tuple()) == m_val;
 }
 
@@ -30,7 +30,7 @@ TodoLargerInvariant::TodoLargerInvariant(
 bool TodoLargerInvariant::before(const simplex::Simplex& t) const
 {
     assert(t.primitive_type() == m_todo_handle.primitive_type());
-    ConstAccessor<double> split_todo_accessor = mesh().create_accessor<double>(m_todo_handle);
+    const attribute::Accessor<double> split_todo_accessor = mesh().create_const_accessor<double>(m_todo_handle);
     return split_todo_accessor.const_scalar_attribute(t.tuple()) > m_val;
 }
 
@@ -69,7 +69,7 @@ TodoSmallerInvariant::TodoSmallerInvariant(
 bool TodoSmallerInvariant::before(const simplex::Simplex& t) const
 {
     assert(t.primitive_type() == m_todo_handle.primitive_type());
-    ConstAccessor<double> split_todo_accessor = mesh().create_accessor<double>(m_todo_handle);
+    const attribute::Accessor<double> split_todo_accessor = mesh().create_const_accessor<double>(m_todo_handle);
     return split_todo_accessor.const_scalar_attribute(t.tuple()) < m_val;
 }
 } // namespace wmtk

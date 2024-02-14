@@ -6,6 +6,8 @@ set(SRC_FILES
     same_simplex_dimension_bijection.cpp
     MultiMeshSimplexVisitor.hpp
 
+    MultiMeshManager.hpp
+    MultiMeshManager.cpp
     BoundaryChecker.cpp
     BoundaryChecker.hpp
     consolidate.hpp

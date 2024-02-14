@@ -5,30 +5,30 @@
 
 namespace wmtk::mesh_utils {
 Eigen::Vector3d
-compute_face_normal_area_weighted(const TriMesh& m, const Accessor<double>& pos, const Tuple& f)
+compute_face_normal_area_weighted(const TriMesh& m, const attribute::Accessor<double>& pos, const Tuple& f)
 {
     const Tuple v0 = f;
     const Tuple v1 = m.switch_vertex(f);
     const Tuple v2 = m.switch_vertex(m.switch_edge(f));
 
-    const Eigen::Vector3d p0 = pos.vector_attribute(v0);
-    const Eigen::Vector3d p1 = pos.vector_attribute(v1);
-    const Eigen::Vector3d p2 = pos.vector_attribute(v2);
+    const Eigen::Vector3d p0 = pos.const_vector_attribute(v0);
+    const Eigen::Vector3d p1 = pos.const_vector_attribute(v1);
+    const Eigen::Vector3d p2 = pos.const_vector_attribute(v2);
     return ((p0 - p2).cross(p1 - p2));
 }
 
-Eigen::Vector3d compute_face_normal(const TriMesh& m, const Accessor<double>& pos, const Tuple& f)
+Eigen::Vector3d compute_face_normal(const TriMesh& m, const attribute::Accessor<double>& pos, const Tuple& f)
 {
     return compute_face_normal_area_weighted(m, pos, f).normalized();
 }
 
-Eigen::Vector3d compute_vertex_normal(const TriMesh& m, const Accessor<double>& pos, const Tuple& v)
+Eigen::Vector3d compute_vertex_normal(const TriMesh& m, const attribute::Accessor<double>& pos, const Tuple& v)
 {
     const simplex::SimplexCollection closed_star =
         simplex::closed_star(m, simplex::Simplex::vertex(v));
 
     Eigen::Vector3d n = Eigen::Vector3d::Zero();
-    for (const simplex::Simplex& f : closed_star.simplex_vector(PrimitiveType::Face)) {
+    for (const simplex::Simplex& f : closed_star.simplex_vector(PrimitiveType::Triangle)) {
         Tuple t = f.tuple();
         if (!m.is_ccw(t)) {
             t = m.switch_vertex(t);

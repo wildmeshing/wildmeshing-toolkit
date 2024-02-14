@@ -5,8 +5,8 @@ set(SRC_FILES
     Operation.hpp
     Operation.cpp
 
-    MeshOperation.hpp
-    MeshOperation.cpp
+    #MeshOperation.hpp
+    #MeshOperation.cpp
 
     EdgeCollapse.hpp
     EdgeCollapse.cpp

@@ -10,8 +10,7 @@ const static std::string names[] = {
     "Vertex",
     "Edge",
     "Face",
-    "Tetrahedron",
-    "HalfEdge"
+    "Tetrahedron"
     "Invalid"};
 } // namespace
 

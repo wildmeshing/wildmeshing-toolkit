@@ -17,6 +17,7 @@ class UpdateEdgeOperationMultiMeshMapFunctor;
 class TriMesh : public Mesh
 {
 public:
+    friend class Mesh;
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
@@ -27,18 +28,9 @@ public:
     TriMesh& operator=(TriMesh&& o);
     void make_cached_accessors();
 
-    int64_t top_cell_dimension() const override { return 2; }
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
-    /**
-     * @brief jump to the next edge by performing a switch of vertex and edge
-     */
-    Tuple next_edge(const Tuple& tuple) const { return switch_edge(switch_vertex(tuple)); }
-    /**
-     * @brief jump to the previous edge by performing a switch of edge and vertex
-     */
-    Tuple prev_edge(const Tuple& tuple) const { return switch_vertex(switch_edge(tuple)); }
 
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
@@ -54,15 +46,19 @@ public:
         Eigen::Ref<const VectorXl> EF);
     void initialize(Eigen::Ref<const RowVectors3l> F);
 
-    bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const override;
+    bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+        const override;
 
     bool is_connectivity_valid() const override;
 
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const override;
 
+    Tuple switch_vertex(const Tuple& tuple) const;
+    Tuple switch_edge(const Tuple& tuple) const;
+    Tuple switch_face(const Tuple& tuple) const;
 protected:
-    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
     int64_t id(const simplex::Simplex& simplex) const
     {
         return id(simplex.tuple(), simplex.primitive_type());
@@ -70,7 +66,7 @@ protected:
 
     int64_t id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
     int64_t id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
-    int64_t id_face(const Tuple& tuple) const { return id(tuple, PrimitiveType::Face); }
+    int64_t id_face(const Tuple& tuple) const { return id(tuple, PrimitiveType::Triangle); }
 
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
@@ -90,11 +86,11 @@ protected:
     attribute::TypedAttributeHandle<int64_t> m_fe_handle;
     attribute::TypedAttributeHandle<int64_t> m_ff_handle;
 
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_vf_accessor = nullptr;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_ef_accessor = nullptr;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_fv_accessor = nullptr;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_fe_accessor = nullptr;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_ff_accessor = nullptr;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_vf_accessor = nullptr;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_ef_accessor = nullptr;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_fv_accessor = nullptr;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_fe_accessor = nullptr;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_ff_accessor = nullptr;
 
 
     Tuple vertex_tuple_from_id(int64_t id) const;
@@ -106,4 +102,16 @@ protected:
     static Tuple with_different_cid(const Tuple& t, int64_t cid);
 };
 
+inline Tuple TriMesh::switch_vertex(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Vertex);
+}
+inline Tuple TriMesh::switch_edge(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Edge);
+}
+inline Tuple TriMesh::switch_face(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Triangle);
+}
 } // namespace wmtk
