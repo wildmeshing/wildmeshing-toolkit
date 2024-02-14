@@ -22,15 +22,12 @@ public:
     bool m_area_weighted_amips;
 
     Accessor<double> m_uv_accessor;
-    //.... TODO can be deleted once multimesh transfer strategy is implemented
     Accessor<double> m_uvmesh_xyz_accessor;
-    Accessor<double> m_pmesh_xyz_accessor;
-    //.....
     Accessor<double> m_distance_error_accessor;
     Accessor<double> m_sum_error_accessor;
     Accessor<double> m_barrier_energy_accessor;
     Accessor<double> m_amips_error_accessor;
-    // Accessor<double> m_edge_priority_accessor;
+    Accessor<double> m_3d_edge_length_accessor;
 
     std::vector<std::shared_ptr<wmtk::operations::Operation>> m_ops;
     std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
@@ -38,13 +35,11 @@ public:
     std::shared_ptr<wmtk::components::function::utils::IntegralBase> m_integral_ptr;
 
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
-        m_edge_priority_update;
-    //.... TODO can be deleted once multimesh transfer strategy is implemented
+        m_3d_edge_length_update;
+
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_uvmesh_xyz_update;
-    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
-        m_pmesh_xyz_update;
-    // ....
+
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_sum_error_update;
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
@@ -99,12 +94,10 @@ public:
         std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
 
     ///// update
-    void set_uvmesh_xyz_update_rule();
-    void initialize_pmesh_vertex_xyz();
-    void initialize_uvmesh_vertex_xyz();
+    void set_uvmesh_xyz_update_rule_initialize();
 
-    void set_edge_length_update_rule();
-    void initialize_edge_length();
+    void set_3d_edge_length_update_rule();
+    void initialize_3d_edge_length();
     void set_sum_error_update_rule();
     void initialize_sum_error();
     void set_distance_error_update_rule();
