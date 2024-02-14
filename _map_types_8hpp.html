@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: src/wmtk/attribute/internal/MapTypes.hpp File Reference</title>
+<title>Wildmeshing Toolkit: src/wmtk/attribute/MapTypes.hpp File Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -113,17 +113,16 @@ $(document).ready(function(){initNavTree('_map_types_8hpp.html',''); initResizab
 <div class="header">
   <div class="summary">
 <a href="#namespaces">Namespaces</a> &#124;
-<a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a>  </div>
   <div class="headertitle">
 <div class="title">MapTypes.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;Eigen/Core&gt;</code><br />
+<div class="textblock"><code>#include &quot;<a class="el" href="internal_2_map_types_8hpp_source.html">internal/MapTypes.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for MapTypes.hpp:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="_map_types_8hpp__incl.svg" width="184" height="127"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="_map_types_8hpp__incl.svg" width="180" height="202"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 </div><div class="textblock"><div class="dynheader">
@@ -141,52 +140,24 @@ Namespaces</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacewmtk_1_1attribute"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute.html">wmtk::attribute</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:namespacewmtk_1_1attribute_1_1internal"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute_1_1internal.html">wmtk::attribute::internal</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
-Macros</h2></td></tr>
-<tr class="memitem:a689bc98e88673715b7a764a12d49e7e1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_map_types_8hpp.html#a689bc98e88673715b7a764a12d49e7e1">WMTK_MAX_ATTRIBUTE_DIMENSION</a>&#160;&#160;&#160;Eigen::Dynamic</td></tr>
-<tr class="separator:a689bc98e88673715b7a764a12d49e7e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:aac8278f58adccaf282751aeb7ef536f7"><td class="memTemplParams" colspan="2">template&lt;typename T , int R = Eigen::Dynamic&gt; </td></tr>
-<tr class="memitem:aac8278f58adccaf282751aeb7ef536f7"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#aac8278f58adccaf282751aeb7ef536f7">wmtk::attribute::internal::VectorResult</a> = Eigen::Matrix&lt; T, R, 1, 0,(R==Eigen::Dynamic ? MAX_ATTR_SIZE :R), 1 &gt;</td></tr>
-<tr class="memdesc:aac8278f58adccaf282751aeb7ef536f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Underlying vector type used by attribute is dynamically sized but bounded.  <a href="namespacewmtk_1_1attribute_1_1internal.html#aac8278f58adccaf282751aeb7ef536f7">More...</a><br /></td></tr>
-<tr class="separator:aac8278f58adccaf282751aeb7ef536f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a749270beef01f0db2a68e6d89aa8d6b5"><td class="memTemplParams" colspan="2">template&lt;typename T , int R = Eigen::Dynamic&gt; </td></tr>
-<tr class="memitem:a749270beef01f0db2a68e6d89aa8d6b5"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#a749270beef01f0db2a68e6d89aa8d6b5">wmtk::attribute::internal::MapResult</a> = typename VectorResult&lt; T, R &gt;::MapType</td></tr>
-<tr class="memdesc:a749270beef01f0db2a68e6d89aa8d6b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">the default map type used by attributes is a map of our vector type.  <a href="namespacewmtk_1_1attribute_1_1internal.html#a749270beef01f0db2a68e6d89aa8d6b5">More...</a><br /></td></tr>
-<tr class="separator:a749270beef01f0db2a68e6d89aa8d6b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7caa4ffd737983d08ee3d548457d6c7b"><td class="memTemplParams" colspan="2">template&lt;typename T , int R = Eigen::Dynamic&gt; </td></tr>
-<tr class="memitem:a7caa4ffd737983d08ee3d548457d6c7b"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#a7caa4ffd737983d08ee3d548457d6c7b">wmtk::attribute::internal::ConstMapResult</a> = typename VectorResult&lt; T, R &gt;::ConstMapType</td></tr>
-<tr class="separator:a7caa4ffd737983d08ee3d548457d6c7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5dc99973daa4be9ea733f616e61a853"><td class="memTemplParams" colspan="2">template&lt;typename T , int R = Eigen::Dynamic&gt; </td></tr>
+<tr class="memitem:ae5dc99973daa4be9ea733f616e61a853"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute.html#ae5dc99973daa4be9ea733f616e61a853">wmtk::attribute::MapResult</a> = typename internal::VectorResult&lt; T, R &gt;::MapType</td></tr>
+<tr class="memdesc:ae5dc99973daa4be9ea733f616e61a853"><td class="mdescLeft">&#160;</td><td class="mdescRight">the default map type used by attributes is a map of our vector type.  <a href="namespacewmtk_1_1attribute.html#ae5dc99973daa4be9ea733f616e61a853">More...</a><br /></td></tr>
+<tr class="separator:ae5dc99973daa4be9ea733f616e61a853"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a262370e4d1050b1b3fa22ff20702430f"><td class="memTemplParams" colspan="2">template&lt;typename T , int R = Eigen::Dynamic&gt; </td></tr>
+<tr class="memitem:a262370e4d1050b1b3fa22ff20702430f"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute.html#a262370e4d1050b1b3fa22ff20702430f">wmtk::attribute::ConstMapResult</a> = typename internal::VectorResult&lt; T, R &gt;::ConstMapType</td></tr>
+<tr class="separator:a262370e4d1050b1b3fa22ff20702430f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a689bc98e88673715b7a764a12d49e7e1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a689bc98e88673715b7a764a12d49e7e1">&#9670;&nbsp;</a></span>WMTK_MAX_ATTRIBUTE_DIMENSION</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define WMTK_MAX_ATTRIBUTE_DIMENSION&#160;&#160;&#160;Eigen::Dynamic</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="_map_types_8hpp_source.html#l00004">4</a> of file <a class="el" href="_map_types_8hpp_source.html">MapTypes.hpp</a>.</p>
-
-</div>
-</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_f2a03d151d5632e9cfdfcc5fe4223b5a.html">attribute</a></li><li class="navelem"><a class="el" href="dir_aa61c4bf93d6c6781f6d1544a13a5327.html">internal</a></li><li class="navelem"><a class="el" href="_map_types_8hpp.html">MapTypes.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_f2a03d151d5632e9cfdfcc5fe4223b5a.html">attribute</a></li><li class="navelem"><a class="el" href="_map_types_8hpp.html">MapTypes.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

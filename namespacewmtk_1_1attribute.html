@@ -172,10 +172,56 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
+<tr class="memitem:ae5dc99973daa4be9ea733f616e61a853"><td class="memTemplParams" colspan="2">template&lt;typename T , int R = Eigen::Dynamic&gt; </td></tr>
+<tr class="memitem:ae5dc99973daa4be9ea733f616e61a853"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute.html#ae5dc99973daa4be9ea733f616e61a853">MapResult</a> = typename <a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#aac8278f58adccaf282751aeb7ef536f7">internal::VectorResult</a>&lt; T, R &gt;::MapType</td></tr>
+<tr class="memdesc:ae5dc99973daa4be9ea733f616e61a853"><td class="mdescLeft">&#160;</td><td class="mdescRight">the default map type used by attributes is a map of our vector type.  <a href="namespacewmtk_1_1attribute.html#ae5dc99973daa4be9ea733f616e61a853">More...</a><br /></td></tr>
+<tr class="separator:ae5dc99973daa4be9ea733f616e61a853"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a262370e4d1050b1b3fa22ff20702430f"><td class="memTemplParams" colspan="2">template&lt;typename T , int R = Eigen::Dynamic&gt; </td></tr>
+<tr class="memitem:a262370e4d1050b1b3fa22ff20702430f"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute.html#a262370e4d1050b1b3fa22ff20702430f">ConstMapResult</a> = typename <a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#aac8278f58adccaf282751aeb7ef536f7">internal::VectorResult</a>&lt; T, R &gt;::ConstMapType</td></tr>
+<tr class="separator:a262370e4d1050b1b3fa22ff20702430f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a97cd6d5cc8e135301c4304414cf24d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute.html#a2a97cd6d5cc8e135301c4304414cf24d">TypedAttributeHandleVariant</a> = std::variant&lt; <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; char &gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; int64_t &gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; double &gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt; &gt;</td></tr>
 <tr class="separator:a2a97cd6d5cc8e135301c4304414cf24d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Typedef Documentation</h2>
+<a id="a262370e4d1050b1b3fa22ff20702430f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a262370e4d1050b1b3fa22ff20702430f">&#9670;&nbsp;</a></span>ConstMapResult</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , int R = Eigen::Dynamic&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="namespacewmtk_1_1attribute.html#a262370e4d1050b1b3fa22ff20702430f">wmtk::attribute::ConstMapResult</a> = typedef typename <a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#aac8278f58adccaf282751aeb7ef536f7">internal::VectorResult</a>&lt;T, R&gt;::ConstMapType</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_map_types_8hpp_source.html#l00012">12</a> of file <a class="el" href="_map_types_8hpp_source.html">MapTypes.hpp</a>.</p>
+
+</div>
+</div>
+<a id="ae5dc99973daa4be9ea733f616e61a853"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5dc99973daa4be9ea733f616e61a853">&#9670;&nbsp;</a></span>MapResult</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , int R = Eigen::Dynamic&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="namespacewmtk_1_1attribute.html#ae5dc99973daa4be9ea733f616e61a853">wmtk::attribute::MapResult</a> = typedef typename <a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#aac8278f58adccaf282751aeb7ef536f7">internal::VectorResult</a>&lt;T, R&gt;::MapType</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>the default map type used by attributes is a map of our vector type. </p>
+<p>Though the max size doesn't affect the storage of the map, this affects the type returned by .eval() </p>
+
+<p class="definition">Definition at line <a class="el" href="_map_types_8hpp_source.html#l00010">10</a> of file <a class="el" href="_map_types_8hpp_source.html">MapTypes.hpp</a>.</p>
+
+</div>
+</div>
 <a id="a2a97cd6d5cc8e135301c4304414cf24d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2a97cd6d5cc8e135301c4304414cf24d">&#9670;&nbsp;</a></span>TypedAttributeHandleVariant</h2>
 

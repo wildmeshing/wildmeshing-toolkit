@@ -21,5 +21,7 @@ var namespacewmtk_1_1attribute =
     [ "AttributeScope", "classwmtk_1_1attribute_1_1_attribute_scope.html", "classwmtk_1_1attribute_1_1_attribute_scope" ],
     [ "AttributeScopeHandle", "classwmtk_1_1attribute_1_1_attribute_scope_handle.html", "classwmtk_1_1attribute_1_1_attribute_scope_handle" ],
     [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", "classwmtk_1_1attribute_1_1_mesh_attribute_handle" ],
+    [ "ConstMapResult", "namespacewmtk_1_1attribute.html#a262370e4d1050b1b3fa22ff20702430f", null ],
+    [ "MapResult", "namespacewmtk_1_1attribute.html#ae5dc99973daa4be9ea733f616e61a853", null ],
     [ "TypedAttributeHandleVariant", "namespacewmtk_1_1attribute.html#a2a97cd6d5cc8e135301c4304414cf24d", null ]
 ];
