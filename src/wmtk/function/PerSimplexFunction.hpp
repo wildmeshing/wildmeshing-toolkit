@@ -14,7 +14,7 @@ public:
     PerSimplexFunction(
         const Mesh& mesh,
         const PrimitiveType primitive_type,
-        const attribute::MeshAttributeHandle<double>& variable_attribute_handle);
+        const attribute::MeshAttributeHandle& variable_attribute_handle);
     virtual ~PerSimplexFunction() {}
 
     /**
@@ -26,29 +26,29 @@ public:
      */
     virtual double get_value(const simplex::Simplex& domain_simplex) const = 0;
     virtual Eigen::VectorXd get_gradient(
-        const Simplex& domain_simplex,
-        const Simplex& variable_simplex) const
+        const simplex::Simplex& domain_simplex,
+        const simplex::Simplex& variable_simplex) const
     {
         throw std::runtime_error("Gradient not implemented");
     }
     virtual Eigen::MatrixXd get_hessian(
-        const Simplex& domain_simplex,
-        const Simplex& variable_simplex) const
+        const simplex::Simplex& domain_simplex,
+        const simplex::Simplex& variable_simplex) const
     {
         throw std::runtime_error("Hessian not implemented");
     }
 
     inline const Mesh& mesh() const { return m_mesh; }
-    inline const MeshAttributeHandle<double>& attribute_handle() const
+    inline const attribute::MeshAttributeHandle& attribute_handle() const
     {
         assert(m_handle.is_valid());
         return m_handle;
     }
 
-    long embedded_dimension() const;
+    int64_t embedded_dimension() const;
 
 private:
-    MeshAttributeHandle<double> m_handle;
+    attribute::MeshAttributeHandle m_handle;
     const Mesh& m_mesh;
 
 protected:

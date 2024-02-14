@@ -11,6 +11,13 @@ set(SRC_FILES
     multi_mesh_edge_split.hpp
     UpdateVertexMultiMeshMapHash.hpp
     UpdateVertexMultiMeshMapHash.cpp
+
+
+    VertexLaplacianSmooth.hpp
+    VertexLaplacianSmooth.cpp
+
+    VertexTangentialLaplacianSmooth.hpp
+    VertexTangentialLaplacianSmooth.cpp
     )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

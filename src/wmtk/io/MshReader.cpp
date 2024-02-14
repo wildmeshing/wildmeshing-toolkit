@@ -5,7 +5,10 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
+
+#include "predicates.h"
 
 namespace wmtk {
 
@@ -13,23 +16,57 @@ namespace wmtk {
 std::shared_ptr<Mesh> MshReader::read(const std::filesystem::path& filename, bool ignore_z)
 {
     m_spec = mshio::load_msh(filename.string());
-    this->ignore_z = ignore_z;
+    m_ignore_z = ignore_z;
 
     std::shared_ptr<Mesh> res;
 
     if (get_num_tets() > 0) {
-        assert(!ignore_z);
+        assert(!m_ignore_z);
         V.resize(get_num_tet_vertices(), 3);
         S.resize(get_num_tets(), 4);
 
         extract_tet_vertices();
         extract_tets();
 
+        exactinit();
+
+        {
+            // check inversion
+            Eigen::Vector3d p0 = V.row(S(0, 0));
+            Eigen::Vector3d p1 = V.row(S(0, 1));
+            Eigen::Vector3d p2 = V.row(S(0, 2));
+            Eigen::Vector3d p3 = V.row(S(0, 3));
+
+            if (orient3d(p0.data(), p1.data(), p2.data(), p3.data()) < 0) {
+                // swap col 0 and 1 of S
+                S.col(0).swap(S.col(1));
+                wmtk::logger().info(
+                    "Input tet orientation is inverted, swapping col 0 and 1 of TV matirx.");
+            }
+        }
+
+        {
+            // check consistency
+            for (int64_t i = 0; i < S.rows(); i++) {
+                Eigen::Vector3d p0 = V.row(S(i, 0));
+                Eigen::Vector3d p1 = V.row(S(i, 1));
+                Eigen::Vector3d p2 = V.row(S(i, 2));
+                Eigen::Vector3d p3 = V.row(S(i, 3));
+                auto orient = orient3d(p0.data(), p1.data(), p2.data(), p3.data());
+
+                if (orient < 0) {
+                    throw std::runtime_error("Input tet orientation is inconsistent.");
+                } else if (orient == 0) {
+                    throw std::runtime_error("Input tet is degenerated.");
+                }
+            }
+        }
+
         auto tmp = std::make_shared<TetMesh>();
         tmp->initialize(S);
         res = tmp;
     } else if (get_num_faces() > 0) {
-        V.resize(get_num_face_vertices(), ignore_z ? 2 : 3);
+        V.resize(get_num_face_vertices(), m_ignore_z ? 2 : 3);
         S.resize(get_num_faces(), 3);
 
         extract_face_vertices();
@@ -39,7 +76,7 @@ std::shared_ptr<Mesh> MshReader::read(const std::filesystem::path& filename, boo
         tmp->initialize(S);
         res = tmp;
     } else if (get_num_edges() > 0) {
-        V.resize(get_num_face_vertices(), ignore_z ? 2 : 3);
+        V.resize(get_num_face_vertices(), m_ignore_z ? 2 : 3);
         S.resize(get_num_edges(), 2);
 
         extract_edge_vertices();

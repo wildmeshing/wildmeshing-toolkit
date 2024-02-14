@@ -12,11 +12,7 @@ ConstAccessor<T>::ConstAccessor(
     const Mesh& mesh,
     const TypedAttributeHandle<T>& handle,
     AttributeAccessMode mode)
-    : TupleBaseType(MeshAttributeHandle<T>(const_cast<Mesh&>(mesh), handle), mode)
-{}
-template <typename T>
-ConstAccessor<T>::ConstAccessor(const MeshAttributeHandle<T>& handle, AttributeAccessMode mode)
-    : TupleBaseType(handle, mode)
+    : TupleBaseType(const_cast<Mesh&>(mesh), handle, mode)
 {}
 //===================================================
 // These following methods just forward to to const names
@@ -34,7 +30,7 @@ T ConstAccessor<T>::scalar_attribute(const Tuple& t) const
 
 
 template class ConstAccessor<char>;
-template class ConstAccessor<long>;
+template class ConstAccessor<int64_t>;
 template class ConstAccessor<double>;
 template class ConstAccessor<Rational>;
 } // namespace wmtk::attribute

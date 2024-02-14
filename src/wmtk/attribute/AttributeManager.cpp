@@ -5,7 +5,7 @@
 #include <wmtk/utils/vector_hash.hpp>
 #include "PerThreadAttributeScopeStacks.hpp"
 namespace wmtk::attribute {
-AttributeManager::AttributeManager(long size)
+AttributeManager::AttributeManager(int64_t size)
     : m_char_attributes(size)
     , m_long_attributes(size)
     , m_double_attributes(size)
@@ -54,9 +54,9 @@ std::map<std::string, std::size_t> AttributeManager::child_hashes() const
 
 AttributeManager::~AttributeManager() = default;
 
-void AttributeManager::serialize(MeshWriter& writer)
+void AttributeManager::serialize(MeshWriter& writer) const
 {
-    for (long dim = 0; dim < m_capacities.size(); ++dim) {
+    for (int64_t dim = 0; dim < m_capacities.size(); ++dim) {
         if (!writer.write(dim)) continue;
         m_char_attributes[dim].serialize(dim, writer);
         m_long_attributes[dim].serialize(dim, writer);
@@ -69,12 +69,12 @@ void AttributeManager::serialize(MeshWriter& writer)
 
 void AttributeManager::reserve_to_fit()
 {
-    for (long dim = 0; dim < m_capacities.size(); ++dim) {
-        const long capacity = m_capacities[dim];
+    for (int64_t dim = 0; dim < m_capacities.size(); ++dim) {
+        const int64_t capacity = m_capacities[dim];
         reserve_attributes(dim, capacity);
     }
 }
-void AttributeManager::reserve_attributes(long dimension, long capacity)
+void AttributeManager::reserve_attributes(int64_t dimension, int64_t capacity)
 {
     m_char_attributes[dimension].reserve(capacity);
     m_long_attributes[dimension].reserve(capacity);
@@ -82,7 +82,7 @@ void AttributeManager::reserve_attributes(long dimension, long capacity)
     m_rational_attributes[dimension].reserve(capacity);
 }
 
-void AttributeManager::reserve_more_attributes(long dimension, long size)
+void AttributeManager::reserve_more_attributes(int64_t dimension, int64_t size)
 {
     assert(dimension < this->size());
     m_char_attributes[dimension].reserve_more(size);
@@ -90,14 +90,14 @@ void AttributeManager::reserve_more_attributes(long dimension, long size)
     m_double_attributes[dimension].reserve_more(size);
     m_rational_attributes[dimension].reserve_more(size);
 }
-void AttributeManager::reserve_more_attributes(const std::vector<long>& more_capacities)
+void AttributeManager::reserve_more_attributes(const std::vector<int64_t>& more_capacities)
 {
     assert(more_capacities.size() == size());
-    for (long dim = 0; dim < size(); ++dim) {
+    for (int64_t dim = 0; dim < size(); ++dim) {
         reserve_more_attributes(dim, more_capacities[dim]);
     }
 }
-void AttributeManager::set_capacities(std::vector<long> capacities)
+void AttributeManager::set_capacities(std::vector<int64_t> capacities)
 {
     assert(capacities.size() == m_capacities.size());
     m_capacities = std::move(capacities);
@@ -106,15 +106,15 @@ void AttributeManager::set_capacities(std::vector<long> capacities)
 
 void AttributeManager::reserve_attributes_to_fit()
 {
-    for (long j = 0; j < size(); ++j) {
+    for (int64_t j = 0; j < size(); ++j) {
         reserve_attributes(j, m_capacities[j]);
     }
 }
 
 
-long AttributeManager::size() const
+int64_t AttributeManager::size() const
 {
-    return long(m_capacities.size());
+    return int64_t(m_capacities.size());
 }
 bool AttributeManager::operator==(const AttributeManager& other) const
 {
@@ -127,6 +127,18 @@ bool AttributeManager::operator==(const AttributeManager& other) const
 AttributeScopeHandle AttributeManager::create_scope(Mesh& m)
 {
     return AttributeScopeHandle(*this);
+}
+
+std::string AttributeManager::get_name(const attribute::TypedAttributeHandleVariant& attr) const
+{
+    std::string name = std::visit(
+        [&](auto&& val) {
+            using T = std::decay_t<decltype(val)>;
+            return this->get_name(std::get<T>(attr));
+        },
+        attr);
+
+    return name;
 }
 
 void AttributeManager::push_scope()
@@ -206,6 +218,87 @@ void AttributeManager::change_to_leaf_scope() const
     for (auto& ma : m_rational_attributes) {
         ma.change_to_leaf_scope();
     }
+}
+
+std::vector<TypedAttributeHandleVariant> AttributeManager::get_all_attributes() const
+{
+    std::vector<TypedAttributeHandleVariant> handles;
+
+    auto run = [&](auto type) {
+        using T = std::decay_t<decltype(type)>;
+
+        const std::vector<MeshAttributes<T>>& mesh_attributes = get<T>();
+        for (size_t pt_index = 0; pt_index < mesh_attributes.size(); ++pt_index) {
+            size_t count = mesh_attributes[pt_index].attribute_count();
+            for (int64_t index = 0; index < count; ++index) {
+                TypedAttributeHandle<T> t;
+                t.m_base_handle.index = index;
+                t.m_primitive_type = get_primitive_type_from_id(pt_index);
+                handles.emplace_back(t);
+            }
+        }
+    };
+    run(double{});
+    run(int64_t{});
+    run(char{});
+    run(Rational{});
+    return handles;
+}
+
+namespace {
+template <typename T>
+class ClearAttrDataT : public std::array<std::vector<AttributeHandle>, 5>
+{
+};
+
+class ClearAttrData : public ClearAttrDataT<char>,
+                      public ClearAttrDataT<int64_t>,
+                      public ClearAttrDataT<double>,
+                      public ClearAttrDataT<Rational>
+{
+public:
+    template <typename T>
+    ClearAttrDataT<T>& get()
+    {
+        return static_cast<ClearAttrDataT<T>&>(*this);
+    }
+};
+} // namespace
+void AttributeManager::clear_attributes(
+    const std::vector<attribute::TypedAttributeHandleVariant>& custom_attributes)
+{
+    // std::array<std::array<std::vector<AttributeHandle>, 5>, 4>
+    //    keeps; // [char/int64_t/...][ptype][attribute]
+
+
+    ClearAttrData customs;
+    for (const attribute::TypedAttributeHandleVariant& attr : custom_attributes) {
+        std::visit(
+            [&](auto&& val) {
+                using T = typename std::decay_t<decltype(val)>::Type;
+                customs.get<T>()[get_primitive_type_id(val.primitive_type())].emplace_back(
+                    val.base_handle());
+            },
+            attr);
+    }
+
+
+    auto run = [&](auto t) {
+        using T = typename std::decay_t<decltype(t)>;
+        auto& mycustoms = customs.get<T>();
+
+        for (size_t ptype_id = 0; ptype_id < m_char_attributes.size(); ++ptype_id) {
+            const PrimitiveType primitive_type = get_primitive_type_from_id(ptype_id);
+
+
+            get<T>(primitive_type).remove_attributes(mycustoms[ptype_id]);
+        }
+    };
+
+    run(double{});
+    run(int64_t{});
+    run(char{});
+    run(Rational{});
 }
 
 } // namespace wmtk::attribute

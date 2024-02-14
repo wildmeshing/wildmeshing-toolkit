@@ -3,10 +3,10 @@
 #include <wmtk/multimesh/MultiMeshSimplexEventVisitor.hpp>
 #include <wmtk/multimesh/MultiMeshSimplexVisitor.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
+#include <wmtk/multimesh/operations/extract_operation_tuples.hpp>
+#include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/utils/MultiMeshEdgeSplitFunctor.hpp>
 #include <wmtk/operations/utils/UpdateEdgeOperationMultiMeshMapFunctor.hpp>
-#include <wmtk/multimesh/operations/extract_operation_tuples.hpp>
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
 
 #include <wmtk/TriMesh.hpp>
 
@@ -19,12 +19,16 @@ std::shared_ptr<InvariantCollection> multimesh_edge_split_invariants(const Mesh&
     return invariants;
 }
 
-SplitReturnData multi_mesh_edge_split(Mesh& mesh, const Tuple& t)
+SplitReturnData multi_mesh_edge_split(
+    Mesh& mesh,
+    const Tuple& t,
+    const std::vector<std::shared_ptr<operations::BaseSplitNewAttributeStrategy>>&
+        new_attr_strategies)
 {
     multimesh::MultiMeshSimplexVisitor visitor(
-        std::integral_constant<long, 1>{}, // specify that this runs on edges
+        std::integral_constant<int64_t, 1>{}, // specify that this runs on edges
         MultiMeshEdgeSplitFunctor{});
-    visitor.execute_from_root(mesh, Simplex(PrimitiveType::Edge, t));
+    visitor.execute_from_root(mesh, simplex::Simplex(PrimitiveType::Edge, t));
     multimesh::MultiMeshSimplexEventVisitor event_visitor(visitor);
     event_visitor.run_on_edges(UpdateEdgeOperationMultiMeshMapFunctor{});
     event_visitor.run_on_nodes(UpdateEdgeOperationMultiMeshMapFunctor{});
@@ -36,8 +40,8 @@ SplitReturnData multi_mesh_edge_split(Mesh& mesh, const Tuple& t)
     auto update_attributes = [&](auto&& m) {
         using T = std::remove_reference_t<decltype(m)>;
         if constexpr (!std::is_const_v<T>) {
-            for(const auto& split_ptr: m.m_split_strategies) {
-                split_ptr->update(cache,tuples);
+            for (const auto& split_ptr : new_attr_strategies) {
+                split_ptr->update(cache, tuples);
             }
         }
     };

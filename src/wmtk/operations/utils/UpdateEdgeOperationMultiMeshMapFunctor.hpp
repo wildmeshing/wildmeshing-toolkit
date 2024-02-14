@@ -35,7 +35,7 @@ class UpdateEdgeOperationMultiMeshMapFunctor
 {
 public:
     // edge -> edge
-    void operator()(
+    [[noreturn]] void operator()(
         EdgeMesh&,
         const simplex::Simplex&,
         const edge_mesh::EdgeOperationData& parent_tmoe,
@@ -86,10 +86,7 @@ public:
         const tet_mesh::EdgeOperationData&) const;
 
     // edge
-    void operator()(
-        EdgeMesh&,
-        const simplex::Simplex&,
-        const edge_mesh::EdgeOperationData& parent_tmoe) const;
+    void operator()(EdgeMesh&, const simplex::Simplex&, const edge_mesh::EdgeOperationData&);
 
     // tri
     void operator()(TriMesh&, const simplex::Simplex&, const tri_mesh::EdgeOperationData&);
@@ -98,16 +95,25 @@ public:
     void operator()(TetMesh&, const simplex::Simplex&, const tet_mesh::EdgeOperationData&);
 
 private:
-    long parent_global_cid(const attribute::ConstAccessor<long>& parent_to_child, long parent_gid)
-        const;
-    long child_global_cid(const attribute::ConstAccessor<long>& parent_to_child, long parent_gid)
-        const;
+    int64_t parent_global_cid(
+        const attribute::ConstAccessor<int64_t>& parent_to_child,
+        int64_t parent_gid) const;
+    int64_t child_global_cid(
+        const attribute::ConstAccessor<int64_t>& parent_to_child,
+        int64_t parent_gid) const;
     void update_all_hashes(
         Mesh& m,
-        const std::vector<std::vector<std::tuple<long, std::vector<Tuple>>>>& simplices_to_update,
-        const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {}) const;
+        const std::vector<std::vector<std::tuple<int64_t, std::vector<Tuple>>>>&
+            simplices_to_update,
+        const std::vector<std::tuple<int64_t, std::array<int64_t, 2>>>& split_cell_maps = {}) const;
     void update_ear_replacement(TriMesh& m, const tri_mesh::EdgeOperationData& fmoe) const;
-    // TODO: add tet version
+
+    // for tet
+    int64_t parent_local_fid(
+        const attribute::ConstAccessor<int64_t>& parent_to_child,
+        int64_t parent_gid) const;
+
+    void update_ear_replacement(TetMesh& m, const tet_mesh::EdgeOperationData& tmoe) const;
 };
 } // namespace operations::utils
 } // namespace wmtk

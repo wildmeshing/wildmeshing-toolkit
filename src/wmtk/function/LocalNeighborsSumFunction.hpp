@@ -11,7 +11,7 @@ class LocalNeighborsSumFunction : public Function
 public:
     LocalNeighborsSumFunction(
         Mesh& mesh,
-        const MeshAttributeHandle<double>& handle,
+        const attribute::MeshAttributeHandle& handle,
         PerSimplexFunction& function);
     /**
      * @brief collects the local neigh and call the same m_function on all simplicies
@@ -37,10 +37,9 @@ public:
     // TODO: should differentiable function be required to be twice differentiable?
     Eigen::MatrixXd get_hessian(const simplex::Simplex& variable_simplex) const override;
 
-private:
-    std::vector<simplex::Simplex> get_local_neighborhood_domain_simplices(
-        const simplex::Simplex& variable_simplex) const;
+    std::vector<simplex::Simplex> domain(const simplex::Simplex& variable_simplex) const override;
 
+private:
     PerSimplexFunction& m_function;
     PrimitiveType m_domain_simplex_type;
 };

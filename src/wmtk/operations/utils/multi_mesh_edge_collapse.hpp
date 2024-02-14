@@ -5,6 +5,7 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/operations/CollapseReturnData.hpp>
+#include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 
 namespace wmtk {
 class Mesh;
@@ -12,7 +13,10 @@ class Tuple;
 
 class InvariantCollection;
 namespace attribute::update_strategies {
-    class UpdateStrategyCollection;
+class UpdateStrategyCollection;
+}
+namespace operations {
+class NewAttributeStrategy;
 }
 namespace operations::utils {
 
@@ -25,8 +29,11 @@ std::shared_ptr<InvariantCollection> multimesh_edge_collapse_invariants(const Me
 
 using CollapseReturnData = wmtk::multimesh::operations::CollapseReturnData;
 
-CollapseReturnData multi_mesh_edge_collapse(Mesh& mesh, const Tuple& t);
-
+CollapseReturnData multi_mesh_edge_collapse(
+    Mesh& mesh,
+    const Tuple& t,
+    const std::vector<std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>>&
+        new_attr_strategies);
 
 
 } // namespace operations::utils

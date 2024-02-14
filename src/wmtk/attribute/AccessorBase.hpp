@@ -34,17 +34,17 @@ public:
 
 public:
     // returns the size of the underlying attribute
-    long reserved_size() const;
-    long dimension() const;
+    int64_t reserved_size() const;
+    int64_t dimension() const;
 
 
     void set_attribute(std::vector<T> value);
 
-    ConstMapResult const_vector_attribute(const long index) const;
-    MapResult vector_attribute(const long index);
+    ConstMapResult const_vector_attribute(const int64_t index) const;
+    MapResult vector_attribute(const int64_t index);
 
-    T const_scalar_attribute(const long index) const;
-    T& scalar_attribute(const long index);
+    T const_scalar_attribute(const int64_t index) const;
+    T& scalar_attribute(const int64_t index);
 
     MeshAttributes<T>& attributes();
     const MeshAttributes<T>& attributes() const;
@@ -55,9 +55,9 @@ public:
 
     ~AccessorBase();
     AccessorBase(Mesh& m, const TypedAttributeHandle<T>& handle);
-    AccessorBase(const MeshAttributeHandle<T>& handle);
 
-    const MeshAttributeHandle<T>& handle() const;
+    MeshAttributeHandle handle() const;
+    const TypedAttributeHandle<T>& typed_handle() const;
     PrimitiveType primitive_type() const;
 
     Mesh& mesh();
@@ -65,7 +65,8 @@ public:
 
 
 protected:
-    MeshAttributeHandle<T> m_handle;
+    TypedAttributeHandle<T> m_handle;
+    Mesh& m_mesh;
 
     const AttributeManager& attribute_manager() const;
     AttributeManager& attribute_manager();

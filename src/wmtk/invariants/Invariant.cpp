@@ -10,7 +10,7 @@ Invariant::Invariant(const Mesh& mesh)
     : m_mesh(mesh)
 {}
 Invariant::~Invariant() = default;
-bool Invariant::before(const Simplex& t) const
+bool Invariant::before(const simplex::Simplex& t) const
 {
     return true;
 }
@@ -46,7 +46,7 @@ const std::vector<Tuple> invariants::Invariant::get_top_dimension_cofaces(
 {
     simplex::SimplexCollection all_simplices(mesh());
 
-    for (const Simplex& s : simplices) {
+    for (const simplex::Simplex& s : simplices) {
         all_simplices.add(simplex::top_dimension_cofaces(mesh(), s, false));
     }
     all_simplices.sort_and_clean();

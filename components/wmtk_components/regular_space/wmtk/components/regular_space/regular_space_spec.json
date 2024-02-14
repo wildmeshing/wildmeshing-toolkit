@@ -1,0 +1,41 @@
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": ["input", "output", "attributes", "values"],
+    "optional": ["pass_through"]
+  },
+  {
+    "pointer": "/input",
+    "type": "string",
+    "doc": "input mesh"
+  },
+  {
+    "pointer": "/output",
+    "type": "string",
+    "doc": "output mesh"
+  },
+  {
+    "pointer": "/attributes",
+    "type": "object",
+    "doc": "All attributes containing labels that should be considered in this component. The attributes are vertex_label, edge_label, face_label, and tetrahedron_label. Only the required ones need to be specified, e.g. if labels are only on the edges, only edge_label needs to be set."
+  },
+  {
+    "pointer": "/values",
+    "type": "list"
+  },
+  {
+    "pointer": "/values/*",
+    "type": "int"
+  },
+  {
+    "pointer": "/pass_through",
+    "type": "list",
+    "default": [],
+    "doc": "all attributes that are not deleted by the component but also not required"
+  },
+  {
+    "pointer": "/pass_through/*",
+    "type": "string"
+  }
+]

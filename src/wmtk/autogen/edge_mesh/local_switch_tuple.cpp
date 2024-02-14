@@ -6,8 +6,8 @@ namespace wmtk::autogen::edge_mesh {
 Tuple local_switch_tuple(const Tuple& tuple, PrimitiveType pt)
 {
     using namespace utils;
-    const long global_cid = TupleInspector::global_cid(tuple);
-    const long hash = TupleInspector::hash(tuple);
+    const int64_t global_cid = TupleInspector::global_cid(tuple);
+    const int64_t hash = TupleInspector::hash(tuple);
     switch (pt) {
     case PrimitiveType::Vertex:
         return Tuple(

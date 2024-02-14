@@ -20,6 +20,8 @@ app/tests/02-after.obj
 app/tests/smooth_after_1.obj
 app/triwild/smooth_after_1.obj
 app/triwild/01-before.obj
+docs/html
+docs/latex
 *.obj
 *.out
 *.exr
@@ -29,3 +31,8 @@ app/triwild/01-before.obj
 *.hdf
 *.hdf5
 *.msh
+
+components/spec_include.hpp
+components/components_include.hpp
+components/components_map.hpp
+components/components.json

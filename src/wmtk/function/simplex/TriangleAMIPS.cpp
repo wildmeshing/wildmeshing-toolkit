@@ -1,14 +1,14 @@
 #include "TriangleAMIPS.hpp"
 
+#include <wmtk/Mesh.hpp>
 #include <wmtk/Primitive.hpp>
-#include <wmtk/TriMesh.hpp>
 #include <wmtk/function/utils/AutoDiffRAII.hpp>
 #include <wmtk/function/utils/amips.hpp>
 
 namespace wmtk::function {
 TriangleAMIPS::TriangleAMIPS(
-    const TriMesh& mesh,
-    const MeshAttributeHandle<double>& vertex_attribute_handle)
+    const Mesh& mesh,
+    const attribute::MeshAttributeHandle& vertex_attribute_handle)
     : PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, vertex_attribute_handle)
 {}
 

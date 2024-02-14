@@ -7,6 +7,7 @@ namespace wmtk::tests {
 class DEBUG_TriMesh : public TriMesh //, public virtual DEBUG_Mesh
 {
 public:
+    using TriMesh::get_flag_accessor;
     using TriMesh::TriMesh;
     DEBUG_TriMesh(const TriMesh& m);
     DEBUG_TriMesh(TriMesh&& m);
@@ -23,15 +24,18 @@ public:
         return reinterpret_cast<DEBUG_MultiMeshManager&>(m_multi_mesh_manager);
     }
 
+    using TriMesh::m_attribute_manager;
+
     void print_vf() const;
-    Eigen::Matrix<long, 3, 1> fv_from_fid(const long fid) const;
+    Eigen::Matrix<int64_t, 3, 1> fv_from_fid(const int64_t fid) const;
 
-    auto edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const -> Tuple;
+    auto edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2, const int64_t fid) const
+        -> Tuple;
 
-    auto edge_tuple_from_vids(const long v1, const long v2) const -> Tuple;
-    auto face_tuple_from_vids(const long v1, const long v2, const long v3) const -> Tuple;
+    auto edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple;
+    auto face_tuple_from_vids(const int64_t v1, const int64_t v2, const int64_t v3) const -> Tuple;
 
-    Tuple tuple_from_face_id(const long fid) const;
+    Tuple tuple_from_face_id(const int64_t fid) const;
     template <typename T>
     attribute::AccessorBase<T> create_base_accessor(const TypedAttributeHandle<T>& handle)
     {
@@ -50,27 +54,29 @@ public:
         return create_const_base_accessor(handle);
     }
 
-    const TypedAttributeHandle<long>& f_handle(const PrimitiveType type) const;
+    const TypedAttributeHandle<int64_t>& f_handle(const PrimitiveType type) const;
 
-    const TypedAttributeHandle<long>& vf_handle() const;
+    const TypedAttributeHandle<int64_t>& vf_handle() const;
 
-    const TypedAttributeHandle<long>& ef_handle() const;
-
-
-    void reserve_attributes(PrimitiveType type, long size);
-    void reserve_more_attributes(const std::vector<long>& sizes);
+    const TypedAttributeHandle<int64_t>& ef_handle() const;
 
 
-    long id(const Tuple& tuple, PrimitiveType type) const override;
-    long id(const Simplex& s) const;
+    void reserve_attributes(PrimitiveType type, int64_t size);
+    void reserve_more_attributes(const std::vector<int64_t>& sizes);
+
+
+    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    int64_t id(const simplex::Simplex& s) const;
     /**
      * @brief returns the TriMeshOperationExecutor
      */
     using TriMesh::tuple_from_id;
 
-    Accessor<long> get_cell_hash_accessor();
+    using TriMesh::custom_attributes;
 
-    TriMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<long>& hash_accessor);
+    Accessor<int64_t> get_cell_hash_accessor();
+
+    TriMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<int64_t>& hash_accessor);
 };
 
 } // namespace wmtk::tests

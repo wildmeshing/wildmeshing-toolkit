@@ -49,8 +49,6 @@ option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to di
 
 option(WMTK_CODE_COVERAGE "Enable coverage reporting" OFF)
 
-option(WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION "Enable deprecation warnings on the SimplicialComplex class" ON)
-
 add_library(wmtk_coverage_config INTERFACE)
 if(WMTK_CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   # Add required flags (GCC & LLVM/Clang)
@@ -86,13 +84,14 @@ include(spdlog)
 include(gmp)
 include(mshio)
 include(predicates)
-include(jse)
 include(polysolve)
 
 # Core library
 add_library(wildmeshing_toolkit)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 target_link_libraries(wildmeshing_toolkit PUBLIC wmtk_coverage_config)
+set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR  ON)
+
 
 add_subdirectory(src)
 
@@ -124,9 +123,6 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
 
 add_subdirectory(components)
 
-if(WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION)
-    target_compile_options(wildmeshing_toolkit PRIVATE -DENABLE_WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION)
-endif()
 
 # ###############################################################################
 # Subdirectories
@@ -134,9 +130,6 @@ endif()
 
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
-    # Binary
-    add_subdirectory(wmtk_app)
-
     # Unit tests
     enable_testing()
 

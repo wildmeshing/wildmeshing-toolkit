@@ -1,0 +1,233 @@
+#include "ATData.hpp"
+#include <fstream>
+#include <nlohmann/json.hpp>
+#include <wmtk/Primitive.hpp>
+#include <wmtk/attribute/MutableAccessor.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
+#include <wmtk/components/adaptive_tessellation/multimesh/utils/edge_meshes_parameterization.hpp>
+#include <wmtk/components/adaptive_tessellation/multimesh/utils/find_critical_points.hpp>
+#include <wmtk/components/adaptive_tessellation/multimesh/utils/map_sibling_edge_meshes.hpp>
+#include <wmtk/invariants/SimplexInversionInvariant.hpp>
+#include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
+#include <wmtk/multimesh/utils/create_tag.hpp>
+#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
+
+namespace ATmultimesh = wmtk::components::multimesh;
+namespace wmtk::components::operations::internal {
+using namespace wmtk;
+using namespace wmtk::attribute;
+ATData::ATData(
+    std::shared_ptr<Mesh> uv_mesh_ptr,
+    std::shared_ptr<Mesh> position_mesh_ptr,
+    std::vector<std::shared_ptr<Mesh>> edge_mesh_ptrs,
+    std::map<Mesh*, Mesh*> sibling_meshes_map,
+    std::array<std::shared_ptr<image::Image>, 3>& images)
+    : m_uv_mesh_ptr(uv_mesh_ptr)
+    , m_position_mesh_ptr(position_mesh_ptr)
+    , m_edge_mesh_ptrs(edge_mesh_ptrs)
+    , m_sibling_meshes_map(sibling_meshes_map)
+    , m_images(images)
+{
+    m_uv_handle = uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    // Storing edge lengths
+    m_3d_edge_length_handle =
+        uv_mesh_ptr->get_attribute_handle<double>("edge_length", PrimitiveType::Edge);
+    auto tmp_uv_pt_accessor = uv_mesh_ptr->create_accessor(m_uv_handle.as<double>());
+    auto tmp_edge_length_accessor =
+        uv_mesh_ptr->create_accessor(m_3d_edge_length_handle.as<double>());
+    const auto edges = uv_mesh_ptr->get_all(PrimitiveType::Edge);
+    for (const auto& e : edges) {
+        const auto p0 = tmp_uv_pt_accessor.vector_attribute(e);
+        const auto p1 = tmp_uv_pt_accessor.vector_attribute(uv_mesh_ptr->switch_vertex(e));
+
+        tmp_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
+    }
+}
+
+ATData::ATData(
+    std::shared_ptr<Mesh> uv_mesh_ptr,
+    std::shared_ptr<Mesh> position_mesh_ptr,
+    std::array<std::shared_ptr<image::Image>, 3>& images)
+    : m_uv_mesh_ptr(uv_mesh_ptr)
+    , m_position_mesh_ptr(position_mesh_ptr)
+    , m_images(images)
+{
+    auto uv_mesh_map =
+        wmtk::multimesh::same_simplex_dimension_bijection(position_mesh(), uv_mesh());
+    position_mesh().register_child_mesh(m_uv_mesh_ptr, uv_mesh_map);
+
+    std::set<Tuple> critical_points =
+        ATmultimesh::utils::find_critical_points(uv_mesh(), position_mesh());
+    auto tags = wmtk::multimesh::utils::create_tags(uv_mesh(), critical_points);
+
+
+    for (int64_t tag : tags) {
+        m_edge_mesh_ptrs.emplace_back(
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                uv_mesh(),
+                "edge_tag",
+                tag,
+                PrimitiveType::Edge));
+    }
+    std::map<Mesh*, Mesh*> sibling_meshes_map =
+        ATmultimesh::utils::map_sibling_edge_meshes(m_edge_mesh_ptrs);
+    m_sibling_meshes_map = sibling_meshes_map;
+    ATmultimesh::utils::parameterize_all_edge_meshes(
+        static_cast<TriMesh&>(uv_mesh()),
+        m_edge_mesh_ptrs,
+        m_sibling_meshes_map);
+    m_uv_handle = uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    // Storing edge lengths
+    m_3d_edge_length_handle =
+        uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
+    auto tmp_uv_pt_accessor = uv_mesh_ptr->create_accessor(m_uv_handle.as<double>());
+    auto tmp_edge_length_accessor =
+        uv_mesh_ptr->create_accessor(m_3d_edge_length_handle.as<double>());
+    const auto edges = uv_mesh_ptr->get_all(PrimitiveType::Edge);
+    for (const auto& e : edges) {
+        const auto p0 = tmp_uv_pt_accessor.vector_attribute(e);
+        const auto p1 = tmp_uv_pt_accessor.vector_attribute(uv_mesh_ptr->switch_vertex(e));
+
+        tmp_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
+    }
+}
+
+ATData::ATData(
+    std::shared_ptr<Mesh> uv_mesh_ptr,
+    std::array<std::shared_ptr<image::Image>, 3>& images)
+    : m_uv_mesh_ptr(uv_mesh_ptr)
+    , m_images(images)
+    , m_evaluator(
+          images,
+          image::SAMPLING_METHOD::Bicubic,
+          image::IMAGE_WRAPPING_MODE::CLAMP_TO_EDGE)
+{
+    std::cout << "!!!!! using image sampling !!!!" << std::endl;
+    std::cout << "!!!!! using bicubic !!!!" << std::endl;
+    std::cout << "!!!!! using clamp to edge !!!!" << std::endl;
+    m_integral_ptr =
+        std::make_shared<wmtk::components::function::utils::TextureIntegral>(m_evaluator);
+
+    initialize_handles();
+}
+
+ATData::ATData(
+    std::shared_ptr<Mesh> uv_mesh_ptr,
+    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs)
+    : m_uv_mesh_ptr(uv_mesh_ptr)
+    , m_funcs(funcs)
+    , m_evaluator(funcs)
+{
+    std::cout << "!!!!! using analytical functions !!!!" << std::endl;
+    m_integral_ptr =
+        std::make_shared<wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature>(
+            m_evaluator);
+    initialize_handles();
+}
+
+void ATData::initialize_handles()
+{
+    m_uv_handle = m_uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    // Storing edge lengths
+    m_3d_edge_length_handle =
+        m_uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
+    m_xyz_handle = m_uv_mesh_ptr->register_attribute<double>("position", PrimitiveType::Vertex, 3);
+
+    m_sum_error_handle =
+        m_uv_mesh_ptr->register_attribute<double>("sum_error", PrimitiveType::Face, 1);
+    m_quadrature_error_handle =
+        m_uv_mesh_ptr->register_attribute<double>("quadrature_error", PrimitiveType::Face, 1);
+    m_amips_error_handle =
+        m_uv_mesh_ptr->register_attribute<double>("amips_error", PrimitiveType::Face, 1);
+    m_barrier_energy_handle =
+        m_uv_mesh_ptr->register_attribute<double>("barrier_energy", PrimitiveType::Face, 1);
+}
+void ATData::_debug_sampling(
+    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator& image_sampling,
+    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator& func_eval) const
+{
+    nlohmann::ordered_json jsonData_image;
+    nlohmann::ordered_json jsonData_func;
+
+    std::cout << "debug sampling" << std::endl;
+    // get the accessors
+    auto m_uv_accessor = uv_mesh().create_accessor(m_uv_handle.as<double>());
+    const auto vertices = uv_mesh_ptr()->get_all(PrimitiveType::Vertex);
+    for (const auto& v : vertices) {
+        Eigen::Vector2d uv = m_uv_accessor.vector_attribute(v);
+
+        auto image_xyz = image_sampling.uv_to_position<double>(uv);
+        auto func_xyz = func_eval.uv_to_position<double>(uv);
+        jsonData_image.push_back({{"x", image_xyz(0)}, {"y", image_xyz(1)}, {"z", image_xyz(2)}});
+        jsonData_func.push_back({{"x", func_xyz(0)}, {"y", func_xyz(1)}, {"z", func_xyz(2)}});
+    }
+    // Open the file in append mode
+    std::ofstream outputFileimage("ATData_debug_sampling_image.json");
+    outputFileimage << jsonData_image.dump(4);
+    outputFileimage.close();
+    std::cout << "JSON data written to "
+              << "ATData_debug_sampling.json" << std::endl;
+    std::ofstream outputFilefunc("ATData_debug_sampling_func.json");
+    outputFilefunc << jsonData_func.dump(4);
+    outputFilefunc.close();
+    std::cout << "JSON data written to "
+              << "ATData_debug_sampling.json" << std::endl;
+}
+
+const std::array<std::shared_ptr<image::Image>, 3>& ATData::images() const
+{
+    return m_images;
+}
+const std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& ATData::funcs() const
+{
+    return m_funcs;
+}
+
+MeshAttributeHandle ATData::uv_handle()
+{
+    return m_uv_handle;
+}
+MeshAttributeHandle ATData::edge_len_handle()
+{
+    return m_3d_edge_length_handle;
+}
+Mesh& ATData::uv_mesh() const
+{
+    return *m_uv_mesh_ptr;
+}
+
+Mesh& ATData::position_mesh() const
+{
+    return *m_position_mesh_ptr;
+}
+
+std::shared_ptr<Mesh> ATData::uv_mesh_ptr() const
+{
+    return m_uv_mesh_ptr;
+}
+std::shared_ptr<Mesh> ATData::position_mesh_ptr() const
+{
+    return m_position_mesh_ptr;
+}
+Mesh* ATData::sibling_edge_mesh_ptr(Mesh* my_edge_mesh_ptr)
+{
+    return m_sibling_meshes_map[my_edge_mesh_ptr];
+}
+std::shared_ptr<Mesh> ATData::edge_mesh_i_ptr(int64_t i) const
+{
+    return m_edge_mesh_ptrs[i];
+}
+int64_t ATData::num_edge_meshes() const
+{
+    return m_edge_mesh_ptrs.size();
+}
+Simplex ATData::sibling_edge(Mesh* my_edge_mesh_ptr, const Simplex& s)
+{
+    assert(s.primitive_type() == PrimitiveType::Edge);
+    Mesh* sibling_mesh_ptr = sibling_edge_mesh_ptr(my_edge_mesh_ptr);
+    std::vector<Simplex> sibling_edge = my_edge_mesh_ptr->map((*sibling_mesh_ptr), s);
+    assert(sibling_edge.size() == 1);
+    return sibling_edge[0];
+}
+} // namespace wmtk::components::operations::internal

@@ -12,7 +12,7 @@ auto AttributeCacheData<T>::data_as_const_map() const -> typename Vector::ConstM
     return typename Vector::ConstMapType(data.data(), data.size());
 }
 
-template class AttributeCacheData<long>;
+template class AttributeCacheData<int64_t>;
 template class AttributeCacheData<double>;
 template class AttributeCacheData<char>;
 template class AttributeCacheData<Rational>;

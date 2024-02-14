@@ -21,15 +21,17 @@ class AttributeManager;
 class AttributeHandle
 {
 protected:
+public:
     template <typename T>
     friend class MeshAttributes;
     template <typename T>
     friend class TypedAttributeHandle;
     friend class AttributeManager;
-    friend struct wmtk::hash<AttributeHandle>;
+    friend class wmtk::hash<AttributeHandle>;
+    friend class Mesh;
 
-    long index = -1;
-    AttributeHandle(long i)
+    int64_t index = -1;
+    AttributeHandle(int64_t i)
         : index(i)
     {}
 
@@ -42,8 +44,10 @@ public:
 
 
     bool operator==(const AttributeHandle& other) const { return index == other.index; }
+    bool operator<(const AttributeHandle& other) const { return index < other.index; }
 
     bool is_valid() const { return index != -1; }
+
 };
 
 } // namespace attribute

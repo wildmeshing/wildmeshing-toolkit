@@ -1,13 +1,12 @@
-#include <spdlog/spdlog.h>
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
-#include "tools/TriMesh_examples.hpp"
 #include "tools/EdgeMesh_examples.hpp"
 #include "tools/TetMesh_examples.hpp"
+#include "tools/TriMesh_examples.hpp"
 
 
 TEST_CASE("test_mesh_boundary", "[mesh]")

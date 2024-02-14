@@ -1,9 +1,9 @@
 #pragma once
 #include <wmtk/function/utils/PositionMapEvaluator.hpp>
 
-namespace image = wmtk::components::adaptive_tessellation::image;
+namespace image = wmtk::components::image;
 #include "TriangleAMIPS.hpp"
-
+using namespace wmtk::attribute;
 namespace wmtk::function {
 using DScalar = typename AutodiffFunction::DScalar;
 using DSVec2 = Eigen::Vector2<DScalar>;
@@ -17,11 +17,11 @@ class PositionMapAMIPS2D : public TriangleAMIPS
 public:
     PositionMapAMIPS2D(
         const TriMesh& mesh,
-        const MeshAttributeHandle<double>& vertex_uv_handle,
+        const MeshAttributeHandle& vertex_uv_handle,
         const image::Image& image);
     PositionMapAMIPS2D(
         const TriMesh& mesh,
-        const MeshAttributeHandle<double>& vertex_uv_handle,
+        const MeshAttributeHandle& vertex_uv_handle,
         const image::SamplingAnalyticFunction::FunctionType type,
         const double a,
         const double b,

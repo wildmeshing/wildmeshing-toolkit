@@ -4,11 +4,12 @@
 #include "PerThreadAttributeScopeStacks.hpp"
 
 #include <wmtk/io/MeshWriter.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 
 #include <cassert>
-#include <stdexcept>
 #include <functional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -85,7 +86,10 @@ template <typename T>
 void MeshAttributes<T>::change_to_parent_scope() const
 {
     for (const auto& attr : m_attributes) {
-        attr.get_local_scope_stack_ptr()->change_to_parent_scope();
+        auto ptr = attr.get_local_scope_stack_ptr();
+        assert(ptr != nullptr);
+
+        ptr->change_to_parent_scope();
     }
 }
 
@@ -100,11 +104,16 @@ void MeshAttributes<T>::change_to_leaf_scope() const
 template <typename T>
 AttributeHandle MeshAttributes<T>::register_attribute(
     const std::string& name,
-    long dimension,
+    int64_t dimension,
     bool replace,
     T default_value)
 {
-    assert(replace || m_handles.find(name) == m_handles.end());
+    if (!replace && m_handles.find(name) != m_handles.end()) {
+        log_and_throw_error(
+            "Cannot register attribute '{}' because it exists already. Set replace to true if you "
+            "want to overwrite the attribute",
+            name);
+    }
 
     AttributeHandle handle;
 
@@ -114,7 +123,7 @@ AttributeHandle MeshAttributes<T>::register_attribute(
         handle.index = it->second.index;
     } else {
         handle.index = m_attributes.size();
-        m_attributes.emplace_back(dimension, default_value, reserved_size());
+        m_attributes.emplace_back(name, dimension, default_value, reserved_size());
     }
     m_handles[name] = handle;
 
@@ -122,6 +131,13 @@ AttributeHandle MeshAttributes<T>::register_attribute(
     return handle;
 }
 
+template <typename T>
+void MeshAttributes<T>::assert_capacity_valid(int64_t cap) const
+{
+    for (const auto& a : m_attributes) {
+        assert(a.reserved_size() >= cap);
+    }
+}
 template <typename T>
 AttributeHandle MeshAttributes<T>::attribute_handle(const std::string& name) const
 {
@@ -143,13 +159,13 @@ bool MeshAttributes<T>::operator==(const MeshAttributes<T>& other) const
 template <typename T>
 Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle)
 {
-    Attribute<T>& attr = m_attributes[handle.index];
+    Attribute<T>& attr = m_attributes.at(handle.index);
     return attr;
 }
 template <typename T>
 const Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle) const
 {
-    return m_attributes[handle.index];
+    return m_attributes.at(handle.index);
 }
 
 
@@ -168,13 +184,19 @@ size_t MeshAttributes<T>::attribute_size(const AttributeHandle& handle) const
 }
 
 template <typename T>
-long MeshAttributes<T>::reserved_size() const
+int64_t MeshAttributes<T>::reserved_size() const
 {
     return m_reserved_size;
 }
 
 template <typename T>
-void MeshAttributes<T>::reserve(const long size)
+size_t MeshAttributes<T>::attribute_count() const
+{
+    return m_attributes.size();
+}
+
+template <typename T>
+void MeshAttributes<T>::reserve(const int64_t size)
 {
     m_reserved_size = size;
     for (auto& attr : m_attributes) {
@@ -183,12 +205,53 @@ void MeshAttributes<T>::reserve(const long size)
 }
 
 template <typename T>
-void MeshAttributes<T>::reserve_more(const long size)
+void MeshAttributes<T>::reserve_more(const int64_t size)
 {
     reserve(m_reserved_size + size);
 }
 template <typename T>
-long MeshAttributes<T>::dimension(const AttributeHandle& handle) const
+void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& attributes)
+{
+    std::vector<int64_t> remove_indices;
+    remove_indices.reserve(attributes.size());
+    for (const AttributeHandle& h : attributes) {
+        remove_indices.emplace_back(h.index);
+    }
+    std::sort(remove_indices.begin(), remove_indices.end());
+
+    std::vector<bool> keep_mask(m_attributes.size(), true);
+    for (const int64_t& i : remove_indices) {
+        keep_mask[i] = false;
+    }
+
+    std::vector<Attribute<T>> remaining_attributes;
+    remaining_attributes.reserve(attributes.size());
+
+    std::vector<int64_t> old_to_new_id(m_attributes.size(), -1);
+    for (size_t i = 0, id = 0; i < keep_mask.size(); ++i) {
+        if (keep_mask[i]) {
+            old_to_new_id[i] = id++;
+            remaining_attributes.emplace_back(m_attributes[i]);
+            // remaining_attributes.emplace_back(std::move(m_attributes[i]));
+            assert(remaining_attributes.size() == id);
+        }
+    }
+
+    // clean up m_handles
+    for (auto it = m_handles.begin(); it != m_handles.end(); /* no increment */) {
+        if (!keep_mask[it->second.index]) {
+            it = m_handles.erase(it);
+        } else {
+            it->second.index = old_to_new_id[it->second.index];
+            ++it;
+        }
+    }
+
+    m_attributes = remaining_attributes;
+}
+
+template <typename T>
+int64_t MeshAttributes<T>::dimension(const AttributeHandle& handle) const
 {
     return attribute(handle).dimension();
 }
@@ -207,7 +270,7 @@ std::string MeshAttributes<T>::get_name(const AttributeHandle& handle) const
 }
 
 template class MeshAttributes<char>;
-template class MeshAttributes<long>;
+template class MeshAttributes<int64_t>;
 template class MeshAttributes<double>;
 template class MeshAttributes<Rational>;
 

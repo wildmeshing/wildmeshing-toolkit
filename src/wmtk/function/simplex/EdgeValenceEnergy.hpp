@@ -8,8 +8,8 @@ class EdgeValenceEnergy : public PerSimplexFunction
 public:
     EdgeValenceEnergy(
         const Mesh& mesh,
-        const attribute::MeshAttributeHandle<double>& variable_attribute_handle);
-    double get_value(const Simplex& simplex) const override;
+        const attribute::MeshAttributeHandle& variable_attribute_handle);
+    double get_value(const simplex::Simplex& simplex) const override;
     using PerSimplexFunction::get_value;
 
 protected:

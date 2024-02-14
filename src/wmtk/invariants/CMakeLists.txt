@@ -1,12 +1,8 @@
 set(SRC_FILES
     Invariant.hpp
     Invariant.cpp
-    TriMeshInvariant.hpp
-    TriMeshInvariant.cpp
-    TetMeshInvariant.hpp
-    TetMeshInvariant.cpp
-    MeshInvariant.hpp
-    MeshInvariant.cpp
+    FunctionInvariant.hpp
+    FunctionInvariant.cpp
     InvariantCollection.hpp
     InvariantCollection.cpp
     InteriorSimplexInvariant.hpp
@@ -19,6 +15,7 @@ set(SRC_FILES
     MultiMeshLinkConditionInvariant.cpp
     MultiMeshMapValidInvariant.hpp
     MultiMeshMapValidInvariant.cpp
+
     MaxEdgeLengthInvariant.hpp
     MaxEdgeLengthInvariant.cpp
     MinEdgeLengthInvariant.hpp
@@ -32,11 +29,24 @@ set(SRC_FILES
     TriMeshSubstructureTopologyPreservingInvariant.cpp
     TetMeshSubstructureTopologyPreservingInvariant.hpp
     TetMeshSubstructureTopologyPreservingInvariant.cpp
-    TriangleInversionInvariant.hpp
-    TriangleInversionInvariant.cpp
-    TetrahedronInversionInvariant.hpp
-    TetrahedronInversionInvariant.cpp
+    SimplexInversionInvariant.hpp
+    SimplexInversionInvariant.cpp
     TodoInvariant.hpp
     TodoInvariant.cpp
+    ValenceImprovementInvariant.hpp
+    ValenceImprovementInvariant.cpp
+
+    EdgeValenceInvariant.hpp
+    EdgeValenceInvariant.cpp
+
+    NoBoundaryCollapseToInteriorInvariant.hpp
+    NoBoundaryCollapseToInteriorInvariant.cpp
+
+    MaxFunctionInvariant.hpp
+    MaxFunctionInvariant.cpp
+
+
+    internal/ConstantInvariant.hpp
+    internal/ConstantInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

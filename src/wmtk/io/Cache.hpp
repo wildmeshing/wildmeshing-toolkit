@@ -85,8 +85,13 @@ public:
      *
      * @param mesh The mesh that is written
      * @param name The name associated with the mesh
+     * @param name The name associated with the mesh
+     * @param multimesh_names names to absolute_multi_mesh_id
      */
-    void write_mesh(Mesh& m, const std::string& name);
+    void write_mesh(
+        const Mesh& m,
+        const std::string& name,
+        const std::map<std::string, std::vector<int64_t>>& multimesh_names = {});
 
     /**
      * @brief Export the cache to the given location.
@@ -109,6 +114,18 @@ public:
      */
     bool import_cache(const std::filesystem::path& import_location);
 
+    std::vector<int64_t> absolute_multi_mesh_id(const std::string& name) const
+    {
+        return m_multimesh_names.at(name);
+    }
+
+    /**
+     * @brief Compare two caches for equality.
+     *
+     * Only compares meshes registered in the cache.
+     */
+    bool equals(const Cache& o);
+
     /**
      * @brief Create a unique directory in the given location.
      *
@@ -129,6 +146,7 @@ public:
 private:
     std::filesystem::path m_cache_dir;
     std::map<std::string, std::filesystem::path> m_file_paths; // name --> file location
+    std::map<std::string, std::vector<int64_t>> m_multimesh_names; // name --> file location
     bool m_delete_cache = true;
 
     inline static const std::string m_cache_content_name =

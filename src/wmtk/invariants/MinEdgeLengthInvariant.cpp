@@ -5,13 +5,13 @@
 namespace wmtk {
 MinEdgeLengthInvariant::MinEdgeLengthInvariant(
     const Mesh& m,
-    const MeshAttributeHandle<double>& coordinate,
+    const TypedAttributeHandle<double>& coordinate,
     double threshold_squared)
     : Invariant(m)
     , m_coordinate_handle(coordinate)
     , m_threshold_squared(threshold_squared)
 {}
-bool MinEdgeLengthInvariant::before(const Simplex& t) const
+bool MinEdgeLengthInvariant::before(const simplex::Simplex& t) const
 {
     ConstAccessor<double> accessor = mesh().create_accessor(m_coordinate_handle);
 

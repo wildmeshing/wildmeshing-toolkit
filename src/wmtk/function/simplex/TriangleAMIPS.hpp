@@ -11,12 +11,12 @@ namespace wmtk::function {
 class TriangleAMIPS : public PerSimplexAutodiffFunction
 {
 public:
-    TriangleAMIPS(const TriMesh& mesh, const MeshAttributeHandle<double>& vertex_attribute_handle);
+    TriangleAMIPS(const Mesh& mesh, const attribute::MeshAttributeHandle& vertex_attribute_handle);
 
     ~TriangleAMIPS();
 
 protected:
-    DScalar eval(const Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
+    DScalar eval(const simplex::Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
         const override;
 };
 

@@ -1,5 +1,6 @@
 #include "TriMesh_examples.hpp"
 #include <random>
+#include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk/utils/triangle_areas.hpp>
@@ -87,14 +88,14 @@ TriMesh unit_squre()
     RowVectors3l tris;
     tris.resize(2, 3);
     tris.row(0) << 0, 1, 2;
-    tris.row(1) << 3, 0, 2;
+    tris.row(1) << 3, 1, 0;
     m.initialize(tris);
 
     Eigen::Matrix<double, 4, 2> V;
 
-    V.row(0) << 0., 0.;
-    V.row(1) << 1., 0.;
-    V.row(2) << 1., 1.;
+    V.row(1) << 0., 0.;
+    V.row(2) << 1., 0.;
+    V.row(0) << 1., 1.;
     V.row(3) << 0., 1.;
     mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
 
@@ -343,7 +344,7 @@ TriMesh embedded_diamond()
     return m;
 }
 
-TriMesh strip(long size)
+TriMesh strip(int64_t size)
 {
     TriMesh m;
 
@@ -357,9 +358,9 @@ TriMesh strip(long size)
     for (int j = 0; j < size; ++j) {
         auto t = tris.row(j);
         if (j % 2 == 0) {
-            t = Vector<long, 3>(j, j + 1, j + 2);
+            t = Vector<int64_t, 3>(j, j + 1, j + 2);
         } else {
-            t = Vector<long, 3>(j, j + 2, j + 1);
+            t = Vector<int64_t, 3>(j, j + 2, j + 1);
         }
     }
     tris.row(0) << 0, 1, 2;
@@ -488,7 +489,7 @@ TriMesh cutup_uv_mesh_with_position()
     V.row(18) << 3., -1.;
     V.row(19) << 2., -1.;
 
-    mesh_utils::set_matrix_attribute(V, "uv_coordinates", PrimitiveType::Vertex, m);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
     return m;
 }
 
@@ -517,8 +518,52 @@ TriMesh sewed_at_seam_position_mesh_with_position()
     V.row(5) << 1.5, 0., 1.;
     V.row(6) << 1.5, 1., 1.;
     V.row(7) << 1., -1., 1.;
-    mesh_utils::set_matrix_attribute(V, "pos_coordinates", PrimitiveType::Vertex, m);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
 
     return m;
+}
+std::shared_ptr<TriMesh> disk(int number)
+{
+    assert(number >= 1);
+    auto mptr = std::make_shared<TriMesh>();
+    TriMesh& m = *mptr;
+    RowVectors3l tris;
+    tris.resize(number, 3);
+    tris.rowwise() = Vector3l(0, 1, 2).transpose();
+    auto mut = tris.rightCols<2>();
+    for (int j = 0; j < number; ++j) {
+        mut.row(j).array() += j;
+    }
+
+    tris(number - 1, 2) = 1;
+    m.initialize(tris);
+    return mptr;
+}
+
+// N triangles of
+std::shared_ptr<TriMesh> individual_triangles(int number)
+{
+    assert(number >= 1);
+
+    auto mptr = std::make_shared<TriMesh>();
+    TriMesh& m = *mptr;
+    RowVectors3l tris;
+    tris.resize(number, 3);
+    tris.rowwise() = Vector3l(0, 1, 2).transpose();
+    for (int j = 0; j < number; ++j) {
+        tris.row(j).array() += 3 * j;
+    }
+    m.initialize(tris);
+    return mptr;
+}
+
+std::shared_ptr<TriMesh> disk_to_individual_multimesh(int number)
+{
+    auto d = disk(number);
+    auto i = individual_triangles(number);
+    auto map = multimesh::same_simplex_dimension_bijection(*d, *i);
+
+    d->register_child_mesh(i, map);
+    return d;
 }
 } // namespace wmtk::tests
