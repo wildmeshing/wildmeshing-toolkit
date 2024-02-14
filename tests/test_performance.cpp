@@ -192,3 +192,41 @@ TEST_CASE("split_with_attributes", "[performance][.]")
         logger().info("#successful operations: {}", pass_stats.number_of_successful_operations());
     }
 }
+
+TEST_CASE("collapse_performance", "[performance][.]")
+{
+    using namespace operations;
+
+    const std::filesystem::path meshfile = data_dir / "armadillo.msh";
+    const int64_t iterations = 5;
+
+    auto mesh_in = wmtk::read_mesh(meshfile);
+    Mesh& m = *mesh_in;
+
+    auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+
+
+    std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
+    pass_through_attributes.emplace_back(pos_handle);
+
+    auto invariant_link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(m);
+
+    //////////////////////////////////////////
+    // collapse
+    auto op_collapse = std::make_shared<EdgeCollapse>(m);
+    op_collapse->add_invariant(invariant_link_condition);
+    op_collapse->set_new_attribute_strategy(pos_handle);
+
+    {
+        logger().set_level(spdlog::level::off);
+        POLYSOLVE_SCOPED_STOPWATCH("Collapse", logger());
+        Scheduler scheduler;
+        SchedulerStats pass_stats;
+        for (long i = 0; i < iterations; ++i) {
+            pass_stats += scheduler.run_operation_on_all(*op_collapse);
+        }
+        logger().set_level(spdlog::level::trace);
+        logger().info("#performed operations : {}", pass_stats.number_of_performed_operations());
+        logger().info("#successful operations: {}", pass_stats.number_of_successful_operations());
+    }
+}
