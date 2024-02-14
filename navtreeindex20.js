@@ -1,5 +1,8 @@
 var NAVTREEINDEX20 =
 {
+"triangle__insertion_8cpp.html":[5,0,0,1,18,0,0,0,0],
+"triangle__insertion_8cpp.html#ad26e15d638e76cf767b43e34d5d68465":[5,0,0,1,18,0,0,0,0,0],
+"triangle__insertion_8cpp_source.html":[5,0,0,1,18,0,0,0,0],
 "triangle__insertion_8hpp.html":[5,0,0,1,18,0,0,0,1],
 "triangle__insertion_8hpp.html#ad26e15d638e76cf767b43e34d5d68465":[5,0,0,1,18,0,0,0,1,0],
 "triangle__insertion_8hpp_source.html":[5,0,0,1,18,0,0,0,1],
