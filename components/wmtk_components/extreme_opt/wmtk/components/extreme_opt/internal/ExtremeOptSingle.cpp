@@ -43,7 +43,8 @@ ExtremeOptSingle::ExtremeOptSingle(
     const bool do_collapse,
     const bool do_swap,
     const bool do_smooth,
-    const bool debug_output)
+    const bool debug_output,
+    std::string debug_dir)
     : m_mesh_name{mesh_name}
     , m_mesh{mesh}
     , m_length_min{(4. / 5.) * length}
@@ -53,6 +54,7 @@ ExtremeOptSingle::ExtremeOptSingle(
     , m_do_swap{do_swap}
     , m_do_smooth{do_smooth}
     , m_debug_output{debug_output}
+    , m_debug_dir{debug_dir}
     , m_position_handle{m_mesh.get_attribute_handle<double>(
           "ref_coordinates",
           PrimitiveType::Vertex)}
@@ -83,7 +85,7 @@ void ExtremeOptSingle::write_debug_mesh(const long test_id)
     m_mesh.consolidate();
 
     wmtk::io::ParaviewWriter writer(
-        "extreme_opt_" + m_mesh_name + "_3d_" + std::to_string(test_id),
+        m_debug_dir + "/extreme_opt_" + m_mesh_name + "_3d_" + std::to_string(test_id),
         "ref_coordinates",
         m_mesh,
         true,
@@ -94,7 +96,7 @@ void ExtremeOptSingle::write_debug_mesh(const long test_id)
     m_mesh.serialize(writer);
 
     wmtk::io::ParaviewWriter writer_uv(
-        "extreme_opt_" + m_mesh_name + "_uv_" + std::to_string(test_id),
+        m_debug_dir + "/extreme_opt_" + m_mesh_name + "_uv_" + std::to_string(test_id),
         "vertices",
         m_mesh,
         true,
@@ -368,8 +370,11 @@ void ExtremeOptSingle::remeshing_amips(const long iterations)
     auto energy_acc = m_mesh.create_accessor(energy_handle.as<double>());
 
     // create energy to optimize
+    // std::shared_ptr<function::PerSimplexFunction> amips =
+    //     std::make_shared<function::AMIPS>(m_mesh, m_uv_handle);
+
     std::shared_ptr<function::PerSimplexFunction> amips =
-        std::make_shared<function::AMIPS>(m_mesh, m_uv_handle);
+        std::make_shared<function::TriangleAMIPS>(m_mesh, m_uv_handle);
 
     auto evaluate_function_sum = [&](std::shared_ptr<function::PerSimplexFunction> f,
                                      bool update_energy_attribute = false) {

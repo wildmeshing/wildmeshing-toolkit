@@ -23,6 +23,7 @@ struct ExtremeOptOptions
     bool do_smooth = true;
     bool uniform_reference = true; // use equilateral triangle as reference
     bool debug_output = true;
+    std::string debug_dir = "";
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
@@ -40,7 +41,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     swap_optimize_E_max,
     do_smooth,
     uniform_reference,
-    debug_output);
+    debug_output,
+    debug_dir);
 
 } // namespace internal
 } // namespace components

@@ -19,6 +19,8 @@ class ExtremeOptSingle
     bool m_do_smooth;
     bool m_debug_output;
 
+    std::string m_debug_dir = "";
+
 
     // TODO: put envelope parameters to json options
     bool m_use_envelope = false;
@@ -40,7 +42,8 @@ public:
         const bool do_collapse,
         const bool do_swap,
         const bool do_smooth,
-        const bool debug_output);
+        const bool debug_output,
+        std::string debug_dir);
 
     void get_boundary_mesh();
     void remeshing(const long iterations);

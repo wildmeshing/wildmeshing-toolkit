@@ -73,7 +73,8 @@ void extreme_opt_single(const base::Paths& paths, const nlohmann::json& j, io::C
         options.do_collapse,
         options.do_swap,
         options.do_smooth,
-        options.debug_output);
+        options.debug_output,
+        options.debug_dir);
 
     // extreme_opt_single.remeshing(options.iterations);
     // TODO: test on amimps energy

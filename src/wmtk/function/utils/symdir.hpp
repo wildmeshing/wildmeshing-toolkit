@@ -27,7 +27,7 @@ auto symdir(const Eigen::MatrixBase<Derived>& J)
 
     return (J(0, 0) * J(0, 0) + J(0, 1) * J(0, 1) + J(1, 0) * J(1, 0) + J(1, 1) * J(1, 1)) *
            (1 + 1 / (Jdet * Jdet));
-    // return (J * J.transpose()).trace() / Jdet;
+    // return (J * J.transpose()).trace() / Jdet; // AMIPS
 }
 
 
