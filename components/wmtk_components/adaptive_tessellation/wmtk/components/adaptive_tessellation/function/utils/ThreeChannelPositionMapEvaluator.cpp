@@ -17,7 +17,7 @@ ThreeChannelPositionMapEvaluator::ThreeChannelPositionMapEvaluator(
     , m_wrapping_mode(other.m_wrapping_mode)
 {}
 ThreeChannelPositionMapEvaluator::ThreeChannelPositionMapEvaluator(
-    const std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> funcs,
+    const std::array<std::shared_ptr<image::Sampling>, 3> funcs,
     const image::SAMPLING_METHOD sampling_method)
     : m_analytical_funcs(funcs)
     , m_sampling_method(sampling_method)

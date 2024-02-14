@@ -1,5 +1,5 @@
 #include "edge_meshes_parameterization.hpp"
-#include <wmtk/Accessor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 
 using namespace wmtk;
 using namespace wmtk::simplex;
@@ -29,7 +29,7 @@ Tuple map_single_tuple(
 double arclength(
     const Mesh& my_mesh,
     const Mesh& parent_mesh,
-    const ConstAccessor<double>& uv_accessor,
+    const Accessor<double>& uv_accessor,
     const Tuple& v_tuple,
     const Tuple& v_next_tuple)
 {
@@ -49,7 +49,7 @@ std::pair<Tuple, Tuple> get_ends_of_edge_mesh(const EdgeMesh& edge_mesh)
     std::vector<Tuple> ends;
     std::vector<Tuple> vertices = edge_mesh.get_all(PrimitiveType::Vertex);
     for (const Tuple& v : vertices) {
-        if (edge_mesh.is_boundary(v, PrimitiveType::Vertex)) ends.push_back(v);
+        if (edge_mesh.is_boundary(PrimitiveType::Vertex, v)) ends.push_back(v);
     }
     if (ends.size() != 2) throw std::runtime_error("The edge mesh is a closed curve!");
     return std::make_pair(ends[0], ends[1]);
@@ -64,7 +64,7 @@ void parameterize_edge_mesh(
     // create an t accessor
     Accessor<double> t_accessor = edge_mesh.create_accessor(t_handle.as<double>());
     // create an uv accessor
-    ConstAccessor<double> uv_accessor = uv_mesh.create_const_accessor(uv_handle.as<double>());
+    Accessor<double> uv_accessor = uv_mesh.create_const_accessor(uv_handle.as<double>());
     // get ends of the edge mesh
     std::pair<Tuple, Tuple> ends = get_ends_of_edge_mesh(edge_mesh);
     Tuple v_start = ends.first;
@@ -99,7 +99,7 @@ void parameterize_seam_edge_meshes(
     Accessor<double> t1_accessor = edge_mesh1.create_accessor(t1_handle.as<double>());
     Accessor<double> t2_accessor = edge_mesh2.create_accessor(t2_handle.as<double>());
     // create an uv accessor
-    ConstAccessor<double> uv_accessor = uv_mesh.create_const_accessor(uv_handle.as<double>());
+    Accessor<double> uv_accessor = uv_mesh.create_const_accessor(uv_handle.as<double>());
     // get ends of the edge mesh
     std::pair<Tuple, Tuple> ends1 = get_ends_of_edge_mesh(edge_mesh1);
     Tuple v_start1 = ends1.first;
@@ -155,7 +155,7 @@ void parameterize_all_edge_meshes(
         if (edge_mesh->has_attribute<double>("t", PrimitiveType::Vertex)) {
             MeshAttributeHandle t_handle =
                 edge_mesh->get_attribute_handle<double>("t", PrimitiveType::Vertex);
-            ConstAccessor<double> t_accessor =
+            Accessor<double> t_accessor =
                 edge_mesh->create_const_accessor<double>(t_handle.as<double>());
             auto vertices = edge_mesh->get_all(PrimitiveType::Vertex);
             Tuple v_start = vertices[0]; // any vertex

@@ -168,7 +168,7 @@ TEST_CASE("1D_self_loop", "[tuple_generation], [tuple_1d]")
 TEST_CASE("1D_random_switches", "[tuple_operation],[tuple_1d]")
 {
     DEBUG_EdgeMesh m = loop_lines();
-    ConstAccessor<int64_t> hash_accessor = m.get_const_cell_hash_accessor();
+    const attribute::Accessor<int64_t> hash_accessor = m.get_const_cell_hash_accessor();
     SECTION("vertices")
     {
         const std::vector<Tuple> vertex_tuples = m.get_all(PrimitiveType::Vertex);

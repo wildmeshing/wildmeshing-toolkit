@@ -13,9 +13,9 @@
 namespace wmtk::components {
 
 template <int D>
-RowVectors<double, D> points_to_rowvectors(PointMesh& point_cloud)
+RowVectors<double, D> points_to_rowvectors(const std::string& position, PointMesh& point_cloud)
 {
-    auto pts_attr = point_cloud.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto pts_attr = point_cloud.get_attribute_handle<double>(position, PrimitiveType::Vertex);
     auto pts_acc = point_cloud.create_accessor<double>(pts_attr);
 
     const auto vertices = point_cloud.get_all(PrimitiveType::Vertex);
@@ -51,7 +51,8 @@ void delaunay_exec(const internal::DelaunayOptions& options, io::Cache& cache)
 
     // make sure dimensions fit
     {
-        auto pts_attr = point_cloud.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        auto pts_attr =
+            point_cloud.get_attribute_handle<double>(options.position, PrimitiveType::Vertex);
         auto pts_acc = point_cloud.create_accessor<double>(pts_attr);
         assert(pts_acc.dimension() == options.cell_dimension);
     }
@@ -60,10 +61,11 @@ void delaunay_exec(const internal::DelaunayOptions& options, io::Cache& cache)
         throw std::runtime_error("not tested for 2d");
     }
 
-    MeshT mesh;
+    std::shared_ptr<MeshT> meshptr = std::make_shared<MeshT>();
+    MeshT& mesh = *meshptr;
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
-    const auto pts_vec = points_to_rowvectors<D>(point_cloud);
+    const auto pts_vec = points_to_rowvectors<D>(options.position, point_cloud);
     if constexpr (D == 2) {
         std::tie(vertices, faces) = internal::delaunay_2d(pts_vec);
     } else if constexpr (D == 3) {
@@ -73,7 +75,7 @@ void delaunay_exec(const internal::DelaunayOptions& options, io::Cache& cache)
     }
 
     mesh.initialize(faces.cast<int64_t>());
-    mesh_utils::set_matrix_attribute(vertices, "vertices", PrimitiveType::Vertex, mesh);
+    mesh_utils::set_matrix_attribute(vertices, options.position, PrimitiveType::Vertex, mesh);
 
     cache.write_mesh(mesh, options.output);
 }

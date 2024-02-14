@@ -2,7 +2,6 @@
 
 #include <optional>
 #include "AccessorBase.hpp"
-#include "AttributeAccessMode.hpp"
 
 namespace wmtk {
 class Mesh;
@@ -30,22 +29,20 @@ public:
     friend class AttributeCache<T>;
     using BaseType = AccessorBase<T>;
 
-    using ConstMapResult = typename BaseType::ConstMapResult; // Eigen::Map<const VectorX<T>>
-    using MapResult = typename BaseType::MapResult; // Eigen::Map<VectorX<T>>
+    template <int D = Eigen::Dynamic>
+    using ConstMapResult = typename BaseType::template ConstMapResult<D>; // Eigen::Map<const VectorX<T>>
+    template <int D = Eigen::Dynamic>
+    using MapResult = typename BaseType::template MapResult<D>; // Eigen::Map<VectorX<T>>
 
 
-    CachingAccessor(
-        Mesh& m,
-        const TypedAttributeHandle<T>& handle,
-        AttributeAccessMode access_mode = AttributeAccessMode::Immediate);
+    CachingAccessor(Mesh& m, const TypedAttributeHandle<T>& handle);
+    CachingAccessor(const Mesh& m, const TypedAttributeHandle<T>& handle);
 
-    ~CachingAccessor();
+        ~CachingAccessor();
     CachingAccessor(const CachingAccessor&) = delete;
     CachingAccessor& operator=(const CachingAccessor&) = delete;
     CachingAccessor(CachingAccessor&&) = default;
     CachingAccessor& operator=(CachingAccessor&&) = default;
-
-    // AttributeAccessMode access_mode() const;
 
 
     // returns the size of the underlying attribute
@@ -56,20 +53,24 @@ public:
     //using BaseType::attribute; // access to Attribute object being used here
     //using BaseType::set_attribute; // (const vector<T>&) -> void
     // shows the depth of scope stacks if they exist, mostly for debug
-    std::optional<int64_t> stack_depth() const;
+    int64_t stack_depth() const;
 
     bool has_stack() const;
 
-    ConstMapResult const_vector_attribute(const int64_t index) const;
+    template <int D = Eigen::Dynamic>
+    ConstMapResult<D> const_vector_attribute(const int64_t index) const;
 
     T const_scalar_attribute(const int64_t index) const;
+    T const_scalar_attribute(const int64_t index, const int8_t offset) const;
 
-    MapResult vector_attribute(const int64_t index);
+    template <int D = Eigen::Dynamic>
+    MapResult<D> vector_attribute(const int64_t index) ;
 
     T& scalar_attribute(const int64_t index);
+    T& scalar_attribute(const int64_t index, const int8_t offset);
 
     // deprecated because we should be more explicit in const/nonconst on internal interfaces
-    ConstMapResult vector_attribute(const int64_t index) const;
+    ConstMapResult<> vector_attribute(const int64_t index) const;
     // deprecated because we should be more explicit in const/nonconst on internal interfaces
     T scalar_attribute(const int64_t index) const;
 
@@ -83,8 +84,7 @@ protected:
     const BaseType& base_type() const { return *this; }
 
 private:
-    AttributeAccessMode m_mode;
-
-    AttributeScopeStack<T>* m_cache_stack = nullptr;
+    AttributeScopeStack<T>& m_cache_stack;
 };
 } // namespace wmtk::attribute
+#include "CachingAccessor.hxx"

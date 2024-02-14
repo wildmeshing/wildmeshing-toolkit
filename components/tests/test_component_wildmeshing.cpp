@@ -19,17 +19,21 @@ TEST_CASE("wildmeshing", "[components][wildmeshing][.]")
     json input_component_json = {
         {"name", "mesh"},
         {"file", data_dir / "adaptive_tessellation_test" / "after_smooth_uv.msh"},
-        // {"input", data_dir / "2d" / "rect1.msh"},
+        // {"file", data_dir / "2d" / "rect1.msh"},
         {"ignore_z", true}};
     wmtk::components::input(Paths(), input_component_json, cache);
 
-    json input = {
-        {"passes", 10},
-        {"input", "mesh"},
-        {"target_edge_length", 0.01},
-        {"intermediate_output", true},
-        {"output", "test"}};
 
+    json input =
+        R"({
+        "passes": 10,
+        "input": "mesh",
+        "target_edge_length": 0.01,
+        "intermediate_output": true,
+        "attributes": {"position": "vertices"},
+        "pass_through": [],
+        "output": "test"
+        })"_json;
 
     CHECK_NOTHROW(wmtk::components::wildmeshing(Paths(), input, cache));
 }
@@ -43,15 +47,48 @@ TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
         {"name", "mesh"},
         // {"input", data_dir / "sphere_coarse_.msh"},
         // {"input", data_dir / "tet.msh"},
-        {"input", data_dir / "sphere_coarse_005_.msh"}};
+        // {"file", data_dir / "sphere_coarse_005_.msh"},
+        {"file", data_dir / "cube_2.msh"},
+        {"ignore_z", false}};
     wmtk::components::input(Paths(), input_component_json, cache);
+
+    json attributes = {{"position", "vertices"}};
+
+    json input = {
+        {"passes", 10},
+        {"input", "mesh"},
+        {"target_edge_length", 0.05},
+        {"intermediate_output", false},
+        {"output", "test_mm"},
+        {"pass_through", std::vector<int64_t>()},
+        {"attributes", attributes}};
+
+
+    CHECK_NOTHROW(wmtk::components::wildmeshing(Paths(), input, cache));
+}
+
+TEST_CASE("wildmeshing_3d_multimesh", "[components][wildmeshing][.]")
+{
+    wmtk::io::Cache cache("wmtk_cache", ".");
+
+    json input_component_json = {
+        {"name", "mesh"},
+        // {"input", data_dir / "sphere_coarse_.msh"},
+        // {"input", data_dir / "tet.msh"},
+        {"file", data_dir / "sphere_coarse_005_.msh"},
+        {"ignore_z", false}};
+    wmtk::components::input(Paths(), input_component_json, cache);
+
+    json attributes = {{"position", "vertices"}};
 
     json input = {
         {"passes", 10},
         {"input", "mesh"},
         {"target_edge_length", 0.1},
         {"intermediate_output", true},
-        {"output", "test_maxinv"}};
+        {"output", "test_multimesh"},
+        {"pass_through", std::vector<int64_t>()},
+        {"attributes", attributes}};
 
 
     CHECK_NOTHROW(wmtk::components::wildmeshing(Paths(), input, cache));

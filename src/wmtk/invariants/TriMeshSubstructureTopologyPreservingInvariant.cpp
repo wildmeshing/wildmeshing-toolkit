@@ -12,7 +12,7 @@ TriMeshSubstructureTopologyPreservingInvariant::TriMeshSubstructureTopologyPrese
     const Mesh& m,
     const TypedAttributeHandle<int64_t>& substructure_edge_tag_handle,
     const int64_t substructure_tag_value)
-    : Invariant(m)
+    : Invariant(m, true, false, false)
     , m_substructure_edge_tag_handle(substructure_edge_tag_handle)
     , m_substructure_tag_value(substructure_tag_value)
 {}
@@ -32,7 +32,7 @@ bool TriMeshSubstructureTopologyPreservingInvariant::before(
     const simplex::Simplex vertex_u(PrimitiveType::Vertex, input_simplex.tuple());
     const simplex::Simplex vertex_v(
         PrimitiveType::Vertex,
-        mesh().switch_vertex(input_simplex.tuple()));
+        mesh().switch_tuple(input_simplex.tuple(), PrimitiveType::Vertex));
 
     RawSimplexCollection lk_u_0(link(mesh(), vertex_u));
     RawSimplexCollection lk_u_1;

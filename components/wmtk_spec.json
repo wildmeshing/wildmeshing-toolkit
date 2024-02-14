@@ -8,7 +8,8 @@
         "optional": [
             "settings",
             "root_path",
-            "output"
+            "output",
+            "tests"
         ]
     },
     {
@@ -65,13 +66,83 @@
     },
     {
         "pointer": "/components/*",
-        "type": "object",
-        "doc": "A single component."
-    },
-    {
-        "pointer": "/components/*",
         "type": "include",
         "spec_file": "components.json",
         "doc": "A single component."
+    },
+    {
+        "pointer": "/tests",
+        "default": null,
+        "type": "object",
+        "optional": [
+            "meshes",
+            "vertices",
+            "edges",
+            "faces",
+            "tetrahedra",
+            "skip_check"
+        ],
+        "doc": "Test data"
+    },
+    {
+        "pointer": "/tests/skip_check",
+        "type": "bool",
+        "default": false,
+        "doc": "Skip check at the end."
+    },
+    {
+        "pointer": "/tests/meshes",
+        "type": "list",
+        "default": [],
+        "doc": "Meshes to test."
+    },
+    {
+        "pointer": "/tests/meshes/*",
+        "type": "string",
+        "doc": "Mesh name."
+    },
+    {
+        "pointer": "/tests/vertices",
+        "type": "list",
+        "default": [],
+        "doc": "Number of vertices, one per mesh."
+    },
+    {
+        "pointer": "/tests/vertices/*",
+        "type": "int",
+        "doc": "Number of vertices."
+    },
+    {
+        "pointer": "/tests/edges",
+        "type": "list",
+        "default": [],
+        "doc": "Number of edges, one per mesh."
+    },
+    {
+        "pointer": "/tests/edges/*",
+        "type": "int",
+        "doc": "Number of edges."
+    },
+    {
+        "pointer": "/tests/faces",
+        "type": "list",
+        "default": [],
+        "doc": "Number of faces, one per mesh."
+    },
+    {
+        "pointer": "/tests/faces/*",
+        "type": "int",
+        "doc": "Number of faces."
+    },
+    {
+        "pointer": "/tests/tetrahedra",
+        "type": "list",
+        "default": [],
+        "doc": "Number of tetrahedra, one per mesh."
+    },
+    {
+        "pointer": "/tests/tetrahedra/*",
+        "type": "int",
+        "doc": "Number of tetrahedra."
     }
 ]

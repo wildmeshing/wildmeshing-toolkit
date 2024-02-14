@@ -6,7 +6,7 @@ namespace wmtk {
 EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
     EdgeMesh& m,
     const Tuple& operating_tuple,
-    Accessor<int64_t>& hash_acc)
+    attribute::Accessor<int64_t>& hash_acc)
     : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge)}}
     , ee_accessor(m.create_accessor<int64_t>(m.m_ee_handle))
     , ev_accessor(m.create_accessor<int64_t>(m.m_ev_handle))
@@ -235,7 +235,7 @@ std::vector<int64_t> EdgeMesh::EdgeMeshOperationExecutor::request_simplex_indice
     const PrimitiveType type,
     int64_t count)
 {
-    m_mesh.reserve_attributes(type, m_mesh.capacity(type) + count);
+    m_mesh.guarantee_more_attributes(type, count);
     return m_mesh.request_simplex_indices(type, count);
 }
 

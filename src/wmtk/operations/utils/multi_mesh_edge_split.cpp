@@ -12,9 +12,9 @@
 
 namespace wmtk::operations::utils {
 
-std::shared_ptr<InvariantCollection> multimesh_edge_split_invariants(const Mesh& m)
+std::shared_ptr<invariants::InvariantCollection> multimesh_edge_split_invariants(const Mesh& m)
 {
-    auto invariants = std::make_shared<InvariantCollection>(m);
+    auto invariants = std::make_shared<invariants::InvariantCollection>(m);
     //*invariants = basic_multimesh_invariant_collection(m, PrimitiveType::Edge);
     return invariants;
 }
@@ -49,5 +49,19 @@ SplitReturnData multi_mesh_edge_split(
     multimesh::MultiMeshVisitor(update_attributes).execute_from_root(mesh);
 
     return cache;
+}
+
+std::vector<simplex::Simplex> multi_mesh_edge_split_with_modified_simplices(
+    Mesh& mesh,
+    const simplex::Simplex& simplex,
+    const std::vector<std::shared_ptr<operations::BaseSplitNewAttributeStrategy>>&
+        new_attr_strategies)
+{
+    auto return_data = multi_mesh_edge_split(mesh, simplex.tuple(), new_attr_strategies);
+    return std::visit(
+        [](const auto& rt) -> std::vector<simplex::Simplex> {
+            return {simplex::Simplex::vertex(rt.m_output_tuple)};
+        },
+        return_data.get_variant(mesh, simplex));
 }
 } // namespace wmtk::operations::utils

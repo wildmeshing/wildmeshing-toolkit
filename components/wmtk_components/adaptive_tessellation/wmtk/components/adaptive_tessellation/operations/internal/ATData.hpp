@@ -20,13 +20,13 @@ namespace wmtk::components::operations::internal {
 using namespace wmtk::simplex;
 class ATData
 {
-    std::shared_ptr<Mesh> m_uv_mesh_ptr;
     std::shared_ptr<Mesh> m_position_mesh_ptr;
+    std::shared_ptr<Mesh> m_uv_mesh_ptr;
+
     std::vector<std::shared_ptr<Mesh>> m_edge_mesh_ptrs;
     std::map<Mesh*, Mesh*> m_sibling_meshes_map;
     std::array<std::shared_ptr<image::Image>, 3> m_images = {{nullptr, nullptr, nullptr}};
-    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> m_funcs = {
-        {nullptr, nullptr, nullptr}};
+    std::array<std::shared_ptr<image::Sampling>, 3> m_funcs = {{nullptr, nullptr, nullptr}};
 
 public:
     // Tnvariants are dependant on the input mesh where the operation is defined one (interior
@@ -36,38 +36,44 @@ public:
 
     // handle to vertex uv coordinates used for the uv non-inversion invariants
     wmtk::attribute::MeshAttributeHandle m_uv_handle;
-    wmtk::attribute::MeshAttributeHandle m_3d_edge_length_handle;
-    wmtk::attribute::MeshAttributeHandle m_xyz_handle;
-    wmtk::attribute::MeshAttributeHandle m_quadrature_error_handle;
+    wmtk::attribute::MeshAttributeHandle m_uvmesh_xyz_handle;
+    wmtk::attribute::MeshAttributeHandle m_distance_error_handle;
     wmtk::attribute::MeshAttributeHandle m_sum_error_handle;
     wmtk::attribute::MeshAttributeHandle m_barrier_energy_handle;
     wmtk::attribute::MeshAttributeHandle m_amips_error_handle;
 
-    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator m_evaluator;
-    std::shared_ptr<wmtk::components::function::utils::IntegralBase> m_integral_ptr;
+    wmtk::attribute::MeshAttributeHandle m_3d_edge_length_handle;
+    // wmtk::attribute::MeshAttributeHandle m_edge_priority_handle;
 
-    // Scheduler m_scheduler;
+    // ATData(
+    //     std::shared_ptr<Mesh> uv_mesh,
+    //     std::shared_ptr<Mesh> position_mesh,
+    //     std::vector<std::shared_ptr<Mesh>> edge_mesh_ptrs,
+    //     std::map<Mesh*, Mesh*> sibling_meshes_map,
+    //     std::array<std::shared_ptr<image::Image>, 3>& images);
+    // ATData(
+    //     std::shared_ptr<Mesh> uv_mesh,
+    //     std::shared_ptr<Mesh> position_mesh,
+    //     std::array<std::shared_ptr<image::Image>, 3>& images);
 
     ATData(
-        std::shared_ptr<Mesh> uv_mesh,
-        std::shared_ptr<Mesh> position_mesh,
-        std::vector<std::shared_ptr<Mesh>> edge_mesh_ptrs,
-        std::map<Mesh*, Mesh*> sibling_meshes_map,
+        std::shared_ptr<Mesh> position_mesh_ptr,
+        std::shared_ptr<Mesh> uv_mesh_ptr,
         std::array<std::shared_ptr<image::Image>, 3>& images);
     ATData(
-        std::shared_ptr<Mesh> uv_mesh,
-        std::shared_ptr<Mesh> position_mesh,
-        std::array<std::shared_ptr<image::Image>, 3>& images);
-
-    ATData(std::shared_ptr<Mesh> uv_mesh, std::array<std::shared_ptr<image::Image>, 3>& images);
+        std::shared_ptr<Mesh> position_mesh_ptr,
+        std::shared_ptr<Mesh> uv_mesh_ptr,
+        const std::filesystem::path& position_path,
+        const std::filesystem::path& normal_path,
+        const std::filesystem::path& height_path);
     ATData(
+        std::shared_ptr<Mesh> position_mesh_ptr,
         std::shared_ptr<Mesh> uv_mesh,
-        std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs);
+        std::array<std::shared_ptr<image::Sampling>, 3>& funcs);
 
 
     void initialize_handles();
     wmtk::attribute::MeshAttributeHandle uv_handle();
-    wmtk::attribute::MeshAttributeHandle edge_len_handle();
     Mesh& uv_mesh() const;
     Mesh& position_mesh() const;
     std::shared_ptr<Mesh> uv_mesh_ptr() const;
@@ -77,7 +83,7 @@ public:
     Mesh* sibling_edge_mesh_ptr(Mesh* my_edge_mesh_ptr);
     Simplex sibling_edge(Mesh* my_edge_mesh_ptr, const Simplex& s);
     const std::array<std::shared_ptr<image::Image>, 3>& images() const;
-    const std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs() const;
+    const std::array<std::shared_ptr<image::Sampling>, 3>& funcs() const;
 
     void _debug_sampling(
         wmtk::components::function::utils::ThreeChannelPositionMapEvaluator& image_sampling,

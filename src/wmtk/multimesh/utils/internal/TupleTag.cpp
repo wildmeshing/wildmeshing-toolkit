@@ -1,5 +1,5 @@
 #include "TupleTag.hpp"
-#include <wmtk/Accessor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/Primitive.hpp>
 namespace wmtk::multimesh::utils::internal {
 TupleTag::TupleTag(Mesh& mesh, const std::set<int64_t>& critical_points)
@@ -30,13 +30,13 @@ void TupleTag::initialize()
     std::vector<Tuple> e_tuples = mesh().get_all(PrimitiveType::Edge);
     // initializing all the edge tags to be -1
     for (const Tuple& e : e_tuples) {
-        if (mesh().is_boundary(e, PrimitiveType::Edge)) {
+        if (mesh().is_boundary(PrimitiveType::Edge, e)) {
             set_edge_tag(e, -1);
         }
     }
     // initializing all the vertex tags to be the vertex id
     for (const Tuple& v : v_tuples) {
-        if (mesh().is_boundary(v, PrimitiveType::Vertex)) {
+        if (mesh().is_boundary(PrimitiveType::Vertex, v)) {
             set_vertex_tag(v, vid(v));
         }
     }
@@ -60,16 +60,16 @@ std::set<int64_t> TupleTag::run()
     int64_t vid_max = mesh().capacity(PrimitiveType::Vertex);
     // the pass to tag all vertices
     for (const Tuple& e : e_tuples) {
-        if (mesh().is_boundary(e, PrimitiveType::Edge)) {
+        if (mesh().is_boundary(PrimitiveType::Edge, e)) {
             run(e);
         }
     }
     // the pass to tag all edges
     int64_t edge_tag = 0;
     for (const Tuple& e : e_tuples) {
-        if (mesh().is_boundary(e, PrimitiveType::Edge)) {
+        if (mesh().is_boundary(PrimitiveType::Edge, e)) {
             Tuple v1 = e;
-            Tuple v2 = mesh().switch_vertex(e);
+            Tuple v2 = mesh().switch_tuple(e, PrimitiveType::Vertex);
             // both vertices are critical points
             if (is_critical_vertex(v1) && is_critical_vertex(v2)) {
                 set_edge_tag(e, edge_tag + vid_max);
@@ -177,7 +177,7 @@ void TupleTag::vertex_sets_unify(const Tuple& v1, const Tuple& v2)
 void TupleTag::run(const Tuple& e)
 {
     Tuple v1 = e;
-    Tuple v2 = mesh().switch_vertex(e);
+    Tuple v2 = mesh().switch_tuple(e, PrimitiveType::Vertex);
     int64_t vid1 = vid(v1);
     int64_t vid2 = vid(v2);
     // both vertices are critical points

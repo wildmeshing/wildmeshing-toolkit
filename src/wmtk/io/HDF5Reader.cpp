@@ -73,14 +73,14 @@ std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
             auto child_to_parent_handle =
                 child_mesh
                     ->get_attribute_handle<int64_t>(
-                        MultiMeshManager::child_to_parent_map_attribute_name(),
+                        multimesh::MultiMeshManager::child_to_parent_map_attribute_name(),
                         child_primitive_type)
                     .as<int64_t>();
 
             auto parent_to_child_handle =
                 parent_mesh
                     ->get_attribute_handle<int64_t>(
-                        MultiMeshManager::parent_to_child_map_attribute_name(child_index),
+                        multimesh::MultiMeshManager::parent_to_child_map_attribute_name(child_index),
                         child_primitive_type)
                     .as<int64_t>();
 
@@ -91,7 +91,8 @@ std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
             parent_mesh->m_multi_mesh_manager.m_children.emplace_back();
             parent_mesh->m_multi_mesh_manager.m_children.back().mesh = child_mesh;
             parent_mesh->m_multi_mesh_manager.m_children.back().map_handle = parent_to_child_handle;
-
+            parent_mesh->m_multi_mesh_manager
+                .m_has_child_mesh_in_dimension[child_mesh->top_cell_dimension()] = true;
             parent_mesh->assert_capacity_valid();
             child_mesh->assert_capacity_valid();
         }
@@ -116,9 +117,8 @@ std::shared_ptr<Mesh> HDF5Reader::read_mesh(h5pp::File& hdf5_file, const std::st
 
     switch (top_simplex_type) {
     case PrimitiveType::Vertex: mesh = std::make_shared<PointMesh>(); break;
-    case PrimitiveType::HalfEdge:
     case PrimitiveType::Edge: mesh = std::make_shared<EdgeMesh>(); break;
-    case PrimitiveType::Face: mesh = std::make_shared<TriMesh>(); break;
+    case PrimitiveType::Triangle: mesh = std::make_shared<TriMesh>(); break;
     case PrimitiveType::Tetrahedron: mesh = std::make_shared<TetMesh>(); break;
     default: break;
     }

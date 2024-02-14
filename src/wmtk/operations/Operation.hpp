@@ -3,7 +3,7 @@
 #include "attribute_new/NewAttributeStrategy.hpp"
 #include "attribute_update/AttributeTransferStrategyBase.hpp"
 
-#include <wmtk/Accessor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/Tuple.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 
@@ -63,6 +63,12 @@ public:
         const attribute::MeshAttributeHandle& attribute,
         const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
 
+    virtual void reserve_enough_simplices();
+
+    static void increase_sampling_cnt();
+    static void reset_sampling_cnt();
+    static void print_sampling_cnt();
+
 protected:
     /**
      * @brief returns an empty vector in case of failure
@@ -83,17 +89,13 @@ protected:
         const std::vector<simplex::Simplex>& mods) const;
 
     /// @brief utility for subclasses
-    /// @param cells
-    void update_cell_hashes(const std::vector<Tuple>& cells);
-
-    /// @brief utility for subclasses
     /// @param tuple
     Tuple resurrect_tuple(const Tuple& tuple) const;
 
     /// @brief utility for subclasses
-    Accessor<int64_t> hash_accessor();
+    attribute::Accessor<int64_t> hash_accessor();
     /// @brief utility for subclasses
-    ConstAccessor<int64_t> hash_accessor() const;
+    const attribute::Accessor<int64_t> hash_accessor() const;
 
 
     void apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods);
@@ -106,7 +108,7 @@ private:
     std::function<std::vector<double>(const simplex::Simplex&)> m_priority = nullptr;
 
 protected:
-    InvariantCollection m_invariants;
+    invariants::InvariantCollection m_invariants;
 
     std::vector<std::shared_ptr<operations::AttributeTransferStrategyBase>>
         m_attr_transfer_strategies;

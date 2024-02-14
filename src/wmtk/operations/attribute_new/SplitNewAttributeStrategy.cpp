@@ -104,7 +104,7 @@ SplitNewAttributeStrategy<T>::SplitNewAttributeStrategy(
     if (mesh.top_simplex_type() == PrimitiveType::Edge) {
         m_topo_info =
             std::make_unique<edge_mesh::SplitNewAttributeTopoInfo>(static_cast<EdgeMesh&>(mesh));
-    } else if (mesh.top_simplex_type() == PrimitiveType::Face) {
+    } else if (mesh.top_simplex_type() == PrimitiveType::Triangle) {
         m_topo_info =
             std::make_unique<tri_mesh::SplitNewAttributeTopoInfo>(static_cast<TriMesh&>(mesh));
     } else if (mesh.top_simplex_type() == PrimitiveType::Tetrahedron) {
@@ -120,7 +120,7 @@ void SplitNewAttributeStrategy<T>::update(
     const ReturnData& data,
     const OperationTupleData& op_datas)
 {
-    assert(op_datas.find(&mesh()) != op_datas.end());
+    if (op_datas.find(&mesh()) == op_datas.end()) return;
     const std::vector<std::array<Tuple, 2>>& tuple_pairs = op_datas.at(&mesh());
 
     for (const auto& tuple_pair : tuple_pairs) {

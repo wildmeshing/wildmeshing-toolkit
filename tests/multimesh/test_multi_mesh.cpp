@@ -19,11 +19,11 @@ using namespace wmtk::simplex;
 using TM = TriMesh;
 using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
     wmtk::Tuple(),
-    std::declval<Accessor<int64_t>&>()));
+    std::declval<wmtk::attribute::Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 
 
 namespace {} // namespace
@@ -35,14 +35,12 @@ void print_tuple_map(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManager& 
     for (auto& child_data : p_mul_manager.children()) {
         std::cout << "child_id = " << child_id++ << std::endl;
         PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
-        auto parent_to_child_accessor = parent.create_accessor(child_data.map_handle);
+        auto parent_to_child_accessor = parent.create_const_accessor(child_data.map_handle);
         for (int64_t parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
             auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
                 parent.tuple_from_id(map_ptype, parent_gid));
-            Tuple parent_tuple =
-                wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
-            Tuple child_tuple =
-                wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+            auto [parent_tuple, child_tuple] =
+                wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
             std::cout << "parent gid = " << parent_gid << std::endl;
             std::cout << "parent_tuple = " << wmtk::utils::TupleInspector::as_string(parent_tuple)
                       << std::endl;
@@ -282,19 +280,19 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
     {
         // try the tuples that should succeed
         for (const auto& [ct, pt] : child0_map) {
-            auto ncts = parent.map_to_child_tuples(child0, Simplex(PrimitiveType::Face, pt));
+            auto ncts = parent.map_to_child_tuples(child0, Simplex(PrimitiveType::Triangle, pt));
             REQUIRE(ncts.size() == 1);
             auto nct = ncts[0];
-            auto npt = child0.map_to_parent_tuple(Simplex(PrimitiveType::Face, ct));
+            auto npt = child0.map_to_parent_tuple(Simplex(PrimitiveType::Triangle, ct));
 
             CHECK(nct == ct);
             CHECK(npt == pt);
         }
         for (const auto& [ct, pt] : child1_map) {
-            auto ncts = parent.map_to_child_tuples(child1, Simplex(PrimitiveType::Face, pt));
+            auto ncts = parent.map_to_child_tuples(child1, Simplex(PrimitiveType::Triangle, pt));
             REQUIRE(ncts.size() == 1);
             auto nct = ncts[0];
-            auto npt = child1.map_to_parent_tuple(Simplex(PrimitiveType::Face, ct));
+            auto npt = child1.map_to_parent_tuple(Simplex(PrimitiveType::Triangle, ct));
 
             CHECK(nct == ct);
             CHECK(npt == pt);
@@ -304,12 +302,12 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
         // go through simplex indices that aren't available in the map
         for (int64_t index = 0; index < 2; ++index) {
             auto pt = parent.tuple_from_id(PF, index);
-            auto ncts = parent.map_to_child(child0, Simplex(PrimitiveType::Face, pt));
+            auto ncts = parent.map_to_child(child0, Simplex(PrimitiveType::Triangle, pt));
             CHECK(ncts.size() == 0);
         }
         for (int64_t index = 2; index < 3; ++index) {
             auto pt = parent.tuple_from_id(PF, index);
-            auto ncts = parent.map_to_child(child1, Simplex(PrimitiveType::Face, pt));
+            auto ncts = parent.map_to_child(child1, Simplex(PrimitiveType::Triangle, pt));
             CHECK(ncts.size() == 0);
         }
     }

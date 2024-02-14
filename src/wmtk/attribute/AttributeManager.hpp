@@ -13,8 +13,6 @@ class Mesh;
 class MeshWriter;
 
 namespace attribute {
-template <typename T>
-class MeshAttributes;
 class AttributeManager : public wmtk::utils::MerkleTreeInteriorNode
 {
     friend class internal::CheckpointScope;
@@ -22,10 +20,10 @@ class AttributeManager : public wmtk::utils::MerkleTreeInteriorNode
 public:
     AttributeManager(int64_t size);
     ~AttributeManager();
-    AttributeManager(const AttributeManager& o);
-    AttributeManager(AttributeManager&& o);
-    AttributeManager& operator=(const AttributeManager& o);
-    AttributeManager& operator=(AttributeManager&& o);
+    AttributeManager(const AttributeManager& o) = delete;
+    AttributeManager(AttributeManager&& o) = default;
+    AttributeManager& operator=(const AttributeManager& o) = delete;
+    AttributeManager& operator=(AttributeManager&& o) = default;
 
     //=========================================================
     // Storage of Mesh Attributes
@@ -55,28 +53,13 @@ public:
     void set_capacities(std::vector<int64_t> capacities);
     void reserve_more_attributes(int64_t dimension, int64_t size);
     void reserve_more_attributes(const std::vector<int64_t>& more_capacities);
+    void guarantee_more_attributes(int64_t dimension, int64_t size);
+    void guarantee_more_attributes(const std::vector<int64_t>& more_capacities);
+    void guarantee_at_least_attributes(int64_t dimension, int64_t size);
+    void guarantee_at_least_attributes(const std::vector<int64_t>& at_least_capacities);
     bool operator==(const AttributeManager& other) const;
 
-    inline void assert_capacity_valid() const
-    {
-        assert(m_char_attributes.size() == m_capacities.size());
-        assert(m_long_attributes.size() == m_capacities.size());
-        assert(m_double_attributes.size() == m_capacities.size());
-        assert(m_rational_attributes.size() == m_capacities.size());
-
-        for (size_t i = 0; i < m_capacities.size(); ++i) {
-            assert(m_capacities[i] > 0);
-            assert(m_char_attributes[i].reserved_size() >= m_capacities[i]);
-            assert(m_long_attributes[i].reserved_size() >= m_capacities[i]);
-            assert(m_double_attributes[i].reserved_size() >= m_capacities[i]);
-            assert(m_rational_attributes[i].reserved_size() >= m_capacities[i]);
-
-            m_char_attributes[i].assert_capacity_valid(m_capacities[i]);
-            m_long_attributes[i].assert_capacity_valid(m_capacities[i]);
-            m_double_attributes[i].assert_capacity_valid(m_capacities[i]);
-            m_rational_attributes[i].assert_capacity_valid(m_capacities[i]);
-        }
-    }
+    void assert_capacity_valid() const;
 
     template <typename T>
     TypedAttributeHandle<T> register_attribute(
@@ -114,11 +97,11 @@ public:
 
     void push_scope();
     void pop_scope(bool apply_updates = true);
-    void clear_current_scope();
+    void rollback_current_scope();
     void flush_all_scopes();
 
     void change_to_parent_scope() const;
-    void change_to_leaf_scope() const;
+    void change_to_child_scope() const;
     template <typename Functor, typename... Args>
     decltype(auto) parent_scope(Functor&& f, Args&&... args) const;
 
@@ -170,8 +153,8 @@ std::vector<MeshAttributes<T>>& AttributeManager::get()
 template <typename T>
 const MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype) const
 {
-    size_t index = get_primitive_type_id(ptype);
-    return get<T>().at(index);
+    const int8_t index = get_primitive_type_id(ptype);
+    return get<T>()[index];
 }
 
 template <typename T>

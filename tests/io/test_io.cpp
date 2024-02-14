@@ -159,8 +159,8 @@ TEST_CASE("attribute_after_split", "[io][.]")
         m.get_attribute_handle<double>(std::string("vertices"), PV).as<double>();
 
     {
-        Accessor<int64_t> acc_attribute = m.create_accessor<int64_t>(attribute_handle);
-        Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
+        wmtk::attribute::Accessor<int64_t> acc_attribute = m.create_accessor<int64_t>(attribute_handle);
+        wmtk::attribute::Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 0);
 
@@ -211,7 +211,7 @@ TEST_CASE("attribute_after_split", "[io][.]")
     } // end of scope for the accessors
 
     {
-        Accessor<int64_t> acc_attribute = m.create_accessor<int64_t>(attribute_handle);
+        wmtk::attribute::Accessor<int64_t> acc_attribute = m.create_accessor<int64_t>(attribute_handle);
         for (const Tuple& t : m.get_all(PE)) {
             CHECK(acc_attribute.scalar_attribute(t) == 0);
         }

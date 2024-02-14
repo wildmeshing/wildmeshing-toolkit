@@ -134,7 +134,7 @@ Image Image::down_sample() const
     return low_res_image;
 }
 
-std::array<Image, 3> combine_position_normal_texture(
+std::array<std::shared_ptr<Image>, 3> combine_position_normal_texture(
     double normalization_scale,
     const Eigen::Matrix<double, 1, 3>& offset,
     const std::filesystem::path& position_path,
@@ -197,11 +197,10 @@ std::array<Image, 3> combine_position_normal_texture(
         }
     }
 
-    return {{
-        buffer_to_image(buffer_r_d, w_p, h_p),
-        buffer_to_image(buffer_g_d, w_p, h_p),
-        buffer_to_image(buffer_b_d, w_p, h_p),
-    }};
+    return {
+        {buffer_to_image_ptr(buffer_r_d, w_p, h_p),
+         buffer_to_image_ptr(buffer_g_d, w_p, h_p),
+         buffer_to_image_ptr(buffer_b_d, w_p, h_p)}};
 }
 
 void split_and_save_3channels(const std::filesystem::path& path)
@@ -242,6 +241,17 @@ Image buffer_to_image(const std::vector<float>& buffer, int w, int h)
         }
     }
     return image;
+}
+
+std::shared_ptr<Image> buffer_to_image_ptr(const std::vector<float>& buffer, int w, int h)
+{
+    std::shared_ptr<Image> image_ptr = std::make_shared<Image>(w, h);
+    for (int i = 0, k = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            image_ptr->set(h - i - 1, j, buffer[k++]);
+        }
+    }
+    return image_ptr;
 }
 
 std::array<Image, 3> load_rgb_image(const std::filesystem::path& path)

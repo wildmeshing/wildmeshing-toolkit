@@ -89,6 +89,77 @@ public:
     }
 };
 
+enum ProceduralFunctionType { Terrain };
+class ProceduralFunction : public Sampling
+{
+protected:
+    ProceduralFunctionType m_type = ProceduralFunctionType::Terrain;
+
+protected:
+    template <typename S>
+    auto noise(const S& u, const S& v) const
+    {
+        return .4 * (5.5 * sin(u) + 8. * cos(v));
+    }
+    template <typename S>
+    auto evaluate_procedural_terrain(const S& u, const S& v) const
+    {
+        // this function generates the terrain height
+        S value = (S)0.;
+        double amplitude = 1.;
+        double freq = 1.;
+
+        for (int i = 0; i < 8; i++) {
+            // From Dave_Hoskins https://www.shadertoy.com/user/Dave_Hoskins
+            value += .25 - pow(noise(40 * u * freq, 40 * v * freq) - .3, 2) * amplitude + 2.5;
+
+            amplitude *= .37;
+
+            freq *= 2.05;
+        }
+
+        return .008 * (value * 1.5 - 1.0);
+    }
+    template <typename S>
+    S evaluate(const S& u, const S& v) const
+    {
+        if (m_type == Terrain) {
+            return evaluate_procedural_terrain(u, v);
+        } else
+            return static_cast<S>(0.0);
+    }
+
+public:
+    // make a contructor
+    ProceduralFunction(const ProceduralFunctionType type)
+        : m_type(type){};
+
+    double sample(const Vector2<double> uv) const override
+    {
+        return evaluate<double>(uv.x(), uv.y());
+    }
+    utils::DScalar sample(const Vector2<utils::DScalar>& uv) const override
+    {
+        return evaluate<utils::DScalar>(uv.x(), uv.y());
+    }
+    // set an image to have same value as the analytical function and save it to the file given
+    bool convert_to_exr(const int w, const int h)
+    {
+        Image img(h, w);
+
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                double u, v;
+                u = (static_cast<double>(j) + 0.5) / static_cast<double>(w);
+                v = (static_cast<double>(i) + 0.5) / static_cast<double>(h);
+                img.set(i, j, evaluate<double>(u, v));
+            }
+        }
+
+        img.save("terrain.exr");
+        return true;
+    }
+};
 
 class SamplingImage : public Sampling
 {

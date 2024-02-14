@@ -18,7 +18,7 @@ set(SRC_FILES
     TupleInspector.cpp
     triangle_areas.hpp
     triangle_areas.cpp
-    
+
     vector_hash.hpp
     vector_hash.cpp
     #Optimization.hpp
@@ -38,6 +38,7 @@ set(SRC_FILES
     primitive_range.hpp
     primitive_range.cpp
 
+    random_seed.hpp
 
 
     MerkleTreeInteriorNode.hpp
@@ -50,6 +51,12 @@ set(SRC_FILES
 
     merkle_tree_diff.hpp
     merkle_tree_diff.cpp
+
+    VolumeRemesherTriangleInsertion.hpp
+    VolumeRemesherTriangleInsertion.cpp
+
+    EigenMatrixWriter.hpp
+    EigenMatrixWriter.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

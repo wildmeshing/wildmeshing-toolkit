@@ -6,6 +6,9 @@
 #include <wmtk/components/adaptive_tessellation/image/utils/SamplingParameters.hpp>
 #include <wmtk/components/adaptive_tessellation/image/utils/sampling_utils.hpp>
 
+#include <wmtk/utils/Logger.hpp>
+
+#include <cmath>
 namespace image = wmtk::components::image;
 namespace wmtk::components {
 namespace function::utils {
@@ -14,7 +17,7 @@ class ThreeChannelPositionMapEvaluator
 {
 protected:
     const std::array<std::shared_ptr<image::Image>, 3> m_images;
-    const std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> m_analytical_funcs;
+    const std::array<std::shared_ptr<image::Sampling>, 3> m_analytical_funcs;
     const image::SAMPLING_METHOD m_sampling_method = image::SAMPLING_METHOD::Bicubic;
     const image::IMAGE_WRAPPING_MODE m_wrapping_mode = image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT;
 
@@ -34,13 +37,13 @@ public:
         const image::IMAGE_WRAPPING_MODE wrapping_mode = image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
 
     ThreeChannelPositionMapEvaluator(
-        const std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> funcs,
+        const std::array<std::shared_ptr<image::Sampling>, 3> funcs,
         const image::SAMPLING_METHOD sampling_method = image::SAMPLING_METHOD::Analytical);
 
     int width() const;
     int height() const;
     image::IMAGE_WRAPPING_MODE get_wrapping_mode() const;
-    image::SAMPLING_METHOD get_sampling_method() const { return m_sampling_method; }
+    image::SAMPLING_METHOD get_sampling_method() const;
 
     template <typename T>
     Vector3<T> uv_to_position(const Vector2<T>& uv) const
@@ -54,7 +57,7 @@ public:
         } else if (m_sampling_method == image::SAMPLING_METHOD::Analytical) {
             Eigen::Vector<T, 3> res;
             for (size_t k = 0; k < 3; ++k) {
-                res[k] = m_analytical_funcs[k]->evaluate(uv.x(), uv.y());
+                res[k] = m_analytical_funcs[k]->sample(uv);
             }
             return res;
         } else {
@@ -64,23 +67,25 @@ public:
     }
 
 
-    template <typename T>
-    std::pair<int, int> pixel_index(const Vector2<T>& uv) const
+    std::pair<int, int> pixel_index(const Vector2<double>& uv) const
     {
-        auto [xx, yy] = m_images[0]->get_pixel_index(
-            image::utils::get_double(uv.x()),
-            image::utils::get_double(uv.y()));
-        return {
-            image::utils::get_pixel_index_with_image_wrapping_mode(
-                xx,
-                width(),
-                height(),
-                get_wrapping_mode()),
-            image::utils::get_pixel_index_with_image_wrapping_mode(
-                yy,
-                width(),
-                height(),
-                get_wrapping_mode())};
+        int w = m_images[0]->width();
+        int h = m_images[0]->height();
+        const int sx = std::clamp(static_cast<int>(std::round(uv.x() * w)), 0, w - 1);
+        const int sy = std::clamp(static_cast<int>(std::round(uv.y() * h)), 0, h - 1);
+        return {sx, sy};
+        // auto [xx, yy] = m_images[0]->get_pixel_index(uv.x(), uv.y());
+        // return {
+        //     image::utils::get_pixel_index_with_image_wrapping_mode(
+        //         xx,
+        //         width(),
+        //         height(),
+        //         get_wrapping_mode()),
+        //     image::utils::get_pixel_index_with_image_wrapping_mode(
+        //         yy,
+        //         width(),
+        //         height(),
+        //         get_wrapping_mode())};
     }
 };
 

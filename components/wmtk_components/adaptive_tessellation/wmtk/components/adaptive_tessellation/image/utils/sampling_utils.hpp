@@ -2,6 +2,7 @@
 
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 // #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
+#include <wmtk/operations/Operation.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -9,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <tuple>
+#include <wmtk/function/PerSimplexAutodiffFunction.hpp>
 #include "SamplingParameters.hpp"
 #include "bicubic_interpolation.hpp"
 
@@ -24,7 +26,7 @@ using BicubicMatrix = Eigen::Matrix<float, 16, 16>;
 using namespace Eigen;
 // typedef DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> DScalar;
 namespace wmtk::components::image::utils {
-using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
+using DScalar = typename wmtk::function::PerSimplexAutodiffFunction::DScalar;
 inline double get_double(float x)
 {
     return static_cast<double>(x);
@@ -169,6 +171,7 @@ Eigen::Vector<T, N> sample_nearest(const std::array<std::shared_ptr<Image>, N>& 
 template <typename T>
 T sample_bilinear(const Image& image, T u, T v)
 {
+    // wmtk::operations::Operation::increase_sampling_cnt();
     auto w = image.width();
     auto h = image.height();
     // x, y are between 0 and 1
@@ -201,6 +204,7 @@ Eigen::Vector<T, N> sample_bilinear(const std::array<std::shared_ptr<Image>, N>&
 template <typename T>
 T sample_bicubic(const Image& image, T u, T v)
 {
+    wmtk::operations::Operation::increase_sampling_cnt();
     auto w = image.width();
     auto h = image.height();
     // x, y are between 0 and 1

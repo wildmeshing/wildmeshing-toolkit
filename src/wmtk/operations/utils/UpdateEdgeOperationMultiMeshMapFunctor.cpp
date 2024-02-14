@@ -17,7 +17,7 @@ namespace wmtk::operations::utils {
 namespace {
 constexpr static PrimitiveType PV = PrimitiveType::Vertex;
 constexpr static PrimitiveType PE = PrimitiveType::Edge;
-constexpr static PrimitiveType PF = PrimitiveType::Face;
+constexpr static PrimitiveType PF = PrimitiveType::Triangle;
 constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
 } // namespace
 void UpdateEdgeOperationMultiMeshMapFunctor::update_all_hashes(
@@ -113,7 +113,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 if (child_ptr->top_cell_dimension() != 1)
                     continue; // only deal with child edgemeshes
 
-                auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
+                const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
                 int64_t child_id = child_mmmanager.child_id();
                 auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
                 auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
@@ -134,10 +134,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
                                                 .const_vector_attribute(parent_ear_eid_old);
 
-                Tuple parent_tuple =
-                    wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
-                Tuple child_tuple =
-                    wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+                Tuple parent_tuple, child_tuple;
+                std::tie(parent_tuple, child_tuple) =
+                    wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
 
                 if (child_tuple.is_null()) {
                     // not child_tuple on this parent edge
@@ -145,7 +144,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 }
 
 
-                parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
                 child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 
                 //  check also the flag accessor of child mesh
@@ -156,7 +154,16 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     continue;
                 }
 
-                const int64_t parent_old_vid = m.id_vertex(parent_tuple);
+                // parent_tuple need to be ressurected in the parent scope and get id in the parent
+                // scope.
+                // TODO: remove the resurrect cuz parent_tuple should be already valid in the parent
+                // scope
+                parent_tuple = m.parent_scope(
+                    [&]() { return m.resurrect_tuple(parent_tuple, parent_hash_accessor); });
+                const int64_t parent_old_vid =
+                    m.parent_scope([&]() { return m.id_vertex(parent_tuple); });
+
+
                 int64_t parent_new_vid = -1;
 
                 if (parent_ear_eid_old != parent_merged_eid) {
@@ -201,17 +208,17 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 if (child_ptr->top_cell_dimension() == 2) {
                     // handle with child tri mesh
                     // update merge faces here
-                    auto child_mmmanager = child_ptr->m_multi_mesh_manager;
-                    int64_t child_id = child_mmmanager.child_id();
+                    const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
+                    const int64_t child_id = child_mmmanager.child_id();
                     auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
-                    auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
-                    auto parent_to_child_handle =
+                    const auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
+                    const auto parent_to_child_handle =
                         parent_mmmanager.children().at(child_id).map_handle;
                     auto child_to_parent_accessor =
                         child_ptr->create_accessor(child_to_parent_handle);
                     auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
                     auto child_cell_flag_accessor =
-                        child_ptr->get_const_flag_accessor(PrimitiveType::Face);
+                        child_ptr->get_const_flag_accessor(PrimitiveType::Triangle);
 
                     const int64_t parent_ear_fid_old = parent_data.ears[ear_index].fid;
                     const int64_t parent_merged_fid = parent_data.new_face_id;
@@ -224,17 +231,17 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
                                                     .const_vector_attribute(parent_ear_fid_old);
 
-                    Tuple parent_tuple =
-                        wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
-                    Tuple child_tuple =
-                        wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+                    // TUPLE_SIZE is the number of tuples in terms of lon
+                    Tuple parent_tuple, child_tuple;
+                    std::tie(parent_tuple, child_tuple) =
+                        wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
 
                     if (child_tuple.is_null()) {
                         // not child_tuple on this parent face
                         continue;
                     }
 
-                    parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+                    // change to index access
                     child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 
                     const char child_flag =
@@ -244,9 +251,13 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         continue;
                     }
 
+                    parent_tuple = m.parent_scope(
+                        [&]() { return m.resurrect_tuple(parent_tuple, parent_hash_accessor); });
+                    const int64_t parent_old_eid =
+                        m.parent_scope([&]() { return m.id_edge(parent_tuple); });
+                    const int64_t parent_old_vid =
+                        m.parent_scope([&]() { return m.id_vertex(parent_tuple); });
 
-                    const int64_t parent_old_eid = m.id_edge(parent_tuple);
-                    const int64_t parent_old_vid = m.id_vertex(parent_tuple);
 
                     // get the corresponding new eid and vid of parent
                     int64_t parent_new_eid = -1;
@@ -295,7 +306,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     // handle with child edge mesh
                     // update merge edges here
                     // there are three ear edges per side
-                    auto child_mmmanager = child_ptr->m_multi_mesh_manager;
+                    const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
                     int64_t child_id = child_mmmanager.child_id();
                     auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
                     auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
@@ -330,17 +341,17 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
                                                         .const_vector_attribute(parent_old_eids[i]);
 
-                        Tuple parent_tuple = wmtk::multimesh::utils::vector5_to_tuple(
-                            parent_to_child_data.head<5>());
-                        Tuple child_tuple = wmtk::multimesh::utils::vector5_to_tuple(
-                            parent_to_child_data.tail<5>());
+
+                        Tuple parent_tuple, child_tuple;
+                        std::tie(parent_tuple, child_tuple) =
+                            wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
 
                         if (child_tuple.is_null()) {
                             // not child_tuple on this parent edge
                             continue;
                         }
 
-                        parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+
                         child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 
                         const char child_flag =
@@ -349,8 +360,11 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         if (!child_tuple_exists) {
                             continue;
                         }
-
-                        const int64_t parent_old_vid = m.id_vertex(parent_tuple);
+                        parent_tuple = m.parent_scope([&]() {
+                            return m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+                        });
+                        const int64_t parent_old_vid =
+                            m.parent_scope([&]() { return m.id_vertex(parent_tuple); });
 
                         int64_t parent_new_vid = -1;
                         if (parent_ear_fid_old != parent_merged_fid) {
@@ -560,7 +574,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     // update_hash on neighboring cells. use only 2 to get the cell types on either case
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
-    constexpr static PrimitiveType PF = PrimitiveType::Face;
+    constexpr static PrimitiveType PF = PrimitiveType::Triangle;
 
     // NOTE: this is purpuosely verbose to show a point
     // We have to select with PrimitiveTypes are supported as children for each type of mesh
@@ -817,6 +831,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     const simplex::Simplex&,
     const edge_mesh::EdgeOperationData& parent_emoe)
 {
+    return;
     // if there's a child mesh then lets disallow this
 #if !defined(NDEBUG)
     if (parent_mesh.get_child_meshes().size() > 0) {
@@ -872,20 +887,20 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 }
 
 int64_t UpdateEdgeOperationMultiMeshMapFunctor::child_global_cid(
-    const attribute::ConstAccessor<int64_t>& parent_to_child,
+    const attribute::Accessor<int64_t>& parent_to_child,
     int64_t parent_gid) const
 {
     return MultiMeshManager::child_global_cid(parent_to_child, parent_gid);
 }
 int64_t UpdateEdgeOperationMultiMeshMapFunctor::parent_global_cid(
-    const attribute::ConstAccessor<int64_t>& child_to_parent,
+    const attribute::Accessor<int64_t>& child_to_parent,
     int64_t child_gid) const
 {
     return MultiMeshManager::parent_global_cid(child_to_parent, child_gid);
 }
 
 int64_t UpdateEdgeOperationMultiMeshMapFunctor::parent_local_fid(
-    const attribute::ConstAccessor<int64_t>& child_to_parent,
+    const attribute::Accessor<int64_t>& child_to_parent,
     int64_t child_gid) const
 {
     return MultiMeshManager::parent_local_fid(child_to_parent, child_gid);

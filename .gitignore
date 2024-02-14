@@ -31,8 +31,11 @@ docs/latex
 *.hdf
 *.hdf5
 *.msh
+*.vtu
 
-components/spec_include.hpp
-components/components_include.hpp
-components/components_map.hpp
-components/components.json
+components/wmtk_components/main/wmtk/components/spec_include.hpp
+components/wmtk_components/main/wmtk/components/components_include.hpp
+components/wmtk_components/main/wmtk/components/components_map.hpp
+components/wmtk_components/main/wmtk/components/components.json
+*_face_error.json
+*_amips_error.json

@@ -17,6 +17,7 @@
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/simplex/link_condition.hpp>
 #include <wmtk/simplex/link_iterable.hpp>
+#include <wmtk/simplex/link_single_dimension.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/simplex/open_star_iterable.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
@@ -37,7 +38,7 @@ using namespace simplex;
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 namespace {
 template <typename MeshType> // use a DEBUG mesh type
@@ -165,7 +166,7 @@ TEST_CASE("simplex_faces", "[simplex_collection][2D]")
         CHECK(m.id(v[1]) == 1);
 
         CHECK(bd.simplex_vector(PrimitiveType::Edge).size() == 0);
-        CHECK(bd.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(bd.simplex_vector(PrimitiveType::Triangle).size() == 0);
         CHECK(bd.simplex_vector(PrimitiveType::Tetrahedron).size() == 0);
     }
     SECTION("face")
@@ -192,7 +193,7 @@ TEST_CASE("simplex_faces", "[simplex_collection][2D]")
             CHECK(simplex::utils::SimplexComparisons::equal(m, e[i], expected_edge_simplices[i]));
         }
 
-        CHECK(bd.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(bd.simplex_vector(PrimitiveType::Triangle).size() == 0);
         CHECK(bd.simplex_vector(PrimitiveType::Tetrahedron).size() == 0);
     }
     SECTION("tetrahedron")
@@ -212,7 +213,7 @@ TEST_CASE("simplex_faces", "[simplex_collection][2D]")
         }
 
 
-        const std::vector<Simplex> f = bd.simplex_vector(PrimitiveType::Face);
+        const std::vector<Simplex> f = bd.simplex_vector(PrimitiveType::Triangle);
         CHECK(f.size() == 4);
         for (size_t i = 0; i < f.size(); ++i) {
             CHECK(m.id(f[i]) == i);
@@ -282,7 +283,7 @@ TEST_CASE("simplex_boundary", "[simplex_collection][2D]")
         CHECK(m.id(v[1]) == 1);
 
         CHECK(bd.simplex_vector(PrimitiveType::Edge).size() == 0);
-        CHECK(bd.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(bd.simplex_vector(PrimitiveType::Triangle).size() == 0);
         CHECK(bd.simplex_vector(PrimitiveType::Tetrahedron).size() == 0);
     }
     SECTION("face")
@@ -306,7 +307,7 @@ TEST_CASE("simplex_boundary", "[simplex_collection][2D]")
             CHECK(simplex::utils::SimplexComparisons::equal(m, e[i], expected_edge_simplices[i]));
         }
 
-        CHECK(bd.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(bd.simplex_vector(PrimitiveType::Triangle).size() == 0);
         CHECK(bd.simplex_vector(PrimitiveType::Tetrahedron).size() == 0);
     }
     SECTION("tetrahedron")
@@ -317,7 +318,7 @@ TEST_CASE("simplex_boundary", "[simplex_collection][2D]")
         CHECK(bd.simplex_vector(PrimitiveType::Edge).size() == 0);
 
 
-        const std::vector<Simplex> f = bd.simplex_vector(PrimitiveType::Face);
+        const std::vector<Simplex> f = bd.simplex_vector(PrimitiveType::Triangle);
         REQUIRE(f.size() == 4);
         CHECK(m.id(f[0]) == 0);
         CHECK(m.id(f[1]) == 1);
@@ -327,7 +328,7 @@ TEST_CASE("simplex_boundary", "[simplex_collection][2D]")
     }
 }
 
-TEST_CASE("simplex_top_dimension_cofaces", "[simplex_collection][2D]")
+TEST_CASE("simplex_top_dimension_cofaces_tri", "[simplex_collection]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
@@ -338,7 +339,7 @@ TEST_CASE("simplex_top_dimension_cofaces", "[simplex_collection][2D]")
         SimplexCollection cc = top_dimension_cofaces(m, input);
 
         REQUIRE(cc.simplex_vector().size() == 6);
-        REQUIRE(cc.simplex_vector(PrimitiveType::Face).size() == 6);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Triangle).size() == 6);
 
         const auto& cells = cc.simplex_vector();
         CHECK(m.id(cells[0]) == 0);
@@ -351,6 +352,23 @@ TEST_CASE("simplex_top_dimension_cofaces", "[simplex_collection][2D]")
         for (const Simplex& s : cells) {
             check_match_below_simplex_type(m, input, s);
         }
+
+        SimplexCollection cc2(
+            m,
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+                top_dimension_cofaces_tuples(m, input),
+                PrimitiveType::Triangle));
+        cc2.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Triangle, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
     SECTION("vertex_boundary")
     {
@@ -359,7 +377,7 @@ TEST_CASE("simplex_top_dimension_cofaces", "[simplex_collection][2D]")
         SimplexCollection cc = top_dimension_cofaces(m, input);
 
         REQUIRE(cc.simplex_vector().size() == 2);
-        REQUIRE(cc.simplex_vector(PrimitiveType::Face).size() == 2);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Triangle).size() == 2);
 
         const auto& cells = cc.simplex_vector();
         CHECK(m.id(cells[0]) == 0);
@@ -367,6 +385,23 @@ TEST_CASE("simplex_top_dimension_cofaces", "[simplex_collection][2D]")
         for (const Simplex& s : cells) {
             check_match_below_simplex_type(m, input, s);
         }
+
+        SimplexCollection cc2(
+            m,
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+                top_dimension_cofaces_tuples(m, input),
+                PrimitiveType::Triangle));
+        cc2.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Triangle, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
     SECTION("edge_interior")
     {
@@ -376,7 +411,7 @@ TEST_CASE("simplex_top_dimension_cofaces", "[simplex_collection][2D]")
         SimplexCollection cc = top_dimension_cofaces(m, input);
 
         REQUIRE(cc.simplex_vector().size() == 2);
-        REQUIRE(cc.simplex_vector(PrimitiveType::Face).size() == 2);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Triangle).size() == 2);
 
         const auto& cells = cc.simplex_vector();
         CHECK(m.id(cells[0]) == 2);
@@ -384,6 +419,23 @@ TEST_CASE("simplex_top_dimension_cofaces", "[simplex_collection][2D]")
         for (const Simplex& s : cells) {
             check_match_below_simplex_type(m, input, s);
         }
+
+        SimplexCollection cc2(
+            m,
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+                top_dimension_cofaces_tuples(m, input),
+                PrimitiveType::Triangle));
+        cc2.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Triangle, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
     SECTION("edge_boundary")
     {
@@ -393,13 +445,30 @@ TEST_CASE("simplex_top_dimension_cofaces", "[simplex_collection][2D]")
         SimplexCollection cc = top_dimension_cofaces(m, input);
 
         REQUIRE(cc.simplex_vector().size() == 1);
-        REQUIRE(cc.simplex_vector(PrimitiveType::Face).size() == 1);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Triangle).size() == 1);
 
         const auto& cells = cc.simplex_vector();
         CHECK(m.id(cells[0]) == 5);
         for (const Simplex& s : cells) {
             check_match_below_simplex_type(m, input, s);
         }
+
+        SimplexCollection cc2(
+            m,
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+                top_dimension_cofaces_tuples(m, input),
+                PrimitiveType::Triangle));
+        cc2.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Triangle, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
     SECTION("face")
     {
@@ -409,13 +478,208 @@ TEST_CASE("simplex_top_dimension_cofaces", "[simplex_collection][2D]")
         SimplexCollection cc = top_dimension_cofaces(m, input);
 
         REQUIRE(cc.simplex_vector().size() == 1);
-        REQUIRE(cc.simplex_vector(PrimitiveType::Face).size() == 1);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Triangle).size() == 1);
 
         const auto& cells = cc.simplex_vector();
         CHECK(m.id(cells[0]) == 2);
         for (const Simplex& s : cells) {
             check_match_below_simplex_type(m, input, s);
         }
+
+        SimplexCollection cc2(
+            m,
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+                top_dimension_cofaces_tuples(m, input),
+                PrimitiveType::Triangle));
+        cc2.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Triangle, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
+    }
+}
+
+TEST_CASE("simplex_top_dimension_cofaces_tet", "[simplex_collection]")
+{
+    tests_3d::DEBUG_TetMesh m = tests_3d::six_cycle_tets();
+
+    SECTION("vertex_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+        Simplex input = simplex::Simplex::vertex(t);
+        SimplexCollection cc = top_dimension_cofaces(m, input);
+
+        REQUIRE(cc.simplex_vector().size() == 2);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Tetrahedron).size() == 2);
+
+        const auto& cells = cc.simplex_vector();
+        CHECK(m.id(cells[0]) == 0);
+        CHECK(m.id(cells[1]) == 1);
+        for (const Simplex& s : cells) {
+            check_match_below_simplex_type(m, input, s);
+        }
+
+        SimplexCollection cc2(
+            m,
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+                top_dimension_cofaces_tuples(m, input),
+                PrimitiveType::Tetrahedron));
+        cc2.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Tetrahedron, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
+    }
+    SECTION("edge_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(2, 3, 0);
+
+        Simplex input = simplex::Simplex::edge(t);
+        SimplexCollection cc = top_dimension_cofaces(m, input);
+
+        REQUIRE(cc.simplex_vector().size() == 6);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Tetrahedron).size() == 6);
+
+        const auto& cells = cc.simplex_vector();
+        CHECK(m.id(cells[0]) == 0);
+        CHECK(m.id(cells[1]) == 1);
+        CHECK(m.id(cells[2]) == 2);
+        CHECK(m.id(cells[3]) == 3);
+        CHECK(m.id(cells[4]) == 4);
+        CHECK(m.id(cells[5]) == 5);
+        for (const Simplex& s : cells) {
+            check_match_below_simplex_type(m, input, s);
+        }
+
+        SimplexCollection cc2(
+            m,
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+                top_dimension_cofaces_tuples(m, input),
+                PrimitiveType::Tetrahedron));
+        cc2.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Tetrahedron, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
+    }
+    SECTION("edge_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(0, 2, 0);
+
+        Simplex input = simplex::Simplex::edge(t);
+        SimplexCollection cc = top_dimension_cofaces(m, input);
+
+        REQUIRE(cc.simplex_vector().size() == 2);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Tetrahedron).size() == 2);
+
+        const auto& cells = cc.simplex_vector();
+        CHECK(m.id(cells[0]) == 0);
+        CHECK(m.id(cells[1]) == 1);
+        for (const Simplex& s : cells) {
+            check_match_below_simplex_type(m, input, s);
+        }
+
+        SimplexCollection cc2(
+            m,
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+                top_dimension_cofaces_tuples(m, input),
+                PrimitiveType::Tetrahedron));
+        cc2.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Tetrahedron, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
+    }
+    SECTION("face_interior")
+    {
+        const Tuple t = m.face_tuple_from_vids(0, 2, 3);
+
+        Simplex input = simplex::Simplex::face(t);
+        SimplexCollection cc = top_dimension_cofaces(m, input);
+
+        REQUIRE(cc.simplex_vector().size() == 2);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Tetrahedron).size() == 2);
+
+        const auto& cells = cc.simplex_vector();
+        CHECK(m.id(cells[0]) == 0);
+        CHECK(m.id(cells[1]) == 1);
+        for (const Simplex& s : cells) {
+            check_match_below_simplex_type(m, input, s);
+        }
+
+        SimplexCollection cc2(
+            m,
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+                top_dimension_cofaces_tuples(m, input),
+                PrimitiveType::Tetrahedron));
+        cc2.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Tetrahedron, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
+    }
+    SECTION("face_boundary")
+    {
+        const Tuple t = m.face_tuple_from_vids(0, 1, 2);
+
+        Simplex input = simplex::Simplex::face(t);
+        SimplexCollection cc = top_dimension_cofaces(m, input);
+
+        REQUIRE(cc.simplex_vector().size() == 1);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Tetrahedron).size() == 1);
+
+        const auto& cells = cc.simplex_vector();
+        CHECK(m.id(cells[0]) == 0);
+        for (const Simplex& s : cells) {
+            check_match_below_simplex_type(m, input, s);
+        }
+
+        SimplexCollection cc2(
+            m,
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+                top_dimension_cofaces_tuples(m, input),
+                PrimitiveType::Tetrahedron));
+        cc2.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Tetrahedron, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
 }
 
@@ -483,7 +747,7 @@ TEST_CASE("simplex_open_star", "[simplex_collection][2D]")
         SimplexCollection os = open_star(m, simplex::Simplex::vertex(t));
 
         REQUIRE(os.simplex_vector().size() == 13);
-        CHECK(os.simplex_vector(PrimitiveType::Face).size() == 6);
+        CHECK(os.simplex_vector(PrimitiveType::Triangle).size() == 6);
         CHECK(os.simplex_vector(PrimitiveType::Edge).size() == 6);
         CHECK(os.simplex_vector(PrimitiveType::Vertex).size() == 1);
 
@@ -512,7 +776,7 @@ TEST_CASE("simplex_open_star", "[simplex_collection][2D]")
         SimplexCollection os = open_star(m, simplex::Simplex::vertex(t));
 
         REQUIRE(os.simplex_vector().size() == 6);
-        CHECK(os.simplex_vector(PrimitiveType::Face).size() == 2);
+        CHECK(os.simplex_vector(PrimitiveType::Triangle).size() == 2);
         CHECK(os.simplex_vector(PrimitiveType::Edge).size() == 3);
         CHECK(os.simplex_vector(PrimitiveType::Vertex).size() == 1);
 
@@ -534,7 +798,7 @@ TEST_CASE("simplex_open_star", "[simplex_collection][2D]")
         SimplexCollection os = open_star(m, simplex::Simplex::edge(t));
 
         REQUIRE(os.simplex_vector().size() == 3);
-        CHECK(os.simplex_vector(PrimitiveType::Face).size() == 2);
+        CHECK(os.simplex_vector(PrimitiveType::Triangle).size() == 2);
         CHECK(os.simplex_vector(PrimitiveType::Edge).size() == 1);
         CHECK(os.simplex_vector(PrimitiveType::Vertex).size() == 0);
 
@@ -552,7 +816,7 @@ TEST_CASE("simplex_open_star", "[simplex_collection][2D]")
         SimplexCollection os = open_star(m, simplex::Simplex::edge(t));
 
         REQUIRE(os.simplex_vector().size() == 2);
-        CHECK(os.simplex_vector(PrimitiveType::Face).size() == 1);
+        CHECK(os.simplex_vector(PrimitiveType::Triangle).size() == 1);
         CHECK(os.simplex_vector(PrimitiveType::Edge).size() == 1);
         CHECK(os.simplex_vector(PrimitiveType::Vertex).size() == 0);
 
@@ -569,7 +833,7 @@ TEST_CASE("simplex_open_star", "[simplex_collection][2D]")
         SimplexCollection os = open_star(m, simplex::Simplex::face(t));
 
         REQUIRE(os.simplex_vector().size() == 1);
-        CHECK(os.simplex_vector(PrimitiveType::Face).size() == 1);
+        CHECK(os.simplex_vector(PrimitiveType::Triangle).size() == 1);
         CHECK(os.simplex_vector(PrimitiveType::Edge).size() == 0);
         CHECK(os.simplex_vector(PrimitiveType::Vertex).size() == 0);
 
@@ -580,17 +844,14 @@ TEST_CASE("simplex_open_star", "[simplex_collection][2D]")
 
 TEST_CASE("simplex_open_star_trimesh", "[simplex_collection][2D]")
 {
-    std::unique_ptr<tests::DEBUG_TriMesh> mp =
-        std::make_unique<tests::DEBUG_TriMesh>(tests::hex_plus_two());
-    tests::DEBUG_TriMesh m = *mp;
-    Mesh& mm = *dynamic_cast<Mesh*>(mp.get());
+    tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
     SECTION("vertex_interior")
     {
         const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
 
         SimplexCollection os_tri = open_star(m, simplex::Simplex::vertex(t));
-        SimplexCollection os_m = open_star(mm, simplex::Simplex::vertex(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::vertex(t));
 
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
     }
@@ -599,7 +860,7 @@ TEST_CASE("simplex_open_star_trimesh", "[simplex_collection][2D]")
         const Tuple t = m.edge_tuple_between_v1_v2(3, 4, 0);
 
         SimplexCollection os_tri = open_star(m, simplex::Simplex::vertex(t));
-        SimplexCollection os_m = open_star(mm, simplex::Simplex::vertex(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::vertex(t));
 
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
     }
@@ -608,7 +869,7 @@ TEST_CASE("simplex_open_star_trimesh", "[simplex_collection][2D]")
         const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
 
         SimplexCollection os_tri = open_star(m, simplex::Simplex::edge(t));
-        SimplexCollection os_m = open_star(mm, simplex::Simplex::edge(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::edge(t));
 
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
     }
@@ -617,7 +878,7 @@ TEST_CASE("simplex_open_star_trimesh", "[simplex_collection][2D]")
         const Tuple t = m.edge_tuple_between_v1_v2(3, 7, 5);
 
         SimplexCollection os_tri = open_star(m, simplex::Simplex::edge(t));
-        SimplexCollection os_m = open_star(mm, simplex::Simplex::edge(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::edge(t));
 
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
     }
@@ -626,7 +887,7 @@ TEST_CASE("simplex_open_star_trimesh", "[simplex_collection][2D]")
         const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
 
         SimplexCollection os_tri = open_star(m, simplex::Simplex::face(t));
-        SimplexCollection os_m = open_star(mm, simplex::Simplex::face(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::face(t));
 
         CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
     }
@@ -694,7 +955,7 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
         SimplexCollection cs = closed_star(m, Simplex::vertex(t));
 
         REQUIRE(cs.simplex_vector().size() == 25);
-        CHECK(cs.simplex_vector(PrimitiveType::Face).size() == 6);
+        CHECK(cs.simplex_vector(PrimitiveType::Triangle).size() == 6);
         CHECK(cs.simplex_vector(PrimitiveType::Edge).size() == 12);
         CHECK(cs.simplex_vector(PrimitiveType::Vertex).size() == 7);
 
@@ -710,7 +971,7 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
 
         for (size_t i = 7; i < 19; ++i) {
             const Simplex& e = simplices[i];
-            const Tuple center = m.switch_vertex(m.next_edge(e.tuple()));
+            const Tuple center = m.switch_tuples(e.tuple(), {PE, PV});
             CHECK(
                 (faces(m, e).contains(v) ||
                  simplex::utils::SimplexComparisons::equal(m, v, Simplex::vertex(center))));
@@ -730,7 +991,7 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
         SimplexCollection cs = closed_star(m, Simplex::vertex(t));
 
         REQUIRE(cs.simplex_vector().size() == 11);
-        CHECK(cs.simplex_vector(PrimitiveType::Face).size() == 2);
+        CHECK(cs.simplex_vector(PrimitiveType::Triangle).size() == 2);
         CHECK(cs.simplex_vector(PrimitiveType::Edge).size() == 5);
         CHECK(cs.simplex_vector(PrimitiveType::Vertex).size() == 4);
 
@@ -743,7 +1004,7 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
 
         for (size_t i = 4; i < 9; ++i) {
             const Simplex& e = simplices[i];
-            const Tuple center = m.switch_vertex(m.next_edge(e.tuple()));
+            const Tuple center = m.switch_tuples(e.tuple(), {PE, PV});
             CHECK(
                 (faces(m, e).contains(v) ||
                  simplex::utils::SimplexComparisons::equal(m, v, Simplex::vertex(center))));
@@ -759,7 +1020,7 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
         SimplexCollection cs = closed_star(m, Simplex::edge(t));
 
         REQUIRE(cs.simplex_vector().size() == 11);
-        CHECK(cs.simplex_vector(PrimitiveType::Face).size() == 2);
+        CHECK(cs.simplex_vector(PrimitiveType::Triangle).size() == 2);
         CHECK(cs.simplex_vector(PrimitiveType::Edge).size() == 5);
         CHECK(cs.simplex_vector(PrimitiveType::Vertex).size() == 4);
 
@@ -791,7 +1052,7 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
         SimplexCollection cs = closed_star(m, Simplex::edge(t));
 
         REQUIRE(cs.simplex_vector().size() == 7);
-        CHECK(cs.simplex_vector(PrimitiveType::Face).size() == 1);
+        CHECK(cs.simplex_vector(PrimitiveType::Triangle).size() == 1);
         CHECK(cs.simplex_vector(PrimitiveType::Edge).size() == 3);
         CHECK(cs.simplex_vector(PrimitiveType::Vertex).size() == 3);
 
@@ -821,7 +1082,7 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
         SimplexCollection cs = closed_star(m, Simplex::face(t));
 
         REQUIRE(cs.simplex_vector().size() == 7);
-        CHECK(cs.simplex_vector(PrimitiveType::Face).size() == 1);
+        CHECK(cs.simplex_vector(PrimitiveType::Triangle).size() == 1);
         CHECK(cs.simplex_vector(PrimitiveType::Edge).size() == 3);
         CHECK(cs.simplex_vector(PrimitiveType::Vertex).size() == 3);
 
@@ -894,7 +1155,7 @@ TEST_CASE("simplex_closed_star_iterable", "[simplex_collection][2D]")
     }
 }
 
-TEST_CASE("simplex_link", "[simplex_collection][2D]")
+TEST_CASE("simplex_link_2d", "[simplex_collection][2D]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
@@ -905,7 +1166,7 @@ TEST_CASE("simplex_link", "[simplex_collection][2D]")
         SimplexCollection sc = link(m, Simplex::vertex(t));
 
         REQUIRE(sc.simplex_vector().size() == 12);
-        CHECK(sc.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Triangle).size() == 0);
         CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 6);
         CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 6);
 
@@ -920,7 +1181,7 @@ TEST_CASE("simplex_link", "[simplex_collection][2D]")
 
         for (size_t i = 6; i < 12; ++i) {
             const Simplex& e = simplices[i];
-            const Tuple center = m.switch_vertex(m.next_edge(e.tuple()));
+            const Tuple center = m.switch_tuples(e.tuple(), {PE, PV});
             CHECK(simplex::utils::SimplexComparisons::equal(m, v, Simplex::vertex(center)));
         }
     }
@@ -931,7 +1192,7 @@ TEST_CASE("simplex_link", "[simplex_collection][2D]")
         SimplexCollection sc = link(m, Simplex::vertex(t));
 
         REQUIRE(sc.simplex_vector().size() == 5);
-        CHECK(sc.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Triangle).size() == 0);
         CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 2);
         CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 3);
 
@@ -943,7 +1204,7 @@ TEST_CASE("simplex_link", "[simplex_collection][2D]")
 
         for (size_t i = 3; i < 5; ++i) {
             const Simplex& e = simplices[i];
-            const Tuple center = m.switch_vertex(m.next_edge(e.tuple()));
+            const Tuple center = m.switch_tuples(e.tuple(), {PE, PV});
             CHECK(simplex::utils::SimplexComparisons::equal(m, v, Simplex::vertex(center)));
         }
     }
@@ -954,7 +1215,7 @@ TEST_CASE("simplex_link", "[simplex_collection][2D]")
         SimplexCollection sc = link(m, Simplex::edge(t));
 
         REQUIRE(sc.simplex_vector().size() == 2);
-        CHECK(sc.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Triangle).size() == 0);
         CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 0);
         CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 2);
 
@@ -970,7 +1231,7 @@ TEST_CASE("simplex_link", "[simplex_collection][2D]")
         SimplexCollection sc = link(m, Simplex::edge(t));
 
         REQUIRE(sc.simplex_vector().size() == 1);
-        CHECK(sc.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Triangle).size() == 0);
         CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 0);
         CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 1);
 
@@ -1039,6 +1300,126 @@ TEST_CASE("simplex_link_iterable", "[simplex_collection][2D]")
     }
 }
 
+TEST_CASE("simplex_open_star_tetmesh", "[simplex_collection]")
+{
+    auto mp = std::make_unique<TetMesh>(tests_3d::two_by_two_by_two_grids_tets());
+    Mesh& m = *mp;
+
+    for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+        SimplexCollection os_tri = open_star(m, simplex::Simplex::vertex(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::vertex(t));
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
+        SimplexCollection os_tri = open_star(m, simplex::Simplex::edge(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::edge(t));
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Triangle)) {
+        SimplexCollection os_tri = open_star(m, simplex::Simplex::face(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::face(t));
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Tetrahedron)) {
+        SimplexCollection os_tri = open_star(m, simplex::Simplex::tetrahedron(t));
+        SimplexCollection os_m = open_star_slow(m, simplex::Simplex::tetrahedron(t));
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+    }
+}
+
+TEST_CASE("simplex_link_trimesh", "[simplex_collection]")
+{
+    auto mp = std::make_unique<TriMesh>(tests::hex_plus_two());
+    Mesh& m = *mp;
+
+    for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+        SimplexCollection os_tri = link(m, simplex::Simplex::vertex(t));
+        SimplexCollection os_m = link_slow(m, simplex::Simplex::vertex(t));
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+
+        for (const PrimitiveType pt : wmtk::utils::primitive_below(m.top_simplex_type())) {
+            SimplexCollection single_dim =
+                link_single_dimension(m, simplex::Simplex::vertex(t), pt);
+            SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
+            CHECK(SimplexCollection::are_simplex_collections_equal(single_dim, single_dim_comp));
+        }
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
+        SimplexCollection os_tri = link(m, simplex::Simplex::edge(t));
+        SimplexCollection os_m = link_slow(m, simplex::Simplex::edge(t));
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+
+        for (const PrimitiveType pt : wmtk::utils::primitive_below(m.top_simplex_type())) {
+            SimplexCollection single_dim = link_single_dimension(m, simplex::Simplex::edge(t), pt);
+            SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
+            CHECK(SimplexCollection::are_simplex_collections_equal(single_dim, single_dim_comp));
+        }
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Triangle)) {
+        SimplexCollection os_tri = link(m, simplex::Simplex::face(t));
+        SimplexCollection os_m = link_slow(m, simplex::Simplex::face(t));
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+
+        for (const PrimitiveType pt : wmtk::utils::primitive_below(m.top_simplex_type())) {
+            SimplexCollection single_dim = link_single_dimension(m, simplex::Simplex::face(t), pt);
+            SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
+            CHECK(SimplexCollection::are_simplex_collections_equal(single_dim, single_dim_comp));
+        }
+    }
+}
+
+TEST_CASE("simplex_link_tetmesh", "[simplex_collection]")
+{
+    auto mp = std::make_unique<TetMesh>(tests_3d::two_by_two_by_two_grids_tets());
+    Mesh& m = *mp;
+
+    for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+        SimplexCollection os_tri = link(m, simplex::Simplex::vertex(t));
+        SimplexCollection os_m = link_slow(m, simplex::Simplex::vertex(t));
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+
+        for (const PrimitiveType pt : wmtk::utils::primitive_below(m.top_simplex_type())) {
+            SimplexCollection single_dim =
+                link_single_dimension(m, simplex::Simplex::vertex(t), pt);
+            SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
+            CHECK(SimplexCollection::are_simplex_collections_equal(single_dim, single_dim_comp));
+        }
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
+        SimplexCollection os_tri = link(m, simplex::Simplex::edge(t));
+        SimplexCollection os_m = link_slow(m, simplex::Simplex::edge(t));
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+
+        for (const PrimitiveType pt : wmtk::utils::primitive_below(m.top_simplex_type())) {
+            SimplexCollection single_dim = link_single_dimension(m, simplex::Simplex::edge(t), pt);
+            SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
+            CHECK(SimplexCollection::are_simplex_collections_equal(single_dim, single_dim_comp));
+        }
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Triangle)) {
+        SimplexCollection os_tri = link(m, simplex::Simplex::face(t));
+        SimplexCollection os_m = link_slow(m, simplex::Simplex::face(t));
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+
+        for (const PrimitiveType pt : wmtk::utils::primitive_below(m.top_simplex_type())) {
+            SimplexCollection single_dim = link_single_dimension(m, simplex::Simplex::face(t), pt);
+            SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
+            CHECK(SimplexCollection::are_simplex_collections_equal(single_dim, single_dim_comp));
+        }
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Tetrahedron)) {
+        SimplexCollection os_tri = link(m, simplex::Simplex::tetrahedron(t));
+        SimplexCollection os_m = link_slow(m, simplex::Simplex::tetrahedron(t));
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+
+        for (const PrimitiveType pt : wmtk::utils::primitive_below(m.top_simplex_type())) {
+            SimplexCollection single_dim =
+                link_single_dimension(m, simplex::Simplex::tetrahedron(t), pt);
+            SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
+            CHECK(SimplexCollection::are_simplex_collections_equal(single_dim, single_dim_comp));
+        }
+    }
+}
 
 TEST_CASE("simplex_cofaces_single_dimension", "[simplex_collection][2D]")
 {
@@ -1053,7 +1434,9 @@ TEST_CASE("simplex_cofaces_single_dimension", "[simplex_collection][2D]")
 
         SimplexCollection sc(
             m,
-            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(tc, PrimitiveType::Face));
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+                tc,
+                PrimitiveType::Triangle));
         sc.sort();
         const auto& cells = sc.simplex_vector();
         std::set<int64_t> target_vids({0, 3, 1, 5, 7, 8});
@@ -1082,7 +1465,9 @@ TEST_CASE("simplex_cofaces_single_dimension", "[simplex_collection][2D]")
         REQUIRE(tc.size() == 3);
         SimplexCollection sc(
             m,
-            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(tc, PrimitiveType::Face));
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+                tc,
+                PrimitiveType::Triangle));
         sc.sort();
 
         const auto& cells = sc.simplex_vector();
@@ -1192,7 +1577,7 @@ TEST_CASE("simplex_faces_single_dimension", "[simplex_collection]")
             single_dim_faces[dim] = faces_single_dimension_tuples(
                 m,
                 Simplex(get_primitive_type_from_id(dim), t),
-                PrimitiveType::Face);
+                PrimitiveType::Triangle);
         }
         CHECK(single_dim_faces[0].size() == 0);
         CHECK(single_dim_faces[1].size() == 0);
@@ -1506,7 +1891,7 @@ TEST_CASE("raw_simplex_with_invalid_tuple", "[raw_simplex_collection]")
 
     RawSimplexCollection sc;
 
-    for (const Tuple& t : m.get_all(PrimitiveType::Face)) {
+    for (const Tuple& t : m.get_all(PrimitiveType::Triangle)) {
         sc.add(m, Simplex::face(t));
     }
     for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
@@ -1577,7 +1962,6 @@ TEST_CASE("raw_simplex_faces", "[raw_simplex_collection]")
 
         RawSimplex higher_dim_simplex({0, 1, 2, 3, 4});
         CHECK(higher_dim_simplex.dimension() == 4);
-        CHECK_THROWS(higher_dim_simplex.faces());
 
         RawSimplex opp_edge = tet.opposite_face(edge);
         CHECK(opp_edge.dimension() == 1);
@@ -1615,7 +1999,6 @@ TEST_CASE("raw_simplex_faces", "[raw_simplex_collection]")
         CHECK(sc.simplex_vector().size() == 3);
     }
 }
-
 
 TEST_CASE("simplex_link_condtion_tetmesh", "[simplex_collection]")
 {
@@ -1754,5 +2137,234 @@ TEST_CASE("simplex_link_condtion_tetmesh", "[simplex_collection]")
         for (int i = 1; i < 19; ++i) {
             CHECK(link_condition(m, e[i]));
         }
+    }
+}
+
+TEST_CASE("simplex_link_3d", "[simplex_collection][3D]")
+{
+    tests_3d::DEBUG_TetMesh m = tests_3d::two_by_two_by_two_grids_tets();
+
+    SECTION("vertex_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(13, 14, 17);
+
+        SimplexCollection sc = link(m, Simplex::vertex(t));
+
+        REQUIRE(sc.simplex_vector().size() == 98);
+        CHECK(sc.simplex_vector(PrimitiveType::Triangle).size() == 32);
+        CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 48);
+        CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 18);
+
+        const auto& simplices = sc.simplex_vector();
+        const simplex::Simplex v = simplex::Simplex::vertex(t);
+        CHECK(m.id(simplices[0]) == 1);
+        CHECK(m.id(simplices[1]) == 3);
+        CHECK(m.id(simplices[2]) == 4);
+        CHECK(m.id(simplices[3]) == 5);
+        CHECK(m.id(simplices[4]) == 7);
+        CHECK(m.id(simplices[5]) == 9);
+        CHECK(m.id(simplices[6]) == 10);
+        CHECK(m.id(simplices[7]) == 11);
+        CHECK(m.id(simplices[8]) == 12);
+        CHECK(m.id(simplices[9]) == 14);
+        CHECK(m.id(simplices[10]) == 15);
+        CHECK(m.id(simplices[11]) == 16);
+        CHECK(m.id(simplices[12]) == 17);
+        CHECK(m.id(simplices[13]) == 19);
+        CHECK(m.id(simplices[14]) == 21);
+        CHECK(m.id(simplices[15]) == 22);
+        CHECK(m.id(simplices[16]) == 23);
+        CHECK(m.id(simplices[17]) == 25);
+
+        for (size_t i = 18; i < 18 + 48; ++i) {
+            const Simplex& e = simplices[i];
+            int id0 = m.id(e.tuple(), PrimitiveType::Vertex);
+            int id1 = m.id(m.switch_vertex(e.tuple()), PrimitiveType::Vertex);
+            m.face_tuple_from_vids(id0, id1, 13);
+        }
+
+        int sum = 0;
+        for (size_t i = 18 + 48; i < 98; ++i) {
+            const Simplex& f = simplices[i];
+            int id0 = m.id(f.tuple(), PrimitiveType::Vertex);
+            int id1 = m.id(m.switch_vertex(f.tuple()), PrimitiveType::Vertex);
+            int id2 = m.id(m.switch_vertex(m.switch_edge(f.tuple())), PrimitiveType::Vertex);
+            m.tet_tuple_from_vids(id0, id1, id2, 13);
+        }
+    }
+    SECTION("vertex_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(14, 13, 8);
+
+        CHECK(m.id(t, PrimitiveType::Vertex) == 14);
+
+        SimplexCollection sc = link(m, Simplex::vertex(t));
+
+        REQUIRE(sc.simplex_vector().size() == 17);
+        CHECK(sc.simplex_vector(PrimitiveType::Triangle).size() == 4);
+        CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 8);
+        CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 5);
+
+        const auto& simplices = sc.simplex_vector();
+        const simplex::Simplex v = simplex::Simplex::vertex(t);
+        CHECK(m.id(simplices[0]) == 5);
+        CHECK(m.id(simplices[1]) == 11);
+        CHECK(m.id(simplices[2]) == 13);
+        CHECK(m.id(simplices[3]) == 17);
+        CHECK(m.id(simplices[4]) == 23);
+
+        for (size_t i = 5; i < 13; ++i) {
+            const Simplex& e = simplices[i];
+            int id0 = m.id(e.tuple(), PrimitiveType::Vertex);
+            int id1 = m.id(m.switch_vertex(e.tuple()), PrimitiveType::Vertex);
+            m.face_tuple_from_vids(id0, id1, 14);
+        }
+
+        for (size_t i = 13; i < 17; ++i) {
+            const Simplex& f = simplices[i];
+            int id0 = m.id(f.tuple(), PrimitiveType::Vertex);
+            int id1 = m.id(m.switch_vertex(f.tuple()), PrimitiveType::Vertex);
+            int id2 = m.id(m.switch_vertex(m.switch_edge(f.tuple())), PrimitiveType::Vertex);
+            m.tet_tuple_from_vids(id0, id1, id2, 14);
+        }
+    }
+    SECTION("edge_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(9, 13, 2);
+
+        SimplexCollection sc = link(m, Simplex::edge(t));
+
+        REQUIRE(sc.simplex_vector().size() == 12);
+        CHECK(sc.simplex_vector(PrimitiveType::Triangle).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 6);
+        CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 6);
+
+        const auto& simplices = sc.simplex_vector();
+
+        CHECK(m.id(simplices[0]) == 1);
+        CHECK(m.id(simplices[1]) == 3);
+        CHECK(m.id(simplices[2]) == 10);
+        CHECK(m.id(simplices[3]) == 12);
+        CHECK(m.id(simplices[4]) == 19);
+        CHECK(m.id(simplices[5]) == 21);
+
+        for (size_t i = 6; i < 12; ++i) {
+            const Simplex& e = simplices[i];
+            int id0 = m.id(e.tuple(), PrimitiveType::Vertex);
+            int id1 = m.id(m.switch_vertex(e.tuple()), PrimitiveType::Vertex);
+            m.tet_tuple_from_vids(id0, id1, 9, 13);
+        }
+    }
+    SECTION("edge_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(1, 3, 0);
+
+        SimplexCollection sc = link(m, Simplex::edge(t));
+
+        REQUIRE(sc.simplex_vector().size() == 7);
+        CHECK(sc.simplex_vector(PrimitiveType::Triangle).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 3);
+        CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 4);
+
+        const auto& simplices = sc.simplex_vector();
+
+        CHECK(m.id(simplices[0]) == 0);
+        CHECK(m.id(simplices[1]) == 4);
+        CHECK(m.id(simplices[2]) == 9);
+        CHECK(m.id(simplices[3]) == 13);
+
+        for (size_t i = 4; i < 7; ++i) {
+            const Simplex& e = simplices[i];
+            int id0 = m.id(e.tuple(), PrimitiveType::Vertex);
+            int id1 = m.id(m.switch_vertex(e.tuple()), PrimitiveType::Vertex);
+            m.tet_tuple_from_vids(id0, id1, 1, 3);
+        }
+    }
+    SECTION("face_interior")
+    {
+        const Tuple t = m.face_tuple_from_vids(9, 10, 13);
+
+        SimplexCollection sc = link(m, Simplex::face(t));
+
+        REQUIRE(sc.simplex_vector().size() == 2);
+        CHECK(sc.simplex_vector(PrimitiveType::Triangle).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 2);
+
+        const auto& simplices = sc.simplex_vector();
+
+        CHECK(m.id(simplices[0]) == 1);
+        CHECK(m.id(simplices[1]) == 19);
+    }
+    SECTION("face_boundary")
+    {
+        const Tuple t = m.face_tuple_from_vids(0, 1, 3);
+
+        SimplexCollection sc = link(m, Simplex::face(t));
+
+        REQUIRE(sc.simplex_vector().size() == 1);
+        CHECK(sc.simplex_vector(PrimitiveType::Triangle).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 1);
+
+        const auto& simplices = sc.simplex_vector();
+
+        CHECK(m.id(simplices[0]) == 9);
+    }
+}
+
+TEST_CASE("simplex_link_iterable_3d", "[simplex_collection][3D]")
+{
+    tests_3d::DEBUG_TetMesh m = tests_3d::two_by_two_by_two_grids_tets();
+
+    Simplex simplex = Simplex::vertex({});
+
+    SECTION("vertex_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(13, 12, 2);
+        simplex = Simplex::vertex(t);
+    }
+    SECTION("vertex_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(1, 4, 1);
+        simplex = Simplex::vertex(t);
+    }
+    SECTION("edge_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(13, 12, 2);
+        simplex = Simplex::edge(t);
+    }
+    SECTION("edge_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+        simplex = Simplex::edge(t);
+    }
+    SECTION("face_interior")
+    {
+        const Tuple t = m.face_tuple_from_vids(19, 21, 13);
+        simplex = Simplex::face(t);
+    }
+    SECTION("face_boundary")
+    {
+        const Tuple t = m.face_tuple_from_vids(0, 1, 3);
+        simplex = Simplex::face(t);
+    }
+
+    LinkIterable itrb = link_iterable(m, simplex);
+    SimplexCollection coll = link(m, simplex);
+
+    SimplexCollection itrb_collection(m);
+    for (const Simplex& s : itrb) {
+        itrb_collection.add(s);
+    }
+    itrb_collection.sort_and_clean();
+
+    REQUIRE(itrb_collection.simplex_vector().size() == coll.simplex_vector().size());
+
+    for (size_t i = 0; i < coll.simplex_vector().size(); ++i) {
+        CHECK(simplex::utils::SimplexComparisons::equal(
+            m,
+            itrb_collection.simplex_vector()[i],
+            coll.simplex_vector()[i]));
     }
 }

@@ -27,12 +27,15 @@ public:
         const TriMesh& mesh,
         const attribute::TypedAttributeHandle<double>& attribute_handle,
         const attribute::TypedAttributeHandle<double>& target_attribute_handle)
-        : PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, attribute::MeshAttributeHandle(const_cast<TriMesh&>(mesh),attribute_handle))
+        : PerSimplexAutodiffFunction(
+              mesh,
+              PrimitiveType::Vertex,
+              attribute::MeshAttributeHandle(const_cast<TriMesh&>(mesh), attribute_handle))
         , m_target_attribute_accessor(mesh.create_const_accessor<double>(target_attribute_handle))
     {}
     ~SquareDistance() override = default;
     using DScalar = PerSimplexAutodiffFunction::DScalar;
-    using DSVec = Eigen::VectorX<DScalar>;
+    using DSVec = PerSimplexAutodiffFunction::DSVec;
 
 protected:
     DScalar eval(const Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
@@ -48,7 +51,7 @@ protected:
         return r;
     }
 
-    ConstAccessor<double> m_target_attribute_accessor;
+    const attribute::Accessor<double> m_target_attribute_accessor;
 };
 } // namespace wmtk::function
 TEST_CASE("smoothing_Newton_Method")
@@ -81,7 +84,7 @@ TEST_CASE("smoothing_Newton_Method")
         auto stats = scheduler.run_operation_on_all(op);
         REQUIRE(stats.number_of_successful_operations() > 0);
     }
-    ConstAccessor<double> pos = mesh.create_const_accessor<double>(handler);
+    const attribute::Accessor<double> pos = mesh.create_const_accessor<double>(handler);
     Tuple tuple = mesh.tuple_from_face_id(0);
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
     Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));
@@ -96,13 +99,8 @@ TEST_CASE("smoothing_tet_amips")
 {
     TetMesh mesh = three_incident_tets_with_positions();
     auto handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    function::AMIPS amips(
-        mesh,
-        handle);
-    auto energy = std::make_shared<function::LocalNeighborsSumFunction>(
-        mesh,
-        handle,
-        amips);
+    function::AMIPS amips(mesh, handle);
+    auto energy = std::make_shared<function::LocalNeighborsSumFunction>(mesh, handle, amips);
     OptimizationSmoothing op(energy);
 
     Scheduler scheduler;
@@ -141,7 +139,10 @@ TEST_CASE("smoothing_Gradient_Descent")
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 1)) << 1, 0;
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 2)) << 0, 1;
 
-    function::SquareDistance squared_dist(mesh, handle.as<double>(), target_coordinate_handle.as<double>());
+    function::SquareDistance squared_dist(
+        mesh,
+        handle.as<double>(),
+        target_coordinate_handle.as<double>());
     auto energy = std::make_shared<function::LocalNeighborsSumFunction>(mesh, handle, squared_dist);
     OptimizationSmoothing op(energy);
 
@@ -165,7 +166,7 @@ TEST_CASE("smoothing_Gradient_Descent")
     do {
         stats = scheduler.run_operation_on_all(op);
     } while (get_min_grad_norm() > 1e-3 && stats.number_of_successful_operations() > 0);
-    ConstAccessor<double> pos = mesh.create_const_accessor<double>(handle);
+    const attribute::Accessor<double> pos = mesh.create_const_accessor<double>(handle);
     Tuple tuple = mesh.tuple_from_face_id(0);
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
     Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));

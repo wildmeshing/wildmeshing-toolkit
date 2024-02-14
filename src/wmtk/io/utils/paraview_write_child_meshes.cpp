@@ -1,7 +1,7 @@
 #include "paraview_write_child_meshes.hpp"
-#include <wmtk/Accessor.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 namespace wmtk::io::utils {
 using namespace wmtk;
@@ -33,7 +33,7 @@ void write_child_meshes(
         child_mesh->register_attribute<double>("child_vertices", PrimitiveType::Vertex, dim);
     Accessor<double> child_vertex_accessor =
         child_mesh->create_accessor<double>(child_vertex_handle);
-    wmtk::attribute::ConstAccessor<double> parent_vertex_accessor =
+    wmtk::attribute::Accessor<double> parent_vertex_accessor =
         parent_mesh->create_const_accessor(parent_handle.as<double>());
 
     for (Tuple& v : child_mesh->get_all(PrimitiveType::Vertex)) {

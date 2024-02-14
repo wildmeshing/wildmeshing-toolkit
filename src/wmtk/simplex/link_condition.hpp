@@ -16,4 +16,5 @@ namespace wmtk::simplex {
 bool link_condition(const EdgeMesh& mesh, const Tuple& edge);
 bool link_condition(const TriMesh& mesh, const Tuple& edge);
 bool link_condition(const TetMesh& mesh, const Tuple& edge);
+bool link_condition(const Mesh& mesh, const Tuple& edge);
 } // namespace wmtk::simplex

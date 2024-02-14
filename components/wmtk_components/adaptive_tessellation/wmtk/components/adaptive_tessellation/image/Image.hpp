@@ -55,10 +55,10 @@ public:
 void split_and_save_3channels(const std::filesystem::path& path);
 
 Image buffer_to_image(const std::vector<float>& buffer, int w, int h);
-
+std::shared_ptr<Image> buffer_to_image_ptr(const std::vector<float>& buffer, int w, int h);
 std::array<Image, 3> load_rgb_image(const std::filesystem::path& path);
 
-std::array<Image, 3> combine_position_normal_texture(
+std::array<std::shared_ptr<Image>, 3> combine_position_normal_texture(
     double normalization_scale,
     const Eigen::Matrix<double, 1, 3>& offset,
     const std::filesystem::path& position_path,

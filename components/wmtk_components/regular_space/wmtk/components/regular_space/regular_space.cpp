@@ -28,7 +28,7 @@ auto gather_attributes(io::Cache& cache, Mesh& mesh, const internal::RegularSpac
             attr_name = "edge_label";
             break;
         }
-        case PrimitiveType::Face: {
+        case PrimitiveType::Triangle: {
             attr_name = "face_label";
             break;
         }

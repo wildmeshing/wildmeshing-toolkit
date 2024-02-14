@@ -7,10 +7,10 @@ namespace wmtk::function {
 PerTriangleAnalyticalIntegral::PerTriangleAnalyticalIntegral(
     const Mesh& mesh,
     const attribute::MeshAttributeHandle& vertex_uv_handle,
-    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator pos_evaluator,
-    const image::SAMPLING_METHOD sampling_method)
+    std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
+        pos_evaluator_ptr)
     : wmtk::function::PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, vertex_uv_handle)
-    , m_pos_evaluator(pos_evaluator)
+    , m_pos_evaluator_ptr(pos_evaluator_ptr)
 {}
 PerTriangleAnalyticalIntegral::~PerTriangleAnalyticalIntegral() = default;
 
@@ -21,7 +21,7 @@ DScalar PerTriangleAnalyticalIntegral::eval(
     assert(embedded_dimension() == 2);
     assert(coords.size() == 3);
     wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature analytical_quadrature(
-        m_pos_evaluator);
+        *m_pos_evaluator_ptr);
     DSVec2 a = coords[0], b = coords[1], c = coords[2];
     return analytical_quadrature.get_error_one_triangle_exact(a, b, c);
 }

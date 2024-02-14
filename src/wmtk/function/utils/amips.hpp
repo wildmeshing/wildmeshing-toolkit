@@ -35,7 +35,8 @@ auto amips(const Eigen::MatrixBase<Derived>& B)
     J = B * detail::amips_reference_to_barycentric.template cast<Scalar>();
 
     auto Jdet = J.determinant();
-    if (Jdet < 0) {
+    if (Jdet < 1e-12) {
+        return static_cast<Scalar>(std::numeric_limits<double>::infinity());
         throw std::runtime_error("AMIPS Jacobian determinant is negative");
         return static_cast<Scalar>(std::numeric_limits<double>::quiet_NaN());
     }
@@ -96,12 +97,18 @@ auto amips(
 
         // TODO: shouldnt we make sure the normms are over some eps instead of 0?
         auto e0norm = e0.norm();
+        if (e0norm < 1e-12) {
+            return static_cast<Scalar>(std::numeric_limits<double>::infinity());
+        }
         assert(e0norm > 0); // check norm is not 0
         e0 = e0 / e0norm;
 
         Vector3<Scalar> n = e0.cross(e1);
         e1 = n.cross(e0);
         auto e1norm = e1.norm();
+        if (e1norm < 1e-12) {
+            return static_cast<Scalar>(std::numeric_limits<double>::infinity());
+        }
         assert(e1norm > 0); // check norm is not 0
         e1 = e1 / e1norm;
 

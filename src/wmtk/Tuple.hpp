@@ -10,6 +10,10 @@ class PointMesh;
 class TriMesh;
 class EdgeMesh;
 class TetMesh;
+namespace attribute {
+template <typename T>
+class Accessor;
+}
 namespace utils {
 class TupleInspector;
 }
@@ -20,18 +24,20 @@ namespace utils {
 // for identifying unique top level simplices between tuples
 class TupleCellLessThan;
 } // namespace utils
+namespace multimesh {
 class MultiMeshManager;
+}
 
 class Tuple
 {
 private:
     // if Tuple is in 2d mesh m_global_cid is the global triangle id, and local_fid is -1
     // if Tuple is in 3d mesh m_global_cid is the global tetrahedron id
-    int64_t m_local_vid = -1;
-    int64_t m_local_eid = -1;
-    int64_t m_local_fid = -1;
+    int8_t m_local_vid = -1;
+    int8_t m_local_eid = -1;
+    int8_t m_local_fid = -1;
+    int8_t m_hash = -1;
     int64_t m_global_cid = -1;
-    int64_t m_hash = -1;
 
 public:
     friend class Mesh;
@@ -39,20 +45,17 @@ public:
     friend class EdgeMesh;
     friend class TriMesh;
     friend class TetMesh;
+    friend class multimesh::MultiMeshManager;
+    template <typename T>
+    friend class attribute::Accessor;
     friend class operations::Operation;
-    friend class MultiMeshManager;
     friend class utils::TupleCellLessThan;
     friend class utils::TupleInspector;
     // friend int64_t Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
     // friend Mesh::is_ccw(const Tuple& tuple) const;
     // friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
 
-    Tuple(
-        int64_t local_vid,
-        int64_t local_eid,
-        int64_t local_fid,
-        int64_t global_cid,
-        int64_t hash);
+    Tuple(int8_t local_vid, int8_t local_eid, int8_t local_fid, int64_t global_cid, int8_t hash);
 
     //         v2
     //       /    \.

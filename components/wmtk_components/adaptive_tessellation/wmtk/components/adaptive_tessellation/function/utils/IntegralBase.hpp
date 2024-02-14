@@ -1,9 +1,10 @@
 #pragma once
 #include <wmtk/function/utils/autodiff.h>
 #include <wmtk/components/adaptive_tessellation/image/utils/SamplingParameters.hpp>
+#include <wmtk/function/PerSimplexAutodiffFunction.hpp>
 namespace image = wmtk::components::image;
 namespace wmtk::components::function::utils {
-using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
+using DScalar = typename wmtk::function::PerSimplexAutodiffFunction::DScalar;
 class IntegralBase
 {
 public:

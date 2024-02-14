@@ -2,10 +2,13 @@
 
 #include <polysolve/nonlinear/Problem.hpp>
 #include <wmtk/Mesh.hpp>
-#include <wmtk/attribute/MutableAccessor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <polysolve/nonlinear/Solver.hpp>
+
+#include <fstream>
+#include <nlohmann/json.hpp>
 
 namespace wmtk::operations {
 
@@ -17,9 +20,9 @@ public:
     using typename polysolve::nonlinear::Problem::TVector;
 
     WMTKProblem(
-        attribute::MutableAccessor<double>&& handle,
+        attribute::Accessor<double>&& handle,
         const simplex::Simplex& simplex,
-        InvariantCollection& invariants,
+        invariants::InvariantCollection& invariants,
         const wmtk::function::Function& energy);
 
     TVector initial_value() const;
@@ -38,17 +41,17 @@ public:
     bool is_attr_valid() const { return m_energy.attribute_handle().is_valid(); }
 
 private:
-    attribute::MutableAccessor<double> m_accessor;
+    attribute::Accessor<double> m_accessor;
     const simplex::Simplex& m_simplex;
     const wmtk::function::Function& m_energy;
 
-    InvariantCollection& m_invariants;
+    invariants::InvariantCollection& m_invariants;
 };
 
 OptimizationSmoothing::WMTKProblem::WMTKProblem(
-    attribute::MutableAccessor<double>&& accessor,
+    attribute::Accessor<double>&& accessor,
     const simplex::Simplex& simplex,
-    InvariantCollection& invariants,
+    invariants::InvariantCollection& invariants,
     const wmtk::function::Function& energy)
     : m_accessor(std::move(accessor))
     , m_simplex(simplex)
@@ -59,8 +62,7 @@ OptimizationSmoothing::WMTKProblem::WMTKProblem(
 OptimizationSmoothing::WMTKProblem::TVector OptimizationSmoothing::WMTKProblem::initial_value()
     const
 {
-    assert(is_attr_valid());
-    return m_accessor.vector_attribute(m_simplex.tuple());
+    return m_accessor.const_vector_attribute(m_simplex.tuple());
 }
 
 double OptimizationSmoothing::WMTKProblem::value(const TVector& x)
@@ -95,7 +97,7 @@ void OptimizationSmoothing::WMTKProblem::hessian(const TVector& x, Eigen::Matrix
 
 void OptimizationSmoothing::WMTKProblem::solution_changed(const TVector& new_x)
 {
-    m_accessor.vector_attribute(m_simplex.tuple()) = new_x;
+    // m_accessor.vector_attribute(m_simplex.tuple()) = new_x;
 }
 
 
@@ -144,19 +146,28 @@ void OptimizationSmoothing::create_solver()
 
 std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simplex& simplex)
 {
-    assert(m_energy->attribute_handle().is_valid());
-    WMTKProblem problem(
-        mesh().create_accessor(m_energy->attribute_handle().as<double>()),
-        simplex,
-        m_invariants,
-        *m_energy);
-    assert(problem.is_attr_valid());
-    // TODO call get_info
+    auto accessor = mesh().create_accessor(m_energy->attribute_handle().as<double>());
+    WMTKProblem problem(std::move(accessor), simplex, m_invariants, *m_energy);
+
+    // std::cout << "smoothing: " << std::endl;
+
     auto x = problem.initial_value();
     try {
+        reset_sampling_cnt();
         // std::cout << "Solving" << std::endl;
         m_solver->minimize(problem, x);
         // std::cout << "Done " << x << std::endl;
+        // nlohmann::json data = m_solver->get_info();
+        // std::ofstream file("solver_info.json");
+
+        // Write the JSON object to the file
+        // std::cout << std::setw(4) << data << std::endl;
+        // wmtk::operations::Operation::print_sampling_cnt();
+        // // Close the file
+        // file.close();
+
+        accessor.vector_attribute(simplex.tuple()) = x;
+
     } catch (const std::exception&) {
         return {};
     }

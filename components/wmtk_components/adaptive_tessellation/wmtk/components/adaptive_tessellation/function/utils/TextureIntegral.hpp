@@ -15,6 +15,8 @@
 #include "BarycentricTriangle.hpp"
 #include "IntegralBase.hpp"
 #include "ThreeChannelPositionMapEvaluator.hpp"
+
+#include <nlohmann/json.hpp>
 namespace image = wmtk::components::image;
 namespace wmtk::components {
 namespace function::utils {
@@ -45,8 +47,8 @@ public:
     TextureIntegral& operator=(const TextureIntegral&) = delete; // copy assignment operator
     TextureIntegral& operator=(TextureIntegral&&); // move assignment operator
     ~TextureIntegral(); // destructor
-
     TextureIntegral(const ThreeChannelPositionMapEvaluator& evaluator);
+    TextureIntegral(const ThreeChannelPositionMapEvaluator& evaluator, bool debug);
 
 public:
     double get_error_one_triangle_exact(
@@ -130,8 +132,9 @@ public:
             return ret;
         };
         T value = T(0.);
-        Eigen::AlignedBox2d bbox = uv_triangle_bbox<T>(uv0, uv1, uv2);
+        Eigen::AlignedBox2d bbox = uv_triangle_bbox(uv_triangle_RowMajor);
         auto [num_pixels, pixel_size] = pixel_num_size_of_uv_triangle(bbox);
+
         for (auto y = 0; y < num_pixels; ++y) {
             for (auto x = 0; x < num_pixels; ++x) {
                 Eigen::AlignedBox2d box;
@@ -157,9 +160,9 @@ public:
                 }
             }
         }
-        // scaling by jacobian
-        value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);
-        value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
+        // // scaling by jacobian
+        // value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);
+        // value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
         return value;
     }
 
@@ -175,12 +178,29 @@ protected:
         return bbox;
     }
 
+
+    Eigen::AlignedBox2d uv_triangle_bbox(
+        const Eigen::Matrix<double, 3, 2, RowMajor>& uv_triangle_RowMajor) const
+    {
+        Eigen::AlignedBox2d bbox;
+        bbox.extend(uv_triangle_RowMajor.row(0).transpose());
+        bbox.extend(uv_triangle_RowMajor.row(1).transpose());
+        bbox.extend(uv_triangle_RowMajor.row(2).transpose());
+        return bbox;
+    }
     std::pair<int, double> pixel_num_size_of_uv_triangle(Eigen::AlignedBox2d& bbox) const;
 
+    std::pair<int, double> pixel_size_of_uv_triangle(int pixel_num, Eigen::AlignedBox2d& bbox)
+        const;
 
 protected:
     const ThreeChannelPositionMapEvaluator& m_three_channel_evaluator;
     std::shared_ptr<Cache> m_cache;
+    bool m_debug;
+
+public:
+    mutable nlohmann::ordered_json m_jsonData_bary_coord,
+        m_jsonData_texture_coord; // this is just for debug
 };
 } // namespace function::utils
 } // namespace wmtk::components

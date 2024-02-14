@@ -10,28 +10,30 @@ namespace wmtk {
 // topologies
 class PointMesh : public Mesh
 {
+public:
+    friend class Mesh;
+
 private:
     Tuple vertex_tuple_from_id(int64_t id) const;
 
 public:
     PointMesh();
     PointMesh(int64_t size);
-    PointMesh(const PointMesh& o) = default;
+    PointMesh(const PointMesh& o) = delete;
     PointMesh(PointMesh&& o) = default;
-    PointMesh& operator=(const PointMesh& o) = default;
+    PointMesh& operator=(const PointMesh& o) = delete;
     PointMesh& operator=(PointMesh&& o) = default;
 
-    int64_t top_cell_dimension() const override { return 0; }
     [[noreturn]] Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
-    bool is_boundary(const Tuple& tuple, PrimitiveType pt) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const override;
+    bool is_boundary(PrimitiveType pt, const Tuple& tuple) const override;
+    bool is_boundary_vertex(const Tuple& tuple) const;
 
     void initialize(int64_t count);
 
 
-    bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const override;
+    bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const override;
 
     bool is_connectivity_valid() const override { return true; }
 
@@ -39,7 +41,7 @@ public:
         const override;
 
 protected:
-    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
 
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index

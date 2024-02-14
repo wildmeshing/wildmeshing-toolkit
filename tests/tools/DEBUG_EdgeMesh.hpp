@@ -8,7 +8,6 @@ class DEBUG_EdgeMesh : public EdgeMesh
 {
 public:
     using EdgeMesh::EdgeMesh;
-    DEBUG_EdgeMesh(const EdgeMesh& m);
     DEBUG_EdgeMesh(EdgeMesh&& m);
     using EdgeMesh::operator=;
 
@@ -58,16 +57,16 @@ public:
     void reserve_attributes(PrimitiveType type, int64_t size);
 
 
-    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
     int64_t id(const simplex::Simplex& s) const;
     /**
      * @brief returns the TriMeshOperationExecutor
      */
     using EdgeMesh::tuple_from_id;
 
-    Accessor<int64_t> get_cell_hash_accessor();
+    attribute::Accessor<int64_t> get_cell_hash_accessor();
 
-    EdgeMeshOperationExecutor get_emoe(const Tuple& t, Accessor<int64_t>& hash_accessor);
+    EdgeMeshOperationExecutor get_emoe(const Tuple& t, attribute::Accessor<int64_t>& hash_accessor);
 
     bool is_simplex_deleted(PrimitiveType type, const int64_t id) const;
 };

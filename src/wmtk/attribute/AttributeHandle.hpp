@@ -13,7 +13,7 @@ class MeshAttributes;
 template <typename T>
 class AccessorBase;
 template <typename T>
-class TupleAccessor;
+class Accessor;
 template <typename T>
 class TypedAttributeHandle;
 class AttributeManager;

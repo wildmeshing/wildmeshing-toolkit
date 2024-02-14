@@ -1,7 +1,18 @@
 #include "Operation.hpp"
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/simplex/closed_star.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
+
+
+// it's ugly but for teh visitor we need these included
+#include <wmtk/EdgeMesh.hpp>
+#include <wmtk/PointMesh.hpp>
+#include <wmtk/TetMesh.hpp>
+#include <wmtk/TriMesh.hpp>
+
+#include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::operations {
 
@@ -14,6 +25,19 @@ Operation::Operation(Mesh& mesh)
 Operation::~Operation() = default;
 
 
+static int sampling_cnt = 0;
+void Operation::increase_sampling_cnt()
+{
+    sampling_cnt++;
+}
+void Operation::reset_sampling_cnt()
+{
+    sampling_cnt = 0;
+}
+void Operation::print_sampling_cnt()
+{
+    wmtk::logger().info("num of smapling called {}", sampling_cnt);
+}
 std::shared_ptr<operations::AttributeTransferStrategyBase> Operation::get_transfer_strategy(
     const attribute::MeshAttributeHandle& attribute)
 {
@@ -50,17 +74,19 @@ void Operation::add_transfer_strategy(
 
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
+    if (!before(simplex)) {
+        return {};
+    }
+
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
 
-    if (before(simplex)) {
-        auto unmods = unmodified_primitives(simplex);
-        auto mods = execute(simplex);
-        if (!mods.empty()) { // success should be marked here
-            apply_attribute_transfer(mods);
-            if (after(unmods, mods)) {
-                return mods; // scope destructor is called
-            }
+    auto unmods = unmodified_primitives(simplex);
+    auto mods = execute(simplex);
+    if (!mods.empty()) { // success should be marked here
+        apply_attribute_transfer(mods);
+        if (after(unmods, mods)) {
+            return mods; // scope destructor is called
         }
     }
     scope.mark_failed();
@@ -69,7 +95,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
 bool Operation::before(const simplex::Simplex& simplex) const
 {
-    ConstAccessor<int64_t> accessor = hash_accessor();
+    const attribute::Accessor<int64_t> accessor = hash_accessor();
 
     if (!mesh().is_valid(simplex.tuple(), accessor)) {
         return false;
@@ -99,25 +125,36 @@ bool Operation::after(
 
 void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods)
 {
-    // TODO: this has no chance of working in multimesh
     simplex::SimplexCollection all(m_mesh);
     for (const auto& s : direct_mods) {
-        all.add(simplex::closed_star(m_mesh, s));
+        all.add(simplex::closed_star(m_mesh, s, false));
     }
+    all.sort_and_clean();
     for (const auto& at_ptr : m_attr_transfer_strategies) {
-        for (const auto& s : all.simplex_vector()) {
-            if (s.primitive_type() == at_ptr->primitive_type()) {
-                at_ptr->run(s);
+        if (&m_mesh == &(at_ptr->mesh())) {
+            for (const auto& s : all.simplex_vector()) {
+                if (s.primitive_type() == at_ptr->primitive_type()) {
+                    at_ptr->run(s);
+                }
+            }
+        } else {
+            auto& at_mesh = at_ptr->mesh();
+            auto at_mesh_simplices = m_mesh.map(at_mesh, direct_mods);
+
+            simplex::SimplexCollection at_mesh_all(at_mesh);
+            for (const auto& s : at_mesh_simplices) {
+                at_mesh_all.add(simplex::closed_star(at_mesh, s));
+            }
+
+            at_mesh_all.sort_and_clean();
+
+            for (const auto& s : at_mesh_all.simplex_vector()) {
+                if (s.primitive_type() == at_ptr->primitive_type()) {
+                    at_ptr->run(s);
+                }
             }
         }
     }
-}
-
-void Operation::update_cell_hashes(const std::vector<Tuple>& cells)
-{
-    Accessor<int64_t> accessor = hash_accessor();
-
-    mesh().update_cell_hashes(cells, accessor);
 }
 
 Tuple Operation::resurrect_tuple(const Tuple& tuple) const
@@ -125,14 +162,33 @@ Tuple Operation::resurrect_tuple(const Tuple& tuple) const
     return mesh().resurrect_tuple(tuple, hash_accessor());
 }
 
-Accessor<int64_t> Operation::hash_accessor()
+attribute::Accessor<int64_t> Operation::hash_accessor()
 {
     return m_mesh.get_cell_hash_accessor();
 }
 
-ConstAccessor<int64_t> Operation::hash_accessor() const
+const attribute::Accessor<int64_t> Operation::hash_accessor() const
 {
     return m_mesh.get_const_cell_hash_accessor();
+}
+
+
+void Operation::reserve_enough_simplices()
+{
+    // by default assume we'll at most create N * capacity
+    constexpr static int64_t default_preallocation_size = 3;
+
+    auto run = [&](auto&& m) {
+        if constexpr (!std::is_const_v<std::remove_reference_t<decltype(m)>>) {
+            auto cap = m.m_attribute_manager.m_capacities;
+            for (auto& v : cap) {
+                v *= default_preallocation_size;
+            }
+            m.reserve_more_attributes(cap);
+        }
+    };
+    multimesh::MultiMeshVisitor visitor(run);
+    visitor.execute_from_root(mesh());
 }
 
 } // namespace wmtk::operations

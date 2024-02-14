@@ -1,7 +1,7 @@
 
 #include "AttributeTransferStrategyBase.hpp"
-#include <wmtk/simplex/cofaces_single_dimension.hpp>
-#include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/Mesh.hpp>
+#include <wmtk/simplex/neighbors_single_dimension.hpp>
 
 #include <wmtk/simplex/utils/unique_homogeneous_simplices.hpp>
 
@@ -11,6 +11,16 @@ AttributeTransferStrategyBase::AttributeTransferStrategyBase(
     : m_handle(my_handle)
 {}
 AttributeTransferStrategyBase::~AttributeTransferStrategyBase() = default;
+
+void AttributeTransferStrategyBase::run_on_all()
+{
+    const PrimitiveType pt = m_handle.primitive_type();
+    auto tuples = m_handle.mesh().get_all(pt);
+
+    for (const Tuple& t : tuples) {
+        run(simplex::Simplex(pt, t));
+    }
+}
 
 std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
     const attribute::MeshAttributeHandle& me,
@@ -32,30 +42,20 @@ std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
     // the set of simplices that can be traversed without crossing a mesh-mesh edge more than once
     std::vector<Tuple> parent_tuples = m.lub_map_tuples(parent, s);
 
-    // lambda for running either of the cases
-    auto run = [&](auto&& f) {
+    if (my_primitive_type != parent_primitive_type) {
+        // lambda for running either of the cases
         std::vector<Tuple> r;
         for (const auto& parent_tup : parent_tuples) {
-            std::vector<Tuple> c = f(simplex::Simplex(my_primitive_type, parent_tup));
+            std::vector<Tuple> c = simplex::neighbors_single_dimension_tuples(
+                m,
+                simplex::Simplex(my_primitive_type, parent_tup),
+                parent_primitive_type);
             std::copy(c.begin(), c.end(), std::back_inserter(r));
         }
         if (parent_tuples.size() > 1) {
             simplex::utils::unique_homogeneous_simplices_inline(m, parent_primitive_type, r);
         }
-
-        return r;
-    };
-
-    if (my_primitive_type < parent_primitive_type) { // simplex is a face of the parent
-
-
-        return run([&](const simplex::Simplex& a) {
-            return simplex::cofaces_single_dimension_tuples(parent, a, parent_primitive_type);
-        });
-    } else if (my_primitive_type > parent_primitive_type) {
-        return run([&](const simplex::Simplex& a) {
-            return simplex::faces_single_dimension_tuples(parent, a, parent_primitive_type);
-        });
+        parent_tuples = std::move(r);
     }
     return parent_tuples;
 }

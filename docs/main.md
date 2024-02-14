@@ -62,8 +62,8 @@ The key concepts are:
 The inclusion tree for storing attributes is: AttributeManager (type), MeshAttributes (simplex dimension), Attribute (simplex index), and vector<T> (final index). The actual data is stored in Attribute as a flatten vector.
 
 The inheritance for accessing attributes is:
-AccessorBase -> CachingAccessor -> TupleAccessor -> ConstAccessor -> MutableAccessor
-The first three are private, the last two are public. AccessorBase provides basic index-based access. CachingAccessor adds a layer on top supporting the use of an intermediate cache to store the changes temporarily. Tuple accessor hides the index access in favor of using a tuple. Finally const and mutable are the two user-facing classes providing read-only or read-write access.
+AccessorBase -> CachingAccessor -> Accessor
+The first two are private, the last is public. AccessorBase provides basic index-based access. CachingAccessor adds a layer on top supporting the use of an intermediate cache to store the changes temporarily. Tuple accessor hides the index access in favor of using a tuple.
 
 The scoping mechanics is complex but entirely hidden by the Accessor interface. Every attribute stores a stack of scopes `PerThreadAttributeScopeStacks<T>`. A `PerThreadAttributeScopeStacks` is a wrapper for a `AttributeScopeStack`. An `AttributeScopeStack` is a stack of changes not yet applied to a Attribute. Each change is an `AttributeScope`, which inherits from an `AttributeCache` to provide the functionality to support a stack. The `AttributeCache` stores an `AttributeCacheData`, which stores the actual diff of the modifications done on the attribute.
 

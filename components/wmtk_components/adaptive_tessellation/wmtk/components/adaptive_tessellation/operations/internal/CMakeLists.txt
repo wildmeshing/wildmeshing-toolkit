@@ -4,6 +4,9 @@ set(SRC_FILES
     ATOperations.hpp
     ATOperations.cpp
     ATOptions.hpp
+    AT_debug.cpp
+    
+    ATEnergies.cpp
 )
 
 

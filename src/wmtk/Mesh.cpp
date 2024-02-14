@@ -5,6 +5,11 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/vector_hash.hpp>
 
+#include "EdgeMesh.hpp"
+#include "PointMesh.hpp"
+#include "TetMesh.hpp"
+#include "TriMesh.hpp"
+
 #include "Primitive.hpp"
 
 namespace wmtk {
@@ -27,10 +32,14 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 
 std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted) const
 {
-    ConstAccessor<char> flag_accessor = get_flag_accessor(type);
-    const attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
     std::vector<Tuple> ret;
-    int64_t cap = capacity(type);
+
+    if (static_cast<int8_t>(type) > top_cell_dimension()) return ret;
+
+    const int64_t cap = capacity(type);
+
+    const attribute::Accessor<char> flag_accessor = get_flag_accessor(type);
+    const attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
     ret.reserve(cap);
     for (size_t index = 0; index < cap; ++index) {
         if (flag_accessor_indices.const_scalar_attribute(index) & 1)
@@ -41,79 +50,90 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted)
     return ret;
 }
 
-void Mesh::serialize(MeshWriter& writer) const
+void Mesh::serialize(MeshWriter& writer, const Mesh* local_root) const
 {
-    writer.write_absolute_id(m_multi_mesh_manager.absolute_id());
+    if (local_root == nullptr) {
+        writer.write_absolute_id(m_multi_mesh_manager.absolute_id());
+    } else {
+        writer.write_absolute_id(m_multi_mesh_manager.relative_id(*this, *local_root));
+    }
     writer.write_top_simplex_type(top_simplex_type());
     m_attribute_manager.serialize(writer);
 
-    m_multi_mesh_manager.serialize(writer);
+    m_multi_mesh_manager.serialize(writer, local_root);
 }
 
 
 bool Mesh::is_boundary(const simplex::Simplex& s) const
 {
-    return is_boundary(s.tuple(), s.primitive_type());
+    return is_boundary(s.primitive_type(), s.tuple());
 }
 
 
-bool Mesh::is_hash_valid(const Tuple& tuple, const ConstAccessor<int64_t>& hash_accessor) const
+bool Mesh::is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const
 {
     const int64_t cid = tuple.m_global_cid;
-    return tuple.m_hash == get_cell_hash(cid, hash_accessor);
+
+    const int64_t desired_hash = get_cell_hash(cid, hash_accessor);
+    if (tuple.m_hash != desired_hash) {
+        logger().debug("Hash is not valid: {} != {}", tuple.m_hash, desired_hash);
+        return false;
+    }
+    return true;
 }
 
 bool Mesh::is_valid_slow(const Tuple& tuple) const
 {
-    ConstAccessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
+    const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
     return is_valid(tuple, hash_accessor);
 }
 
 
-ConstAccessor<char> Mesh::get_flag_accessor(PrimitiveType type) const
+const attribute::Accessor<char> Mesh::get_flag_accessor(PrimitiveType type) const
 {
     return get_const_flag_accessor(type);
 }
-ConstAccessor<char> Mesh::get_const_flag_accessor(PrimitiveType type) const
+const attribute::Accessor<char> Mesh::get_const_flag_accessor(PrimitiveType type) const
 {
     return create_const_accessor(m_flag_handles.at(get_primitive_type_id(type)));
 }
-Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
+attribute::Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
 {
     return create_accessor(m_flag_handles.at(get_primitive_type_id(type)));
 }
 
-ConstAccessor<int64_t> Mesh::get_const_cell_hash_accessor() const
+const attribute::Accessor<int64_t> Mesh::get_const_cell_hash_accessor() const
 {
     return create_const_accessor(m_cell_hash_handle);
 }
 
-ConstAccessor<int64_t> Mesh::get_cell_hash_accessor() const
+const attribute::Accessor<int64_t> Mesh::get_cell_hash_accessor() const
 {
     return get_const_cell_hash_accessor();
 }
-Accessor<int64_t> Mesh::get_cell_hash_accessor()
+attribute::Accessor<int64_t> Mesh::get_cell_hash_accessor()
 {
     return create_accessor(m_cell_hash_handle);
 }
 
-void Mesh::update_cell_hash(const Tuple& cell, Accessor<int64_t>& hash_accessor)
+void Mesh::update_cell_hash(const Tuple& cell, attribute::Accessor<int64_t>& hash_accessor)
 {
     const int64_t cid = cell.m_global_cid;
     update_cell_hash(cid, hash_accessor);
 }
-void Mesh::update_cell_hash(const int64_t cid, Accessor<int64_t>& hash_accessor)
+void Mesh::update_cell_hash(const int64_t cid, attribute::Accessor<int64_t>& hash_accessor)
 {
-    ++hash_accessor.index_access().scalar_attribute(cid);
+    auto& h = hash_accessor.index_access().scalar_attribute(cid);
+    h = (h + 1) % (1 << 6);
 }
 
-void Mesh::update_cell_hashes(const std::vector<Tuple>& cells, Accessor<int64_t>& hash_accessor)
+void Mesh::update_cell_hashes(const std::vector<Tuple>& cells, attribute::Accessor<int64_t>& hash_accessor)
 {
     for (const Tuple& t : cells) {
         update_cell_hash(t, hash_accessor);
     }
 }
-void Mesh::update_cell_hashes(const std::vector<int64_t>& cells, Accessor<int64_t>& hash_accessor)
+void Mesh::update_cell_hashes(const std::vector<int64_t>& cells, attribute::Accessor<int64_t>& hash_accessor)
 {
     for (const int64_t t : cells) {
         update_cell_hash(t, hash_accessor);
@@ -122,12 +142,12 @@ void Mesh::update_cell_hashes(const std::vector<int64_t>& cells, Accessor<int64_
 
 void Mesh::update_cell_hashes_slow(const std::vector<Tuple>& cells)
 {
-    Accessor<int64_t> hash_accessor = get_cell_hash_accessor();
+    attribute::Accessor<int64_t> hash_accessor = get_cell_hash_accessor();
     update_cell_hashes(cells, hash_accessor);
 }
 
 
-Tuple Mesh::resurrect_tuple(const Tuple& tuple, const ConstAccessor<int64_t>& hash_accessor) const
+Tuple Mesh::resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const
 {
     Tuple t = tuple;
     t.m_hash = get_cell_hash(tuple.m_global_cid, hash_accessor);
@@ -136,25 +156,25 @@ Tuple Mesh::resurrect_tuple(const Tuple& tuple, const ConstAccessor<int64_t>& ha
 
 Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple)
 {
-    Accessor<int64_t> hash_accessor = get_cell_hash_accessor();
+    attribute::Accessor<int64_t> hash_accessor = get_cell_hash_accessor();
     return resurrect_tuple(tuple, hash_accessor);
 }
 
-int64_t Mesh::get_cell_hash(int64_t cell_index, const ConstAccessor<int64_t>& hash_accessor) const
+int64_t Mesh::get_cell_hash(int64_t cell_index, const attribute::Accessor<int64_t>& hash_accessor) const
 {
     return hash_accessor.index_access().const_scalar_attribute(cell_index);
 }
 
 int64_t Mesh::get_cell_hash_slow(int64_t cell_index) const
 {
-    ConstAccessor<int64_t> hash_accessor = get_cell_hash_accessor();
+    const attribute::Accessor<int64_t> hash_accessor = get_cell_hash_accessor();
     return get_cell_hash(cell_index, hash_accessor);
 }
 
 void Mesh::set_capacities_from_flags()
 {
     for (int64_t dim = 0; dim < m_attribute_manager.m_capacities.size(); ++dim) {
-        Accessor<char> flag_accessor = create_accessor<char>(m_flag_handles[dim]);
+        attribute::Accessor<char> flag_accessor = create_accessor<char>(m_flag_handles[dim]);
         m_attribute_manager.m_capacities[dim] = flag_accessor.reserved_size();
     }
 }
@@ -196,203 +216,7 @@ Tuple Mesh::switch_tuples_unsafe(
 }
 
 
-std::vector<int64_t> Mesh::absolute_multi_mesh_id() const
-{
-    return m_multi_mesh_manager.absolute_id();
-}
-void Mesh::register_child_mesh(
-    const std::shared_ptr<Mesh>& child_mesh_ptr,
-    const std::vector<std::array<Tuple, 2>>& map_tuples)
-{
-    m_multi_mesh_manager.register_child_mesh(*this, child_mesh_ptr, map_tuples);
-}
-
-
-bool Mesh::is_from_same_multi_mesh_structure(const Mesh& other) const
-{
-    return &get_multi_mesh_root() == &other.get_multi_mesh_root();
-}
-
-std::vector<simplex::Simplex> Mesh::map(const Mesh& other_mesh, const simplex::Simplex& my_simplex)
-    const
-{
-    if (!is_from_same_multi_mesh_structure(other_mesh)) {
-        throw std::runtime_error(
-            "Attempted to map between two simplices in different multi-mesh structures");
-    }
-    return m_multi_mesh_manager.map(*this, other_mesh, my_simplex);
-}
-
-std::vector<simplex::Simplex> Mesh::map(
-    const Mesh& other_mesh,
-    const std::vector<simplex::Simplex>& simplices) const
-{
-    std::vector<simplex::Simplex> ret;
-    ret.reserve(simplices.size());
-    for (const auto& s : simplices) {
-        auto v = map(other_mesh, s);
-        ret.insert(ret.end(), v.begin(), v.end());
-    }
-
-    return ret;
-}
-
-std::vector<simplex::Simplex> Mesh::lub_map(
-    const Mesh& other_mesh,
-    const simplex::Simplex& my_simplex) const
-{
-    if (!is_from_same_multi_mesh_structure(other_mesh)) {
-        throw std::runtime_error(
-            "Attempted to map between two simplices in different multi-mesh structures");
-    }
-    return m_multi_mesh_manager.lub_map(*this, other_mesh, my_simplex);
-}
-
-std::vector<simplex::Simplex> Mesh::lub_map(
-    const Mesh& other_mesh,
-    const std::vector<simplex::Simplex>& simplices) const
-{
-    std::vector<simplex::Simplex> ret;
-    ret.reserve(simplices.size());
-    for (const auto& s : simplices) {
-        auto v = lub_map(other_mesh, s);
-        ret.insert(ret.end(), v.begin(), v.end());
-    }
-
-    return ret;
-}
-
-
-simplex::Simplex Mesh::map_to_parent(const simplex::Simplex& my_simplex) const
-{
-    if (is_multi_mesh_root()) {
-        throw std::runtime_error("Attempted to map a simplex to parent despite being a root");
-    }
-    return m_multi_mesh_manager.map_to_parent(*this, my_simplex);
-}
-simplex::Simplex Mesh::map_to_root(const simplex::Simplex& my_simplex) const
-{
-    return m_multi_mesh_manager.map_to_root(*this, my_simplex);
-}
-
-std::vector<simplex::Simplex> Mesh::map_to_child(
-    const Mesh& child_mesh,
-    const simplex::Simplex& my_simplex) const
-{
-    if (!is_from_same_multi_mesh_structure(child_mesh)) {
-        throw std::runtime_error(
-            "Attempted to map between two simplices in different multi-mesh structures");
-    }
-    return m_multi_mesh_manager.map_to_child(*this, child_mesh, my_simplex);
-}
-
-std::vector<Tuple> Mesh::map_tuples(const Mesh& other_mesh, const simplex::Simplex& my_simplex)
-    const
-{
-    if (!is_from_same_multi_mesh_structure(other_mesh)) {
-        throw std::runtime_error(
-            "Attempted to map between two simplices in different multi-mesh structures");
-    }
-    return m_multi_mesh_manager.map_tuples(*this, other_mesh, my_simplex);
-}
-
-std::vector<Tuple>
-Mesh::map_tuples(const Mesh& other_mesh, PrimitiveType pt, const std::vector<Tuple>& tuples) const
-{
-    std::vector<Tuple> ret;
-    ret.reserve(tuples.size());
-    for (const auto& t : tuples) {
-        auto v = map_tuples(other_mesh, simplex::Simplex(pt, t));
-        ret.insert(ret.end(), v.begin(), v.end());
-    }
-
-    return ret;
-}
-std::vector<Tuple> Mesh::lub_map_tuples(const Mesh& other_mesh, const simplex::Simplex& my_simplex)
-    const
-{
-    if (!is_from_same_multi_mesh_structure(other_mesh)) {
-        throw std::runtime_error(
-            "Attempted to map between two simplices in different multi-mesh structures");
-    }
-    return m_multi_mesh_manager.lub_map_tuples(*this, other_mesh, my_simplex);
-}
-
-std::vector<Tuple> Mesh::lub_map_tuples(
-    const Mesh& other_mesh,
-    PrimitiveType pt,
-    const std::vector<Tuple>& tuples) const
-{
-    std::vector<Tuple> ret;
-    ret.reserve(tuples.size());
-    for (const auto& t : tuples) {
-        auto v = lub_map_tuples(other_mesh, simplex::Simplex(pt, t));
-        ret.insert(ret.end(), v.begin(), v.end());
-    }
-
-    return ret;
-}
-
-Tuple Mesh::map_to_parent_tuple(const simplex::Simplex& my_simplex) const
-{
-    if (is_multi_mesh_root()) {
-        throw std::runtime_error("Attempted to map a simplex to parent despite being a root");
-    }
-    return m_multi_mesh_manager.map_to_parent_tuple(*this, my_simplex);
-}
-Tuple Mesh::map_to_root_tuple(const simplex::Simplex& my_simplex) const
-{
-    return m_multi_mesh_manager.map_to_root_tuple(*this, my_simplex);
-}
-std::vector<Tuple> Mesh::map_to_child_tuples(
-    const Mesh& child_mesh,
-    const simplex::Simplex& my_simplex) const
-{
-    if (!is_from_same_multi_mesh_structure(child_mesh)) {
-        throw std::runtime_error(
-            "Attempted to map between two simplices in different multi-mesh structures");
-    }
-    return m_multi_mesh_manager.map_to_child_tuples(*this, child_mesh, my_simplex);
-}
-
-bool Mesh::is_multi_mesh_root() const
-{
-    return m_multi_mesh_manager.is_root();
-}
-Mesh& Mesh::get_multi_mesh_root()
-{
-    return m_multi_mesh_manager.get_root_mesh(*this);
-}
-const Mesh& Mesh::get_multi_mesh_root() const
-{
-    return m_multi_mesh_manager.get_root_mesh(*this);
-}
-
-Mesh& Mesh::get_multi_mesh_mesh(const std::vector<int64_t>& absolute_id)
-{
-    return m_multi_mesh_manager.get_mesh(*this, absolute_id);
-}
-const Mesh& Mesh::get_multi_mesh_mesh(const std::vector<int64_t>& absolute_id) const
-{
-    return m_multi_mesh_manager.get_mesh(*this, absolute_id);
-}
-
-
-Mesh& Mesh::get_multi_mesh_child_mesh(const std::vector<int64_t>& relative_id)
-{
-    return m_multi_mesh_manager.get_child_mesh(*this, relative_id);
-}
-const Mesh& Mesh::get_multi_mesh_child_mesh(const std::vector<int64_t>& relative_id) const
-{
-    return m_multi_mesh_manager.get_child_mesh(*this, relative_id);
-}
-
-std::vector<std::shared_ptr<Mesh>> Mesh::get_child_meshes() const
-{
-    return m_multi_mesh_manager.get_child_meshes();
-}
-
-void Mesh::update_vertex_operation_hashes(const Tuple& vertex, Accessor<int64_t>& hash_accessor)
+void Mesh::update_vertex_operation_hashes(const Tuple& vertex, attribute::Accessor<int64_t>& hash_accessor)
 {
     MultiMeshManager::update_vertex_operation_hashes_internal(*this, vertex, hash_accessor);
 }
@@ -400,6 +224,17 @@ void Mesh::update_vertex_operation_hashes(const Tuple& vertex, Accessor<int64_t>
 void Mesh::assert_capacity_valid() const
 {
     m_attribute_manager.assert_capacity_valid();
+}
+
+int64_t Mesh::id(const Tuple& tuple, PrimitiveType type) const
+{
+    switch (top_simplex_type()) {
+    case PrimitiveType::Vertex: return static_cast<const PointMesh*>(this)->id(tuple, type);
+    case PrimitiveType::Edge: return static_cast<const EdgeMesh*>(this)->id(tuple, type);
+    case PrimitiveType::Triangle: return static_cast<const TriMesh*>(this)->id(tuple, type);
+    case PrimitiveType::Tetrahedron: return static_cast<const TetMesh*>(this)->id(tuple, type);
+    default: assert(false); return -1;
+    }
 }
 
 } // namespace wmtk

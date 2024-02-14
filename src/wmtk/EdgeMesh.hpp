@@ -15,23 +15,22 @@ class UpdateEdgeOperationMultiMeshMapFunctor;
 class EdgeMesh : public Mesh
 {
 public:
+    friend class Mesh;
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     EdgeMesh();
-    EdgeMesh(const EdgeMesh& o);
-    EdgeMesh(EdgeMesh&& o);
-    EdgeMesh& operator=(const EdgeMesh& o);
-    EdgeMesh& operator=(EdgeMesh&& o);
-
-    int64_t top_cell_dimension() const override { return 1; }
+    EdgeMesh(const EdgeMesh& o) = delete;
+    EdgeMesh(EdgeMesh&& o) = default;
+    EdgeMesh& operator=(const EdgeMesh& o) = delete;
+    EdgeMesh& operator=(EdgeMesh&& o) = default;
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
-    bool is_boundary(const Tuple& tuple, PrimitiveType) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const override;
+    bool is_boundary(PrimitiveType, const Tuple& tuple) const override;
+    bool is_boundary_vertex(const Tuple& tuple) const;
 
 
     void initialize(Eigen::Ref<const RowVectors2l> E);
@@ -41,15 +40,18 @@ public:
         Eigen::Ref<const RowVectors2l> EE,
         Eigen::Ref<const VectorXl> VE);
 
-    bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const override;
+    bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const override;
 
     bool is_connectivity_valid() const override;
 
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const override;
 
+    Tuple switch_vertex(const Tuple& tuple) const;
+    Tuple switch_edge(const Tuple& tuple) const;
+
 protected:
-    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
     int64_t id(const simplex::Simplex& simplex) const
     {
         return id(simplex.tuple(), simplex.primitive_type());
@@ -82,4 +84,12 @@ protected:
     class EdgeMeshOperationExecutor;
 };
 
+inline Tuple EdgeMesh::switch_vertex(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Vertex);
+}
+inline Tuple EdgeMesh::switch_edge(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Edge);
+}
 } // namespace wmtk

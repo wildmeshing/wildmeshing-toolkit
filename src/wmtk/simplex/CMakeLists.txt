@@ -19,6 +19,8 @@ set(SRC_FILES
     cofaces_single_dimension.cpp
     link.hpp
     link.cpp
+    link_single_dimension.hpp
+    link_single_dimension.cpp
     link_condition.hpp
     link_condition.cpp
     link_iterable.hpp
@@ -39,6 +41,9 @@ set(SRC_FILES
     faces_single_dimension.cpp
     k_ring.hpp
     k_ring.cpp
+
+    neighbors_single_dimension.hpp
+    neighbors_single_dimension.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(utils)

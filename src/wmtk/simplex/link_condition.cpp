@@ -1,4 +1,5 @@
 #include "link_condition.hpp"
+#include <wmtk/utils/metaprogramming/as_mesh_variant.hpp>
 #include "cofaces_single_dimension.hpp"
 #include "link.hpp"
 #include "open_star.hpp"
@@ -53,7 +54,7 @@ bool link_condition(const TriMesh& mesh, const Tuple& edge)
         // get incident_edges from open_star
         auto incident_edges = open_star(mesh, input_v).simplex_vector(PrimitiveType::Edge);
         for (const Simplex& _e : incident_edges) {
-            if (mesh.is_boundary(_e.tuple(), PrimitiveType::Edge)) {
+            if (mesh.is_boundary(PrimitiveType::Edge, _e.tuple())) {
                 if (utils::SimplexComparisons::equal(
                         mesh,
                         Simplex(PrimitiveType::Vertex, _e.tuple()),
@@ -133,9 +134,9 @@ bool link_condition(const TetMesh& mesh, const Tuple& edge)
         const Simplex input_v(PrimitiveType::Vertex, _v);
         std::vector<Tuple> ret;
         // get incident_faces from open_star
-        auto incident_faces = cofaces_single_dimension(mesh, input_v, PrimitiveType::Face);
+        auto incident_faces = cofaces_single_dimension(mesh, input_v, PrimitiveType::Triangle);
         for (const Simplex& _f : incident_faces) {
-            if (mesh.is_boundary(_f.tuple(), PrimitiveType::Face)) {
+            if (mesh.is_boundary(PrimitiveType::Triangle, _f.tuple())) {
                 // if (utils::SimplexComparisons::equal(
                 //         mesh,
                 //         Simplex(PrimitiveType::Vertex, _f.tuple()),
@@ -190,4 +191,20 @@ bool link_condition(const TetMesh& mesh, const Tuple& edge)
     return true;
 }
 
+bool link_condition(const Mesh& mesh, const Tuple& edge)
+{
+    return std::visit(
+        [&edge](auto&& m) noexcept {
+            using MType = std::decay_t<decltype(m.get())>;
+            if constexpr (std::is_same_v<MType, Mesh>) {
+                throw std::runtime_error("Link condition called on an unknown type of mesh - could "
+                                         "only cast it to Mesh");
+            } else if constexpr (std::is_same_v<MType, PointMesh>) {
+                return true;
+            } else {
+                return link_condition(m.get(), edge);
+            }
+        },
+        wmtk::utils::metaprogramming::as_const_mesh_variant(mesh));
+}
 } // namespace wmtk::simplex

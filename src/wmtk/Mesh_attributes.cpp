@@ -1,6 +1,7 @@
 #include <numeric>
 #include "Mesh.hpp"
 
+#include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include "Primitive.hpp"
@@ -28,17 +29,9 @@ attribute::TypedAttributeHandle<T> Mesh::register_attribute_typed(
     bool replace,
     T default_value)
 {
-    return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
-}
-template <typename T>
-attribute::TypedAttributeHandle<T> Mesh::register_attribute_builtin(
-    const std::string& name,
-    PrimitiveType ptype,
-    int64_t size,
-    bool replace,
-    T default_value)
-{
-    return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
+    auto attr =
+        m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
+    return attr;
 }
 
 std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t count)
@@ -48,7 +41,7 @@ std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t c
     int64_t current_capacity = capacity(type);
 
     // enable newly requested simplices
-    Accessor<char> flag_accessor = get_flag_accessor(type);
+    attribute::Accessor<char> flag_accessor = get_flag_accessor(type);
     int64_t max_size = flag_accessor.reserved_size();
 
     if (current_capacity + count > max_size) {
@@ -112,6 +105,28 @@ void Mesh::reserve_more_attributes(const std::vector<int64_t>& sizes)
         m_attribute_manager.reserve_more_attributes(j, sizes[j]);
     }
 }
+void Mesh::guarantee_at_least_attributes(PrimitiveType type, int64_t size)
+{
+    m_attribute_manager.guarantee_at_least_attributes(get_primitive_type_id(type), size);
+}
+void Mesh::guarantee_at_least_attributes(const std::vector<int64_t>& sizes)
+{
+    assert(top_cell_dimension() + 1 == sizes.size());
+    for (int64_t j = 0; j < sizes.size(); ++j) {
+        m_attribute_manager.guarantee_at_least_attributes(j, sizes[j]);
+    }
+}
+void Mesh::guarantee_more_attributes(PrimitiveType type, int64_t size)
+{
+    m_attribute_manager.guarantee_more_attributes(get_primitive_type_id(type), size);
+}
+void Mesh::guarantee_more_attributes(const std::vector<int64_t>& sizes)
+{
+    assert(top_cell_dimension() + 1 == sizes.size());
+    for (int64_t j = 0; j < sizes.size(); ++j) {
+        m_attribute_manager.guarantee_more_attributes(j, sizes[j]);
+    }
+}
 
 namespace {
 std::vector<attribute::TypedAttributeHandleVariant> variant_diff(
@@ -153,11 +168,11 @@ void Mesh::clear_attributes(
 }
 void Mesh::clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes)
 {
-    std::map<Mesh*,std::vector<attribute::TypedAttributeHandleVariant>> keeps_t;
-    for(const auto& attr: keep_attributes) {
+    std::map<Mesh*, std::vector<attribute::TypedAttributeHandleVariant>> keeps_t;
+    for (const auto& attr : keep_attributes) {
         keeps_t[const_cast<Mesh*>(&attr.mesh())].emplace_back(attr.handle());
     }
-    for(auto&[ mptr, handles]: keeps_t) {
+    for (auto& [mptr, handles] : keeps_t) {
         mptr->clear_attributes(handles);
     }
 }
@@ -184,7 +199,7 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
 
     // Initialize both maps
     for (int64_t d = 0; d < tcp; d++) {
-        Accessor<char> flag_accessor = get_flag_accessor(wmtk::get_primitive_type_from_id(d));
+        attribute::Accessor<char> flag_accessor = get_flag_accessor(wmtk::get_primitive_type_from_id(d));
         for (int64_t i = 0; i < capacity(wmtk::get_primitive_type_from_id(d)); ++i) {
             if (flag_accessor.index_access().scalar_attribute(i) & 1) {
                 old2new[d].push_back(new2old[d].size());
@@ -196,27 +211,25 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
     }
 
     // Use new2oldmap to compact all attributes
-    for (int64_t d = 0; d < tcp; d++) {
-        attribute::MeshAttributes<char>& attributesc = m_attribute_manager.m_char_attributes[d];
-        for (auto h = attributesc.m_attributes.begin(); h != attributesc.m_attributes.end(); h++)
-            h->consolidate(new2old[d]);
+    auto run = [&](auto&& mesh_attrs) {
+        for (int64_t d = 0; d < mesh_attrs.size(); ++d) {
+            mesh_attrs[d].reserve(new2old.size());
+            for (auto& h : mesh_attrs[d].m_attributes) {
+                h->consolidate(new2old[d]);
+            }
+        }
+    };
+    run(m_attribute_manager.m_char_attributes);
+    run(m_attribute_manager.m_long_attributes);
 
-        attribute::MeshAttributes<int64_t>& attributesl = m_attribute_manager.m_long_attributes[d];
-        for (auto h = attributesl.m_attributes.begin(); h != attributesl.m_attributes.end(); h++)
-            h->consolidate(new2old[d]);
+    run(m_attribute_manager.m_double_attributes);
 
-        attribute::MeshAttributes<double>& attributesd = m_attribute_manager.m_double_attributes[d];
-        for (auto h = attributesd.m_attributes.begin(); h != attributesd.m_attributes.end(); h++)
-            h->consolidate(new2old[d]);
-
-        attribute::MeshAttributes<Rational>& attributesr =
-            m_attribute_manager.m_rational_attributes[d];
-        for (auto h = attributesr.m_attributes.begin(); h != attributesr.m_attributes.end(); h++)
-            h->consolidate(new2old[d]);
-    }
+    run(m_attribute_manager.m_rational_attributes);
 
     // Update the attribute size in the manager
-    for (int64_t d = 0; d < tcp; d++) m_attribute_manager.m_capacities[d] = new2old[d].size();
+    for (int64_t d = 0; d < tcp; d++) {
+        m_attribute_manager.m_capacities[d] = new2old[d].size();
+    }
 
     // Apply old2new to attributes containing indices
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> handle_indices =
@@ -224,10 +237,53 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
 
     for (int64_t d = 0; d < tcp; d++) {
         for (int64_t i = 0; i < handle_indices[d].size(); ++i) {
-            Accessor<int64_t> accessor = create_accessor<int64_t>(handle_indices[d][i]);
+            attribute::Accessor<int64_t> accessor = create_accessor<int64_t>(handle_indices[d][i]);
             accessor.attribute().index_remap(old2new[d]);
         }
     }
+
+    {
+        constexpr static int64_t TUPLE_SIZE = multimesh::utils::TUPLE_SIZE; // in terms of int64_t
+        constexpr static int64_t GLOBAL_ID_INDEX = multimesh::utils::GLOBAL_ID_INDEX;
+        const static std::vector<Eigen::Index> image_map_offsets{
+            Eigen::Index(TUPLE_SIZE + GLOBAL_ID_INDEX)};
+        const static std::vector<Eigen::Index> domain_map_offsets{Eigen::Index(GLOBAL_ID_INDEX)};
+        size_t dim = get_primitive_type_id(top_simplex_type());
+        const auto& top_map = old2new[dim];
+        if (auto parent_ptr = m_multi_mesh_manager.m_parent; parent_ptr != nullptr) {
+            {
+                int64_t child_id = m_multi_mesh_manager.m_child_id;
+                const auto& child_data = parent_ptr->m_multi_mesh_manager.m_children[child_id];
+                const auto handle = child_data.map_handle;
+                auto acc = parent_ptr->create_accessor(handle);
+                auto& attr = acc.attribute();
+                attr.index_remap(top_map, image_map_offsets);
+            }
+
+            {
+                const auto handle = m_multi_mesh_manager.map_to_parent_handle;
+                auto acc = create_accessor(handle);
+                auto& attr = acc.attribute();
+                attr.index_remap(top_map, domain_map_offsets);
+            }
+        }
+
+        for (const auto& child_data : m_multi_mesh_manager.m_children) {
+            {
+                const auto handle = child_data.map_handle;
+                auto acc = create_accessor(handle);
+                auto& attr = acc.attribute();
+                attr.index_remap(top_map, domain_map_offsets);
+            }
+            {
+                const auto handle = child_data.mesh->m_multi_mesh_manager.map_to_parent_handle;
+                auto acc = child_data.mesh->create_accessor(handle);
+                auto& attr = acc.attribute();
+                attr.index_remap(top_map, image_map_offsets);
+            }
+        }
+    }
+
     // Return both maps for custom attribute remapping
     return {new2old, old2new};
 }

@@ -26,7 +26,7 @@ TEST_CASE("energy_valence")
     auto e4 = example_mesh.edge_tuple_between_v1_v2(5, 1, 3);
 
 
-    const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
+    const TriMesh& tri_mesh = static_cast<const TriMesh&>(example_mesh);
     auto handle = tri_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
 
@@ -52,7 +52,7 @@ TEST_CASE("amips2d_values")
 
         TriangleAMIPS amips2d(tri_mesh, uv_handle);
 
-        CHECK(abs(amips2d.get_value(Simplex(PrimitiveType::Face, e1)) - 2.0) < 1e-6);
+        CHECK(abs(amips2d.get_value(Simplex(PrimitiveType::Triangle, e1)) - 2.0) < 1e-6);
     }
     SECTION("random_triangle")
     {
@@ -65,7 +65,7 @@ TEST_CASE("amips2d_values")
             const TriMesh& tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
             TriangleAMIPS amips2d(tri_mesh, uv_handle);
-            CHECK(amips2d.get_value(Simplex(PrimitiveType::Face, e1)) >= 2.);
+            CHECK(amips2d.get_value(Simplex(PrimitiveType::Triangle, e1)) >= 2.);
         }
     }
 }

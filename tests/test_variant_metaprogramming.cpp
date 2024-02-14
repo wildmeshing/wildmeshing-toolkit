@@ -198,7 +198,6 @@ TEST_CASE("test_variant_metaprogramming_return_types", "[meta]")
     using F1ARet = wmtk::utils::metaprogramming::detail::
         ReferenceWrappedFunctorReturnType<TestFunctor, TestRefType::ReferenceTuple>::ReturnType<A>;
     static_assert(std::is_same_v<F1ARet, std::tuple<A, int>>);
-
     using F1ARefRet = wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType<
         TestFunctor,
         TestRefType::ReferenceTuple>::ReturnType<ARef>;

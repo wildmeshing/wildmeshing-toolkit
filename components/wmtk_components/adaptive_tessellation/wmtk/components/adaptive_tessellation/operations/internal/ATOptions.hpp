@@ -7,9 +7,8 @@ namespace wmtk::components {
 struct ATOptions
 {
 public:
-    bool planar;
     int64_t passes;
-    std::string input;
+    std::string parent, child;
     std::string uv_output;
     std::string xyz_output;
     double target_edge_length;
@@ -19,13 +18,16 @@ public:
     double amips_weight;
     bool area_weighted_amips;
     bool intermediate_output;
+    std::string position_path;
+    std::string normal_path;
+    std::string height_path;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     ATOptions,
-    planar,
     passes,
-    input,
+    parent,
+    child,
     uv_output,
     xyz_output,
     target_edge_length,
@@ -34,6 +36,9 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     quadrature_weight,
     amips_weight,
     area_weighted_amips,
-    intermediate_output);
+    intermediate_output,
+    position_path,
+    normal_path,
+    height_path);
 
 } // namespace wmtk::components

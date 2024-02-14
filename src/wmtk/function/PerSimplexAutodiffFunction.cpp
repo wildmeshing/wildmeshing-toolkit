@@ -20,12 +20,12 @@ std::vector<PerSimplexAutodiffFunction::DSVec> PerSimplexAutodiffFunction::get_c
     const simplex::Simplex& domain_simplex,
     const std::optional<simplex::Simplex>& variable_simplex_opt) const
 {
-    ConstAccessor<double> pos = mesh().create_const_accessor(attribute_handle().as<double>());
+    const attribute::Accessor<double> pos = mesh().create_const_accessor(attribute_handle().as<double>());
     return get_coordinates(pos, domain_simplex, variable_simplex_opt);
 }
 
 std::vector<PerSimplexAutodiffFunction::DSVec> PerSimplexAutodiffFunction::get_coordinates(
-    const ConstAccessor<double>& accessor,
+    const attribute::Accessor<double>& accessor,
     const simplex::Simplex& domain_simplex,
     const std::optional<simplex::Simplex>& variable_simplex_opt) const
 {

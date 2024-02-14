@@ -11,3 +11,5 @@ int64_t local_id_table_offset(const Tuple& t);
 std::array<int64_t, 3> lvid_leid_lfid_from_table_offset(int64_t table_offset);
 
 } // namespace wmtk::autogen::tet_mesh
+
+#include "local_id_table_offset.hxx"

@@ -1,5 +1,6 @@
+#include <spdlog/spdlog.h>
+
 #include "AttributeManager.hpp"
-#include <fmt/format.h>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/vector_hash.hpp>
@@ -13,10 +14,6 @@ AttributeManager::AttributeManager(int64_t size)
     , m_capacities(size, 0)
 {}
 
-AttributeManager::AttributeManager(const AttributeManager& o) = default;
-AttributeManager::AttributeManager(AttributeManager&& o) = default;
-AttributeManager& AttributeManager::operator=(const AttributeManager& o) = default;
-AttributeManager& AttributeManager::operator=(AttributeManager&& o) = default;
 
 // attribute directly hashes its "child_hashables" components so it overrides "child_hashes"
 std::map<std::string, const wmtk::utils::Hashable*> AttributeManager::child_hashables() const
@@ -97,11 +94,63 @@ void AttributeManager::reserve_more_attributes(const std::vector<int64_t>& more_
         reserve_more_attributes(dim, more_capacities[dim]);
     }
 }
+void AttributeManager::guarantee_at_least_attributes(int64_t dimension, int64_t size)
+{
+    assert(dimension < this->size());
+
+
+    m_char_attributes[dimension].guarantee_at_least(size);
+    m_long_attributes[dimension].guarantee_at_least(size);
+    m_double_attributes[dimension].guarantee_at_least(size);
+    m_rational_attributes[dimension].guarantee_at_least(size);
+}
+
+void AttributeManager::guarantee_at_least_attributes(
+    const std::vector<int64_t>& at_least_capacities)
+{
+    assert(at_least_capacities.size() == size());
+    for (int64_t dim = 0; dim < size(); ++dim) {
+        guarantee_at_least_attributes(dim, at_least_capacities[dim]);
+    }
+}
+void AttributeManager::guarantee_more_attributes(int64_t dimension, int64_t size)
+{
+    const int64_t current_capacity = m_capacities[dimension];
+    const int64_t target_capacity = current_capacity + size;
+    guarantee_at_least_attributes(dimension, target_capacity);
+}
+void AttributeManager::guarantee_more_attributes(const std::vector<int64_t>& more_capacities)
+{
+    assert(more_capacities.size() == size());
+    for (int64_t dim = 0; dim < size(); ++dim) {
+        guarantee_more_attributes(dim, more_capacities[dim]);
+    }
+}
 void AttributeManager::set_capacities(std::vector<int64_t> capacities)
 {
     assert(capacities.size() == m_capacities.size());
     m_capacities = std::move(capacities);
     reserve_attributes_to_fit();
+}
+void AttributeManager::assert_capacity_valid() const
+{
+    assert(m_char_attributes.size() == m_capacities.size());
+    assert(m_long_attributes.size() == m_capacities.size());
+    assert(m_double_attributes.size() == m_capacities.size());
+    assert(m_rational_attributes.size() == m_capacities.size());
+
+    for (size_t i = 0; i < m_capacities.size(); ++i) {
+        assert(m_capacities[i] > 0);
+        assert(m_char_attributes[i].reserved_size() >= m_capacities[i]);
+        assert(m_long_attributes[i].reserved_size() >= m_capacities[i]);
+        assert(m_double_attributes[i].reserved_size() >= m_capacities[i]);
+        assert(m_rational_attributes[i].reserved_size() >= m_capacities[i]);
+
+        m_char_attributes[i].assert_capacity_valid(m_capacities[i]);
+        m_long_attributes[i].assert_capacity_valid(m_capacities[i]);
+        m_double_attributes[i].assert_capacity_valid(m_capacities[i]);
+        m_rational_attributes[i].assert_capacity_valid(m_capacities[i]);
+    }
 }
 
 void AttributeManager::reserve_attributes_to_fit()
@@ -172,19 +221,19 @@ void AttributeManager::pop_scope(bool apply_updates)
     }
 }
 
-void AttributeManager::clear_current_scope()
+void AttributeManager::rollback_current_scope()
 {
     for (auto& ma : m_char_attributes) {
-        ma.clear_current_scope();
+        ma.rollback_current_scope();
     }
     for (auto& ma : m_long_attributes) {
-        ma.clear_current_scope();
+        ma.rollback_current_scope();
     }
     for (auto& ma : m_double_attributes) {
-        ma.clear_current_scope();
+        ma.rollback_current_scope();
     }
     for (auto& ma : m_rational_attributes) {
-        ma.clear_current_scope();
+        ma.rollback_current_scope();
     }
 }
 
@@ -204,19 +253,19 @@ void AttributeManager::change_to_parent_scope() const
     }
 }
 
-void AttributeManager::change_to_leaf_scope() const
+void AttributeManager::change_to_child_scope() const
 {
     for (auto& ma : m_char_attributes) {
-        ma.change_to_leaf_scope();
+        ma.change_to_child_scope();
     }
     for (auto& ma : m_long_attributes) {
-        ma.change_to_leaf_scope();
+        ma.change_to_child_scope();
     }
     for (auto& ma : m_double_attributes) {
-        ma.change_to_leaf_scope();
+        ma.change_to_child_scope();
     }
     for (auto& ma : m_rational_attributes) {
-        ma.change_to_leaf_scope();
+        ma.change_to_child_scope();
     }
 }
 

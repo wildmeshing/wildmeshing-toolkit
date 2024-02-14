@@ -9,10 +9,12 @@ class DEBUG_TriMesh : public TriMesh //, public virtual DEBUG_Mesh
 public:
     using TriMesh::get_flag_accessor;
     using TriMesh::TriMesh;
-    DEBUG_TriMesh(const TriMesh& m);
     DEBUG_TriMesh(TriMesh&& m);
-    using TriMesh::operator=;
 
+    using TriMesh::id_vertex;
+
+
+    DEBUG_TriMesh& operator=(TriMesh&& o);
 
     bool operator==(const DEBUG_TriMesh& o) const;
     bool operator!=(const DEBUG_TriMesh& o) const;
@@ -22,6 +24,10 @@ public:
     DEBUG_MultiMeshManager& multi_mesh_manager()
     {
         return reinterpret_cast<DEBUG_MultiMeshManager&>(m_multi_mesh_manager);
+    }
+    const DEBUG_MultiMeshManager& multi_mesh_manager() const
+    {
+        return reinterpret_cast<const DEBUG_MultiMeshManager&>(m_multi_mesh_manager);
     }
 
     using TriMesh::m_attribute_manager;
@@ -65,7 +71,7 @@ public:
     void reserve_more_attributes(const std::vector<int64_t>& sizes);
 
 
-    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
     int64_t id(const simplex::Simplex& s) const;
     /**
      * @brief returns the TriMeshOperationExecutor
@@ -74,9 +80,9 @@ public:
 
     using TriMesh::custom_attributes;
 
-    Accessor<int64_t> get_cell_hash_accessor();
+    wmtk::attribute::Accessor<int64_t> get_cell_hash_accessor();
 
-    TriMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<int64_t>& hash_accessor);
+    TriMeshOperationExecutor get_tmoe(const Tuple& t, attribute::Accessor<int64_t>& hash_accessor);
 };
 
 } // namespace wmtk::tests

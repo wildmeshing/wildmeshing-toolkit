@@ -46,9 +46,11 @@
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATData.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATOperations.hpp>
 
+#include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 
 #include <fstream>
 #include <iostream>
+#include <wmtk/components/adaptive_tessellation/operations/internal/AT_debug.cpp>
 
 namespace wmtk::components {
 using namespace operations;
@@ -58,7 +60,8 @@ namespace AT = wmtk::components;
 
 namespace {
 void write(
-    const std::shared_ptr<Mesh>& mesh,
+    const std::shared_ptr<Mesh>& position_mesh,
+    const std::shared_ptr<Mesh>& uv_mesh,
     const std::string& uv_output,
     const std::string& xyz_output,
     const int64_t index,
@@ -69,33 +72,33 @@ void write(
         wmtk::io::ParaviewWriter writer(
             data_dir / (uv_output + "_" + std::to_string(index)),
             "vertices",
-            *mesh,
+            *uv_mesh,
             true,
             true,
             true,
             false);
-        mesh->serialize(writer);
+        uv_mesh->serialize(writer);
         wmtk::io::ParaviewWriter writer3d(
             data_dir / (xyz_output + "_" + std::to_string(index)),
-            "position",
-            *mesh,
+            "positions",
+            *uv_mesh,
             true,
             true,
             true,
             false);
-        mesh->serialize(writer3d);
+        uv_mesh->serialize(writer3d);
     }
 }
 void write_face_attr(
     const std::shared_ptr<Mesh>& mesh,
-    const Accessor<double>& face_error_accessor,
+    wmtk::attribute::Accessor<double>& face_error_accessor,
     nlohmann::ordered_json& jsonData,
     const int64_t index,
     const std::string& filename)
 {
     // Create an array under the key "data"
     jsonData["itr_" + std::to_string(index)] = nlohmann::json::array();
-    for (auto& f : mesh->get_all(PrimitiveType::Face)) {
+    for (auto& f : mesh->get_all(PrimitiveType::Triangle)) {
         double res = face_error_accessor.scalar_attribute(f);
         jsonData["itr_" + std::to_string(index)].push_back(res);
     }
@@ -110,42 +113,6 @@ void write_face_attr(
     }
 }
 
-
-void _debug_texture_integral(
-    std::shared_ptr<Mesh> mesh,
-    wmtk::attribute::MeshAttributeHandle m_uv_handle,
-    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator& image_evaluator,
-    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator& func_evaluator)
-{
-    Accessor<double> m_uv_accessor = mesh->create_accessor(m_uv_handle.as<double>());
-    wmtk::attribute::MeshAttributeHandle image_res_handle =
-        mesh->register_attribute<double>("image_res", PrimitiveType::Face, 1);
-    Accessor<double> image_res_accessor = mesh->create_accessor(image_res_handle.as<double>());
-    wmtk::attribute::MeshAttributeHandle func_res_handle =
-        mesh->register_attribute<double>("func_res", PrimitiveType::Face, 1);
-    Accessor<double> func_res_accessor = mesh->create_accessor(func_res_handle.as<double>());
-    for (auto& f : mesh->get_all(PrimitiveType::Face)) {
-        if (!mesh->is_ccw(f)) {
-            f = mesh->switch_vertex(f);
-        }
-        const Eigen::Vector2d uv0 = m_uv_accessor.vector_attribute(f);
-        const Eigen::Vector2d uv1 = m_uv_accessor.vector_attribute(mesh->switch_vertex(f));
-        const Eigen::Vector2d uv2 =
-            m_uv_accessor.vector_attribute(mesh->switch_vertex(mesh->switch_edge(f)));
-
-        wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
-            analytical_quadrature(func_evaluator);
-        double func_res = analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2);
-        func_res_accessor.scalar_attribute(f) = func_res;
-
-        wmtk::components::function::utils::TextureIntegral texture_integral(image_evaluator);
-        double image_res = texture_integral.get_error_one_triangle_exact(uv0, uv1, uv2);
-        image_res_accessor.scalar_attribute(f) = image_res;
-        std::cout << "func_res: " << func_res << std::endl;
-        std::cout << "image_res: " << image_res << std::endl;
-    }
-    write(mesh, "diff_sampling_debug_og_l4", "at_sampling_flat__xyz_output", 0, 1);
-}
 } // namespace
 
 void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
@@ -159,60 +126,81 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     std::cout << "options.amips_weight: " << options.amips_weight << std::endl;
     std::cout << "options.passes: " << options.passes << std::endl;
     // const std::filesystem::path& file = options.input;
-    std::shared_ptr<Mesh> mesh = cache.read_mesh(options.input);
+
+    std::shared_ptr<Mesh> position_mesh_ptr = cache.read_mesh(options.parent);
+    std::shared_ptr<Mesh> uv_mesh_ptr = cache.read_mesh(options.child);
 
     //////////////////////////////////
     // Storing edge lengths
-    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> funcs = {{
-        std::make_shared<image::SamplingAnalyticFunction>(
-            image::SamplingAnalyticFunction_FunctionType::Linear,
-            1,
-            0,
-            0.),
-        std::make_shared<image::SamplingAnalyticFunction>(
-            image::SamplingAnalyticFunction_FunctionType::Linear,
-            0,
-            1,
-            0.),
-        std::make_shared<image::SamplingAnalyticFunction>(
-            image::SamplingAnalyticFunction_FunctionType::Periodic,
-            2,
-            2,
-            1.)
-        //  std::make_shared<image::SamplingAnalyticFunction>(
-        //      image::SamplingAnalyticFunction_FunctionType::Gaussian,
-        //      0.5,
-        //      0.5,
-        //      1.)
+    std::array<std::shared_ptr<image::Sampling>, 3> funcs = {
+        {std::make_shared<image::SamplingAnalyticFunction>(
+             image::SamplingAnalyticFunction_FunctionType::Linear,
+             1,
+             0,
+             0.),
+         std::make_shared<image::SamplingAnalyticFunction>(
+             image::SamplingAnalyticFunction_FunctionType::Linear,
+             0,
+             1,
+             0.),
+         // std::make_shared<image::SamplingAnalyticFunction>(
+         //     image::SamplingAnalyticFunction_FunctionType::Periodic,
+         //     2,
+         //     2,
+         //     1.)
+         //  std::make_shared<image::SamplingAnalyticFunction>(
+         //      image::SamplingAnalyticFunction_FunctionType::Gaussian,
+         //      0.5,
+         //      0.5,
+         //      1.)
+         std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
 
-    }};
+        }};
 
+    // std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
+    //     ->convert_to_exr(512, 512);
     std::array<std::shared_ptr<image::Image>, 3> images = {
         {std::make_shared<image::Image>(500, 500),
          std::make_shared<image::Image>(500, 500),
          std::make_shared<image::Image>(500, 500)}};
 
-    auto u = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
-    auto v = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
+    auto u_func = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
+    auto v_func = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
     auto height_function = [](const double& u, [[maybe_unused]] const double& v) -> double {
-        // return exp(-(pow(u - 0.5, 2) + pow(v - 0.5, 2)) / (2 * 0.1 * 0.1));
-        return sin(2 * M_PI * u) * cos(2 * M_PI * v);
+        return exp(-(pow(u - 0.5, 2) + pow(v - 0.5, 2)) / (2 * 0.1 * 0.1));
+        // return sin(2 * M_PI * u) * cos(2 * M_PI * v);
     };
-    images[0]->set(u);
-    images[1]->set(v);
+    images[0]->set(u_func);
+    images[1]->set(v_func);
     images[2]->set(height_function);
 
-    // AT::operations::internal::ATData atdata(mesh, funcs);
-    AT::operations::internal::ATData atdata(mesh, images);
+
+    // AT::operations::internal::ATData atdata(
+    //     position_mesh_ptr,
+    //     uv_mesh_ptr,
+    //     options.position_path,
+    //     options.normal_path,
+    //     options.height_path);
+    // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
+    AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, funcs);
+
     // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator image_evaluator(
     //     images,
     //     image::SAMPLING_METHOD::Bicubic,
     //     image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
     // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator func_evaluator(funcs);
-    // atdata._debug_sampling(image_evaluator, func_evaluator);
+    // wmtk::components::operations::internal::_debug_sampling(
+    //     atdata.uv_mesh_ptr(),
+    //     atdata.uv_handle(),
+    //     image_evaluator,
+    //     func_evaluator);
 
-    // _debug_texture_integral(mesh, atdata.uv_handle(), image_evaluator, func_evaluator);
-    // exit(0);
+    // wmtk::components::operations::internal::_debug_texture_integral(
+    //     atdata.uv_mesh_ptr(),
+    //     atdata.uv_handle(),
+    //     image_evaluator,
+    //     func_evaluator);
+
 
     AT::operations::internal::ATOperations at_ops(
         atdata,
@@ -227,31 +215,47 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     at_ops.set_energies();
     nlohmann::ordered_json FaceErrorJson_sum;
     nlohmann::ordered_json FaceErrorJson_amips;
-    write(mesh, options.uv_output, options.xyz_output, 0, options.intermediate_output);
-    write_face_attr(
-        mesh,
-        at_ops.m_sum_error_accessor,
-        FaceErrorJson_sum,
+    write(
+        position_mesh_ptr,
+        uv_mesh_ptr,
+        options.uv_output,
+        options.xyz_output,
         0,
-        options.uv_output + "_face_error.json");
-    write_face_attr(
-        mesh,
-        at_ops.m_amips_error_accessor,
-        FaceErrorJson_amips,
-        0,
-        options.uv_output + "_amips_error.json");
+        options.intermediate_output);
+
+    // write_face_attr(
+    //     position_mesh_ptr,
+    //     at_ops.m_sum_error_accessor,
+    //     FaceErrorJson_sum,
+    //     0,
+    //     options.uv_output + "_face_error.json");
+    // write_face_attr(
+    //     position_mesh_ptr,
+    //     at_ops.m_amips_error_accessor,
+    //     FaceErrorJson_amips,
+    //     0,
+    //     options.uv_output + "_amips_error.json");
     opt_logger().set_level(spdlog::level::level_enum::critical);
 
 
+    // 1.5) FaceSplit
+    // at_ops.AT_face_split(at_ops.m_high_distance_faces_first, at_ops.m_distance_nondiff_energy);
     // 1) wmtk::operations::EdgeSplit
-    at_ops.AT_split_interior(at_ops.m_high_error_edges_first, at_ops.m_sum_energy);
-
-
+    // at_ops.AT_edge_split(at_ops.m_high_distance_edges_first, at_ops.m_distance_nondiff_energy);
+    // at_ops.AT_boundary_edge_split(
+    //     at_ops.m_high_distance_edges_first,
+    //     at_ops.m_distance_nondiff_energy);
     // 3) EdgeSwap
-    at_ops.AT_swap_interior(at_ops.m_valence_improvement, at_ops.m_sum_energy);
+    // at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first, at_ops.m_distance_nondiff_energy);
 
     // 4) Smoothing
-    at_ops.AT_smooth_interior(at_ops.m_sum_energy);
+    // at_ops.AT_smooth_interior(at_ops.m_distance_energy);
+
+    /// split on amips error
+
+    at_ops.AT_edge_split(at_ops.m_long_edges_first, at_ops.m_3d_amips_energy);
+    at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first, at_ops.m_3d_amips_energy);
+    at_ops.AT_smooth_interior(at_ops.m_3d_amips_energy);
 
 
     // nlohmann::ordered_json FaceErrorJson;
@@ -263,6 +267,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         SchedulerStats pass_stats;
         for (auto& op : at_ops.m_ops) pass_stats += scheduler.run_operation_on_all(*op);
 
+        // cache.write_mesh(*uv_mesh_ptr, "bumpyDice_debug_" + std::to_string(i));
         logger().info(
             "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
             pass_stats.number_of_performed_operations(),
@@ -272,20 +277,26 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
-        write_face_attr(
-            mesh,
-            at_ops.m_sum_error_accessor,
-            FaceErrorJson_sum,
-            i + 1,
-            options.uv_output + "_face_error.json");
-        write_face_attr(
-            mesh,
-            at_ops.m_amips_error_accessor,
-            FaceErrorJson_amips,
-            i + 1,
-            options.uv_output + "_amips_error.json");
+        // write_face_attr(
+        //     uv_mesh_ptr,
+        //     at_ops.m_distance_error_accessor,
+        //     FaceErrorJson_sum,
+        //     i + 1,
+        //     options.uv_output + "_distance_error.json");
+        // write_face_attr(
+        //     uv_mesh_ptr,
+        //     at_ops.m_amips_error_accessor,
+        //     FaceErrorJson_amips,
+        //     i + 1,
+        //     options.uv_output + "_amips_error.json");
 
-        write(mesh, options.uv_output, options.xyz_output, i + 1, options.intermediate_output);
+        write(
+            uv_mesh_ptr,
+            uv_mesh_ptr,
+            options.uv_output,
+            options.xyz_output,
+            i + 1,
+            options.intermediate_output);
     }
 
     // write(mesh, "no_operation", 0, options.intermediate_output);

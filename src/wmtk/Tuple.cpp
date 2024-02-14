@@ -8,16 +8,16 @@
 
 namespace wmtk {
 Tuple::Tuple(
-    int64_t local_vid,
-    int64_t local_eid,
-    int64_t local_fid,
+    int8_t local_vid,
+    int8_t local_eid,
+    int8_t local_fid,
     int64_t global_cid,
-    int64_t hash)
+    int8_t hash)
     : m_local_vid(local_vid)
     , m_local_eid(local_eid)
     , m_local_fid(local_fid)
-    , m_global_cid(global_cid)
     , m_hash(hash)
+    , m_global_cid(global_cid)
 {}
 
 //         v2

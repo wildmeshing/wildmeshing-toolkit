@@ -12,25 +12,25 @@ class UpdateEdgeOperationMultiMeshMapFunctor;
 class TetMesh : public Mesh
 {
 public:
+    friend class Mesh;
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     TetMesh();
-    TetMesh(const TetMesh& o);
+    TetMesh(const TetMesh& o) = delete;
     TetMesh(TetMesh&& o);
-    TetMesh& operator=(const TetMesh& o);
+    TetMesh& operator=(const TetMesh& o) = delete;
     TetMesh& operator=(TetMesh&& o);
 
-    int64_t top_cell_dimension() const override { return 3; }
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
-    bool is_boundary(const Tuple& tuple, PrimitiveType pt) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const override;
-    bool is_boundary_edge(const Tuple& tuple) const override;
+    bool is_boundary(PrimitiveType pt, const Tuple& tuple) const override;
+    bool is_boundary_vertex(const Tuple& tuple) const;
+    bool is_boundary_edge(const Tuple& tuple) const;
     bool is_boundary_face(const Tuple& tuple) const;
 
-    bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const override;
+    bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const override;
 
     void initialize(
         Eigen::Ref<const RowVectors4l> TV,
@@ -47,8 +47,15 @@ public:
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const override;
 
+    Tuple switch_vertex(const Tuple& tuple) const;
+    Tuple switch_edge(const Tuple& tuple) const;
+    Tuple switch_face(const Tuple& tuple) const;
+    Tuple switch_tetrahedron(const Tuple& tuple) const;
+
+
 protected:
-    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    void make_cached_accessors();
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
     int64_t id(const simplex::Simplex& simplex) const
     {
         return id(simplex.tuple(), simplex.primitive_type());
@@ -57,7 +64,7 @@ protected:
 
     int64_t id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
     int64_t id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
-    int64_t id_face(const Tuple& tuple) const { return id(tuple, PrimitiveType::Face); }
+    int64_t id_face(const Tuple& tuple) const { return id(tuple, PrimitiveType::Triangle); }
     int64_t id_tet(const Tuple& tuple) const { return id(tuple, PrimitiveType::Tetrahedron); }
 
     /**
@@ -82,10 +89,36 @@ protected:
     TypedAttributeHandle<int64_t> m_tf_handle;
     TypedAttributeHandle<int64_t> m_tt_handle;
 
+    std::unique_ptr<attribute::Accessor<int64_t>> m_vt_accessor;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_et_accessor;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_ft_accessor;
+
+    std::unique_ptr<attribute::Accessor<int64_t>> m_tv_accessor;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_te_accessor;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_tf_accessor;
+    std::unique_ptr<attribute::Accessor<int64_t>> m_tt_accessor;
+
     Tuple vertex_tuple_from_id(int64_t id) const;
     Tuple edge_tuple_from_id(int64_t id) const;
     Tuple face_tuple_from_id(int64_t id) const;
     Tuple tet_tuple_from_id(int64_t id) const;
 };
+
+inline Tuple TetMesh::switch_vertex(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Vertex);
+}
+inline Tuple TetMesh::switch_edge(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Edge);
+}
+inline Tuple TetMesh::switch_face(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Triangle);
+}
+inline Tuple TetMesh::switch_tetrahedron(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Tetrahedron);
+}
 
 } // namespace wmtk

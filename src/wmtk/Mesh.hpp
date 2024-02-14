@@ -1,6 +1,5 @@
 #pragma once
 
-#define MTAO_PUBLICIZING_ID
 #include <Eigen/Core>
 
 #include <initializer_list>
@@ -12,7 +11,7 @@
 
 
 // need to return this header
-#include "Accessor.hpp"
+#include "attribute/Accessor.hpp"
 
 // is a member of the Mesh class
 #include "MultiMeshManager.hpp"
@@ -44,7 +43,7 @@ namespace wmtk {
 namespace attribute {
 class AttributeManager;
 template <typename T>
-class TupleAccessor;
+class Accessor;
 
 } // namespace attribute
 namespace operations {
@@ -96,11 +95,11 @@ public:
     template <typename T>
     friend class attribute::AccessorBase;
     template <typename T>
-    friend class attribute::TupleAccessor;
+    friend class attribute::Accessor;
     friend class io::ParaviewWriter;
     friend class HDF5Reader;
     friend class multimesh::attribute::UseParentScopeRAII;
-    friend class MultiMeshManager;
+    friend class multimesh::MultiMeshManager;
     friend class attribute::AttributeManager;
     template <int64_t cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshSimplexVisitor;
@@ -114,6 +113,7 @@ public:
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::RawSimplex;
+    friend class simplex::SimplexCollection;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
     friend class operations::EdgeCollapse;
@@ -123,15 +123,15 @@ public:
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
         const simplex::SimplexCollection& vertex_closed_star,
-        Accessor<int64_t>& parent_hash_accessor);
+        attribute::Accessor<int64_t>& parent_hash_accessor);
 
     friend void operations::utils::update_vertex_operation_hashes(
         Mesh& m,
         const Tuple& vertex,
-        Accessor<int64_t>& hash_accessor);
+        attribute::Accessor<int64_t>& hash_accessor);
 
 
-    virtual int64_t top_cell_dimension() const = 0;
+    int64_t top_cell_dimension() const;
     PrimitiveType top_simplex_type() const;
 
     // attribute directly hashes its "children" components so it overrides "child_hashes"
@@ -144,12 +144,12 @@ public:
     // maximum primitive type id for supported attribute primitive locations
     Mesh(const int64_t& dimension, const int64_t& max_primitive_type_id, PrimitiveType hash_type);
     Mesh(Mesh&& other);
-    Mesh(const Mesh& other);
-    Mesh& operator=(const Mesh& other);
+    Mesh(const Mesh& other) = delete;
+    Mesh& operator=(const Mesh& other) = delete;
     Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
-    void serialize(MeshWriter& writer) const;
+    void serialize(MeshWriter& writer, const Mesh* local_root = nullptr) const;
 
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
@@ -196,16 +196,6 @@ public:
         bool replace = false,
         T default_value = T(0));
 
-protected:
-    /* @brief registers an attribute without assuming the mesh exists */
-    template <typename T>
-    [[deprecated]] [[nodiscard]] attribute::TypedAttributeHandle<T> register_attribute_builtin(
-        const std::string& name,
-        PrimitiveType type,
-        int64_t size,
-        bool replace,
-        T default_value);
-
 
 public:
     template <typename T>
@@ -225,18 +215,20 @@ public:
 
 
     template <typename T>
-    Accessor<T> create_accessor(const attribute::MeshAttributeHandle& handle);
+    attribute::Accessor<T> create_accessor(const attribute::MeshAttributeHandle& handle);
+    template <typename T>
+    const attribute::Accessor<T> create_const_accessor(
+        const attribute::MeshAttributeHandle& handle);
 
     template <typename T>
-    ConstAccessor<T> create_const_accessor(const attribute::MeshAttributeHandle& handle) const;
+    const attribute::Accessor<T> create_const_accessor(
+        const attribute::MeshAttributeHandle& handle) const;
 
     template <typename T>
-    Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
+    attribute::Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
 
     template <typename T>
-    ConstAccessor<T> create_const_accessor(const TypedAttributeHandle<T>& handle) const;
-    template <typename T>
-    ConstAccessor<T> create_accessor(const TypedAttributeHandle<T>& handle) const;
+    const attribute::Accessor<T> create_const_accessor(const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
     int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
@@ -273,13 +265,14 @@ public:
     decltype(auto) parent_scope(Functor&& f, Args&&... args) const;
 
 
-    ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
-    ConstAccessor<int64_t> get_cell_hash_accessor() const;
-    ConstAccessor<char> get_const_flag_accessor(PrimitiveType type) const;
-    ConstAccessor<int64_t> get_const_cell_hash_accessor() const;
+    const attribute::Accessor<char> get_flag_accessor(PrimitiveType type) const;
+    const attribute::Accessor<int64_t> get_cell_hash_accessor() const;
+    const attribute::Accessor<char> get_const_flag_accessor(PrimitiveType type) const;
+    const attribute::Accessor<int64_t> get_const_cell_hash_accessor() const;
 
 
-    int64_t get_cell_hash(int64_t cell_index, const ConstAccessor<int64_t>& hash_accessor) const;
+    int64_t get_cell_hash(int64_t cell_index, const attribute::Accessor<int64_t>& hash_accessor)
+        const;
     // utility function for getting a cell's hash - slow because it creates a new accessor
     int64_t get_cell_hash_slow(int64_t cell_index) const;
 
@@ -290,8 +283,8 @@ public:
     virtual bool is_connectivity_valid() const = 0;
 
 protected: // member functions
-    Accessor<char> get_flag_accessor(PrimitiveType type);
-    Accessor<int64_t> get_cell_hash_accessor();
+    attribute::Accessor<char> get_flag_accessor(PrimitiveType type);
+    attribute::Accessor<int64_t> get_cell_hash_accessor();
 
     /**
      * @brief update hash in given cell
@@ -299,7 +292,7 @@ protected: // member functions
      * @param cell tuple in which the hash should be updated
      * @param hash_accessor hash accessor
      */
-    void update_cell_hash(const Tuple& cell, Accessor<int64_t>& hash_accessor);
+    void update_cell_hash(const Tuple& cell, attribute::Accessor<int64_t>& hash_accessor);
 
     /**
      * @brief update hashes in given cells
@@ -307,7 +300,9 @@ protected: // member functions
      * @param cells vector of tuples in which the hash should be updated
      * @param hash_accessor hash accessor
      */
-    void update_cell_hashes(const std::vector<Tuple>& cells, Accessor<int64_t>& hash_accessor);
+    void update_cell_hashes(
+        const std::vector<Tuple>& cells,
+        attribute::Accessor<int64_t>& hash_accessor);
     /**
      * @brief same as `update_cell_hashes` but slow because it creates a new accessor
      */
@@ -317,7 +312,7 @@ protected: // member functions
      * @param cell tuple in which the hash should be updated
      * @param hash_accessor hash accessor
      */
-    void update_cell_hash(const int64_t cell_index, Accessor<int64_t>& hash_accessor);
+    void update_cell_hash(const int64_t cell_index, attribute::Accessor<int64_t>& hash_accessor);
 
     /**
      * @brief update hashes in given cells
@@ -327,7 +322,7 @@ protected: // member functions
      */
     void update_cell_hashes(
         const std::vector<int64_t>& cell_indices,
-        Accessor<int64_t>& hash_accessor);
+        attribute::Accessor<int64_t>& hash_accessor);
 
     void update_cell_hashes_slow(const std::vector<Tuple>& cells);
 
@@ -341,16 +336,13 @@ protected: // member functions
      * @param hash_accessor hash accessor
      * @return tuple with updated hash
      */
-    Tuple resurrect_tuple(const Tuple& tuple, const ConstAccessor<int64_t>& hash_accessor) const;
+    Tuple resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+        const;
 
     /**
      * @brief same as `resurrect_tuple` but slow because it creates a new accessor
      */
     Tuple resurrect_tuple_slow(const Tuple& tuple);
-
-    // provides new simplices - should ONLY be called in our atomic topological operations
-    // all returned simplices are active (i.e their flags say they exist)
-    [[nodiscard]] std::vector<int64_t> request_simplex_indices(PrimitiveType type, int64_t count);
 
 
 protected:
@@ -374,6 +366,28 @@ protected:
     void reserve_attributes(int64_t dimension, int64_t size);
 
 
+    // specifies the number of simplices of each type and resizes attributes appropritely
+    void set_capacities(std::vector<int64_t> capacities);
+
+    // reserves extra attributes than necessary right now
+    void reserve_more_attributes(PrimitiveType type, int64_t size);
+    // reserves extra attributes than necessary right now, does not pay attention
+    void reserve_more_attributes(const std::vector<int64_t>& sizes);
+
+    // makes sure that there are at least `size` simples of type `type` avialable
+    void guarantee_more_attributes(PrimitiveType type, int64_t size);
+    // makes sure that there are at least `size` simplices avialable at every dimension
+    void guarantee_more_attributes(const std::vector<int64_t>& sizes);
+
+    // makes sure that there are at least `size` simples of type `type` avialable
+    void guarantee_at_least_attributes(PrimitiveType type, int64_t size);
+    // makes sure that there are at least `size` simplices avialable at every dimension
+    void guarantee_at_least_attributes(const std::vector<int64_t>& sizes);
+
+    // provides new simplices - should ONLY be called in our atomic topological operations
+    // all returned simplices are active (i.e their flags say they exist)
+    [[nodiscard]] std::vector<int64_t> request_simplex_indices(PrimitiveType type, int64_t count);
+
 public:
     /**
      * @brief switch the orientation of the Tuple of the given dimension
@@ -387,10 +401,7 @@ public:
     */
     virtual Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const = 0;
 
-    Tuple switch_vertex(const Tuple& tuple) const;
-    Tuple switch_edge(const Tuple& tuple) const;
-    Tuple switch_face(const Tuple& tuple) const;
-    Tuple switch_tetrahedron(const Tuple& tuple) const;
+    // NOTE: adding per-simplex utility functions here is _wrong_ and will be removed
 
 
     // Performs a sequence of switch_tuple operations in the order specified in op_sequence.
@@ -451,15 +462,10 @@ public:
      * @return true if this simplex lies on the boundary of the mesh
      * @return false otherwise
      */
-    virtual bool is_boundary(const Tuple& tuple, PrimitiveType pt) const = 0;
-    virtual bool is_boundary_vertex(const Tuple& tuple) const = 0;
-    virtual bool is_boundary_edge(const Tuple& tuple) const
-    {
-        throw std::runtime_error("is_boundary_edge dosent make sense for this mesh");
-    }
+    virtual bool is_boundary(PrimitiveType, const Tuple& tuple) const = 0;
 
 
-    bool is_hash_valid(const Tuple& tuple, const ConstAccessor<int64_t>& hash_accessor) const;
+    bool is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const;
 
     /**
      * @brief check validity of tuple including its hash
@@ -470,7 +476,8 @@ public:
      * @return true if is valid
      * @return false
      */
-    virtual bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const = 0;
+    virtual bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+        const = 0;
     bool is_valid_slow(const Tuple& tuple) const;
 
 
@@ -502,6 +509,12 @@ public:
      * @brief returns the direct multimesh child meshes for the current mesh
      */
     std::vector<std::shared_ptr<Mesh>> get_child_meshes() const;
+
+    /**
+     * @brief returns all multimesh child meshes
+     */
+    std::vector<std::shared_ptr<Mesh>> get_all_child_meshes() const;
+
 
     /**
      * @brief returns a unique identifier for this mesh within a single multimesh structure
@@ -731,6 +744,15 @@ public:
         const simplex::Simplex& my_simplex) const;
 
 
+    /*
+     * @brief identifies if this simplex can be mapped to another mesh
+     *
+     * This tries to map a simplex to another mesh and wil return true if a simplex is found.
+     * Note that the cost of this is almost hte same as mapping, so it is more efficient to map and
+     * check if the returned vector is empty rather than call this function.
+     */
+    bool can_map(const Mesh& other_mesh, const simplex::Simplex& my_simplex) const;
+
     /**
      * @brief wrapper function to update hashes (for parent mesh *this and its child meshes) after
      * vertex operations
@@ -738,9 +760,23 @@ public:
      * @param vertex operating vertex tuple
      * @param hash_accessor hash accesor of the parent mesh (*this)
      */
-    void update_vertex_operation_hashes(const Tuple& vertex, Accessor<int64_t>& hash_accessor);
+    void update_vertex_operation_hashes(
+        const Tuple& vertex,
+        attribute::Accessor<int64_t>& hash_accessor);
 
-private:
+
+    /**
+     * @brief returns if the mesh has a child mesh in the given dimension
+     *
+     * @param dimension
+     * @return true
+     * @return false
+     */
+    bool has_child_mesh_in_dimension(int64_t dimension) const
+    {
+        return m_multi_mesh_manager.has_child_mesh_in_dimension(dimension);
+    }
+
     /*
      * @brief returns if the other mesh is part of the same multi-mesh structure
      * @param other the other being mesh being checked
@@ -763,33 +799,23 @@ protected:
                     d-3 -> tetrahedron
         * @return int64_t id of the entity
     */
-#if defined(MTAO_PUBLICIZING_ID)
-public: // TODO remove
-#else
+
 protected:
-#endif
-    virtual int64_t id(const Tuple& tuple, PrimitiveType type) const = 0;
-    int64_t id(const simplex::Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
+    int64_t id(const simplex::Simplex& s) const;
 
 
     template <typename T>
-    static auto& get_index_access(attribute::MutableAccessor<T>& attr)
+    static auto& get_index_access(attribute::Accessor<T>& attr)
     {
         return attr.index_access();
     }
     template <typename T>
-    static auto& get_index_access(const attribute::ConstAccessor<T>& attr)
+    static auto& get_index_access(const attribute::Accessor<T>& attr)
     {
         return attr.index_access();
     }
 
-    // specifies the number of simplices of each type and resizes attributes appropritely
-    void set_capacities(std::vector<int64_t> capacities);
-
-    // reserves extra attributes than necessary right now
-    void reserve_more_attributes(PrimitiveType type, int64_t size);
-    // reserves extra attributes than necessary right now
-    void reserve_more_attributes(const std::vector<int64_t>& sizes);
 
     // std::shared_ptr<AccessorCache> request_accesor_cache();
     //[[nodiscard]] AccessorScopeHandle push_accesor_scope();
@@ -798,8 +824,9 @@ protected: // THese are protected so unit tests can access - do not use manually
            // classes?
     attribute::AttributeManager m_attribute_manager;
 
-    MultiMeshManager m_multi_mesh_manager;
+    multimesh::MultiMeshManager m_multi_mesh_manager;
 
+    int64_t m_top_cell_dimension = -1;
 
 private:
     // PImpl'd manager of per-thread update stacks
@@ -835,23 +862,19 @@ private:
 
 
 template <typename T>
-Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
+inline attribute::Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
 {
-    return Accessor<T>(*this, handle);
+    return attribute::Accessor<T>(*this, handle);
 }
 template <typename T>
-ConstAccessor<T> Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
+inline const attribute::Accessor<T> Mesh::create_const_accessor(
+    const TypedAttributeHandle<T>& handle) const
 {
-    return ConstAccessor<T>(*this, handle);
-}
-template <typename T>
-ConstAccessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle) const
-{
-    return create_const_accessor(handle);
+    return attribute::Accessor<T>(*this, handle);
 }
 
 template <typename T>
-Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
+inline attribute::Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());
@@ -859,7 +882,17 @@ Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
 }
 
 template <typename T>
-ConstAccessor<T> Mesh::create_const_accessor(const attribute::MeshAttributeHandle& handle) const
+inline const attribute::Accessor<T> Mesh::create_const_accessor(
+    const attribute::MeshAttributeHandle& handle)
+{
+    assert(&handle.mesh() == this);
+    assert(handle.holds<T>());
+    return create_const_accessor(handle.as<T>());
+}
+
+template <typename T>
+inline const attribute::Accessor<T> Mesh::create_const_accessor(
+    const attribute::MeshAttributeHandle& handle) const
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());
@@ -912,22 +945,6 @@ inline decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args) const
     return std::invoke(std::forward<Functor>(f), std::forward<Args>(args)...);
 }
 
-inline Tuple Mesh::switch_vertex(const Tuple& tuple) const
-{
-    return switch_tuple(tuple, PrimitiveType::Vertex);
-}
-inline Tuple Mesh::switch_edge(const Tuple& tuple) const
-{
-    return switch_tuple(tuple, PrimitiveType::Edge);
-}
-inline Tuple Mesh::switch_face(const Tuple& tuple) const
-{
-    return switch_tuple(tuple, PrimitiveType::Face);
-}
-inline Tuple Mesh::switch_tetrahedron(const Tuple& tuple) const
-{
-    return switch_tuple(tuple, PrimitiveType::Tetrahedron);
-}
 #if defined(__cpp_concepts)
 template <std::forward_iterator ContainerType>
 #else
@@ -944,14 +961,19 @@ Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequence) con
 
     for (const PrimitiveType primitive : sequence) {
         // for top level simplices we cannot navigate across boundaries
-        if (primitive == top_type && is_boundary(r, boundary_pt)) {
-            assert(!is_boundary(r, boundary_pt));
+        if (primitive == top_type && is_boundary(boundary_pt, r)) {
+            assert(!is_boundary(boundary_pt, r));
             r = {};
             return r;
         }
         r = switch_tuple(r, primitive);
     }
     return r;
+}
+
+inline int64_t Mesh::top_cell_dimension() const
+{
+    return m_top_cell_dimension;
 }
 
 #if defined(__cpp_concepts)
@@ -969,4 +991,11 @@ Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType& sequen
     return r;
 }
 
+inline int64_t Mesh::id(const simplex::Simplex& s) const
+{
+    if (s.m_index == -1) {
+        s.m_index = id(s.tuple(), s.primitive_type());
+    }
+    return s.m_index;
+}
 } // namespace wmtk

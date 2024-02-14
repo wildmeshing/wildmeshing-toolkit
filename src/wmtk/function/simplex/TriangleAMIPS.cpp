@@ -24,8 +24,9 @@ DScalar TriangleAMIPS::eval(
 {
     assert(coords.size() == 3);
 
-    if (domain_simplex.primitive_type() != PrimitiveType::Face)
-        throw std::runtime_error("TriangleAMIPS only supports faces meshes");
+    assert(
+        domain_simplex.primitive_type() ==
+        PrimitiveType::Triangle); // "TriangleAMIPS only supports faces meshes"
 
     switch (embedded_dimension()) {
     case 2: {
@@ -36,8 +37,10 @@ DScalar TriangleAMIPS::eval(
         DSVec3 a = coords[0], b = coords[1], c = coords[2];
         return utils::amips(a, b, c);
     }
-    default: throw std::runtime_error("TriangleAMIPS only supports 2D and 3D meshes");
+    default: assert(false); // "TriangleAMIPS only supports 2D and 3D meshes"
     }
+
+    return DScalar();
 }
 
 } // namespace wmtk::function

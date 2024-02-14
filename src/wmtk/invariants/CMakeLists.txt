@@ -1,12 +1,23 @@
 set(SRC_FILES
     Invariant.hpp
     Invariant.cpp
+
+    EnvelopeInvariant.hpp
+    EnvelopeInvariant.cpp
+
+    StateChanges.hpp
+    StateChanges.cpp
+
     FunctionInvariant.hpp
     FunctionInvariant.cpp
     InvariantCollection.hpp
     InvariantCollection.cpp
     InteriorSimplexInvariant.hpp
     InteriorSimplexInvariant.cpp
+
+    BoundarySimplexInvariant.hpp
+    BoundarySimplexInvariant.cpp
+
     InteriorVertexInvariant.hpp
     InteriorVertexInvariant.cpp
     InteriorEdgeInvariant.hpp
@@ -44,6 +55,9 @@ set(SRC_FILES
 
     MaxFunctionInvariant.hpp
     MaxFunctionInvariant.cpp
+
+    FusionEdgeInvariant.hpp
+    FusionEdgeInvariant.cpp
 
 
     internal/ConstantInvariant.hpp

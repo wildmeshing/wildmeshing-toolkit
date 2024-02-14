@@ -1,0 +1,33 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required":[
+            "input",
+            "fusion_X",
+            "fusion_Y",
+            "fusion_Z",
+            "name"
+        ]
+    },
+    {
+        "pointer": "/input",
+        "type": "string"
+    },
+    {
+        "pointer": "/fusion_X",
+        "type": "bool"  
+    },
+    {
+        "pointer": "/fusion_Y",
+        "type": "bool"  
+    },
+    {
+        "pointer": "/fusion_Z",
+        "type": "bool" 
+    },
+    {
+        "pointer": "/name",
+        "type": "string"
+    }
+]

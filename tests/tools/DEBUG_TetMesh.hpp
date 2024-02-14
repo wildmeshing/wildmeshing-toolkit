@@ -1,13 +1,13 @@
 #pragma once
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TetMeshOperationExecutor.hpp>
-
+#include "DEBUG_MultiMeshManager.hpp"
 namespace wmtk::tests_3d {
 class DEBUG_TetMesh : public TetMesh
 {
 public:
+    using TetMesh::get_flag_accessor;
     using TetMesh::TetMesh;
-    DEBUG_TetMesh(const TetMesh& m);
     DEBUG_TetMesh(TetMesh&& m);
     using TetMesh::operator=;
 
@@ -16,6 +16,13 @@ public:
 
     // uses spdlog to print out a variety of information about the mesh
     void print_state() const;
+
+    wmtk::tests::DEBUG_MultiMeshManager& multi_mesh_manager()
+    {
+        return reinterpret_cast<wmtk::tests::DEBUG_MultiMeshManager&>(m_multi_mesh_manager);
+    }
+
+    using TetMesh::m_attribute_manager;
 
 
     auto edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2, const int64_t tid) const
@@ -43,6 +50,12 @@ public:
     Tuple tuple_from_tet_id(const int64_t tid);
 
     template <typename T>
+    attribute::AccessorBase<T> create_base_accessor(const TypedAttributeHandle<T>& handle)
+    {
+        return attribute::AccessorBase<T>(*this, handle);
+    }
+
+    template <typename T>
     attribute::AccessorBase<T> create_const_base_accessor(
         const TypedAttributeHandle<T>& handle) const
     {
@@ -64,16 +77,22 @@ public:
 
     void reserve_attributes(PrimitiveType type, int64_t size);
 
-    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
     int64_t id(const simplex::Simplex& s) const;
 
     using TetMesh::tuple_from_id;
 
-    Accessor<int64_t> get_cell_hash_accessor();
+    attribute::Accessor<int64_t> get_cell_hash_accessor();
 
-    TetMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<int64_t>& hash_accessor);
+    TetMeshOperationExecutor get_tmoe(const Tuple& t, attribute::Accessor<int64_t>& hash_accessor);
 
     int64_t valid_primitive_count(PrimitiveType type) const;
+
+    Eigen::Matrix<int64_t, 4, 1> tv_from_tid(const int64_t tid) const
+    {
+        auto tv_accessor = create_base_accessor<int64_t>(t_handle(PrimitiveType::Vertex));
+        return tv_accessor.vector_attribute(tid);
+    }
 };
 
 } // namespace wmtk::tests_3d
