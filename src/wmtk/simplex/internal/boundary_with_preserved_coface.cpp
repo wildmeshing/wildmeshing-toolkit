@@ -1,5 +1,5 @@
-#include "coface_preserving_boundary.hpp"
 #include <wmtk/Mesh.hpp>
+#include "coface_preserving_boundary.hpp"
 
 namespace wmtk::simplex {
 
@@ -12,7 +12,7 @@ std::vector<Tuple> coface_preserving_boundary_tuples(
     std::vector<Tuple> ret;
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
-    constexpr static PrimitiveType PF = PrimitiveType::Face;
+    constexpr static PrimitiveType PF = PrimitiveType::Triangle;
     constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
     if (coface_pt < pt) {
         ret.emplace_back(t);
@@ -23,7 +23,7 @@ std::vector<Tuple> coface_preserving_boundary_tuples(
     } break;
     case PrimitiveType::Edge: {
     } break;
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         if (coface_pt < PE) {
             ret.emplace_back(m.switch_tuples(t, {PE}));
         }
