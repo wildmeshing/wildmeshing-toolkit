@@ -33,8 +33,12 @@ public:
     using BaseType = AccessorBase<T>;
     using CachingBaseType = CachingAccessor<T>;
 
-    using ConstMapResult = typename BaseType::ConstMapResult; // Eigen::Map<const VectorX<T>>
-    using MapResult = typename BaseType::MapResult; // Eigen::Map<VectorX<T>>
+    // Eigen::Map<VectorX<T>>
+    template <int D = Eigen::Dynamic>
+    using MapResult = internal::MapResult<T,D>;
+    // Eigen::Map<const VectorX<T>>
+    template <int D = Eigen::Dynamic>
+    using ConstMapResult = internal::ConstMapResult<T,D>;
 
     using CachingBaseType::CachingBaseType;
 
@@ -45,8 +49,10 @@ public:
     T const_scalar_attribute(const Tuple& t) const;
     T& scalar_attribute(const Tuple& t);
 
-    ConstMapResult const_vector_attribute(const Tuple& t) const;
-    MapResult vector_attribute(const Tuple& t);
+    template <int D = Eigen::Dynamic>
+    ConstMapResult<D> const_vector_attribute(const Tuple& t) const;
+    template <int D = Eigen::Dynamic>
+    MapResult<D> vector_attribute(const Tuple& t);
 
 
     using BaseType::dimension; // const() -> int64_t

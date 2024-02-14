@@ -558,7 +558,7 @@ void Tri_AMIPS_hessian(const std::array<double, 6>& T, Eigen::Matrix2d& result_0
 
 template <int64_t NV, int64_t DIM>
 std::array<double, NV * DIM> unbox(
-    const std::vector<std::decay_t<typename attribute::AccessorBase<double>::ConstMapResult>>& data,
+    const std::vector<std::decay_t<typename attribute::ConstMapResult<double>>>& data,
     const int64_t index)
 {
     std::array<double, NV * DIM> res;

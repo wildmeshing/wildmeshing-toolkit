@@ -108,10 +108,10 @@ void TetMesh::initialize(
 
     // iterate over the matrices and fill attributes
     for (int64_t i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
-        tv_accessor.index_access().vector_attribute(i) = TV.row(i).transpose();
-        te_accessor.index_access().vector_attribute(i) = TE.row(i).transpose();
-        tf_accessor.index_access().vector_attribute(i) = TF.row(i).transpose();
-        tt_accessor.index_access().vector_attribute(i) = TT.row(i).transpose();
+        tv_accessor.index_access().vector_attribute<4>(i) = TV.row(i).transpose();
+        te_accessor.index_access().vector_attribute<6>(i) = TE.row(i).transpose();
+        tf_accessor.index_access().vector_attribute<4>(i) = TF.row(i).transpose();
+        tt_accessor.index_access().vector_attribute<4>(i) = TT.row(i).transpose();
         t_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
     // m_vt
@@ -141,7 +141,7 @@ void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T)
 Tuple TetMesh::vertex_tuple_from_id(int64_t id) const
 {
     int64_t t = m_vt_accessor->index_access().const_scalar_attribute(id);
-    auto tv = m_tv_accessor->index_access().const_vector_attribute(t);
+    auto tv = m_tv_accessor->index_access().const_vector_attribute<4>(t);
     int64_t lvid = -1;
 
     for (int64_t i = 0; i < 4; ++i) {
@@ -167,7 +167,7 @@ Tuple TetMesh::vertex_tuple_from_id(int64_t id) const
 Tuple TetMesh::edge_tuple_from_id(int64_t id) const
 {
     int64_t t = m_et_accessor->index_access().const_scalar_attribute(id);
-    auto te = m_te_accessor->index_access().const_vector_attribute(t);
+    auto te = m_te_accessor->index_access().const_vector_attribute<6>(t);
 
     int64_t leid = -1;
 
@@ -194,7 +194,7 @@ Tuple TetMesh::edge_tuple_from_id(int64_t id) const
 Tuple TetMesh::face_tuple_from_id(int64_t id) const
 {
     int64_t t = m_ft_accessor->index_access().const_scalar_attribute(id);
-    auto tf = m_tf_accessor->index_access().const_vector_attribute(t);
+    auto tf = m_tf_accessor->index_access().const_vector_attribute<4>(t);
 
     int64_t lfid = -1;
 
@@ -261,17 +261,17 @@ int64_t TetMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
-        auto tv = m_tv_accessor->const_vector_attribute(tuple);
+        auto tv = m_tv_accessor->const_vector_attribute<4>(tuple);
         return tv(tuple.m_local_vid);
         break;
     }
     case PrimitiveType::Edge: {
-        auto te = m_te_accessor->const_vector_attribute(tuple);
+        auto te = m_te_accessor->const_vector_attribute<6>(tuple);
         return te(tuple.m_local_eid);
         break;
     }
     case PrimitiveType::Triangle: {
-        auto tf = m_tf_accessor->const_vector_attribute(tuple);
+        auto tf = m_tf_accessor->const_vector_attribute<4>(tuple);
         return tf(tuple.m_local_fid);
         break;
     }
@@ -297,7 +297,7 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         const int64_t geid = id(tuple, PrimitiveType::Edge);
         const int64_t gfid = id(tuple, PrimitiveType::Triangle);
 
-        auto tt = m_tt_accessor->const_vector_attribute(tuple);
+        auto tt = m_tt_accessor->const_vector_attribute<4>(tuple);
 
         int64_t gcid_new = tt(tuple.m_local_fid);
 
@@ -311,11 +311,11 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 
         int64_t lvid_new = -1, leid_new = -1, lfid_new = -1;
 
-        auto tv = m_tv_accessor->index_access().const_vector_attribute(gcid_new);
+        auto tv = m_tv_accessor->index_access().const_vector_attribute<4>(gcid_new);
 
-        auto te = m_te_accessor->index_access().const_vector_attribute(gcid_new);
+        auto te = m_te_accessor->index_access().const_vector_attribute<6>(gcid_new);
 
-        auto tf = m_tf_accessor->index_access().const_vector_attribute(gcid_new);
+        auto tf = m_tf_accessor->index_access().const_vector_attribute<4>(gcid_new);
 
         for (int64_t i = 0; i < 4; ++i) {
             if (tv(i) == gvid) {
@@ -387,7 +387,7 @@ bool TetMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 bool TetMesh::is_boundary_face(const Tuple& tuple) const
 {
     const attribute::Accessor<int64_t> tt_accessor = create_const_accessor<int64_t>(m_tt_handle);
-    return tt_accessor.const_vector_attribute(tuple)(tuple.m_local_fid) < 0;
+    return tt_accessor.const_vector_attribute<4>(tuple)(tuple.m_local_fid) < 0;
 }
 
 bool TetMesh::is_boundary_edge(const Tuple& edge) const
@@ -439,7 +439,7 @@ bool TetMesh::is_connectivity_valid() const
         }
         int cnt = 0;
         for (int j = 0; j < 4; ++j) {
-            if (tv_accessor.index_access().const_vector_attribute(
+            if (tv_accessor.index_access().const_vector_attribute<4>(
                     vt_accessor.index_access().const_scalar_attribute(i))[j] == i) {
                 cnt++;
             }
@@ -458,7 +458,7 @@ bool TetMesh::is_connectivity_valid() const
         }
         int cnt = 0;
         for (int j = 0; j < 6; ++j) {
-            if (te_accessor.index_access().const_vector_attribute(
+            if (te_accessor.index_access().const_vector_attribute<6>(
                     et_accessor.index_access().const_scalar_attribute(i))[j] == i) {
                 cnt++;
             }
@@ -477,7 +477,7 @@ bool TetMesh::is_connectivity_valid() const
         }
         int cnt = 0;
         for (int j = 0; j < 4; ++j) {
-            if (tf_accessor.index_access().const_vector_attribute(
+            if (tf_accessor.index_access().const_vector_attribute<4>(
                     ft_accessor.index_access().const_scalar_attribute(i))[j] == i) {
                 cnt++;
             }
@@ -496,10 +496,10 @@ bool TetMesh::is_connectivity_valid() const
         }
 
         for (int j = 0; j < 4; ++j) {
-            int64_t nb = tt_accessor.index_access().const_vector_attribute(i)(j);
+            int64_t nb = tt_accessor.index_access().const_vector_attribute<4>(i)(j);
             if (nb == -1) {
                 if (ft_accessor.index_access().const_scalar_attribute(
-                        tf_accessor.index_access().const_vector_attribute(i)(j)) != i) {
+                        tf_accessor.index_access().const_vector_attribute<4>(i)(j)) != i) {
                     wmtk::logger().info("fail TF and TT 1");
                     return false;
                 }
@@ -509,7 +509,7 @@ bool TetMesh::is_connectivity_valid() const
             int cnt = 0;
             int id_in_nb;
             for (int k = 0; k < 4; ++k) {
-                if (tt_accessor.index_access().const_vector_attribute(nb)(k) == i) {
+                if (tt_accessor.index_access().const_vector_attribute<4>(nb)(k) == i) {
                     cnt++;
                     id_in_nb = k;
                 }
@@ -519,8 +519,8 @@ bool TetMesh::is_connectivity_valid() const
                 return false;
             }
 
-            if (tf_accessor.index_access().const_vector_attribute(i)(j) !=
-                tf_accessor.index_access().const_vector_attribute(nb)(id_in_nb)) {
+            if (tf_accessor.index_access().const_vector_attribute<4>(i)(j) !=
+                tf_accessor.index_access().const_vector_attribute<4>(nb)(id_in_nb)) {
                 wmtk::logger().info("fail TF and TT 3");
                 return false;
             }
@@ -548,9 +548,9 @@ std::vector<std::vector<TypedAttributeHandle<int64_t>>> TetMesh::connectivity_at
 
 Tuple TetMesh::tuple_from_global_ids(int64_t tid, int64_t fid, int64_t eid, int64_t vid) const
 {
-    auto tv = m_tv_accessor->index_access().const_vector_attribute(tid);
-    auto te = m_te_accessor->index_access().const_vector_attribute(tid);
-    auto tf = m_tf_accessor->index_access().const_vector_attribute(tid);
+    auto tv = m_tv_accessor->index_access().const_vector_attribute<4>(tid);
+    auto te = m_te_accessor->index_access().const_vector_attribute<6>(tid);
+    auto tf = m_tf_accessor->index_access().const_vector_attribute<4>(tid);
 
     int64_t lvid = -1, leid = -1, lfid = -1;
 

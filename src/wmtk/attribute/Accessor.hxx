@@ -5,17 +5,19 @@
 namespace wmtk::attribute {
 
 template <typename T>
-auto Accessor<T>::const_vector_attribute(const Tuple& t) const -> ConstMapResult
+    template <int D>
+auto Accessor<T>::const_vector_attribute(const Tuple& t) const -> ConstMapResult<D>
 {
     const int64_t idx = index(t);
-    return CachingBaseType::const_vector_attribute(idx);
+    return CachingBaseType::template const_vector_attribute<D>(idx);
 }
 
 template <typename T>
-auto Accessor<T>::vector_attribute(const Tuple& t) -> MapResult
+    template <int D>
+auto Accessor<T>::vector_attribute(const Tuple& t) -> MapResult<D>
 {
     const int64_t idx = index(t);
-    return CachingBaseType::vector_attribute(idx);
+    return CachingBaseType::template vector_attribute<D>(idx);
 }
 
 template <typename T>

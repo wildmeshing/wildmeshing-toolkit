@@ -36,7 +36,8 @@ void AttributeCache<T>::clear()
 
 
 template <typename T>
-void AttributeCache<T>::try_caching(int64_t index, const MapResult& value)
+template <typename Derived>
+void AttributeCache<T>::try_caching(int64_t index, const Eigen::MatrixBase<Derived>& value)
 {
     // basically try_emplace but optimizes to avoid accessing the pointed-to value
     auto [it, did_insert] = m_data.try_emplace(index, AttributeCacheData<T>{});
