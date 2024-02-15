@@ -23,6 +23,17 @@ public:
     {
         return derived().switch_tuple(tuple, type);
     }
+    // Performs a sequence of switch_tuple operations in the order specified in op_sequence.
+    // in debug mode this will assert a failure, in release this will return a null tuple
+#if defined(__cpp_concepts)
+    template <std::forward_iterator ContainerType>
+#else
+    template <typename ContainerType>
+#endif
+    Tuple switch_tuples(const Tuple& tuple, const ContainerType& op_sequence) const;
+    // annoying initializer list prototype to catch switch_tuples(t, {PV,PE})
+    Tuple switch_tuples(const Tuple& tuple, const std::initializer_list<PrimitiveType>& op_sequence)
+        const;
     bool is_ccw(const Tuple& tuple) const override { return derived().is_ccw(tuple); }
     bool is_boundary(PrimitiveType pt, const Tuple& tuple) const override
     {
@@ -80,4 +91,40 @@ protected:
         return derived().tuple_from_id(type, gid);
     }
 };
+
+template <typename Derived>
+#if defined(__cpp_concepts)
+template <std::forward_iterator ContainerType>
+#else
+template <typename ContainerType>
+#endif
+Tuple MeshCRTP<Derived>::switch_tuples(const Tuple& tuple, const ContainerType& sequence) const
+{
+    static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
+    Tuple r = tuple;
+    const PrimitiveType top_type = top_simplex_type();
+
+    const int64_t boundary_dim = top_cell_dimension() - 1;
+    const PrimitiveType boundary_pt = static_cast<PrimitiveType>(boundary_dim);
+
+    for (const PrimitiveType primitive : sequence) {
+        // for top level simplices we cannot navigate across boundaries
+        if (primitive == top_type && is_boundary(boundary_pt, r)) {
+            assert(!is_boundary(boundary_pt, r));
+            r = {};
+            return r;
+        }
+        r = switch_tuple(r, primitive);
+    }
+    return r;
+}
+
+
+template <typename Derived>
+Tuple MeshCRTP<Derived>::switch_tuples(
+    const Tuple& tuple,
+    const std::initializer_list<PrimitiveType>& op_sequence) const
+{
+    return switch_tuples<std::initializer_list<PrimitiveType>>(tuple, op_sequence);
+}
 } // namespace wmtk
