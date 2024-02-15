@@ -12,7 +12,7 @@ namespace wmtk::components::internal {
 class TagAttribute
 {
 public:
-    Accessor<int64_t> m_accessor;
+    wmtk::attribute::Accessor<int64_t> m_accessor;
     PrimitiveType m_ptype;
     int64_t m_val;
 
@@ -60,7 +60,7 @@ void Marching::process()
     assert(m_input_values.size() == 2);
     const int64_t vertex_tag_0 = m_input_values[0];
     const int64_t vertex_tag_1 = m_input_values[1];
-    Accessor<int64_t> acc_vertex_tag = m_mesh.create_accessor<int64_t>(m_vertex_label);
+    wmtk::attribute::Accessor<int64_t> acc_vertex_tag = m_mesh.create_accessor<int64_t>(m_vertex_label);
 
     std::deque<TagAttribute> filters;
     for (size_t i = 0; i < m_filter_labels.size(); ++i) {
@@ -68,7 +68,7 @@ void Marching::process()
     }
 
     // compute the todo list for the split edge
-    Accessor<int64_t> acc_todo = m_mesh.create_accessor(todo_attribute);
+    wmtk::attribute::Accessor<int64_t> acc_todo = m_mesh.create_accessor(todo_attribute);
     for (const Tuple& edge : m_mesh.get_all(PrimitiveType::Edge)) {
         bool is_of_interest = true;
         for (const TagAttribute& filter : filters) {
@@ -83,7 +83,7 @@ void Marching::process()
         }
 
         const int64_t vt0 = acc_vertex_tag.scalar_attribute(edge);
-        const int64_t vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(edge));
+        const int64_t vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_tuple(edge,PrimitiveType::Vertex));
         if ((vt0 == vertex_tag_0 && vt1 == vertex_tag_1) ||
             (vt1 == vertex_tag_0 && vt0 == vertex_tag_1)) {
             acc_todo.scalar_attribute(edge) = 1;

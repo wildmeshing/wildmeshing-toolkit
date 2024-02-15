@@ -1,6 +1,5 @@
 
 set(SRC_FILES
-    Accessor.hpp
     Cell.cpp
     Cell.hpp
     Mesh.cpp
@@ -33,7 +32,6 @@ set(SRC_FILES
     Scheduler.hpp
     Scheduler.cpp
     MultiMeshManager.hpp
-    MultiMeshManager.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

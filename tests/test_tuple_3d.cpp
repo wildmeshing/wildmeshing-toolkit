@@ -21,7 +21,7 @@ TEST_CASE("create TetMesh", "[tuple_3d]")
     REQUIRE(vertices.size() == 4);
     const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
     REQUIRE(edges.size() == 6);
-    const std::vector<Tuple> faces = m.get_all(PrimitiveType::Face);
+    const std::vector<Tuple> faces = m.get_all(PrimitiveType::Triangle);
     REQUIRE(faces.size() == 4);
     const std::vector<Tuple> tets = m.get_all(PrimitiveType::Tetrahedron);
     REQUIRE(tets.size() == 1);
@@ -62,7 +62,7 @@ TEST_CASE("TetMesh with 1 tet", "[tuple_3d][.]")
     }
     SECTION("faces")
     {
-        const std::vector<Tuple> faces = m.get_all(PrimitiveType::Face);
+        const std::vector<Tuple> faces = m.get_all(PrimitiveType::Triangle);
         REQUIRE(faces.size() == 4);
         //  TODO add test for face ids
         CHECK(false);

@@ -12,7 +12,7 @@ namespace wmtk::operations {
 
 
 EdgeCollapse::EdgeCollapse(Mesh& m)
-    : MeshOperation(m)
+    : Operation(m)
 {
     auto collect_attrs = [&](auto&& mesh) {
         // can have const variant values here so gotta filter htose out
@@ -34,75 +34,22 @@ EdgeCollapse::EdgeCollapse(Mesh& m)
     custom_attribute_collector.execute_from_root(m);
 }
 
-////////////////////////////////////
-std::vector<simplex::Simplex> EdgeCollapse::execute_aux(
-    EdgeMesh& mesh,
-    const simplex::Simplex& simplex)
+std::vector<simplex::Simplex> EdgeCollapse::execute(const simplex::Simplex& simplex)
 {
-    auto return_data =
-        operations::utils::multi_mesh_edge_collapse(mesh, simplex.tuple(), m_new_attr_strategies);
-
-    const operations::edge_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
-
-    return {simplex::Simplex(PrimitiveType::Vertex, my_data.m_output_tuple)};
+    return utils::multi_mesh_edge_collapse_with_modified_simplices(
+        mesh(),
+        simplex,
+        m_new_attr_strategies);
 }
 
-std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives_aux(
-    const EdgeMesh& mesh,
+std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives(
     const simplex::Simplex& simplex) const
 {
-    const simplex::Simplex v0 = simplex::Simplex::vertex(simplex.tuple());
-    const simplex::Simplex v1 = mesh.parent_scope(
-        [&]() { return simplex::Simplex::vertex(mesh.switch_vertex(simplex.tuple())); });
-    return {v0, v1};
-}
-////////////////////////////////////
-
-
-////////////////////////////////////
-std::vector<simplex::Simplex> EdgeCollapse::execute_aux(
-    TriMesh& mesh,
-    const simplex::Simplex& simplex)
-{
-    auto return_data =
-        operations::utils::multi_mesh_edge_collapse(mesh, simplex.tuple(), m_new_attr_strategies);
-
-    const operations::tri_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
-
-    return {simplex::Simplex(PrimitiveType::Vertex, my_data.m_output_tuple)};
-}
-
-std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives_aux(
-    const TriMesh& mesh,
-    const simplex::Simplex& simplex) const
-{
-    const simplex::Simplex v0 = simplex::Simplex::vertex(simplex.tuple());
-    const simplex::Simplex v1 = mesh.parent_scope(
-        [&]() { return simplex::Simplex::vertex(mesh.switch_vertex(simplex.tuple())); });
-    return {v0, v1};
-}
-////////////////////////////////////
-
-
-////////////////////////////////////
-std::vector<simplex::Simplex> EdgeCollapse::execute_aux(
-    TetMesh& mesh,
-    const simplex::Simplex& simplex)
-{
-    auto return_data =
-        operations::utils::multi_mesh_edge_collapse(mesh, simplex.tuple(), m_new_attr_strategies);
-    const operations::tet_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
-    return {simplex::Simplex::vertex(my_data.m_output_tuple)};
-}
-
-std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives_aux(
-    const TetMesh& mesh,
-    const simplex::Simplex& simplex) const
-{
-    const simplex::Simplex v0 = simplex::Simplex::vertex(simplex.tuple());
-    const simplex::Simplex v1 = mesh.parent_scope(
-        [&]() { return simplex::Simplex::vertex(mesh.switch_vertex(simplex.tuple())); });
-    return {v0, v1};
+    return mesh().parent_scope([&]() -> std::vector<simplex::Simplex> {
+        const simplex::Simplex v0 = simplex::Simplex::vertex(simplex.tuple());
+        const simplex::Simplex v1 = simplex::Simplex::vertex(mesh().switch_tuple(simplex.tuple(), PrimitiveType::Vertex));
+        return {v0, v1};
+    });
 }
 ////////////////////////////////////
 

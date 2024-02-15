@@ -13,8 +13,8 @@ namespace simplex {
 class Simplex;
 }
 namespace attribute {
-template <typename T>
-class ConstAccessor;
+template <typename T, typename MeshType>
+class Accessor;
 }
 
 namespace operations {
@@ -96,10 +96,10 @@ public:
 
 private:
     int64_t parent_global_cid(
-        const attribute::ConstAccessor<int64_t>& parent_to_child,
+        const attribute::Accessor<int64_t,Mesh>& parent_to_child,
         int64_t parent_gid) const;
     int64_t child_global_cid(
-        const attribute::ConstAccessor<int64_t>& parent_to_child,
+        const attribute::Accessor<int64_t,Mesh>& parent_to_child,
         int64_t parent_gid) const;
     void update_all_hashes(
         Mesh& m,
@@ -110,7 +110,7 @@ private:
 
     // for tet
     int64_t parent_local_fid(
-        const attribute::ConstAccessor<int64_t>& parent_to_child,
+        const attribute::Accessor<int64_t,Mesh>& parent_to_child,
         int64_t parent_gid) const;
 
     void update_ear_replacement(TetMesh& m, const tet_mesh::EdgeOperationData& tmoe) const;

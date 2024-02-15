@@ -43,7 +43,7 @@ TEST_CASE("test_insert_surface_mesh", "[triangleinsertion][.]")
 
     DEBUG_TriMesh surface_mesh = hex_plus_two_with_position();
     RowVectors3d V(surface_mesh.capacity(PrimitiveType::Vertex), 3);
-    RowVectors3l F(surface_mesh.capacity(PrimitiveType::Face), 3);
+    RowVectors3l F(surface_mesh.capacity(PrimitiveType::Triangle), 3);
 
     auto pos_handle = surface_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto pos_accessor = surface_mesh.create_accessor(pos_handle.as<double>());
@@ -53,7 +53,7 @@ TEST_CASE("test_insert_surface_mesh", "[triangleinsertion][.]")
         V.row(i) = pos_accessor.vector_attribute(vs[i]);
     }
 
-    for (int64_t i = 0; i < surface_mesh.capacity(PrimitiveType::Face); ++i) {
+    for (int64_t i = 0; i < surface_mesh.capacity(PrimitiveType::Triangle); ++i) {
         F.row(i) = surface_mesh.fv_from_fid(i);
     }
 
@@ -70,7 +70,7 @@ TEST_CASE("test_insert_and_register_surface_mesh", "[triangleinsertion][.]")
 
     // DEBUG_TriMesh surface_mesh = hex_plus_two_with_position();
     RowVectors3d V(surface_mesh.capacity(PrimitiveType::Vertex), 3);
-    RowVectors3l F(surface_mesh.capacity(PrimitiveType::Face), 3);
+    RowVectors3l F(surface_mesh.capacity(PrimitiveType::Triangle), 3);
 
     auto pos_handle = surface_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto pos_accessor = surface_mesh.create_accessor(pos_handle.as<double>());
@@ -80,7 +80,7 @@ TEST_CASE("test_insert_and_register_surface_mesh", "[triangleinsertion][.]")
         V.row(i) = pos_accessor.vector_attribute(vs[i]);
     }
 
-    for (int64_t i = 0; i < surface_mesh.capacity(PrimitiveType::Face); ++i) {
+    for (int64_t i = 0; i < surface_mesh.capacity(PrimitiveType::Triangle); ++i) {
         F.row(i) = surface_mesh.fv_from_fid(i);
     }
 

@@ -8,10 +8,6 @@ class Mesh;
 }
 
 namespace wmtk::attribute {
-template <typename T>
-class MutableAccessor;
-template <typename T>
-class ConstAccessor;
 
 /* @brief Handle that can construct an accessor on its own
  * NOTE: This naming is inconsistent with the existing
@@ -119,32 +115,32 @@ private:
 };
 
 template <typename T>
-const TypedAttributeHandle<T>& MeshAttributeHandle::as() const
+inline const TypedAttributeHandle<T>& MeshAttributeHandle::as() const
 {
     return std::get<TypedAttributeHandle<T>>(m_handle);
 }
 
 
 template <typename T>
-bool MeshAttributeHandle::holds() const
+inline bool MeshAttributeHandle::holds() const
 {
     return std::holds_alternative<TypedAttributeHandle<T>>(m_handle);
 }
 template <MeshAttributeHandle::HeldType Type>
-auto MeshAttributeHandle::as_from_held_type() const
+inline auto MeshAttributeHandle::as_from_held_type() const
     -> const TypedAttributeHandle<held_primitive_type<Type>>&
 {
     return as<held_primitive_type<Type>>();
 }
 
 template <MeshAttributeHandle::HeldType Type>
-bool MeshAttributeHandle::holds_from_held_type() const
+inline bool MeshAttributeHandle::holds_from_held_type() const
 {
     return MeshAttributeHandle::holds<held_primitive_type<Type>>();
 }
 
 template <typename T>
-constexpr auto MeshAttributeHandle::held_type_from_primitive() -> HeldType
+inline constexpr auto MeshAttributeHandle::held_type_from_primitive() -> HeldType
 {
     if constexpr (std::is_same_v<T, char>) {
         return HeldType::Char;

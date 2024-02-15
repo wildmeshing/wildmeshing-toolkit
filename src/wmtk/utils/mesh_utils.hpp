@@ -32,17 +32,17 @@ inline attribute::MeshAttributeHandle set_matrix_attribute(
  * @brief compute area vector of face
  */
 Eigen::Vector3d
-compute_face_normal_area_weighted(const TriMesh& m, const Accessor<double>& pos, const Tuple& f);
+compute_face_normal_area_weighted(const TriMesh& m, const attribute::Accessor<double>& pos, const Tuple& f);
 
 /**
  * @brief compute the normalized face normal based on the vertex positions
  */
-Eigen::Vector3d compute_face_normal(const TriMesh& m, const Accessor<double>& pos, const Tuple& f);
+Eigen::Vector3d compute_face_normal(const TriMesh& m, const attribute::Accessor<double>& pos, const Tuple& f);
 
 /**
  * @brief compute the normalized vertex normal from the incident area weighted face normals
  */
 Eigen::Vector3d
-compute_vertex_normal(const TriMesh& m, const Accessor<double>& pos, const Tuple& v);
+compute_vertex_normal(const TriMesh& m, const attribute::Accessor<double>& pos, const Tuple& v);
 
 } // namespace wmtk::mesh_utils

@@ -221,19 +221,19 @@ void AttributeManager::pop_scope(bool apply_updates)
     }
 }
 
-void AttributeManager::clear_current_scope()
+void AttributeManager::rollback_current_scope()
 {
     for (auto& ma : m_char_attributes) {
-        ma.clear_current_scope();
+        ma.rollback_current_scope();
     }
     for (auto& ma : m_long_attributes) {
-        ma.clear_current_scope();
+        ma.rollback_current_scope();
     }
     for (auto& ma : m_double_attributes) {
-        ma.clear_current_scope();
+        ma.rollback_current_scope();
     }
     for (auto& ma : m_rational_attributes) {
-        ma.clear_current_scope();
+        ma.rollback_current_scope();
     }
 }
 

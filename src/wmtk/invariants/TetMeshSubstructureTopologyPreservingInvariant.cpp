@@ -35,7 +35,7 @@ bool TetMeshSubstructureTopologyPreservingInvariant::before(
     const simplex::Simplex vertex_u(PrimitiveType::Vertex, input_simplex.tuple());
     const simplex::Simplex vertex_v(
         PrimitiveType::Vertex,
-        mesh().switch_vertex(input_simplex.tuple()));
+        mesh().switch_tuple(input_simplex.tuple(), PrimitiveType::Vertex));
 
     RawSimplexCollection lk_u_0(link(mesh(), vertex_u));
     RawSimplexCollection lk_u_1;
@@ -43,7 +43,7 @@ bool TetMeshSubstructureTopologyPreservingInvariant::before(
 
     simplex::SimplexCollection u_open_star = open_star(mesh(), vertex_u);
 
-    for (const simplex::Simplex& f_u : u_open_star.simplex_vector(PrimitiveType::Face)) {
+    for (const simplex::Simplex& f_u : u_open_star.simplex_vector(PrimitiveType::Triangle)) {
         if (face_tag_acc.const_scalar_attribute(f_u.tuple()) == m_substructure_tag_value) {
             std::vector<Tuple> vertices_dummy_tet =
                 faces_single_dimension_tuples(mesh(), f_u, PrimitiveType::Vertex);
@@ -103,7 +103,7 @@ bool TetMeshSubstructureTopologyPreservingInvariant::before(
 
     simplex::SimplexCollection v_open_star = open_star(mesh(), vertex_v);
 
-    for (const simplex::Simplex& f_v : v_open_star.simplex_vector(PrimitiveType::Face)) {
+    for (const simplex::Simplex& f_v : v_open_star.simplex_vector(PrimitiveType::Triangle)) {
         if (face_tag_acc.const_scalar_attribute(f_v.tuple()) == m_substructure_tag_value) {
             std::vector<Tuple> vertices_dummy_tet =
                 faces_single_dimension_tuples(mesh(), f_v, PrimitiveType::Vertex);
@@ -166,7 +166,7 @@ bool TetMeshSubstructureTopologyPreservingInvariant::before(
     RawSimplex raw_edge_e(mesh(), edge_e);
 
     for (const simplex::Simplex& f_e :
-         cofaces_single_dimension_simplices(mesh(), edge_e, PrimitiveType::Face)) {
+         cofaces_single_dimension_simplices(mesh(), edge_e, PrimitiveType::Triangle)) {
         if (face_tag_acc.const_scalar_attribute(f_e.tuple()) == m_substructure_tag_value) {
             std::vector<Tuple> vertices_dummy_tet =
                 faces_single_dimension_tuples(mesh(), f_e, PrimitiveType::Vertex);

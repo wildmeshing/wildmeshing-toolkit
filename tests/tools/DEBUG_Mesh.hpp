@@ -46,7 +46,7 @@ public:
 
     using Mesh::tuple_from_id;
 
-    Accessor<int64_t> get_cell_hash_accessor();
+    attribute::Accessor<int64_t> get_cell_hash_accessor();
 };
 
 } // namespace wmtk::tests
