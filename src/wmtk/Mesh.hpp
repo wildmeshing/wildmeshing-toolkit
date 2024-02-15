@@ -980,6 +980,14 @@ inline int64_t Mesh::top_cell_dimension() const
 {
     return m_top_cell_dimension;
 }
+inline PrimitiveType Mesh::top_simplex_type() const
+{
+    int64_t dimension = top_cell_dimension();
+    assert(dimension >= 0);
+    assert(dimension < 4);
+    return static_cast<PrimitiveType>(dimension);
+}
+
 
 #if defined(__cpp_concepts)
 template <std::forward_iterator ContainerType>

@@ -2,6 +2,7 @@
 #include <type_traits>
 #include "wmtk/Primitive.hpp"
 
+// TODO: is this abstraction still necessary? the original attempt was to have a generic index that avoided passing templates around, but in the end we still obtained a TypedAttributeHandle<T> and used variant to remove the templating + introduce multimesh
 
 namespace wmtk {
 template <typename T>
@@ -18,6 +19,9 @@ template <typename T>
 class TypedAttributeHandle;
 class AttributeManager;
 
+/** @brief Internal handle representation used by MeshAttributes
+ *
+ */
 class AttributeHandle
 {
 protected:
