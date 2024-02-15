@@ -12,7 +12,7 @@ template <typename T>
 class MeshAttributes;
 template <typename T>
 class AccessorBase;
-template <typename T>
+template <typename T, typename MeshType>
 class Accessor;
 template <typename T>
 class TypedAttributeHandle;

@@ -15,9 +15,9 @@ public:
     void update_cell_hash();
 
     std::array<attribute::Accessor<char>, 2> flag_accessors;
-    attribute::Accessor<int64_t> ee_accessor;
-    attribute::Accessor<int64_t> ev_accessor;
-    attribute::Accessor<int64_t> ve_accessor;
+    attribute::Accessor<int64_t,EdgeMesh> ee_accessor;
+    attribute::Accessor<int64_t,EdgeMesh> ev_accessor;
+    attribute::Accessor<int64_t,EdgeMesh> ve_accessor;
     attribute::Accessor<int64_t>& hash_accessor;
 
     /**

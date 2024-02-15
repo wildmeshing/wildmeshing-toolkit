@@ -18,7 +18,7 @@ namespace operations::utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
 namespace attribute {
-template <typename T>
+template <typename T, typename MeshType>
 class Accessor;
 }
 namespace multimesh {

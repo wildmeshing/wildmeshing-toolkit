@@ -14,11 +14,11 @@ public:
     void update_cell_hash();
 
     std::array<attribute::Accessor<char>, 3> flag_accessors;
-    attribute::Accessor<int64_t> ff_accessor;
-    attribute::Accessor<int64_t> fe_accessor;
-    attribute::Accessor<int64_t> fv_accessor;
-    attribute::Accessor<int64_t> vf_accessor;
-    attribute::Accessor<int64_t> ef_accessor;
+    attribute::Accessor<int64_t,TriMesh> ff_accessor;
+    attribute::Accessor<int64_t,TriMesh> fe_accessor;
+    attribute::Accessor<int64_t,TriMesh> fv_accessor;
+    attribute::Accessor<int64_t,TriMesh> vf_accessor;
+    attribute::Accessor<int64_t,TriMesh> ef_accessor;
     attribute::Accessor<int64_t>& hash_accessor;
 
     /**

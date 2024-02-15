@@ -42,7 +42,7 @@ namespace wmtk {
 // thread management tool that we will PImpl
 namespace attribute {
 class AttributeManager;
-template <typename T>
+template <typename T, typename MeshType>
 class Accessor;
 
 } // namespace attribute
@@ -94,7 +94,7 @@ class Mesh : public std::enable_shared_from_this<Mesh>, public wmtk::utils::Merk
 public:
     template <typename T>
     friend class attribute::AccessorBase;
-    template <typename T>
+    template <typename T, typename MeshType>
     friend class attribute::Accessor;
     friend class io::ParaviewWriter;
     friend class HDF5Reader;
@@ -792,6 +792,8 @@ protected:
     /**
      * @brief return the global id of the Tuple of the given dimension
      *
+     * This function uses the implementation defined in a derived class (like a Tri/TetMesh) using a virtual function, but to enable more opportunities teh actual virtual function is id_virtual
+     *
      * @param m
      * @param type  d-0 -> vertex
                     d-1 -> edge
@@ -799,19 +801,22 @@ protected:
                     d-3 -> tetrahedron
         * @return int64_t id of the entity
     */
-
-protected:
     int64_t id(const Tuple& tuple, PrimitiveType type) const;
-    int64_t id(const simplex::Simplex& s) const;
+    /// Forwarding version of id on simplices that does id caching
+    virtual int64_t id(const simplex::Simplex& s) const = 0;
+    /// Internal utility to allow id to be virtual with a non-virtual overload in derived -Mesh classes.
+    /// Mesh::id invokes Mesh::id_virtual which is final overriden by MeshCRTP<TriMesh>::id_virtual, which in turn invokes MeshCRTP<TriMesh>::id, and then TriMesh::id.
+    /// This circuitous mechanism makes MeshCRTP<TriMesh>::id and TriMesh::id fully inlineable, so code that wants to take in any derived class can get optimized results with MeshCRTP, or for cases where classes want to utilize just TriMesh they can get inline/accelerated usage as well.
+    virtual int64_t id_virtual(const Tuple& tuple, PrimitiveType type) const = 0;
 
 
-    template <typename T>
-    static auto& get_index_access(attribute::Accessor<T>& attr)
+    template <typename T, typename MeshType>
+    static auto& get_index_access(attribute::Accessor<T, MeshType>& attr)
     {
         return attr.index_access();
     }
-    template <typename T>
-    static auto& get_index_access(const attribute::Accessor<T>& attr)
+    template <typename T, typename MeshType>
+    static auto& get_index_access(const attribute::Accessor<T, MeshType>& attr)
     {
         return attr.index_access();
     }
@@ -991,11 +996,8 @@ Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType& sequen
     return r;
 }
 
-inline int64_t Mesh::id(const simplex::Simplex& s) const
+inline int64_t Mesh::id(const Tuple& tuple, PrimitiveType type) const
 {
-    if (s.m_index == -1) {
-        s.m_index = id(s.tuple(), s.primitive_type());
-    }
-    return s.m_index;
+    return id_virtual(tuple, type);
 }
 } // namespace wmtk

@@ -7,7 +7,7 @@ Tuple PointMesh::vertex_tuple_from_id(int64_t id) const
 }
 
 PointMesh::PointMesh()
-    : Mesh(0)
+    : MeshCRTP<PointMesh>(0)
 {}
 
 
@@ -58,7 +58,8 @@ void PointMesh::initialize(int64_t count)
 }
 
 
-bool PointMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const
+bool PointMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+    const
 {
     if (tuple.is_null()) return false;
     return true;

@@ -23,21 +23,28 @@ std::tuple<Tuple, Tuple> vectors_to_tuples(const Eigen::Ref<const TwoTupleVector
 TwoTupleVector tuples_to_vectors(const Tuple& a, const Tuple& b);
 
 // utility functions to simplify how we encode 2-Tuple attributes as 10-int64_t attribute
+template <typename MeshType>
 void write_tuple_map_attribute(
-    wmtk::attribute::Accessor<int64_t>& map_accessor,
+    wmtk::attribute::Accessor<int64_t, MeshType>& map_accessor,
     const Tuple& source_tuple,
     const Tuple& target_tuple);
 
+template <typename MeshType>
 std::tuple<Tuple, Tuple> read_tuple_map_attribute(
-    const wmtk::attribute::Accessor<int64_t>& accessor,
+    const wmtk::attribute::Accessor<int64_t, MeshType>& accessor,
     const Tuple& source_tuple);
 
 
+template <typename MeshA, typename MeshB>
 void symmetric_write_tuple_map_attributes(
-    wmtk::attribute::Accessor<int64_t>& a_to_b,
-    wmtk::attribute::Accessor<int64_t>& b_to_a,
+    wmtk::attribute::Accessor<int64_t, MeshA>& a_to_b,
+    wmtk::attribute::Accessor<int64_t, MeshB>& b_to_a,
     const Tuple& a_tuple,
-    const Tuple& b_tuple);
+    const Tuple& b_tuple)
+{
+    write_tuple_map_attribute(a_to_b, a_tuple, b_tuple);
+    write_tuple_map_attribute(b_to_a, b_tuple, a_tuple);
+}
 void write_tuple_map_attribute_slow(
     Mesh& source_mesh,
     TypedAttributeHandle<int64_t> map_handle,

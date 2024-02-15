@@ -11,6 +11,7 @@ public:
     using TriMesh::TriMesh;
     DEBUG_TriMesh(TriMesh&& m);
 
+    using TriMesh::id;
     using TriMesh::id_vertex;
 
 
@@ -71,8 +72,6 @@ public:
     void reserve_more_attributes(const std::vector<int64_t>& sizes);
 
 
-    int64_t id(const Tuple& tuple, PrimitiveType type) const;
-    int64_t id(const simplex::Simplex& s) const;
     /**
      * @brief returns the TriMeshOperationExecutor
      */

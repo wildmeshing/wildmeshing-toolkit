@@ -8,7 +8,7 @@
 
 namespace wmtk {
 TriMesh::TriMesh()
-    : Mesh(2)
+    : MeshCRTP<TriMesh>(2)
     , m_vf_handle(register_attribute_typed<int64_t>("m_vf", PrimitiveType::Vertex, 1, false, -1))
     , m_ef_handle(register_attribute_typed<int64_t>("m_ef", PrimitiveType::Edge, 1, false, -1))
     , m_fv_handle(register_attribute_typed<int64_t>("m_fv", PrimitiveType::Triangle, 3, false, -1))
@@ -20,15 +20,15 @@ TriMesh::TriMesh()
 
 void TriMesh::make_cached_accessors()
 {
-    m_vf_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_vf_handle);
-    m_ef_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_ef_handle);
-    m_fv_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_fv_handle);
-    m_fe_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_fe_handle);
-    m_ff_accessor = std::make_unique<attribute::Accessor<int64_t>>(*this, m_ff_handle);
+    m_vf_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_vf_handle);
+    m_ef_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_ef_handle);
+    m_fv_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_fv_handle);
+    m_fe_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_fe_handle);
+    m_ff_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_ff_handle);
 }
 
 TriMesh::TriMesh(TriMesh&& o)
-    : Mesh(std::move(o))
+    : MeshCRTP<TriMesh>(std::move(o))
 {
     m_vf_handle = o.m_vf_handle;
     m_ef_handle = o.m_ef_handle;
@@ -500,7 +500,8 @@ bool TriMesh::is_connectivity_valid() const
                     assert(false);
                     continue;
                 }
-                auto neighbor_ff = ff_accessor.index_access().const_vector_attribute<3>(neighbor_fid);
+                auto neighbor_ff =
+                    ff_accessor.index_access().const_vector_attribute<3>(neighbor_fid);
 
                 if ((neighbor_ff.array() == i).any()) {
                     auto neighbor_fe =

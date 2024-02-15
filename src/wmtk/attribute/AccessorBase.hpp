@@ -3,9 +3,9 @@
 #include <memory>
 #include <type_traits>
 #include "MeshAttributeHandle.hpp"
+#include "internal/MapTypes.hpp"
 #include "wmtk/Tuple.hpp"
 #include "wmtk/Types.hpp"
-#include "internal/MapTypes.hpp"
 
 #include <Eigen/Dense>
 
@@ -16,6 +16,8 @@ namespace wmtk::attribute {
 
 template <typename T>
 class Attribute;
+template <typename T, typename MeshType>
+class Accessor;
 template <typename T>
 class MeshAttributes;
 template <typename T>
@@ -31,12 +33,14 @@ public:
     using T = _T;
     friend class AccessorCache<T>;
     using MeshAttributesType = MeshAttributes<T>;
+    template <typename U, typename MeshType>
+    friend class Accessor;
     using AttributeType = Attribute<T>;
 
     template <int D = Eigen::Dynamic>
-    using MapResult = internal::MapResult<T,D>;
+    using MapResult = internal::MapResult<T, D>;
     template <int D = Eigen::Dynamic>
-    using ConstMapResult = internal::ConstMapResult<T,D>;
+    using ConstMapResult = internal::ConstMapResult<T, D>;
 
 
 public:

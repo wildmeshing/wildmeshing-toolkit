@@ -5,7 +5,7 @@
 #include <wmtk/utils/Logger.hpp>
 namespace wmtk {
 EdgeMesh::EdgeMesh()
-    : Mesh(1)
+    : MeshCRTP<EdgeMesh>(1)
     , m_ve_handle(register_attribute_typed<int64_t>("m_ve", PrimitiveType::Vertex, 1, false, -1))
     , m_ev_handle(register_attribute_typed<int64_t>("m_ev", PrimitiveType::Edge, 2, false, -1))
     , m_ee_handle(register_attribute_typed<int64_t>("m_ee", PrimitiveType::Edge, 2, false, -1))
@@ -15,7 +15,8 @@ int64_t EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
-        const attribute::Accessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
+        const attribute::Accessor<int64_t> ev_accessor =
+            create_const_accessor<int64_t>(m_ev_handle);
         auto ev = ev_accessor.const_vector_attribute<2>(tuple);
         return ev(tuple.m_local_vid);
     }
@@ -67,7 +68,8 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
     case PrimitiveType::Edge: {
         const int64_t gvid = id(tuple, PrimitiveType::Vertex);
 
-        const attribute::Accessor<int64_t> ee_accessor = create_const_accessor<int64_t>(m_ee_handle);
+        const attribute::Accessor<int64_t> ee_accessor =
+            create_const_accessor<int64_t>(m_ee_handle);
         auto ee = ee_accessor.const_vector_attribute<2>(tuple);
 
         int64_t gcid_new = ee(tuple.m_local_vid);
@@ -80,7 +82,8 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 
         int64_t lvid_new = -1;
 
-        const attribute::Accessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
+        const attribute::Accessor<int64_t> ev_accessor =
+            create_const_accessor<int64_t>(m_ev_handle);
         auto ev = ev_accessor.index_access().const_vector_attribute<2>(gcid_new);
 
         for (int64_t i = 0; i < 2; ++i) {
