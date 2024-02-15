@@ -801,7 +801,7 @@ protected:
                     d-3 -> tetrahedron
         * @return int64_t id of the entity
     */
-    virtual int64_t id(const Tuple& tuple, PrimitiveType type) const = 0;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
     /// Forwarding version of id on simplices that does id caching
     virtual int64_t id(const simplex::Simplex& s) const = 0;
     /// Internal utility to allow id to be virtual with a non-virtual overload in derived -Mesh classes.
@@ -996,4 +996,8 @@ Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType& sequen
     return r;
 }
 
+inline int64_t Mesh::id(const Tuple& tuple, PrimitiveType type) const
+{
+    return id_virtual(tuple, type);
+}
 } // namespace wmtk
