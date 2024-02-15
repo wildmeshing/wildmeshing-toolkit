@@ -94,7 +94,7 @@ class Mesh : public std::enable_shared_from_this<Mesh>, public wmtk::utils::Merk
 public:
     template <typename T>
     friend class attribute::AccessorBase;
-    template <typename T>
+    template <typename T, typename MeshType>
     friend class attribute::Accessor;
     friend class io::ParaviewWriter;
     friend class HDF5Reader;
