@@ -95,13 +95,13 @@ protected:
     // MeshAttributeHandle<T> m_handle;
 };
 template <typename T>
-int64_t AttributeScopeStack<T>::size() const
+inline int64_t AttributeScopeStack<T>::size() const
 {
     return m_scopes.size();
 }
 
 template <typename T>
-void AttributeScopeStack<T>::rollback_current_scope(Attribute<T>& attr)
+inline void AttributeScopeStack<T>::rollback_current_scope(Attribute<T>& attr)
 {
     assert(!empty());
     assert(at_current_scope());
@@ -132,7 +132,7 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
         assert(m_active >= m_scopes.begin());
         assert(m_active < m_scopes.end());
         for (auto it = m_active; it < m_scopes.end(); ++it) {
-        //for (auto it = m_active; it < m_scopes.rend(); ++it) {
+            // for (auto it = m_active; it < m_scopes.rend(); ++it) {
             if (auto mapit = it->find_value(index); it->is_value(mapit)) {
                 const auto& d = mapit->second;
                 auto dat = d.template data_as_const_map<D>();
@@ -147,7 +147,7 @@ template <typename T>
 inline auto AttributeScopeStack<T>::scalar_attribute(AccessorBase<T>& accessor, int64_t index) -> T&
 {
     assert(writing_enabled());
-    T& value =  accessor.scalar_attribute(index);
+    T& value = accessor.scalar_attribute(index);
     if (!empty()) {
         m_scopes.back().try_caching(index, value);
     }
