@@ -65,7 +65,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
     SECTION("4")
     {
         const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-        Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+        attribute::Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
         acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
 
         expected_isosurface_vertex_num = 6;
@@ -73,7 +73,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
     SECTION("4-5")
     {
         const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-        Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+        attribute::Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
         acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
         acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
 
@@ -82,7 +82,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
     SECTION("0-4-5")
     {
         const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-        Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+        attribute::Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
         acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = input_tag_value_1;
         acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
         acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
@@ -92,7 +92,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
     SECTION("0-4-5-with-filter")
     {
         const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-        Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+        attribute::Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
         acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = input_tag_value_1;
         acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
         acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
@@ -102,7 +102,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
         filter_labels.emplace_back(filter);
         filter_values.emplace_back(1);
 
-        Accessor<int64_t> acc_filter = m.create_accessor<int64_t>(filter);
+        attribute::Accessor<int64_t> acc_filter = m.create_accessor<int64_t>(filter);
         acc_filter.scalar_attribute(m.edge_tuple_from_vids(0, 1)) = 1;
         acc_filter.scalar_attribute(m.edge_tuple_from_vids(1, 4)) = 1;
         acc_filter.scalar_attribute(m.edge_tuple_from_vids(1, 5)) = 1;
@@ -130,7 +130,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
     mc.process();
 
     const auto& vertices = m.get_all(PrimitiveType::Vertex);
-    Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+    attribute::Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
     // vertex number should be correct
     {
         CHECK(vertices.size() == expected_vertex_num);
@@ -208,7 +208,7 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
     SECTION("2-3")
     {
         const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-        Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+        attribute::Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
         acc_vertex_tag.scalar_attribute(vertex_tuples[2]) = input_tag_value_1;
         acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = input_tag_value_1;
 
@@ -217,7 +217,7 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
     // SECTION("4-5")
     //{
     //     const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-    //     Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+    //     attribute::Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
     //     acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
     //     acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
     //
@@ -243,7 +243,7 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
     mc.process();
 
     const auto& vertices = m.get_all(PrimitiveType::Vertex);
-    Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+    attribute::Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
     // vertex number should be correct
     {
         CHECK(vertices.size() == expected_vertex_num);

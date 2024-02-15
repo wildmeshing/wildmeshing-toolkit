@@ -12,6 +12,11 @@ inline CachingAccessor<T>::CachingAccessor(Mesh& mesh_in, const TypedAttributeHa
     : BaseType(mesh_in, handle)
     , m_cache_stack(attribute().get_local_scope_stack())
 {}
+template <typename T>
+CachingAccessor<T>::CachingAccessor(const Mesh& mesh_in, const TypedAttributeHandle<T>& handle)
+    : BaseType(mesh_in, handle)
+    , m_cache_stack(attribute().get_local_scope_stack())
+{}
 
 template <typename T>
 inline CachingAccessor<T>::~CachingAccessor() = default;
@@ -35,9 +40,10 @@ inline int64_t CachingAccessor<T>::stack_depth() const
 }
 
 template <typename T>
-inline auto CachingAccessor<T>::vector_attribute(const int64_t index) -> MapResult
+template <int D>
+inline auto CachingAccessor<T>::vector_attribute(const int64_t index) -> MapResult<D>
 {
-    return m_cache_stack.vector_attribute(*this, index);
+    return m_cache_stack.template vector_attribute<D>(*this, index);
 }
 
 
@@ -48,9 +54,10 @@ inline auto CachingAccessor<T>::scalar_attribute(const int64_t index) -> T&
 }
 
 template <typename T>
-inline auto CachingAccessor<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult
+template <int D>
+inline auto CachingAccessor<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult<D>
 {
-    return m_cache_stack.const_vector_attribute(*this, index);
+    return m_cache_stack.template const_vector_attribute<D>(*this, index);
 }
 
 
@@ -61,7 +68,7 @@ inline auto CachingAccessor<T>::const_scalar_attribute(const int64_t index) cons
 }
 
 template <typename T>
-inline auto CachingAccessor<T>::vector_attribute(const int64_t index) const -> ConstMapResult
+inline auto CachingAccessor<T>::vector_attribute(const int64_t index) const -> ConstMapResult<>
 {
     return const_vector_attribute(index);
 }

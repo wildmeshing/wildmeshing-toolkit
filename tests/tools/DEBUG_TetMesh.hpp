@@ -77,14 +77,13 @@ public:
 
     void reserve_attributes(PrimitiveType type, int64_t size);
 
-    int64_t id(const Tuple& tuple, PrimitiveType type) const;
-    int64_t id(const simplex::Simplex& s) const;
+    using TetMesh::id;
 
     using TetMesh::tuple_from_id;
 
-    Accessor<int64_t> get_cell_hash_accessor();
+    attribute::Accessor<int64_t> get_cell_hash_accessor();
 
-    TetMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<int64_t>& hash_accessor);
+    TetMeshOperationExecutor get_tmoe(const Tuple& t, attribute::Accessor<int64_t>& hash_accessor);
 
     int64_t valid_primitive_count(PrimitiveType type) const;
 

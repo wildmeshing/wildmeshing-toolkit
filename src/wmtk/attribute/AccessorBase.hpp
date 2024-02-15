@@ -3,9 +3,9 @@
 #include <memory>
 #include <type_traits>
 #include "MeshAttributeHandle.hpp"
+#include "internal/MapTypes.hpp"
 #include "wmtk/Tuple.hpp"
 #include "wmtk/Types.hpp"
-#include "internal/MapTypes.hpp"
 
 #include <Eigen/Dense>
 
@@ -16,6 +16,8 @@ namespace wmtk::attribute {
 
 template <typename T>
 class Attribute;
+template <typename T, typename MeshType>
+class Accessor;
 template <typename T>
 class MeshAttributes;
 template <typename T>
@@ -31,10 +33,14 @@ public:
     using T = _T;
     friend class AccessorCache<T>;
     using MeshAttributesType = MeshAttributes<T>;
+    template <typename U, typename MeshType>
+    friend class Accessor;
     using AttributeType = Attribute<T>;
 
-    using MapResult = typename internal::MapResult<T>;
-    using ConstMapResult = typename internal::ConstMapResult<T>;
+    template <int D = Eigen::Dynamic>
+    using MapResult = internal::MapResult<T, D>;
+    template <int D = Eigen::Dynamic>
+    using ConstMapResult = internal::ConstMapResult<T, D>;
 
 
 public:
@@ -45,8 +51,10 @@ public:
 
     void set_attribute(std::vector<T> value);
 
-    ConstMapResult const_vector_attribute(const int64_t index) const;
-    MapResult vector_attribute(const int64_t index);
+    template <int D = Eigen::Dynamic>
+    ConstMapResult<D> const_vector_attribute(const int64_t index) const;
+    template <int D = Eigen::Dynamic>
+    MapResult<D> vector_attribute(const int64_t index);
 
     T const_scalar_attribute(const int64_t index) const;
     T& scalar_attribute(const int64_t index);
@@ -63,6 +71,7 @@ public:
 
     ~AccessorBase();
     AccessorBase(Mesh& m, const TypedAttributeHandle<T>& handle);
+    AccessorBase(const Mesh& m, const TypedAttributeHandle<T>& handle);
 
     MeshAttributeHandle handle() const;
     const TypedAttributeHandle<T>& typed_handle() const;

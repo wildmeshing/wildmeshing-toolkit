@@ -13,6 +13,8 @@ inline AccessorBase<T>::AccessorBase(Mesh& m, const TypedAttributeHandle<T>& han
     , m_mesh(m)
     , m_attribute(mesh().m_attribute_manager.get(m_handle).attribute(m_handle.m_base_handle))
 {}
+template <typename T>
+AccessorBase<T>::AccessorBase(const Mesh& m, const TypedAttributeHandle<T>& handle): AccessorBase(const_cast<Mesh&>(m), handle) {}
 
 
 template <typename T>
@@ -93,17 +95,19 @@ inline PrimitiveType AccessorBase<T>::primitive_type() const
 }
 
 template <typename T>
-inline auto AccessorBase<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult
+template <int D>
+inline auto AccessorBase<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult<D>
 {
-    auto buffer = attribute().const_vector_attribute(index);
+    auto buffer = attribute().template const_vector_attribute<D>(index);
     return buffer;
 }
 
 template <typename T>
-inline auto AccessorBase<T>::vector_attribute(const int64_t index) -> MapResult
+template <int D>
+inline auto AccessorBase<T>::vector_attribute(const int64_t index) -> MapResult<D>
 {
     auto& attr = attribute();
-    auto buffer = attr.vector_attribute(index);
+    auto buffer = attr.template vector_attribute<D>(index);
 
     return buffer;
 }

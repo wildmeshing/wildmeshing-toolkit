@@ -51,7 +51,7 @@ Eigen::Matrix<int64_t, 2, 1> DEBUG_EdgeMesh::ev_from_eid(const int64_t eid) cons
 auto DEBUG_EdgeMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple
 {
     throw std::runtime_error("this function is never used");
-    ConstAccessor<int64_t> ev = create_accessor<int64_t>(m_ev_handle);
+    const attribute::Accessor<int64_t> ev = create_const_accessor<int64_t>(m_ev_handle);
     for (int64_t eid = 0; eid < capacity(PrimitiveType::Edge); ++eid) {
         Tuple edge = edge_tuple_from_id(eid);
         auto ev0 = ev.const_vector_attribute(edge);
@@ -104,22 +104,14 @@ void DEBUG_EdgeMesh::reserve_attributes(PrimitiveType type, int64_t size)
 }
 
 
-int64_t DEBUG_EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
-{
-    return EdgeMesh::id(tuple, type);
-}
-int64_t DEBUG_EdgeMesh::id(const simplex::Simplex& s) const
-{
-    return id(s.tuple(), s.primitive_type());
-}
-Accessor<int64_t> DEBUG_EdgeMesh::get_cell_hash_accessor()
+attribute::Accessor<int64_t> DEBUG_EdgeMesh::get_cell_hash_accessor()
 {
     return EdgeMesh::get_cell_hash_accessor();
 }
 /**
  * @brief returns the EdgeMeshOperationExecutor
  */
-auto DEBUG_EdgeMesh::get_emoe(const Tuple& t, Accessor<int64_t>& hash_accessor)
+auto DEBUG_EdgeMesh::get_emoe(const Tuple& t, wmtk::attribute::Accessor<int64_t>& hash_accessor)
     -> EdgeMeshOperationExecutor
 {
     return EdgeMeshOperationExecutor(*this, t, hash_accessor);

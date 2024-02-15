@@ -9,18 +9,26 @@ namespace wmtk {
 class TriMesh::TriMeshOperationExecutor : public operations::tri_mesh::EdgeOperationData
 {
 public:
-    TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple, Accessor<int64_t>& hash_acc);
+    TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple, attribute::Accessor<int64_t>& hash_acc);
     void delete_simplices();
     void update_cell_hash();
 
-    std::array<Accessor<char>, 3> flag_accessors;
-    Accessor<int64_t> ff_accessor;
-    Accessor<int64_t> fe_accessor;
-    Accessor<int64_t> fv_accessor;
-    Accessor<int64_t> vf_accessor;
-    Accessor<int64_t> ef_accessor;
-    Accessor<int64_t>& hash_accessor;
+    std::array<attribute::Accessor<char>, 3> flag_accessors;
+    attribute::Accessor<int64_t,TriMesh> ff_accessor;
+    attribute::Accessor<int64_t,TriMesh> fe_accessor;
+    attribute::Accessor<int64_t,TriMesh> fv_accessor;
+    attribute::Accessor<int64_t,TriMesh> vf_accessor;
+    attribute::Accessor<int64_t,TriMesh> ef_accessor;
+    attribute::Accessor<int64_t>& hash_accessor;
 
+    /**
+     * @brief jump to the next edge
+     */
+    Tuple next_edge(const Tuple& tuple) const;
+    /**
+     * @brief jump to the previous edge
+     */
+    Tuple prev_edge(const Tuple& tuple) const;
 
     /**
      * @brief gather all simplices that are deleted in a split

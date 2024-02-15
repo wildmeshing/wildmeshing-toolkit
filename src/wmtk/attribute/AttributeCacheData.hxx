@@ -3,14 +3,16 @@
 #include "AttributeCacheData.hpp"
 namespace wmtk::attribute {
 template <typename T>
-inline auto AttributeCacheData<T>::data_as_map() -> typename Vector::MapType
+template <int D>
+inline auto AttributeCacheData<T>::data_as_map() -> typename VectorD<D>::MapType
 {
-    return typename Vector::MapType(data.data(), data.size());
+    return typename VectorD<D>::MapType(data.data(), data.size());
 }
 template <typename T>
-inline auto AttributeCacheData<T>::data_as_const_map() const -> typename Vector::ConstMapType
+template <int D>
+inline auto AttributeCacheData<T>::data_as_const_map() const -> typename VectorD<D>::ConstMapType
 {
-    return typename Vector::ConstMapType(data.data(), data.size());
+    return typename VectorD<D>::ConstMapType(data.data(), data.size());
 }
 
 } // namespace wmtk::attribute

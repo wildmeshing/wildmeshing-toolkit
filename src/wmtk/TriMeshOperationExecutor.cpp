@@ -26,6 +26,10 @@
 
 namespace wmtk {
 
+    constexpr static PrimitiveType PV = PrimitiveType::Vertex;
+    constexpr static PrimitiveType PE = PrimitiveType::Edge;
+    Tuple TriMesh::TriMeshOperationExecutor::next_edge(const Tuple& tuple) const { return m_mesh.switch_tuples(tuple,{PV,PE}); }
+    Tuple TriMesh::TriMeshOperationExecutor::prev_edge(const Tuple& tuple) const { return m_mesh.switch_tuples(tuple,{PE,PV}); }
 auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> IncidentFaceData
 {
     /*         / \
@@ -43,7 +47,7 @@ auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> Incid
                 simplex::Simplex::edge(m_operating_tuple))) {
             break;
         }
-        t = m_mesh.next_edge(t);
+        t = next_edge(t);
     }
     assert(simplex::utils::SimplexComparisons::equal(
         m_mesh,
@@ -89,7 +93,7 @@ auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> Incid
 TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     TriMesh& m,
     const Tuple& operating_tuple,
-    Accessor<int64_t>& hash_acc)
+    attribute::Accessor<int64_t>& hash_acc)
     : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Triangle)}}
     , ff_accessor(m.create_accessor<int64_t>(m.m_ff_handle))
     , fe_accessor(m.create_accessor<int64_t>(m.m_fe_handle))
@@ -124,7 +128,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     // update hash on all faces in the two-ring neighborhood
     simplex::SimplexCollection hash_update_region(m);
     for (const simplex::Simplex& v : edge_closed_star.simplex_vector(PrimitiveType::Vertex)) {
-        const simplex::SimplexCollection v_closed_star = simplex::closed_star(m_mesh, v);
+        const simplex::SimplexCollection v_closed_star = simplex::top_dimension_cofaces(m_mesh, v);
         hash_update_region.add(v_closed_star);
     }
     hash_update_region.sort_and_clean();

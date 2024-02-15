@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Mesh.hpp"
+#include "MeshCRTP.hpp"
 #include "Tuple.hpp"
 
 #include <Eigen/Core>
@@ -8,15 +8,15 @@
 namespace wmtk {
 // Simple mesh without topology. Mainly useful for testing attributes without having to construct
 // topologies
-class PointMesh : public Mesh
+class PointMesh : public MeshCRTP<PointMesh>
 {
-public:
-    friend class Mesh;
-
 private:
     Tuple vertex_tuple_from_id(int64_t id) const;
 
 public:
+    friend class MeshCRTP<PointMesh>;
+    template <typename U, typename MeshType>
+    friend class attribute::Accessor;
     PointMesh();
     PointMesh(int64_t size);
     PointMesh(const PointMesh& o) = delete;
@@ -33,7 +33,8 @@ public:
     void initialize(int64_t count);
 
 
-    bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const override;
+    bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+        const override;
 
     bool is_connectivity_valid() const override { return true; }
 
@@ -41,6 +42,7 @@ public:
         const override;
 
 protected:
+    using MeshCRTP<PointMesh>::id; // getting the (simplex) prototype
     int64_t id(const Tuple& tuple, PrimitiveType type) const;
 
     /**

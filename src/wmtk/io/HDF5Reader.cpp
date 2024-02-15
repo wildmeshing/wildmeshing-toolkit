@@ -73,14 +73,14 @@ std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
             auto child_to_parent_handle =
                 child_mesh
                     ->get_attribute_handle<int64_t>(
-                        MultiMeshManager::child_to_parent_map_attribute_name(),
+                        multimesh::MultiMeshManager::child_to_parent_map_attribute_name(),
                         child_primitive_type)
                     .as<int64_t>();
 
             auto parent_to_child_handle =
                 parent_mesh
                     ->get_attribute_handle<int64_t>(
-                        MultiMeshManager::parent_to_child_map_attribute_name(child_index),
+                        multimesh::MultiMeshManager::parent_to_child_map_attribute_name(child_index),
                         child_primitive_type)
                     .as<int64_t>();
 

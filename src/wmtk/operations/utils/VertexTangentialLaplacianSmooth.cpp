@@ -30,15 +30,15 @@ bool VertexTangentialLaplacianSmooth::operator()(Mesh& mesh, const simplex::Simp
         //
         Tuple t0 = tup;
         while (!mesh.is_boundary(PrimitiveType::Edge, t0)) {
-            t0 = mesh.switch_edge(mesh.switch_face(t0));
+            t0 = mesh.switch_tuples(t0,{PrimitiveType::Triangle,PrimitiveType::Edge});
         }
-        const Tuple v0 = mesh.switch_vertex(t0);
+        const Tuple v0 = mesh.switch_tuple(t0, PrimitiveType::Vertex);
 
-        Tuple t1 = mesh.switch_edge(tup);
+        Tuple t1 = mesh.switch_tuple(tup,PrimitiveType::Edge);
         while (!mesh.is_boundary(PrimitiveType::Edge, t1)) {
-            t1 = mesh.switch_edge(mesh.switch_face(t1));
+            t1 = mesh.switch_tuples(t1, {PrimitiveType::Triangle, PrimitiveType::Edge});
         }
-        const Tuple v1 = mesh.switch_vertex(t1);
+        const Tuple v1 = mesh.switch_tuple(t1, PrimitiveType::Vertex);
 
         const Eigen::Vector3d p0 = accessor.vector_attribute(v0);
         const Eigen::Vector3d p1 = accessor.vector_attribute(v1);

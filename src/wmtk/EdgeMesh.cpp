@@ -5,7 +5,7 @@
 #include <wmtk/utils/Logger.hpp>
 namespace wmtk {
 EdgeMesh::EdgeMesh()
-    : Mesh(1)
+    : MeshCRTP<EdgeMesh>(1)
     , m_ve_handle(register_attribute_typed<int64_t>("m_ve", PrimitiveType::Vertex, 1, false, -1))
     , m_ev_handle(register_attribute_typed<int64_t>("m_ev", PrimitiveType::Edge, 2, false, -1))
     , m_ee_handle(register_attribute_typed<int64_t>("m_ee", PrimitiveType::Edge, 2, false, -1))
@@ -15,8 +15,9 @@ int64_t EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
-        ConstAccessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
-        auto ev = ev_accessor.const_vector_attribute(tuple);
+        const attribute::Accessor<int64_t> ev_accessor =
+            create_const_accessor<int64_t>(m_ev_handle);
+        auto ev = ev_accessor.const_vector_attribute<2>(tuple);
         return ev(tuple.m_local_vid);
     }
     case PrimitiveType::Edge: {
@@ -47,8 +48,8 @@ bool EdgeMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 bool EdgeMesh::is_boundary_vertex(const Tuple& tuple) const
 {
     assert(is_valid_slow(tuple));
-    ConstAccessor<int64_t> ee_accessor = create_const_accessor<int64_t>(m_ee_handle);
-    return ee_accessor.const_vector_attribute(tuple)(tuple.m_local_vid) < 0;
+    const attribute::Accessor<int64_t> ee_accessor = create_const_accessor<int64_t>(m_ee_handle);
+    return ee_accessor.const_vector_attribute<2>(tuple)(tuple.m_local_vid) < 0;
 }
 
 Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
@@ -67,8 +68,9 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
     case PrimitiveType::Edge: {
         const int64_t gvid = id(tuple, PrimitiveType::Vertex);
 
-        ConstAccessor<int64_t> ee_accessor = create_const_accessor<int64_t>(m_ee_handle);
-        auto ee = ee_accessor.const_vector_attribute(tuple);
+        const attribute::Accessor<int64_t> ee_accessor =
+            create_const_accessor<int64_t>(m_ee_handle);
+        auto ee = ee_accessor.const_vector_attribute<2>(tuple);
 
         int64_t gcid_new = ee(tuple.m_local_vid);
 
@@ -80,8 +82,9 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 
         int64_t lvid_new = -1;
 
-        ConstAccessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
-        auto ev = ev_accessor.index_access().const_vector_attribute(gcid_new);
+        const attribute::Accessor<int64_t> ev_accessor =
+            create_const_accessor<int64_t>(m_ev_handle);
+        auto ev = ev_accessor.index_access().const_vector_attribute<2>(gcid_new);
 
         for (int64_t i = 0; i < 2; ++i) {
             if (ev(i) == gvid) {
@@ -91,7 +94,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         }
         assert(lvid_new != -1);
 
-        ConstAccessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
+        const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
 
         const Tuple res(
             lvid_new,
@@ -128,18 +131,18 @@ void EdgeMesh::initialize(
     set_capacities(cap);
 
     // get accessors for topology
-    Accessor<int64_t> ev_accessor = create_accessor<int64_t>(m_ev_handle);
-    Accessor<int64_t> ee_accessor = create_accessor<int64_t>(m_ee_handle);
-    Accessor<int64_t> ve_accessor = create_accessor<int64_t>(m_ve_handle);
+    attribute::Accessor<int64_t> ev_accessor = create_accessor<int64_t>(m_ev_handle);
+    attribute::Accessor<int64_t> ee_accessor = create_accessor<int64_t>(m_ee_handle);
+    attribute::Accessor<int64_t> ve_accessor = create_accessor<int64_t>(m_ve_handle);
 
-    Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
-    Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
 
     // iterate over the matrices and fill attributes
 
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
-        ev_accessor.index_access().vector_attribute(i) = EV.row(i).transpose();
-        ee_accessor.index_access().vector_attribute(i) = EE.row(i).transpose();
+        ev_accessor.index_access().vector_attribute<2>(i) = EV.row(i).transpose();
+        ee_accessor.index_access().vector_attribute<2>(i) = EE.row(i).transpose();
 
         e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
@@ -181,10 +184,10 @@ Tuple EdgeMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
 
 Tuple EdgeMesh::vertex_tuple_from_id(int64_t id) const
 {
-    ConstAccessor<int64_t> ve_accessor = create_const_accessor<int64_t>(m_ve_handle);
+    const attribute::Accessor<int64_t> ve_accessor = create_const_accessor<int64_t>(m_ve_handle);
     auto e = ve_accessor.index_access().const_scalar_attribute(id);
-    ConstAccessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
-    auto ev = ev_accessor.index_access().const_vector_attribute(e);
+    const attribute::Accessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
+    auto ev = ev_accessor.index_access().const_vector_attribute<2>(e);
     for (int64_t i = 0; i < 2; ++i) {
         if (ev(i) == id) {
             Tuple v_tuple = Tuple(i, -1, -1, e, get_cell_hash_slow(e));
@@ -206,8 +209,8 @@ Tuple EdgeMesh::edge_tuple_from_id(int64_t id) const
 
 Tuple EdgeMesh::tuple_from_global_ids(int64_t eid, int64_t vid) const
 {
-    ConstAccessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
-    auto ev = ev_accessor.index_access().const_vector_attribute(eid);
+    const attribute::Accessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
+    auto ev = ev_accessor.index_access().const_vector_attribute<2>(eid);
 
     int64_t lvid = -1;
 
@@ -227,7 +230,7 @@ Tuple EdgeMesh::tuple_from_global_ids(int64_t eid, int64_t vid) const
 }
 
 
-bool EdgeMesh::is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const
+bool EdgeMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const
 {
     if (tuple.is_null()) return false;
 
@@ -239,11 +242,11 @@ bool EdgeMesh::is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accesso
 bool EdgeMesh::is_connectivity_valid() const
 {
     // get accessors for topology
-    ConstAccessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
-    ConstAccessor<int64_t> ee_accessor = create_const_accessor<int64_t>(m_ee_handle);
-    ConstAccessor<int64_t> ve_accessor = create_const_accessor<int64_t>(m_ve_handle);
-    ConstAccessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
-    ConstAccessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    const attribute::Accessor<int64_t> ev_accessor = create_const_accessor<int64_t>(m_ev_handle);
+    const attribute::Accessor<int64_t> ee_accessor = create_const_accessor<int64_t>(m_ee_handle);
+    const attribute::Accessor<int64_t> ve_accessor = create_const_accessor<int64_t>(m_ve_handle);
+    const attribute::Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    const attribute::Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
 
     // VE and EV
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
@@ -253,7 +256,7 @@ bool EdgeMesh::is_connectivity_valid() const
         }
         int cnt = 0;
         for (int64_t j = 0; j < 2; ++j) {
-            if (ev_accessor.index_access().const_vector_attribute(
+            if (ev_accessor.index_access().const_vector_attribute<2>(
                     ve_accessor.index_access().const_scalar_attribute(i))[j] == i) {
                 cnt++;
             }

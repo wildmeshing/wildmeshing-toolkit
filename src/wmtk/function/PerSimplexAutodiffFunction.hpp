@@ -65,7 +65,7 @@ protected:
         const std::optional<simplex::Simplex>& variable_simplex_opt = {}) const;
 
     std::vector<DSVec> get_coordinates(
-        const ConstAccessor<double>& accessor,
+        const attribute::Accessor<double>& accessor,
         const simplex::Simplex& domain_simplex,
         const std::optional<simplex::Simplex>& variable_simplex_opt = {}) const;
 

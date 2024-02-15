@@ -42,7 +42,8 @@ public:
     AttributeCache& operator=(AttributeCache&&) = default;
 
 
-    void try_caching(int64_t index, const MapResult& value);
+    template <typename Derived>
+    void try_caching(int64_t index, const Eigen::MatrixBase<Derived>& value);
     void try_caching(int64_t index, const T& value);
 
     typename DataStorage::const_iterator find_value(int64_t index) const;

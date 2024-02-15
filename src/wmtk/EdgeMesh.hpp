@@ -2,7 +2,7 @@
 
 #include <Eigen/Core>
 #include <wmtk/operations/edge_mesh/EdgeOperationData.hpp>
-#include "Mesh.hpp"
+#include "MeshCRTP.hpp"
 #include "Tuple.hpp"
 
 namespace wmtk {
@@ -12,10 +12,12 @@ class MultiMeshEdgeSplitFunctor;
 class MultiMeshEdgeCollapseFunctor;
 class UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations::utils
-class EdgeMesh : public Mesh
+class EdgeMesh : public MeshCRTP<EdgeMesh>
 {
 public:
-    friend class Mesh;
+    friend class MeshCRTP<EdgeMesh>;
+    template <typename U, typename MeshType>
+    friend class attribute::Accessor;
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
@@ -40,19 +42,20 @@ public:
         Eigen::Ref<const RowVectors2l> EE,
         Eigen::Ref<const VectorXl> VE);
 
-    bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const override;
+    bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+        const override;
 
     bool is_connectivity_valid() const override;
 
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const override;
 
+    Tuple switch_vertex(const Tuple& tuple) const;
+    Tuple switch_edge(const Tuple& tuple) const;
+
 protected:
     int64_t id(const Tuple& tuple, PrimitiveType type) const;
-    int64_t id(const simplex::Simplex& simplex) const
-    {
-        return id(simplex.tuple(), simplex.primitive_type());
-    }
+    using MeshCRTP<EdgeMesh>::id; // getting the (simplex) prototype
 
     int64_t id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
     int64_t id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
@@ -81,4 +84,12 @@ protected:
     class EdgeMeshOperationExecutor;
 };
 
+inline Tuple EdgeMesh::switch_vertex(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Vertex);
+}
+inline Tuple EdgeMesh::switch_edge(const Tuple& tuple) const
+{
+    return switch_tuple(tuple, PrimitiveType::Edge);
+}
 } // namespace wmtk

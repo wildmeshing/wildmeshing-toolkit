@@ -11,6 +11,7 @@ public:
     using TriMesh::TriMesh;
     DEBUG_TriMesh(TriMesh&& m);
 
+    using TriMesh::id;
     using TriMesh::id_vertex;
 
 
@@ -71,8 +72,6 @@ public:
     void reserve_more_attributes(const std::vector<int64_t>& sizes);
 
 
-    int64_t id(const Tuple& tuple, PrimitiveType type) const;
-    int64_t id(const simplex::Simplex& s) const;
     /**
      * @brief returns the TriMeshOperationExecutor
      */
@@ -80,9 +79,9 @@ public:
 
     using TriMesh::custom_attributes;
 
-    Accessor<int64_t> get_cell_hash_accessor();
+    wmtk::attribute::Accessor<int64_t> get_cell_hash_accessor();
 
-    TriMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<int64_t>& hash_accessor);
+    TriMeshOperationExecutor get_tmoe(const Tuple& t, attribute::Accessor<int64_t>& hash_accessor);
 };
 
 } // namespace wmtk::tests

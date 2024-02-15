@@ -94,7 +94,7 @@ TetMesh::TetMeshOperationExecutor::get_incident_tets_and_faces(Tuple t)
 TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     TetMesh& m,
     const Tuple& operating_tuple,
-    Accessor<int64_t>& hash_acc)
+    attribute::Accessor<int64_t>& hash_acc)
     : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Triangle), m.get_flag_accessor(PrimitiveType::Tetrahedron)}}
     , tt_accessor(m.create_accessor<int64_t>(m.m_tt_handle))
     , tf_accessor(m.create_accessor<int64_t>(m.m_tf_handle))

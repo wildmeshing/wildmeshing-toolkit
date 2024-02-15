@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <numeric>
-#include <wmtk/Accessor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/TetMeshOperationExecutor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
@@ -27,7 +27,7 @@ using TM = TetMesh;
 using MapResult = typename Eigen::Matrix<int64_t, Eigen::Dynamic, 1>::MapType;
 using TMOE = decltype(std::declval<DEBUG_TetMesh>().get_tmoe(
     wmtk::Tuple(),
-    std::declval<Accessor<int64_t>&>()));
+    std::declval<attribute::Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -148,7 +148,7 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
 
 
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
         // std::array<std::vector<Tuple>, 2> incident_tets_and_faces =
@@ -170,7 +170,7 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         DEBUG_TetMesh m = one_ear();
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
 
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
         const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
@@ -186,7 +186,7 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
 
 
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
         const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
@@ -202,7 +202,7 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 4, 1);
 
 
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
         const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
@@ -216,7 +216,7 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 2);
 
 
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
         const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
@@ -229,7 +229,7 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         DEBUG_TetMesh m = six_cycle_tets();
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0);
 
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
         const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
@@ -296,7 +296,7 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
     SECTION("one_ear")
     {
         DEBUG_TetMesh m = one_ear();
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
@@ -308,7 +308,7 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
     SECTION("two_ears")
     {
         DEBUG_TetMesh m = two_ears();
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
@@ -320,7 +320,7 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
     SECTION("three_incident_tets_1")
     {
         DEBUG_TetMesh m = three_incident_tets();
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 2, 1);
@@ -332,7 +332,7 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
     SECTION("three_incident_tets_2")
     {
         DEBUG_TetMesh m = three_incident_tets();
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
@@ -344,7 +344,7 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
     SECTION("six_cycle_tets_1")
     {
         DEBUG_TetMesh m = six_cycle_tets();
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
@@ -356,7 +356,7 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
     SECTION("six_cycle_tets_2")
     {
         DEBUG_TetMesh m = six_cycle_tets();
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 2, 1);
@@ -671,9 +671,9 @@ TEST_CASE("tet_split_with_tags", "[operations][split][3d][.]")
             embedding_tag_value);
         wmtk::attribute::MeshAttributeHandle todo_tag_handle =
             m.register_attribute<int64_t>("todo_tag", wmtk::PrimitiveType::Tetrahedron, 1);
-        Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
+        wmtk::attribute::Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
         acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = 5;
-        Accessor<int64_t> acc_todo_tag = m.create_accessor<int64_t>(todo_tag_handle);
+        wmtk::attribute::Accessor<int64_t> acc_todo_tag = m.create_accessor<int64_t>(todo_tag_handle);
         acc_todo_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = 1;
 
         composite::TetCellSplit op(m);
@@ -728,7 +728,7 @@ TEST_CASE("tet_split_with_tags", "[operations][split][3d][.]")
             embedding_tag_value);
         wmtk::attribute::MeshAttributeHandle todo_tag_handle =
             m.register_attribute<int64_t>("todo_tag", wmtk::PrimitiveType::Tetrahedron, 1);
-        Accessor<int64_t> acc_todo_tag = m.create_accessor<int64_t>(todo_tag_handle);
+        wmtk::attribute::Accessor<int64_t> acc_todo_tag = m.create_accessor<int64_t>(todo_tag_handle);
         acc_todo_tag.scalar_attribute(m.get_all(PrimitiveType::Tetrahedron)[0]) = 1;
         acc_todo_tag.scalar_attribute(m.get_all(PrimitiveType::Tetrahedron)[3]) = 1;
 

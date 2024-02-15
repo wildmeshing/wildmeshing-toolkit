@@ -8,6 +8,8 @@ template <typename T>
 class AttributeCacheData
 {
 public:
+    template <int D>
+    using VectorD = typename internal::VectorResult<T, D>;
     using Vector = typename internal::VectorResult<T>;
     template <typename Derived>
     AttributeCacheData(const Eigen::MatrixBase<Derived>& a)
@@ -22,8 +24,10 @@ public:
     AttributeCacheData(const AttributeCacheData&) = default;
     AttributeCacheData& operator=(AttributeCacheData&&) = default;
     AttributeCacheData& operator=(const AttributeCacheData&) = default;
-    typename Vector::MapType data_as_map();
-    typename Vector::ConstMapType data_as_const_map() const;
+    template <int D = Eigen::Dynamic>
+    typename VectorD<D>::MapType data_as_map();
+    template <int D = Eigen::Dynamic>
+    typename VectorD<D>::ConstMapType data_as_const_map() const;
 
     Vector data;
 };
