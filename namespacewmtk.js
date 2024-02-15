@@ -38,6 +38,7 @@ var namespacewmtk =
     [ "MeshWriter", "classwmtk_1_1_mesh_writer.html", "classwmtk_1_1_mesh_writer" ],
     [ "MshReader", "classwmtk_1_1_msh_reader.html", "classwmtk_1_1_msh_reader" ],
     [ "Mesh", "classwmtk_1_1_mesh.html", "classwmtk_1_1_mesh" ],
+    [ "MeshCRTP", "classwmtk_1_1_mesh_c_r_t_p.html", "classwmtk_1_1_mesh_c_r_t_p" ],
     [ "MultiMeshManager", "classwmtk_1_1_multi_mesh_manager.html", null ],
     [ "PointMesh", "classwmtk_1_1_point_mesh.html", "classwmtk_1_1_point_mesh" ],
     [ "Primitive", "classwmtk_1_1_primitive.html", "classwmtk_1_1_primitive" ],

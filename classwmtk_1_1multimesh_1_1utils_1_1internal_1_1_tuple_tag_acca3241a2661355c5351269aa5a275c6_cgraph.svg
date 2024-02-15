@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 1011;
+var viewWidth = 812;
 var viewHeight = 236;
 var sectionId = 'dynsection-1';
 </script>
@@ -166,7 +166,7 @@ var sectionId = 'dynsection-1';
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
-<g id="a_node6"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#a53557572af34425dfee70a4e051af630" target="_top" xlink:title=" ">
+<g id="a_node6"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#aafa94b8b49762a2263df4a12cf65d2e2" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="498,-123.5 498,-153.5 640,-153.5 640,-123.5 498,-123.5"/>
 <text text-anchor="start" x="506" y="-141.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
 <text text-anchor="middle" x="569" y="-130.5" font-family="Helvetica,sans-Serif" font-size="10.00">::scalar_attribute</text>
@@ -186,7 +186,7 @@ var sectionId = 'dynsection-1';
 <polygon fill="midnightblue" stroke="midnightblue" points="487.5,-127.85 497.96,-126.14 488.72,-120.95 487.5,-127.85"/>
 </g>
 <!-- Node8&#45;&gt;Node4 -->
-<g id="edge12" class="edge">
+<g id="edge11" class="edge">
 <title>Node8&#45;&gt;Node4</title>
 <path fill="none" stroke="midnightblue" d="M456.03,-30.52C470.17,-34.18 485.43,-38.13 499.99,-41.9"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="499.39,-45.36 509.94,-44.47 501.14,-38.58 499.39,-45.36"/>
@@ -209,33 +209,17 @@ var sectionId = 'dynsection-1';
 <!-- Node10 -->
 <g id="node10" class="node">
 <title>Node10</title>
-<g id="a_node10"><a xlink:href="classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="676,-6 676,-25 846,-25 846,-6 676,-6"/>
-<text text-anchor="middle" x="761" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::top_simplex_type</text>
+<g id="a_node10"><a xlink:href="classwmtk_1_1_mesh.html#a6f6c3b9a1d738d05ec8d84cabfa5e4b4" target="_top" xlink:title="Internal utility to allow id to be virtual with a non&#45;virtual overload in derived &#45;Mesh classes.">
+<polygon fill="none" stroke="black" points="676,-6 676,-25 804,-25 804,-6 676,-6"/>
+<text text-anchor="middle" x="740" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::id_virtual</text>
 </a>
 </g>
 </g>
 <!-- Node9&#45;&gt;Node10 -->
 <g id="edge10" class="edge">
 <title>Node9&#45;&gt;Node10</title>
-<path fill="none" stroke="midnightblue" d="M615.03,-15.5C630.26,-15.5 647.88,-15.5 665.48,-15.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="665.82,-19 675.82,-15.5 665.82,-12 665.82,-19"/>
-</g>
-<!-- Node11 -->
-<g id="node11" class="node">
-<title>Node11</title>
-<g id="a_node11"><a xlink:href="classwmtk_1_1_mesh.html#a933f681cf24a63b155c9462280385200" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="882,-0.5 882,-30.5 1003,-30.5 1003,-0.5 882,-0.5"/>
-<text text-anchor="start" x="890" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::top_cell</text>
-<text text-anchor="middle" x="942.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_dimension</text>
-</a>
-</g>
-</g>
-<!-- Node10&#45;&gt;Node11 -->
-<g id="edge11" class="edge">
-<title>Node10&#45;&gt;Node11</title>
-<path fill="none" stroke="midnightblue" d="M846.23,-15.5C854.78,-15.5 863.39,-15.5 871.76,-15.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="871.83,-19 881.83,-15.5 871.83,-12 871.83,-19"/>
+<path fill="none" stroke="midnightblue" d="M615.29,-15.5C630.82,-15.5 648.62,-15.5 665.78,-15.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="665.8,-19 675.8,-15.5 665.8,-12 665.8,-19"/>
 </g>
 </g>
 </svg>

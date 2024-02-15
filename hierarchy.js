@@ -5,7 +5,10 @@ var hierarchy =
       [ "wmtk::attribute::CachingAccessor< T >", "classwmtk_1_1attribute_1_1_caching_accessor.html", [
         [ "wmtk::attribute::Accessor< int64_t >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
         [ "wmtk::attribute::Accessor< double >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
-        [ "wmtk::attribute::Accessor< T >", "classwmtk_1_1attribute_1_1_accessor.html", null ]
+        [ "wmtk::attribute::Accessor< int64_t, wmtk::EdgeMesh >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
+        [ "wmtk::attribute::Accessor< int64_t, wmtk::TriMesh >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
+        [ "wmtk::attribute::Accessor< int64_t, wmtk::TetMesh >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
+        [ "wmtk::attribute::Accessor< T, MeshType >", "classwmtk_1_1attribute_1_1_accessor.html", null ]
       ] ]
     ] ],
     [ "wmtk::attribute::AccessorCache< T >", "classwmtk_1_1attribute_1_1_accessor_cache.html", null ],
@@ -80,10 +83,19 @@ var hierarchy =
     ] ],
     [ "std::enable_shared_from_this", null, [
       [ "wmtk::Mesh", "classwmtk_1_1_mesh.html", [
-        [ "wmtk::EdgeMesh", "classwmtk_1_1_edge_mesh.html", null ],
-        [ "wmtk::PointMesh", "classwmtk_1_1_point_mesh.html", null ],
-        [ "wmtk::TetMesh", "classwmtk_1_1_tet_mesh.html", null ],
-        [ "wmtk::TriMesh", "classwmtk_1_1_tri_mesh.html", null ]
+        [ "wmtk::MeshCRTP< EdgeMesh >", "classwmtk_1_1_mesh_c_r_t_p.html", [
+          [ "wmtk::EdgeMesh", "classwmtk_1_1_edge_mesh.html", null ]
+        ] ],
+        [ "wmtk::MeshCRTP< TriMesh >", "classwmtk_1_1_mesh_c_r_t_p.html", [
+          [ "wmtk::TriMesh", "classwmtk_1_1_tri_mesh.html", null ]
+        ] ],
+        [ "wmtk::MeshCRTP< TetMesh >", "classwmtk_1_1_mesh_c_r_t_p.html", [
+          [ "wmtk::TetMesh", "classwmtk_1_1_tet_mesh.html", null ]
+        ] ],
+        [ "wmtk::MeshCRTP< PointMesh >", "classwmtk_1_1_mesh_c_r_t_p.html", [
+          [ "wmtk::PointMesh", "classwmtk_1_1_point_mesh.html", null ]
+        ] ],
+        [ "wmtk::MeshCRTP< Derived >", "classwmtk_1_1_mesh_c_r_t_p.html", null ]
       ] ]
     ] ],
     [ "wmtk::simplex::utils::MeshSimplexComparator::Equal", "classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator_1_1_equal.html", null ],

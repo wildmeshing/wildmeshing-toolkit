@@ -139,7 +139,7 @@ $(document).ready(function(){initNavTree('functions_func_s.html',''); initResiza
 : <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html#adb3484dabaffb78610e46d8a4a3c38e4">wmtk::components::adaptive_tessellation::image::Image</a>
 </li>
 <li>scalar_attribute()
-: <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#a53557572af34425dfee70a4e051af630">wmtk::attribute::Accessor&lt; T &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#aafa94b8b49762a2263df4a12cf65d2e2">wmtk::attribute::Accessor&lt; T, MeshType &gt;</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#a7b8aec53b09f796ad3f680a73150222f">wmtk::attribute::AccessorBase&lt; _T &gt;</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a54a0f1a318e8ee28844c041daf3357ad">wmtk::attribute::Attribute&lt; T &gt;</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#abfe4aea6c8cb24f7506b30f8d8ef7600">wmtk::attribute::AttributeScopeStack&lt; T &gt;</a>
@@ -197,7 +197,7 @@ $(document).ready(function(){initNavTree('functions_func_s.html',''); initResiza
 </li>
 <li>set_new_attribute_strategy()
 : <a class="el" href="classwmtk_1_1operations_1_1_edge_collapse.html#a9fee9bff38940d22e86725aa39f5304a">wmtk::operations::EdgeCollapse</a>
-, <a class="el" href="classwmtk_1_1operations_1_1_edge_split.html#ae0a8318865da32ee77c8ce98158b48e8">wmtk::operations::EdgeSplit</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_edge_split.html#a9ad8025fa6682135fc5bbbb5fc6cefcf">wmtk::operations::EdgeSplit</a>
 </li>
 <li>set_nonlinear_solver_params()
 : <a class="el" href="classwmtk_1_1operations_1_1_optimization_smoothing.html#a59cfa9d2cbea4d717ceef68c1fd34a6b">wmtk::operations::OptimizationSmoothing</a>
@@ -212,7 +212,7 @@ $(document).ready(function(){initNavTree('functions_func_s.html',''); initResiza
 : <a class="el" href="classwmtk_1_1utils_1_1_random_seed_singleton.html#ae4ccdf9daa8caab99d352e0cbad64052">wmtk::utils::RandomSeedSingleton</a>
 </li>
 <li>set_simplex_predicate()
-: <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ae3a7acfb373944746721d97a0b3c739b">wmtk::operations::NewAttributeStrategy</a>
+: <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#aa6ffebc96bb7cf5d861585cf1924ff69">wmtk::operations::NewAttributeStrategy</a>
 </li>
 <li>set_strategy()
 : <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ae9756dc5225d6d12179b4a62fd1d8763">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;</a>
@@ -251,7 +251,7 @@ $(document).ready(function(){initNavTree('functions_func_s.html',''); initResiza
 </li>
 <li>simplex_vector()
 : <a class="el" href="classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a002ff09e5ebcd0af41063090ddffab0f">wmtk::simplex::RawSimplexCollection</a>
-, <a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a5f719ceebed01c94aeace9cfbe08183f">wmtk::simplex::SimplexCollection</a>
+, <a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128">wmtk::simplex::SimplexCollection</a>
 </li>
 <li>simplex_vector_tuples()
 : <a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#ad76f1f147d2ef6b62c6aff05070464bd">wmtk::simplex::SimplexCollection</a>
@@ -343,7 +343,7 @@ $(document).ready(function(){initNavTree('functions_func_s.html',''); initResiza
 , <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_split_new_attribute_topo_info.html#adc21593200cd04a12d889fdcc2150827">wmtk::operations::tri_mesh::SplitNewAttributeTopoInfo</a>
 </li>
 <li>stack_depth()
-: <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#afb9f06d72f48df706a59d45bfc4d7284">wmtk::attribute::Accessor&lt; T &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#afb9f06d72f48df706a59d45bfc4d7284">wmtk::attribute::Accessor&lt; T, MeshType &gt;</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#afb9f06d72f48df706a59d45bfc4d7284">wmtk::attribute::CachingAccessor&lt; T &gt;</a>
 </li>
 <li>standard_collapse_strategy()
@@ -379,12 +379,14 @@ $(document).ready(function(){initNavTree('functions_func_s.html',''); initResiza
 <li>switch_tuple()
 : <a class="el" href="classwmtk_1_1_edge_mesh.html#a46725851b572b51a356450adc30c14ed">wmtk::EdgeMesh</a>
 , <a class="el" href="classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7">wmtk::Mesh</a>
+, <a class="el" href="classwmtk_1_1_mesh_c_r_t_p.html#a0a7fada114a5adf3e37fd5ce1c0b2e06">wmtk::MeshCRTP&lt; Derived &gt;</a>
 , <a class="el" href="classwmtk_1_1_point_mesh.html#a66bcea03adca55331c31f915260f6174">wmtk::PointMesh</a>
-, <a class="el" href="classwmtk_1_1_tet_mesh.html#a4525e2b5565d11fda49e902958dbf4c4">wmtk::TetMesh</a>
-, <a class="el" href="classwmtk_1_1_tri_mesh.html#a980d7bf51ebd7a8c096e904867bd9a41">wmtk::TriMesh</a>
+, <a class="el" href="classwmtk_1_1_tet_mesh.html#a53d9ec91a1c80da4ae10dea485564f27">wmtk::TetMesh</a>
+, <a class="el" href="classwmtk_1_1_tri_mesh.html#a17b808a46d1a31efc12d555e6721bd02">wmtk::TriMesh</a>
 </li>
 <li>switch_tuples()
 : <a class="el" href="classwmtk_1_1_mesh.html#a7f8a7b7d592fdbf672f2c6c9653487ea">wmtk::Mesh</a>
+, <a class="el" href="classwmtk_1_1_mesh_c_r_t_p.html#ab3cb3dac6bbba12336c6e24e6e8a5450">wmtk::MeshCRTP&lt; Derived &gt;</a>
 </li>
 <li>switch_tuples_unsafe()
 : <a class="el" href="classwmtk_1_1_mesh.html#a072ba17f33381b00b9dec76cb3d986af">wmtk::Mesh</a>

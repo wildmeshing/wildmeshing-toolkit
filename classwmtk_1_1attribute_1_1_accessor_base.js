@@ -1,8 +1,8 @@
 var classwmtk_1_1attribute_1_1_accessor_base =
 [
     [ "AttributeType", "classwmtk_1_1attribute_1_1_accessor_base.html#ab1af1107d495f936bba9c7e2adf52109", null ],
-    [ "ConstMapResult", "classwmtk_1_1attribute_1_1_accessor_base.html#a7f3733023994cc84511024ad65849f43", null ],
-    [ "MapResult", "classwmtk_1_1attribute_1_1_accessor_base.html#ac0b5a6b806c34ac383a13bd542f25b21", null ],
+    [ "ConstMapResult", "classwmtk_1_1attribute_1_1_accessor_base.html#ae58cc91d6de205823433ce1e8fba8315", null ],
+    [ "MapResult", "classwmtk_1_1attribute_1_1_accessor_base.html#a3303d80ac8fdd2df138f99281a507779", null ],
     [ "MeshAttributesType", "classwmtk_1_1attribute_1_1_accessor_base.html#a230383217094cf31fa63f9ebc75944bd", null ],
     [ "T", "classwmtk_1_1attribute_1_1_accessor_base.html#a32978315f845e8d89c76b3d3c3b73cb2", null ],
     [ "~AccessorBase", "classwmtk_1_1attribute_1_1_accessor_base.html#a1bf2b4fed4a4783aedf42d1f3f395e28", null ],
@@ -30,6 +30,7 @@ var classwmtk_1_1attribute_1_1_accessor_base =
     [ "typed_handle", "classwmtk_1_1attribute_1_1_accessor_base.html#ae593ba5f29485a4ae42ba81153f30c94", null ],
     [ "vector_attribute", "classwmtk_1_1attribute_1_1_accessor_base.html#a448b8bcc9c03648c63b3a381da65895f", null ],
     [ "vector_attribute", "classwmtk_1_1attribute_1_1_accessor_base.html#ac917eb9a5282628a9fc7331940031341", null ],
+    [ "Accessor", "classwmtk_1_1attribute_1_1_accessor_base.html#a45f1f17a4c7a4a8b2d68c864efa01439", null ],
     [ "AccessorCache< T >", "classwmtk_1_1attribute_1_1_accessor_base.html#ad5fe767ce099664f32a2f39912ae93fa", null ],
     [ "m_attribute", "classwmtk_1_1attribute_1_1_accessor_base.html#af0e1e1793cd386b34d47950578eadd4a", null ],
     [ "m_handle", "classwmtk_1_1attribute_1_1_accessor_base.html#ab382d5dea9897aa5c00ecf944c0d8469", null ],

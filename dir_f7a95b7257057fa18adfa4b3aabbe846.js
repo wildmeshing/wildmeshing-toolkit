@@ -29,6 +29,9 @@ var dir_f7a95b7257057fa18adfa4b3aabbe846 =
     [ "Mesh_construction.cpp", "_mesh__construction_8cpp.html", null ],
     [ "Mesh_hash.cpp", "_mesh__hash_8cpp.html", null ],
     [ "Mesh_multimesh.cpp", "_mesh__multimesh_8cpp.html", null ],
+    [ "MeshCRTP.hpp", "_mesh_c_r_t_p_8hpp.html", [
+      [ "MeshCRTP", "classwmtk_1_1_mesh_c_r_t_p.html", "classwmtk_1_1_mesh_c_r_t_p" ]
+    ] ],
     [ "MultiMeshManager.hpp", "_multi_mesh_manager_8hpp.html", [
       [ "MultiMeshManager", "classwmtk_1_1_multi_mesh_manager.html", null ]
     ] ],

@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 1031;
+var viewWidth = 832;
 var viewHeight = 168;
 var sectionId = 'dynsection-21';
 </script>
@@ -99,10 +99,10 @@ var sectionId = 'dynsection-21';
 <path fill="none" stroke="midnightblue" d="M122.44,-70.85C135.92,-65.92 150.41,-60.62 164.27,-55.55"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="165.55,-58.81 173.73,-52.08 163.14,-52.23 165.55,-58.81"/>
 </g>
-<!-- Node11 -->
-<g id="node11" class="node">
-<title>Node11</title>
-<g id="a_node11"><a xlink:href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a74880862626b85c76af2061a637ed0ff" target="_top" xlink:title=" ">
+<!-- Node10 -->
+<g id="node10" class="node">
+<title>Node10</title>
+<g id="a_node10"><a xlink:href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a74880862626b85c76af2061a637ed0ff" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="166,-71 166,-112 296,-112 296,-71 166,-71"/>
 <text text-anchor="start" x="174" y="-100" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::utils</text>
 <text text-anchor="start" x="174" y="-89" font-family="Helvetica,sans-Serif" font-size="10.00">::internal::TupleTag::</text>
@@ -110,16 +110,16 @@ var sectionId = 'dynsection-21';
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node11 -->
-<g id="edge11" class="edge">
-<title>Node1&#45;&gt;Node11</title>
+<!-- Node1&#45;&gt;Node10 -->
+<g id="edge10" class="edge">
+<title>Node1&#45;&gt;Node10</title>
 <path fill="none" stroke="midnightblue" d="M130.35,-91.5C138.64,-91.5 147.19,-91.5 155.62,-91.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="155.84,-95 165.84,-91.5 155.84,-88 155.84,-95"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
-<g id="a_node3"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#a9b6dae794392ccb35bffc91d04e35a79" target="_top" xlink:title=" ">
+<g id="a_node3"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#a0bad11a314b02f52d89d08b18e613e38" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="518,-123.5 518,-153.5 660,-153.5 660,-123.5 518,-123.5"/>
 <text text-anchor="start" x="526" y="-141.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
 <text text-anchor="middle" x="589" y="-130.5" font-family="Helvetica,sans-Serif" font-size="10.00">::const_scalar_attribute</text>
@@ -180,7 +180,7 @@ var sectionId = 'dynsection-21';
 <polygon fill="midnightblue" stroke="midnightblue" points="339.7,-64.22 350.27,-63.45 341.53,-57.46 339.7,-64.22"/>
 </g>
 <!-- Node7&#45;&gt;Node5 -->
-<g id="edge10" class="edge">
+<g id="edge9" class="edge">
 <title>Node7&#45;&gt;Node5</title>
 <path fill="none" stroke="midnightblue" d="M453.05,-63.43C462.62,-60.19 472.65,-56.75 482,-53.5 499.99,-47.24 519.65,-40.23 537.09,-33.96"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="538.31,-37.25 546.53,-30.57 535.94,-30.66 538.31,-37.25"/>
@@ -203,43 +203,27 @@ var sectionId = 'dynsection-21';
 <!-- Node9 -->
 <g id="node9" class="node">
 <title>Node9</title>
-<g id="a_node9"><a xlink:href="classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="696,-69 696,-88 866,-88 866,-69 696,-69"/>
-<text text-anchor="middle" x="781" y="-76" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::top_simplex_type</text>
+<g id="a_node9"><a xlink:href="classwmtk_1_1_mesh.html#a6f6c3b9a1d738d05ec8d84cabfa5e4b4" target="_top" xlink:title="Internal utility to allow id to be virtual with a non&#45;virtual overload in derived &#45;Mesh classes.">
+<polygon fill="none" stroke="black" points="696,-69 696,-88 824,-88 824,-69 696,-69"/>
+<text text-anchor="middle" x="760" y="-76" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::id_virtual</text>
 </a>
 </g>
 </g>
 <!-- Node8&#45;&gt;Node9 -->
 <g id="edge8" class="edge">
 <title>Node8&#45;&gt;Node9</title>
-<path fill="none" stroke="midnightblue" d="M635.03,-78.5C650.26,-78.5 667.88,-78.5 685.48,-78.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="685.82,-82 695.82,-78.5 685.82,-75 685.82,-82"/>
+<path fill="none" stroke="midnightblue" d="M635.29,-78.5C650.82,-78.5 668.62,-78.5 685.78,-78.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="685.8,-82 695.8,-78.5 685.8,-75 685.8,-82"/>
 </g>
-<!-- Node10 -->
-<g id="node10" class="node">
-<title>Node10</title>
-<g id="a_node10"><a xlink:href="classwmtk_1_1_mesh.html#a933f681cf24a63b155c9462280385200" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="902,-63.5 902,-93.5 1023,-93.5 1023,-63.5 902,-63.5"/>
-<text text-anchor="start" x="910" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::top_cell</text>
-<text text-anchor="middle" x="962.5" y="-70.5" font-family="Helvetica,sans-Serif" font-size="10.00">_dimension</text>
-</a>
-</g>
-</g>
-<!-- Node9&#45;&gt;Node10 -->
-<g id="edge9" class="edge">
-<title>Node9&#45;&gt;Node10</title>
-<path fill="none" stroke="midnightblue" d="M866.23,-78.5C874.78,-78.5 883.39,-78.5 891.76,-78.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="891.83,-82 901.83,-78.5 891.83,-75 891.83,-82"/>
-</g>
-<!-- Node11&#45;&gt;Node2 -->
-<g id="edge12" class="edge">
-<title>Node11&#45;&gt;Node2</title>
+<!-- Node10&#45;&gt;Node2 -->
+<g id="edge11" class="edge">
+<title>Node10&#45;&gt;Node2</title>
 <path fill="none" stroke="midnightblue" d="M296.3,-108.87C307.94,-112.01 320.18,-115.32 332.07,-118.53"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="331.4,-121.97 341.97,-121.2 333.23,-115.22 331.4,-121.97"/>
 </g>
-<!-- Node11&#45;&gt;Node7 -->
-<g id="edge13" class="edge">
-<title>Node11&#45;&gt;Node7</title>
+<!-- Node10&#45;&gt;Node7 -->
+<g id="edge12" class="edge">
+<title>Node10&#45;&gt;Node7</title>
 <path fill="none" stroke="midnightblue" d="M296.3,-86.7C307.83,-85.83 319.93,-84.93 331.72,-84.05"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="332.26,-87.52 341.97,-83.28 331.73,-80.54 332.26,-87.52"/>
 </g>

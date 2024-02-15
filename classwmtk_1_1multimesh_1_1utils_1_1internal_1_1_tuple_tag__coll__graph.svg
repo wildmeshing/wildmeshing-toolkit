@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 2389;
+var viewWidth = 2361;
 var viewHeight = 197;
 var sectionId = 'dynsection-0';
 </script>
@@ -58,9 +58,9 @@ var sectionId = 'dynsection-0';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="TupleTag is a util helper class for tagging edges in a triangle mesh.">
-<polygon fill="#bfbfbf" stroke="black" points="2251,-62.5 2251,-92.5 2381,-92.5 2381,-62.5 2251,-62.5"/>
-<text text-anchor="start" x="2259" y="-80.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::utils</text>
-<text text-anchor="middle" x="2316" y="-69.5" font-family="Helvetica,sans-Serif" font-size="10.00">::internal::TupleTag</text>
+<polygon fill="#bfbfbf" stroke="black" points="2223,-62.5 2223,-92.5 2353,-92.5 2353,-62.5 2223,-62.5"/>
+<text text-anchor="start" x="2231" y="-80.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::utils</text>
+<text text-anchor="middle" x="2288" y="-69.5" font-family="Helvetica,sans-Serif" font-size="10.00">::internal::TupleTag</text>
 </a>
 </g>
 </g>
@@ -68,66 +68,67 @@ var sectionId = 'dynsection-0';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="1983,-90.5 1983,-120.5 2125,-120.5 2125,-90.5 1983,-90.5"/>
-<text text-anchor="start" x="1991" y="-108.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
-<text text-anchor="middle" x="2054" y="-97.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; int64_t &gt;</text>
+<polygon fill="none" stroke="black" points="1955,-89.5 1955,-119.5 2097,-119.5 2097,-89.5 1955,-89.5"/>
+<text text-anchor="start" x="1963" y="-107.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
+<text text-anchor="middle" x="2026" y="-96.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; int64_t &gt;</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M2135.29,-96.85C2172.36,-92.86 2215.78,-88.19 2250.65,-84.43"/>
-<polygon fill="#9a32cd" stroke="#9a32cd" points="2134.58,-93.41 2125.02,-97.96 2135.33,-100.37 2134.58,-93.41"/>
-<text text-anchor="middle" x="2188" y="-109.5" font-family="Helvetica,sans-Serif" font-size="10.00"> m_edge_tag_acc</text>
-<text text-anchor="middle" x="2188" y="-98.5" font-family="Helvetica,sans-Serif" font-size="10.00">m_vertex_tag_acc</text>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M2107.29,-96.16C2144.36,-92.31 2187.78,-87.8 2222.65,-84.18"/>
+<polygon fill="#9a32cd" stroke="#9a32cd" points="2106.6,-92.71 2097.02,-97.23 2107.33,-99.68 2106.6,-92.71"/>
+<text text-anchor="middle" x="2160" y="-108.5" font-family="Helvetica,sans-Serif" font-size="10.00"> m_edge_tag_acc</text>
+<text text-anchor="middle" x="2160" y="-97.5" font-family="Helvetica,sans-Serif" font-size="10.00">m_vertex_tag_acc</text>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classwmtk_1_1attribute_1_1_caching_accessor.html" target="_top" xlink:title="An accessor for cached attribute values.">
-<polygon fill="none" stroke="black" points="1543,-128.5 1543,-158.5 1680,-158.5 1680,-128.5 1543,-128.5"/>
-<text text-anchor="start" x="1551" y="-146.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Caching</text>
-<text text-anchor="middle" x="1611.5" y="-135.5" font-family="Helvetica,sans-Serif" font-size="10.00">Accessor&lt; T &gt;</text>
+<polygon fill="none" stroke="black" points="1543,-133.5 1543,-163.5 1680,-163.5 1680,-133.5 1543,-133.5"/>
+<text text-anchor="start" x="1551" y="-151.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Caching</text>
+<text text-anchor="middle" x="1611.5" y="-140.5" font-family="Helvetica,sans-Serif" font-size="10.00">Accessor&lt; T &gt;</text>
 </a>
 </g>
 </g>
 <!-- Node3&#45;&gt;Node2 -->
 <g id="edge2" class="edge">
 <title>Node3&#45;&gt;Node2</title>
-<path fill="none" stroke="darkgreen" d="M1690.18,-128.28C1699.2,-126.84 1708.29,-125.53 1717,-124.5 1808.53,-113.63 1914.84,-108.94 1982.96,-106.95"/>
-<polygon fill="darkgreen" stroke="darkgreen" points="1689.35,-124.87 1680.05,-129.96 1690.49,-131.78 1689.35,-124.87"/>
+<path fill="none" stroke="darkgreen" d="M1680.31,-131.26C1692.46,-128.65 1705.06,-126.25 1717,-124.5 1798.12,-112.63 1892.29,-107.8 1954.94,-105.84"/>
+<polygon fill="darkgreen" stroke="darkgreen" points="1679.23,-127.92 1670.22,-133.5 1680.74,-134.75 1679.23,-127.92"/>
 </g>
 <!-- Node15 -->
 <g id="node15" class="node">
 <title>Node15</title>
 <g id="a_node15"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html" target="_top" xlink:title="A CachingAccessor that uses tuples for accessing attributes instead of indices.">
-<polygon fill="none" stroke="black" points="1717,-134 1717,-153 1887,-153 1887,-134 1717,-134"/>
-<text text-anchor="middle" x="1802" y="-141" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor&lt; T &gt;</text>
+<polygon fill="none" stroke="black" points="1717,-133.5 1717,-163.5 1859,-163.5 1859,-133.5 1717,-133.5"/>
+<text text-anchor="start" x="1725" y="-151.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
+<text text-anchor="middle" x="1788" y="-140.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; T, MeshType &gt;</text>
 </a>
 </g>
 </g>
 <!-- Node3&#45;&gt;Node15 -->
 <g id="edge19" class="edge">
 <title>Node3&#45;&gt;Node15</title>
-<path fill="none" stroke="darkgreen" d="M1690.22,-143.5C1699,-143.5 1707.99,-143.5 1716.85,-143.5"/>
-<polygon fill="darkgreen" stroke="darkgreen" points="1690.02,-140 1680.02,-143.5 1690.02,-147 1690.02,-140"/>
+<path fill="none" stroke="darkgreen" d="M1690.66,-148.5C1699.41,-148.5 1708.28,-148.5 1716.92,-148.5"/>
+<polygon fill="darkgreen" stroke="darkgreen" points="1690.47,-145 1680.47,-148.5 1690.47,-152 1690.47,-145"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:href="classwmtk_1_1attribute_1_1_accessor_base.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="1364,-138.5 1364,-168.5 1506,-168.5 1506,-138.5 1364,-138.5"/>
-<text text-anchor="start" x="1372" y="-156.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
-<text text-anchor="middle" x="1435" y="-145.5" font-family="Helvetica,sans-Serif" font-size="10.00">Base&lt; T &gt;</text>
+<polygon fill="none" stroke="black" points="1364,-139.5 1364,-169.5 1506,-169.5 1506,-139.5 1364,-139.5"/>
+<text text-anchor="start" x="1372" y="-157.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
+<text text-anchor="middle" x="1435" y="-146.5" font-family="Helvetica,sans-Serif" font-size="10.00">Base&lt; T &gt;</text>
 </a>
 </g>
 </g>
 <!-- Node4&#45;&gt;Node3 -->
 <g id="edge3" class="edge">
 <title>Node4&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M1516.25,-148.9C1525.18,-148.39 1534.22,-147.87 1542.97,-147.37"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="1516,-145.41 1506.22,-149.48 1516.41,-152.4 1516,-145.41"/>
+<path fill="none" stroke="midnightblue" d="M1516.25,-151.74C1525.18,-151.43 1534.22,-151.12 1542.97,-150.82"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="1516.1,-148.24 1506.22,-152.09 1516.34,-155.24 1516.1,-148.24"/>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
@@ -142,9 +143,9 @@ var sectionId = 'dynsection-0';
 <!-- Node5&#45;&gt;Node4 -->
 <g id="edge4" class="edge">
 <title>Node5&#45;&gt;Node4</title>
-<path fill="none" stroke="orange" stroke-dasharray="5,2" d="M1297.36,-155.39C1319.14,-155.09 1342.54,-154.76 1363.72,-154.47"/>
-<polygon fill="orange" stroke="orange" points="1297.1,-151.89 1287.15,-155.53 1297.2,-158.89 1297.1,-151.89"/>
-<text text-anchor="middle" x="1330" y="-157.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &lt; T &gt;</text>
+<path fill="none" stroke="orange" stroke-dasharray="5,2" d="M1297.36,-155.76C1319.14,-155.56 1342.54,-155.34 1363.72,-155.15"/>
+<polygon fill="orange" stroke="orange" points="1297.12,-152.26 1287.15,-155.85 1297.19,-159.26 1297.12,-152.26"/>
+<text text-anchor="middle" x="1330" y="-158.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &lt; T &gt;</text>
 </g>
 <!-- Node6 -->
 <g id="node6" class="node">
@@ -158,7 +159,7 @@ var sectionId = 'dynsection-0';
 <!-- Node6&#45;&gt;Node1 -->
 <g id="edge20" class="edge">
 <title>Node6&#45;&gt;Node1</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M966.26,-84.83C1024.67,-73.87 1126.67,-57.5 1215,-57.5 1215,-57.5 1215,-57.5 2055,-57.5 2122,-57.5 2198.43,-64.18 2251,-69.82"/>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M966.26,-84.83C1024.67,-73.87 1126.67,-57.5 1215,-57.5 1215,-57.5 1215,-57.5 2027,-57.5 2094,-57.5 2170.43,-64.18 2223,-69.82"/>
 <polygon fill="#9a32cd" stroke="#9a32cd" points="965.39,-81.43 956.22,-86.74 966.7,-88.31 965.39,-81.43"/>
 <text text-anchor="middle" x="1611.5" y="-60.5" font-family="Helvetica,sans-Serif" font-size="10.00"> m_mesh</text>
 </g>
@@ -329,9 +330,9 @@ var sectionId = 'dynsection-0';
 <!-- Node15&#45;&gt;Node2 -->
 <g id="edge18" class="edge">
 <title>Node15&#45;&gt;Node2</title>
-<path fill="none" stroke="orange" stroke-dasharray="5,2" d="M1875.99,-132.4C1909.64,-127.29 1949.4,-121.25 1982.71,-116.18"/>
-<polygon fill="orange" stroke="orange" points="1875.12,-129 1865.76,-133.96 1876.18,-135.92 1875.12,-129"/>
-<text text-anchor="middle" x="1935" y="-130.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &lt; int64_t &gt;</text>
+<path fill="none" stroke="orange" stroke-dasharray="5,2" d="M1869.23,-133.54C1896.97,-128.37 1927.82,-122.62 1954.69,-117.61"/>
+<polygon fill="orange" stroke="orange" points="1868.36,-130.14 1859.17,-135.42 1869.64,-137.03 1868.36,-130.14"/>
+<text text-anchor="middle" x="1907" y="-134.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &lt; int64_t &gt;</text>
 </g>
 </g>
 </svg>

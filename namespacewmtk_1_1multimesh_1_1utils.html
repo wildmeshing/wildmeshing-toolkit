@@ -173,16 +173,35 @@ Functions</h2></td></tr>
 <tr class="separator:a7382ca1de4356752b14e745f23b6892d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa35461d0dfd6b7202351061ab67b5bc3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#acff53209923ca86be1f06d03944ee942">TwoTupleVector</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#aa35461d0dfd6b7202351061ab67b5bc3">tuples_to_vectors</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;a, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;b)</td></tr>
 <tr class="separator:aa35461d0dfd6b7202351061ab67b5bc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e738c974c80637ea0e2e9a6f5abc46f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a3e738c974c80637ea0e2e9a6f5abc46f">symmetric_write_tuple_map_attributes</a> (<a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t &gt; &amp;a_to_b, <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t &gt; &amp;b_to_a, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;a_tuple, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;b_tuple)</td></tr>
-<tr class="separator:a3e738c974c80637ea0e2e9a6f5abc46f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa6fb761beb691e021e87753de8c15b8f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#aa6fb761beb691e021e87753de8c15b8f">write_tuple_map_attribute</a> (<a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t &gt; &amp;map_accessor, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;target_tuple)</td></tr>
-<tr class="separator:aa6fb761beb691e021e87753de8c15b8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d748ef4839b09a5460e8af97b9fa678"><td class="memTemplParams" colspan="2">template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:a7d748ef4839b09a5460e8af97b9fa678"><td class="memTemplItemLeft" align="right" valign="top">std::tuple&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a7d748ef4839b09a5460e8af97b9fa678">read_tuple_map_attribute</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, MeshType &gt; &amp;accessor, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple)</td></tr>
+<tr class="separator:a7d748ef4839b09a5460e8af97b9fa678"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5bf1d578ce0be7136638e77a5aa8ba1"><td class="memItemLeft" align="right" valign="top">template std::tuple&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#ae5bf1d578ce0be7136638e77a5aa8ba1">read_tuple_map_attribute</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_mesh.html">wmtk::Mesh</a> &gt; &amp;accessor, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple)</td></tr>
+<tr class="separator:ae5bf1d578ce0be7136638e77a5aa8ba1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9d686b24e938026af90d216d63c0973"><td class="memItemLeft" align="right" valign="top">template std::tuple&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#ae9d686b24e938026af90d216d63c0973">read_tuple_map_attribute</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_edge_mesh.html">wmtk::EdgeMesh</a> &gt; &amp;accessor, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple)</td></tr>
+<tr class="separator:ae9d686b24e938026af90d216d63c0973"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8526e68986fef51108b07e98237018a0"><td class="memItemLeft" align="right" valign="top">template std::tuple&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a8526e68986fef51108b07e98237018a0">read_tuple_map_attribute</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a> &gt; &amp;accessor, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple)</td></tr>
+<tr class="separator:a8526e68986fef51108b07e98237018a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22641e67f847e704d0d2b04de0b5b78c"><td class="memItemLeft" align="right" valign="top">template std::tuple&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a22641e67f847e704d0d2b04de0b5b78c">read_tuple_map_attribute</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt; &amp;accessor, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple)</td></tr>
+<tr class="separator:a22641e67f847e704d0d2b04de0b5b78c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa965e96578f254d53e7ca53d617f5c6a"><td class="memTemplParams" colspan="2">template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:aa965e96578f254d53e7ca53d617f5c6a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#aa965e96578f254d53e7ca53d617f5c6a">write_tuple_map_attribute</a> (<a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, MeshType &gt; &amp;map_accessor, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;target_tuple)</td></tr>
+<tr class="separator:aa965e96578f254d53e7ca53d617f5c6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2960024173750eeba9adfb064eda249d"><td class="memItemLeft" align="right" valign="top">template void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a2960024173750eeba9adfb064eda249d">write_tuple_map_attribute</a> (<a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_mesh.html">wmtk::Mesh</a> &gt; &amp;map_accessor, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;target_tuple)</td></tr>
+<tr class="separator:a2960024173750eeba9adfb064eda249d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07b8009ca9992063d075010713346a12"><td class="memItemLeft" align="right" valign="top">template void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a07b8009ca9992063d075010713346a12">write_tuple_map_attribute</a> (<a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_edge_mesh.html">wmtk::EdgeMesh</a> &gt; &amp;map_accessor, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;target_tuple)</td></tr>
+<tr class="separator:a07b8009ca9992063d075010713346a12"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1fecb8c3d7bc904e3d79c0869190ed9f"><td class="memItemLeft" align="right" valign="top">template void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a1fecb8c3d7bc904e3d79c0869190ed9f">write_tuple_map_attribute</a> (<a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a> &gt; &amp;map_accessor, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;target_tuple)</td></tr>
+<tr class="separator:a1fecb8c3d7bc904e3d79c0869190ed9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad44c96858a5163a998f87104820f00af"><td class="memItemLeft" align="right" valign="top">template void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#ad44c96858a5163a998f87104820f00af">write_tuple_map_attribute</a> (<a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt; &amp;map_accessor, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;target_tuple)</td></tr>
+<tr class="separator:ad44c96858a5163a998f87104820f00af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab96c92511f3311e2c2aa44286a401c5c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#ab96c92511f3311e2c2aa44286a401c5c">write_tuple_map_attribute_slow</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;source_mesh, <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; int64_t &gt; map_handle, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;target_tuple)</td></tr>
 <tr class="separator:ab96c92511f3311e2c2aa44286a401c5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac284fa0faee52b08e831a1f405832da7"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#ac284fa0faee52b08e831a1f405832da7">read_tuple_map_attribute</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t &gt; &amp;map_accessor, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple)</td></tr>
-<tr class="separator:ac284fa0faee52b08e831a1f405832da7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad94e77dd28232bdd696412d346f30f62"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#ad94e77dd28232bdd696412d346f30f62">read_tuple_map_attribute_slow</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;source_mesh, <a class="el" href="namespacewmtk.html#a49c007ac9ba40c3688e46dcf5d4bb624">TypedAttributeHandle</a>&lt; int64_t &gt; map_handle, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple)</td></tr>
 <tr class="separator:ad94e77dd28232bdd696412d346f30f62"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab19d57f46b80f20b1b4685ed83e305d5"><td class="memTemplParams" colspan="2">template&lt;typename MeshA , typename MeshB &gt; </td></tr>
+<tr class="memitem:ab19d57f46b80f20b1b4685ed83e305d5"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#ab19d57f46b80f20b1b4685ed83e305d5">symmetric_write_tuple_map_attributes</a> (<a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, MeshA &gt; &amp;a_to_b, <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, MeshB &gt; &amp;b_to_a, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;a_tuple, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;b_tuple)</td></tr>
+<tr class="separator:ab19d57f46b80f20b1b4685ed83e305d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Typedef Documentation</h2>
 <a id="abe1bb2be3cf7cec23a07aa160ff41f82"></a>
@@ -318,7 +337,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00157">157</a> of file <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html">extract_child_mesh_from_tag.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00168">extract_and_register_child_mesh_from_tag_handle()</a>, <a class="el" href="_mesh_8hpp_source.html#l00903">wmtk::Mesh::get_attribute_handle()</a>, and <a class="el" href="_mesh_8cpp_source.html#l00018">wmtk::Mesh::top_simplex_type()</a>.</p>
+<p class="reference">References <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00168">extract_and_register_child_mesh_from_tag_handle()</a>, <a class="el" href="_mesh_8hpp_source.html#l00908">wmtk::Mesh::get_attribute_handle()</a>, and <a class="el" href="_mesh_8cpp_source.html#l00018">wmtk::Mesh::top_simplex_type()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00577">wmtk::utils::generate_raw_tetmesh_with_surface_from_input()</a>, <a class="el" href="multimesh_8cpp_source.html#l00011">wmtk::components::multimesh()</a>, and <a class="el" href="test__component__isotropic__remeshing_8cpp_source.html#l00794">TEST_CASE()</a>.</p>
 <div class="dynheader">
@@ -636,17 +655,19 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
-<a id="ac284fa0faee52b08e831a1f405832da7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac284fa0faee52b08e831a1f405832da7">&#9670;&nbsp;</a></span>read_tuple_map_attribute()</h2>
+<a id="a7d748ef4839b09a5460e8af97b9fa678"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7d748ef4839b09a5460e8af97b9fa678">&#9670;&nbsp;</a></span>read_tuple_map_attribute() <span class="overload">[1/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType &gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">std::tuple&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; wmtk::multimesh::utils::read_tuple_map_attribute </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t &gt; &amp;&#160;</td>
-          <td class="paramname"><em>map_accessor</em>, </td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, MeshType &gt; &amp;&#160;</td>
+          <td class="paramname"><em>accessor</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -662,23 +683,135 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00122">122</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00092">92</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#a6e17e7b873894b46a5f42e75db17de0e">wmtk::attribute::Accessor&lt; T &gt;::const_vector_attribute()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00071">vectors_to_tuples()</a>.</p>
+<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#a02b9afd258380cfdafdac411b30d48af">wmtk::attribute::Accessor&lt; T, MeshType &gt;::const_vector_attribute()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00074">vectors_to_tuples()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00024">wmtk::multimesh::MultiMeshManager::map_tuple_between_meshes()</a>, <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00132">read_tuple_map_attribute_slow()</a>, <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00064">wmtk::operations::utils::update_vertex_operation_multimesh_map_hash()</a>, and <a class="el" href="_multi_mesh_manager_8cpp_source.html#l01015">wmtk::multimesh::MultiMeshManager::update_vertex_operation_multimesh_map_hash_internal()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00024">wmtk::multimesh::MultiMeshManager::map_tuple_between_meshes()</a>, <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00165">read_tuple_map_attribute_slow()</a>, <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00064">wmtk::operations::utils::update_vertex_operation_multimesh_map_hash()</a>, and <a class="el" href="_multi_mesh_manager_8cpp_source.html#l01015">wmtk::multimesh::MultiMeshManager::update_vertex_operation_multimesh_map_hash_internal()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_ac284fa0faee52b08e831a1f405832da7_cgraph.svg" width="100%" height="412"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_a7d748ef4839b09a5460e8af97b9fa678_cgraph.svg" width="100%" height="412"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_ac284fa0faee52b08e831a1f405832da7_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_a7d748ef4839b09a5460e8af97b9fa678_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
+
+</div>
+</div>
+<a id="ae9d686b24e938026af90d216d63c0973"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9d686b24e938026af90d216d63c0973">&#9670;&nbsp;</a></span>read_tuple_map_attribute() <span class="overload">[2/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">template std::tuple&lt;<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&gt; wmtk::multimesh::utils::read_tuple_map_attribute </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_edge_mesh.html">wmtk::EdgeMesh</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>accessor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>source_tuple</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae5bf1d578ce0be7136638e77a5aa8ba1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5bf1d578ce0be7136638e77a5aa8ba1">&#9670;&nbsp;</a></span>read_tuple_map_attribute() <span class="overload">[3/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">template std::tuple&lt;<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&gt; wmtk::multimesh::utils::read_tuple_map_attribute </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_mesh.html">wmtk::Mesh</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>accessor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>source_tuple</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a22641e67f847e704d0d2b04de0b5b78c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a22641e67f847e704d0d2b04de0b5b78c">&#9670;&nbsp;</a></span>read_tuple_map_attribute() <span class="overload">[4/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">template std::tuple&lt;<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&gt; wmtk::multimesh::utils::read_tuple_map_attribute </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>accessor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>source_tuple</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8526e68986fef51108b07e98237018a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8526e68986fef51108b07e98237018a0">&#9670;&nbsp;</a></span>read_tuple_map_attribute() <span class="overload">[5/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">template std::tuple&lt;<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&gt; wmtk::multimesh::utils::read_tuple_map_attribute </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>accessor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>source_tuple</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -714,9 +847,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00132">132</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00165">165</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00885">wmtk::Mesh::create_const_accessor()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00122">read_tuple_map_attribute()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00890">wmtk::Mesh::create_const_accessor()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00092">read_tuple_map_attribute()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_multi_mesh_manager_8cpp_source.html#l01060">wmtk::multimesh::MultiMeshManager::check_child_map_valid()</a>.</p>
 <div class="dynheader">
@@ -734,22 +867,24 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
-<a id="a3e738c974c80637ea0e2e9a6f5abc46f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3e738c974c80637ea0e2e9a6f5abc46f">&#9670;&nbsp;</a></span>symmetric_write_tuple_map_attributes()</h2>
+<a id="ab19d57f46b80f20b1b4685ed83e305d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab19d57f46b80f20b1b4685ed83e305d5">&#9670;&nbsp;</a></span>symmetric_write_tuple_map_attributes()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshA , typename MeshB &gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">void wmtk::multimesh::utils::symmetric_write_tuple_map_attributes </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, MeshA &gt; &amp;&#160;</td>
           <td class="paramname"><em>a_to_b</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, MeshB &gt; &amp;&#160;</td>
           <td class="paramname"><em>b_to_a</em>, </td>
         </tr>
         <tr>
@@ -772,21 +907,21 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00086">86</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8hpp_source.html#l00039">39</a> of file <a class="el" href="tuple__map__attribute__io_8hpp_source.html">tuple_map_attribute_io.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh__multimesh_8cpp_source.html#l00011">wmtk::Mesh::absolute_multi_mesh_id()</a>, <a class="el" href="_tuple_inspector_8cpp_source.html#l00006">wmtk::utils::TupleInspector::as_string()</a>, <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="_accessor_base_8hxx_source.html#l00021">wmtk::attribute::AccessorBase&lt; _T &gt;::mesh()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00101">write_tuple_map_attribute()</a>.</p>
+<p class="reference">References <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00121">write_tuple_map_attribute()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00418">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00189">wmtk::multimesh::MultiMeshManager::register_child_mesh()</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00101">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>, <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00660">wmtk::multimesh::MultiMeshManager::update_map_tuple_hashes()</a>, <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00064">wmtk::operations::utils::update_vertex_operation_multimesh_map_hash()</a>, and <a class="el" href="_multi_mesh_manager_8cpp_source.html#l01015">wmtk::multimesh::MultiMeshManager::update_vertex_operation_multimesh_map_hash_internal()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_a3e738c974c80637ea0e2e9a6f5abc46f_cgraph.svg" width="100%" height="548"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_ab19d57f46b80f20b1b4685ed83e305d5_cgraph.svg" width="100%" height="535"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_a3e738c974c80637ea0e2e9a6f5abc46f_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_ab19d57f46b80f20b1b4685ed83e305d5_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -872,11 +1007,11 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00054">54</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00057">57</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00015">tuple_to_vector2()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00038">tuple_to_vector5()</a>.</p>
+<p class="reference">References <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00018">tuple_to_vector2()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00041">tuple_to_vector5()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00077">tuples_to_vectors()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00080">tuples_to_vectors()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -908,11 +1043,11 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00015">15</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00018">18</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_tuple_inspector_8hpp_source.html#l00015">wmtk::utils::TupleInspector::global_cid()</a>, <a class="el" href="_tuple_inspector_8hpp_source.html#l00016">wmtk::utils::TupleInspector::hash()</a>, <a class="el" href="_tuple_inspector_8hpp_source.html#l00012">wmtk::utils::TupleInspector::local_eid()</a>, <a class="el" href="_tuple_inspector_8hpp_source.html#l00013">wmtk::utils::TupleInspector::local_fid()</a>, and <a class="el" href="_tuple_inspector_8hpp_source.html#l00011">wmtk::utils::TupleInspector::local_vid()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00054">tuple_to_vector()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00057">tuple_to_vector()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -944,11 +1079,11 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00038">38</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00041">41</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_tuple_inspector_8hpp_source.html#l00015">wmtk::utils::TupleInspector::global_cid()</a>, <a class="el" href="_tuple_inspector_8hpp_source.html#l00016">wmtk::utils::TupleInspector::hash()</a>, <a class="el" href="_tuple_inspector_8hpp_source.html#l00012">wmtk::utils::TupleInspector::local_eid()</a>, <a class="el" href="_tuple_inspector_8hpp_source.html#l00013">wmtk::utils::TupleInspector::local_fid()</a>, and <a class="el" href="_tuple_inspector_8hpp_source.html#l00011">wmtk::utils::TupleInspector::local_vid()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00054">tuple_to_vector()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00057">tuple_to_vector()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -990,11 +1125,11 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00077">77</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00080">80</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00054">tuple_to_vector()</a>.</p>
+<p class="reference">References <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00057">tuple_to_vector()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00101">write_tuple_map_attribute()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00121">write_tuple_map_attribute()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1026,9 +1161,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00031">31</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00034">34</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00062">vector_to_tuple()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00065">vector_to_tuple()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -1054,9 +1189,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00049">49</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00052">52</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00062">vector_to_tuple()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00065">vector_to_tuple()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -1082,11 +1217,11 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00062">62</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00065">65</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00031">vector2_to_tuple()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00049">vector5_to_tuple()</a>.</p>
+<p class="reference">References <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00034">vector2_to_tuple()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00052">vector5_to_tuple()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00660">wmtk::multimesh::MultiMeshManager::update_map_tuple_hashes()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00071">vectors_to_tuples()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00660">wmtk::multimesh::MultiMeshManager::update_map_tuple_hashes()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00074">vectors_to_tuples()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1118,11 +1253,11 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00071">71</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00074">74</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00062">vector_to_tuple()</a>.</p>
+<p class="reference">References <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00065">vector_to_tuple()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="test__component__isotropic__remeshing_8cpp_source.html#l00046">print_tuple_map_iso()</a>, <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00122">read_tuple_map_attribute()</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00101">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>, and <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00660">wmtk::multimesh::MultiMeshManager::update_map_tuple_hashes()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="test__component__isotropic__remeshing_8cpp_source.html#l00046">print_tuple_map_iso()</a>, <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00092">read_tuple_map_attribute()</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00101">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>, and <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00660">wmtk::multimesh::MultiMeshManager::update_map_tuple_hashes()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1138,16 +1273,18 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
-<a id="aa6fb761beb691e021e87753de8c15b8f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa6fb761beb691e021e87753de8c15b8f">&#9670;&nbsp;</a></span>write_tuple_map_attribute()</h2>
+<a id="aa965e96578f254d53e7ca53d617f5c6a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa965e96578f254d53e7ca53d617f5c6a">&#9670;&nbsp;</a></span>write_tuple_map_attribute() <span class="overload">[1/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType &gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">void wmtk::multimesh::utils::write_tuple_map_attribute </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, MeshType &gt; &amp;&#160;</td>
           <td class="paramname"><em>map_accessor</em>, </td>
         </tr>
         <tr>
@@ -1170,23 +1307,159 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00101">101</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00121">121</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00077">tuples_to_vectors()</a>, and <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#a9712b0cf5ab1bf61cad493efb7b91bb3">wmtk::attribute::Accessor&lt; T &gt;::vector_attribute()</a>.</p>
+<p class="reference">References <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00080">tuples_to_vectors()</a>, and <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#a3eeacae1f8b3f3375f8279fae2596894">wmtk::attribute::Accessor&lt; T, MeshType &gt;::vector_attribute()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00086">symmetric_write_tuple_map_attributes()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00112">write_tuple_map_attribute_slow()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8hpp_source.html#l00039">symmetric_write_tuple_map_attributes()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00156">write_tuple_map_attribute_slow()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_aa6fb761beb691e021e87753de8c15b8f_cgraph.svg" width="100%" height="535"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_aa965e96578f254d53e7ca53d617f5c6a_cgraph.svg" width="100%" height="535"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_aa6fb761beb691e021e87753de8c15b8f_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_aa965e96578f254d53e7ca53d617f5c6a_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
+
+</div>
+</div>
+<a id="a07b8009ca9992063d075010713346a12"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a07b8009ca9992063d075010713346a12">&#9670;&nbsp;</a></span>write_tuple_map_attribute() <span class="overload">[2/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">template void wmtk::multimesh::utils::write_tuple_map_attribute </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_edge_mesh.html">wmtk::EdgeMesh</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>map_accessor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>source_tuple</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>target_tuple</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2960024173750eeba9adfb064eda249d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2960024173750eeba9adfb064eda249d">&#9670;&nbsp;</a></span>write_tuple_map_attribute() <span class="overload">[3/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">template void wmtk::multimesh::utils::write_tuple_map_attribute </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_mesh.html">wmtk::Mesh</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>map_accessor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>source_tuple</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>target_tuple</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad44c96858a5163a998f87104820f00af"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad44c96858a5163a998f87104820f00af">&#9670;&nbsp;</a></span>write_tuple_map_attribute() <span class="overload">[4/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">template void wmtk::multimesh::utils::write_tuple_map_attribute </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>map_accessor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>source_tuple</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>target_tuple</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a1fecb8c3d7bc904e3d79c0869190ed9f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1fecb8c3d7bc904e3d79c0869190ed9f">&#9670;&nbsp;</a></span>write_tuple_map_attribute() <span class="overload">[5/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">template void wmtk::multimesh::utils::write_tuple_map_attribute </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a>&lt; int64_t, <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>map_accessor</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>source_tuple</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>target_tuple</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -1228,9 +1501,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00112">112</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00156">156</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00877">wmtk::Mesh::create_accessor()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00101">write_tuple_map_attribute()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00882">wmtk::Mesh::create_accessor()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00121">write_tuple_map_attribute()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
