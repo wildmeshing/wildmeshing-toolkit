@@ -40,7 +40,7 @@ The main classes in the toolkit are:
 2. Tuple `Tuple.hpp`. A tuple is a ordered set of simplices, containing one simplex for each dimension. It allows navigation by using switch operations, see 
 [Representing geometric structures in d dimensions: topology and order](https://dl.acm.org/doi/10.1145/73833.73858).
 3. Simplex `Simplex.hpp`. A simplex uniquely identifies a simplex in a mesh, and it is internally implemented as a primitive type and a tuple. A collection of simplexes can be stored in a `SimplexCollection.hpp`. The operations that return collection of simplexes are: `boundary.hpp`, `closed_star.hpp`, `link.hpp`, `open_star.hpp`.
-4. An accessor `Accessor.hpp` allows to access the attributes of the mesh. There are multiple accessors that provide different access levels: read-only (`ConstAccessor.hpp`) and read-write (`MutableAccessor.hpp`)
+4. An accessor `Accessor.hpp` allows to access the attributes of the mesh.
 
 ### attribute --- Management of Mesh Attributes, Caching, and Checkpoints
 
@@ -60,7 +60,8 @@ The key concepts are:
 #### Public interface description:
 1. Register a new attribute. Mesh->register_attribute. This function returns a handle.
 2. Mesh->create_accessor. Converts the handle into an accessor
-3. Access the attribute within the accessor using `vector_attribute` using a Tuple.
+3. Access the attribute within the accessor using `vector_attribute` using a `Tuple` or `Simplex`. `scalar_attribute` can also be used if the attribute only contains a single value.
+
 
 #### Private API development details:
 
