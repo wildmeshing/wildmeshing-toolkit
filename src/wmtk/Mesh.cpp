@@ -15,14 +15,6 @@
 namespace wmtk {
 
 
-PrimitiveType Mesh::top_simplex_type() const
-{
-    int64_t dimension = top_cell_dimension();
-    assert(dimension >= 0);
-    assert(dimension < 4);
-    return static_cast<PrimitiveType>(dimension);
-}
-
 
 std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 {

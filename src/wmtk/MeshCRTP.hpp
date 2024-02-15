@@ -9,6 +9,12 @@ template <typename T, typename MeshType>
 class Accessor;
 }
 
+/**
+ * A [Curiously Recurring Template Pattern](https://en.cppreference.com/w/cpp/language/crtp) shim to enable generic specialization of functions.
+ * CRTP allows us to shift from dynamic to static (inline-able) polymorphism for functions that are frequently called (like id and switch_tuple).
+ * It also allows us to create slightly different interfaces to return different types of accessors to take advantage of the static polymorphism.
+ * 
+ **/
 template <typename Derived>
 class MeshCRTP : public Mesh
 {
@@ -16,35 +22,43 @@ public:
     template <typename U, typename MeshType>
     friend class attribute::Accessor;
     using Mesh::Mesh;
+    /// CRTP utility to extract the derived type of this
     Derived& derived() { return static_cast<Derived&>(*this); }
+    /// CRTP utility to extract the derived type of this with constnesss
     const Derived& derived() const { return static_cast<const Derived&>(*this); }
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override
     {
+        assert(type <= top_simplex_type());
         return derived().switch_tuple(tuple, type);
     }
-    // Performs a sequence of switch_tuple operations in the order specified in op_sequence.
-    // in debug mode this will assert a failure, in release this will return a null tuple
+    /// Performs a sequence of switch_tuple operations in the order specified in op_sequence.
+    /// in debug mode this will assert a failure, in release this will return a null tuple
 #if defined(__cpp_concepts)
     template <std::forward_iterator ContainerType>
 #else
     template <typename ContainerType>
 #endif
     Tuple switch_tuples(const Tuple& tuple, const ContainerType& op_sequence) const;
-    // annoying initializer list prototype to catch switch_tuples(t, {PV,PE})
+    /// annoying initializer list prototype to catch switch_tuples(t, {PV,PE})
     Tuple switch_tuples(const Tuple& tuple, const std::initializer_list<PrimitiveType>& op_sequence)
         const;
+
+    /// returns if a tuple is counterclockwise or not
     bool is_ccw(const Tuple& tuple) const override { return derived().is_ccw(tuple); }
+    /// returns if a simplex is on the boundary of hte mesh. For anything but dimension - 1 this checks if this is the face of any boundary dimension-1 facet
     bool is_boundary(PrimitiveType pt, const Tuple& tuple) const override
     {
         return derived().is_boundary(pt, tuple);
     }
 
+    /// constructs an accessor that is aware of the derived mesh's type
     template <typename T>
     inline attribute::Accessor<T, Derived> create_accessor(const TypedAttributeHandle<T>& handle)
     {
         return attribute::Accessor<T, Derived>(derived(), handle);
     }
+    /// constructs a const accessor that is aware of the derived mesh's type
     template <typename T>
     const attribute::Accessor<T, Derived> create_const_accessor(
         const TypedAttributeHandle<T>& handle) const
@@ -52,6 +66,7 @@ public:
         return attribute::Accessor<T, Derived>(derived(), handle);
     }
 
+    /// constructs a accessor that is aware of the derived mesh's type
     template <typename T>
     attribute::Accessor<T, Derived> create_accessor(const attribute::MeshAttributeHandle& handle)
     {
@@ -61,6 +76,7 @@ public:
     }
 
 
+    /// constructs a const accessor that is aware of the derived mesh's type
     template <typename T>
     inline const attribute::Accessor<T, Derived> create_const_accessor(
         const attribute::MeshAttributeHandle& handle) const
@@ -71,11 +87,16 @@ public:
     }
 
 protected:
+    /// Returns the id of a simplex encoded in a tuple
     int64_t id(const Tuple& tuple, PrimitiveType type) const { return derived().id(tuple, type); }
+    /// internal utility for overriding the mesh class's id function without having the final override block the derived class's override
+    /// (we can't have Mesh::id be virtual, MeshCRTP<Derived>::id final override, and TriMesh::id. This indirection pushes the final override to this other function
     int64_t id_virtual(const Tuple& tuple, PrimitiveType type) const final override
     {
         return id(tuple, type);
     }
+    
+    /// variant of id that can cache internally held values
     int64_t id(const simplex::Simplex& s) const final override
     {
         if (s.m_index == -1) {
