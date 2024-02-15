@@ -1,9 +1,10 @@
 #pragma once
-#include <spdlog/spdlog.h>
+#include <iostream>
 #include <memory>
 #include <vector>
 #include "AttributeCache.hpp"
 #include "AttributeHandle.hpp"
+#include "internal/MapTypes.hpp"
 
 namespace wmtk {
 class Mesh;
@@ -26,110 +27,131 @@ template <typename T>
 class AttributeScopeStack
 {
 public:
-    using MapResult = typename AttributeCache<T>::MapResult;
-    using ConstMapResult = typename AttributeCache<T>::ConstMapResult;
+    template <int D = Eigen::Dynamic>
+    using MapResult = internal::MapResult<T,D>;
+    template <int D = Eigen::Dynamic>
+    using ConstMapResult = internal::ConstMapResult<T,D>;
     // stack is implemented by a parent pointing graph, so we track a pointer
     // to the leaf
     AttributeScopeStack();
     ~AttributeScopeStack();
     AttributeScopeStack(const AttributeScopeStack&) = delete;
     AttributeScopeStack& operator=(const AttributeScopeStack&) = delete;
-    void emplace();
-    void pop(Attribute<T>& attribute, bool apply_updates);
-    AttributeScope<T>* active_scope_ptr();
-    const AttributeScope<T>* active_scope_ptr() const;
+    AttributeScopeStack(AttributeScopeStack&&) = default;
+    AttributeScopeStack& operator=(AttributeScopeStack&&) = default;
 
     bool empty() const;
-    void clear_current_scope(Attribute<T>& attr);
+    int64_t size() const;
 
-    int64_t depth() const;
-#if defined(WMTK_ENABLE_GENERIC_CHECKPOINTS)
-    int64_t add_checkpoint();
-    AttributeScope<T> const* get_checkpoint(int64_t index) const;
-#endif
 
-    // go to the next most historic scope
-    void change_to_next_scope() const;
-    void change_to_previous_scope() const;
-    // go to the scope with active data
-    void change_to_current_scope() const;
-
-    bool at_current_scope() const;
     bool writing_enabled() const;
 
-    void flush_changes_to_vector(const Attribute<T>& attr, std::vector<T>& data) const;
 
-#if defined(WMTK_FLUSH_ON_FAIL)
-    MapResult vector_attribute(AccessorBase<T>& accessor, int64_t index);
+    /// default mutable vector access
+    template <int D = Eigen::Dynamic>
+    MapResult<D> vector_attribute(AccessorBase<T>& accessor, int64_t index);
+    /// default immutable vector access
 
-    ConstMapResult const_vector_attribute(const AccessorBase<T>& accessor, int64_t index) const;
-
-
+    template <int D = Eigen::Dynamic>
+    ConstMapResult<D> const_vector_attribute(const AccessorBase<T>& accessor, int64_t index) const;
+    /// default mutable scalar access
     T& scalar_attribute(AccessorBase<T>& accessor, int64_t index);
 
+    /// default immutable scalar access
     T const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index) const;
+
+    template <int D = Eigen::Dynamic>
+    /// specialized immutable scalar access useful for topological operations
     T const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index, int8_t offset) const;
-#endif
+
+    void emplace();
+    void pop(Attribute<T>& attribute, bool preserve_changes);
+    // go to the next most historic scope
+    void change_to_next_scope();
+    void change_to_previous_scope();
+    // go to the scope with active data
+    void change_to_current_scope();
+    void rollback_current_scope(Attribute<T>& attr);
+
+    /// checks that we are viewing the active state of the attribute
+    bool at_current_scope() const;
+    /// applies the diffs from the last scope to the current attribute
+private:
+    void apply_last_scope(Attribute<T>& attr);
+    /// apply a particular scope to the current attribute
+    void apply_scope(const AttributeScope<T>& scope, Attribute<T>& attr);
+    /// apply a particular scope to a piece of data
+    void apply_scope(const AttributeScope<T>& scope, const Attribute<T>& attr, std::vector<T>& data)
+        const;
+
+
+    // current scope is
 
 protected:
-    std::unique_ptr<AttributeScope<T>> m_start;
-    mutable AttributeScope<T>* m_active = nullptr;
-#if defined(WMTK_ENABLE_GENERIC_CHECKPOINTS)
-    std::vector<AttributeScope<T> const*> m_checkpoints;
-#endif
+    std::vector<AttributeScope<T>> m_scopes;
+    typename std::vector<AttributeScope<T>>::const_iterator m_active;
     // Mesh& m_mesh;
     // AttributeManager& m_attribute_manager;
     // MeshAttributeHandle<T> m_handle;
 };
-
 template <typename T>
-inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index) -> MapResult
+int64_t AttributeScopeStack<T>::size() const
 {
-    assert(writing_enabled());
-
-
-#if defined(WMTK_FLUSH_ON_FAIL)
-    // make sure we record the original value of this attribute by inserting if it hasn't been
-    // inserted yet
-    auto value = accessor.vector_attribute(index);
-    if (bool(m_start)) {
-
-        auto& l = m_start->m_data;
-        auto [it, was_inserted] = l.try_emplace(index,AttributeCacheData<T>{});
-        if (was_inserted) {
-            it->second.data = value;
-            if constexpr(!std::is_same_v<T,Rational>) {
-            }
-        }
-    }
-
-    return value;
-#else
-    if (m_active) {
-        return m_active->vector_attribute(accessor, index);
-    } else {
-        return accessor.vector_attribute(index);
-    }
-
-#endif
+    return m_scopes.size();
 }
 
 template <typename T>
+void AttributeScopeStack<T>::rollback_current_scope(Attribute<T>& attr)
+{
+    assert(!empty());
+    assert(at_current_scope());
+    apply_last_scope(attr);
+}
+
+template <typename T>
+template <int D>
+inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index)
+    -> MapResult<D>
+{
+    assert(writing_enabled());
+
+    auto data = accessor.template vector_attribute<D>(index);
+    if (!empty()) {
+        m_scopes.back().try_caching(index, data);
+    }
+    return data;
+}
+
+template <typename T>
+template <int D>
 inline auto AttributeScopeStack<T>::const_vector_attribute(
     const AccessorBase<T>& accessor,
-    int64_t index) const -> ConstMapResult
+    int64_t index) const -> ConstMapResult<D>
 {
-    if (m_active != nullptr) {
-        return m_active->const_vector_attribute(accessor, index);
-    } else {
-        return accessor.const_vector_attribute(index);
+    if (!at_current_scope()) {
+        assert(m_active >= m_scopes.begin());
+        assert(m_active < m_scopes.end());
+        for (auto it = m_active; it < m_scopes.end(); ++it) {
+        //for (auto it = m_active; it < m_scopes.rend(); ++it) {
+            if (auto mapit = it->find_value(index); it->is_value(mapit)) {
+                const auto& d = mapit->second;
+                auto dat = d.template data_as_const_map<D>();
+                return dat;
+            }
+        }
     }
+    return accessor.template const_vector_attribute<D>(index);
 }
 
 template <typename T>
 inline auto AttributeScopeStack<T>::scalar_attribute(AccessorBase<T>& accessor, int64_t index) -> T&
 {
-    return vector_attribute(accessor, index)(0);
+    assert(writing_enabled());
+    T& value =  accessor.scalar_attribute(index);
+    if (!empty()) {
+        m_scopes.back().try_caching(index, value);
+    }
+    return value;
 }
 
 template <typename T>
@@ -137,16 +159,17 @@ inline auto AttributeScopeStack<T>::const_scalar_attribute(
     const AccessorBase<T>& accessor,
     int64_t index) const -> T
 {
-    return const_vector_attribute(accessor, index)(0);
+    return const_vector_attribute<1>(accessor, index)(0);
 }
 template <typename T>
+template <int D>
 inline auto AttributeScopeStack<T>::const_scalar_attribute(
     const AccessorBase<T>& accessor,
     int64_t index,
     int8_t offset) const -> T
 {
-    if (m_active != nullptr) {
-        return m_active->const_vector_attribute(accessor, index)(offset);
+    if (!at_current_scope()) {
+        return const_vector_attribute<D>(accessor, index)(offset);
     } else {
         return accessor.const_scalar_attribute(index, offset);
     }

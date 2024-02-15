@@ -70,7 +70,7 @@ CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
     if (mesh.top_simplex_type() == PrimitiveType::Edge) {
         m_topo_info =
             std::make_unique<edge_mesh::CollapseNewAttributeTopoInfo>(static_cast<EdgeMesh&>(mesh));
-    } else if (mesh.top_simplex_type() == PrimitiveType::Face) {
+    } else if (mesh.top_simplex_type() == PrimitiveType::Triangle) {
         m_topo_info =
             std::make_unique<tri_mesh::CollapseNewAttributeTopoInfo>(static_cast<TriMesh&>(mesh));
     } else if (mesh.top_simplex_type() == PrimitiveType::Tetrahedron) {

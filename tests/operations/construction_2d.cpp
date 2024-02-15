@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <numeric>
-#include <wmtk/Accessor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
@@ -33,7 +33,7 @@ void test_split(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
     REQUIRE(should_succeed == result);
     auto updated_hash = m.hash();
     if (should_succeed) { // try to run again to make sure we cant do an op twice
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeSplit op(m);
         op(Simplex::edge(e));
 
@@ -66,7 +66,7 @@ void test_collapse(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
 
     auto updated_hash = m.hash();
     if (should_succeed) { // try to run again to make sure we cant do an op twice
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         auto res = op(Simplex::edge(e));

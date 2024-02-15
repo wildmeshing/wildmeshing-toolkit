@@ -10,7 +10,12 @@ namespace wmtk::attribute {
 template <typename T>
 CachingAccessor<T>::CachingAccessor(Mesh& mesh_in, const TypedAttributeHandle<T>& handle)
     : BaseType(mesh_in, handle)
-    , m_cache_stack(*attribute().get_local_scope_stack_ptr())
+    , m_cache_stack(attribute().get_local_scope_stack())
+{}
+template <typename T>
+CachingAccessor<T>::CachingAccessor(const Mesh& mesh_in, const TypedAttributeHandle<T>& handle)
+    : BaseType(mesh_in, handle)
+    , m_cache_stack(attribute().get_local_scope_stack())
 {}
 
 template <typename T>
@@ -18,11 +23,7 @@ CachingAccessor<T>::~CachingAccessor() = default;
 template <typename T>
 bool CachingAccessor<T>::has_stack() const
 {
-#if defined(WMTK_FLUSH_ON_FAIL)
     return !m_cache_stack.empty();
-#else
-    return !m_cache_stack.empty() && m_cache_stack.active_scope_ptr();
-#endif
 }
 template <typename T>
 bool CachingAccessor<T>::writing_enabled() const
@@ -33,13 +34,14 @@ bool CachingAccessor<T>::writing_enabled() const
 template <typename T>
 int64_t CachingAccessor<T>::stack_depth() const
 {
-    return m_cache_stack.depth();
+    return m_cache_stack.size();
 }
 
 template <typename T>
-auto CachingAccessor<T>::vector_attribute(const int64_t index) -> MapResult
+template <int D>
+auto CachingAccessor<T>::vector_attribute(const int64_t index) -> MapResult<D>
 {
-    return m_cache_stack.vector_attribute(*this, index);
+    return m_cache_stack.template vector_attribute<D>(*this, index);
 }
 
 
@@ -50,9 +52,10 @@ auto CachingAccessor<T>::scalar_attribute(const int64_t index) -> T&
 }
 
 template <typename T>
-auto CachingAccessor<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult
+template <int D>
+auto CachingAccessor<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult<D>
 {
-    return m_cache_stack.const_vector_attribute(*this, index);
+    return m_cache_stack.template const_vector_attribute<D>(*this, index);
 }
 
 
@@ -63,7 +66,7 @@ auto CachingAccessor<T>::const_scalar_attribute(const int64_t index) const -> T
 }
 
 template <typename T>
-auto CachingAccessor<T>::vector_attribute(const int64_t index) const -> ConstMapResult
+auto CachingAccessor<T>::vector_attribute(const int64_t index) const -> ConstMapResult<>
 {
     return const_vector_attribute(index);
 }

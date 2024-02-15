@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
+#include "MapTypes.hpp"
+#include "PerThreadAttributeScopeStacks.hpp"
 
 namespace wmtk {
 class MeshWriter;
@@ -29,17 +31,10 @@ template <typename T>
 class Attribute : public wmtk::utils::Hashable
 {
 public:
-    // this value is set by CMake
-    constexpr static int MAX_ATTR_SIZE = WMTK_MAX_ATTRIBUTE_DIMENSION;
-    template <int R>
-    using MapResultD =
-        Eigen::Map<Eigen::Matrix<T, R, 1, 0, (R == Eigen::Dynamic ? MAX_ATTR_SIZE : R), 1>>;
-    template <int R>
-    using ConstMapResultD =
-        Eigen::Map<const Eigen::Matrix<T, R, 1, 0, (R == Eigen::Dynamic ? MAX_ATTR_SIZE : R), 1>>;
-
-    using MapResult = MapResultD<Eigen::Dynamic>;
-    using ConstMapResult = ConstMapResultD<Eigen::Dynamic>;
+    template <int D = Eigen::Dynamic>
+    using MapResult = internal::MapResult<T, D>;
+    template <int D = Eigen::Dynamic>
+    using ConstMapResult = internal::ConstMapResult<T, D>;
 
 
     // attribute directly hashes its "children" components so it overrides "child_hashes"
@@ -64,9 +59,11 @@ public:
     Attribute(Attribute&& o);
     ~Attribute();
     Attribute& operator=(Attribute&& o);
-    ConstMapResult const_vector_attribute(const int64_t index) const;
-    MapResult vector_attribute(const int64_t index);
 
+    template <int D = Eigen::Dynamic>
+    ConstMapResult<D> const_vector_attribute(const int64_t index) const;
+    template <int D = Eigen::Dynamic>
+    MapResult<D> vector_attribute(const int64_t index);
 
     T const_scalar_attribute(const int64_t index) const;
     T& scalar_attribute(const int64_t index);
@@ -95,10 +92,10 @@ public:
 
     void push_scope();
     void pop_scope(bool apply_updates);
-    void clear_current_scope();
+    void rollback_current_scope();
 
-    // returns nullptr if no scope exists
-    AttributeScopeStack<T>* get_local_scope_stack_ptr() const;
+    const AttributeScopeStack<T>& get_local_scope_stack() const;
+    AttributeScopeStack<T>& get_local_scope_stack();
 
     /**
      * @brief Consolidate the vector, using the new2old map m provided and resizing the vector to
@@ -111,7 +108,7 @@ public:
      * This is commonly used after a consolidate to account for the change in global indices
      */
     void index_remap(const std::vector<T>& old2new);
-    void index_remap(const std::vector<T>& old2new,  const std::vector<Eigen::Index>& cols);
+    void index_remap(const std::vector<T>& old2new, const std::vector<Eigen::Index>& cols);
 
 protected:
     /**
@@ -119,12 +116,14 @@ protected:
      * This is internally used by the single-arg const_vector_attribute and to help with
      * serialization
      */
-    ConstMapResult const_vector_attribute(const int64_t index, const std::vector<T>& data) const;
+    template <int D = Eigen::Dynamic>
+    ConstMapResult<D> const_vector_attribute(const int64_t index, const std::vector<T>& data) const;
     /**
      * @brief Accesses the attribute using the specified vector as the underlying data
      * This is internally used by the single-arg vector_attribute and to help with serialization
      */
-    MapResult vector_attribute(const int64_t index, std::vector<T>& data) const;
+    template <int D = Eigen::Dynamic>
+    MapResult<D> vector_attribute(const int64_t index, std::vector<T>& data) const;
     /**
      * @brief Accesses the attribute using the specified scalar as the underlying data
      * This is internally used by the single-arg const_scalar_attribute and to help with
@@ -142,7 +141,8 @@ protected:
      * This is internally used by the single-arg const_scalar_attribute and to help with
      * serialization
      */
-    T const_scalar_attribute(const int64_t index, const int8_t offset, const std::vector<T>& data) const;
+    T const_scalar_attribute(const int64_t index, const int8_t offset, const std::vector<T>& data)
+        const;
     /**
      * @brief Accesses the attribute using the specified scalar as the underlying data
      * This is internally used by the single-arg scalar_attribute and to help with serialization
@@ -154,7 +154,7 @@ protected:
 
 private:
     std::vector<T> m_data;
-    std::unique_ptr<PerThreadAttributeScopeStacks<T>> m_scope_stacks;
+    PerThreadAttributeScopeStacks<T> m_scope_stacks;
     int64_t m_dimension = -1;
     T m_default_value = T(0);
 
@@ -163,19 +163,24 @@ public:
 };
 
 template <typename T>
-inline auto Attribute<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult
+template <int D>
+inline auto Attribute<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult<D>
 {
-    return const_vector_attribute(index, m_data);
+    return const_vector_attribute<D>(index, m_data);
 }
 template <typename T>
-inline auto Attribute<T>::const_vector_attribute(const int64_t index, const std::vector<T>& data) const
-    -> ConstMapResult
+template <int D>
+inline auto Attribute<T>::const_vector_attribute(const int64_t index, const std::vector<T>& data)
+    const -> ConstMapResult<D>
 {
     assert(index < reserved_size(data));
     assert(data.size() % m_dimension == 0);
     assert(m_dimension > 0);
+    if constexpr (D != Eigen::Dynamic) {
+        assert(D == m_dimension);
+    }
     const int64_t start = index * m_dimension;
-    ConstMapResult R(data.data() + start, m_dimension);
+    ConstMapResult<D> R(data.data() + start, m_dimension);
 
     assert(R.size() == m_dimension);
 
@@ -184,18 +189,24 @@ inline auto Attribute<T>::const_vector_attribute(const int64_t index, const std:
 
 
 template <typename T>
-inline auto Attribute<T>::vector_attribute(const int64_t index) -> MapResult
+template <int D>
+inline auto Attribute<T>::vector_attribute(const int64_t index) -> MapResult<D>
 {
-    return vector_attribute(index, m_data);
+    return vector_attribute<D>(index, m_data);
 }
 template <typename T>
-inline auto Attribute<T>::vector_attribute(const int64_t index, std::vector<T>& data) const -> MapResult
+template <int D>
+inline auto Attribute<T>::vector_attribute(const int64_t index, std::vector<T>& data) const
+    -> MapResult<D>
 {
     assert(index < reserved_size(data));
     assert(data.size() % m_dimension == 0);
     assert(m_dimension > 0);
+    if constexpr (D != Eigen::Dynamic) {
+        assert(D == m_dimension);
+    }
     const int64_t start = index * m_dimension;
-    MapResult R(data.data() + start, m_dimension);
+    MapResult<D> R(data.data() + start, m_dimension);
     assert(R.size() == m_dimension);
     return R;
 }
@@ -232,7 +243,10 @@ inline T Attribute<T>::const_scalar_attribute(const int64_t index, const int8_t 
     return const_scalar_attribute(index, offset, m_data);
 }
 template <typename T>
-inline T Attribute<T>::const_scalar_attribute(const int64_t index, const int8_t offset, const std::vector<T>& data) const
+inline T Attribute<T>::const_scalar_attribute(
+    const int64_t index,
+    const int8_t offset,
+    const std::vector<T>& data) const
 {
     const int64_t idx = index * m_dimension + offset;
     assert(index < reserved_size(data));
@@ -245,7 +259,8 @@ inline T& Attribute<T>::scalar_attribute(const int64_t index, const int8_t offse
     return scalar_attribute(index, offset, m_data);
 }
 template <typename T>
-inline T& Attribute<T>::scalar_attribute(const int64_t index, const int8_t offset, std::vector<T>& data) const
+inline T&
+Attribute<T>::scalar_attribute(const int64_t index, const int8_t offset, std::vector<T>& data) const
 {
     const int64_t idx = index * m_dimension + offset;
     assert(index < reserved_size(data));
@@ -253,5 +268,41 @@ inline T& Attribute<T>::scalar_attribute(const int64_t index, const int8_t offse
 }
 
 
+template <typename T>
+inline int64_t Attribute<T>::dimension() const
+{
+    return m_dimension;
+}
+
+template <typename T>
+inline const AttributeScopeStack<T>& Attribute<T>::get_local_scope_stack() const
+{
+    return m_scope_stacks.local();
+}
+template <typename T>
+inline AttributeScopeStack<T>& Attribute<T>::get_local_scope_stack()
+{
+    return m_scope_stacks.local();
+}
+
+template <typename T>
+inline void Attribute<T>::push_scope()
+{
+    m_scope_stacks.local().emplace();
+}
+template <typename T>
+inline void Attribute<T>::pop_scope(bool apply_updates)
+{
+    m_scope_stacks.local().pop(*this, apply_updates);
+}
+
+template <typename T>
+inline void Attribute<T>::rollback_current_scope()
+{
+    m_scope_stacks.local().rollback_current_scope(*this);
+}
+
 } // namespace attribute
 } // namespace wmtk
+#include "AccessorBase.hpp"
+#include "AttributeCache.hpp"

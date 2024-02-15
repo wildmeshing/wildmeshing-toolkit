@@ -70,7 +70,7 @@ public:
     bool operator==(const MeshAttributes<T>& other) const;
     void push_scope();
     void pop_scope(bool apply_updates = true);
-    void clear_current_scope();
+    void rollback_current_scope();
 
     void change_to_parent_scope() const;
     void change_to_child_scope() const;

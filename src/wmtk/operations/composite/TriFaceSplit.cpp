@@ -45,7 +45,8 @@ std::vector<simplex::Simplex> TriFaceSplit::execute(const simplex::Simplex& simp
     //  \  |  /
     //   \ | /
     //    \|/
-    const Tuple second_split_input_tuple = mesh().switch_vertex(mesh().switch_edge(split_ret));
+    const Tuple second_split_input_tuple =
+        mesh().switch_tuples(split_ret, {PrimitiveType::Edge, PrimitiveType::Vertex});
     const auto second_split_simplicies = m_split(simplex::Simplex::edge(second_split_input_tuple));
     if (second_split_simplicies.empty()) return {};
     assert(second_split_simplicies.size() == 1);
@@ -74,11 +75,12 @@ std::vector<simplex::Simplex> TriFaceSplit::execute(const simplex::Simplex& simp
     //    \ | /
     //     \|/
 
-    const Tuple coll_input_tuple = mesh().switch_edge(mesh().switch_vertex(second_split_ret));
-    const auto collapse_simplicies = m_collapse(simplex::Simplex::edge(coll_input_tuple));
+    const Tuple col1_input_tuple =
+        mesh().switch_tuples(second_split_ret, {PrimitiveType::Vertex, PrimitiveType::Edge});
+    const auto collapse_simplicies = m_collapse(simplex::Simplex::edge(col1_input_tuple));
     if (collapse_simplicies.empty()) return {};
     assert(collapse_simplicies.size() == 1);
-    const Tuple coll_ret = collapse_simplicies.front().tuple();
+    const Tuple col1_ret = collapse_simplicies.front().tuple();
 
     // collapse output
     //     /| \ .
@@ -92,7 +94,8 @@ std::vector<simplex::Simplex> TriFaceSplit::execute(const simplex::Simplex& simp
     //    \    /
     //     \  /
     // return new vertex's tuple
-    const Tuple output_tuple = mesh().switch_edge(mesh().switch_vertex(coll_ret));
+    const Tuple output_tuple =
+        mesh().switch_tuples(col1_ret, {PrimitiveType::Vertex, PrimitiveType::Edge});
 
     return {simplex::Simplex::vertex(output_tuple)};
 }

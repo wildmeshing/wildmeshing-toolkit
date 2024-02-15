@@ -3,7 +3,7 @@
 #include "attribute_new/NewAttributeStrategy.hpp"
 #include "attribute_update/AttributeTransferStrategyBase.hpp"
 
-#include <wmtk/Accessor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/Tuple.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 
@@ -89,9 +89,9 @@ protected:
     Tuple resurrect_tuple(const Tuple& tuple) const;
 
     /// @brief utility for subclasses
-    Accessor<int64_t> hash_accessor();
+    attribute::Accessor<int64_t> hash_accessor();
     /// @brief utility for subclasses
-    ConstAccessor<int64_t> hash_accessor() const;
+    const attribute::Accessor<int64_t> hash_accessor() const;
 
 
     void apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods);

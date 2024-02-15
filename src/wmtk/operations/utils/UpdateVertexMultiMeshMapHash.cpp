@@ -9,7 +9,7 @@
 #include <wmtk/simplex/closed_star.hpp>
 
 namespace wmtk::operations::utils {
-void update_vertex_operation_hashes(Mesh& m, const Tuple& vertex, Accessor<int64_t>& hash_accessor)
+void update_vertex_operation_hashes(Mesh& m, const Tuple& vertex, attribute::Accessor<int64_t>& hash_accessor)
 {
     const PrimitiveType pt = m.top_simplex_type();
     const simplex::SimplexCollection star =
@@ -32,8 +32,8 @@ void update_vertex_operation_hashes(Mesh& m, const Tuple& vertex, Accessor<int64
         }
         break;
     }
-    case PrimitiveType::Face: {
-        const auto star_faces = star.simplex_vector(PrimitiveType::Face);
+    case PrimitiveType::Triangle: {
+        const auto star_faces = star.simplex_vector(PrimitiveType::Triangle);
         tuples_to_update.reserve(star_faces.size());
         for (const simplex::Simplex& s : star_faces) {
             tuples_to_update.emplace_back(s.tuple());
@@ -48,8 +48,7 @@ void update_vertex_operation_hashes(Mesh& m, const Tuple& vertex, Accessor<int64
         }
         break;
     }
-    default:
-    case PrimitiveType::HalfEdge: throw std::runtime_error("invalid input");
+    default: assert(false); // "invalid input"
     }
 
 
@@ -65,7 +64,7 @@ void update_vertex_operation_hashes(Mesh& m, const Tuple& vertex, Accessor<int64
 void update_vertex_operation_multimesh_map_hash(
     Mesh& m,
     const simplex::SimplexCollection& vertex_closed_star,
-    Accessor<int64_t>& parent_hash_accessor)
+    attribute::Accessor<int64_t>& parent_hash_accessor)
 {
     auto& mm_manager = m.m_multi_mesh_manager;
 

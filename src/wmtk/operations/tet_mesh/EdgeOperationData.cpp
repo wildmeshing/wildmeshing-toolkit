@@ -31,7 +31,7 @@ std::vector<std::array<Tuple, 2>> EdgeOperationData::ear_faces(const TetMesh& m)
 
         for (size_t j = 0; j < 2; ++j) {
             int64_t fid = itd.ears[j].fid;
-            r[j] = tuple_from_id(m, PrimitiveType::Face, fid);
+            r[j] = tuple_from_id(m, PrimitiveType::Triangle, fid);
         }
     }
     return ret;
@@ -61,7 +61,7 @@ std::vector<Tuple> EdgeOperationData::collapse_merged_ear_faces(const TetMesh& m
     ret.reserve(incident_tet_datas().size());
 
     for (const auto& itd : incident_tet_datas()) {
-        ret.emplace_back(tuple_from_id(m, PrimitiveType::Face, itd.new_face_id));
+        ret.emplace_back(tuple_from_id(m, PrimitiveType::Triangle, itd.new_face_id));
     }
     return ret;
 }
@@ -83,7 +83,7 @@ std::vector<Tuple> EdgeOperationData::split_new_rib_faces(const TetMesh& m) cons
     ret.reserve(incident_tet_datas().size());
 
     for (const auto& itd : incident_tet_datas()) {
-        ret.emplace_back(tuple_from_id(m, PrimitiveType::Face, itd.new_face_id));
+        ret.emplace_back(tuple_from_id(m, PrimitiveType::Triangle, itd.new_face_id));
     }
     return ret;
 }
@@ -127,7 +127,7 @@ std::vector<std::array<Tuple, 2>> EdgeOperationData::split_output_faces(const Te
     for (const auto& ifd : incident_face_datas()) {
         std::array<Tuple, 2>& r = ret.emplace_back();
         for (size_t j = 0; j < 2; ++j) {
-            r[j] = tuple_from_id(m, PrimitiveType::Face, ifd.split_f[j]);
+            r[j] = tuple_from_id(m, PrimitiveType::Triangle, ifd.split_f[j]);
         }
     }
     return ret;

@@ -558,7 +558,7 @@ void Tri_AMIPS_hessian(const std::array<double, 6>& T, Eigen::Matrix2d& result_0
 
 template <int64_t NV, int64_t DIM>
 std::array<double, NV * DIM> unbox(
-    const std::vector<typename attribute::AccessorBase<double>::ConstMapResult>& data,
+    const std::vector<std::decay_t<typename attribute::ConstMapResult<double>>>& data,
     const int64_t index)
 {
     std::array<double, NV * DIM> res;
@@ -586,7 +586,7 @@ std::array<double, NV * DIM> AMIPS::get_raw_coordinates(
     const std::optional<simplex::Simplex>& variable_simplex) const
 {
     if (embedded_dimension() != DIM) throw std::runtime_error("AMIPS wrong dimension");
-    attribute::ConstAccessor<double> accessor =
+    const attribute::Accessor<double> accessor =
         mesh().create_const_accessor(attribute_handle().as<double>());
 
     auto [attrs, index] = utils::get_simplex_attributes(
@@ -612,7 +612,7 @@ double AMIPS::get_value(const simplex::Simplex& domain_simplex) const
     double res = 0;
     if (domain_simplex.primitive_type() == PrimitiveType::Tetrahedron)
         res = Tet_AMIPS_energy(get_raw_coordinates<4, 3>(domain_simplex));
-    else if (domain_simplex.primitive_type() == PrimitiveType::Face)
+    else if (domain_simplex.primitive_type() == PrimitiveType::Triangle)
         res = Tri_AMIPS_energy(get_raw_coordinates<3, 2>(domain_simplex));
     else
         throw std::runtime_error("AMIPS wrong simplex type");
@@ -629,7 +629,7 @@ Eigen::VectorXd AMIPS::get_gradient(
         Eigen::Vector3d res;
         Tet_AMIPS_jacobian(get_raw_coordinates<4, 3>(domain_simplex, variable_simplex), res);
         return res;
-    } else if (domain_simplex.primitive_type() == PrimitiveType::Face) {
+    } else if (domain_simplex.primitive_type() == PrimitiveType::Triangle) {
         Eigen::Vector2d res;
         Tri_AMIPS_jacobian(get_raw_coordinates<3, 2>(domain_simplex, variable_simplex), res);
         return res;
@@ -645,7 +645,7 @@ Eigen::MatrixXd AMIPS::get_hessian(
         Eigen::Matrix3d res;
         Tet_AMIPS_hessian(get_raw_coordinates<4, 3>(domain_simplex, variable_simplex), res);
         return res;
-    } else if (domain_simplex.primitive_type() == PrimitiveType::Face) {
+    } else if (domain_simplex.primitive_type() == PrimitiveType::Triangle) {
         Eigen::Matrix2d res;
         Tri_AMIPS_hessian(get_raw_coordinates<3, 2>(domain_simplex, variable_simplex), res);
         return res;

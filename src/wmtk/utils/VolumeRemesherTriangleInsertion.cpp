@@ -583,13 +583,14 @@ generate_raw_tetmesh_with_surface_from_input(
 {
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
-    constexpr static PrimitiveType PF = PrimitiveType::Face;
+    constexpr static PrimitiveType PF = PrimitiveType::Triangle;
     constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
 
     auto [tetmesh, tet_face_on_input_surface] =
         generate_raw_tetmesh_from_input_surface(V, F, eps_target, bgV, bgF);
 
-    auto surface_handle = tetmesh->register_attribute<int64_t>("surface", PrimitiveType::Face, 1);
+    auto surface_handle =
+        tetmesh->register_attribute<int64_t>("surface", PrimitiveType::Triangle, 1);
     auto surface_accessor = tetmesh->create_accessor<int64_t>(surface_handle);
 
     const auto& tets = tetmesh->get_all(PrimitiveType::Tetrahedron);

@@ -61,7 +61,7 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         writer.get_FV_matrix(FV);
 
         assert(V.rows() == mesh->get_all(PrimitiveType::Vertex).size());
-        assert(FV.rows() == mesh->get_all(PrimitiveType::Face).size());
+        assert(FV.rows() == mesh->get_all(PrimitiveType::Triangle).size());
 
         // rescale to [0, 1]
         Eigen::MatrixXd V_rescale(V.rows(), V.cols());
