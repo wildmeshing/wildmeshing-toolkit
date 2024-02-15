@@ -3,23 +3,23 @@
 namespace wmtk::attribute {
 
 template <typename T>
-AttributeScope<T>::AttributeScope()
+inline AttributeScope<T>::AttributeScope()
 {}
 template <typename T>
-AttributeScope<T>::~AttributeScope()
+inline AttributeScope<T>::~AttributeScope()
 {}
 template <typename T>
-AttributeScope<T>::AttributeScope(std::unique_ptr<AttributeScope>&& next)
+inline AttributeScope<T>::AttributeScope(std::unique_ptr<AttributeScope>&& next)
 {}
 
 
 template <typename T>
-void AttributeScope<T>::apply(Attribute<T>& attr) const
+inline void AttributeScope<T>::apply(Attribute<T>& attr) const
 {
     AttributeCache<T>::apply_to(attr);
 }
 template <typename T>
-void AttributeScope<T>::apply(const Attribute<T>& attr, std::vector<T>& data)
+inline void AttributeScope<T>::apply(const Attribute<T>& attr, std::vector<T>& data)
 {
     AttributeCache<T>::apply_to(attr, data);
 }
