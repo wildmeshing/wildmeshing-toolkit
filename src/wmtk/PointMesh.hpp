@@ -55,4 +55,16 @@ protected:
     Tuple tuple_from_id(const PrimitiveType type, const int64_t gid) const override;
 };
 
+inline int64_t PointMesh::id(const Tuple& tuple, PrimitiveType type) const
+{
+    switch (type) {
+    case PrimitiveType::Vertex: return tuple.m_global_cid;
+    case PrimitiveType::Edge:
+    case PrimitiveType::Triangle:
+    case PrimitiveType::Tetrahedron:
+    default: assert(false); // "Tuple switch: Invalid primitive type"
+    }
+
+    return -1;
+}
 } // namespace wmtk

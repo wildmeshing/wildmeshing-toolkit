@@ -66,18 +66,6 @@ bool PointMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>&
     return Mesh::is_hash_valid(tuple, hash_accessor);
 }
 
-int64_t PointMesh::id(const Tuple& tuple, PrimitiveType type) const
-{
-    switch (type) {
-    case PrimitiveType::Vertex: return tuple.m_global_cid;
-    case PrimitiveType::Edge:
-    case PrimitiveType::Triangle:
-    case PrimitiveType::Tetrahedron:
-    default: assert(false); // "Tuple switch: Invalid primitive type"
-    }
-
-    return -1;
-}
 
 Tuple PointMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
 {
