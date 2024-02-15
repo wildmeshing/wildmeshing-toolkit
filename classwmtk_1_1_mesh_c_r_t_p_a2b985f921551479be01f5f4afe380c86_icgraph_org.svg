@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
-<g id="a_node1"><a xlink:title=" ">
+<g id="a_node1"><a xlink:title="CRTP utility to extract the derived type of this.">
 <polygon fill="#bfbfbf" stroke="black" points="630,-143 630,-162 774,-162 774,-143 630,-143"/>
 <text text-anchor="middle" x="702" y="-150" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::derived</text>
 </a>
@@ -20,7 +20,7 @@
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#ad76ef2aae43e08679c275ba4677fee23" target="_top" xlink:title=" ">
+<g id="a_node2"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#ad76ef2aae43e08679c275ba4677fee23" target="_top" xlink:title="constructs an accessor that is aware of the derived mesh&#39;s type">
 <polygon fill="none" stroke="black" points="455,-411.5 455,-441.5 593,-441.5 593,-411.5 455,-411.5"/>
 <text text-anchor="start" x="463" y="-429.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::create</text>
 <text text-anchor="middle" x="524" y="-418.5" font-family="Helvetica,sans-Serif" font-size="10.00">_accessor</text>
@@ -36,7 +36,7 @@
 <!-- Node9 -->
 <g id="node9" class="node">
 <title>Node9</title>
-<g id="a_node9"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a6ea09c7e81905a5f5dbd003451b39a3d" target="_top" xlink:title=" ">
+<g id="a_node9"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a6ea09c7e81905a5f5dbd003451b39a3d" target="_top" xlink:title="constructs a const accessor that is aware of the derived mesh&#39;s type">
 <polygon fill="none" stroke="black" points="455,-225.5 455,-255.5 593,-255.5 593,-225.5 455,-225.5"/>
 <text text-anchor="start" x="463" y="-243.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::create</text>
 <text text-anchor="middle" x="524" y="-232.5" font-family="Helvetica,sans-Serif" font-size="10.00">_const_accessor</text>
@@ -52,7 +52,7 @@
 <!-- Node12 -->
 <g id="node12" class="node">
 <title>Node12</title>
-<g id="a_node12"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a95ffde19b33a0309a9195c71c3077599" target="_top" xlink:title=" ">
+<g id="a_node12"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a95ffde19b33a0309a9195c71c3077599" target="_top" xlink:title="Returns the id of a simplex encoded in a tuple.">
 <polygon fill="none" stroke="black" points="466,-187 466,-206 582,-206 582,-187 466,-187"/>
 <text text-anchor="middle" x="524" y="-194" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::id</text>
 </a>
@@ -67,7 +67,7 @@
 <!-- Node15 -->
 <g id="node15" class="node">
 <title>Node15</title>
-<g id="a_node15"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#aaa8dfeafa3263c0cbc52c8e599ce89cb" target="_top" xlink:title="check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not">
+<g id="a_node15"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#aaa8dfeafa3263c0cbc52c8e599ce89cb" target="_top" xlink:title="returns if a simplex is on the boundary of hte mesh. For anything but dimension &#45; 1 this checks if th...">
 <polygon fill="none" stroke="black" points="466,-137.5 466,-167.5 582,-167.5 582,-137.5 466,-137.5"/>
 <text text-anchor="start" x="474" y="-155.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::is</text>
 <text text-anchor="middle" x="524" y="-144.5" font-family="Helvetica,sans-Serif" font-size="10.00">_boundary</text>
@@ -83,7 +83,7 @@
 <!-- Node16 -->
 <g id="node16" class="node">
 <title>Node16</title>
-<g id="a_node16"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a784f1fef589ff3e49424662ca99bb3df" target="_top" xlink:title="TODO this needs dimension?">
+<g id="a_node16"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a784f1fef589ff3e49424662ca99bb3df" target="_top" xlink:title="returns if a tuple is counterclockwise or not">
 <polygon fill="none" stroke="black" points="454,-99 454,-118 594,-118 594,-99 454,-99"/>
 <text text-anchor="middle" x="524" y="-106" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::is_ccw</text>
 </a>
@@ -130,7 +130,7 @@
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
-<g id="a_node3"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#ac739ef77c0624c5b4da936e17fb24d9a" target="_top" xlink:title=" ">
+<g id="a_node3"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#ac739ef77c0624c5b4da936e17fb24d9a" target="_top" xlink:title="constructs a accessor that is aware of the derived mesh&#39;s type">
 <polygon fill="none" stroke="black" points="248.5,-532.5 248.5,-562.5 386.5,-562.5 386.5,-532.5 248.5,-532.5"/>
 <text text-anchor="start" x="256.5" y="-550.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::create</text>
 <text text-anchor="middle" x="317.5" y="-539.5" font-family="Helvetica,sans-Serif" font-size="10.00">_accessor</text>
@@ -244,7 +244,7 @@
 <!-- Node11 -->
 <g id="node11" class="node">
 <title>Node11</title>
-<g id="a_node11"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#afcb0f538f2e52af562a4e1eda17a923f" target="_top" xlink:title=" ">
+<g id="a_node11"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#afcb0f538f2e52af562a4e1eda17a923f" target="_top" xlink:title="constructs a const accessor that is aware of the derived mesh&#39;s type">
 <polygon fill="none" stroke="black" points="248.5,-225.5 248.5,-255.5 386.5,-255.5 386.5,-225.5 248.5,-225.5"/>
 <text text-anchor="start" x="256.5" y="-243.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::create</text>
 <text text-anchor="middle" x="317.5" y="-232.5" font-family="Helvetica,sans-Serif" font-size="10.00">_const_accessor</text>
@@ -260,7 +260,7 @@
 <!-- Node13 -->
 <g id="node13" class="node">
 <title>Node13</title>
-<g id="a_node13"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#aa2fdf40173bc0169bd933235a00ded4b" target="_top" xlink:title="Forwarding version of id on simplices that does id caching.">
+<g id="a_node13"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#aa2fdf40173bc0169bd933235a00ded4b" target="_top" xlink:title="variant of id that can cache internally held values">
 <polygon fill="none" stroke="black" points="259.5,-187 259.5,-206 375.5,-206 375.5,-187 259.5,-187"/>
 <text text-anchor="middle" x="317.5" y="-194" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::id</text>
 </a>
@@ -275,7 +275,7 @@
 <!-- Node14 -->
 <g id="node14" class="node">
 <title>Node14</title>
-<g id="a_node14"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a09b6f5adf237950ddef0f8d78abe4089" target="_top" xlink:title="Internal utility to allow id to be virtual with a non&#45;virtual overload in derived &#45;Mesh classes.">
+<g id="a_node14"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a09b6f5adf237950ddef0f8d78abe4089" target="_top" xlink:title="internal utility for overriding the mesh class&#39;s id function without having the final override block ...">
 <polygon fill="none" stroke="black" points="259.5,-137.5 259.5,-167.5 375.5,-167.5 375.5,-137.5 259.5,-137.5"/>
 <text text-anchor="start" x="267.5" y="-155.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::id</text>
 <text text-anchor="middle" x="317.5" y="-144.5" font-family="Helvetica,sans-Serif" font-size="10.00">_virtual</text>

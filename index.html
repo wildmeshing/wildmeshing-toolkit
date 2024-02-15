@@ -115,12 +115,12 @@ $(document).ready(function(){initNavTree('index.html',''); initResizable(); });
 <div class="title">Code Structure and Manual </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="md_docs_main"></a> The wildmeshing toolkit provides a set of algorithms and corresponding data structure for supporting the creation, editing, and optimization of meshes in 2D and 3D. It is designed to support algorithms requiring to store data on a mesh whose connectivity is changing: for example in adaptive refinement, shape optimization, or multi-material mesh optimization.</p>
+<div class="textblock"><p><a class="anchor" id="md_docs_main"></a> The wildmeshing toolkit provides a set of algorithms and corresponding data structure for supporting the creation, editing, and optimization of meshes in 2D and 3D. It is designed to support algorithms that that manipulate data on a mesh whose connectivity is changing such asadaptive refinement, shape optimization, or multi-material mesh optimization.</p>
 <h1><a class="anchor" id="autotoc_md1"></a>
 Key Concepts</h1>
 <ol type="1">
 <li><em>Attributes store per-simplex data.</em> This includes the connectivity <code><a class="el" href="_attribute_8hpp.html">Attribute.hpp</a></code>.</li>
-<li><em>Tuples.</em> A tuple <code><a class="el" href="_tuple_8hpp.html">Tuple.hpp</a></code> identifies a position on the mesh, and it is the only way to access attributes (and thus navigate). Indices of simplices are purposedly hiddern and not accessible to the public API.</li>
+<li><em>Tuples.</em> A tuple <code><a class="el" href="_tuple_8hpp.html">Tuple.hpp</a></code> identifies a "position" on the mesh that can be used for navigation. It is the only way to public interface for accessing attributes. Indices of simplices are purposedly hiddern and not accessible to the public API.</li>
 <li><em>Checkpointing.</em> The library supports checkpointing to implement convenient operation rollback at any point during an operation.</li>
 <li><em>Invariants.</em> Mesh invariants <code><a class="el" href="_invariant_8hpp.html">Invariant.hpp</a></code> (such as non-inversion) are automatically checked after each operation and the operation is rolled back if it does not satisfy the invariants.</li>
 <li><em>Topological Navigation.</em> The library directly supports topological navigation using a tuple, and standard topological operators (star, link, order, etc) in a dimension independent manner <code><a class="el" href="_simplex_collection_8hpp.html">SimplexCollection.hpp</a></code>. Efficient replacement for the most common operations is also supported to improve performance for common operations.</li>
@@ -131,14 +131,15 @@ Key Concepts</h1>
 Data Structure</h1>
 <p>The toolkit implements an abstract interface <code><a class="el" href="_mesh_8hpp.html">Mesh.hpp</a></code>, which supports simplicial meshes of dimension 0 to 3. The navigation is dimension agnostic and based on a <code><a class="el" href="_tuple_8hpp.html">Tuple.hpp</a></code>. We currently implement this interface for 4 simplicial mesh types: <code><a class="el" href="_point_mesh_8hpp.html">PointMesh.hpp</a></code>, <code><a class="el" href="_edge_mesh_8hpp.html">EdgeMesh.hpp</a></code>, <code>TriangleMesh.hpp</code>, and <code><a class="el" href="_tet_mesh_8hpp.html">TetMesh.hpp</a></code>.</p>
 <p>Internally, the data structure is stored as:</p><ul>
-<li>A vector of simplices for each dimension storing the simplex attributes (note that each simplex has thus a unique global index, which is its position in this vector)</li>
-<li>A set of standard attributes storing the connectivity.</li>
+<li>A vector of data for each mesh, dimension of simplex, and type of attribute. The vector contains one attribute (vector-)value per simplex of that single dimension (note that each simplex has thus a unique global index, which is its position in this vector).</li>
+<li>The connectivity attributes are matinained as standard attributes.</li>
 </ul>
-<p>For connectivity, we store the complete relationship between each top simplex of dimension d and both its neighbours connected through a d-1 face and its faces (for a triangle mesh, TT, TE, TV), and one representative for the inverse relationships (for a triangle mesh, every vertex stores the index of one of its incident triangles, and every edge also stores an index of one of the incident triangles). Note that we use only indices internally, but we <b>do not expose</b> this information on purpose to avoid the temptation to use indices in user code (which might be invalidated by local operations).</p>
-<p>The data structure is not allowed to dynamically resize during local operations: it is responsability of the user to reserve enough memory before attempting to modify a mesh with local operations. Unused memory can be reclaimed by using the function TODO.</p>
+<p>For connectivity, for a $d$-simplicial complex we store, for each $d$-simplex, the $d$-simplex and its neighbours (TT for tet, FF for tri) connected through d-1 faces as well as its faces (TF,TE,TV for tet, FE,FV for tri), and one representative for the inverse relationships (for a triangle mesh, every vertex stores the index of one of its incident triangles, and every edge also stores an index of one of the incident triangles). Note that we use only indices internally, but we <b>do not expose</b> this information on purpose to avoid the temptation to use indices in user code (which might be invalidated by local operations).</p>
+<p>(TODO: diagrams)</p>
+<p>The data structure is not allowed to dynamically resize during local operations: it is responsability of the user to reserve enough memory before attempting to modify a mesh with local operations. Unused memory can be reclaimed by using the function <code>consolidate</code>. If you are using multimesh use <code>multimesh::consolidate</code> (perhaps the other consolidate should not be publicly available).</p>
 <h2><a class="anchor" id="autotoc_md3"></a>
 Tuple</h2>
-<p>A <code><a class="el" href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></code> is internally represented as a single global index to its top simplex, and a collection of local indices identifying the local faces (for a triangle mesh, the tuple points to the triangle, and it has two local indices to identify the vertex and edge). Tuple implements switch operations that allows to navigate the mesh by changing one of the pointed simplexes: the navigation is performed by either accessing an adjency topological relation to move to a different top simplex, or by changing the local indices. The change in local indexes is tabulated <code>local_switch_tuple.hpp</code>, making the navigation efficient. The table is generated with the scripts in the autogen folder.</p>
+<p>A <code><a class="el" href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></code> is our primitive for navigating a mesh, and represents a set of $d+1$ simplices on a $d$-simplicial complex. These simplices are all faces of one another, one per dimension, and if we select $d$ simplices from a tuple there is at most $1$ other tuple that uses those same $d$ simplices, so navigation is performed by "switching" one of the simplices. It is internally represented as a single global index for the $d$-simplex, and a collection of local indices identifying the local faces (for a triangle mesh, the tuple points to the triangle, and it has two local indices to identify the vertex and edge). Navigation is performed by either accessing an adjency topological relation to move to a different top simplex, or by changing the local indices. The change in local indexes is tabulated at <code>local_switch_tuple.hpp</code>, making the navigation efficient. The table is generated with the scripts in the autogen folder.</p>
 <h1><a class="anchor" id="autotoc_md4"></a>
 Repository Structure</h1>
 <p>The main classes in the toolkit are:</p>
@@ -146,7 +147,7 @@ Repository Structure</h1>
 <li>Mesh <code><a class="el" href="_mesh_8hpp.html">Mesh.hpp</a></code>. It stores a set of attributes and allows navigation and execution of operations. The types of meshes supported are: points (<code><a class="el" href="_point_mesh_8hpp.html">PointMesh.hpp</a></code>), edges (<code><a class="el" href="_edge_mesh_8hpp.html">EdgeMesh.hpp</a></code>), triangles (<code><a class="el" href="_tri_mesh_8hpp.html">TriMesh.hpp</a></code>) and tetrahedra (<code><a class="el" href="_tet_mesh_8hpp.html">TetMesh.hpp</a></code>).</li>
 <li>Tuple <code><a class="el" href="_tuple_8hpp.html">Tuple.hpp</a></code>. A tuple is a ordered set of simplices, containing one simplex for each dimension. It allows navigation by using switch operations, see <a href="https://dl.acm.org/doi/10.1145/73833.73858">Representing geometric structures in d dimensions: topology and order</a>.</li>
 <li>Simplex <code><a class="el" href="_simplex_8hpp.html">Simplex.hpp</a></code>. A simplex uniquely identifies a simplex in a mesh, and it is internally implemented as a primitive type and a tuple. A collection of simplexes can be stored in a <code><a class="el" href="_simplex_collection_8hpp.html">SimplexCollection.hpp</a></code>. The operations that return collection of simplexes are: <code><a class="el" href="boundary_8hpp.html">boundary.hpp</a></code>, <code><a class="el" href="closed__star_8hpp.html">closed_star.hpp</a></code>, <code><a class="el" href="link_8hpp.html">link.hpp</a></code>, <code><a class="el" href="open__star_8hpp.html">open_star.hpp</a></code>.</li>
-<li>An accessor <code><a class="el" href="_accessor_8hpp.html">Accessor.hpp</a></code> allows to access the attributes of the mesh. There are multiple accessors that provide different access levels: read-only (<code>ConstAccessor.hpp</code>) and read-write (<code>MutableAccessor.hpp</code>)</li>
+<li>An accessor <code><a class="el" href="_accessor_8hpp.html">Accessor.hpp</a></code> allows to access the attributes of the mesh.</li>
 </ol>
 <h2><a class="anchor" id="autotoc_md5"></a>
 attribute — Management of Mesh Attributes, Caching, and Checkpoints</h2>
@@ -157,30 +158,34 @@ attribute — Management of Mesh Attributes, Caching, and Checkpoints</h2>
 <li>Safe access to attributes only through a tuple (no index access is exposed)</li>
 </ul>
 <p>The key concepts are:</p><ul>
-<li><b>Handles</b>. They represent pointers to an entity. There are two of them, one for each attribute (AttributeHandle) and one for the Scope (in database terms a transaction, AttributeScopeHandle). Handles can be obtained from the mesh class after an attribute is registered using the register_attribute method.</li>
-<li><b>Accessors</b>. They enable safe access to an attribute. To obtain one you can convert an handle to an accessor using the function get_accessor of the mesh. There are two types of them, const and mutable. The mutable one is automatically casted to a const one if necessary. The scope (transaction) is handled by the AttributeManager class. <em>Attributes</em>. Attributes are indexed by type (i.e double/char/long/Rational), simplex dimension, attribute id, and finally an additional index for vector type. This nested hierarchy is represented by the following nested classes: AttributeManager (type), MeshAttributes (simplex dimension), Attribute (attribute index), and vector&lt;T&gt; (final index).</li>
+<li><b>Attributes</b>. Attributes are indexed by type (i.e double/char/long/Rational), simplex dimension, attribute id, and finally an additional index for vector type. This nested hierarchy is represented by the following nested classes: AttributeManager (type), MeshAttributes (simplex dimension), Attribute (attribute index), and vector&lt;T&gt; (final index).</li>
+<li><b>Handles</b>. They represent pointers to an entity. There are two types of handles, those that represent Attributes and those that demark the existence of a Scope (in database terms a transaction). Handles can be obtained from the mesh class after an attribute is registered using the <code>register_attribute method.</code></li>
+<li><code>**Accessors**. They enable safe access to an attribute. A handle can be used to request an accessor using the function</code>get_accessor<code>of the mesh. There are two types of them,</code>Const<code>and</code>Mutable<code>. The mutable one is automatically casted to a const one if necessary.</code></li>
+<li><code>**Scopes**. Each attribute is accessed with respect to a scope (transaction). If a scope is marked as failed then all changes made during that scope's lifetime is deleted. It is possible to have no scope where data is permanently saved and it is possible to view the mesh from a scope by using the</code>parent_scope` function in the Mesh class. These scopes are handled by the AttributeManager class.</li>
 </ul>
 <h3><a class="anchor" id="autotoc_md6"></a>
 Public interface description:</h3>
 <ol type="1">
 <li>Register a new attribute. Mesh-&gt;register_attribute. This function returns a handle.</li>
-<li>Two standard ways to create an accessor:<ul>
 <li>Mesh-&gt;create_accessor. Converts the handle into an accessor</li>
-<li>Handle.create_accessor. Creates a handle with respect to the accessor</li>
-</ul>
-</li>
-<li>Access the attribute using a Tuple.</li>
+<li>Access the attribute within the accessor using <code>vector_attribute</code> using a <code>Tuple</code> or <code>Simplex</code>. <code>scalar_attribute</code> can also be used if the attribute only contains a single value.</li>
 </ol>
 <h3><a class="anchor" id="autotoc_md7"></a>
 Private API development details:</h3>
-<p>The inclusion tree for storing attributes is: AttributeManager (type), MeshAttributes (simplex dimension), Attribute (simplex index), and vector&lt;T&gt; (final index). The actual data is stored in Attribute as a flatten vector.</p>
+<p>The inclusion tree for storing attributes is: AttributeManager (type), MeshAttributes (simplex dimension), Attribute (simplex index), and vector&lt;T&gt; (final index). The actual data is stored in Attribute as a flat STL vector strided for vector-type attributes.</p>
 <p>The inheritance for accessing attributes is: AccessorBase -&gt; CachingAccessor -&gt; Accessor The first two are private, the last is public. AccessorBase provides basic index-based access. CachingAccessor adds a layer on top supporting the use of an intermediate cache to store the changes temporarily. Tuple accessor hides the index access in favor of using a tuple.</p>
 <p>The scoping mechanics is complex but entirely hidden by the Accessor interface. Every attribute stores a stack of scopes <code>PerThreadAttributeScopeStacks&lt;T&gt;</code>. A <code>PerThreadAttributeScopeStacks</code> is a wrapper for a <code>AttributeScopeStack</code>. An <code>AttributeScopeStack</code> is a stack of changes not yet applied to a Attribute. Each change is an <code>AttributeScope</code>, which inherits from an <code>AttributeCache</code> to provide the functionality to support a stack. The <code>AttributeCache</code> stores an <code>AttributeCacheData</code>, which stores the actual diff of the modifications done on the attribute.</p>
 <h2><a class="anchor" id="autotoc_md8"></a>
 autogen — Automatic Generation of Connectivity Tables</h2>
 <p>This folder stores a set of scripts that generate navigation tables for the local navigation inside a simplex.</p>
 <h2><a class="anchor" id="autotoc_md9"></a>
-function</h2>
+function — Interfaces and implementations of functions for optimization</h2>
+<p>The <code><a class="el" href="_function_8hpp.html">Function.hpp</a></code> provides a generic interface for representing functiosn that might be passed into an optimization scheme, but the majority of our use cases are minimizing "energies" whose degrees of freedom are vertices but their values are defined on a top-dimension simplex, like an integral over triangles on a triangle mesh using barycentric interpolation. We therefore have an interface for defining <code>PerSimplexFunction</code>s that evaluate an energy on a single simplex, but can be differentiated with respect to an attribute stored on a different simplex.</p>
+<ul>
+<li><code>PerSimplexFunction</code> provides an interface for defining a function evaluated on a simplex, and whose gradient / hessian can be defined with respect to an attribute stored on faces/cofaces of the simplex.</li>
+<li><code>LocalNeighborhoodSumFunction.hpp</code> provides a sort of <code>Function</code> that is evaluated in the neighborhood of a target simple so that we can evaluate the full derivative of a variable that affects the evaluation of a function on a set of neighboring simplices. For instance, when evaluating a function on triangles using barycentric interpolation the gradient of a vertex with respect to a per-triangle energy is the sum of the gradients of any triangle coface of the vertex.</li>
+</ul>
+<p>The <code>simplex</code> folder contains multiple functions that use these interfaces.</p>
 <p>TODO: Refactor in progress</p>
 <h2><a class="anchor" id="autotoc_md10"></a>
 invariants</h2>

@@ -57,7 +57,7 @@ var sectionId = 'dynsection-5';
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
-<g id="a_node1"><a xlink:title=" ">
+<g id="a_node1"><a xlink:title="constructs a const accessor that is aware of the derived mesh&#39;s type">
 <polygon fill="#bfbfbf" stroke="black" points="0,-73.5 0,-103.5 138,-103.5 138,-73.5 0,-73.5"/>
 <text text-anchor="start" x="8" y="-91.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::create</text>
 <text text-anchor="middle" x="69" y="-80.5" font-family="Helvetica,sans-Serif" font-size="10.00">_const_accessor</text>
@@ -83,7 +83,7 @@ var sectionId = 'dynsection-5';
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
-<g id="a_node3"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a6ea09c7e81905a5f5dbd003451b39a3d" target="_top" xlink:title=" ">
+<g id="a_node3"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a6ea09c7e81905a5f5dbd003451b39a3d" target="_top" xlink:title="constructs a const accessor that is aware of the derived mesh&#39;s type">
 <polygon fill="none" stroke="black" points="188.5,-98.5 188.5,-128.5 326.5,-128.5 326.5,-98.5 188.5,-98.5"/>
 <text text-anchor="start" x="196.5" y="-116.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::create</text>
 <text text-anchor="middle" x="257.5" y="-105.5" font-family="Helvetica,sans-Serif" font-size="10.00">_const_accessor</text>
@@ -131,7 +131,7 @@ var sectionId = 'dynsection-5';
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a2b985f921551479be01f5f4afe380c86" target="_top" xlink:title=" ">
+<g id="a_node4"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a2b985f921551479be01f5f4afe380c86" target="_top" xlink:title="CRTP utility to extract the derived type of this.">
 <polygon fill="none" stroke="black" points="377,-104 377,-123 521,-123 521,-104 377,-104"/>
 <text text-anchor="middle" x="449" y="-111" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::derived</text>
 </a>

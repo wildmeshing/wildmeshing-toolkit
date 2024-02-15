@@ -36,7 +36,7 @@ var NAVTREE =
           [ "Private API development details:", "index.html#autotoc_md7", null ]
         ] ],
         [ "autogen — Automatic Generation of Connectivity Tables", "index.html#autotoc_md8", null ],
-        [ "function", "index.html#autotoc_md9", null ],
+        [ "function — Interfaces and implementations of functions for optimization", "index.html#autotoc_md9", null ],
         [ "invariants", "index.html#autotoc_md10", null ],
         [ "io", "index.html#autotoc_md11", null ],
         [ "multimesh", "index.html#autotoc_md12", null ],

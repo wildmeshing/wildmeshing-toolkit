@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
-<g id="a_node1"><a xlink:title="TODO this needs dimension?">
+<g id="a_node1"><a xlink:title="returns if a tuple is counterclockwise or not">
 <polygon fill="#bfbfbf" stroke="black" points="0,-0.5 0,-19.5 140,-19.5 140,-0.5 0,-0.5"/>
 <text text-anchor="middle" x="70" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::is_ccw</text>
 </a>
@@ -20,7 +20,7 @@
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a2b985f921551479be01f5f4afe380c86" target="_top" xlink:title=" ">
+<g id="a_node2"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a2b985f921551479be01f5f4afe380c86" target="_top" xlink:title="CRTP utility to extract the derived type of this.">
 <polygon fill="none" stroke="black" points="176,-0.5 176,-19.5 320,-19.5 320,-0.5 176,-0.5"/>
 <text text-anchor="middle" x="248" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::derived</text>
 </a>

@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
-<g id="a_node1"><a xlink:title="check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not">
+<g id="a_node1"><a xlink:title="returns if a simplex is on the boundary of hte mesh. For anything but dimension &#45; 1 this checks if th...">
 <polygon fill="#bfbfbf" stroke="black" points="0,-0.5 0,-30.5 116,-30.5 116,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::is</text>
 <text text-anchor="middle" x="58" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_boundary</text>
@@ -21,7 +21,7 @@
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a2b985f921551479be01f5f4afe380c86" target="_top" xlink:title=" ">
+<g id="a_node2"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a2b985f921551479be01f5f4afe380c86" target="_top" xlink:title="CRTP utility to extract the derived type of this.">
 <polygon fill="none" stroke="black" points="152,-6 152,-25 296,-25 296,-6 152,-6"/>
 <text text-anchor="middle" x="224" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP::derived</text>
 </a>

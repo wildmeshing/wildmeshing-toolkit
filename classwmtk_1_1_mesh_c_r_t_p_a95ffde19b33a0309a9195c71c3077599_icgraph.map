@@ -1,5 +1,5 @@
 <map id="wmtk::MeshCRTP::id" name="wmtk::MeshCRTP::id">
-<area shape="rect" id="node1" title=" " alt="" coords="208,35,363,61"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1_mesh_c_r_t_p.html#aa2fdf40173bc0169bd933235a00ded4b" title="Forwarding version of id on simplices that does id caching." alt="" coords="5,5,160,32"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1_mesh_c_r_t_p.html#a09b6f5adf237950ddef0f8d78abe4089" title="Internal utility to allow id to be virtual with a non&#45;virtual overload in derived &#45;Mesh classes." alt="" coords="5,57,160,98"/>
+<area shape="rect" id="node1" title="Returns the id of a simplex encoded in a tuple." alt="" coords="208,35,363,61"/>
+<area shape="rect" id="node2" href="$classwmtk_1_1_mesh_c_r_t_p.html#aa2fdf40173bc0169bd933235a00ded4b" title="variant of id that can cache internally held values" alt="" coords="5,5,160,32"/>
+<area shape="rect" id="node3" href="$classwmtk_1_1_mesh_c_r_t_p.html#a09b6f5adf237950ddef0f8d78abe4089" title="internal utility for overriding the mesh class&#39;s id function without having the final override block ..." alt="" coords="5,57,160,98"/>
 </map>
