@@ -1,7 +1,5 @@
 var NAVTREEINDEX15 =
 {
-"namespacemembers_func_d.html":[3,1,1,3],
-"namespacemembers_func_e.html":[3,1,1,4],
 "namespacemembers_func_f.html":[3,1,1,5],
 "namespacemembers_func_g.html":[3,1,1,6],
 "namespacemembers_func_i.html":[3,1,1,7],
@@ -249,5 +247,7 @@ var NAVTREEINDEX15 =
 "namespacewmtk_1_1components_1_1internal_1_1procedural.html#a2a5ca17b568f0a95f3e09a50106afd70":[3,0,7,2,2,0,1],
 "namespacewmtk_1_1components_1_1internal_1_1procedural.html#a2a7af9e891fd050fa16bd07092decf04":[3,0,7,2,2,0,3],
 "namespacewmtk_1_1components_1_1internal_1_1procedural.html#a35d1c2751f3a87c2bc71ff5b7a89d0b4":[3,0,7,2,2,0,0],
-"namespacewmtk_1_1components_1_1internal_1_1procedural.html#a4d145286f882fbc2ce23dc9caf64d7c4":[3,0,7,2,2,0,4]
+"namespacewmtk_1_1components_1_1internal_1_1procedural.html#a4d145286f882fbc2ce23dc9caf64d7c4":[3,0,7,2,2,0,4],
+"namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872":[3,0,7,2,2,0,2],
+"namespacewmtk_1_1components_1_1internal_1_1procedural.html#aa350a4628718ab75cb758b079854bc9f":[3,0,7,2,2,0,6]
 };

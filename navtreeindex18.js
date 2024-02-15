@@ -1,7 +1,5 @@
 var NAVTREEINDEX18 =
 {
-"structwmtk_1_1components_1_1_wildmeshing_options.html#aca0ec181b65ad829121c780e0416d78d":[4,0,2,1,14,2],
-"structwmtk_1_1components_1_1_wildmeshing_options.html#ad60d810f34783559e16a972e6390b2ad":[4,0,2,1,14,3],
 "structwmtk_1_1components_1_1_wildmeshing_options_attributes.html":[4,0,2,1,11],
 "structwmtk_1_1components_1_1_wildmeshing_options_attributes.html#aeb39f9ec53b32d23af17d38c9323ea11":[4,0,2,1,11,0],
 "structwmtk_1_1components_1_1_wildmeshing_options_envelope.html":[4,0,2,1,13],
@@ -249,5 +247,7 @@ var NAVTREEINDEX18 =
 "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__types_3_01_t_00_01_ts_8_8_8_01_4.html":[4,0,2,8,0,1,0,7],
 "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__types_3_01_t_00_01_ts_8_8_8_01_4.html#a3d076abe6db46be0962838a594f0b45a":[4,0,2,8,0,1,0,7,0],
 "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__types_3_01_t_01_4.html":[4,0,2,8,0,1,0,6],
-"structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__types_3_01_t_01_4.html#ab4cbaf34736218825a82ef52d3949700":[4,0,2,8,0,1,0,6,0]
+"structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__types_3_01_t_01_4.html#ab4cbaf34736218825a82ef52d3949700":[4,0,2,8,0,1,0,6,0],
+"structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__types__tuple.html":[4,0,2,8,0,1,0,5],
+"structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__types__tuple_3_01_t_00f3e1a7192a11c9414a9ffa12a7f4b214.html":[4,0,2,8,0,1,0,8]
 };

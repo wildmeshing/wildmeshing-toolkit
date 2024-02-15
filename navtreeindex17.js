@@ -1,7 +1,5 @@
 var NAVTREEINDEX17 =
 {
-"open__star_8cpp.html#ad3819c31e843e174b473e7b97446a93f":[5,0,2,0,7,29,3],
-"open__star_8cpp.html#ae52e68a7ebacf23d85b0b15c1565dd5a":[5,0,2,0,7,29,1],
 "open__star_8cpp_source.html":[5,0,2,0,7,29],
 "open__star_8hpp.html":[5,0,2,0,7,30],
 "open__star_8hpp.html#a0e571467fb4068842d9c1a38a433f1ed":[5,0,2,0,7,30,0],
@@ -249,5 +247,7 @@ var NAVTREEINDEX17 =
 "structwmtk_1_1components_1_1_wildmeshing_options.html#a49af2c4f737f53ab6fdc8b2854e36442":[4,0,2,1,14,4],
 "structwmtk_1_1components_1_1_wildmeshing_options.html#a59660158f8a2710928e1cd4e3f4f5a50":[4,0,2,1,14,5],
 "structwmtk_1_1components_1_1_wildmeshing_options.html#a79ab238bf5be44539f98c354cfc3fcdc":[4,0,2,1,14,0],
-"structwmtk_1_1components_1_1_wildmeshing_options.html#a7b02467b85dfa9fb29740720de89fcad":[4,0,2,1,14,6]
+"structwmtk_1_1components_1_1_wildmeshing_options.html#a7b02467b85dfa9fb29740720de89fcad":[4,0,2,1,14,6],
+"structwmtk_1_1components_1_1_wildmeshing_options.html#aca0ec181b65ad829121c780e0416d78d":[4,0,2,1,14,2],
+"structwmtk_1_1components_1_1_wildmeshing_options.html#ad60d810f34783559e16a972e6390b2ad":[4,0,2,1,14,3]
 };

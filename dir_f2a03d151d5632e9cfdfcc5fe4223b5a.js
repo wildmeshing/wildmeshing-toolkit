@@ -6,7 +6,6 @@ var dir_f2a03d151d5632e9cfdfcc5fe4223b5a =
       [ "Accessor", "classwmtk_1_1attribute_1_1_accessor.html", "classwmtk_1_1attribute_1_1_accessor" ]
     ] ],
     [ "Accessor.hxx", "_accessor_8hxx.html", null ],
-    [ "AccessorBase.cpp", "_accessor_base_8cpp.html", null ],
     [ "AccessorBase.hpp", "_accessor_base_8hpp.html", [
       [ "AccessorBase", "classwmtk_1_1attribute_1_1_accessor_base.html", "classwmtk_1_1attribute_1_1_accessor_base" ]
     ] ],

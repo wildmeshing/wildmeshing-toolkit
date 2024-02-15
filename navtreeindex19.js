@@ -1,7 +1,5 @@
 var NAVTREEINDEX19 =
 {
-"structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__types__tuple.html":[4,0,2,8,0,1,0,5],
-"structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__types__tuple_3_01_t_00f3e1a7192a11c9414a9ffa12a7f4b214.html":[4,0,2,8,0,1,0,8],
 "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__types__tuple_3_01_t_00f3e1a7192a11c9414a9ffa12a7f4b214.html#a177868c6a54973d5091bcf9dc213c260":[4,0,2,8,0,1,0,8,0],
 "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__types__tuple_3_01_t_00f3e1a7192a11c9414a9ffa12a7f4b214.html#ab4b2397478085b1dc4c91c720413cfe7":[4,0,2,8,0,1,0,8,1],
 "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1remove__void.html":[4,0,2,8,0,1,0,9],
@@ -249,5 +247,7 @@ var NAVTREEINDEX19 =
 "tri__mesh_2_edge_operation_data_8hpp.html":[5,0,2,0,6,5,3],
 "tri__mesh_2_edge_operation_data_8hpp_source.html":[5,0,2,0,6,5,3],
 "tri__mesh_2_split_new_attribute_topo_info_8cpp.html":[5,0,2,0,6,5,4],
-"tri__mesh_2_split_new_attribute_topo_info_8cpp_source.html":[5,0,2,0,6,5,4]
+"tri__mesh_2_split_new_attribute_topo_info_8cpp_source.html":[5,0,2,0,6,5,4],
+"tri__mesh_2_split_new_attribute_topo_info_8hpp.html":[5,0,2,0,6,5,5],
+"tri__mesh_2_split_new_attribute_topo_info_8hpp_source.html":[5,0,2,0,6,5,5]
 };
