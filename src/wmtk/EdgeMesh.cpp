@@ -11,25 +11,6 @@ EdgeMesh::EdgeMesh()
     , m_ee_handle(register_attribute_typed<int64_t>("m_ee", PrimitiveType::Edge, 2, false, -1))
 {}
 
-int64_t EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
-{
-    switch (type) {
-    case PrimitiveType::Vertex: {
-        const attribute::Accessor<int64_t> ev_accessor =
-            create_const_accessor<int64_t>(m_ev_handle);
-        auto ev = ev_accessor.const_vector_attribute<2>(tuple);
-        return ev(tuple.m_local_vid);
-    }
-    case PrimitiveType::Edge: {
-        return tuple.m_global_cid;
-    }
-    case PrimitiveType::Triangle:
-    case PrimitiveType::Tetrahedron:
-    default: assert(false); // "Tuple id: Invalid primitive type")
-    }
-
-    return -1;
-}
 
 bool EdgeMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 {
