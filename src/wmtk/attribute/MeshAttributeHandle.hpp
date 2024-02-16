@@ -39,12 +39,12 @@ public:
 
     friend class wmtk::Mesh;
     friend class wmtk::hash<MeshAttributeHandle>;
-    MeshAttributeHandle();
+    MeshAttributeHandle() = default;
     MeshAttributeHandle(Mesh& m, const HandleVariant& h);
-    MeshAttributeHandle(const MeshAttributeHandle& o);
-    MeshAttributeHandle(MeshAttributeHandle&& o);
-    MeshAttributeHandle& operator=(const MeshAttributeHandle& o);
-    MeshAttributeHandle& operator=(MeshAttributeHandle&& o);
+    MeshAttributeHandle(const MeshAttributeHandle& o) = default;
+    MeshAttributeHandle(MeshAttributeHandle&& o) = default;
+    MeshAttributeHandle& operator=(const MeshAttributeHandle& o) = default;
+    MeshAttributeHandle& operator=(MeshAttributeHandle&& o) = default;
 
     bool operator==(const MeshAttributeHandle& o) const
     {
