@@ -1,6 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <wmtk/simplex/face_coface_intersection.hpp>
+#include <wmtk/simplex/tuples_preserving_primitive_types.hpp>
 #include "tools/DEBUG_TetMesh.hpp"
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TetMesh_examples.hpp"
@@ -10,7 +10,7 @@ using namespace wmtk;
 using namespace tests;
 using namespace tests_3d;
 
-TEST_CASE("simplex_face_coface_interesction", "[simplex_collection]")
+TEST_CASE("simplex_tuples_preserving_primitive_types", "[simplex_collection]")
 {
     SECTION("trimesh_tri_vertex")
     {
@@ -18,8 +18,11 @@ TEST_CASE("simplex_face_coface_interesction", "[simplex_collection]")
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
 
-        const auto fci =
-            simplex::face_coface_intersection(m, t, PrimitiveType::Triangle, PrimitiveType::Vertex);
+        const auto fci = simplex::tuples_preserving_primitive_types(
+            m,
+            t,
+            PrimitiveType::Triangle,
+            PrimitiveType::Vertex);
 
         REQUIRE(fci.size() == 2);
         for (const Tuple& f : fci) {
@@ -33,8 +36,11 @@ TEST_CASE("simplex_face_coface_interesction", "[simplex_collection]")
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
 
-        const auto fci =
-            simplex::face_coface_intersection(m, t, PrimitiveType::Triangle, PrimitiveType::Edge);
+        const auto fci = simplex::tuples_preserving_primitive_types(
+            m,
+            t,
+            PrimitiveType::Triangle,
+            PrimitiveType::Edge);
 
         REQUIRE(fci.size() == 1);
         for (const Tuple& f : fci) {
@@ -48,7 +54,7 @@ TEST_CASE("simplex_face_coface_interesction", "[simplex_collection]")
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
 
-        const auto fci = simplex::face_coface_intersection(
+        const auto fci = simplex::tuples_preserving_primitive_types(
             m,
             t,
             PrimitiveType::Triangle,
@@ -66,7 +72,7 @@ TEST_CASE("simplex_face_coface_interesction", "[simplex_collection]")
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
 
-        const auto fci = simplex::face_coface_intersection(
+        const auto fci = simplex::tuples_preserving_primitive_types(
             m,
             t,
             PrimitiveType::Tetrahedron,
@@ -84,8 +90,11 @@ TEST_CASE("simplex_face_coface_interesction", "[simplex_collection]")
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
 
-        const auto fci =
-            simplex::face_coface_intersection(m, t, PrimitiveType::Triangle, PrimitiveType::Vertex);
+        const auto fci = simplex::tuples_preserving_primitive_types(
+            m,
+            t,
+            PrimitiveType::Triangle,
+            PrimitiveType::Vertex);
 
         REQUIRE(fci.size() == 2);
         for (const Tuple& f : fci) {
@@ -99,8 +108,11 @@ TEST_CASE("simplex_face_coface_interesction", "[simplex_collection]")
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
 
-        const auto fci =
-            simplex::face_coface_intersection(m, t, PrimitiveType::Edge, PrimitiveType::Vertex);
+        const auto fci = simplex::tuples_preserving_primitive_types(
+            m,
+            t,
+            PrimitiveType::Edge,
+            PrimitiveType::Vertex);
 
         REQUIRE(fci.size() == 1);
         for (const Tuple& f : fci) {
@@ -114,8 +126,11 @@ TEST_CASE("simplex_face_coface_interesction", "[simplex_collection]")
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
 
-        const auto fci =
-            simplex::face_coface_intersection(m, t, PrimitiveType::Vertex, PrimitiveType::Vertex);
+        const auto fci = simplex::tuples_preserving_primitive_types(
+            m,
+            t,
+            PrimitiveType::Vertex,
+            PrimitiveType::Vertex);
 
         REQUIRE(fci.size() == 1);
         for (const Tuple& f : fci) {
@@ -129,7 +144,7 @@ TEST_CASE("simplex_face_coface_interesction", "[simplex_collection]")
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
 
-        const auto fci = simplex::face_coface_intersection(
+        const auto fci = simplex::tuples_preserving_primitive_types(
             m,
             t,
             PrimitiveType::Tetrahedron,
@@ -147,8 +162,11 @@ TEST_CASE("simplex_face_coface_interesction", "[simplex_collection]")
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
 
-        const auto fci =
-            simplex::face_coface_intersection(m, t, PrimitiveType::Triangle, PrimitiveType::Edge);
+        const auto fci = simplex::tuples_preserving_primitive_types(
+            m,
+            t,
+            PrimitiveType::Triangle,
+            PrimitiveType::Edge);
 
         REQUIRE(fci.size() == 1);
         for (const Tuple& f : fci) {
@@ -162,7 +180,7 @@ TEST_CASE("simplex_face_coface_interesction", "[simplex_collection]")
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
 
-        const auto fci = simplex::face_coface_intersection(
+        const auto fci = simplex::tuples_preserving_primitive_types(
             m,
             t,
             PrimitiveType::Tetrahedron,
@@ -180,7 +198,7 @@ TEST_CASE("simplex_face_coface_interesction", "[simplex_collection]")
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
 
-        const auto fci = simplex::face_coface_intersection(
+        const auto fci = simplex::tuples_preserving_primitive_types(
             m,
             t,
             PrimitiveType::Triangle,

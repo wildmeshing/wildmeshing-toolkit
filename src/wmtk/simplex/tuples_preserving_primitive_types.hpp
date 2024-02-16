@@ -13,7 +13,7 @@ namespace wmtk::simplex {
  *
  * The return tuples are guaranteed to contain both input simplices.
  */
-std::vector<Tuple> face_coface_intersection(
+std::vector<Tuple> tuples_preserving_primitive_types(
     const Mesh& mesh,
     const Tuple& t,
     const PrimitiveType ptype1,

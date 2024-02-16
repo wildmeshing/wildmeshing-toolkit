@@ -1,4 +1,4 @@
-#include "face_coface_intersection.hpp"
+#include "tuples_preserving_primitive_types.hpp"
 
 #include <cassert>
 #include <wmtk/Mesh.hpp>
@@ -6,7 +6,7 @@
 
 namespace wmtk::simplex {
 
-std::vector<Tuple> face_coface_intersection(
+std::vector<Tuple> tuples_preserving_primitive_types(
     const Mesh& mesh,
     const Tuple& t,
     const PrimitiveType simplex_ptype,

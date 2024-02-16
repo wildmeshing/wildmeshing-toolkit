@@ -17,8 +17,6 @@ set(SRC_FILES
     top_dimension_cofaces_iterable.cpp
     cofaces_single_dimension.hpp
     cofaces_single_dimension.cpp
-    face_coface_intersection.hpp
-    face_coface_intersection.cpp
     link.hpp
     link.cpp
     link_single_dimension.hpp
@@ -43,6 +41,8 @@ set(SRC_FILES
     faces_single_dimension.cpp
     k_ring.hpp
     k_ring.cpp
+    tuples_preserving_primitive_types.hpp
+    tuples_preserving_primitive_types.cpp
 
     neighbors_single_dimension.hpp
     neighbors_single_dimension.cpp
