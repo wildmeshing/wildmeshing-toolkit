@@ -12,8 +12,6 @@ std::vector<Tuple> face_coface_intersection(
     const PrimitiveType simplex_ptype,
     const PrimitiveType face_ptype)
 {
-    assert(get_primitive_type_id(face_ptype) < get_primitive_type_id(simplex_ptype));
-
     std::vector<PrimitiveType> switch_tuple_types =
         wmtk::utils::primitive_range(simplex_ptype, face_ptype);
 
