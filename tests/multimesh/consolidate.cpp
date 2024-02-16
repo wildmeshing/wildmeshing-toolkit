@@ -154,7 +154,7 @@ TEST_CASE("consolidate_multimesh_splits", "[mesh][consolidate_multimesh]")
 
     for (int j = 0; j < 5; ++j) {
         for (const auto& tup : dptr->get_all(wmtk::PrimitiveType::Edge)) {
-            split_op(simplex::Simplex::edge(tup)).empty();
+            split_op(simplex::Simplex::edge(tup));//.empty();
         }
     }
     DEBUG_TriMesh& debug_d = reinterpret_cast<DEBUG_TriMesh&>(*dptr);

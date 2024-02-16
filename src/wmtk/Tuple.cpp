@@ -7,18 +7,6 @@
 #include <tuple>
 
 namespace wmtk {
-Tuple::Tuple(
-    int8_t local_vid,
-    int8_t local_eid,
-    int8_t local_fid,
-    int64_t global_cid,
-    int8_t hash)
-    : m_local_vid(local_vid)
-    , m_local_eid(local_eid)
-    , m_local_fid(local_fid)
-    , m_hash(hash)
-    , m_global_cid(global_cid)
-{}
 
 //         v2
 //       /    \ .
@@ -26,11 +14,6 @@ Tuple::Tuple(
 //     v0 - - - v1
 //         e2
 
-Tuple::Tuple() = default;
-Tuple::Tuple(const Tuple& other) = default;
-Tuple::Tuple(Tuple&& other) = default;
-Tuple& Tuple::operator=(const Tuple& other) = default;
-Tuple& Tuple::operator=(Tuple&& other) = default;
 
 bool Tuple::operator!=(const wmtk::Tuple& t) const
 {

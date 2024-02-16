@@ -6,11 +6,11 @@ class MappableContainer : public Mappable
 {
 public:
     MappableContainer(const Mesh& m);
-    MappableContainer(const MappableContainer&);
-    MappableContainer(MappableContainer&&);
+    MappableContainer(const MappableContainer&) = default;
+    MappableContainer(MappableContainer&&) = default;
     MappableContainer& operator=(const MappableContainer&);
     MappableContainer& operator=(MappableContainer&&);
-    ~MappableContainer();
+    ~MappableContainer() = default;
 
 
     virtual std::vector<std::shared_ptr<Mappable>> mappables() = 0;
