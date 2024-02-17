@@ -7,12 +7,7 @@
 #include <tuple>
 
 namespace wmtk {
-Tuple::Tuple(
-    int8_t local_vid,
-    int8_t local_eid,
-    int8_t local_fid,
-    int64_t global_cid,
-    int8_t hash)
+Tuple::Tuple(int8_t local_vid, int8_t local_eid, int8_t local_fid, int64_t global_cid, int8_t hash)
     : m_local_vid(local_vid)
     , m_local_eid(local_eid)
     , m_local_fid(local_fid)
@@ -62,6 +57,21 @@ bool Tuple::is_null() const
 Tuple Tuple::with_updated_hash(int64_t new_hash) const
 {
     return Tuple(m_local_vid, m_local_eid, m_local_fid, m_global_cid, new_hash);
+}
+
+int8_t Tuple::local_vid() const
+{
+    return m_local_vid;
+}
+
+int8_t Tuple::local_eid() const
+{
+    return m_local_eid;
+}
+
+int8_t Tuple::local_fid() const
+{
+    return m_local_fid;
 }
 
 } // namespace wmtk

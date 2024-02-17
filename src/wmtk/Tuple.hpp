@@ -77,5 +77,9 @@ public:
 
     bool is_null() const;
     Tuple with_updated_hash(int64_t new_hash) const;
+
+    int8_t local_vid() const;
+    int8_t local_eid() const;
+    int8_t local_fid() const;
 };
 } // namespace wmtk
