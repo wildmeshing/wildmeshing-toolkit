@@ -11,6 +11,7 @@
 #include <wmtk/function/simplex/AMIPS.cpp>
 #include <wmtk/function/simplex/AMIPS.hpp>
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
+#include <wmtk/function/utils/AutoDiffRAII.hpp>
 #include <wmtk/function/utils/SimplexGetter.hpp>
 #include <wmtk/function/utils/amips.hpp>
 #include <wmtk/io/Cache.hpp>
@@ -20,6 +21,8 @@
 #include <chrono>
 #include <polysolve/Utils.hpp>
 #include <wmtk/utils/Logger.hpp>
+
+#include <finitediff.hpp>
 
 using namespace wmtk;
 using namespace wmtk::tests;
@@ -82,7 +85,7 @@ TEST_CASE("at_test")
         wmtk::components::adaptive_tessellation(wmtk::components::base::Paths(), input, cache));
 }
 
-TEST_CASE("autodiff_performance")
+TEST_CASE("3damips_autodiff_performance_correctness")
 {
     std::shared_ptr<Mesh> mesh_ptr = read_mesh(
         "/home/yunfan/wildmeshing-toolkit/data/adaptive_tessellation_test/"
@@ -121,7 +124,7 @@ TEST_CASE("autodiff_performance")
         std::make_shared<wmtk::function::DistanceEnergy>(*mesh_ptr, m_uv_handle, m_integral_ptr);
     // iterate over all the triangles
 
-    SECTION("autodiff_gradient")
+    SECTION("autodiff_gradient", "[performance]")
     {
         int cnt = 0;
         const auto start = std::chrono::high_resolution_clock::now();
@@ -129,17 +132,18 @@ TEST_CASE("autodiff_performance")
         for (int i = 0; i < 1000; ++i) {
             for (const wmtk::Tuple& triangle : mesh_ptr->get_all(PrimitiveType::Triangle)) {
                 cnt++;
+                auto scope = wmtk::function::utils::AutoDiffRAII(2);
                 std::vector<DSVec> attrs = wmtk::tests::get_vertex_coordinates(
                     *mesh_ptr,
                     accessor,
                     wmtk::simplex::Simplex(PrimitiveType::Triangle, triangle),
-                    std::optional<simplex::Simplex>());
+                    wmtk::simplex::Simplex(PrimitiveType::Vertex, triangle));
                 DSVec2 a = attrs[0], b = attrs[1], c = attrs[2];
                 DSVec3 p0 = m_evaluator_ptr->uv_to_position(a);
                 DSVec3 p1 = m_evaluator_ptr->uv_to_position(b);
                 DSVec3 p2 = m_evaluator_ptr->uv_to_position(c);
 
-                DScalar amips = wmtk::function::utils::amips(a, b, c);
+                DScalar amips = wmtk::function::utils::amips(p0, p1, p2);
                 amips.getGradient();
             }
         }
@@ -149,7 +153,7 @@ TEST_CASE("autodiff_performance")
         wmtk::logger().info("cnt = {}", cnt);
     }
 
-    SECTION("autodiff_hessian")
+    SECTION("autodiff_hessian", "[performance]")
     {
         int cnt = 0;
         const auto start = std::chrono::high_resolution_clock::now();
@@ -157,17 +161,18 @@ TEST_CASE("autodiff_performance")
         for (int i = 0; i < 1000; ++i) {
             for (const wmtk::Tuple& triangle : mesh_ptr->get_all(PrimitiveType::Triangle)) {
                 cnt++;
+                auto scope = wmtk::function::utils::AutoDiffRAII(2);
                 std::vector<DSVec> attrs = wmtk::tests::get_vertex_coordinates(
                     *mesh_ptr,
                     accessor,
                     wmtk::simplex::Simplex(PrimitiveType::Triangle, triangle),
-                    std::optional<simplex::Simplex>());
+                    wmtk::simplex::Simplex(PrimitiveType::Vertex, triangle));
                 DSVec2 a = attrs[0], b = attrs[1], c = attrs[2];
                 DSVec3 p0 = m_evaluator_ptr->uv_to_position(a);
                 DSVec3 p1 = m_evaluator_ptr->uv_to_position(b);
                 DSVec3 p2 = m_evaluator_ptr->uv_to_position(c);
 
-                DScalar amips = wmtk::function::utils::amips(a, b, c);
+                DScalar amips = wmtk::function::utils::amips(p0, p1, p2);
                 amips.getHessian();
             }
         }
@@ -177,7 +182,7 @@ TEST_CASE("autodiff_performance")
         wmtk::logger().info("cnt = {}", cnt);
     }
 
-    SECTION("analytical_amips_grad")
+    SECTION("analytical_amips_grad", "[performance]")
     {
         int cnt = 0;
         const auto start = std::chrono::high_resolution_clock::now();
@@ -206,7 +211,7 @@ TEST_CASE("autodiff_performance")
         wmtk::logger().info("analytical grad runtime: {} ms", duration.count());
         wmtk::logger().info("cnt = {}", cnt);
     }
-    SECTION("analytical_amips_hessian")
+    SECTION("analytical_amips_hessian", "[performance]")
     {
         int cnt = 0;
         const auto start = std::chrono::high_resolution_clock::now();
@@ -234,6 +239,47 @@ TEST_CASE("autodiff_performance")
         const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
         wmtk::logger().info("analytical hess runtime: {} ms", duration.count());
         wmtk::logger().info("cnt = {}", cnt);
+    }
+    SECTION("finitediff_vs_autodiff", "[correctness]")
+    {
+        // logger().set_level(spdlog::level::debug);
+        for (const wmtk::Tuple& triangle : mesh_ptr->get_all(PrimitiveType::Triangle)) {
+            auto scope = wmtk::function::utils::AutoDiffRAII(2);
+            std::vector<DSVec> attrs = wmtk::tests::get_vertex_coordinates(
+                *mesh_ptr,
+                accessor,
+                wmtk::simplex::Simplex(PrimitiveType::Triangle, triangle),
+                wmtk::simplex::Simplex(PrimitiveType::Vertex, triangle));
+            DSVec2 a = attrs[0], b = attrs[1], c = attrs[2];
+            DSVec3 p0 = m_evaluator_ptr->uv_to_position(a);
+            DSVec3 p1 = m_evaluator_ptr->uv_to_position(b);
+            DSVec3 p2 = m_evaluator_ptr->uv_to_position(c);
+            DScalar amips = wmtk::function::utils::amips(p0, p1, p2);
+            auto autodiff_grad = amips.getGradient();
+            wmtk::logger().debug("autodiff grad: {}", autodiff_grad);
+
+            Eigen::Vector2d uv0 = image::utils::get_double(a);
+            Eigen::Vector3d double_p1 = image::utils::get_double(p1);
+            Eigen::Vector3d double_p2 = image::utils::get_double(p2);
+            auto double_amips = [&](const Eigen::Vector2d& x) -> double {
+                Eigen::Vector3d p0 = m_evaluator_ptr->uv_to_position(x);
+                return wmtk::function::utils::amips(p0, double_p1, double_p2);
+            };
+
+
+            Eigen::VectorXd finitediff_grad;
+            fd::finite_gradient(uv0, double_amips, finitediff_grad, fd::AccuracyOrder::FOURTH);
+            fd::compare_gradient(autodiff_grad, finitediff_grad);
+            wmtk::logger().debug("finitediff grad: {}", finitediff_grad);
+            REQUIRE(fd::compare_gradient(autodiff_grad, finitediff_grad, 1e-5));
+
+            auto autodiff_hess = amips.getHessian();
+            wmtk::logger().debug("autodiff hess: {}", autodiff_hess);
+            Eigen::MatrixXd finitediff_hess;
+            fd::finite_hessian(uv0, double_amips, finitediff_hess, fd::AccuracyOrder::FOURTH);
+            wmtk::logger().debug("finitediff hess: {}", finitediff_hess);
+            REQUIRE(fd::compare_hessian(autodiff_hess, finitediff_hess, 1));
+        }
     }
 }
 
