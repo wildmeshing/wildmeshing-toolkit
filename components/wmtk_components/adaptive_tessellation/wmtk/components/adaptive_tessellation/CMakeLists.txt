@@ -26,3 +26,13 @@ add_subdirectory(multimesh/utils)
 # private libraries that will just be used in internal implementation details, not public APIs
 target_link_libraries(${CURRENT_COMPONENT_LIB_NAME} PRIVATE tinyexr::tinyexr)
 target_link_libraries(${CURRENT_COMPONENT_LIB_NAME} PUBLIC stb::image)
+
+include(FetchContent)
+FetchContent_Declare(
+    finite-diff
+    GIT_REPOSITORY https://github.com/zfergus/finite-diff.git
+    GIT_TAG 60f9fee
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(finite-diff)
+target_link_libraries(${CURRENT_COMPONENT_LIB_NAME} PUBLIC finitediff::finitediff)

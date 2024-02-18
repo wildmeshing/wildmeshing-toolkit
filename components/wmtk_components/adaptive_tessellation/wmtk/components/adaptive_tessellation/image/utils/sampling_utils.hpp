@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <tuple>
 #include <wmtk/function/PerSimplexAutodiffFunction.hpp>
 #include "SamplingParameters.hpp"
@@ -40,6 +41,23 @@ inline double get_double(double x)
 inline double get_double(DScalar x)
 {
     return x.getValue();
+}
+template <typename T>
+inline Vector3d get_double(const Vector3<T>& vector_x);
+
+template <>
+inline Vector3d get_double(const Vector3<DScalar>& vector_x)
+{
+    VectorXd res(vector_x.size());
+    for (int i = 0; i < vector_x.size(); ++i) {
+        res(i) = vector_x(i).getValue();
+    }
+    return res;
+}
+template <>
+inline Vector3d get_double(const Vector3<double>& vector_x)
+{
+    return vector_x;
 }
 
 template <typename T>
