@@ -61,6 +61,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
 
 
     int64_t expected_isosurface_vertex_num = 0;
+    int64_t expected_isosurface_edge_num = 0;
 
     SECTION("4")
     {
@@ -69,6 +70,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
         acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
 
         expected_isosurface_vertex_num = 6;
+        expected_isosurface_edge_num = 6;
     }
     SECTION("4-5")
     {
@@ -78,6 +80,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
         acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
 
         expected_isosurface_vertex_num = 9;
+        expected_isosurface_edge_num = 8;
     }
     SECTION("0-4-5")
     {
@@ -88,6 +91,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
         acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
 
         expected_isosurface_vertex_num = 10;
+        expected_isosurface_edge_num = 8;
     }
     SECTION("0-4-5-with-filter")
     {
@@ -110,6 +114,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
         acc_filter.scalar_attribute(m.edge_tuple_from_vids(5, 6)) = 1;
 
         expected_isosurface_vertex_num = 5;
+        expected_isosurface_edge_num = 4;
     }
 
     int64_t expected_vertex_num =
@@ -142,6 +147,21 @@ TEST_CASE("marching_component_tri", "[components][marching]")
             }
         }
         CHECK(isosurface_vertex_num == expected_isosurface_vertex_num);
+    }
+
+    const auto& edges = m.get_all(PrimitiveType::Edge);
+    wmtk::attribute::MeshAttributeHandle edge_tag_handle =
+        m.get_attribute_handle<int64_t>("edge_tag_handle", PrimitiveType::Edge);
+    Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
+    // edge number should be correct
+    {
+        int64_t isosurface_edge_num = 0;
+        for (const Tuple& e : edges) {
+            if (acc_edge_tag.scalar_attribute(e) == isosurface_tag_value) {
+                isosurface_edge_num++;
+            }
+        }
+        CHECK(isosurface_edge_num == expected_isosurface_edge_num);
     }
 
     // should be manifold
@@ -169,23 +189,24 @@ TEST_CASE("marching_component_tri", "[components][marching]")
 
     if (false) {
         wmtk::io::ParaviewWriter
-            writer("marching_2d_result", "vertices", m, true, false, true, false);
+            writer("marching_2d_result", "vertices", m, true, true, true, false);
         m.serialize(writer);
     }
 }
 
 TEST_CASE("marching_component_tet", "[components][marching][.]")
 {
-    //REQUIRE(false); // TODO test when wmtk code is ready on TetMesh
     const int64_t input_tag_value_0 = 0;
     const int64_t input_tag_value_1 = 1;
     const int64_t isosurface_tag_value = 2;
 
-    //    0---1---2
-    //   / \ / \ / \ .
-    //  3---4---5---6
-    //   \ / \ /  .
-    //    7---8
+    //        0 ---------- 4
+    //       / \\        // \ .
+    //      /   \ \     //   \ .
+    //     /     \  \  //     \  .
+    //    /       \   \3       \ .
+    //  1 --------- 2/ -------- 5   tuple edge 2-3
+    //
 
     tests_3d::DEBUG_TetMesh m = tests_3d::three_incident_tets_with_positions();
 
@@ -204,6 +225,7 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
 
 
     int64_t expected_isosurface_vertex_num = 0;
+    int64_t expected_isosurface_face_num = 0;
 
     SECTION("2-3")
     {
@@ -213,16 +235,30 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
         acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = input_tag_value_1;
 
         expected_isosurface_vertex_num = 8;
+        expected_isosurface_face_num = 6;
     }
-    // SECTION("4-5")
-    //{
-    //     const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-    //     Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
-    //     acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
-    //     acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
-    //
-    //     expected_isosurface_vertex_num = 9;
-    // }
+    SECTION("4-5")
+    {
+        const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
+        Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+        acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
+        acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
+
+        expected_isosurface_vertex_num = 5;
+        expected_isosurface_face_num = 3;
+    }
+    SECTION("1-0-4-5")
+    {
+        const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
+        Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+        acc_vertex_tag.scalar_attribute(vertex_tuples[1]) = input_tag_value_1;
+        acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = input_tag_value_1;
+        acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
+        acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
+
+        expected_isosurface_vertex_num = 8;
+        expected_isosurface_face_num = 6;
+    }
 
     int64_t expected_vertex_num =
         m.get_all(PrimitiveType::Vertex).size() + expected_isosurface_vertex_num;
@@ -255,6 +291,21 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
             }
         }
         CHECK(isosurface_vertex_num == expected_isosurface_vertex_num);
+    }
+
+    // face number should be correct
+    const auto& faces = m.get_all(PrimitiveType::Face);
+    wmtk::attribute::MeshAttributeHandle face_tag_handle =
+        m.get_attribute_handle<int64_t>("face_tag_handle", PrimitiveType::Face);
+    Accessor<int64_t> acc_face_tag = m.create_accessor<int64_t>(face_tag_handle);
+    {
+        int64_t isosurface_face_num = 0;
+        for (const Tuple& f : faces) {
+            if (acc_face_tag.scalar_attribute(f) == isosurface_tag_value) {
+                isosurface_face_num++;
+            }
+        }
+        CHECK(isosurface_face_num == expected_isosurface_face_num);
     }
 
     if (false) {

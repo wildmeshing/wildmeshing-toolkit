@@ -29,6 +29,10 @@ private:
     std::vector<int64_t> m_filter_values;
 
     std::vector<attribute::MeshAttributeHandle> m_pass_through_attributes;
+
+    // p0 is input and p1 is scalffold, if we have isovalue u, then offset is u*p0+(1-u)p1
+    // p0's tag is input_values[0], p1's tag is input_values[1]
+    double m_isovalue;
 };
 
 } // namespace wmtk::components::internal
