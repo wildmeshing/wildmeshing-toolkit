@@ -31,9 +31,8 @@ void ATOperations::set_energies()
         1);
 
 
-    m_amips_energy = std::make_shared<wmtk::function::TriangleAMIPS>(
-        *m_atdata.uv_mesh_ptr(),
-        m_atdata.uv_handle());
+    m_2d_amips_energy =
+        std::make_shared<wmtk::function::AMIPS>(*m_atdata.uv_mesh_ptr(), m_atdata.uv_handle());
     m_3d_amips_energy = std::make_shared<wmtk::function::PositionMapAMIPS>(
         *m_atdata.uv_mesh_ptr(),
         m_atdata.uv_handle(),

@@ -5,8 +5,8 @@
 #include <wmtk/components/adaptive_tessellation/function/simplex/SumEnergy.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
+#include <wmtk/function/simplex/AMIPS.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
-
 #include "ATData.hpp"
 namespace wmtk::components::operations::internal {
 class ATOperations
@@ -60,7 +60,7 @@ public:
     std::shared_ptr<wmtk::function::DistanceEnergy> m_distance_energy;
     std::shared_ptr<wmtk::function::DistanceEnergyNonDiff> m_distance_nondiff_energy;
 
-    std::shared_ptr<wmtk::function::TriangleAMIPS> m_amips_energy;
+    std::shared_ptr<wmtk::function::AMIPS> m_2d_amips_energy;
     std::shared_ptr<wmtk::function::PositionMapAMIPS> m_3d_amips_energy;
     std::shared_ptr<wmtk::function::SumEnergy> m_sum_energy;
 
