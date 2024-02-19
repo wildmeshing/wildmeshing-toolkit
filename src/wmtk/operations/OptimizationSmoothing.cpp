@@ -44,7 +44,6 @@ private:
     attribute::Accessor<double> m_accessor;
     const simplex::Simplex& m_simplex;
     const wmtk::function::Function& m_energy;
-
     invariants::InvariantCollection& m_invariants;
 };
 
@@ -157,17 +156,17 @@ std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simp
         // std::cout << "Solving" << std::endl;
         m_solver->minimize(problem, x);
         // std::cout << "Done " << x << std::endl;
-        // nlohmann::json data = m_solver->get_info();
-        // std::ofstream file("solver_info.json");
+        nlohmann::json data = m_solver->get_info();
 
+        // iterations.push_back(data);
         // Write the JSON object to the file
+        m_file << data.dump(4);
         // std::cout << std::setw(4) << data << std::endl;
         // wmtk::operations::Operation::print_sampling_cnt();
         // // Close the file
         // file.close();
 
         accessor.vector_attribute(simplex.tuple()) = x;
-
     } catch (const std::exception&) {
         return {};
     }

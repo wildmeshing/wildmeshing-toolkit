@@ -4,7 +4,7 @@
 #include <wmtk/function/Function.hpp>
 #include "AttributesUpdate.hpp"
 
-
+#include <fstream>
 namespace polysolve::nonlinear {
 class Solver;
 }
@@ -49,6 +49,7 @@ private:
     polysolve::json m_linear_solver_params;
     polysolve::json m_nonlinear_solver_params;
 
+    std::ofstream m_file = std::ofstream("solver_2damips.json");
     void create_solver();
 };
 
