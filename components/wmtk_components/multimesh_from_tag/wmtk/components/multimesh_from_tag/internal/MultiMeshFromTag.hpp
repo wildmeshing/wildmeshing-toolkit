@@ -61,6 +61,7 @@ private:
     attribute::MeshAttributeHandle m_adjacency_handle;
     Eigen::MatrixX<int64_t> m_adjacency_matrix;
     std::map<PrimitiveType, Eigen::MatrixX<int64_t>> m_new_id_matrices;
+    std::map<PrimitiveType, VectorXl> m_new_top_coface_vectors;
 };
 
 } // namespace wmtk::components::internal

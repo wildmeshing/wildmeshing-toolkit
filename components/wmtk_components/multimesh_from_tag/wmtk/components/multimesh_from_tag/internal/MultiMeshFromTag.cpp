@@ -112,9 +112,12 @@ void MultiMeshFromTag::compute_substructure_ids()
             ++cell_counter;
         }
 
-        // build FV matrix
+        // build id and top-coface matrix
         Eigen::MatrixX<int64_t> id_matrix;
         id_matrix.resize(cell_counter, id_acc.dimension());
+        VectorXl coface_vector;
+        coface_vector.resize(simplex_counter);
+
 
         cell_counter = 0;
         for (const Tuple& cell_tuple : top_substructure_tuples) {
@@ -133,12 +136,14 @@ void MultiMeshFromTag::compute_substructure_ids()
                 const int64_t id = get_id(id_acc, face_tuples[i]);
                 assert(id != -1);
                 id_matrix(cell_counter, i) = id;
+                coface_vector(id) = cell_counter;
             }
 
             ++cell_counter;
         }
 
         m_new_id_matrices[pt] = id_matrix;
+        m_new_top_coface_vectors[pt] = coface_vector;
     }
 }
 
