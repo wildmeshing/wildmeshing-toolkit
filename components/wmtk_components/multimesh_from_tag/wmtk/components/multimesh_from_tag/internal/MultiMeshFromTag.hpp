@@ -49,7 +49,7 @@ private:
     const int64_t m_tag_value;
     const PrimitiveType m_tag_ptype;
 
-    std::vector<attribute::MeshAttributeHandle> m_new_id_handles;
+    std::map<PrimitiveType, attribute::MeshAttributeHandle> m_new_id_handles;
 
     std::array<std::array<int64_t, 4>, 4> m_n_local_ids = {{
         {1, 0, 0, 0}, // PointMesh
@@ -59,6 +59,8 @@ private:
     }};
 
     attribute::MeshAttributeHandle m_adjacency_handle;
+    Eigen::MatrixX<int64_t> m_adjacency_matrix;
+    std::map<PrimitiveType, Eigen::MatrixX<int64_t>> m_new_id_matrices;
 };
 
 } // namespace wmtk::components::internal
