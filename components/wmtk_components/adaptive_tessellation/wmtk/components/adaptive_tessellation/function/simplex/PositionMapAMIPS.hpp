@@ -27,6 +27,11 @@ public:
 
     ~PositionMapAMIPS();
 
+public:
+    DScalar debug_eval(const Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
+    {
+        return eval(domain_simplex, coordinates);
+    }
 
 protected:
     std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
