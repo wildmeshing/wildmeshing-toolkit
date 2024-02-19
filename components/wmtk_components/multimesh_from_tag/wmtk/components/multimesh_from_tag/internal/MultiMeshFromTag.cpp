@@ -19,14 +19,15 @@ MultiMeshFromTag::MultiMeshFromTag(
     , m_tag_acc(m_mesh.create_const_accessor<int64_t>(m_tag_handle))
     , m_tag_ptype(tag_handle.primitive_type())
 {
-    assert(m_tag_ptype == PrimitiveType::Triangle); // start by implementing only the simple
-                                                    // 2d triangle substructure case
-
     const PrimitiveType top_pt = m_mesh.top_simplex_type();
     const int64_t top_pt_id = get_primitive_type_id(top_pt);
 
     // create attributes to store new ids
     for (const PrimitiveType pt : utils::primitive_below(m_tag_ptype)) {
+        if (pt == top_pt) {
+            continue;
+        }
+
         const int64_t pt_id = get_primitive_type_id(pt);
 
         const int64_t n_ids = m_n_local_ids[top_pt_id][pt_id];
@@ -224,6 +225,9 @@ void MultiMeshFromTag::build_adjacency()
         return;
     }
 
+    const PrimitiveType top_pt = m_mesh.top_simplex_type();
+    const int64_t top_pt_id = get_primitive_type_id(top_pt);
+
     const int64_t tag_ptype_id = get_primitive_type_id(m_tag_ptype);
 
     const int64_t connecting_pt_id = tag_ptype_id - 1;
@@ -261,7 +265,7 @@ void MultiMeshFromTag::build_adjacency()
 
     m_adjacency_handle = m_mesh.register_attribute<int64_t>(
         "multimesh_from_tag_adjacency",
-        m_tag_ptype,
+        top_pt,
         m_n_local_ids[tag_ptype_id][connecting_pt_id],
         false,
         -1);
@@ -270,8 +274,13 @@ void MultiMeshFromTag::build_adjacency()
 
     const auto top_substructure_tuples = m_mesh.get_all(m_tag_ptype);
 
-    auto top_simplex_id_acc = m_mesh.create_accessor<int64_t>(m_new_id_handles[m_tag_ptype]);
-    assert(top_simplex_id_acc.dimension() == 1);
+    auto top_simplex_id_handle = m_mesh.register_attribute<int64_t>(
+        "multimesh_from_tag_top_substructure_simplex_id",
+        m_tag_ptype,
+        1,
+        false,
+        -1);
+    auto top_simplex_id_acc = m_mesh.create_accessor<int64_t>(top_simplex_id_handle);
 
     // set cell ids
     int64_t cell_counter = 0;
@@ -319,7 +328,7 @@ void MultiMeshFromTag::build_adjacency()
     }
 
     Eigen::MatrixX<int64_t> adj_matrix;
-    adj_matrix.resize(cell_counter, adj_acc.dimension());
+    adj_matrix.resize(cell_counter, m_n_local_ids[tag_ptype_id][connecting_pt_id]);
 
     cell_counter = 0;
     for (const Tuple& cell_tuple : top_substructure_tuples) {
@@ -332,7 +341,7 @@ void MultiMeshFromTag::build_adjacency()
             simplex::Simplex(m_tag_ptype, cell_tuple),
             connecting_ptype);
 
-        assert(face_tuples.size() == adj_acc.dimension());
+        assert(face_tuples.size() == adj_matrix.cols());
 
         for (size_t i = 0; i < face_tuples.size(); ++i) {
             const int64_t id = get_id(adj_acc, face_tuples[i]);
