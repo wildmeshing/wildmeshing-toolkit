@@ -25,6 +25,9 @@ public:
 
     void compute_substructure_ids();
 
+    Eigen::MatrixX<int64_t> get_new_id_matrix(const PrimitiveType ptype) const;
+    VectorXl get_new_top_coface_vector(const PrimitiveType ptype) const;
+
 private:
     /**
      * @brief Get tuples with different global_cid that all represent simplex(t_in, ptype) and are

@@ -42,6 +42,16 @@ MultiMeshFromTag::MultiMeshFromTag(
     build_adjacency();
 }
 
+Eigen::MatrixX<int64_t> MultiMeshFromTag::get_new_id_matrix(const PrimitiveType ptype) const
+{
+    return m_new_id_matrices.at(ptype);
+}
+
+VectorXl MultiMeshFromTag::get_new_top_coface_vector(const PrimitiveType ptype) const
+{
+    return m_new_top_coface_vectors.at(ptype);
+}
+
 void MultiMeshFromTag::compute_substructure_ids()
 {
     const auto top_substructure_tuples = m_mesh.get_all(m_tag_ptype);

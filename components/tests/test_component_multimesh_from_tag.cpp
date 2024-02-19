@@ -30,4 +30,17 @@ TEST_CASE("multimesh_from_tag_tri_tri", "[components][multimesh][multimesh_from_
 
     MultiMeshFromTag mmft(m, tag_handle, tag_value);
     mmft.compute_substructure_ids();
+
+    const Eigen::MatrixX<int64_t> FV = mmft.get_new_id_matrix(PrimitiveType::Vertex);
+    CHECK(FV.rows() == 4);
+    CHECK(FV.cols() == 3);
+
+    const Eigen::MatrixX<int64_t> FE = mmft.get_new_id_matrix(PrimitiveType::Edge);
+    CHECK(FE.rows() == 4);
+    CHECK(FE.cols() == 3);
+
+    const VectorXl VF = mmft.get_new_top_coface_vector(PrimitiveType::Vertex);
+    CHECK(VF.size() == 8);
+    const VectorXl EF = mmft.get_new_top_coface_vector(PrimitiveType::Edge);
+    CHECK(EF.size() == 10);
 }
