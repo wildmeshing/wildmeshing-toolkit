@@ -26,7 +26,20 @@ public:
     void compute_substructure_ids();
 
 private:
+    /**
+     * @brief Get tuples with different global_cid that all represent simplex(t_in, ptype) and are
+     * in the same tag-region.
+     *
+     * To find the tag-region a breadth-first-search is utilized where it is not allowed to cross
+     * non-manifold d-1-simplices.
+     *
+     */
     std::vector<Tuple> get_connected_region(const Tuple& t, const PrimitiveType ptype);
+
+    /**
+     * Create the adjacency (stored as attribute) of the substructure
+     */
+    void build_adjacency();
 
 private:
     Mesh& m_mesh;
@@ -35,6 +48,17 @@ private:
     const attribute::Accessor<int64_t> m_tag_acc;
     const int64_t m_tag_value;
     const PrimitiveType m_tag_ptype;
+
+    std::vector<attribute::MeshAttributeHandle> m_new_id_handles;
+
+    std::array<std::array<int64_t, 4>, 4> m_n_local_ids = {{
+        {1, 0, 0, 0}, // PointMesh
+        {2, 1, 0, 0}, // EdgeMesh
+        {3, 3, 1, 0}, // TriMesh
+        {4, 6, 4, 1} //  TetMesh
+    }};
+
+    attribute::MeshAttributeHandle m_adjacency_handle;
 };
 
 } // namespace wmtk::components::internal
