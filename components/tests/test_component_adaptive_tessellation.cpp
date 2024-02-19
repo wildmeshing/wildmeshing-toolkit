@@ -2,6 +2,7 @@
 #include <nlohmann/json.hpp>
 #include <wmtk/components/adaptive_tessellation/adaptive_tessellation.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/DistanceEnergy.hpp>
+#include <wmtk/components/adaptive_tessellation/function/simplex/PositionMapAMIPS.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
@@ -94,20 +95,30 @@ TEST_CASE("3damips_autodiff_performance_correctness")
     wmtk::attribute::MeshAttributeHandle m_uv_handle =
         mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto accessor = mesh_ptr->create_accessor(m_uv_handle.as<double>());
-    std::array<std::shared_ptr<image::Sampling>, 3> funcs = {
-        {std::make_shared<image::SamplingAnalyticFunction>(
-             image::SamplingAnalyticFunction_FunctionType::Linear,
-             1,
-             0,
-             0.),
-         std::make_shared<image::SamplingAnalyticFunction>(
-             image::SamplingAnalyticFunction_FunctionType::Linear,
-             0,
-             1,
-             0.),
-         std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
+    std::array<std::shared_ptr<image::Sampling>, 3> funcs = {{
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Linear,
+            1,
+            0,
+            0.),
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Linear,
+            0,
+            1,
+            0.),
+        // std::make_shared<image::SamplingAnalyticFunction>(
+        //     image::SamplingAnalyticFunction_FunctionType::Linear,
+        //     1,
+        //     1,
+        //     0.)
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Gaussian,
+            0.5,
+            0.5,
+            1.)
+        //  std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
 
-        }};
+    }};
 
 
     std::shared_ptr<function::utils::ThreeChannelPositionMapEvaluator> m_evaluator_ptr =
@@ -123,6 +134,9 @@ TEST_CASE("3damips_autodiff_performance_correctness")
     std::shared_ptr<wmtk::function::DistanceEnergy> m_distance_energy =
         std::make_shared<wmtk::function::DistanceEnergy>(*mesh_ptr, m_uv_handle, m_integral_ptr);
     // iterate over all the triangles
+
+    wmtk::function::PositionMapAMIPS positionmap_amips(*mesh_ptr, m_uv_handle, m_evaluator_ptr);
+    wmtk::function::AMIPS analytical_2damips(*mesh_ptr, m_uv_handle);
 
     SECTION("autodiff_gradient", "[performance]")
     {
@@ -250,17 +264,18 @@ TEST_CASE("3damips_autodiff_performance_correctness")
                 accessor,
                 wmtk::simplex::Simplex(PrimitiveType::Triangle, triangle),
                 wmtk::simplex::Simplex(PrimitiveType::Vertex, triangle));
+            DScalar amips = positionmap_amips.debug_eval(
+                wmtk::simplex::Simplex(PrimitiveType::Triangle, triangle),
+                attrs);
             DSVec2 a = attrs[0], b = attrs[1], c = attrs[2];
-            DSVec3 p0 = m_evaluator_ptr->uv_to_position(a);
-            DSVec3 p1 = m_evaluator_ptr->uv_to_position(b);
-            DSVec3 p2 = m_evaluator_ptr->uv_to_position(c);
-            DScalar amips = wmtk::function::utils::amips(p0, p1, p2);
             auto autodiff_grad = amips.getGradient();
             wmtk::logger().debug("autodiff grad: {}", autodiff_grad);
 
             Eigen::Vector2d uv0 = image::utils::get_double(a);
-            Eigen::Vector3d double_p1 = image::utils::get_double(p1);
-            Eigen::Vector3d double_p2 = image::utils::get_double(p2);
+            Eigen::Vector3d double_p1 =
+                m_evaluator_ptr->uv_to_position(image::utils::get_double(b));
+            Eigen::Vector3d double_p2 =
+                m_evaluator_ptr->uv_to_position(image::utils::get_double(c));
             auto double_amips = [&](const Eigen::Vector2d& x) -> double {
                 Eigen::Vector3d p0 = m_evaluator_ptr->uv_to_position(x);
                 return wmtk::function::utils::amips(p0, double_p1, double_p2);
@@ -278,7 +293,18 @@ TEST_CASE("3damips_autodiff_performance_correctness")
             Eigen::MatrixXd finitediff_hess;
             fd::finite_hessian(uv0, double_amips, finitediff_hess, fd::AccuracyOrder::FOURTH);
             wmtk::logger().debug("finitediff hess: {}", finitediff_hess);
-            REQUIRE(fd::compare_hessian(autodiff_hess, finitediff_hess, 1));
+            REQUIRE(fd::compare_hessian(autodiff_hess, finitediff_hess, 1e-2));
+
+            ///// compare the constatnt displacement hessian and gradient to 2d amips analytical hessiana and gradient
+            //// if not constant displacement, this shall not be used
+            // Eigen::VectorXd analytical_2damips_gradient = analytical_2damips.get_gradient(
+            //     wmtk::simplex::Simplex(PrimitiveType::Triangle, triangle),
+            //     wmtk::simplex::Simplex(PrimitiveType::Vertex, triangle));
+            // REQUIRE(fd::compare_gradient(autodiff_grad, analytical_2damips_gradient, 1e-5));
+            // Eigen::MatrixXd analytical_2damips_hessian = analytical_2damips.get_hessian(
+            //     wmtk::simplex::Simplex(PrimitiveType::Triangle, triangle),
+            //     wmtk::simplex::Simplex(PrimitiveType::Vertex, triangle));
+            // REQUIRE(fd::compare_hessian(autodiff_hess, analytical_2damips_hessian, 1e-2));
         }
     }
 }
