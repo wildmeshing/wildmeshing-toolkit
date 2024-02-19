@@ -222,7 +222,8 @@ void ATOperations::AT_edge_split(
     //     std::make_shared<FunctionInvariant>(uv_mesh_ptr->top_simplex_type(), function_ptr));
     split->add_invariant(
         std::make_shared<StateChanges>(uv_mesh_ptr->top_simplex_type(), function_ptr));
-    split->set_priority(priority);
+    // split->set_priority(priority);
+    split->use_random_priority() = true;
 
     split->set_new_attribute_strategy(m_atdata.m_uv_handle);
     split->set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);
