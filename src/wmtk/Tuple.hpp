@@ -72,9 +72,10 @@ public:
     bool operator==(const Tuple& t) const;
     bool operator!=(const Tuple& t) const;
     bool operator<(const Tuple& t) const;
-    // equality comparison but skips the hash
+    /// Checks whether two tuples are equal, but ignores the hash
     bool same_ids(const Tuple& t) const;
 
+    /// Checks if a tuple is "null". This merely implies the global index is -1
     bool is_null() const;
     Tuple with_updated_hash(int64_t new_hash) const;
 };
