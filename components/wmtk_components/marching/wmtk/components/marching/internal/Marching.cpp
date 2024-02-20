@@ -6,7 +6,7 @@
 #include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
+#include <wmtk/operations/attribute_update/AttributeTransferStrategyPosition.hpp>
 
 namespace wmtk::components::internal {
 
@@ -46,7 +46,7 @@ Marching::Marching(
     , m_filter_labels(filter_labels)
     , m_filter_values(filter_values)
     , m_pass_through_attributes(pass_through_attributes)
-    , m_isovalue(0.5)
+    , m_isovalue(0.1)
 {}
 
 void Marching::process()
@@ -57,7 +57,11 @@ void Marching::process()
         "todo_edgesplit_in_marching_component",
         wmtk::PrimitiveType::Edge,
         1);
+    auto new_position =
+        m_mesh.register_attribute<double>("new_position", wmtk::PrimitiveType::Vertex, 3);
+    auto position = m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
+    m_pass_through_attributes.push_back(new_position);
 
     assert(m_input_values.size() == 2);
     const int64_t vertex_tag_0 = m_input_values[0];
@@ -71,6 +75,8 @@ void Marching::process()
 
     // compute the todo list for the split edge
     Accessor<int64_t> acc_todo = m_mesh.create_accessor(todo_attribute);
+    Accessor<double> acc_position = m_mesh.create_accessor<double>(position);
+    Accessor<double> acc_new_position = m_mesh.create_accessor<double>(new_position);
     for (const Tuple& edge : m_mesh.get_all(PrimitiveType::Edge)) {
         bool is_of_interest = true;
         for (const TagAttribute& filter : filters) {
@@ -86,9 +92,16 @@ void Marching::process()
 
         const int64_t vt0 = acc_vertex_tag.scalar_attribute(edge);
         const int64_t vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(edge));
-        if ((vt0 == vertex_tag_0 && vt1 == vertex_tag_1) ||
-            (vt1 == vertex_tag_0 && vt0 == vertex_tag_1)) {
+        if (vt0 == vertex_tag_0 && vt1 == vertex_tag_1) {
             acc_todo.scalar_attribute(edge) = 1;
+            acc_new_position.vector_attribute(m_mesh.switch_vertex(edge)) =
+                acc_position.const_vector_attribute(edge) * (1 - m_isovalue) +
+                acc_position.const_vector_attribute(m_mesh.switch_vertex(edge)) * m_isovalue;
+        } else if (vt1 == vertex_tag_0 && vt0 == vertex_tag_1) {
+            acc_todo.scalar_attribute(edge) = 1;
+            acc_new_position.vector_attribute(edge) =
+                acc_position.const_vector_attribute(edge) * m_isovalue +
+                acc_position.const_vector_attribute(m_mesh.switch_vertex(edge)) * (1 - m_isovalue);
         }
     }
 
@@ -101,7 +114,7 @@ void Marching::process()
         auto compute_edge_label =
             [this](const Eigen::MatrixX<int64_t>& labels) -> Eigen::VectorX<int64_t> {
             assert(labels.cols() == 2);
-            if (labels(0, 0) == m_output_value && labels(1, 0) == m_output_value)
+            if (labels(0, 0) == m_output_value && labels(0, 1) == m_output_value)
                 return Eigen::VectorX<int64_t>::Constant(1, m_output_value);
             return Eigen::VectorX<int64_t>::Constant(1, 0);
         };
@@ -122,8 +135,8 @@ void Marching::process()
         auto compute_face_label =
             [this](const Eigen::MatrixX<int64_t>& labels) -> Eigen::VectorX<int64_t> {
             assert(labels.cols() == 3);
-            if (labels(0, 0) == m_output_value && labels(1, 0) == m_output_value &&
-                labels(2, 0) == m_output_value)
+            if (labels(0, 0) == m_output_value && labels(0, 1) == m_output_value &&
+                labels(0, 2) == m_output_value)
                 return Eigen::VectorX<int64_t>::Constant(1, m_output_value);
             return Eigen::VectorX<int64_t>::Constant(1, 0);
         };
@@ -140,6 +153,35 @@ void Marching::process()
 
         op_split.add_transfer_strategy(ftag_strategy);
 
+        // position update
+        /**************************position******************************/
+
+        // auto compute_position = [this](
+        //                             const Eigen::MatrixXd& new_pos,
+        //                             const Eigen::MatrixX<int64_t>& labels) -> Eigen::VectorXd {
+        //     assert(new_pos.cols() == labels.cols());
+        //     int inside_idx = -1;
+
+        //     for (int i = 0; i < labels.cols(); ++i) {
+        //         int v = labels(0, i);
+        //         if (labels(0, i) == m_input_values[1]) {
+        //             inside_idx = i;
+        //         }
+        //     }
+
+        //     return new_pos.col(inside_idx);
+        // };
+
+        // std::shared_ptr position_strategy = std::make_shared<
+        //     wmtk::operations::
+        //         SingleAttributeTransferStrategyWithMultiParents<double, double, int64_t>>(
+        //     position,
+        //     new_position,
+        //     m_vertex_label,
+        //     compute_position);
+
+        // op_split.add_transfer_strategy(position_strategy);
+
         auto tmp = std::make_shared<SplitNewAttributeStrategy<int64_t>>(m_vertex_label);
         tmp->set_strategy(SplitBasicStrategy::None);
         tmp->set_rib_strategy(
@@ -149,34 +191,6 @@ void Marching::process()
                 return ret;
             });
         op_split.set_new_attribute_strategy(m_vertex_label, tmp);
-
-        // position update
-        /**************************position******************************/
-
-        // auto compute_position = [this](
-        //                             const Eigen::MatrixXd& position,
-        //                             const Eigen::MatrixX<int64_t>& labels) -> Eigen::VectorXd {
-        //     assert(position.cols() == 2);
-        //     assert(labels.cols() == 2);
-        //     if (labels(0, 0) == m_input_values[0]) {
-        //         return position.col(0) * m_isovalue + position.col(1) * (1 - m_isovalue);
-        //     } else {
-        //         return position.col(1) * m_isovalue + position.col(0) * (1 - m_isovalue);
-        //     }
-        // };
-
-
-        // auto position = m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-
-        // std::shared_ptr position_strategy = std::make_shared<
-        //     wmtk::operations::
-        //         SingleAttributeTransferStrategyWithMultiParents<double, double, int64_t>>(
-        //     position,
-        //     position,
-        //     m_vertex_label,
-        //     compute_position);
-
-        // op_split.add_transfer_strategy(position_strategy);
     }
 
     // filters
