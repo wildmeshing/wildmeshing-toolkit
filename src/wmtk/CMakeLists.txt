@@ -26,7 +26,7 @@ set(SRC_FILES
     PrimitiveType.cpp
     Primitive.hpp
     Primitive.cpp
-    Tuple.cpp
+    Tuple.hxx
     Tuple.hpp
     Types.hpp
     Scheduler.hpp

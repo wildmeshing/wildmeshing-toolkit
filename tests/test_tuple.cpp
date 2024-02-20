@@ -6,6 +6,23 @@
 
 using namespace wmtk;
 
+TEST_CASE("tuple_is_null", "[tuple]")
+{
+    Tuple a(0, 0, 0, 0, 0);
+    CHECK(!a.is_null());
+
+    Tuple b(0, 0, 0, -1, 0);
+    CHECK(b.is_null());
+
+    Tuple c(-1, -1, -1, -1, -1);
+    CHECK(c.is_null());
+
+    Tuple d(-1, -1, -1, 0, -1);
+    CHECK(!d.is_null());
+
+    Tuple e(-1, -1, -1, -2, -1);
+    CHECK(!e.is_null());
+}
 TEST_CASE("tuple_comparison", "[tuple]")
 {
     { // check that equals are detected properly
