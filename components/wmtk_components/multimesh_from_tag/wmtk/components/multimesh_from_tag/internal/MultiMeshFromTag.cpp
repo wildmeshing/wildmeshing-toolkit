@@ -2,9 +2,14 @@
 
 #include <queue>
 #include <set>
+#include <wmtk/EdgeMesh.hpp>
+#include <wmtk/PointMesh.hpp>
+#include <wmtk/TetMesh.hpp>
+#include <wmtk/TriMesh.hpp>
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/simplex/tuples_preserving_primitive_types.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 
 namespace wmtk::components::internal {
@@ -352,6 +357,69 @@ void MultiMeshFromTag::build_adjacency()
     }
 
     m_adjacency_matrix = adj_matrix;
+}
+
+void MultiMeshFromTag::create_substructure_soup()
+{
+    const int64_t n_vertices_per_simplex = m_n_local_ids[get_primitive_type_id(m_tag_ptype)][0];
+
+    std::vector<Tuple> tagged_tuples;
+    {
+        const auto tag_type_tuples = m_mesh.get_all(m_tag_ptype);
+        for (const Tuple& t : tag_type_tuples) {
+            if (m_tag_acc.const_scalar_attribute(t) != m_tag_value) {
+                continue;
+            }
+            tagged_tuples.emplace_back(t);
+        }
+    }
+
+    // vertex matrix
+    Eigen::MatrixX<int64_t> id_matrix;
+    id_matrix.resize(tagged_tuples.size(), n_vertices_per_simplex);
+
+    for (size_t i = 0; i < tagged_tuples.size(); ++i) {
+        for (int64_t j = 0; j < n_vertices_per_simplex; ++j) {
+            id_matrix(i, j) = n_vertices_per_simplex * i + j;
+        }
+    }
+
+    std::shared_ptr<Mesh> child_ptr;
+    switch (m_tag_ptype) {
+    case PrimitiveType::Vertex: {
+        child_ptr = std ::make_shared<PointMesh>();
+        static_cast<PointMesh&>(*child_ptr).initialize(tagged_tuples.size());
+        break;
+    }
+    case PrimitiveType::Edge: {
+        child_ptr = std ::make_shared<EdgeMesh>();
+        static_cast<EdgeMesh&>(*child_ptr).initialize(id_matrix);
+        break;
+    }
+    case PrimitiveType::Triangle: {
+        child_ptr = std ::make_shared<TriMesh>();
+        static_cast<TriMesh&>(*child_ptr).initialize(id_matrix);
+        break;
+    }
+    case PrimitiveType::Tetrahedron: {
+        child_ptr = std ::make_shared<TetMesh>();
+        static_cast<TetMesh&>(*child_ptr).initialize(id_matrix);
+        break;
+    }
+    default: log_and_throw_error("Unknown primitive type for tag");
+    }
+
+    std::vector<std::array<Tuple, 2>> child_to_parent_map(tagged_tuples.size());
+
+    const auto child_top_dimension_tuples = child_ptr->get_all(m_tag_ptype);
+
+    assert(tagged_tuples.size() == child_top_dimension_tuples.size());
+
+    for (size_t i = 0; i < tagged_tuples.size(); ++i) {
+        child_to_parent_map[i] = {{child_top_dimension_tuples[i], tagged_tuples[i]}};
+    }
+
+    m_mesh.register_child_mesh(child_ptr, child_to_parent_map);
 }
 
 } // namespace wmtk::components::internal
