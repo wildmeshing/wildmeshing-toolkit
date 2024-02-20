@@ -66,9 +66,9 @@ var dir_f7a95b7257057fa18adfa4b3aabbe846 =
     [ "TriMeshOperationExecutor.hpp", "_tri_mesh_operation_executor_8hpp.html", [
       [ "TriMeshOperationExecutor", "classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html", "classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor" ]
     ] ],
-    [ "Tuple.cpp", "_tuple_8cpp.html", null ],
     [ "Tuple.hpp", "_tuple_8hpp.html", [
       [ "Tuple", "classwmtk_1_1_tuple.html", "classwmtk_1_1_tuple" ]
     ] ],
+    [ "Tuple.hxx", "_tuple_8hxx.html", null ],
     [ "Types.hpp", "_types_8hpp.html", "_types_8hpp" ]
 ];
