@@ -91,3 +91,4 @@ inline Tuple::Tuple(
     , m_hash(hash)
 {}
 } // namespace wmtk
+#include "Tuple.hxx"
