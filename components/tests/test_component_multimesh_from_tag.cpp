@@ -239,3 +239,85 @@ TEST_CASE("multimesh_from_tag_tet_tet", "[components][multimesh][multimesh_from_
     const VectorXl FT = mmft.get_new_top_coface_vector(PrimitiveType::Triangle);
     CHECK(FT.size() == n_faces);
 }
+
+TEST_CASE("multimesh_from_tag_tet_tri", "[components][multimesh][multimesh_from_tag]")
+{
+    DEBUG_TetMesh m = six_cycle_tets();
+
+    auto tag_handle = m.register_attribute<int64_t>("tag", PrimitiveType::Triangle, 1);
+    int64_t tag_value = 1;
+
+    int64_t n_faces = -1;
+    int64_t n_edges = -1;
+    int64_t n_vertices = -1;
+
+    auto tag_acc = m.create_accessor<int64_t>(tag_handle);
+
+    SECTION("one_component")
+    {
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(1, 2, 3)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 1, 2)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(2, 3, 5)) = tag_value;
+        n_faces = 3;
+        n_edges = 7;
+        n_vertices = 5;
+    }
+    SECTION("non_manifold_vertex")
+    {
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 1, 2)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 2, 4)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(1, 2, 6)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(2, 5, 7)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(3, 5, 7)) = tag_value;
+        n_faces = 5;
+        n_edges = 12;
+        n_vertices = 9;
+    }
+    SECTION("non_manifold_vertex_2")
+    {
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 1, 2)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(1, 2, 3)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 2, 3)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 1, 3)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(2, 5, 7)) = tag_value;
+        n_faces = 5;
+        n_edges = 9;
+        n_vertices = 7;
+    }
+    SECTION("non_manifold_edge")
+    {
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 1, 2)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(1, 2, 3)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 2, 3)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 1, 3)) = tag_value;
+
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(2, 3, 5)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(3, 5, 7)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(2, 5, 7)) = tag_value;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(2, 3, 7)) = tag_value;
+        n_faces = 8;
+        n_edges = 14;
+        n_vertices = 8;
+    }
+
+
+    MultiMeshFromTag mmft(m, tag_handle, tag_value);
+
+    REQUIRE(m.get_child_meshes().size() == 1);
+    REQUIRE(m.is_multi_mesh_root());
+
+    mmft.compute_substructure_ids();
+
+    const Eigen::MatrixX<int64_t> FV = mmft.get_new_id_matrix(PrimitiveType::Vertex);
+    CHECK(FV.rows() == n_faces);
+    CHECK(FV.cols() == 3);
+
+    const Eigen::MatrixX<int64_t> FE = mmft.get_new_id_matrix(PrimitiveType::Edge);
+    CHECK(FE.rows() == n_faces);
+    CHECK(FE.cols() == 3);
+
+    const VectorXl VF = mmft.get_new_top_coface_vector(PrimitiveType::Vertex);
+    CHECK(VF.size() == n_vertices);
+    const VectorXl EF = mmft.get_new_top_coface_vector(PrimitiveType::Edge);
+    CHECK(EF.size() == n_edges);
+}

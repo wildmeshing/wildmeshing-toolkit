@@ -186,7 +186,7 @@ std::vector<Tuple> MultiMeshFromTag::get_connected_region(
         connected_region.emplace_back(t);
 
         const std::vector<Tuple> pt_intersection =
-            simplex::tuples_preserving_primitive_types(m_mesh, t, ptype, m_tag_ptype);
+            simplex::tuples_preserving_primitive_types(child, t, ptype, m_tag_ptype);
 
 
         for (const Tuple& t_version : pt_intersection) {
