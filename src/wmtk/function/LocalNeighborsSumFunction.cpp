@@ -7,6 +7,8 @@
 
 namespace wmtk::function {
 
+int LocalNeighborsSumFunction::grad_cnt = 0;
+int LocalNeighborsSumFunction::hess_cnt = 0;
 
 LocalNeighborsSumFunction::LocalNeighborsSumFunction(
     Mesh& mesh,
@@ -60,7 +62,7 @@ Eigen::VectorXd LocalNeighborsSumFunction::get_gradient(
         assert(cell.primitive_type() == m_domain_simplex_type);
         res += m_function.get_gradient(cell, variable_simplex);
     }
-
+    grad_cnt++;
     return res;
 }
 
@@ -79,7 +81,7 @@ Eigen::MatrixXd LocalNeighborsSumFunction::get_hessian(
         assert(cell.primitive_type() == m_domain_simplex_type);
         res += m_function.get_hessian(cell, variable_simplex);
     }
-
+    hess_cnt++;
     return res;
 }
 

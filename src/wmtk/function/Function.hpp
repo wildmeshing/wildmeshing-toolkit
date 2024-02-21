@@ -1,9 +1,9 @@
 #pragma once
 
-#include <wmtk/attribute//MeshAttributeHandle.hpp>
-#include <wmtk/simplex/Simplex.hpp>
 #include <Eigen/Core>
-
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
+#include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/utils/Logger.hpp>
 namespace wmtk::function {
 
 class Function
@@ -51,6 +51,7 @@ public:
     inline const attribute::MeshAttributeHandle& attribute_handle() const { return m_handle; }
     virtual std::vector<simplex::Simplex> domain(
         const simplex::Simplex& variable_simplex) const = 0;
+    virtual void print_cnt() const { logger().error("grad/hess cnt Not implemented in Function "); }
 
 
 private:
