@@ -14,7 +14,7 @@ using namespace tests;
 using namespace components;
 using namespace internal;
 
-TEST_CASE("multimesh_from_tag_tri_tri", "[components][multimesh][multimesh_from_tag][.]")
+TEST_CASE("multimesh_from_tag_tri_tri", "[components][multimesh][multimesh_from_tag]")
 {
     auto mesh_in = tests::disk(6);
     DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(*mesh_in);
@@ -80,7 +80,7 @@ TEST_CASE("multimesh_from_tag_tri_tri", "[components][multimesh][multimesh_from_
     CHECK(EF.size() == n_edges);
 }
 
-TEST_CASE("multimesh_from_tag_tri_edge", "[components][multimesh][multimesh_from_tag][.]")
+TEST_CASE("multimesh_from_tag_tri_edge", "[components][multimesh][multimesh_from_tag]")
 {
     auto mesh_in = tests::disk(6);
     DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(*mesh_in);

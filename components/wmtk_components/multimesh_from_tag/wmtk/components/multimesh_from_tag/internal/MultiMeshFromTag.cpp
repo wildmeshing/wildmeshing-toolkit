@@ -38,17 +38,17 @@ MultiMeshFromTag::MultiMeshFromTag(
 
     // create attributes to store new ids
     for (const PrimitiveType pt : utils::primitive_below(m_tag_ptype)) {
-        if (pt == top_pt) {
+        if (pt == m_tag_ptype) {
             continue;
         }
 
         const int64_t pt_id = get_primitive_type_id(pt);
 
-        const int64_t n_ids = m_n_local_ids[top_pt_id][pt_id];
+        const int64_t n_ids = m_n_local_ids[get_primitive_type_id(m_tag_ptype)][pt_id];
 
         m_new_id_handles[pt] = child.register_attribute<int64_t>(
             std::string("multimesh_from_tag_new_ids_") + std::to_string(pt_id),
-            top_pt,
+            m_tag_ptype,
             n_ids,
             false,
             -1);
