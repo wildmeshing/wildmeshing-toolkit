@@ -1,6 +1,8 @@
 #pragma once
+#include <wmtk/components/adaptive_tessellation/function/simplex/PositionMapAMIPS.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/IntegralBase.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include "PerTriangleAnalyticalIntegral.hpp"
 #include "PerTriangleTextureIntegralAccuracyFunction.hpp"
 #include "PositionMapAMIPS.hpp"
@@ -26,11 +28,8 @@ public:
         std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
             pos_evaluator_ptr,
         std::shared_ptr<wmtk::components::function::utils::IntegralBase> integral,
-        const double barrier_weight = 1e-3,
-        const double barrier_area_constant = 1e-6,
-        const double quadrature_weight = 1,
-        const double amips_weight = 1,
-        const bool amips_area_weighted = false,
+        const double distance_energy_weight = 1,
+        std::shared_ptr<wmtk::function::PositionMapAMIPS> amips_energy = nullptr,
         const image::SAMPLING_METHOD sampling_method = image::SAMPLING_METHOD::Bicubic);
 
 
@@ -41,11 +40,8 @@ protected:
     std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
         m_pos_evaluator_ptr;
     std::shared_ptr<wmtk::components::function::utils::IntegralBase> m_integral_ptr;
-    double m_barrier_weight;
-    double m_barrier_area;
-    double m_quadrature_weight;
-    double m_amips_weight;
-    bool m_amips_area_weighted;
+    std::shared_ptr<wmtk::function::PositionMapAMIPS> m_3d_amips_energy;
+    double m_distance_energy_weight;
     DScalar eval(const Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
         const override;
 };
