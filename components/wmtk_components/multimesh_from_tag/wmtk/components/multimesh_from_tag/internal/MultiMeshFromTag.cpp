@@ -25,16 +25,11 @@ MultiMeshFromTag::MultiMeshFromTag(
     , m_tag_acc(m_mesh.create_const_accessor<int64_t>(m_tag_handle))
     , m_tag_ptype(tag_handle.primitive_type())
 {
-    const PrimitiveType top_pt = m_mesh.top_simplex_type();
-    const int64_t top_pt_id = get_primitive_type_id(top_pt);
-
     assert(m_mesh.get_child_meshes().empty());
 
     create_substructure_soup();
 
-    assert(m_mesh.get_child_meshes().size() == 1);
-    std::shared_ptr<Mesh> child_ptr = m_mesh.get_child_meshes()[0];
-    Mesh& child = *child_ptr;
+    Mesh& child = *m_child_ptr;
 
     // create attributes to store new ids
     for (const PrimitiveType pt : utils::primitive_below(m_tag_ptype)) {
@@ -69,9 +64,7 @@ VectorXl MultiMeshFromTag::get_new_top_coface_vector(const PrimitiveType ptype) 
 
 void MultiMeshFromTag::compute_substructure_ids()
 {
-    assert(m_mesh.get_child_meshes().size() == 1);
-    std::shared_ptr<Mesh> child_ptr = m_mesh.get_child_meshes()[0];
-    Mesh& child = *child_ptr;
+    Mesh& child = *m_child_ptr;
 
     const auto top_dimension_child_tuples = child.get_all(m_tag_ptype);
 
@@ -168,9 +161,7 @@ std::vector<Tuple> MultiMeshFromTag::get_connected_region(
     const Tuple& t_in,
     const PrimitiveType ptype)
 {
-    assert(m_mesh.get_child_meshes().size() == 1);
-    std::shared_ptr<Mesh> child_ptr = m_mesh.get_child_meshes()[0];
-    Mesh& child = *child_ptr;
+    Mesh& child = *m_child_ptr;
 
     const PrimitiveType connecting_ptype =
         get_primitive_type_from_id(get_primitive_type_id(m_tag_ptype) - 1);
@@ -228,9 +219,7 @@ void MultiMeshFromTag::build_adjacency()
         return;
     }
 
-    assert(m_mesh.get_child_meshes().size() == 1);
-    std::shared_ptr<Mesh> child_ptr = m_mesh.get_child_meshes()[0];
-    Mesh& child = *child_ptr;
+    Mesh& child = *m_child_ptr;
 
     const int64_t tag_ptype_id = get_primitive_type_id(m_tag_ptype);
 
@@ -365,26 +354,25 @@ void MultiMeshFromTag::create_substructure_soup()
         }
     }
 
-    std::shared_ptr<Mesh> child_ptr;
     switch (m_tag_ptype) {
     case PrimitiveType::Vertex: {
-        child_ptr = std ::make_shared<PointMesh>();
-        static_cast<PointMesh&>(*child_ptr).initialize(tagged_tuples.size());
+        m_child_ptr = std ::make_shared<PointMesh>();
+        static_cast<PointMesh&>(*m_child_ptr).initialize(tagged_tuples.size());
         break;
     }
     case PrimitiveType::Edge: {
-        child_ptr = std ::make_shared<EdgeMesh>();
-        static_cast<EdgeMesh&>(*child_ptr).initialize(id_matrix);
+        m_child_ptr = std ::make_shared<EdgeMesh>();
+        static_cast<EdgeMesh&>(*m_child_ptr).initialize(id_matrix);
         break;
     }
     case PrimitiveType::Triangle: {
-        child_ptr = std ::make_shared<TriMesh>();
-        static_cast<TriMesh&>(*child_ptr).initialize(id_matrix);
+        m_child_ptr = std ::make_shared<TriMesh>();
+        static_cast<TriMesh&>(*m_child_ptr).initialize(id_matrix);
         break;
     }
     case PrimitiveType::Tetrahedron: {
-        child_ptr = std ::make_shared<TetMesh>();
-        static_cast<TetMesh&>(*child_ptr).initialize(id_matrix);
+        m_child_ptr = std ::make_shared<TetMesh>();
+        static_cast<TetMesh&>(*m_child_ptr).initialize(id_matrix);
         break;
     }
     default: log_and_throw_error("Unknown primitive type for tag");
@@ -392,7 +380,7 @@ void MultiMeshFromTag::create_substructure_soup()
 
     std::vector<std::array<Tuple, 2>> child_to_parent_map(tagged_tuples.size());
 
-    const auto child_top_dimension_tuples = child_ptr->get_all(m_tag_ptype);
+    const auto child_top_dimension_tuples = m_child_ptr->get_all(m_tag_ptype);
 
     assert(tagged_tuples.size() == child_top_dimension_tuples.size());
 
@@ -400,7 +388,12 @@ void MultiMeshFromTag::create_substructure_soup()
         child_to_parent_map[i] = {{child_top_dimension_tuples[i], tagged_tuples[i]}};
     }
 
-    m_mesh.register_child_mesh(child_ptr, child_to_parent_map);
+    m_mesh.register_child_mesh(m_child_ptr, child_to_parent_map);
+}
+
+std::shared_ptr<Mesh> MultiMeshFromTag::substructure_soup() const
+{
+    return m_child_ptr;
 }
 
 } // namespace wmtk::components::internal

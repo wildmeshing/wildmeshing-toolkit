@@ -33,6 +33,8 @@ public:
      */
     void create_substructure_soup();
 
+    std::shared_ptr<Mesh> substructure_soup() const;
+
 private:
     /**
      * @brief Get tuples with different global_cid that all represent simplex(t_in, ptype) and are
@@ -70,6 +72,7 @@ private:
     Eigen::MatrixX<int64_t> m_adjacency_matrix;
     std::map<PrimitiveType, Eigen::MatrixX<int64_t>> m_new_id_matrices;
     std::map<PrimitiveType, VectorXl> m_new_top_coface_vectors;
+    std::shared_ptr<Mesh> m_child_ptr;
 };
 
 } // namespace wmtk::components::internal
