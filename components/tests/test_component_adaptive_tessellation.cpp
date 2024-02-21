@@ -86,7 +86,7 @@ TEST_CASE("at_test")
         wmtk::components::adaptive_tessellation(wmtk::components::base::Paths(), input, cache));
 }
 
-TEST_CASE("3damips_autodiff_performance_correctness")
+TEST_CASE("3damips_autodiff_performance", "[.][performance]")
 {
     const std::filesystem::path mesh_path =
         data_dir / "adaptive_tessellation_test/subdivided_unit_square.msh";
@@ -247,6 +247,46 @@ TEST_CASE("3damips_autodiff_performance_correctness")
         wmtk::logger().info("analytical hess runtime: {} ms", duration.count());
         wmtk::logger().info("cnt = {}", cnt);
     }
+}
+
+TEST_CASE("3damips_autodiff_correctness")
+{
+    const std::filesystem::path mesh_path =
+        data_dir / "adaptive_tessellation_test/subdivided_unit_square.msh";
+
+    std::shared_ptr<Mesh> mesh_ptr = read_mesh(mesh_path, true);
+    wmtk::attribute::MeshAttributeHandle m_uv_handle =
+        mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto accessor = mesh_ptr->create_accessor(m_uv_handle.as<double>());
+    std::array<std::shared_ptr<image::Sampling>, 3> funcs = {{
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Linear,
+            1,
+            0,
+            0.),
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Linear,
+            0,
+            1,
+            0.),
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Linear,
+            0,
+            0,
+            0.)
+        // std::make_shared<image::SamplingAnalyticFunction>(
+        //     image::SamplingAnalyticFunction_FunctionType::Gaussian,
+        //     0.5,
+        //     0.5,
+        //     1.)
+        //  std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
+
+    }};
+    std::shared_ptr<function::utils::ThreeChannelPositionMapEvaluator> m_evaluator_ptr =
+        std::make_shared<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
+            funcs,
+            image::SAMPLING_METHOD::Analytical);
+    wmtk::function::AMIPS analytical_2damips(*mesh_ptr, m_uv_handle);
     SECTION("finitediff_vs_autodiff", "[correctness]")
     {
         // logger().set_level(spdlog::level::debug);
@@ -303,6 +343,5 @@ TEST_CASE("3damips_autodiff_performance_correctness")
         }
     }
 }
-
 
 } // namespace wmtk::components
