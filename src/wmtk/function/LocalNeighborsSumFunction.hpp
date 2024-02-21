@@ -1,7 +1,7 @@
 #pragma once
 
+#include <wmtk/utils/Logger.hpp>
 #include "Function.hpp"
-
 namespace wmtk::function {
 
 class PerSimplexFunction;
@@ -9,6 +9,7 @@ class PerSimplexFunction;
 class LocalNeighborsSumFunction : public Function
 {
 public:
+    static int grad_cnt, hess_cnt;
     LocalNeighborsSumFunction(
         Mesh& mesh,
         const attribute::MeshAttributeHandle& handle,
@@ -38,6 +39,10 @@ public:
     Eigen::MatrixXd get_hessian(const simplex::Simplex& variable_simplex) const override;
 
     std::vector<simplex::Simplex> domain(const simplex::Simplex& variable_simplex) const override;
+    void print_cnt() const override
+    {
+        logger().debug("LocalNeighborsSumFunction:: grad cnt {}, hess cnt {}", grad_cnt, hess_cnt);
+    }
 
 private:
     PerSimplexFunction& m_function;

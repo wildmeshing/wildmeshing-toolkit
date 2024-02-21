@@ -152,10 +152,8 @@ std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simp
 
     auto x = problem.initial_value();
     try {
-        reset_sampling_cnt();
-        // std::cout << "Solving" << std::endl;
+        // reset_sampling_cnt();
         m_solver->minimize(problem, x);
-        // std::cout << "Done " << x << std::endl;
         nlohmann::json data = m_solver->get_info();
 
         // iterations.push_back(data);
@@ -167,6 +165,7 @@ std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simp
         // file.close();
 
         accessor.vector_attribute(simplex.tuple()) = x;
+        m_energy->print_cnt();
     } catch (const std::exception&) {
         return {};
     }
