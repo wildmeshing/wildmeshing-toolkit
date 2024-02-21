@@ -8,6 +8,7 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/tuples_preserving_primitive_types.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/primitive_range.hpp>
@@ -107,18 +108,15 @@ void MultiMeshFromTag::compute_substructure_ids()
             acc.vector_attribute(t)(local_id) = val;
         };
 
-        auto id_acc = m_mesh.create_accessor<int64_t>(m_new_id_handles[pt]);
+        auto id_acc = child.create_accessor<int64_t>(m_new_id_handles[pt]);
 
         int64_t simplex_counter = 0;
-        int64_t cell_counter = 0;
         // assign ids with duplication at non-manifold simplices
         for (const Tuple& cell_tuple : top_dimension_child_tuples) {
             const auto simplex_tuples = simplex::faces_single_dimension_tuples(
                 child,
                 simplex::Simplex(m_tag_ptype, cell_tuple),
                 pt);
-
-            log_and_throw_error("code is messed up from that point on -> changing to multimesh");
 
             for (const Tuple& s_tuple : simplex_tuples) {
                 if (get_id(id_acc, s_tuple) != -1) {
@@ -134,38 +132,31 @@ void MultiMeshFromTag::compute_substructure_ids()
 
                 ++simplex_counter;
             }
-
-            ++cell_counter;
         }
 
         // build id and top-coface matrix
         Eigen::MatrixX<int64_t> id_matrix;
-        id_matrix.resize(cell_counter, id_acc.dimension());
+        id_matrix.resize(top_dimension_child_tuples.size(), id_acc.dimension());
         VectorXl coface_vector;
         coface_vector.resize(simplex_counter);
 
 
-        cell_counter = 0;
-        for (const Tuple& cell_tuple : top_dimension_child_tuples) {
-            if (m_tag_acc.const_scalar_attribute(cell_tuple) != m_tag_value) {
-                continue;
-            }
+        for (size_t i = 0; i < top_dimension_child_tuples.size(); ++i) {
+            const Tuple& cell_tuple = top_dimension_child_tuples[i];
 
             const auto face_tuples = simplex::faces_single_dimension_tuples(
-                m_mesh,
+                child,
                 simplex::Simplex(m_tag_ptype, cell_tuple),
                 pt);
 
             assert(face_tuples.size() == id_acc.dimension());
 
-            for (size_t i = 0; i < face_tuples.size(); ++i) {
-                const int64_t id = get_id(id_acc, face_tuples[i]);
+            for (size_t j = 0; j < face_tuples.size(); ++j) {
+                const int64_t id = get_id(id_acc, face_tuples[j]);
                 assert(id != -1);
-                id_matrix(cell_counter, i) = id;
-                coface_vector(id) = cell_counter;
+                id_matrix(i, j) = id;
+                coface_vector(id) = i;
             }
-
-            ++cell_counter;
         }
 
         m_new_id_matrices[pt] = id_matrix;
@@ -177,6 +168,10 @@ std::vector<Tuple> MultiMeshFromTag::get_connected_region(
     const Tuple& t_in,
     const PrimitiveType ptype)
 {
+    assert(m_mesh.get_child_meshes().size() == 1);
+    std::shared_ptr<Mesh> child_ptr = m_mesh.get_child_meshes()[0];
+    Mesh& child = *child_ptr;
+
     const PrimitiveType connecting_ptype =
         get_primitive_type_from_id(get_primitive_type_id(m_tag_ptype) - 1);
 
@@ -205,28 +200,21 @@ std::vector<Tuple> MultiMeshFromTag::get_connected_region(
 
         for (const Tuple& t_version : pt_intersection) {
             const simplex::Simplex face = simplex::Simplex(connecting_ptype, t_version);
-            const std::vector<Tuple> face_cofaces =
-                simplex::cofaces_single_dimension_tuples(m_mesh, face, m_tag_ptype);
 
-            std::vector<Tuple> face_cofaces_in_substructure;
-            for (const Tuple& fcf : face_cofaces) {
-                if (m_tag_acc.const_scalar_attribute(fcf) == m_tag_value) {
-                    face_cofaces_in_substructure.emplace_back(fcf);
-                }
-            }
+            const simplex::Simplex root_face = child.map_to_parent(face);
 
-            if (face_cofaces_in_substructure.size() != 2) {
+            const std::vector<simplex::Simplex> child_faces = m_mesh.map_to_child(child, root_face);
+
+            if (child_faces.size() != 2) {
                 // the connection through this face is not manifold or a boundary
                 continue;
             }
 
-            assert(
-                face_cofaces_in_substructure[0] == t_version ||
-                face_cofaces_in_substructure[1] == t_version);
+            assert(child_faces[0].tuple() == t_version || child_faces[1].tuple() == t_version);
 
             q.push(
-                face_cofaces[0] == t_version ? face_cofaces_in_substructure[1]
-                                             : face_cofaces_in_substructure[0]);
+                child_faces[0].tuple() == t_version ? child_faces[1].tuple()
+                                                    : child_faces[0].tuple());
         }
     }
 
