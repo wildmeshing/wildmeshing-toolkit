@@ -16,6 +16,8 @@ using DSVec3 = Eigen::Vector3<DScalar>;
 
 class PositionMapAMIPS : public PerSimplexAutodiffFunction
 {
+    friend class SumEnergy;
+
 public:
     PositionMapAMIPS(
         const Mesh& mesh,
@@ -23,7 +25,9 @@ public:
         std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
             pos_evaluator_ptr,
         double amips_weight = 1,
-        bool amips_area_weighted = false);
+        bool amips_area_weighted = false,
+        double barrier_weight = 1e-3,
+        double barrier_area = 1e-6);
 
     ~PositionMapAMIPS();
 
@@ -38,6 +42,10 @@ protected:
         m_pos_evaluator_ptr;
     double m_amips_weight;
     bool m_amips_area_weighted;
+    double m_barrier_weight;
+    double m_barrier_area;
+
+
     DScalar eval(const Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
         const override;
 };

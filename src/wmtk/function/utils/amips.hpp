@@ -1,7 +1,7 @@
 #pragma once
 #include <Eigen/Dense>
 #include <wmtk/Types.hpp>
-
+#include <wmtk/utils/Logger.hpp>
 namespace wmtk::function::utils {
 
 namespace detail {
@@ -98,6 +98,8 @@ auto amips(
         // TODO: shouldnt we make sure the normms are over some eps instead of 0?
         auto e0norm = e0.norm();
         if (e0norm < 1e-12) {
+            assert(false);
+            throw std::runtime_error("3d AMIPS e0 of triangle is too short");
             return static_cast<Scalar>(std::numeric_limits<double>::infinity());
         }
         assert(e0norm > 0); // check norm is not 0
@@ -107,15 +109,15 @@ auto amips(
         e1 = n.cross(e0);
         auto e1norm = e1.norm();
         if (e1norm < 1e-12) {
+            assert(false);
+            throw std::runtime_error("3d AMIPS e1 of triangle is too short");
             return static_cast<Scalar>(std::numeric_limits<double>::infinity());
         }
         assert(e1norm > 0); // check norm is not 0
         e1 = e1 / e1norm;
 
-
         Dm = (B.transpose() * V).eval();
     }
-
 
     return amips(Dm);
 }
