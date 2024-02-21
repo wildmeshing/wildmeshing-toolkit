@@ -59,9 +59,12 @@ TEST_CASE("multimesh_from_tag_tri_tri", "[components][multimesh][multimesh_from_
     // }
 
     MultiMeshFromTag mmft(m, tag_handle, tag_value);
-    mmft.create_substructure_soup();
 
-    // mmft.compute_substructure_ids();
+    REQUIRE(m.get_child_meshes().size() == 1);
+    REQUIRE(m.is_multi_mesh_root());
+    std::shared_ptr<Mesh> child_ptr = m.get_child_meshes()[0];
+
+    mmft.compute_substructure_ids();
     //
     // const Eigen::MatrixX<int64_t> FV = mmft.get_new_id_matrix(PrimitiveType::Vertex);
     // CHECK(FV.rows() == n_faces);
