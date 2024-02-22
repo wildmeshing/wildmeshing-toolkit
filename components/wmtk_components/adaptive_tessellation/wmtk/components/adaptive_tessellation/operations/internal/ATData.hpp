@@ -38,12 +38,8 @@ public:
     wmtk::attribute::MeshAttributeHandle m_uv_handle;
     wmtk::attribute::MeshAttributeHandle m_uvmesh_xyz_handle;
     wmtk::attribute::MeshAttributeHandle m_distance_error_handle;
-    wmtk::attribute::MeshAttributeHandle m_sum_error_handle;
-    wmtk::attribute::MeshAttributeHandle m_barrier_energy_handle;
     wmtk::attribute::MeshAttributeHandle m_amips_error_handle;
-
     wmtk::attribute::MeshAttributeHandle m_3d_edge_length_handle;
-    // wmtk::attribute::MeshAttributeHandle m_edge_priority_handle;
 
     // ATData(
     //     std::shared_ptr<Mesh> uv_mesh,

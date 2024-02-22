@@ -106,8 +106,8 @@ ATOperations::ATOperations(
     set_distance_error_update_rule();
     initialize_distance_error();
 
-    set_amips_error_update_rule();
-    initialize_amips_error();
+    set_3d_amips_error_update_rule();
+    initialize_3d_amips_error();
 
     // Lambdas for priority
     m_valence_improvement = [&](const Simplex& s) {

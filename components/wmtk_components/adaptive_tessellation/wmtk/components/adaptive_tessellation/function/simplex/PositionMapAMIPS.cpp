@@ -54,7 +54,7 @@ DScalar PositionMapAMIPS::eval(
         m_barrier_weight * wmtk::function::utils::area_barrier(a, b, c, m_barrier_area);
     DScalar amips = m_amips_weight * utils::amips(p0, p1, p2);
     if (m_amips_area_weighted) {
-        return amips * wmtk::utils::triangle_unsigned_2d_area(a, b, c) + barrier;
+        amips = amips * wmtk::utils::triangle_unsigned_2d_area(a, b, c);
     }
     return amips + barrier;
 }

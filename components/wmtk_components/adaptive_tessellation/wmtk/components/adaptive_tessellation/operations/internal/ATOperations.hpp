@@ -67,8 +67,11 @@ public:
         double amips_weight,
         bool area_weighted_amips);
     void set_energies();
+    double amips3d_in_double(
+        Eigen::Vector2<double>& uv0,
+        Eigen::Vector2<double>& uv1,
+        Eigen::Vector2<double>& uv2);
     void AT_split_single_edge_mesh(Mesh* edge_meshi_ptr);
-    void AT_smooth_interior();
     void AT_smooth_interior(std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
     void AT_edge_split(
         std::function<std::vector<double>(const Simplex&)>& priority,
@@ -92,7 +95,7 @@ public:
     void initialize_3d_edge_length();
     void set_distance_error_update_rule();
     void initialize_distance_error();
-    void set_amips_error_update_rule();
-    void initialize_amips_error();
+    void set_3d_amips_error_update_rule();
+    void initialize_3d_amips_error();
 };
 } // namespace wmtk::components::operations::internal

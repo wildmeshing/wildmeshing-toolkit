@@ -7,6 +7,7 @@
 #include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/area_barrier.hpp>
 
+#include <wmtk/components/adaptive_tessellation/function/utils/area_barrier.hpp>
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/function/simplex/AMIPS.hpp>
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
@@ -112,7 +113,32 @@ void ATOperations::initialize_distance_error()
     }
 }
 
-void ATOperations::set_amips_error_update_rule()
+double ATOperations::amips3d_in_double(
+    Eigen::Vector2<double>& uv0,
+    Eigen::Vector2<double>& uv1,
+    Eigen::Vector2<double>& uv2)
+{
+    // assumes the triangle is not inverted
+    if (orient2d(uv0.data(), uv1.data(), uv2.data()) <= 0) {
+        std::swap(uv1, uv2);
+    }
+    if (orient2d(uv0.data(), uv1.data(), uv2.data()) <= 0) {
+        Eigen::VectorXd infinity(1);
+        return std::numeric_limits<double>::infinity();
+    }
+    auto p0 = m_evaluator_ptr->uv_to_position(uv0);
+    auto p1 = m_evaluator_ptr->uv_to_position(uv1);
+    auto p2 = m_evaluator_ptr->uv_to_position(uv2);
+    Eigen::VectorXd error(1);
+    auto amips = m_amips_weight * wmtk::function::utils::amips(p0, p1, p2);
+    auto barrier = m_barrier_weight *
+                   wmtk::function::utils::area_barrier(uv0, uv1, uv2, m_barrier_triangle_area);
+    if (m_area_weighted_amips) {
+        amips *= wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
+    }
+    return amips + barrier;
+}
+void ATOperations::set_3d_amips_error_update_rule()
 {
     auto compute_amips_error = [&](const Eigen::Matrix<double, 2, 3>& P) -> Eigen::VectorXd {
         assert(P.cols() == 3);
@@ -121,23 +147,10 @@ void ATOperations::set_amips_error_update_rule()
         Eigen::Vector2<double> uv1 = P.col(1);
         Eigen::Vector2<double> uv2 = P.col(2);
 
-        if (orient2d(uv0.data(), uv1.data(), uv2.data()) <= 0) {
-            std::swap(uv1, uv2);
-        }
-        if (orient2d(uv0.data(), uv1.data(), uv2.data()) <= 0) {
-            Eigen::VectorXd infinity(1);
-            infinity(0) = std::numeric_limits<double>::infinity();
-            return infinity;
-        }
-        auto p0 = m_evaluator_ptr->uv_to_position(uv0);
-        auto p1 = m_evaluator_ptr->uv_to_position(uv1);
-        auto p2 = m_evaluator_ptr->uv_to_position(uv2);
+
         Eigen::VectorXd error(1);
-        auto res = wmtk::function::utils::amips(p0, p1, p2);
-        if (m_area_weighted_amips) {
-            res *= wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
-        }
-        error(0) = res;
+
+        error(0) = amips3d_in_double(uv0, uv1, uv2);
         return error;
     };
     m_amips_error_update =
@@ -146,29 +159,20 @@ void ATOperations::set_amips_error_update_rule()
             m_atdata.uv_handle(),
             compute_amips_error);
 }
-void ATOperations::initialize_amips_error()
+void ATOperations::initialize_3d_amips_error()
 {
     // initialize face error values
     for (auto& f : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Triangle)) {
         if (!m_atdata.uv_mesh_ptr()->is_ccw(f)) {
             f = m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Vertex);
         }
-        const Eigen::Vector2d uv0 = m_uv_accessor.vector_attribute(f);
-        const Eigen::Vector2d uv1 = m_uv_accessor.vector_attribute(
+        Eigen::Vector2d uv0 = m_uv_accessor.vector_attribute(f);
+        Eigen::Vector2d uv1 = m_uv_accessor.vector_attribute(
             m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Vertex));
-        const Eigen::Vector2d uv2 =
-            m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_tuple(
-                m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Edge),
-                PrimitiveType::Vertex));
-        auto p0 = m_evaluator_ptr->uv_to_position(uv0);
-        auto p1 = m_evaluator_ptr->uv_to_position(uv1);
-        auto p2 = m_evaluator_ptr->uv_to_position(uv2);
-        auto res = wmtk::function::utils::amips(p0, p1, p2);
-        // res = m_amips_weight * res;
-        if (m_area_weighted_amips) {
-            res *= wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
-        }
-        m_amips_error_accessor.scalar_attribute(f) = res;
+        Eigen::Vector2d uv2 = m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_tuple(
+            m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Edge),
+            PrimitiveType::Vertex));
+        m_amips_error_accessor.scalar_attribute(f) = amips3d_in_double(uv0, uv1, uv2);
     }
 }
 void ATOperations::set_3d_edge_length_update_rule()
