@@ -46,6 +46,7 @@ public:
     std::function<std::vector<double>(const Simplex&)> m_high_distance_edges_first;
     std::function<std::vector<double>(const Simplex&)> m_high_distance_faces_first;
     std::function<std::vector<double>(const Simplex&)> m_high_amips_edges_first;
+    std::function<std::vector<double>(const Simplex&)> m_edge_length_weighted_distance_priority;
     std::function<std::vector<double>(const Simplex&)> m_long_edges_first;
     std::function<std::vector<double>(const Simplex&)> m_short_edges_first;
     std::function<std::vector<long>(const Simplex&)> m_valence_improvement;

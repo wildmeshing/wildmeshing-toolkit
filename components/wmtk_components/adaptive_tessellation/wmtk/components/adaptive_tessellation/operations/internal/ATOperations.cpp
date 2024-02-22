@@ -148,6 +148,19 @@ ATOperations::ATOperations(
         assert(s.primitive_type() == PrimitiveType::Edge);
         return std::vector<double>({-m_3d_edge_length_accessor.scalar_attribute(s.tuple())});
     };
+    m_edge_length_weighted_distance_priority = [&](const Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        if (m_atdata.uv_mesh_ptr()->is_boundary(s)) {
+            return std::vector<double>(
+                {-m_distance_error_accessor.scalar_attribute(s.tuple()) *
+                 m_3d_edge_length_accessor.scalar_attribute(s.tuple())});
+        }
+        auto other_face = m_atdata.uv_mesh_ptr()->switch_tuple(s.tuple(), PrimitiveType::Triangle);
+        return std::vector<double>(
+            {-(m_distance_error_accessor.scalar_attribute(s.tuple()) +
+               m_distance_error_accessor.scalar_attribute(other_face)) /
+             2 * m_3d_edge_length_accessor.scalar_attribute(s.tuple())});
+    };
     std::cout << "target edge length " << m_target_edge_length << std::endl;
     set_energies();
 }
@@ -197,10 +210,10 @@ void ATOperations::AT_edge_split(
     //     std::make_shared<BoundarySimplexInvariant>(*uv_mesh_ptr, PrimitiveType::Edge));
     // split->add_invariant(
     //     std::make_shared<FunctionInvariant>(uv_mesh_ptr->top_simplex_type(), function_ptr));
-    split->add_invariant(
-        std::make_shared<StateChanges>(uv_mesh_ptr->top_simplex_type(), function_ptr));
+    // split->add_invariant(
+    //     std::make_shared<StateChanges>(uv_mesh_ptr->top_simplex_type(), function_ptr));
     // split->set_priority(priority);
-    split->use_random_priority() = true;
+    // split->use_random_priority() = true;
 
     split->set_new_attribute_strategy(m_atdata.m_uv_handle);
     split->set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);

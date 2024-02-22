@@ -120,18 +120,13 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     //////////////////////////////////
     // Load mesh from settings
     ATOptions options = j.get<ATOptions>();
-    std::cout << "at_ops.barrier_weight: " << options.barrier_weight << std::endl;
-    std::cout << "options.barrier_triangle_area: " << options.barrier_triangle_area << std::endl;
-    std::cout << "options.quadrature_weight: " << options.quadrature_weight << std::endl;
-    std::cout << "options.amips_weight: " << options.amips_weight << std::endl;
-    std::cout << "options.passes: " << options.passes << std::endl;
-    // const std::filesystem::path& file = options.input;
 
     std::shared_ptr<Mesh> position_mesh_ptr = cache.read_mesh(options.parent);
     std::shared_ptr<Mesh> uv_mesh_ptr = cache.read_mesh(options.child);
 
     //////////////////////////////////
     // Storing edge lengths
+    wmtk::logger().critical("///// using gaussian displacement /////");
     std::array<std::shared_ptr<image::Sampling>, 3> funcs = {{
         std::make_shared<image::SamplingAnalyticFunction>(
             image::SamplingAnalyticFunction_FunctionType::Linear,
@@ -143,21 +138,21 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
             0,
             1,
             0.),
-        std::make_shared<image::SamplingAnalyticFunction>(
-            image::SamplingAnalyticFunction_FunctionType::Linear,
-            0,
-            0,
-            1.)
+        // std::make_shared<image::SamplingAnalyticFunction>(
+        //     image::SamplingAnalyticFunction_FunctionType::Linear,
+        //     0,
+        //     0,
+        //     1.)
         // std::make_shared<image::SamplingAnalyticFunction>(
         //     image::SamplingAnalyticFunction_FunctionType::Periodic,
         //     2,
         //     2,
         //     1.)
-        //  std::make_shared<image::SamplingAnalyticFunction>(
-        //      image::SamplingAnalyticFunction_FunctionType::Gaussian,
-        //      0.5,
-        //      0.5,
-        //      1.)
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Gaussian,
+            0.5,
+            0.5,
+            1.)
         //  std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
 
     }};
@@ -189,24 +184,6 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
     AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, funcs);
 
-    // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator image_evaluator(
-    //     images,
-    //     image::SAMPLING_METHOD::Bicubic,
-    //     image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
-    // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator func_evaluator(funcs);
-    // wmtk::components::operations::internal::_debug_sampling(
-    //     atdata.uv_mesh_ptr(),
-    //     atdata.uv_handle(),
-    //     image_evaluator,
-    //     func_evaluator);
-
-    // wmtk::components::operations::internal::_debug_texture_integral(
-    //     atdata.uv_mesh_ptr(),
-    //     atdata.uv_handle(),
-    //     image_evaluator,
-    //     func_evaluator);
-
-
     AT::operations::internal::ATOperations at_ops(
         atdata,
         options.target_edge_length,
@@ -218,7 +195,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
 
     at_ops.set_energies();
-    nlohmann::ordered_json FaceErrorJson_sum;
+    nlohmann::ordered_json FaceErrorJson_distance;
     nlohmann::ordered_json FaceErrorJson_amips;
     write(
         position_mesh_ptr,
@@ -228,18 +205,6 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         0,
         options.intermediate_output);
 
-    // write_face_attr(
-    //     position_mesh_ptr,
-    //     at_ops.m_sum_error_accessor,
-    //     FaceErrorJson_sum,
-    //     0,
-    //     options.uv_output + "_face_error.json");
-    // write_face_attr(
-    //     position_mesh_ptr,
-    //     at_ops.m_amips_error_accessor,
-    //     FaceErrorJson_amips,
-    //     0,
-    //     options.uv_output + "_amips_error.json");
     opt_logger().set_level(spdlog::level::level_enum::critical);
 
 
@@ -258,9 +223,9 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
     /// split on amips error
 
-    at_ops.AT_edge_split(at_ops.m_long_edges_first, at_ops.m_3d_amips_energy);
+    at_ops.AT_edge_split(at_ops.m_edge_length_weighted_distance_priority, at_ops.m_3d_amips_energy);
     Scheduler scheduler;
-    for (int64_t i = 0; i < 10; ++i) {
+    for (int64_t i = 0; i < options.passes; ++i) {
         opt_logger().set_level(spdlog::level::level_enum::critical);
 
         logger().info("Pass {}", i);
@@ -274,14 +239,21 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
             pass_stats.collecting_time,
             pass_stats.sorting_time,
             pass_stats.executing_time);
+        write(
+            uv_mesh_ptr,
+            uv_mesh_ptr,
+            options.uv_output,
+            options.xyz_output,
+            i + 1,
+            options.intermediate_output);
+        write_face_attr(
+            uv_mesh_ptr,
+            at_ops.m_distance_error_accessor,
+            FaceErrorJson_distance,
+            i + 1,
+            options.uv_output + "_distance_error.json");
     }
-    write(
-        uv_mesh_ptr,
-        uv_mesh_ptr,
-        options.uv_output,
-        options.xyz_output,
-        0,
-        options.intermediate_output);
+
     // at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first, at_ops.m_3d_amips_energy);
     at_ops.m_ops.clear();
     at_ops.AT_smooth_interior(at_ops.m_2d_amips_energy);
@@ -291,7 +263,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     //////////////////////////////////
     // Running all ops in order n times
     // Scheduler scheduler;
-    for (int64_t i = 0; i < options.passes; ++i) {
+    for (int64_t i = 0; i < 0; ++i) {
         opt_logger().set_level(spdlog::level::level_enum::critical);
 
         logger().info("Pass {}", i);
