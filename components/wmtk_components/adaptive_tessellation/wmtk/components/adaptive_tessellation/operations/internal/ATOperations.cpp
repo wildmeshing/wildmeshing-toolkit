@@ -70,10 +70,6 @@ ATOperations::ATOperations(
 
     , m_distance_error_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_distance_error_handle.as<double>()))
-    , m_sum_error_accessor(
-          m_atdata.uv_mesh().create_accessor(m_atdata.m_sum_error_handle.as<double>()))
-    , m_barrier_energy_accessor(
-          m_atdata.uv_mesh().create_accessor(m_atdata.m_barrier_energy_handle.as<double>()))
     , m_amips_error_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_amips_error_handle.as<double>()))
     , m_3d_edge_length_accessor(
@@ -113,13 +109,6 @@ ATOperations::ATOperations(
     set_amips_error_update_rule();
     initialize_amips_error();
 
-    set_sum_error_update_rule();
-    initialize_sum_error();
-
-
-    // set_barrier_energy_update_rule();
-    // initialize_barrier_energy();
-
     // Lambdas for priority
     m_valence_improvement = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
@@ -130,16 +119,6 @@ ATOperations::ATOperations(
         return std::vector<long>({val_before - val_after});
     };
 
-    m_high_error_edges_first = [&](const Simplex& s) {
-        assert(s.primitive_type() == PrimitiveType::Edge);
-        if (m_atdata.uv_mesh_ptr()->is_boundary(s)) {
-            return std::vector<double>({-m_sum_error_accessor.scalar_attribute(s.tuple())});
-        }
-        return std::vector<double>(
-            {-(m_sum_error_accessor.scalar_attribute(s.tuple()) +
-               m_sum_error_accessor.scalar_attribute(
-                   m_atdata.uv_mesh_ptr()->switch_tuple(s.tuple(), PrimitiveType::Triangle)))});
-    };
     m_high_distance_edges_first = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         if (m_atdata.uv_mesh_ptr()->is_boundary(s)) {
@@ -194,11 +173,9 @@ void ATOperations::AT_smooth_interior(
     m_ops.back()->add_transfer_strategy(m_uvmesh_xyz_update);
     // {
     m_ops.back()->add_transfer_strategy(m_distance_error_update);
-    //     m_ops.back()->add_transfer_strategy(m_barrier_energy_update);
     m_ops.back()->add_transfer_strategy(m_amips_error_update);
     m_ops.back()->add_transfer_strategy(m_3d_edge_length_update);
 
-    m_ops.back()->add_transfer_strategy(m_sum_error_update);
     m_ops.back()->use_random_priority() = true;
 }
 
@@ -228,18 +205,14 @@ void ATOperations::AT_edge_split(
     split->set_new_attribute_strategy(m_atdata.m_uv_handle);
     split->set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);
     split->set_new_attribute_strategy(m_atdata.m_distance_error_handle);
-    split->set_new_attribute_strategy(m_atdata.m_barrier_energy_handle);
     split->set_new_attribute_strategy(m_atdata.m_amips_error_handle);
-    split->set_new_attribute_strategy(m_atdata.m_sum_error_handle);
     split->set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
 
     split->add_transfer_strategy(m_uvmesh_xyz_update);
 
     split->add_transfer_strategy(m_3d_edge_length_update);
     split->add_transfer_strategy(m_distance_error_update);
-    // split->add_transfer_strategy(m_barrier_energy_update);
     split->add_transfer_strategy(m_amips_error_update);
-    split->add_transfer_strategy(m_sum_error_update);
     m_ops.emplace_back(split);
 }
 
@@ -267,17 +240,13 @@ void ATOperations::AT_boundary_edge_split(
     split->set_new_attribute_strategy(m_atdata.m_uv_handle);
     split->set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);
     split->set_new_attribute_strategy(m_atdata.m_distance_error_handle);
-    split->set_new_attribute_strategy(m_atdata.m_barrier_energy_handle);
     split->set_new_attribute_strategy(m_atdata.m_amips_error_handle);
-    split->set_new_attribute_strategy(m_atdata.m_sum_error_handle);
 
     split->add_transfer_strategy(m_uvmesh_xyz_update);
 
     // split->add_transfer_strategy(m_edge_length_update);
     split->add_transfer_strategy(m_distance_error_update);
-    // split->add_transfer_strategy(m_barrier_energy_update);
     split->add_transfer_strategy(m_amips_error_update);
-    split->add_transfer_strategy(m_sum_error_update);
     m_ops.emplace_back(split);
 }
 
@@ -312,10 +281,6 @@ void ATOperations::AT_face_split(
         face_split->collapse().set_new_attribute_strategy(
             m_atdata.m_distance_error_handle,
             wmtk::operations::CollapseBasicStrategy::CopyOther);
-        face_split->split().set_new_attribute_strategy(m_atdata.m_barrier_energy_handle);
-        face_split->collapse().set_new_attribute_strategy(
-            m_atdata.m_barrier_energy_handle,
-            wmtk::operations::CollapseBasicStrategy::CopyOther);
         face_split->split().set_new_attribute_strategy(
             m_atdata.m_amips_error_handle,
             SplitBasicStrategy::None,
@@ -323,17 +288,9 @@ void ATOperations::AT_face_split(
         face_split->collapse().set_new_attribute_strategy(
             m_atdata.m_amips_error_handle,
             wmtk::operations::CollapseBasicStrategy::Mean);
-        face_split->split().set_new_attribute_strategy(
-            m_atdata.m_sum_error_handle,
-            SplitBasicStrategy::None,
-            SplitRibBasicStrategy::Mean);
-        face_split->collapse().set_new_attribute_strategy(
-            m_atdata.m_sum_error_handle,
-            wmtk::operations::CollapseBasicStrategy::CopyOther);
     }
     face_split->add_transfer_strategy(m_uvmesh_xyz_update);
     face_split->add_transfer_strategy(m_amips_error_update);
-    face_split->add_transfer_strategy(m_sum_error_update);
     face_split->add_transfer_strategy(m_distance_error_update);
     m_ops.push_back(face_split);
 }
@@ -369,10 +326,6 @@ void ATOperations::AT_swap_interior(
         swap->collapse().set_new_attribute_strategy(
             m_atdata.m_distance_error_handle,
             wmtk::operations::CollapseBasicStrategy::CopyOther);
-        swap->split().set_new_attribute_strategy(m_atdata.m_barrier_energy_handle);
-        swap->collapse().set_new_attribute_strategy(
-            m_atdata.m_barrier_energy_handle,
-            wmtk::operations::CollapseBasicStrategy::CopyOther);
         swap->split().set_new_attribute_strategy(
             m_atdata.m_amips_error_handle,
             SplitBasicStrategy::None,
@@ -380,13 +333,6 @@ void ATOperations::AT_swap_interior(
         swap->collapse().set_new_attribute_strategy(
             m_atdata.m_amips_error_handle,
             wmtk::operations::CollapseBasicStrategy::Mean);
-        swap->split().set_new_attribute_strategy(
-            m_atdata.m_sum_error_handle,
-            SplitBasicStrategy::None,
-            SplitRibBasicStrategy::Mean);
-        swap->collapse().set_new_attribute_strategy(
-            m_atdata.m_sum_error_handle,
-            wmtk::operations::CollapseBasicStrategy::CopyOther);
         swap->split().set_new_attribute_strategy(
             m_atdata.m_3d_edge_length_handle,
             SplitBasicStrategy::None,
@@ -397,7 +343,6 @@ void ATOperations::AT_swap_interior(
     }
     swap->add_transfer_strategy(m_uvmesh_xyz_update);
     swap->add_transfer_strategy(m_amips_error_update);
-    swap->add_transfer_strategy(m_sum_error_update);
     swap->add_transfer_strategy(m_distance_error_update);
     swap->add_transfer_strategy(m_3d_edge_length_update);
 

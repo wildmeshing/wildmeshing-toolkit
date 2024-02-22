@@ -24,8 +24,6 @@ public:
     wmtk::attribute::Accessor<double> m_uv_accessor;
     wmtk::attribute::Accessor<double> m_uvmesh_xyz_accessor;
     wmtk::attribute::Accessor<double> m_distance_error_accessor;
-    wmtk::attribute::Accessor<double> m_sum_error_accessor;
-    wmtk::attribute::Accessor<double> m_barrier_energy_accessor;
     wmtk::attribute::Accessor<double> m_amips_error_accessor;
     wmtk::attribute::Accessor<double> m_3d_edge_length_accessor;
 
@@ -39,13 +37,8 @@ public:
 
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_uvmesh_xyz_update;
-
-    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
-        m_sum_error_update;
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_distance_error_update;
-    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
-        m_barrier_energy_update;
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_amips_error_update;
 
@@ -62,7 +55,6 @@ public:
 
     std::shared_ptr<wmtk::function::AMIPS> m_2d_amips_energy;
     std::shared_ptr<wmtk::function::PositionMapAMIPS> m_3d_amips_energy;
-    std::shared_ptr<wmtk::function::SumEnergy> m_sum_energy;
 
 public:
     // constructor
@@ -98,13 +90,9 @@ public:
 
     void set_3d_edge_length_update_rule();
     void initialize_3d_edge_length();
-    void set_sum_error_update_rule();
-    void initialize_sum_error();
     void set_distance_error_update_rule();
     void initialize_distance_error();
     void set_amips_error_update_rule();
     void initialize_amips_error();
-    void set_barrier_energy_update_rule();
-    void initialize_barrier_energy();
 };
 } // namespace wmtk::components::operations::internal
