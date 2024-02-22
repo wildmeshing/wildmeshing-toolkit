@@ -175,18 +175,19 @@ ATOperations::ATOperations(
 
 
 void ATOperations::AT_smooth_interior(
-    std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
+    std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr,
+    std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> local_sum_energy)
 {
     std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
     wmtk::attribute::MeshAttributeHandle uv_handle = m_atdata.uv_handle();
 
-    std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> energy =
-        std::make_shared<wmtk::function::LocalNeighborsSumFunction>(
-            *uv_mesh_ptr,
-            uv_handle,
-            *function_ptr);
+    // std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> local_sum_energy =
+    //     std::make_shared<wmtk::function::LocalNeighborsSumFunction>(
+    //         *uv_mesh_ptr,
+    //         uv_handle,
+    //         *function_ptr);
 
-    m_ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(energy));
+    m_ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(local_sum_energy));
     m_ops.back()->add_invariant(
         std::make_shared<SimplexInversionInvariant>(*uv_mesh_ptr, uv_handle.as<double>()));
     m_ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*uv_mesh_ptr));

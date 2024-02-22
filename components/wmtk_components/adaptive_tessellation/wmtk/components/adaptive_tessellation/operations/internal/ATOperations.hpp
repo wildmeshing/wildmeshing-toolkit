@@ -61,8 +61,12 @@ public:
     std::shared_ptr<wmtk::function::DistanceEnergyNonDiff> m_distance_nondiff_energy;
 
     std::shared_ptr<wmtk::function::AMIPS> m_2d_amips_energy;
+    std::shared_ptr<wmtk::function::TriangleAMIPS> m_2d_amips_autodiff_energy;
     std::shared_ptr<wmtk::function::PositionMapAMIPS> m_3d_amips_energy;
     std::shared_ptr<wmtk::function::SumEnergy> m_sum_energy;
+
+
+    std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> m_local_sum_energy;
 
 public:
     // constructor
@@ -77,7 +81,9 @@ public:
     void set_energies();
     void AT_split_single_edge_mesh(Mesh* edge_meshi_ptr);
     void AT_smooth_interior();
-    void AT_smooth_interior(std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
+    void AT_smooth_interior(
+        std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr,
+        std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> local_sum_energy);
     void AT_edge_split(
         std::function<std::vector<double>(const Simplex&)>& priority,
         std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);

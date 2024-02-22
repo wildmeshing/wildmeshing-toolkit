@@ -158,14 +158,11 @@ std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simp
 
         // iterations.push_back(data);
         // Write the JSON object to the file
-        m_file << data.dump(4);
+        // m_file << data.dump(4);
         // std::cout << std::setw(4) << data << std::endl;
         // wmtk::operations::Operation::print_sampling_cnt();
-        // // Close the file
-        // file.close();
 
         accessor.vector_attribute(simplex.tuple()) = x;
-        m_energy->print_cnt();
     } catch (const std::exception&) {
         return {};
     }
