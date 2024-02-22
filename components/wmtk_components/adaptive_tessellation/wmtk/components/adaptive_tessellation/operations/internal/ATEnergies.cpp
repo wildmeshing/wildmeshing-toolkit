@@ -33,24 +33,32 @@ void ATOperations::set_energies()
 
     m_2d_amips_energy =
         std::make_shared<wmtk::function::AMIPS>(*m_atdata.uv_mesh_ptr(), m_atdata.uv_handle());
+    m_2d_amips_autodiff_energy = std::make_shared<wmtk::function::TriangleAMIPS>(
+        *m_atdata.uv_mesh_ptr(),
+        m_atdata.uv_handle());
+
+    // this amips contains area barrier
     m_3d_amips_energy = std::make_shared<wmtk::function::PositionMapAMIPS>(
         *m_atdata.uv_mesh_ptr(),
         m_atdata.uv_handle(),
         m_evaluator_ptr,
         m_amips_weight,
-        m_area_weighted_amips);
-
+        m_area_weighted_amips,
+        m_barrier_weight,
+        m_barrier_triangle_area);
 
     m_sum_energy = std::make_shared<wmtk::function::SumEnergy>(
         *m_atdata.uv_mesh_ptr(),
         m_atdata.uv_handle(),
         m_evaluator_ptr,
         m_integral_ptr,
-        m_barrier_weight,
-        m_barrier_triangle_area,
         m_distance_weight,
-        m_amips_weight,
-        m_area_weighted_amips);
+        m_3d_amips_energy);
+    m_local_sum_energy = std::make_shared<wmtk::function::LocalNeighborsSumFunction>(
+        *m_atdata.uv_mesh_ptr(),
+        m_atdata.uv_handle(),
+        *m_3d_amips_energy);
+    logger().critical("using amips3d and explicit local sum");
 }
 
 void ATOperations::set_uvmesh_xyz_update_rule_initialize()
