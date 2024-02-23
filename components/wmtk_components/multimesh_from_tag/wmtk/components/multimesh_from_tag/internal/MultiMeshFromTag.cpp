@@ -62,6 +62,11 @@ VectorXl MultiMeshFromTag::get_new_top_coface_vector(const PrimitiveType ptype) 
     return m_new_top_coface_vectors.at(ptype);
 }
 
+Eigen::MatrixX<int64_t> MultiMeshFromTag::adjacency_matrix() const
+{
+    return m_adjacency_matrix;
+}
+
 void MultiMeshFromTag::compute_substructure_ids()
 {
     Mesh& child = *m_child_ptr;
@@ -394,6 +399,55 @@ void MultiMeshFromTag::create_substructure_soup()
 std::shared_ptr<Mesh> MultiMeshFromTag::substructure_soup() const
 {
     return m_child_ptr;
+}
+
+std::shared_ptr<Mesh> MultiMeshFromTag::compute_substructure_idf()
+{
+    std::vector<Tuple> tagged_tuples;
+    {
+        const auto tag_type_tuples = m_mesh.get_all(m_tag_ptype);
+        for (const Tuple& t : tag_type_tuples) {
+            if (m_tag_acc.const_scalar_attribute(t) != m_tag_value) {
+                continue;
+            }
+            tagged_tuples.emplace_back(t);
+        }
+    }
+
+    switch (m_child_ptr->top_simplex_type()) {
+    case PrimitiveType::Triangle: {
+        const Eigen::MatrixX<int64_t> FV = get_new_id_matrix(PrimitiveType::Vertex);
+        const Eigen::MatrixX<int64_t> FE = get_new_id_matrix(PrimitiveType::Edge);
+        const VectorXl VF = get_new_top_coface_vector(PrimitiveType::Vertex);
+        const VectorXl EF = get_new_top_coface_vector(PrimitiveType::Edge);
+
+        std::shared_ptr<TriMesh> substructure_mesh = std::make_shared<TriMesh>();
+        substructure_mesh->initialize(FV, FE, adjacency_matrix(), VF, EF);
+
+
+        std::vector<std::array<Tuple, 2>> child_to_parent_map(tagged_tuples.size());
+
+        const auto child_top_dimension_tuples = substructure_mesh->get_all(m_tag_ptype);
+
+        assert(tagged_tuples.size() == child_top_dimension_tuples.size());
+
+        for (size_t i = 0; i < tagged_tuples.size(); ++i) {
+            child_to_parent_map[i] = {{child_top_dimension_tuples[i], tagged_tuples[i]}};
+        }
+
+        m_mesh.register_child_mesh(substructure_mesh, child_to_parent_map);
+
+        return substructure_mesh;
+    }
+    case PrimitiveType::Tetrahedron: {
+        log_and_throw_error("implementation missing");
+        break;
+    }
+    case PrimitiveType::Vertex:
+    case PrimitiveType::Edge:
+    default: log_and_throw_error("implementation missing"); break;
+    }
+    //
 }
 
 } // namespace wmtk::components::internal

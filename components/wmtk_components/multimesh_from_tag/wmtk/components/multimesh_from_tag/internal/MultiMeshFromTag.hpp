@@ -28,12 +28,16 @@ public:
     Eigen::MatrixX<int64_t> get_new_id_matrix(const PrimitiveType ptype) const;
     VectorXl get_new_top_coface_vector(const PrimitiveType ptype) const;
 
+    Eigen::MatrixX<int64_t> adjacency_matrix() const;
+
     /**
      * Create a multimesh where the child-mesh is just a soup (no connectivity) of m_mesh
      */
     void create_substructure_soup();
 
     std::shared_ptr<Mesh> substructure_soup() const;
+
+    std::shared_ptr<Mesh> compute_substructure_idf();
 
 private:
     /**
