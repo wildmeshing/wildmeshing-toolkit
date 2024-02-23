@@ -343,5 +343,20 @@ TEST_CASE("3damips_autodiff_correctness")
         }
     }
 }
+// wmtk::components::function::utils::ThreeChannelPositionMapEvaluator image_evaluator(
+//     images,
+//     image::SAMPLING_METHOD::Bicubic,
+//     image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
+// wmtk::components::function::utils::ThreeChannelPositionMapEvaluator func_evaluator(funcs);
+// wmtk::components::operations::internal::_debug_sampling(
+//     atdata.uv_mesh_ptr(),
+//     atdata.uv_handle(),
+//     image_evaluator,
+//     func_evaluator);
 
+// wmtk::components::operations::internal::_debug_texture_integral(
+//     atdata.uv_mesh_ptr(),
+//     atdata.uv_handle(),
+//     image_evaluator,
+//     func_evaluator);
 } // namespace wmtk::components

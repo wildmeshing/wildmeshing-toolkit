@@ -430,6 +430,12 @@ bool ATOperations::single_split_execution(
             return edge_priority(s_a) < edge_priority(s_b);
         });
     assert(edge_simplices.size() > 0);
+    if (abs(edge_priority(edge_simplices[0])[0]) < 1e-11) {
+        logger().warn(
+            "!!!! Using hardcode 1e-11 for distance error bond !!!! current error {}",
+            edge_priority(edge_simplices[0])[0]);
+        return false;
+    }
     auto mods = edge_split_op(edge_simplices[0]);
     return !mods.empty();
 }
