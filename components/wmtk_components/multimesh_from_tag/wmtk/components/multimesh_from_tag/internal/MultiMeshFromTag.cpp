@@ -26,30 +26,6 @@ MultiMeshFromTag::MultiMeshFromTag(
     , m_tag_ptype(tag_handle.primitive_type())
 {
     assert(m_mesh.get_child_meshes().empty());
-
-    create_substructure_soup();
-
-    Mesh& child = *m_child_ptr;
-
-    // create attributes to store new ids
-    for (const PrimitiveType pt : utils::primitive_below(m_tag_ptype)) {
-        if (pt == m_tag_ptype) {
-            continue;
-        }
-
-        const int64_t pt_id = get_primitive_type_id(pt);
-
-        const int64_t n_ids = m_n_local_ids[get_primitive_type_id(m_tag_ptype)][pt_id];
-
-        m_new_id_handles[pt] = child.register_attribute<int64_t>(
-            std::string("multimesh_from_tag_new_ids_") + std::to_string(pt_id),
-            m_tag_ptype,
-            n_ids,
-            false,
-            -1);
-    }
-
-    build_adjacency();
 }
 
 Eigen::MatrixX<int64_t> MultiMeshFromTag::get_new_id_matrix(const PrimitiveType ptype) const
@@ -67,9 +43,19 @@ Eigen::MatrixX<int64_t> MultiMeshFromTag::adjacency_matrix() const
     return m_adjacency_matrix;
 }
 
+std::shared_ptr<Mesh> MultiMeshFromTag::substructure_soup() const
+{
+    return m_soup_ptr;
+}
+
+std::shared_ptr<Mesh> MultiMeshFromTag::substructure() const
+{
+    return m_substructure_ptr;
+}
+
 void MultiMeshFromTag::compute_substructure_ids()
 {
-    Mesh& child = *m_child_ptr;
+    Mesh& child = *m_soup_ptr;
 
     const auto top_dimension_child_tuples = child.get_all(m_tag_ptype);
 
@@ -79,7 +65,7 @@ void MultiMeshFromTag::compute_substructure_ids()
             continue;
         }
 
-        auto get_id = [pt](const attribute::Accessor<int64_t>& acc, const Tuple& t) -> int64_t {
+        auto local_id = [pt](const Tuple& t) -> int64_t {
             int64_t local_id = -1;
             switch (pt) {
             case PrimitiveType::Vertex: local_id = t.local_vid(); break;
@@ -88,22 +74,19 @@ void MultiMeshFromTag::compute_substructure_ids()
             case PrimitiveType::Tetrahedron:
             default: assert(false); break;
             }
-
-            return acc.const_vector_attribute(t)(local_id);
+            return local_id;
         };
 
-        auto set_id =
-            [pt](attribute::Accessor<int64_t>& acc, const Tuple& t, const int64_t val) -> void {
-            int64_t local_id = -1;
-            switch (pt) {
-            case PrimitiveType::Vertex: local_id = t.local_vid(); break;
-            case PrimitiveType::Edge: local_id = t.local_eid(); break;
-            case PrimitiveType::Triangle: local_id = t.local_fid(); break;
-            case PrimitiveType::Tetrahedron:
-            default: assert(false); break;
-            }
+        auto get_id =
+            [pt, &local_id](const attribute::Accessor<int64_t>& acc, const Tuple& t) -> int64_t {
+            return acc.const_vector_attribute(t)(local_id(t));
+        };
 
-            acc.vector_attribute(t)(local_id) = val;
+        auto set_id = [pt, &local_id](
+                          attribute::Accessor<int64_t>& acc,
+                          const Tuple& t,
+                          const int64_t val) -> void {
+            acc.vector_attribute(t)(local_id(t)) = val;
         };
 
         auto id_acc = child.create_accessor<int64_t>(m_new_id_handles[pt]);
@@ -152,7 +135,7 @@ void MultiMeshFromTag::compute_substructure_ids()
             for (size_t j = 0; j < face_tuples.size(); ++j) {
                 const int64_t id = get_id(id_acc, face_tuples[j]);
                 assert(id != -1);
-                id_matrix(i, j) = id;
+                id_matrix(i, local_id(face_tuples[j])) = id;
                 coface_vector(id) = i;
             }
         }
@@ -166,7 +149,7 @@ std::vector<Tuple> MultiMeshFromTag::get_connected_region(
     const Tuple& t_in,
     const PrimitiveType ptype)
 {
-    Mesh& child = *m_child_ptr;
+    Mesh& child = *m_soup_ptr;
 
     const PrimitiveType connecting_ptype =
         get_primitive_type_from_id(get_primitive_type_id(m_tag_ptype) - 1);
@@ -217,22 +200,21 @@ std::vector<Tuple> MultiMeshFromTag::get_connected_region(
     return connected_region;
 }
 
-void MultiMeshFromTag::build_adjacency()
+void MultiMeshFromTag::build_adjacency_matrix()
 {
     if (m_tag_ptype == PrimitiveType::Vertex) {
         // A point mesh does not have any adjacency
         return;
     }
 
-    Mesh& child = *m_child_ptr;
+    Mesh& child = *m_soup_ptr;
 
     const int64_t tag_ptype_id = get_primitive_type_id(m_tag_ptype);
 
     const int64_t connecting_pt_id = tag_ptype_id - 1;
     const PrimitiveType connecting_ptype = get_primitive_type_from_id(connecting_pt_id);
 
-    auto get_id =
-        [connecting_ptype](const attribute::Accessor<int64_t>& acc, const Tuple& t) -> int64_t {
+    auto local_id = [connecting_ptype](const Tuple& t) -> int64_t {
         int64_t local_id = -1;
         switch (connecting_ptype) {
         case PrimitiveType::Vertex: local_id = t.local_vid(); break;
@@ -241,25 +223,18 @@ void MultiMeshFromTag::build_adjacency()
         case PrimitiveType::Tetrahedron:
         default: assert(false); break;
         }
-
-        return acc.const_vector_attribute(t)(local_id);
+        return local_id;
     };
 
-    auto set_id = [connecting_ptype](
+    auto get_id = [connecting_ptype,
+                   &local_id](const attribute::Accessor<int64_t>& acc, const Tuple& t) -> int64_t {
+        return acc.const_vector_attribute(t)(local_id(t));
+    };
+
+    auto set_id = [connecting_ptype, &local_id](
                       attribute::Accessor<int64_t>& acc,
                       const Tuple& t,
-                      const int64_t val) -> void {
-        int64_t local_id = -1;
-        switch (connecting_ptype) {
-        case PrimitiveType::Vertex: local_id = t.local_vid(); break;
-        case PrimitiveType::Edge: local_id = t.local_eid(); break;
-        case PrimitiveType::Triangle: local_id = t.local_fid(); break;
-        case PrimitiveType::Tetrahedron:
-        default: assert(false); break;
-        }
-
-        acc.vector_attribute(t)(local_id) = val;
-    };
+                      const int64_t val) -> void { acc.vector_attribute(t)(local_id(t)) = val; };
 
     m_adjacency_handle = child.register_attribute<int64_t>(
         "multimesh_from_tag_adjacency",
@@ -327,7 +302,7 @@ void MultiMeshFromTag::build_adjacency()
 
         for (size_t j = 0; j < face_tuples.size(); ++j) {
             const int64_t id = get_id(adj_acc, face_tuples[j]);
-            adj_matrix(i, j) = id;
+            adj_matrix(i, local_id(face_tuples[j])) = id;
         }
     }
 
@@ -361,23 +336,23 @@ void MultiMeshFromTag::create_substructure_soup()
 
     switch (m_tag_ptype) {
     case PrimitiveType::Vertex: {
-        m_child_ptr = std ::make_shared<PointMesh>();
-        static_cast<PointMesh&>(*m_child_ptr).initialize(tagged_tuples.size());
+        m_soup_ptr = std ::make_shared<PointMesh>();
+        static_cast<PointMesh&>(*m_soup_ptr).initialize(tagged_tuples.size());
         break;
     }
     case PrimitiveType::Edge: {
-        m_child_ptr = std ::make_shared<EdgeMesh>();
-        static_cast<EdgeMesh&>(*m_child_ptr).initialize(id_matrix);
+        m_soup_ptr = std ::make_shared<EdgeMesh>();
+        static_cast<EdgeMesh&>(*m_soup_ptr).initialize(id_matrix);
         break;
     }
     case PrimitiveType::Triangle: {
-        m_child_ptr = std ::make_shared<TriMesh>();
-        static_cast<TriMesh&>(*m_child_ptr).initialize(id_matrix);
+        m_soup_ptr = std ::make_shared<TriMesh>();
+        static_cast<TriMesh&>(*m_soup_ptr).initialize(id_matrix);
         break;
     }
     case PrimitiveType::Tetrahedron: {
-        m_child_ptr = std ::make_shared<TetMesh>();
-        static_cast<TetMesh&>(*m_child_ptr).initialize(id_matrix);
+        m_soup_ptr = std ::make_shared<TetMesh>();
+        static_cast<TetMesh&>(*m_soup_ptr).initialize(id_matrix);
         break;
     }
     default: log_and_throw_error("Unknown primitive type for tag");
@@ -385,7 +360,7 @@ void MultiMeshFromTag::create_substructure_soup()
 
     std::vector<std::array<Tuple, 2>> child_to_parent_map(tagged_tuples.size());
 
-    const auto child_top_dimension_tuples = m_child_ptr->get_all(m_tag_ptype);
+    const auto child_top_dimension_tuples = m_soup_ptr->get_all(m_tag_ptype);
 
     assert(tagged_tuples.size() == child_top_dimension_tuples.size());
 
@@ -393,16 +368,37 @@ void MultiMeshFromTag::create_substructure_soup()
         child_to_parent_map[i] = {{child_top_dimension_tuples[i], tagged_tuples[i]}};
     }
 
-    m_mesh.register_child_mesh(m_child_ptr, child_to_parent_map);
+    m_mesh.register_child_mesh(m_soup_ptr, child_to_parent_map);
 }
 
-std::shared_ptr<Mesh> MultiMeshFromTag::substructure_soup() const
+void MultiMeshFromTag::compute_substructure_mesh()
 {
-    return m_child_ptr;
-}
+    create_substructure_soup();
 
-std::shared_ptr<Mesh> MultiMeshFromTag::compute_substructure_idf()
-{
+    Mesh& child = *m_soup_ptr;
+
+    // create attributes to store new ids
+    for (const PrimitiveType pt : utils::primitive_below(m_tag_ptype)) {
+        if (pt == m_tag_ptype) {
+            continue;
+        }
+
+        const int64_t pt_id = get_primitive_type_id(pt);
+
+        const int64_t n_ids = m_n_local_ids[get_primitive_type_id(m_tag_ptype)][pt_id];
+
+        m_new_id_handles[pt] = child.register_attribute<int64_t>(
+            std::string("multimesh_from_tag_new_ids_") + std::to_string(pt_id),
+            m_tag_ptype,
+            n_ids,
+            false,
+            -1);
+    }
+
+    build_adjacency_matrix();
+
+    compute_substructure_ids();
+
     std::vector<Tuple> tagged_tuples;
     {
         const auto tag_type_tuples = m_mesh.get_all(m_tag_ptype);
@@ -414,40 +410,71 @@ std::shared_ptr<Mesh> MultiMeshFromTag::compute_substructure_idf()
         }
     }
 
-    switch (m_child_ptr->top_simplex_type()) {
+    switch (m_soup_ptr->top_simplex_type()) {
+    case PrimitiveType::Vertex: {
+        m_substructure_ptr = std::make_shared<PointMesh>();
+        static_cast<PointMesh&>(*m_substructure_ptr).initialize(tagged_tuples.size());
+        break;
+    }
+    case PrimitiveType::Edge: {
+        const Eigen::MatrixX<int64_t> EV = get_new_id_matrix(PrimitiveType::Vertex);
+        const VectorXl VE = get_new_top_coface_vector(PrimitiveType::Vertex);
+        m_substructure_ptr = std::make_shared<EdgeMesh>();
+        static_cast<EdgeMesh&>(*m_substructure_ptr).initialize(EV, adjacency_matrix(), VE);
+        assert(static_cast<EdgeMesh&>(*m_substructure_ptr).is_connectivity_valid());
+        break;
+    }
     case PrimitiveType::Triangle: {
         const Eigen::MatrixX<int64_t> FV = get_new_id_matrix(PrimitiveType::Vertex);
         const Eigen::MatrixX<int64_t> FE = get_new_id_matrix(PrimitiveType::Edge);
         const VectorXl VF = get_new_top_coface_vector(PrimitiveType::Vertex);
         const VectorXl EF = get_new_top_coface_vector(PrimitiveType::Edge);
-
-        std::shared_ptr<TriMesh> substructure_mesh = std::make_shared<TriMesh>();
-        substructure_mesh->initialize(FV, FE, adjacency_matrix(), VF, EF);
-
-
-        std::vector<std::array<Tuple, 2>> child_to_parent_map(tagged_tuples.size());
-
-        const auto child_top_dimension_tuples = substructure_mesh->get_all(m_tag_ptype);
-
-        assert(tagged_tuples.size() == child_top_dimension_tuples.size());
-
-        for (size_t i = 0; i < tagged_tuples.size(); ++i) {
-            child_to_parent_map[i] = {{child_top_dimension_tuples[i], tagged_tuples[i]}};
-        }
-
-        m_mesh.register_child_mesh(substructure_mesh, child_to_parent_map);
-
-        return substructure_mesh;
-    }
-    case PrimitiveType::Tetrahedron: {
-        log_and_throw_error("implementation missing");
+        m_substructure_ptr = std::make_shared<TriMesh>();
+        static_cast<TriMesh&>(*m_substructure_ptr).initialize(FV, FE, adjacency_matrix(), VF, EF);
+        assert(static_cast<TriMesh&>(*m_substructure_ptr).is_connectivity_valid());
         break;
     }
-    case PrimitiveType::Vertex:
-    case PrimitiveType::Edge:
-    default: log_and_throw_error("implementation missing"); break;
+    case PrimitiveType::Tetrahedron: {
+        const Eigen::MatrixX<int64_t> TV = get_new_id_matrix(PrimitiveType::Vertex);
+        const Eigen::MatrixX<int64_t> TE = get_new_id_matrix(PrimitiveType::Edge);
+        const Eigen::MatrixX<int64_t> TF = get_new_id_matrix(PrimitiveType::Triangle);
+        const VectorXl VT = get_new_top_coface_vector(PrimitiveType::Vertex);
+        const VectorXl ET = get_new_top_coface_vector(PrimitiveType::Edge);
+        const VectorXl FT = get_new_top_coface_vector(PrimitiveType::Triangle);
+        m_substructure_ptr = std::make_shared<TetMesh>();
+        static_cast<TetMesh&>(*m_substructure_ptr)
+            .initialize(TV, TE, TF, adjacency_matrix(), VT, ET, FT);
+        assert(static_cast<TetMesh&>(*m_substructure_ptr).is_connectivity_valid());
+        break;
     }
-    //
+    default: log_and_throw_error("Unknown primitive type for substructure."); break;
+    }
+
+    std::vector<std::array<Tuple, 2>> child_to_parent_map(tagged_tuples.size());
+
+    const auto child_top_dimension_tuples = m_substructure_ptr->get_all(m_tag_ptype);
+
+    assert(tagged_tuples.size() == child_top_dimension_tuples.size());
+
+    for (size_t i = 0; i < tagged_tuples.size(); ++i) {
+        child_to_parent_map[i] = {{child_top_dimension_tuples[i], tagged_tuples[i]}};
+    }
+
+    m_mesh.register_child_mesh(m_substructure_ptr, child_to_parent_map);
+}
+
+bool MultiMeshFromTag::is_substructure_simplex_manifold(const simplex::Simplex& s) const
+{
+    const simplex::Simplex s_in_root = m_substructure_ptr->map_to_parent(s);
+
+    return is_root_simplex_manifold(s_in_root);
+}
+
+bool MultiMeshFromTag::is_root_simplex_manifold(const simplex::Simplex& s) const
+{
+    const std::vector<simplex::Simplex> s_in_sub = m_mesh.map_to_child(*m_substructure_ptr, s);
+
+    return s_in_sub.size() < 2;
 }
 
 } // namespace wmtk::components::internal

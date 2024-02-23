@@ -9,6 +9,7 @@
 #include <wmtk/components/multimesh_from_tag/multimesh_from_tag.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
+#include <wmtk/utils/primitive_range.hpp>
 
 using json = nlohmann::json;
 using namespace wmtk;
@@ -28,6 +29,7 @@ TEST_CASE("multimesh_from_tag_tri_tri", "[components][multimesh][multimesh_from_
     int64_t n_faces = -1;
     int64_t n_edges = -1;
     int64_t n_vertices = -1;
+    simplex::SimplexCollection non_manifold_root_simplices(m);
 
     auto tag_acc = m.create_accessor<int64_t>(tag_handle);
 
@@ -50,6 +52,7 @@ TEST_CASE("multimesh_from_tag_tri_tri", "[components][multimesh][multimesh_from_
         n_faces = 4;
         n_edges = 10;
         n_vertices = 8;
+        non_manifold_root_simplices.add(PrimitiveType::Vertex, m.vertex_tuple_from_id(0));
     }
     SECTION("three_components")
     {
@@ -59,28 +62,35 @@ TEST_CASE("multimesh_from_tag_tri_tri", "[components][multimesh][multimesh_from_
         n_faces = 3;
         n_edges = 9;
         n_vertices = 9;
+        non_manifold_root_simplices.add(PrimitiveType::Vertex, m.vertex_tuple_from_id(0));
     }
 
     MultiMeshFromTag mmft(m, tag_handle, tag_value);
 
-    REQUIRE(m.get_child_meshes().size() == 1);
-    REQUIRE(m.is_multi_mesh_root());
-    std::shared_ptr<Mesh> child_ptr = m.get_child_meshes()[0];
+    mmft.compute_substructure_mesh();
 
-    mmft.compute_substructure_ids();
+    CHECK(m.get_child_meshes().size() == 2);
+    CHECK(m.is_multi_mesh_root());
 
-    const Eigen::MatrixX<int64_t> FV = mmft.get_new_id_matrix(PrimitiveType::Vertex);
-    CHECK(FV.rows() == n_faces);
-    CHECK(FV.cols() == 3);
+    auto substructure_mesh_ptr = mmft.substructure();
+    Mesh& sub_mesh = *substructure_mesh_ptr;
 
-    const Eigen::MatrixX<int64_t> FE = mmft.get_new_id_matrix(PrimitiveType::Edge);
-    CHECK(FE.rows() == n_faces);
-    CHECK(FE.cols() == 3);
+    CHECK(sub_mesh.top_simplex_type() == PrimitiveType::Triangle);
+    CHECK(sub_mesh.get_all(PrimitiveType::Triangle).size() == n_faces);
+    CHECK(sub_mesh.get_all(PrimitiveType::Edge).size() == n_edges);
+    CHECK(sub_mesh.get_all(PrimitiveType::Vertex).size() == n_vertices);
 
-    const VectorXl VF = mmft.get_new_top_coface_vector(PrimitiveType::Vertex);
-    CHECK(VF.size() == n_vertices);
-    const VectorXl EF = mmft.get_new_top_coface_vector(PrimitiveType::Edge);
-    CHECK(EF.size() == n_edges);
+    non_manifold_root_simplices.sort_and_clean();
+    for (const PrimitiveType pt : utils::primitive_below(m.top_simplex_type())) {
+        for (const Tuple& t : m.get_all(pt)) {
+            const simplex::Simplex s(pt, t);
+            if (non_manifold_root_simplices.contains(s)) {
+                CHECK_FALSE(mmft.is_root_simplex_manifold(s));
+            } else {
+                CHECK(mmft.is_root_simplex_manifold(s));
+            }
+        }
+    }
 }
 
 TEST_CASE("multimesh_from_tag_tri_edge", "[components][multimesh][multimesh_from_tag]")
@@ -93,6 +103,7 @@ TEST_CASE("multimesh_from_tag_tri_edge", "[components][multimesh][multimesh_from
 
     int64_t n_edges = -1;
     int64_t n_vertices = -1;
+    simplex::SimplexCollection non_manifold_root_simplices(m);
 
     auto tag_acc = m.create_accessor<int64_t>(tag_handle);
 
@@ -117,6 +128,7 @@ TEST_CASE("multimesh_from_tag_tri_edge", "[components][multimesh][multimesh_from
         tag_acc.scalar_attribute(m.edge_tuple_from_vids(0, 1)) = tag_value;
         tag_acc.scalar_attribute(m.edge_tuple_from_vids(0, 4)) = tag_value;
         tag_acc.scalar_attribute(m.edge_tuple_from_vids(5, 0)) = tag_value;
+        non_manifold_root_simplices.add(PrimitiveType::Vertex, m.vertex_tuple_from_id(0));
         n_edges = 3;
         n_vertices = 6;
     }
@@ -128,19 +140,36 @@ TEST_CASE("multimesh_from_tag_tri_edge", "[components][multimesh][multimesh_from
         tag_acc.scalar_attribute(m.edge_tuple_from_vids(0, 4)) = tag_value;
         tag_acc.scalar_attribute(m.edge_tuple_from_vids(4, 5)) = tag_value;
         tag_acc.scalar_attribute(m.edge_tuple_from_vids(5, 0)) = tag_value;
+        non_manifold_root_simplices.add(PrimitiveType::Vertex, m.vertex_tuple_from_id(0));
         n_edges = 6;
         n_vertices = 8;
     }
 
     MultiMeshFromTag mmft(m, tag_handle, tag_value);
-    mmft.compute_substructure_ids();
 
-    const Eigen::MatrixX<int64_t> EV = mmft.get_new_id_matrix(PrimitiveType::Vertex);
-    CHECK(EV.rows() == n_edges);
-    CHECK(EV.cols() == 2);
+    mmft.compute_substructure_mesh();
 
-    const VectorXl VE = mmft.get_new_top_coface_vector(PrimitiveType::Vertex);
-    CHECK(VE.size() == n_vertices);
+    CHECK(m.get_child_meshes().size() == 2);
+    CHECK(m.is_multi_mesh_root());
+
+    auto substructure_mesh_ptr = mmft.substructure();
+    Mesh& sub_mesh = *substructure_mesh_ptr;
+
+    CHECK(sub_mesh.top_simplex_type() == PrimitiveType::Edge);
+    CHECK(sub_mesh.get_all(PrimitiveType::Edge).size() == n_edges);
+    CHECK(sub_mesh.get_all(PrimitiveType::Vertex).size() == n_vertices);
+
+    non_manifold_root_simplices.sort_and_clean();
+    for (const PrimitiveType pt : utils::primitive_below(m.top_simplex_type())) {
+        for (const Tuple& t : m.get_all(pt)) {
+            const simplex::Simplex s(pt, t);
+            if (non_manifold_root_simplices.contains(s)) {
+                CHECK_FALSE(mmft.is_root_simplex_manifold(s));
+            } else {
+                CHECK(mmft.is_root_simplex_manifold(s));
+            }
+        }
+    }
 }
 
 TEST_CASE("multimesh_from_tag_tri_point", "[components][multimesh][multimesh_from_tag]")
@@ -159,14 +188,18 @@ TEST_CASE("multimesh_from_tag_tri_point", "[components][multimesh][multimesh_fro
         tag_acc.scalar_attribute(vertices[i]) = tag_value;
     }
 
-
     MultiMeshFromTag mmft(m, tag_handle, tag_value);
-    mmft.compute_substructure_ids();
 
-    const auto child = mmft.substructure_soup();
+    mmft.compute_substructure_mesh();
 
-    CHECK(child->top_simplex_type() == PrimitiveType::Vertex);
-    CHECK(child->get_all(PrimitiveType::Vertex).size() == 4);
+    CHECK(m.get_child_meshes().size() == 2);
+    CHECK(m.is_multi_mesh_root());
+
+    auto substructure_mesh_ptr = mmft.substructure();
+    Mesh& sub_mesh = *substructure_mesh_ptr;
+
+    CHECK(sub_mesh.top_simplex_type() == PrimitiveType::Vertex);
+    CHECK(sub_mesh.get_all(PrimitiveType::Vertex).size() == 4);
 }
 
 TEST_CASE("multimesh_from_tag_tet_tet", "[components][multimesh][multimesh_from_tag]")
@@ -217,32 +250,19 @@ TEST_CASE("multimesh_from_tag_tet_tet", "[components][multimesh][multimesh_from_
 
     MultiMeshFromTag mmft(m, tag_handle, tag_value);
 
-    REQUIRE(m.get_child_meshes().size() == 1);
-    REQUIRE(m.is_multi_mesh_root());
+    mmft.compute_substructure_mesh();
 
-    mmft.compute_substructure_ids();
+    CHECK(m.get_child_meshes().size() == 2);
+    CHECK(m.is_multi_mesh_root());
 
-    const Eigen::MatrixX<int64_t> TV = mmft.get_new_id_matrix(PrimitiveType::Vertex);
-    CHECK(TV.rows() == n_tets);
-    CHECK(TV.cols() == 4);
+    auto substructure_mesh_ptr = mmft.substructure();
+    Mesh& sub_mesh = *substructure_mesh_ptr;
 
-    const Eigen::MatrixX<int64_t> TE = mmft.get_new_id_matrix(PrimitiveType::Edge);
-    CHECK(TE.rows() == n_tets);
-    CHECK(TE.cols() == 6);
-
-    const Eigen::MatrixX<int64_t> TF = mmft.get_new_id_matrix(PrimitiveType::Triangle);
-    CHECK(TF.rows() == n_tets);
-    CHECK(TF.cols() == 4);
-
-    const VectorXl VT = mmft.get_new_top_coface_vector(PrimitiveType::Vertex);
-    CHECK(VT.size() == n_vertices);
-    const VectorXl ET = mmft.get_new_top_coface_vector(PrimitiveType::Edge);
-    CHECK(ET.size() == n_edges);
-    const VectorXl FT = mmft.get_new_top_coface_vector(PrimitiveType::Triangle);
-    CHECK(FT.size() == n_faces);
-
-    TetMesh substructure_mesh;
-    substructure_mesh.initialize(TV, TE, TF, mmft.adjacency_matrix(), VT, ET, FT);
+    CHECK(sub_mesh.top_simplex_type() == PrimitiveType::Tetrahedron);
+    CHECK(sub_mesh.get_all(PrimitiveType::Tetrahedron).size() == n_tets);
+    CHECK(sub_mesh.get_all(PrimitiveType::Triangle).size() == n_faces);
+    CHECK(sub_mesh.get_all(PrimitiveType::Edge).size() == n_edges);
+    CHECK(sub_mesh.get_all(PrimitiveType::Vertex).size() == n_vertices);
 }
 
 TEST_CASE("multimesh_from_tag_tet_tri", "[components][multimesh][multimesh_from_tag]")
@@ -305,29 +325,23 @@ TEST_CASE("multimesh_from_tag_tet_tri", "[components][multimesh][multimesh_from_
         n_vertices = 8;
     }
 
-
     MultiMeshFromTag mmft(m, tag_handle, tag_value);
 
-    REQUIRE(m.get_child_meshes().size() == 1);
-    REQUIRE(m.is_multi_mesh_root());
+    mmft.compute_substructure_mesh();
 
-    mmft.compute_substructure_ids();
+    CHECK(m.get_child_meshes().size() == 2);
+    CHECK(m.is_multi_mesh_root());
 
-    const Eigen::MatrixX<int64_t> FV = mmft.get_new_id_matrix(PrimitiveType::Vertex);
-    CHECK(FV.rows() == n_faces);
-    CHECK(FV.cols() == 3);
+    auto substructure_mesh_ptr = mmft.substructure();
+    Mesh& sub_mesh = *substructure_mesh_ptr;
 
-    const Eigen::MatrixX<int64_t> FE = mmft.get_new_id_matrix(PrimitiveType::Edge);
-    CHECK(FE.rows() == n_faces);
-    CHECK(FE.cols() == 3);
-
-    const VectorXl VF = mmft.get_new_top_coface_vector(PrimitiveType::Vertex);
-    CHECK(VF.size() == n_vertices);
-    const VectorXl EF = mmft.get_new_top_coface_vector(PrimitiveType::Edge);
-    CHECK(EF.size() == n_edges);
+    CHECK(sub_mesh.top_simplex_type() == PrimitiveType::Triangle);
+    CHECK(sub_mesh.get_all(PrimitiveType::Triangle).size() == n_faces);
+    CHECK(sub_mesh.get_all(PrimitiveType::Edge).size() == n_edges);
+    CHECK(sub_mesh.get_all(PrimitiveType::Vertex).size() == n_vertices);
 }
 
-TEST_CASE("multimesh_from_tag_tri_visualization", "[components][multimesh][multimesh_from_tag]")
+TEST_CASE("multimesh_from_tag_tri_visualization", "[components][multimesh][multimesh_from_tag][.]")
 {
     DEBUG_TriMesh m = tests::edge_region_with_position();
 
@@ -350,29 +364,23 @@ TEST_CASE("multimesh_from_tag_tri_visualization", "[components][multimesh][multi
 
     MultiMeshFromTag mmft(m, tag_handle, tag_value);
 
-    REQUIRE(m.get_child_meshes().size() == 1);
-    REQUIRE(m.is_multi_mesh_root());
+    mmft.compute_substructure_mesh();
 
-    mmft.compute_substructure_ids();
+    CHECK(m.get_child_meshes().size() == 2);
+    CHECK(m.is_multi_mesh_root());
 
-    const Eigen::MatrixX<int64_t> FV = mmft.get_new_id_matrix(PrimitiveType::Vertex);
-    CHECK(FV.rows() == n_faces);
-    CHECK(FV.cols() == 3);
+    auto substructure_mesh_ptr = mmft.substructure();
+    Mesh& sub_mesh = *substructure_mesh_ptr;
 
-    const Eigen::MatrixX<int64_t> FE = mmft.get_new_id_matrix(PrimitiveType::Edge);
-    CHECK(FE.rows() == n_faces);
-    CHECK(FE.cols() == 3);
+    CHECK(sub_mesh.top_simplex_type() == PrimitiveType::Triangle);
+    CHECK(sub_mesh.get_all(PrimitiveType::Triangle).size() == n_faces);
+    CHECK(sub_mesh.get_all(PrimitiveType::Edge).size() == n_edges);
+    CHECK(sub_mesh.get_all(PrimitiveType::Vertex).size() == n_vertices);
 
-    const VectorXl VF = mmft.get_new_top_coface_vector(PrimitiveType::Vertex);
-    CHECK(VF.size() == n_vertices);
-    const VectorXl EF = mmft.get_new_top_coface_vector(PrimitiveType::Edge);
-    CHECK(EF.size() == n_edges);
-
-    auto substructure_mesh = mmft.compute_substructure_idf();
 
     auto root_pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto subs_pos_handle =
-        substructure_mesh->register_attribute<double>("vertices", PrimitiveType::Vertex, 3);
+        sub_mesh.register_attribute<double>("vertices", PrimitiveType::Vertex, 3);
 
     auto propagate_to_child_position = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
         return P;
@@ -385,8 +393,8 @@ TEST_CASE("multimesh_from_tag_tri_visualization", "[components][multimesh][multi
             propagate_to_child_position);
     pos_transfer->run_on_all();
 
-    ParaviewWriter writer("child_mesh", "vertices", *substructure_mesh, false, false, true, false);
-    substructure_mesh->serialize(writer);
+    ParaviewWriter writer("child_mesh", "vertices", sub_mesh, false, false, true, false);
+    sub_mesh.serialize(writer);
     ParaviewWriter writer2("root_mesh", "vertices", m, false, false, true, false);
     m.serialize(writer2);
 }

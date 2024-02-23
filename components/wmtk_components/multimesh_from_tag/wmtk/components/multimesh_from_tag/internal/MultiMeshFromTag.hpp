@@ -23,7 +23,6 @@ public:
         const attribute::MeshAttributeHandle& tag_handle,
         const int64_t tag_value);
 
-    void compute_substructure_ids();
 
     Eigen::MatrixX<int64_t> get_new_id_matrix(const PrimitiveType ptype) const;
     VectorXl get_new_top_coface_vector(const PrimitiveType ptype) const;
@@ -31,15 +30,46 @@ public:
     Eigen::MatrixX<int64_t> adjacency_matrix() const;
 
     /**
-     * Create a multimesh where the child-mesh is just a soup (no connectivity) of m_mesh
+     * @brief Returns a pointer to the substructure soup.
+     *
+     * The soup is merely an intermediate representation and should not be used. The function
+     * `substructure()` is most likely what you are looking for.
+     */
+    std::shared_ptr<Mesh> substructure_soup() const;
+
+    /**
+     * @brief Returns a pointer to the manifold substructure mesh.
+     *
+     * This mesh is the substructure that is represented by tags in the input mesh. Any non-manifold
+     * simplices were duplicated to make the substructure manifold. Besides that, no topological
+     * changes were performed.
+     */
+    std::shared_ptr<Mesh> substructure() const;
+
+    /**
+     * @brief Create a manifold mesh from the substructure.
+     */
+    void compute_substructure_mesh();
+
+    bool is_substructure_simplex_manifold(const simplex::Simplex& s) const;
+
+    bool is_root_simplex_manifold(const simplex::Simplex& s) const;
+
+private:
+    /**
+     * @brief Compute the ids of the manifold substructure.
+     *
+     * This function utilizes the substructure soup to store the ids.
+     */
+    void compute_substructure_ids();
+
+    /**
+     * @brief Create a multimesh where the child-mesh is just a soup (no connectivity) of m_mesh.
+     *
+     * The soup is required as an intermediate step to construct the proper manifold substructure.
      */
     void create_substructure_soup();
 
-    std::shared_ptr<Mesh> substructure_soup() const;
-
-    std::shared_ptr<Mesh> compute_substructure_idf();
-
-private:
     /**
      * @brief Get tuples with different global_cid that all represent simplex(t_in, ptype) and are
      * in the same tag-region.
@@ -53,7 +83,7 @@ private:
     /**
      * Create the adjacency (stored as attribute) of the substructure
      */
-    void build_adjacency();
+    void build_adjacency_matrix();
 
 private:
     Mesh& m_mesh;
@@ -76,7 +106,8 @@ private:
     Eigen::MatrixX<int64_t> m_adjacency_matrix;
     std::map<PrimitiveType, Eigen::MatrixX<int64_t>> m_new_id_matrices;
     std::map<PrimitiveType, VectorXl> m_new_top_coface_vectors;
-    std::shared_ptr<Mesh> m_child_ptr;
+    std::shared_ptr<Mesh> m_soup_ptr;
+    std::shared_ptr<Mesh> m_substructure_ptr;
 };
 
 } // namespace wmtk::components::internal
