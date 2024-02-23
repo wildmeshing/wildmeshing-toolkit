@@ -9,6 +9,7 @@
 #include <wmtk/components/multimesh_from_tag/multimesh_from_tag.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
+#include <wmtk/simplex/RawSimplex.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 
 using json = nlohmann::json;
@@ -200,6 +201,13 @@ TEST_CASE("multimesh_from_tag_tri_point", "[components][multimesh][multimesh_fro
 
     CHECK(sub_mesh.top_simplex_type() == PrimitiveType::Vertex);
     CHECK(sub_mesh.get_all(PrimitiveType::Vertex).size() == 4);
+
+    for (const PrimitiveType pt : utils::primitive_below(m.top_simplex_type())) {
+        for (const Tuple& t : m.get_all(pt)) {
+            const simplex::Simplex s(pt, t);
+            CHECK(mmft.is_root_simplex_manifold(s));
+        }
+    }
 }
 
 TEST_CASE("multimesh_from_tag_tet_tet", "[components][multimesh][multimesh_from_tag]")
@@ -213,6 +221,7 @@ TEST_CASE("multimesh_from_tag_tet_tet", "[components][multimesh][multimesh_from_
     int64_t n_faces = -1;
     int64_t n_edges = -1;
     int64_t n_vertices = -1;
+    simplex::SimplexCollection non_manifold_root_simplices(m);
 
     auto tag_acc = m.create_accessor<int64_t>(tag_handle);
 
@@ -236,6 +245,9 @@ TEST_CASE("multimesh_from_tag_tet_tet", "[components][multimesh][multimesh_from_
         n_faces = 14;
         n_edges = 18;
         n_vertices = 10;
+        non_manifold_root_simplices.add(PrimitiveType::Vertex, m.vertex_tuple_from_id(2));
+        non_manifold_root_simplices.add(PrimitiveType::Vertex, m.vertex_tuple_from_id(3));
+        non_manifold_root_simplices.add(PrimitiveType::Edge, m.edge_tuple_from_vids(2, 3));
     }
     SECTION("three_components")
     {
@@ -246,6 +258,10 @@ TEST_CASE("multimesh_from_tag_tet_tet", "[components][multimesh][multimesh_from_
         n_faces = 12;
         n_edges = 18;
         n_vertices = 12;
+
+        non_manifold_root_simplices.add(PrimitiveType::Vertex, m.vertex_tuple_from_id(2));
+        non_manifold_root_simplices.add(PrimitiveType::Vertex, m.vertex_tuple_from_id(3));
+        non_manifold_root_simplices.add(PrimitiveType::Edge, m.edge_tuple_from_vids(2, 3));
     }
 
     MultiMeshFromTag mmft(m, tag_handle, tag_value);
@@ -263,6 +279,19 @@ TEST_CASE("multimesh_from_tag_tet_tet", "[components][multimesh][multimesh_from_
     CHECK(sub_mesh.get_all(PrimitiveType::Triangle).size() == n_faces);
     CHECK(sub_mesh.get_all(PrimitiveType::Edge).size() == n_edges);
     CHECK(sub_mesh.get_all(PrimitiveType::Vertex).size() == n_vertices);
+
+    non_manifold_root_simplices.sort_and_clean();
+    for (const PrimitiveType pt : utils::primitive_below(m.top_simplex_type())) {
+        for (const Tuple& t : m.get_all(pt)) {
+            const simplex::Simplex s(pt, t);
+            const simplex::RawSimplex rs(m, s);
+            if (non_manifold_root_simplices.contains(s)) {
+                CHECK_FALSE(mmft.is_root_simplex_manifold(s));
+            } else {
+                CHECK(mmft.is_root_simplex_manifold(s));
+            }
+        }
+    }
 }
 
 TEST_CASE("multimesh_from_tag_tet_tri", "[components][multimesh][multimesh_from_tag]")
@@ -275,6 +304,7 @@ TEST_CASE("multimesh_from_tag_tet_tri", "[components][multimesh][multimesh_from_
     int64_t n_faces = -1;
     int64_t n_edges = -1;
     int64_t n_vertices = -1;
+    simplex::SimplexCollection non_manifold_root_simplices(m);
 
     auto tag_acc = m.create_accessor<int64_t>(tag_handle);
 
@@ -297,6 +327,7 @@ TEST_CASE("multimesh_from_tag_tet_tri", "[components][multimesh][multimesh_from_
         n_faces = 5;
         n_edges = 12;
         n_vertices = 9;
+        non_manifold_root_simplices.add(PrimitiveType::Vertex, m.vertex_tuple_from_id(2));
     }
     SECTION("non_manifold_vertex_2")
     {
@@ -308,6 +339,7 @@ TEST_CASE("multimesh_from_tag_tet_tri", "[components][multimesh][multimesh_from_
         n_faces = 5;
         n_edges = 9;
         n_vertices = 7;
+        non_manifold_root_simplices.add(PrimitiveType::Vertex, m.vertex_tuple_from_id(2));
     }
     SECTION("non_manifold_edge")
     {
@@ -323,6 +355,9 @@ TEST_CASE("multimesh_from_tag_tet_tri", "[components][multimesh][multimesh_from_
         n_faces = 8;
         n_edges = 14;
         n_vertices = 8;
+        non_manifold_root_simplices.add(PrimitiveType::Vertex, m.vertex_tuple_from_id(2));
+        non_manifold_root_simplices.add(PrimitiveType::Vertex, m.vertex_tuple_from_id(3));
+        non_manifold_root_simplices.add(PrimitiveType::Edge, m.edge_tuple_from_vids(2, 3));
     }
 
     MultiMeshFromTag mmft(m, tag_handle, tag_value);
@@ -339,6 +374,18 @@ TEST_CASE("multimesh_from_tag_tet_tri", "[components][multimesh][multimesh_from_
     CHECK(sub_mesh.get_all(PrimitiveType::Triangle).size() == n_faces);
     CHECK(sub_mesh.get_all(PrimitiveType::Edge).size() == n_edges);
     CHECK(sub_mesh.get_all(PrimitiveType::Vertex).size() == n_vertices);
+
+    non_manifold_root_simplices.sort_and_clean();
+    for (const PrimitiveType pt : utils::primitive_below(m.top_simplex_type())) {
+        for (const Tuple& t : m.get_all(pt)) {
+            const simplex::Simplex s(pt, t);
+            if (non_manifold_root_simplices.contains(s)) {
+                CHECK_FALSE(mmft.is_root_simplex_manifold(s));
+            } else {
+                CHECK(mmft.is_root_simplex_manifold(s));
+            }
+        }
+    }
 }
 
 TEST_CASE("multimesh_from_tag_tri_visualization", "[components][multimesh][multimesh_from_tag][.]")
