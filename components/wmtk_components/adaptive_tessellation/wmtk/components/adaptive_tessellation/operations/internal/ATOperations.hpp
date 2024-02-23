@@ -6,6 +6,7 @@
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/function/simplex/AMIPS.hpp>
+#include <wmtk/operations/Operation.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include "ATData.hpp"
 namespace wmtk::components::operations::internal {
@@ -45,6 +46,7 @@ public:
     std::function<std::vector<double>(const Simplex&)> m_high_error_edges_first;
     std::function<std::vector<double>(const Simplex&)> m_high_distance_edges_first;
     std::function<std::vector<double>(const Simplex&)> m_high_distance_faces_first;
+    std::function<std::vector<double>(const Simplex&)> m_triangle_distance_edge_length;
     std::function<std::vector<double>(const Simplex&)> m_high_amips_edges_first;
     std::function<std::vector<double>(const Simplex&)> m_edge_length_weighted_distance_priority;
     std::function<std::vector<double>(const Simplex&)> m_long_edges_first;
@@ -98,5 +100,8 @@ public:
     void initialize_distance_error();
     void set_3d_amips_error_update_rule();
     void initialize_3d_amips_error();
+    bool single_split_execution(
+        wmtk::operations::Operation& edge_split_op,
+        std::function<std::vector<double>(const Simplex&)>& edge_priority);
 };
 } // namespace wmtk::components::operations::internal

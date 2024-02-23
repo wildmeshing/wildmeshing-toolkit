@@ -134,6 +134,13 @@ ATOperations::ATOperations(
         return std::vector<double>({-m_distance_error_accessor.scalar_attribute(s.tuple())});
     };
 
+    m_triangle_distance_edge_length = [&](const Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        return std::vector<double>(
+            {-m_distance_error_accessor.scalar_attribute(s.tuple()),
+             -m_3d_edge_length_accessor.scalar_attribute(s.tuple())});
+    };
+
     m_high_amips_edges_first = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         if (m_atdata.uv_mesh_ptr()->is_boundary(s)) {
@@ -212,7 +219,7 @@ void ATOperations::AT_edge_split(
     //     std::make_shared<FunctionInvariant>(uv_mesh_ptr->top_simplex_type(), function_ptr));
     // split->add_invariant(
     //     std::make_shared<StateChanges>(uv_mesh_ptr->top_simplex_type(), function_ptr));
-    // split->set_priority(priority);
+    split->set_priority(priority);
     // split->use_random_priority() = true;
 
     split->set_new_attribute_strategy(m_atdata.m_uv_handle);
@@ -396,6 +403,35 @@ void ATOperations::AT_collapse_interior(
     std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
 {
     throw std::runtime_error("AT collapse not implemented");
+}
+
+bool ATOperations::single_split_execution(
+    wmtk::operations::Operation& edge_split_op,
+    std::function<std::vector<double>(const wmtk::simplex::Simplex&)>& edge_priority)
+{
+    auto& uv_mesh = m_atdata.uv_mesh();
+    const auto tups = edge_split_op.mesh().get_all(PrimitiveType::Triangle);
+    std::vector<wmtk::simplex::Simplex> edge_simplices;
+    for (const auto& tup : tups) {
+        // get all the edges simplices of each triangle tuple
+        // current edge
+        edge_simplices.emplace_back(wmtk::simplex::Simplex(PrimitiveType::Edge, tup));
+        auto next_edge = uv_mesh.switch_tuple(tup, PrimitiveType::Edge);
+        edge_simplices.emplace_back(wmtk::simplex::Simplex(PrimitiveType::Edge, next_edge));
+        auto next_next_edge = uv_mesh.switch_tuple(
+            uv_mesh.switch_tuple(tup, PrimitiveType::Vertex),
+            PrimitiveType::Edge);
+        edge_simplices.emplace_back(wmtk::simplex::Simplex(PrimitiveType::Edge, next_next_edge));
+    }
+    std::stable_sort(
+        edge_simplices.begin(),
+        edge_simplices.end(),
+        [&edge_priority](const auto& s_a, const auto& s_b) {
+            return edge_priority(s_a) < edge_priority(s_b);
+        });
+    assert(edge_simplices.size() > 0);
+    auto mods = edge_split_op(edge_simplices[0]);
+    return !mods.empty();
 }
 
 } // namespace wmtk::components::operations::internal
