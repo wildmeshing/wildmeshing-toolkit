@@ -446,5 +446,35 @@ TEST_CASE("multimesh_from_tag_tri_visualization", "[components][multimesh][multi
     m.serialize(writer2);
 }
 
+TEST_CASE("multimesh_from_tag", "[components][multimesh][multimesh_from_tag]")
+{
+    io::Cache cache("wmtk_cache", ".");
+    {
+        auto mesh_in = tests::disk(6);
+        DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(*mesh_in);
+
+        auto tag_handle = m.register_attribute<int64_t>("tag", PrimitiveType::Triangle, 1);
+        auto tag_acc = m.create_accessor<int64_t>(tag_handle);
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 1, 2)) = 1;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 2, 3)) = 1;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 3, 4)) = 1;
+        tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 5, 6)) = 1;
+
+        cache.write_mesh(*mesh_in, "input_mesh");
+    }
+
+    json o = R"(
+        {
+            "input": "input_mesh",
+            "output": "output_mesh",
+            "substructure_label": "tag",
+            "substructure_value": 1,
+            "pass_through": []
+        }
+        )"_json;
+
+    CHECK_NOTHROW(multimesh_from_tag(base::Paths(), o, cache));
+}
+
 // TODO add tests for tet_edge and tet_point
 // TODO add hour glass test (non-manifold vertex) in tet_tri

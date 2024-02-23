@@ -6,6 +6,7 @@
 #include <wmtk/io/Cache.hpp>
 
 namespace wmtk::components {
+
 /**
  * @brief Generate a multi-mesh from a mesh with a tag that represents the substructure
  */
