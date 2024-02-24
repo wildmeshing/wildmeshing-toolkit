@@ -33,7 +33,6 @@ TEST_CASE("tuple_to_int64_t_storage", "[accessor]")
         CHECK(idat(0) == iptr[0]);
         CHECK(idat(1) == iptr[1]);
     }
-    // }
 }
 
 TEST_CASE("test_single_tuple_accessor", "[accessor]")
