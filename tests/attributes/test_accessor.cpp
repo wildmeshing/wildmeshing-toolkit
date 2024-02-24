@@ -224,9 +224,10 @@ TEST_CASE("test_accessor_caching", "[accessor]")
 
         for (const wmtk::Tuple& tup : vertices) {
             auto check_id = [&](const auto& va, int id) {
+                using T = typename std::decay_t<decltype(va)>::T;
                 auto v = va.const_vector_attribute(id);
                 auto x = v.eval();
-                std::iota(x.begin(), x.end(), va.dimension() * id);
+                std::iota(x.begin(), x.end(), T(va.dimension() * id));
                 CHECK(v == x);
                 bool is_scalar = va.dimension() == 1;
                 if (is_scalar) {
