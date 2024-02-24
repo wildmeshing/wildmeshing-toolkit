@@ -50,14 +50,14 @@ using namespace wmtk::invariants;
 
 ATOperations::ATOperations(
     ATData& atdata,
-    double target_edge_length,
+    double target_distance,
     double barrier_weight,
     double barrier_triangle_area,
     double distance_weight,
     double amips_weight,
     bool area_weighted_amips)
     : m_atdata(atdata)
-    , m_target_edge_length(target_edge_length)
+    , m_target_distance(target_distance)
     , m_barrier_weight(barrier_weight)
     , m_barrier_triangle_area(barrier_triangle_area)
     , m_distance_weight(distance_weight)
@@ -168,7 +168,7 @@ ATOperations::ATOperations(
                m_distance_error_accessor.scalar_attribute(other_face)) /
              2 * m_3d_edge_length_accessor.scalar_attribute(s.tuple())});
     };
-    std::cout << "target edge length " << m_target_edge_length << std::endl;
+    std::cout << "target edge length " << m_target_distance << std::endl;
     set_energies();
 }
 
@@ -209,10 +209,10 @@ void ATOperations::AT_edge_split(
 
     // 1) EdgeSplit
     auto split = std::make_shared<wmtk::operations::EdgeSplit>(*uv_mesh_ptr);
-    // split->add_invariant(std::make_shared<TodoAvgEnergyLargerInvariant>(
-    //     *uv_mesh_ptr,
-    //     m_atdata.m_sum_error_handle.as<double>(),
-    //     m_target_edge_length));
+    split->add_invariant(std::make_shared<TodoLargerInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.m_distance_error_handle.as<double>(),
+        m_target_distance));
     // split->add_invariant(
     //     std::make_shared<BoundarySimplexInvariant>(*uv_mesh_ptr, PrimitiveType::Edge));
     // split->add_invariant(
@@ -248,7 +248,7 @@ void ATOperations::AT_boundary_edge_split(
     // split->add_invariant(std::make_shared<TodoAvgEnergyLargerInvariant>(
     //     *uv_mesh_ptr,
     //     m_atdata.m_sum_error_handle.as<double>(),
-    //     m_target_edge_length));
+    //     m_target_distance));
     split->add_invariant(
         std::make_shared<BoundarySimplexInvariant>(*uv_mesh_ptr, PrimitiveType::Edge));
     // split->add_invariant(
@@ -430,12 +430,6 @@ bool ATOperations::single_split_execution(
             return edge_priority(s_a) < edge_priority(s_b);
         });
     assert(edge_simplices.size() > 0);
-    if (abs(edge_priority(edge_simplices[0])[0]) < 1e-11) {
-        logger().warn(
-            "!!!! Using hardcode 1e-11 for distance error bond !!!! current error {}",
-            edge_priority(edge_simplices[0])[0]);
-        return false;
-    }
     auto mods = edge_split_op(edge_simplices[0]);
     return !mods.empty();
 }

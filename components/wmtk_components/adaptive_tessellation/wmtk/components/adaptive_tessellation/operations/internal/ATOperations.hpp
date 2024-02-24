@@ -15,7 +15,7 @@ class ATOperations
 public:
     ATData& m_atdata;
 
-    double m_target_edge_length;
+    double m_target_distance;
     double m_barrier_weight;
     double m_barrier_triangle_area;
     double m_distance_weight;
@@ -63,7 +63,7 @@ public:
     // constructor
     ATOperations(
         ATData& atdata,
-        double target_edge_length,
+        double target_distance,
         double barrier_weight,
         double barrier_triangle_area,
         double distance_weight,

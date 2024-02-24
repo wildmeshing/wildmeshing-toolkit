@@ -30,7 +30,9 @@ TodoLargerInvariant::TodoLargerInvariant(
 
 bool TodoLargerInvariant::before(const simplex::Simplex& t) const
 {
-    assert(t.primitive_type() == m_todo_handle.primitive_type());
+    // comment out the below assert. I want to split an edge of a triangle depending on the
+    // triangle's attribute
+    // assert(t.primitive_type() == m_todo_handle.primitive_type());
     const attribute::Accessor<double> split_todo_accessor =
         mesh().create_const_accessor<double>(m_todo_handle);
     return split_todo_accessor.const_scalar_attribute(t.tuple()) > m_val;

@@ -11,7 +11,7 @@ public:
     std::string parent, child;
     std::string uv_output;
     std::string xyz_output;
-    double target_edge_length;
+    double target_distance;
     double barrier_weight;
     double barrier_triangle_area;
     double quadrature_weight;
@@ -30,7 +30,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     child,
     uv_output,
     xyz_output,
-    target_edge_length,
+    target_distance,
     barrier_weight,
     barrier_triangle_area,
     quadrature_weight,
