@@ -65,10 +65,13 @@ public:
 
     using BaseType::attribute; // access to Attribute object being used here
     using BaseType::handle;
-    using BaseType::mesh;
+    using BaseType::typed_handle;
     using CachingBaseType::has_stack;
     using CachingBaseType::mesh;
     using CachingBaseType::stack_depth;
+
+    MeshType& mesh() { return static_cast<MeshType&>(BaseType::mesh()); }
+    const MeshType& mesh() const { return static_cast<const MeshType&>(BaseType::mesh()); }
 
 protected:
     int64_t index(const Tuple& t) const;
