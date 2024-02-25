@@ -52,6 +52,8 @@ set(SRC_FILES
     FusionEdgeInvariant.hpp
     FusionEdgeInvariant.cpp
 
+    SmallerFunctionInvariant.hpp
+    SmallerFunctionInvariant.cpp
 
     internal/ConstantInvariant.hpp
     internal/ConstantInvariant.cpp
