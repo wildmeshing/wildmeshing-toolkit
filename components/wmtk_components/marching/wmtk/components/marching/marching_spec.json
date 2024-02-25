@@ -11,7 +11,8 @@
     ],
     "optional": [
       "pass_through",
-      "filter_values"
+      "filter_values",
+      "weight"
     ]
   },
   {
@@ -23,6 +24,12 @@
     "pointer": "/output",
     "type": "string",
     "doc": "output mesh"
+  },
+  {
+    "pointer": "/weight",
+    "type": "float",
+    "default": 0.5,
+    "doc": "isovalue"
   },
   {
     "pointer": "/attributes",

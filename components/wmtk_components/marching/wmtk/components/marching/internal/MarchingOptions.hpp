@@ -20,6 +20,7 @@ struct MarchingOptions
     MarchingAttributes attributes;
     std::vector<int64_t> input_values;
     int64_t output_value;
+    double weight;
     std::vector<int64_t> filter_values;
     std::vector<std::string> pass_through;
 };

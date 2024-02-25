@@ -9,6 +9,7 @@
 #include <wmtk/components/marching/internal/Marching.hpp>
 #include <wmtk/components/marching/internal/MarchingOptions.hpp>
 #include <wmtk/components/marching/marching.hpp>
+#include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
@@ -27,10 +28,18 @@ TEST_CASE("component_marching_options", "[components][marching]")
         {"attributes", {{"vertex_label", "v"}, {"filter_labels", json::array({})}}},
         {"input_values", {0, 1}},
         {"output_value", 2},
+        {"weight", 0.5},
         {"filter_values", json::array({})},
         {"pass_through", {"vertices"}}};
 
     CHECK_NOTHROW(o.get<MarchingOptions>());
+}
+
+TEST_CASE("s", "[.]")
+{
+    TetMesh& mesh = static_cast<TetMesh&>(
+        *read_mesh(WMTK_DATA_DIR "/unit_test/meshes/sphere_regularized.hdf5"));
+    auto x = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 }
 
 TEST_CASE("marching_component_tri", "[components][marching]")
@@ -72,50 +81,50 @@ TEST_CASE("marching_component_tri", "[components][marching]")
         expected_isosurface_vertex_num = 6;
         expected_isosurface_edge_num = 6;
     }
-    // SECTION("4-5")
-    // {
-    //     const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-    //     Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
-    //     acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
-    //     acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
+    SECTION("4-5")
+    {
+        const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
+        Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+        acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
+        acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
 
-    //     expected_isosurface_vertex_num = 9;
-    //     expected_isosurface_edge_num = 8;
-    // }
-    // SECTION("0-4-5")
-    // {
-    //     const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-    //     Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
-    //     acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = input_tag_value_1;
-    //     acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
-    //     acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
+        expected_isosurface_vertex_num = 9;
+        expected_isosurface_edge_num = 8;
+    }
+    SECTION("0-4-5")
+    {
+        const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
+        Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+        acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = input_tag_value_1;
+        acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
+        acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
 
-    //     expected_isosurface_vertex_num = 10;
-    //     expected_isosurface_edge_num = 8;
-    // }
-    // SECTION("0-4-5-with-filter")
-    // {
-    //     const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-    //     Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
-    //     acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = input_tag_value_1;
-    //     acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
-    //     acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
+        expected_isosurface_vertex_num = 10;
+        expected_isosurface_edge_num = 8;
+    }
+    SECTION("0-4-5-with-filter")
+    {
+        const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
+        Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+        acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = input_tag_value_1;
+        acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
+        acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
 
-    //     attribute::MeshAttributeHandle filter =
-    //         m.register_attribute<int64_t>("edge_filter", PrimitiveType::Edge, 1);
-    //     filter_labels.emplace_back(filter);
-    //     filter_values.emplace_back(1);
+        attribute::MeshAttributeHandle filter =
+            m.register_attribute<int64_t>("edge_filter", PrimitiveType::Edge, 1);
+        filter_labels.emplace_back(filter);
+        filter_values.emplace_back(1);
 
-    //     Accessor<int64_t> acc_filter = m.create_accessor<int64_t>(filter);
-    //     acc_filter.scalar_attribute(m.edge_tuple_from_vids(0, 1)) = 1;
-    //     acc_filter.scalar_attribute(m.edge_tuple_from_vids(1, 4)) = 1;
-    //     acc_filter.scalar_attribute(m.edge_tuple_from_vids(1, 5)) = 1;
-    //     acc_filter.scalar_attribute(m.edge_tuple_from_vids(2, 5)) = 1;
-    //     acc_filter.scalar_attribute(m.edge_tuple_from_vids(5, 6)) = 1;
+        Accessor<int64_t> acc_filter = m.create_accessor<int64_t>(filter);
+        acc_filter.scalar_attribute(m.edge_tuple_from_vids(0, 1)) = 1;
+        acc_filter.scalar_attribute(m.edge_tuple_from_vids(1, 4)) = 1;
+        acc_filter.scalar_attribute(m.edge_tuple_from_vids(1, 5)) = 1;
+        acc_filter.scalar_attribute(m.edge_tuple_from_vids(2, 5)) = 1;
+        acc_filter.scalar_attribute(m.edge_tuple_from_vids(5, 6)) = 1;
 
-    //     expected_isosurface_vertex_num = 5;
-    //     expected_isosurface_edge_num = 4;
-    // }
+        expected_isosurface_vertex_num = 5;
+        expected_isosurface_edge_num = 4;
+    }
 
     int64_t expected_vertex_num =
         m.get_all(PrimitiveType::Vertex).size() + expected_isosurface_vertex_num;
@@ -129,6 +138,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
         vertex_tag_handle,
         input_values,
         output_value,
+        0.1,
         filter_labels,
         filter_values,
         pass_through_attributes);
@@ -151,7 +161,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
 
     const auto& edges = m.get_all(PrimitiveType::Edge);
     wmtk::attribute::MeshAttributeHandle edge_tag_handle =
-        m.get_attribute_handle<int64_t>("edge_tag_handle", PrimitiveType::Edge);
+        m.get_attribute_handle<int64_t>("marching_edge_tag", PrimitiveType::Edge);
     Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
     // edge number should be correct
     {
@@ -279,6 +289,7 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
         vertex_tag_handle,
         input_values,
         output_value,
+        0.1,
         filter_labels,
         filter_values,
         pass_through_attributes);
@@ -302,7 +313,7 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
     // face number should be correct
     const auto& faces = m.get_all(PrimitiveType::Face);
     wmtk::attribute::MeshAttributeHandle face_tag_handle =
-        m.get_attribute_handle<int64_t>("face_tag_handle", PrimitiveType::Face);
+        m.get_attribute_handle<int64_t>("marching_face_tag", PrimitiveType::Face);
     Accessor<int64_t> acc_face_tag = m.create_accessor<int64_t>(face_tag_handle);
     {
         int64_t isosurface_face_num = 0;

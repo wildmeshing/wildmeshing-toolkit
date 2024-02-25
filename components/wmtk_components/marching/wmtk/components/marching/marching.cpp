@@ -33,8 +33,8 @@ void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cach
     MarchingOptions options = j.get<MarchingOptions>();
 
     // input
+    auto x = options.input;
     std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
-    // std::shared_ptr<Mesh> mesh_in = wmtk::read_mesh(file);
 
     Mesh& mesh = static_cast<Mesh&>(*mesh_in);
     assert(options.input_values.size() == 2);
@@ -62,6 +62,7 @@ void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cach
             vertex_tag_handle,
             options.input_values,
             options.output_value,
+            options.weight,
             filter_labels,
             options.filter_values,
             pass_through_attributes);

@@ -6,7 +6,8 @@
 #include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/attribute_update/AttributeTransferStrategyPosition.hpp>
+#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
+#include <wmtk/simplex/cofaces_single_dimension.hpp>
 
 namespace wmtk::components::internal {
 
@@ -30,12 +31,14 @@ public:
     TagAttribute(TagAttribute&) = delete;
 };
 
+/*
 
 Marching::Marching(
     Mesh& mesh,
     attribute::MeshAttributeHandle& vertex_label,
     const std::vector<int64_t>& input_values,
     const int64_t output_value,
+    const double weight,
     std::vector<attribute::MeshAttributeHandle>& filter_labels,
     const std::vector<int64_t>& filter_values,
     const std::vector<attribute::MeshAttributeHandle>& pass_through_attributes)
@@ -43,10 +46,30 @@ Marching::Marching(
     , m_vertex_label(vertex_label)
     , m_input_values(input_values)
     , m_output_value(output_value)
+    , m_weight(weight)
     , m_filter_labels(filter_labels)
     , m_filter_values(filter_values)
     , m_pass_through_attributes(pass_through_attributes)
-    , m_isovalue(0.1)
+{}
+*/
+
+Marching::Marching(
+    Mesh& mesh,
+    attribute::MeshAttributeHandle& vertex_label,
+    const std::vector<int64_t>& input_values,
+    const int64_t output_value,
+    const double weight,
+    std::vector<attribute::MeshAttributeHandle>& filter_labels,
+    const std::vector<int64_t>& filter_values,
+    const std::vector<attribute::MeshAttributeHandle>& pass_through_attributes)
+    : m_mesh(mesh)
+    , m_vertex_label(vertex_label)
+    , m_input_values(input_values)
+    , m_output_value(output_value)
+    , m_weight(weight)
+    , m_filter_labels(filter_labels)
+    , m_filter_values(filter_values)
+    , m_pass_through_attributes(pass_through_attributes)
 {}
 
 void Marching::process()
@@ -57,11 +80,10 @@ void Marching::process()
         "todo_edgesplit_in_marching_component",
         wmtk::PrimitiveType::Edge,
         1);
-    auto new_position =
-        m_mesh.register_attribute<double>("new_position", wmtk::PrimitiveType::Vertex, 3);
-    auto position = m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-
-    m_pass_through_attributes.push_back(new_position);
+    auto splitted_edges_attribute = m_mesh.register_attribute_typed<int64_t>(
+        "splitted_edges_in_marching_component",
+        wmtk::PrimitiveType::Edge,
+        1);
 
     assert(m_input_values.size() == 2);
     const int64_t vertex_tag_0 = m_input_values[0];
@@ -75,8 +97,7 @@ void Marching::process()
 
     // compute the todo list for the split edge
     Accessor<int64_t> acc_todo = m_mesh.create_accessor(todo_attribute);
-    Accessor<double> acc_position = m_mesh.create_accessor<double>(position);
-    Accessor<double> acc_new_position = m_mesh.create_accessor<double>(new_position);
+    Accessor<int64_t> acc_splitted_edges = m_mesh.create_accessor(splitted_edges_attribute);
     for (const Tuple& edge : m_mesh.get_all(PrimitiveType::Edge)) {
         bool is_of_interest = true;
         for (const TagAttribute& filter : filters) {
@@ -92,16 +113,10 @@ void Marching::process()
 
         const int64_t vt0 = acc_vertex_tag.scalar_attribute(edge);
         const int64_t vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(edge));
-        if (vt0 == vertex_tag_0 && vt1 == vertex_tag_1) {
+        if ((vt0 == vertex_tag_0 && vt1 == vertex_tag_1) ||
+            (vt1 == vertex_tag_0 && vt0 == vertex_tag_1)) {
             acc_todo.scalar_attribute(edge) = 1;
-            acc_new_position.vector_attribute(m_mesh.switch_vertex(edge)) =
-                acc_position.const_vector_attribute(edge) * (1 - m_isovalue) +
-                acc_position.const_vector_attribute(m_mesh.switch_vertex(edge)) * m_isovalue;
-        } else if (vt1 == vertex_tag_0 && vt0 == vertex_tag_1) {
-            acc_todo.scalar_attribute(edge) = 1;
-            acc_new_position.vector_attribute(edge) =
-                acc_position.const_vector_attribute(edge) * m_isovalue +
-                acc_position.const_vector_attribute(m_mesh.switch_vertex(edge)) * (1 - m_isovalue);
+            acc_splitted_edges.scalar_attribute(edge) = 1;
         }
     }
 
@@ -121,7 +136,7 @@ void Marching::process()
 
         // get edge_handle
         auto edge_tag_handle =
-            m_mesh.register_attribute<int64_t>("edge_tag_handle", wmtk::PrimitiveType::Edge, 1);
+            m_mesh.register_attribute<int64_t>("marching_edge_tag", wmtk::PrimitiveType::Edge, 1);
 
         std::shared_ptr etag_strategy =
             std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<int64_t, int64_t>>(
@@ -143,7 +158,7 @@ void Marching::process()
 
         // get face_handle
         auto face_tag_handle =
-            m_mesh.register_attribute<int64_t>("face_tag_handle", wmtk::PrimitiveType::Face, 1);
+            m_mesh.register_attribute<int64_t>("marching_face_tag", wmtk::PrimitiveType::Face, 1);
 
         std::shared_ptr ftag_strategy =
             std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<int64_t, int64_t>>(
@@ -153,34 +168,6 @@ void Marching::process()
 
         op_split.add_transfer_strategy(ftag_strategy);
 
-        // position update
-        /**************************position******************************/
-
-        // auto compute_position = [this](
-        //                             const Eigen::MatrixXd& new_pos,
-        //                             const Eigen::MatrixX<int64_t>& labels) -> Eigen::VectorXd {
-        //     assert(new_pos.cols() == labels.cols());
-        //     int inside_idx = -1;
-
-        //     for (int i = 0; i < labels.cols(); ++i) {
-        //         int v = labels(0, i);
-        //         if (labels(0, i) == m_input_values[1]) {
-        //             inside_idx = i;
-        //         }
-        //     }
-
-        //     return new_pos.col(inside_idx);
-        // };
-
-        // std::shared_ptr position_strategy = std::make_shared<
-        //     wmtk::operations::
-        //         SingleAttributeTransferStrategyWithMultiParents<double, double, int64_t>>(
-        //     position,
-        //     new_position,
-        //     m_vertex_label,
-        //     compute_position);
-
-        // op_split.add_transfer_strategy(position_strategy);
 
         auto tmp = std::make_shared<SplitNewAttributeStrategy<int64_t>>(m_vertex_label);
         tmp->set_strategy(SplitBasicStrategy::None);
@@ -191,6 +178,11 @@ void Marching::process()
                 return ret;
             });
         op_split.set_new_attribute_strategy(m_vertex_label, tmp);
+
+        op_split.set_new_attribute_strategy(
+            attribute::MeshAttributeHandle(m_mesh, splitted_edges_attribute),
+            SplitBasicStrategy::Copy,
+            SplitRibBasicStrategy::None);
     }
 
     // filters
@@ -210,13 +202,47 @@ void Marching::process()
         op_split.set_new_attribute_strategy(attr);
     }
 
-
     Scheduler scheduler;
     while (true) {
         const auto stats = scheduler.run_operation_on_all(op_split);
         if (stats.number_of_successful_operations() == 0) {
             break;
         }
+    }
+
+    // move vertices according to weight
+    auto pos_handle = m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto pos_acc = m_mesh.create_accessor<double>(pos_handle);
+    for (const Tuple& v : m_mesh.get_all(PrimitiveType::Vertex)) {
+        if (acc_vertex_tag.const_scalar_attribute(v) != m_output_value) {
+            continue;
+        }
+        // get the two input positions
+        Tuple v0;
+        Tuple v1;
+        auto incident_edges = simplex::cofaces_single_dimension_tuples(
+            m_mesh,
+            simplex::Simplex::vertex(v),
+            PrimitiveType::Edge);
+        for (Tuple e : incident_edges) {
+            if (acc_splitted_edges.const_scalar_attribute(e) == 0) {
+                continue;
+            }
+            if (acc_vertex_tag.const_scalar_attribute(e) == m_output_value) {
+                e = m_mesh.switch_vertex(e);
+            }
+            if (acc_vertex_tag.const_scalar_attribute(e) == vertex_tag_0) {
+                v0 = e;
+            }
+            if (acc_vertex_tag.const_scalar_attribute(e) == vertex_tag_1) {
+                v1 = e;
+            }
+        }
+        assert(m_mesh.is_valid_slow(v0));
+        assert(m_mesh.is_valid_slow(v1));
+        const auto p0 = pos_acc.const_vector_attribute(v0);
+        const auto p1 = pos_acc.const_vector_attribute(v1);
+        pos_acc.vector_attribute(v) = (1 - m_weight) * p0 + m_weight * p1;
     }
 }
 
