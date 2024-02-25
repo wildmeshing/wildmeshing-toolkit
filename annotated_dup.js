@@ -33,7 +33,8 @@ var annotated_dup =
         [ "CachingAccessor", "classwmtk_1_1attribute_1_1_caching_accessor.html", "classwmtk_1_1attribute_1_1_caching_accessor" ],
         [ "AttributeScope", "classwmtk_1_1attribute_1_1_attribute_scope.html", "classwmtk_1_1attribute_1_1_attribute_scope" ],
         [ "AttributeScopeHandle", "classwmtk_1_1attribute_1_1_attribute_scope_handle.html", "classwmtk_1_1attribute_1_1_attribute_scope_handle" ],
-        [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", "classwmtk_1_1attribute_1_1_mesh_attribute_handle" ]
+        [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", "classwmtk_1_1attribute_1_1_mesh_attribute_handle" ],
+        [ "TupleAccessor", "classwmtk_1_1attribute_1_1_tuple_accessor.html", "classwmtk_1_1attribute_1_1_tuple_accessor" ]
       ] ],
       [ "components", "namespacewmtk_1_1components.html", [
         [ "adaptive_tessellation", "namespacewmtk_1_1components_1_1adaptive__tessellation.html", [

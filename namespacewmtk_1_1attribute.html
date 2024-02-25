@@ -114,7 +114,8 @@ $(document).ready(function(){initNavTree('namespacewmtk_1_1attribute.html',''); 
   <div class="summary">
 <a href="#namespaces">Namespaces</a> &#124;
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#typedef-members">Typedefs</a>  </div>
+<a href="#typedef-members">Typedefs</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">wmtk::attribute Namespace Reference</div>  </div>
 </div><!--header-->
@@ -171,6 +172,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">TupleAccessor</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
@@ -183,6 +186,15 @@ Typedefs</h2></td></tr>
 <tr class="separator:a262370e4d1050b1b3fa22ff20702430f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a97cd6d5cc8e135301c4304414cf24d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute.html#a2a97cd6d5cc8e135301c4304414cf24d">TypedAttributeHandleVariant</a> = std::variant&lt; <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; char &gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; int64_t &gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; double &gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt; &gt;</td></tr>
 <tr class="separator:a2a97cd6d5cc8e135301c4304414cf24d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:a99c42c12cfed88d04753c7bf257b6abb"><td class="memTemplParams" colspan="2">template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:a99c42c12cfed88d04753c7bf257b6abb"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute.html#a99c42c12cfed88d04753c7bf257b6abb">TupleAccessor</a> (MeshType &amp;m, const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; int64_t &gt; &amp;handle) -&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">TupleAccessor</a>&lt; MeshType &gt;</td></tr>
+<tr class="separator:a99c42c12cfed88d04753c7bf257b6abb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a30951a7eb28a699c6f07292abf3362"><td class="memTemplParams" colspan="2">template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:a8a30951a7eb28a699c6f07292abf3362"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute.html#a8a30951a7eb28a699c6f07292abf3362">TupleAccessor</a> (const MeshType &amp;m, const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; int64_t &gt; &amp;handle) -&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">TupleAccessor</a>&lt; MeshType &gt;</td></tr>
+<tr class="separator:a8a30951a7eb28a699c6f07292abf3362"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Typedef Documentation</h2>
 <a id="a262370e4d1050b1b3fa22ff20702430f"></a>
@@ -237,6 +249,67 @@ template&lt;typename T , int R = Eigen::Dynamic&gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00072">72</a> of file <a class="el" href="_typed_attribute_handle_8hpp_source.html">TypedAttributeHandle.hpp</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="a8a30951a7eb28a699c6f07292abf3362"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a30951a7eb28a699c6f07292abf3362">&#9670;&nbsp;</a></span>TupleAccessor() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a> </td>
+          <td>(</td>
+          <td class="paramtype">const MeshType &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; int64_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> -&gt;  <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">TupleAccessor</a>&lt; MeshType &gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a99c42c12cfed88d04753c7bf257b6abb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a99c42c12cfed88d04753c7bf257b6abb">&#9670;&nbsp;</a></span>TupleAccessor() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a> </td>
+          <td>(</td>
+          <td class="paramtype">MeshType &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; int64_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> -&gt;  <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">TupleAccessor</a>&lt; MeshType &gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>

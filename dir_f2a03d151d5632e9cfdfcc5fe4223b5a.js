@@ -57,6 +57,8 @@ var dir_f2a03d151d5632e9cfdfcc5fe4223b5a =
     [ "PerThreadAttributeScopeStacks.hpp", "_per_thread_attribute_scope_stacks_8hpp.html", [
       [ "PerThreadAttributeScopeStacks", "classwmtk_1_1attribute_1_1_per_thread_attribute_scope_stacks.html", "classwmtk_1_1attribute_1_1_per_thread_attribute_scope_stacks" ]
     ] ],
+    [ "TupleAccessor.hpp", "_tuple_accessor_8hpp.html", "_tuple_accessor_8hpp" ],
+    [ "TupleAccessor.hxx", "_tuple_accessor_8hxx.html", null ],
     [ "TypedAttributeHandle.cpp", "_typed_attribute_handle_8cpp.html", null ],
     [ "TypedAttributeHandle.hpp", "_typed_attribute_handle_8hpp.html", "_typed_attribute_handle_8hpp" ]
 ];
