@@ -38,5 +38,11 @@ CollapseReturnData multi_mesh_edge_collapse(
         new_attr_strategies);
 
 
+std::vector<simplex::Simplex> multi_mesh_edge_collapse_with_modified_simplices(
+    Mesh& mesh,
+    const simplex::Simplex& simplex,
+    const std::vector<std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>>&
+        new_attr_strategies);
+
 } // namespace operations::utils
 } // namespace wmtk

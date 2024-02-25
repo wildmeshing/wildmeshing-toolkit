@@ -134,9 +134,9 @@ bool link_condition(const TetMesh& mesh, const Tuple& edge)
         const Simplex input_v(PrimitiveType::Vertex, _v);
         std::vector<Tuple> ret;
         // get incident_faces from open_star
-        auto incident_faces = cofaces_single_dimension(mesh, input_v, PrimitiveType::Face);
+        auto incident_faces = cofaces_single_dimension(mesh, input_v, PrimitiveType::Triangle);
         for (const Simplex& _f : incident_faces) {
-            if (mesh.is_boundary(PrimitiveType::Face, _f.tuple())) {
+            if (mesh.is_boundary(PrimitiveType::Triangle, _f.tuple())) {
                 // if (utils::SimplexComparisons::equal(
                 //         mesh,
                 //         Simplex(PrimitiveType::Vertex, _f.tuple()),

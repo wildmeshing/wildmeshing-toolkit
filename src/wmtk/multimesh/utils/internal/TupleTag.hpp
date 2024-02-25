@@ -64,8 +64,8 @@ public:
 
     Mesh& m_mesh;
     std::set<int64_t> m_critical_points;
-    Accessor<int64_t> m_vertex_tag_acc;
-    Accessor<int64_t> m_edge_tag_acc;
+    wmtk::attribute::Accessor<int64_t> m_vertex_tag_acc;
+    wmtk::attribute::Accessor<int64_t> m_edge_tag_acc;
 
 
     // this is shoved in this class to reduce the number of times we have to friend mesh - this is

@@ -123,15 +123,7 @@ if(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
     target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
 endif()
 
-option(WMTK_ONLY_CACHE_WRITES "Cache only stores writeable data" ON)
-if(WMTK_ONLY_CACHE_WRITES)
-    target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_ONLY_CACHE_WRITES)
-endif()
 
-option(WMTK_FLUSH_ON_FAIL "Cache where failure " ON)
-if(WMTK_FLUSH_ON_FAIL)
-    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_FLUSH_ON_FAIL)
-endif()
 option(WMTK_ENABLE_GENERIC_CHECKPOINTS "Enable checkpoint selection" OFF)
 if(WMTK_ENABLE_GENERIC_CHECKPOINTS)
     target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_ENABLE_GENERIC_CHECKPOINTS)
@@ -156,6 +148,11 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
 if(MSVC)
     target_compile_options(wildmeshing_toolkit PUBLIC /MP)
     target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/GL>)
+    target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ob2>) # inline whenever suitable
+    target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ot>) # favor faster code over binary size
+    target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELEASE>:/GL>)
+    target_compile_options(wildmeshing_toolkit PUBLIC $<$<CONFIG:RELEASE>:/Ot>)
+    target_compile_definitions(wildmeshing_toolkit PUBLIC _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS)
 endif()
 
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
@@ -217,8 +214,14 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     if(MSVC)
         target_compile_options(wmtk_app PUBLIC /MP)
         target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/GL>)
+        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ob2>) # inline whenever suitable
+        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ot>) # favor faster code over binary size
         target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/LTCG>)
         target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/INCREMENTAL:NO>)
+        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELEASE>:/GL>)
+        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELEASE>:/Ot>)
+        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELEASE>:/LTCG>)
+        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELEASE>:/INCREMENTAL:NO>)
     endif()
 
 endif()

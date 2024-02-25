@@ -14,7 +14,7 @@ void EigenMatrixWriter::get_TV_matrix(MatrixX<int64_t>& matrix)
 
 void EigenMatrixWriter::get_FV_matrix(MatrixX<int64_t>& matrix)
 {
-    get_int64_t_matrix("m_fv", PrimitiveType::Face, matrix);
+    get_int64_t_matrix("m_fv", PrimitiveType::Triangle, matrix);
 }
 
 void EigenMatrixWriter::get_EV_matrix(MatrixX<int64_t>& matrix)

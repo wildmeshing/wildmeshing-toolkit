@@ -34,7 +34,7 @@ TEST_CASE("test_eigenmatrixwriter", "[eigenmatrixwriter][.]")
         CHECK(V.cols() == 3);
 
         MatrixX<int64_t> FV;
-        writer.get_int64_t_matrix("m_fv", PrimitiveType::Face, FV);
+        writer.get_int64_t_matrix("m_fv", PrimitiveType::Triangle, FV);
 
         // std::cout << FV << std::endl;
         CHECK(FV.rows() == 8);

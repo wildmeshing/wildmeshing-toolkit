@@ -25,7 +25,7 @@ std::array<int64_t, 3> trimesh_simplex_counts(const TriMesh& m)
     return std::array<int64_t, 3>{
         {int64_t(m.get_all(PrimitiveType::Vertex).size()),
          int64_t(m.get_all(PrimitiveType::Edge).size()),
-         int64_t(m.get_all(PrimitiveType::Face).size())}};
+         int64_t(m.get_all(PrimitiveType::Triangle).size())}};
 }
 
 
@@ -38,12 +38,12 @@ std::array<int64_t, 3> trimesh_simplex_counts(const TriMesh& m)
 
 int trimesh_simply_connected_components(const DEBUG_TriMesh& m, std::vector<int>& component_ids)
 {
-    component_ids.resize(m.capacity(PrimitiveType::Face), -1);
-    const auto all_face_tuples = m.get_all(PrimitiveType::Face);
+    component_ids.resize(m.capacity(PrimitiveType::Triangle), -1);
+    const auto all_face_tuples = m.get_all(PrimitiveType::Triangle);
     int component_id = 0;
     // BFS
     for (auto face_tuple : all_face_tuples) {
-        const int64_t fid = m.id(face_tuple, PrimitiveType::Face);
+        const int64_t fid = m.id(face_tuple, PrimitiveType::Triangle);
         if (component_ids[fid] != -1) {
             continue;
         } // visited
@@ -59,8 +59,8 @@ int trimesh_simply_connected_components(const DEBUG_TriMesh& m, std::vector<int>
             // push all adjacent faces
             for (int j = 0; j < 3; ++j) {
                 if (!m.is_boundary_edge(f_tuple)) {
-                    auto adj_face_tuple = m.switch_tuple(f_tuple, PrimitiveType::Face);
-                    int64_t adj_fid = m.id(adj_face_tuple, PrimitiveType::Face);
+                    auto adj_face_tuple = m.switch_tuple(f_tuple, PrimitiveType::Triangle);
+                    int64_t adj_fid = m.id(adj_face_tuple, PrimitiveType::Triangle);
                     if (component_ids[adj_fid] == -1) {
                         q.push(adj_fid);
                     }
@@ -154,7 +154,7 @@ void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
     auto [v_count, e_count, f_count] = info.simplex_counts;
     auto v_tups = m.get_all(PrimitiveType::Vertex);
     auto e_tups = m.get_all(PrimitiveType::Edge);
-    auto f_tups = m.get_all(PrimitiveType::Face);
+    auto f_tups = m.get_all(PrimitiveType::Triangle);
 
     REQUIRE(size_t(v_count) == v_tups.size());
     REQUIRE(size_t(e_count) == e_tups.size());
@@ -169,7 +169,7 @@ void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
         fmt::print("edge {} is active with vertices {} {}\n", id, a, b);
     }
     for (const auto& f_tup : f_tups) {
-        int64_t id = m.id(f_tup, PrimitiveType::Face);
+        int64_t id = m.id(f_tup, PrimitiveType::Triangle);
         int64_t a = m.id(f_tup, PrimitiveType::Vertex);
         int64_t b = m.id(m.switch_tuple(f_tup, PrimitiveType::Vertex), PrimitiveType::Vertex);
         int64_t c = m.id(

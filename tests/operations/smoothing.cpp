@@ -48,7 +48,7 @@ protected:
         return r;
     }
 
-    ConstAccessor<double> m_target_attribute_accessor;
+    const attribute::Accessor<double> m_target_attribute_accessor;
 };
 } // namespace wmtk::function
 TEST_CASE("smoothing_Newton_Method")
@@ -81,7 +81,7 @@ TEST_CASE("smoothing_Newton_Method")
         auto stats = scheduler.run_operation_on_all(op);
         REQUIRE(stats.number_of_successful_operations() > 0);
     }
-    ConstAccessor<double> pos = mesh.create_const_accessor<double>(handler);
+    const attribute::Accessor<double> pos = mesh.create_const_accessor<double>(handler);
     Tuple tuple = mesh.tuple_from_face_id(0);
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
     Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));
@@ -165,7 +165,7 @@ TEST_CASE("smoothing_Gradient_Descent")
     do {
         stats = scheduler.run_operation_on_all(op);
     } while (get_min_grad_norm() > 1e-3 && stats.number_of_successful_operations() > 0);
-    ConstAccessor<double> pos = mesh.create_const_accessor<double>(handle);
+    const attribute::Accessor<double> pos = mesh.create_const_accessor<double>(handle);
     Tuple tuple = mesh.tuple_from_face_id(0);
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
     Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));

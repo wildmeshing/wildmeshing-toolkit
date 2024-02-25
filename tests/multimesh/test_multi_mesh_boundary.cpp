@@ -19,11 +19,11 @@ using namespace wmtk::simplex;
 using TM = TriMesh;
 using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
     wmtk::Tuple(),
-    std::declval<Accessor<int64_t>&>()));
+    std::declval<wmtk::attribute::Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 
 
 TEST_CASE("multimesh_boundary", "[multimesh]")
@@ -38,7 +38,7 @@ TEST_CASE("multimesh_boundary", "[multimesh]")
         auto tag_handle = c.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Edge, 1);
         auto tag_accessor = c.create_accessor(tag_handle.as<int64_t>());
         for (const auto& e : c.get_all(PE)) {
-            tag_accessor.scalar_attribute(e) = c.is_boundary(PrimitiveType::Edge,e) ? 1 : 0;
+            tag_accessor.scalar_attribute(e) = c.is_boundary(PrimitiveType::Edge, e) ? 1 : 0;
         }
         wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(tag_handle, int64_t(1));
     }
@@ -57,7 +57,7 @@ TEST_CASE("multimesh_boundary", "[multimesh]")
         }
     }
     {
-        multimesh::BoundaryChecker bc(*dptr,c);
+        multimesh::BoundaryChecker bc(*dptr, c);
         for (PrimitiveType pt : wmtk::utils::primitive_below(PrimitiveType::Edge)) {
             auto simplices = dptr->get_all(pt);
             // c and dptr have the same triangles so no mapping is required
@@ -68,7 +68,7 @@ TEST_CASE("multimesh_boundary", "[multimesh]")
         }
     }
     {
-        multimesh::BoundaryChecker bc(*dptr,edge_mesh);
+        multimesh::BoundaryChecker bc(*dptr, edge_mesh);
         for (PrimitiveType pt : wmtk::utils::primitive_below(PrimitiveType::Edge)) {
             auto simplices = dptr->get_all(pt);
             // the edge mesh was constructed by lookign at the boundary of c

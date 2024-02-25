@@ -67,7 +67,7 @@ void write(
     const bool intermediate_output)
 {
     if (intermediate_output) {
-        if (mesh->top_simplex_type() == PrimitiveType::Face) {
+        if (mesh->top_simplex_type() == PrimitiveType::Triangle) {
             // write trimesh
             const std::filesystem::path data_dir = "";
             wmtk::io::ParaviewWriter writer(
@@ -271,7 +271,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         4.0 / 5.0 * target_edge_length);
 
     auto interior_edge = std::make_shared<InteriorEdgeInvariant>(*mesh);
-    auto interior_face = std::make_shared<InteriorSimplexInvariant>(*mesh, PrimitiveType::Face);
+    auto interior_face = std::make_shared<InteriorSimplexInvariant>(*mesh, PrimitiveType::Triangle);
 
     auto valence_3 = std::make_shared<EdgeValenceInvariant>(*mesh, 3);
     auto valence_4 = std::make_shared<EdgeValenceInvariant>(*mesh, 4);
@@ -369,7 +369,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     };
 
 
-    if (mesh->top_simplex_type() == PrimitiveType::Face) {
+    if (mesh->top_simplex_type() == PrimitiveType::Triangle) {
         auto swap = std::make_shared<TriEdgeSwap>(*mesh);
         setup_swap(*swap, swap->collapse(), swap->split(), interior_edge);
         ops.push_back(swap);

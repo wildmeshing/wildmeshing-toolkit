@@ -41,7 +41,7 @@ std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t c
     int64_t current_capacity = capacity(type);
 
     // enable newly requested simplices
-    Accessor<char> flag_accessor = get_flag_accessor(type);
+    attribute::Accessor<char> flag_accessor = get_flag_accessor(type);
     int64_t max_size = flag_accessor.reserved_size();
 
     if (current_capacity + count > max_size) {
@@ -199,7 +199,7 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
 
     // Initialize both maps
     for (int64_t d = 0; d < tcp; d++) {
-        Accessor<char> flag_accessor = get_flag_accessor(wmtk::get_primitive_type_from_id(d));
+        attribute::Accessor<char> flag_accessor = get_flag_accessor(wmtk::get_primitive_type_from_id(d));
         for (int64_t i = 0; i < capacity(wmtk::get_primitive_type_from_id(d)); ++i) {
             if (flag_accessor.index_access().scalar_attribute(i) & 1) {
                 old2new[d].push_back(new2old[d].size());
@@ -237,7 +237,7 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
 
     for (int64_t d = 0; d < tcp; d++) {
         for (int64_t i = 0; i < handle_indices[d].size(); ++i) {
-            Accessor<int64_t> accessor = create_accessor<int64_t>(handle_indices[d][i]);
+            attribute::Accessor<int64_t> accessor = create_accessor<int64_t>(handle_indices[d][i]);
             accessor.attribute().index_remap(old2new[d]);
         }
     }

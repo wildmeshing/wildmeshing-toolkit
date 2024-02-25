@@ -23,7 +23,7 @@ void DEBUG_Mesh::reserve_attributes(PrimitiveType type, int64_t size)
 }
 
 
-Accessor<int64_t> DEBUG_Mesh::get_cell_hash_accessor()
+attribute::Accessor<int64_t> DEBUG_Mesh::get_cell_hash_accessor()
 {
     return Mesh::get_cell_hash_accessor();
 }
