@@ -11,7 +11,7 @@ void to_json(nlohmann::json& j, MeshDecimationOptions& o)
         {"output", o.output},
         {"constrait_value", o.constrait_value},
         {"decimation_factor", o.decimation_factor},
-        {"tet_constrait_tag_name", o.tet_constrait_tag_name},
+        {"cell_constrait_tag_name", o.cell_constrait_tag_name},
         {"pass_through", o.pass_through}};
 }
 
@@ -21,7 +21,7 @@ void from_json(const nlohmann::json& j, MeshDecimationOptions& o)
     o.output = j.at("output");
     o.constrait_value = j.at("constrait_value");
     o.decimation_factor = j.at("decimation_factor");
-    o.tet_constrait_tag_name = j.at("tet_constrait_tag_name");
+    o.cell_constrait_tag_name = j.at("cell_constrait_tag_name");
     j.at("pass_through").get_to(o.pass_through);
 }
 
