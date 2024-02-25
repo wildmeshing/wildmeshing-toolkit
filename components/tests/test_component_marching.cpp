@@ -35,13 +35,6 @@ TEST_CASE("component_marching_options", "[components][marching]")
     CHECK_NOTHROW(o.get<MarchingOptions>());
 }
 
-TEST_CASE("s", "[.]")
-{
-    TetMesh& mesh = static_cast<TetMesh&>(
-        *read_mesh(WMTK_DATA_DIR "/unit_test/meshes/sphere_regularized.hdf5"));
-    auto x = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-}
-
 TEST_CASE("marching_component_tri", "[components][marching]")
 {
     const int64_t input_tag_value_0 = 0;
@@ -162,7 +155,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
     const auto& edges = m.get_all(PrimitiveType::Edge);
     wmtk::attribute::MeshAttributeHandle edge_tag_handle =
         m.get_attribute_handle<int64_t>("marching_edge_tag", PrimitiveType::Edge);
-    Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
+    wmtk::attribute::Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
     // edge number should be correct
     {
         int64_t isosurface_edge_num = 0;
@@ -256,7 +249,8 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
     SECTION("4-5")
     {
         const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-        Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+        wmtk::attribute::Accessor<int64_t> acc_vertex_tag =
+            m.create_accessor<int64_t>(vertex_tag_handle);
         acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
         acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
 
@@ -266,7 +260,8 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
     SECTION("1-0-4-5")
     {
         const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-        Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+        wmtk::attribute::Accessor<int64_t> acc_vertex_tag =
+            m.create_accessor<int64_t>(vertex_tag_handle);
         acc_vertex_tag.scalar_attribute(vertex_tuples[1]) = input_tag_value_1;
         acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = input_tag_value_1;
         acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
@@ -311,10 +306,10 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
     }
 
     // face number should be correct
-    const auto& faces = m.get_all(PrimitiveType::Face);
+    const auto& faces = m.get_all(PrimitiveType::Triangle);
     wmtk::attribute::MeshAttributeHandle face_tag_handle =
-        m.get_attribute_handle<int64_t>("marching_face_tag", PrimitiveType::Face);
-    Accessor<int64_t> acc_face_tag = m.create_accessor<int64_t>(face_tag_handle);
+        m.get_attribute_handle<int64_t>("marching_face_tag", PrimitiveType::Triangle);
+    wmtk::attribute::Accessor<int64_t> acc_face_tag = m.create_accessor<int64_t>(face_tag_handle);
     {
         int64_t isosurface_face_num = 0;
         for (const Tuple& f : faces) {

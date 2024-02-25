@@ -97,8 +97,9 @@ void Marching::process()
     }
 
     // compute the todo list for the split edge
-    Accessor<int64_t> acc_todo = m_mesh.create_accessor(todo_attribute);
-    Accessor<int64_t> acc_splitted_edges = m_mesh.create_accessor(splitted_edges_attribute);
+    wmtk::attribute::Accessor<int64_t> acc_todo = m_mesh.create_accessor(todo_attribute);
+    wmtk::attribute::Accessor<int64_t> acc_splitted_edges =
+        m_mesh.create_accessor(splitted_edges_attribute);
     for (const Tuple& edge : m_mesh.get_all(PrimitiveType::Edge)) {
         bool is_of_interest = true;
         for (const TagAttribute& filter : filters) {
@@ -159,8 +160,10 @@ void Marching::process()
         };
 
         // get face_handle
-        auto face_tag_handle =
-            m_mesh.register_attribute<int64_t>("marching_face_tag", wmtk::PrimitiveType::Face, 1);
+        auto face_tag_handle = m_mesh.register_attribute<int64_t>(
+            "marching_face_tag",
+            wmtk::PrimitiveType::Triangle,
+            1);
 
         std::shared_ptr ftag_strategy =
             std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<int64_t, int64_t>>(
@@ -231,7 +234,7 @@ void Marching::process()
                 continue;
             }
             if (acc_vertex_tag.const_scalar_attribute(e) == m_output_value) {
-                e = m_mesh.switch_vertex(e);
+                e = m_mesh.switch_tuple(e, PrimitiveType::Vertex);
             }
             if (acc_vertex_tag.const_scalar_attribute(e) == vertex_tag_0) {
                 v0 = e;
