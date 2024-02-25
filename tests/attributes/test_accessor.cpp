@@ -25,7 +25,7 @@ void populate(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
         if (for_zeros) {
             v.setZero();
         } else {
-            std::iota(v.begin(), v.end(), dimension * id);
+            std::iota(v.begin(), v.end(), (typename VectorAcc::Scalar)(dimension * id));
         }
     }
 }
@@ -46,7 +46,7 @@ void check(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
             }
         } else {
             auto v = va.vector_attribute(tup);
-            std::iota(x.begin(), x.end(), dimension * id);
+            std::iota(x.begin(), x.end(), (typename VectorAcc::Scalar)(dimension * id));
             CHECK(v == x);
             if (is_scalar) {
                 CHECK(va.const_scalar_attribute(tup) == id);

@@ -46,7 +46,7 @@ auto TupleAccessor<MeshType>::vector_attribute(const Tuple& t) -> MapResult<D>
 template <typename MeshType>
 auto TupleAccessor<MeshType>::scalar_attribute(const Tuple& t) -> Tuple&
 {
-    auto base_map = m_base_accessor.template vector_attribute(t);
+    auto base_map = m_base_accessor.template vector_attribute<2>(t);
 
     assert(m_dimension == 1);
     return *reinterpret_cast<Tuple*>(base_map.data());
@@ -56,7 +56,7 @@ template <typename MeshType>
 auto TupleAccessor<MeshType>::const_scalar_attribute(const Tuple& t) const -> const Tuple&
 {
     assert(m_dimension == 1);
-    auto base_map = m_base_accessor.template const_vector_attribute(t);
+    auto base_map = m_base_accessor.template const_vector_attribute<2>(t);
     return *reinterpret_cast<const Tuple*>(base_map.data());
 }
 
