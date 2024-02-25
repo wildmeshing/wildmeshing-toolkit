@@ -73,8 +73,15 @@ void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cach
 
     // clear attributes
     {
+        attribute::MeshAttributeHandle marching_edge_tag =
+            mesh.get_attribute_handle<int64_t>("marching_edge_tag", PrimitiveType::Edge);
+        attribute::MeshAttributeHandle marching_face_tag =
+            mesh.get_attribute_handle<int64_t>("marching_face_tag", PrimitiveType::Triangle);
+
         std::vector<attribute::MeshAttributeHandle> keeps = pass_through_attributes;
         keeps.emplace_back(vertex_tag_handle);
+        keeps.emplace_back(marching_edge_tag);
+        keeps.emplace_back(marching_face_tag);
         keeps.insert(keeps.end(), filter_labels.begin(), filter_labels.end());
         mesh.clear_attributes(keeps);
     }
