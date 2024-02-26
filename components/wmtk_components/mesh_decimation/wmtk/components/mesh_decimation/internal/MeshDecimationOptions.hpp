@@ -11,11 +11,10 @@ struct MeshDecimationOptions
     std::string input;
     std::string output;
     int64_t constrait_value;
-    double decimation_factor;
+    double target_len;
     std::string cell_constrait_tag_name;
     std::vector<std::string> pass_through;
 };
-
 
 void to_json(nlohmann::json& j, MeshDecimationOptions& o);
 

@@ -5,11 +5,13 @@
     "required": [
       "input",
       "output",
-      "attributes",
-      "input_values",
-      "output_value"
+      "constrait_value",
+      "target_len",
+      "cell_constrait_tag_name"
     ],
-    "optional": ["pass_through", "filter_values"]
+    "optional": [
+      "pass_through"
+    ]
   },
   {
     "pointer": "/input",
@@ -22,50 +24,19 @@
     "doc": "output mesh"
   },
   {
-    "pointer": "/attributes",
-    "type": "object",
-    "required": "input_label",
-    "optional": "filter_labels",
-    "doc": "all attributes required for this component"
-  },
-  {
-    "pointer": "/attributes/vertex_label",
+    "pointer": "/cell_constrait_tag_name",
     "type": "string",
-    "doc": "The vertex int64_t attribute which is used for deciding if an edge should be split."
+    "doc": "constrait_tag_handle's name"
   },
   {
-    "pointer": "/attributes/filter_labels",
-    "type": "list",
-    "default": [],
-    "doc": "List of edge int64_t attributes that are used as filter. Only if all given edge labels are present, an edge is considered for a split. If no edge labels are given, every edge is considered for splitting."
-  },
-  {
-    "pointer": "/attributes/filter_labels/*",
-    "type": "string",
-    "doc": "Name of the edge int64_t attribute that is used as filter."
-  },
-
-  {
-    "pointer": "/input_values",
-    "type": "list",
-    "doc": "List of vertex labels that are considered in the split",
-    "min": 1,
-    "max": 2
-  },
-  {
-    "pointer": "/output_value",
+    "pointer": "/constrait_value",
     "type": "int",
-    "doc": "The label that is assigned to new vertices emerging from a split, i.e. vertices that are on the isosurface."
+    "doc": "used for specific tagged simplices that we don't want to touch"
   },
   {
-    "pointer": "/filter_values",
-    "type": "list",
-    "doc": "Values for the edge filters. Each value corresponds to one edge filter"
-  },
-  {
-    "pointer": "/filter_values/*",
-    "type": "int",
-    "doc": "Edge filter value."
+    "pointer": "/target_len",
+    "type": "float",
+    "doc": "the decimation will make sure all edge will end with a length larger than target_len"
   },
   {
     "pointer": "/pass_through",

@@ -18,8 +18,8 @@ MeshDecimation::MeshDecimation(
     double target_len,
     const std::vector<attribute::MeshAttributeHandle>& pass_through_attributes)
     : m_mesh(mesh)
-    , m_constriant_name(constriant_name)
     , m_constrait_value(constrait_value)
+    , m_constriant_name(constriant_name)
     , m_target_len(target_len)
     , m_pass_through_attributes(pass_through_attributes)
 {}
