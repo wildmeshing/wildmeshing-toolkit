@@ -30,35 +30,65 @@ TEST_CASE("component_mesh_decimation_options", "[components][mesh_decimation]")
     json o = {
         {"input", "input_mesh"},
         {"output", "output_mesh"},
-        {"constrait_value", 1},
         {"target_len", 1.0},
         {"cell_constrait_tag_name", "tag"},
-        {"pass_through", {"vertices"}}};
+        {"attributes", {"vertices", "tag"}},
+        {"pass_through", {"dummy"}}};
 
     CHECK_NOTHROW(o.get<MeshDecimationOptions>());
 }
 
-TEST_CASE("preprocess", "[.]")
+TEST_CASE("decimation_test", "[components][2D][3D]")
 {
     using namespace wmtk::components;
 
-    auto mesh_in = wmtk::read_mesh(data_dir / "3d_images/sphere_regularized.hdf5");
-    Mesh& mesh = static_cast<Mesh&>(*mesh_in);
+    SECTION("3D")
+    {
+        auto mesh_in = wmtk::read_mesh(data_dir / "unit_test/meshes/sphere_regularized.hdf5");
+        Mesh& mesh = *mesh_in;
 
-    std::vector<wmtk::attribute::MeshAttributeHandle> pass_though;
-    wmtk::attribute::MeshAttributeHandle vertex =
-        mesh.get_attribute_handle<int64_t>("vertex_tag", PrimitiveType::Vertex);
-    wmtk::attribute::MeshAttributeHandle edge =
-        mesh.get_attribute_handle<int64_t>("edge_tag", PrimitiveType::Edge);
-    wmtk::attribute::MeshAttributeHandle face =
-        mesh.get_attribute_handle<int64_t>("face_tag", PrimitiveType::Triangle);
-    pass_though.push_back(vertex);
-    pass_though.push_back(edge);
-    pass_though.push_back(face);
-    internal::MeshDecimation MD(mesh, "tag", 1, 5, pass_though);
-    MD.process();
+        std::vector<wmtk::attribute::MeshAttributeHandle> keep;
+        wmtk::attribute::MeshAttributeHandle constrait_cell_tag_handle =
+            mesh.get_attribute_handle<int64_t>("tag", mesh.top_simplex_type());
+        wmtk::attribute::MeshAttributeHandle pos_handle =
+            mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        keep.emplace_back(constrait_cell_tag_handle);
+        keep.emplace_back(pos_handle);
+        mesh.clear_attributes(keep);
 
-    wmtk::io::ParaviewWriter
-        writer(data_dir / "3d_images/out.hdf", "vertices", mesh, false, true, true, false);
-    mesh.serialize(writer);
+        std::vector<wmtk::attribute::MeshAttributeHandle> pass_though;
+        internal::MeshDecimation MD(mesh, constrait_cell_tag_handle, 5, pass_though);
+        MD.process();
+
+        if (false) {
+            wmtk::io::ParaviewWriter
+                writer(data_dir / "out3d.hdf", "vertices", mesh, false, true, true, true);
+            mesh.serialize(writer);
+        }
+    }
+
+    SECTION("2D")
+    {
+        auto mesh_in = wmtk::read_mesh(data_dir / "2d/ellipse_layer/ellipse_01_substructure.hdf5");
+        Mesh& mesh = *mesh_in;
+
+        std::vector<wmtk::attribute::MeshAttributeHandle> keep;
+        wmtk::attribute::MeshAttributeHandle constrait_cell_tag_handle =
+            mesh.get_attribute_handle<int64_t>("tag", mesh.top_simplex_type());
+        wmtk::attribute::MeshAttributeHandle pos_handle =
+            mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        keep.emplace_back(constrait_cell_tag_handle);
+        keep.emplace_back(pos_handle);
+        mesh.clear_attributes(keep);
+
+        std::vector<wmtk::attribute::MeshAttributeHandle> pass_though;
+        internal::MeshDecimation MD(mesh, constrait_cell_tag_handle, 5, pass_though);
+        MD.process();
+
+        if (false) {
+            wmtk::io::ParaviewWriter
+                writer(data_dir / "out2d.hdf", "vertices", mesh, false, true, true, false);
+            mesh.serialize(writer);
+        }
+    }
 }

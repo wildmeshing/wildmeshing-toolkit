@@ -10,9 +10,9 @@ struct MeshDecimationOptions
 {
     std::string input;
     std::string output;
-    int64_t constrait_value;
     double target_len;
     std::string cell_constrait_tag_name;
+    std::vector<std::string> attributes;
     std::vector<std::string> pass_through;
 };
 

@@ -4,13 +4,13 @@
             "mesh_decimation": {
                 "input": "input_mesh",
                 "output": "output_mesh",
-                "constrait_value": 1,
                 "target_len": 2.0,
                 "cell_constrait_tag_name": "tag",
-                "pass_through": [
-                    "vertices",
-                    "tag"
-                ]
+                "attributes": [
+                    "tag",
+                    "vertices"
+                ],
+                "pass_through": []
             }
         }
     ]

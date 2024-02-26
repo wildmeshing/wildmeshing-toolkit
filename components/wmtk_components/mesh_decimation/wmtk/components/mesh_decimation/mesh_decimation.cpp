@@ -14,27 +14,28 @@ void mesh_decimation(const base::Paths& paths, const nlohmann::json& j, io::Cach
 
     // input
     std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
-    Mesh& mesh = static_cast<Mesh&>(*mesh_in);
+    Mesh& mesh = *mesh_in;
     auto pass_through_attributes = base::get_attributes(cache, mesh, options.pass_through);
+    auto original_attributes = base::get_attributes(cache, mesh, options.attributes);
+    auto cell_constrait_tag_handle = mesh.get_attribute_handle<int64_t>(
+        options.cell_constrait_tag_name,
+        mesh.top_simplex_type());
 
     // clear attributes
     {
         std::vector<attribute::MeshAttributeHandle> keeps = pass_through_attributes;
+        keeps.insert(keeps.end(), original_attributes.begin(), original_attributes.end());
         mesh.clear_attributes(keeps);
     }
 
-    MeshDecimation md(
-        mesh,
-        options.cell_constrait_tag_name,
-        options.constrait_value,
-        options.target_len,
-        pass_through_attributes);
+    MeshDecimation md(mesh, cell_constrait_tag_handle, options.target_len, pass_through_attributes);
 
     md.process();
 
     // clear attributes
     {
         std::vector<attribute::MeshAttributeHandle> keeps = pass_through_attributes;
+        keeps.insert(keeps.end(), original_attributes.begin(), original_attributes.end());
         mesh.clear_attributes(keeps);
     }
 

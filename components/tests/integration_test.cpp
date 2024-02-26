@@ -58,12 +58,12 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
     in_args["root_path"] = json_file;
 
 
-    // if (compute_validation && !contains_results(in_args)) {
-    //     spdlog::error("JSON file missing vertices edges faces or tetrahedra or meshes key. Add a
-    //     * "
-    //                   "to the beginning of filename to allow appends.");
-    //     return 2;
-    // }
+    if (compute_validation && !contains_results(in_args)) {
+        spdlog::error("JSON file missing vertices edges faces or tetrahedra or meshes key. Add a * "
+                      "to the beginning of filename to allow appends.");
+        return 2;
+    }
+
 
     // in_args["settings"] = R"({
     //     "log_level": 5,

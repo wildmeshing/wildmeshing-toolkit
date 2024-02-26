@@ -5,9 +5,9 @@
     "required": [
       "input",
       "output",
-      "constrait_value",
       "target_len",
-      "cell_constrait_tag_name"
+      "cell_constrait_tag_name",
+      "attributes"
     ],
     "optional": [
       "pass_through"
@@ -29,14 +29,18 @@
     "doc": "constrait_tag_handle's name"
   },
   {
-    "pointer": "/constrait_value",
-    "type": "int",
-    "doc": "used for specific tagged simplices that we don't want to touch"
-  },
-  {
     "pointer": "/target_len",
     "type": "float",
     "doc": "the decimation will make sure all edge will end with a length larger than target_len"
+  },
+  {
+    "pointer": "/attributes",
+    "type": "list",
+    "doc": "the original attributes"
+  },
+  {
+    "pointer": "/attributes/*",
+    "type": "string"
   },
   {
     "pointer": "/pass_through",

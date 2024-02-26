@@ -13,13 +13,11 @@ namespace wmtk::components::internal {
 
 MeshDecimation::MeshDecimation(
     Mesh& mesh,
-    std::string constriant_name,
-    int64_t constrait_value,
+    attribute::MeshAttributeHandle constraited_cell_tag_handle,
     double target_len,
     const std::vector<attribute::MeshAttributeHandle>& pass_through_attributes)
     : m_mesh(mesh)
-    , m_constrait_value(constrait_value)
-    , m_constriant_name(constriant_name)
+    , m_constraited_cell_tag_handle(constraited_cell_tag_handle)
     , m_target_len(target_len)
     , m_pass_through_attributes(pass_through_attributes)
 {}
@@ -35,8 +33,7 @@ void MeshDecimation::process()
 
     volatile PrimitiveType x = m_mesh.top_simplex_type();
 
-    MeshAttributeHandle cell_tag_handle =
-        m_mesh.get_attribute_handle<int64_t>(m_constriant_name, m_mesh.top_simplex_type());
+    MeshAttributeHandle& cell_tag_handle = m_constraited_cell_tag_handle;
     MeshAttributeHandle position = m_mesh.get_attribute_handle<double>("vertices", PV);
     MeshAttributeHandle edge_handle = m_mesh.register_attribute<int64_t>("todo_edge_", PE, 1);
     MeshAttributeHandle vertex_handle = m_mesh.register_attribute<int64_t>("todo_vertex_", PV, 1);
@@ -109,10 +106,8 @@ void MeshDecimation::process()
 
     op_scaffold->add_invariant(
         std::make_shared<TodoInvariant>(m_mesh, edge_handle.as<int64_t>(), 0));
-    op_scaffold->add_invariant(std::make_shared<TodoSmallerInvariant>(
-        m_mesh,
-        edge_len_handle.as<double>(),
-        4.0 / 5.0 * m_target_len));
+    op_scaffold->add_invariant(
+        std::make_shared<TodoSmallerInvariant>(m_mesh, edge_len_handle.as<double>(), m_target_len));
 
     auto m_amips = std::make_shared<function::AMIPS>(m_mesh, position);
     auto m_link_conditions = std::make_shared<InvariantCollection>(m_mesh);
@@ -165,7 +160,10 @@ void MeshDecimation::process()
     while (true) {
         Scheduler scheduler;
         SchedulerStats pass_stats = scheduler.run_operation_on_all(*op_scaffold);
-        if (pass_stats.number_of_successful_operations() == 0) break;
+        if (pass_stats.number_of_successful_operations() == 0) {
+            break;
+        }
+        m_mesh.consolidate();
     }
 }
 
