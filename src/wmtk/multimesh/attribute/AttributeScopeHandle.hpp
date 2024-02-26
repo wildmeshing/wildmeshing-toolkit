@@ -13,7 +13,7 @@ class AttributeScopeHandle
 public:
     using single_handle_type = wmtk::attribute::AttributeScopeHandle;
     AttributeScopeHandle(Mesh& m);
-    ~AttributeScopeHandle();
+    ~AttributeScopeHandle() = default;
 
     void mark_failed();
 
