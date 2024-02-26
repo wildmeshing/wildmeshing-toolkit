@@ -96,10 +96,10 @@ private:
     std::map<PrimitiveType, attribute::MeshAttributeHandle> m_new_id_handles;
 
     std::array<std::array<int64_t, 4>, 4> m_n_local_ids = {{
-        {1, 0, 0, 0}, // PointMesh
-        {2, 1, 0, 0}, // EdgeMesh
-        {3, 3, 1, 0}, // TriMesh
-        {4, 6, 4, 1} //  TetMesh
+        {{1, 0, 0, 0}}, // PointMesh
+        {{2, 1, 0, 0}}, // EdgeMesh
+        {{3, 3, 1, 0}}, // TriMesh
+        {{4, 6, 4, 1}} //  TetMesh
     }};
 
     attribute::MeshAttributeHandle m_adjacency_handle;
