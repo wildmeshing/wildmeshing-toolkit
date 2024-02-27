@@ -118,7 +118,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto mesh = cache.read_mesh(options.input);
 
     if (!mesh->is_connectivity_valid()) {
-        std::cout << "invalid connectivity" << std::endl;
         throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
     }
 
