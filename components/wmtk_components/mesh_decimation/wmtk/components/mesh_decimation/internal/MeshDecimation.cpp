@@ -136,8 +136,8 @@ void MeshDecimation::process()
 
 
     op_scaffold->add_invariant(m_link_conditions);
-    op_scaffold->add_invariant(m_function_invariant);
     op_scaffold->add_invariant(m_inversion_invariant);
+    op_scaffold->add_invariant(m_function_invariant);
 
     op_scaffold->add_transfer_strategy(m_edge_length_update);
 
