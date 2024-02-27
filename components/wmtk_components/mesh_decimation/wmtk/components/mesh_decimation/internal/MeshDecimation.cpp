@@ -116,11 +116,11 @@ void MeshDecimation::process()
         }
     }
 
-    auto op_scaffold = std::make_shared<operations::EdgeCollapse>(m_mesh);
+    auto op_collapse = std::make_shared<operations::EdgeCollapse>(m_mesh);
 
-    op_scaffold->add_invariant(
+    op_collapse->add_invariant(
         std::make_shared<TodoInvariant>(m_mesh, edge_handle.as<int64_t>(), 0));
-    op_scaffold->add_invariant(
+    op_collapse->add_invariant(
         std::make_shared<TodoSmallerInvariant>(m_mesh, edge_len_handle.as<double>(), m_target_len));
 
     auto m_amips = std::make_shared<function::AMIPS>(m_mesh, position);
@@ -149,31 +149,31 @@ void MeshDecimation::process()
     };
 
 
-    op_scaffold->add_invariant(m_link_conditions);
-    op_scaffold->add_invariant(m_inversion_invariant);
-    op_scaffold->add_invariant(m_function_invariant);
+    op_collapse->add_invariant(m_link_conditions);
+    op_collapse->add_invariant(m_inversion_invariant);
+    op_collapse->add_invariant(m_function_invariant);
 
-    op_scaffold->add_transfer_strategy(m_edge_length_update);
+    op_collapse->add_transfer_strategy(m_edge_length_update);
 
-    op_scaffold->set_priority(m_prio_short_edges_first);
+    op_collapse->set_priority(m_prio_short_edges_first);
 
-    op_scaffold->set_new_attribute_strategy(
+    op_collapse->set_new_attribute_strategy(
         position,
         wmtk::operations::CollapseBasicStrategy::Mean);
-    op_scaffold->set_new_attribute_strategy(vertex_handle);
+    op_collapse->set_new_attribute_strategy(vertex_handle);
 
-    op_scaffold->set_new_attribute_strategy(edge_handle);
-    op_scaffold->set_new_attribute_strategy(edge_len_handle);
-    op_scaffold->set_new_attribute_strategy(cell_tag_handle);
+    op_collapse->set_new_attribute_strategy(edge_handle);
+    op_collapse->set_new_attribute_strategy(edge_len_handle);
+    op_collapse->set_new_attribute_strategy(cell_tag_handle);
 
     // pass_through
     for (const auto& attr : m_pass_through_attributes) {
-        op_scaffold->set_new_attribute_strategy(attr);
+        op_collapse->set_new_attribute_strategy(attr);
     }
 
     while (true) {
         Scheduler scheduler;
-        SchedulerStats pass_stats = scheduler.run_operation_on_all(*op_scaffold);
+        SchedulerStats pass_stats = scheduler.run_operation_on_all(*op_collapse);
         if (pass_stats.number_of_successful_operations() == 0) {
             break;
         }
