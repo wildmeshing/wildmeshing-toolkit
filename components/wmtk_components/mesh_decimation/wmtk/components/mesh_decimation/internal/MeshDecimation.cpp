@@ -102,6 +102,20 @@ void MeshDecimation::process()
                                              .norm();
     }
 
+    for (const Tuple& edge : m_mesh.get_all(PE)) {
+        if (acc_edge.scalar_attribute(edge) == 1) {
+            acc_vertex.scalar_attribute(edge) = 1;
+            acc_vertex.scalar_attribute(m_mesh.switch_tuple(edge, PV)) = 1;
+        }
+    }
+
+    for (const Tuple& edge : m_mesh.get_all(PE)) {
+        if (acc_vertex.scalar_attribute(edge) == 1 ||
+            acc_vertex.scalar_attribute(m_mesh.switch_tuple(edge, PV)) == 1) {
+            acc_edge.scalar_attribute(edge) = 1;
+        }
+    }
+
     auto op_scaffold = std::make_shared<operations::EdgeCollapse>(m_mesh);
 
     op_scaffold->add_invariant(
