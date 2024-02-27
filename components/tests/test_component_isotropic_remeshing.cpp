@@ -704,6 +704,7 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D]")
         0.1,
         true,
         false,
+        false,
         10));
 
     {
@@ -738,6 +739,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
             0.5,
             false,
             false,
+            false,
             5);
 
         size_t n_boundary_edges = 0;
@@ -768,6 +770,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
             pass_through_attributes,
             0.5,
             true,
+            false,
             false,
             5);
 
@@ -833,6 +836,7 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
         pass_through_attributes,
         0.5,
         /*lock_boundary*/ false,
+        true,
         true,
         5);
 
@@ -909,6 +913,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
             0.05,
             false,
             true,
+            false,
             1);
         REQUIRE(mesh.is_connectivity_valid());
         mesh.multi_mesh_manager().check_map_valid(mesh);
@@ -1001,6 +1006,7 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
         0.5,
         false,
         true,
+        false,
         25);
 
     REQUIRE(mesh.is_connectivity_valid());
