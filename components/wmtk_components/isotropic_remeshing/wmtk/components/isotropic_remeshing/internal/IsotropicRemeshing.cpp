@@ -127,8 +127,8 @@ void isotropic_remeshing(
     op_collapse->add_invariant(invariant_mm_map);
 
     // hack for uv
-    //op_collapse->add_invariant(
-    //    std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
+    op_collapse->add_invariant(
+        std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
 
     if (lock_boundary && !use_for_periodic) {
         op_collapse->add_invariant(invariant_interior_edge);
