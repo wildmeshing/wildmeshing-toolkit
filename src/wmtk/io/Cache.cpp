@@ -198,13 +198,21 @@ void Cache::write_mesh(
     }
 
     std::map<std::string, std::vector<int64_t>> mm_names = multimesh_names;
-
-    m_multimeshes.emplace(
-        name,
-        CachedMultiMesh(
+    if (m_multimeshes.find(name) != m_multimeshes.end()) {
+        mm_names = m_multimeshes.at(name).get_multimesh_names();
+        mm_names.insert(multimesh_names.begin(), multimesh_names.end());
+        m_multimeshes.at(name) = CachedMultiMesh(
             name,
-            multimesh_names,
-            const_cast<Mesh&>(m).get_multi_mesh_root().shared_from_this()));
+            mm_names,
+            const_cast<Mesh&>(m).get_multi_mesh_root().shared_from_this());
+    } else {
+        m_multimeshes.emplace(
+            name,
+            CachedMultiMesh(
+                name,
+                multimesh_names,
+                const_cast<Mesh&>(m).get_multi_mesh_root().shared_from_this()));
+    }
 
     HDF5Writer writer(p);
     m.serialize(writer, &m);
