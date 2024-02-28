@@ -24,7 +24,7 @@ ProjectOperation::ProjectOperation(
     for (auto& pair : mesh_constaint_pairs) {
         int64_t count = 0;
         int64_t index = 0;
-        ConstAccessor<double> accessor = pair.first.mesh().create_accessor(pair.first.as<double>());
+        const attribute::Accessor<double> accessor = pair.first.mesh().create_const_accessor(pair.first.as<double>());
 
         const std::vector<Tuple>& facest =
             pair.first.mesh().get_all(pair.first.mesh().top_simplex_type());
@@ -74,7 +74,7 @@ std::vector<simplex::Simplex> ProjectOperation::execute(const simplex::Simplex& 
 
         if (mapped_tuples_after.empty()) continue;
 
-        Accessor<double> accessor = pair.first.mesh().create_accessor(pair.first.as<double>());
+        wmtk::attribute::Accessor<double> accessor = pair.first.mesh().create_accessor(pair.first.as<double>());
 
         for (const auto& t : mapped_tuples_after) {
             auto p = accessor.const_vector_attribute(t);

@@ -127,8 +127,8 @@ void isotropic_remeshing(
     op_collapse->add_invariant(invariant_mm_map);
 
     // hack for uv
-    op_collapse->add_invariant(
-        std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
+    //op_collapse->add_invariant(
+    //    std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
 
     if (lock_boundary && !use_for_periodic) {
         op_collapse->add_invariant(invariant_interior_edge);
@@ -224,7 +224,10 @@ void isotropic_remeshing(
         wmtk::logger().info("Iteration {}", i);
 
         SchedulerStats pass_stats;
-        for (auto& op : ops) pass_stats += scheduler.run_operation_on_all(*op);
+        for (size_t j = 0; j < ops.size(); ++j) {
+            const auto& op = ops[j];
+            pass_stats += scheduler.run_operation_on_all(*op);
+        }
 
         multimesh::consolidate(mesh);
 

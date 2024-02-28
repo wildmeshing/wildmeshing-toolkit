@@ -8,9 +8,6 @@ namespace wmtk {
 MappableContainer::MappableContainer(const Mesh& m)
     : Mappable(m)
 {}
-MappableContainer::~MappableContainer() = default;
-MappableContainer::MappableContainer(const MappableContainer&) = default;
-MappableContainer::MappableContainer(MappableContainer&&) = default;
 MappableContainer& MappableContainer::operator=(const MappableContainer& o)
 {
     assert(o.mesh() == mesh());

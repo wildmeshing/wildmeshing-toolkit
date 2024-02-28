@@ -89,7 +89,8 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
 
         // 4. test switch_top_simplex operation
         // for 4, current code support only mapping between triangle meshes
-        if (map_type == PrimitiveType::Face && my_mesh.top_simplex_type() == PrimitiveType::Face) {
+        if (map_type == PrimitiveType::Triangle &&
+            my_mesh.top_simplex_type() == PrimitiveType::Triangle) {
             Tuple cur_child_tuple = child_tuple_from_child;
             Tuple cur_parent_tuple = parent_tuple_from_child;
 
@@ -99,8 +100,8 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
                 if (!child_mesh.is_boundary(PrimitiveType::Edge, cur_child_tuple)) {
                     REQUIRE(!my_mesh.is_boundary(PrimitiveType::Edge, cur_parent_tuple));
 
-                    Tuple child_tuple_opp = child_mesh.switch_face(cur_child_tuple);
-                    Tuple parent_tuple_opp = my_mesh.switch_face(cur_parent_tuple);
+                    Tuple child_tuple_opp = child_mesh.switch_tuple(cur_child_tuple, PrimitiveType::Triangle);
+                    Tuple parent_tuple_opp = my_mesh.switch_tuple(cur_parent_tuple, PrimitiveType::Triangle);
                     CHECK(
                         parent_tuple_opp == map_tuple_between_meshes(
                                                 child_mesh,
@@ -108,15 +109,16 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
                                                 child_to_parent_accessor,
                                                 child_tuple_opp));
                 }
-                cur_child_tuple = child_mesh.switch_edge(child_mesh.switch_vertex(cur_child_tuple));
-                cur_parent_tuple = my_mesh.switch_edge(my_mesh.switch_vertex(cur_parent_tuple));
+                cur_child_tuple = child_mesh.switch_tuples(cur_child_tuple, {PrimitiveType::Vertex,PrimitiveType::Edge});
+                cur_parent_tuple = my_mesh.switch_tuples(cur_parent_tuple, {PrimitiveType::Vertex,PrimitiveType::Edge});
             }
         } else if (
-            map_type == PrimitiveType::Edge && my_mesh.top_simplex_type() == PrimitiveType::Face) {
+            map_type == PrimitiveType::Edge &&
+            my_mesh.top_simplex_type() == PrimitiveType::Triangle) {
             if (!my_mesh.is_boundary(PrimitiveType::Edge, parent_tuple_from_child)) {
                 auto parent_to_child_accessor =
                     my_mesh.create_const_accessor(parent_to_child_handle);
-                const Tuple parent_tuple_opp = my_mesh.switch_face(parent_tuple_from_child);
+                const Tuple parent_tuple_opp = my_mesh.switch_tuple(parent_tuple_from_child, PrimitiveType::Triangle);
                 CHECK(
                     child_tuple_from_child == map_tuple_between_meshes(
                                                   my_mesh,

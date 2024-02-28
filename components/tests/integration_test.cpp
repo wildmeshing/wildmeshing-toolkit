@@ -14,6 +14,7 @@
 
 using json = nlohmann::json;
 using namespace wmtk;
+namespace {
 
 bool load_json(const std::string& json_file, json& out)
 {
@@ -23,6 +24,17 @@ bool load_json(const std::string& json_file, json& out)
 
     file >> out;
 
+    return true;
+}
+
+bool contains_results(const json& in_args)
+{
+    const auto& tests = in_args["tests"];
+    for (const auto& type : {"vertices", "edges", "faces", "tetrahedra"}) {
+        if (!(tests.contains(type) && tests[type].is_number())) {
+            return false;
+        }
+    }
     return true;
 }
 
@@ -46,18 +58,16 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
     in_args["root_path"] = json_file;
 
 
-    if (!compute_validation &&
-        (!in_args["tests"].contains("vertices") || !in_args["tests"].contains("edges") ||
-         !in_args["tests"].contains("faces") || !in_args["tests"].contains("tetrahedra"))) {
+    if (compute_validation && !contains_results(in_args)) {
         spdlog::error("JSON file missing vertices edges faces or tetrahedra or meshes key. Add a * "
                       "to the beginning of filename to allow appends.");
         return 2;
     }
 
-    in_args["settings"] = R"({
-        "log_level": 5,
-        "opt_log_level": 5
-        })"_json;
+    //in_args["settings"] = R"({
+    //    "log_level": 5,
+    //    "opt_log_level": 5
+    //    })"_json;
 
     utils::set_random_seed(0);
     auto cache = wmtk::components::run_components(in_args, true);
@@ -94,7 +104,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
 
             const int64_t n_vertices = mesh->get_all(PrimitiveType::Vertex).size();
             const int64_t n_edges = mesh->get_all(PrimitiveType::Edge).size();
-            const int64_t n_faces = mesh->get_all(PrimitiveType::Face).size();
+            const int64_t n_faces = mesh->get_all(PrimitiveType::Triangle).size();
             const int64_t n_tetrahedra = mesh->get_all(PrimitiveType::Tetrahedron).size();
 
             if (n_vertices != expected_vertices) {
@@ -133,7 +143,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
 
             const int64_t n_vertices = mesh->get_all(PrimitiveType::Vertex).size();
             const int64_t n_edges = mesh->get_all(PrimitiveType::Edge).size();
-            const int64_t n_faces = mesh->get_all(PrimitiveType::Face).size();
+            const int64_t n_faces = mesh->get_all(PrimitiveType::Triangle).size();
             const int64_t n_tetrahedra = mesh->get_all(PrimitiveType::Tetrahedron).size();
 
             expected_vertices.push_back(n_vertices);
@@ -155,34 +165,38 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
 
     return 0;
 }
-
+} // namespace
+namespace {
 #if defined(NDEBUG)
 std::string tagsrun = "[integration]";
 #else
 std::string tagsrun = "[.][integration]";
 #endif
-TEST_CASE("integration", tagsrun)
-{
-    // Disabled on Windows CI, due to the requirement for Pardiso.
-    std::ifstream file(WMTK_TEST_DIR "/integration_test_list.txt");
-    std::vector<std::string> failing_tests;
-    std::string line;
-    while (std::getline(file, line)) {
-        bool compute_validation = false;
-        if (line[0] == '#')
-            continue;
-        else if (line[0] == '*') {
-            compute_validation = true;
-            line = line.substr(1);
-        }
-        spdlog::info("Processing {}", line);
-        auto flag = authenticate_json(WMTK_DATA_DIR "/" + line, compute_validation);
-        CAPTURE(line);
-        CHECK(flag == 0);
-        if (flag != 0) failing_tests.push_back(line);
-    }
-    if (failing_tests.size() > 0) {
-        std::cout << "Failing tests:" << std::endl;
-        for (auto& t : failing_tests) std::cout << t << std::endl;
-    }
+} // namespace
+
+#define WMTK_INTEGRATION(NAME, DO_VALIDATION)\
+TEST_CASE(std::string("integration_") + NAME, tagsrun) \
+{ \
+    std::string path = std::string("unit_test/") + NAME + ".json"; \
+    bool compute_validation = DO_VALIDATION; \
+    spdlog::info("Processing {}", NAME); \
+    auto flag = authenticate_json(WMTK_DATA_DIR "/" + path, compute_validation); \
+    REQUIRE(flag == 0); \
 }
+
+
+
+WMTK_INTEGRATION("input",false);
+WMTK_INTEGRATION("to_points",false);
+WMTK_INTEGRATION("delaunay",false);
+WMTK_INTEGRATION("insertion",false);
+WMTK_INTEGRATION("insertion_open",false);
+WMTK_INTEGRATION("multimesh",false);
+WMTK_INTEGRATION("multimesh_boundary_2d",false);
+WMTK_INTEGRATION("multimesh_boundary_3d",false);
+WMTK_INTEGRATION("isotropic_remeshing",false);
+WMTK_INTEGRATION("isotropic_remeshing_mm",false);
+WMTK_INTEGRATION("disk_fan_mm",false);
+//WMTK_INTEGRATION("grid",false);
+WMTK_INTEGRATION("wildmeshing_2d",false);
+WMTK_INTEGRATION("wildmeshing_3d",false);

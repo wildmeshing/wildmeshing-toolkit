@@ -1,69 +1,64 @@
+
 #pragma once
 #include <wmtk/utils/Rational.hpp>
 #include "TupleAccessor.hpp"
 
 namespace wmtk::attribute {
 
-template <typename T>
-auto TupleAccessor<T>::const_vector_attribute(const Tuple& t) const -> ConstMapResult
+
+template <typename MeshType>
+TupleAccessor<MeshType>::TupleAccessor(MeshType& m, const TypedAttributeHandle<int64_t>& handle)
+    : m_base_accessor(m, handle)
+    , m_dimension(m_base_accessor.dimension() / (sizeof(Tuple) / sizeof(int64_t)))
+{}
+template <typename MeshType>
+TupleAccessor<MeshType>::TupleAccessor(
+    const MeshType& m,
+    const TypedAttributeHandle<int64_t>& handle)
+    : TupleAccessor(const_cast<MeshType&>(m), handle)
+{}
+template <typename MeshType>
+TupleAccessor<MeshType>::TupleAccessor(const Accessor<int64_t, MeshType>& accessor)
+    : TupleAccessor(accessor.mesh(), accessor.typed_handle())
+{}
+
+template <typename MeshType>
+template <int D>
+auto TupleAccessor<MeshType>::const_vector_attribute(const Tuple& t) const -> ConstMapResult<D>
 {
-    const int64_t idx = index(t);
-    return CachingBaseType::const_vector_attribute(idx);
+    auto base_map = m_base_accessor.template const_vector_attribute<D>(t);
+
+    const int64_t* int_data = base_map.data();
+    const Tuple* data = reinterpret_cast<const Tuple*>(int_data);
+    return ConstMapResult<D>(data, dimension());
 }
 
-template <typename T>
-auto TupleAccessor<T>::vector_attribute(const Tuple& t) -> MapResult
+template <typename MeshType>
+template <int D>
+auto TupleAccessor<MeshType>::vector_attribute(const Tuple& t) -> MapResult<D>
 {
-    const int64_t idx = index(t);
-    return CachingBaseType::vector_attribute(idx);
+    auto base_map = m_base_accessor.template vector_attribute<D>(t);
+    int64_t* int_data = base_map.data();
+    Tuple* data = reinterpret_cast<Tuple*>(int_data);
+    return MapResult<D>(data, dimension());
 }
 
-template <typename T>
-auto TupleAccessor<T>::scalar_attribute(const Tuple& t) -> T&
+template <typename MeshType>
+auto TupleAccessor<MeshType>::scalar_attribute(const Tuple& t) -> Tuple&
 {
-    const int64_t idx = index(t);
-    return CachingBaseType::scalar_attribute(idx);
+    auto base_map = m_base_accessor.template vector_attribute<2>(t);
+
+    assert(m_dimension == 1);
+    return *reinterpret_cast<Tuple*>(base_map.data());
 }
 
-template <typename T>
-T TupleAccessor<T>::const_scalar_attribute(const Tuple& t) const
+template <typename MeshType>
+auto TupleAccessor<MeshType>::const_scalar_attribute(const Tuple& t) const -> const Tuple&
 {
-    const int64_t idx = index(t);
-    return CachingBaseType::const_scalar_attribute(idx);
-}
-template <typename T>
-int64_t TupleAccessor<T>::index(const Tuple& t) const
-{
-    assert(mesh().is_valid_slow(t));
-    return mesh().id(t, BaseType::handle().primitive_type());
+    assert(m_dimension == 1);
+    auto base_map = m_base_accessor.template const_vector_attribute<2>(t);
+    return *reinterpret_cast<const Tuple*>(base_map.data());
 }
 
-template <typename T>
-auto TupleAccessor<T>::topological_scalar_attribute(const Tuple& t) -> T&
-{
-    const int64_t idx = index(t);
-    return CachingBaseType::scalar_attribute(idx);
-}
 
-template <typename T>
-T TupleAccessor<T>::const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const
-{
-
-    assert(mesh().top_simplex_type() == BaseType::primitive_type());
-    switch (pt) {
-    case PrimitiveType::Vertex:
-         return CachingBaseType::const_scalar_attribute(t.m_global_cid, t.m_local_vid);
-    case PrimitiveType::Edge:
-         return CachingBaseType::const_scalar_attribute(t.m_global_cid, t.m_local_eid);
-    case PrimitiveType::Face:
-         return CachingBaseType::const_scalar_attribute(t.m_global_cid, t.m_local_fid);
-    case PrimitiveType::Tetrahedron: [[fallthrough]];
-    case PrimitiveType::HalfEdge: [[fallthrough]];
-    default: return T(0);
-    }
-}
-// template class TupleAccessor<char>;
-// template class TupleAccessor<int64_t>;
-// template class TupleAccessor<double>;
-// template class TupleAccessor<Rational>;
 } // namespace wmtk::attribute

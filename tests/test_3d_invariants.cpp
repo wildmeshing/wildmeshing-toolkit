@@ -55,7 +55,7 @@ TEST_CASE("tet_inversion_invariant", "[invariants][3D]")
     const SimplexInversionInvariant inv(m, position_handle.as<double>());
     Tuple t = v0;
 
-    for (const auto& t : m.get_all(PrimitiveType::Face)) {
+    for (const auto& t : m.get_all(PrimitiveType::Triangle)) {
         CHECK_FALSE(inv.after({}, {t}));
         CHECK_FALSE(inv.after({}, {m.switch_vertex(t)}));
         CHECK_FALSE(inv.after({}, {m.switch_edge(t)}));

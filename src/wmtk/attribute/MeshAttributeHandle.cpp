@@ -8,11 +8,6 @@ MeshAttributeHandle::MeshAttributeHandle(Mesh& m, const HandleVariant& h)
     : m_mesh(&m)
     , m_handle(h)
 {}
-MeshAttributeHandle::MeshAttributeHandle() = default;
-MeshAttributeHandle::MeshAttributeHandle(const MeshAttributeHandle& o) = default;
-MeshAttributeHandle::MeshAttributeHandle(MeshAttributeHandle&& o) = default;
-MeshAttributeHandle& MeshAttributeHandle::operator=(const MeshAttributeHandle& o) = default;
-MeshAttributeHandle& MeshAttributeHandle::operator=(MeshAttributeHandle&& o) = default;
 
 bool MeshAttributeHandle::is_same_mesh(const Mesh& m) const
 {

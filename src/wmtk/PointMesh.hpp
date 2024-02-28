@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Mesh.hpp"
+#include "MeshCRTP.hpp"
 #include "Tuple.hpp"
 
 #include <Eigen/Core>
@@ -8,12 +8,15 @@
 namespace wmtk {
 // Simple mesh without topology. Mainly useful for testing attributes without having to construct
 // topologies
-class PointMesh : public Mesh
+class PointMesh : public MeshCRTP<PointMesh>
 {
 private:
     Tuple vertex_tuple_from_id(int64_t id) const;
 
 public:
+    friend class MeshCRTP<PointMesh>;
+    template <typename U, typename MeshType>
+    friend class attribute::Accessor;
     PointMesh();
     PointMesh(int64_t size);
     PointMesh(const PointMesh& o) = delete;
@@ -21,7 +24,6 @@ public:
     PointMesh& operator=(const PointMesh& o) = delete;
     PointMesh& operator=(PointMesh&& o) = default;
 
-    int64_t top_cell_dimension() const override { return 0; }
     [[noreturn]] Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
@@ -31,7 +33,8 @@ public:
     void initialize(int64_t count);
 
 
-    bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const override;
+    bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+        const override;
 
     bool is_connectivity_valid() const override { return true; }
 
@@ -39,7 +42,8 @@ public:
         const override;
 
 protected:
-    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    using MeshCRTP<PointMesh>::id; // getting the (simplex) prototype
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
 
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
@@ -51,4 +55,16 @@ protected:
     Tuple tuple_from_id(const PrimitiveType type, const int64_t gid) const override;
 };
 
+inline int64_t PointMesh::id(const Tuple& tuple, PrimitiveType type) const
+{
+    switch (type) {
+    case PrimitiveType::Vertex: return tuple.m_global_cid;
+    case PrimitiveType::Edge:
+    case PrimitiveType::Triangle:
+    case PrimitiveType::Tetrahedron:
+    default: assert(false); // "Tuple switch: Invalid primitive type"
+    }
+
+    return -1;
+}
 } // namespace wmtk

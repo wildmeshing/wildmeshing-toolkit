@@ -20,7 +20,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
     std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
     std::shared_ptr<Mesh> bg_mesh = cache.read_mesh(options.background);
 
-    if (mesh_in->top_simplex_type() != PrimitiveType::Face)
+    if (mesh_in->top_simplex_type() != PrimitiveType::Triangle)
         log_and_throw_error("triangle_insertion supports only triangle meshes");
     if (bg_mesh->top_simplex_type() != PrimitiveType::Tetrahedron)
         log_and_throw_error("triangle_insertion supports only bg tet meshes");

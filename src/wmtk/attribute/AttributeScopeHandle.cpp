@@ -23,7 +23,7 @@ void AttributeScopeHandle::mark_failed()
     assert(!m_was_moved);
     if (!m_was_moved) {
         m_failed = true;
-        m_manager.clear_current_scope();
+        m_manager.rollback_current_scope();
     }
 }
 AttributeScopeHandle::~AttributeScopeHandle()

@@ -22,7 +22,7 @@ bool uvEdgeInvariant::before(const simplex::Simplex& s) const
         auto uv_v1 = mesh().map_to_child(m_uv_mesh, simplex::Simplex::vertex(s.tuple()));
         auto uv_v2 = mesh().map_to_child(
             m_uv_mesh,
-            simplex::Simplex::vertex(mesh().switch_vertex(s.tuple())));
+            simplex::Simplex::vertex(mesh().switch_tuple(s.tuple(), PrimitiveType::Vertex)));
 
         for (const auto& v : uv_v1) {
             if (m_uv_mesh.is_boundary(PrimitiveType::Vertex, v.tuple())) return false;

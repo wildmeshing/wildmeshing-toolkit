@@ -1,6 +1,10 @@
 #include "tuple_map_attribute_io.hpp"
+#include <wmtk/attribute/TupleAccessor.hpp>
 
+#include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
+#include <wmtk/TetMesh.hpp>
+#include <wmtk/TriMesh.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 
@@ -14,26 +18,14 @@ using Vec84 = Vector<int8_t, 4>;
 }
 Vector<int64_t, 2> tuple_to_vector2(const Tuple& t)
 {
-    Vector<int64_t, 2> v;
-    Vec84* v_p = reinterpret_cast<Vec84*>(&v.coeffRef(0));
-    Vec84& v_ = *v_p;
-    // Vec84 v_;
-    v_[0] = wmtk::utils::TupleInspector::local_vid(t);
-    v_[1] = wmtk::utils::TupleInspector::local_eid(t);
-    v_[2] = wmtk::utils::TupleInspector::local_fid(t);
-    v_[3] = wmtk::utils::TupleInspector::hash(t);
-
-    // v(0) = static_cast<int64_t>(v_);
-    v(1) = wmtk::utils::TupleInspector::global_cid(t);
+    Vector<int64_t, 2> v = Vector<int64_t, 2>::ConstMapType(reinterpret_cast<const int64_t*>(&t));
     return v;
 }
 
 Tuple vector2_to_tuple(const Eigen::Ref<const Vector2l>& v)
 {
-    const Vec84* v_p = reinterpret_cast<const Vec84*>(&v.coeffRef(0));
-    const Vec84& v_ = *v_p;
-
-    return Tuple(v_[0], v_[1], v_[2], v(1), v_[3]);
+    const Tuple* data = reinterpret_cast<const Tuple*>(v.data());
+    return *data;
 }
 Vector<int64_t, 5> tuple_to_vector5(const Tuple& t)
 {
@@ -83,31 +75,77 @@ TwoTupleVector tuples_to_vectors(const Tuple& a, const Tuple& b)
 }
 
 
-void symmetric_write_tuple_map_attributes(
-    Accessor<int64_t>& a_to_b,
-    Accessor<int64_t>& b_to_a,
-    const Tuple& a_tuple,
-    const Tuple& b_tuple)
+template <typename MeshType>
+std::tuple<Tuple, Tuple> read_tuple_map_attribute(
+    const wmtk::attribute::Accessor<int64_t, MeshType>& accessor,
+    const Tuple& source_tuple)
 {
-    logger().debug(
-        "[{} -> {}] Symmetric map write parent {}  child {}",
-        fmt::join(a_to_b.mesh().absolute_multi_mesh_id(), ","),
-        fmt::join(b_to_a.mesh().absolute_multi_mesh_id(), ","),
-        wmtk::utils::TupleInspector::as_string(a_tuple),
-        wmtk::utils::TupleInspector::as_string(b_tuple));
-    write_tuple_map_attribute(a_to_b, a_tuple, b_tuple);
-    write_tuple_map_attribute(b_to_a, b_tuple, a_tuple);
+#if !defined(NDEBUG)
+    // check t hat the global ids are either -1 or positive
+    auto v = accessor.const_vector_attribute(source_tuple);
+    assert(v(0) >= -1);
+    assert(v(2) >= -1);
+#endif
+    assert(accessor.dimension() == 4);
+
+    const wmtk::attribute::TupleAccessor<MeshType> acc(accessor);
+    assert(acc.dimension() == 2);
+    auto map = acc.const_vector_attribute(source_tuple);
+    return std::tie(map(0), map(1));
 }
+
+
+template std::tuple<Tuple, Tuple> read_tuple_map_attribute(
+    const wmtk::attribute::Accessor<int64_t, wmtk::Mesh>& accessor,
+    const Tuple& source_tuple);
+template std::tuple<Tuple, Tuple> read_tuple_map_attribute(
+    const wmtk::attribute::Accessor<int64_t, wmtk::EdgeMesh>& accessor,
+    const Tuple& source_tuple);
+template std::tuple<Tuple, Tuple> read_tuple_map_attribute(
+    const wmtk::attribute::Accessor<int64_t, wmtk::TriMesh>& accessor,
+    const Tuple& source_tuple);
+template std::tuple<Tuple, Tuple> read_tuple_map_attribute(
+    const wmtk::attribute::Accessor<int64_t, wmtk::TetMesh>& accessor,
+    const Tuple& source_tuple);
+
+
+template <typename MeshType>
 void write_tuple_map_attribute(
-    Accessor<int64_t>& map_accessor,
+    wmtk::attribute::Accessor<int64_t, MeshType>& map_accessor,
     const Tuple& source_tuple,
     const Tuple& target_tuple)
 {
-    auto map = map_accessor.vector_attribute(source_tuple);
-
-    assert(map.size() == TWO_TUPLE_SIZE);
-    map = tuples_to_vectors(source_tuple, target_tuple);
+    assert(map_accessor.dimension() == 4);
+    wmtk::attribute::TupleAccessor<MeshType> acc(map_accessor);
+    assert(acc.dimension() == 2);
+    auto map = acc.vector_attribute(source_tuple);
+    map(0) = source_tuple;
+    map(1) = target_tuple;
+#if !defined(NDEBUG)
+    // check t hat the global ids are either -1 or positive
+    auto v = map_accessor.const_vector_attribute(source_tuple);
+    assert(v(0) >= -1);
+    assert(v(2) >= -1);
+#endif
 }
+
+template void write_tuple_map_attribute(
+    wmtk::attribute::Accessor<int64_t, wmtk::Mesh>& map_accessor,
+    const Tuple& source_tuple,
+    const Tuple& target_tuple);
+template void write_tuple_map_attribute(
+    wmtk::attribute::Accessor<int64_t, wmtk::EdgeMesh>& map_accessor,
+    const Tuple& source_tuple,
+    const Tuple& target_tuple);
+template void write_tuple_map_attribute(
+    wmtk::attribute::Accessor<int64_t, wmtk::TriMesh>& map_accessor,
+    const Tuple& source_tuple,
+    const Tuple& target_tuple);
+template void write_tuple_map_attribute(
+    wmtk::attribute::Accessor<int64_t, wmtk::TetMesh>& map_accessor,
+    const Tuple& source_tuple,
+    const Tuple& target_tuple);
+
 
 void write_tuple_map_attribute_slow(
     Mesh& source_mesh,
@@ -118,17 +156,6 @@ void write_tuple_map_attribute_slow(
     auto map_accessor = source_mesh.create_accessor(map_handle);
     write_tuple_map_attribute(map_accessor, source_tuple, target_tuple);
 }
-
-std::tuple<Tuple, Tuple> read_tuple_map_attribute(
-    const ConstAccessor<int64_t>& map_accessor,
-    const Tuple& source_tuple)
-{
-    auto map = map_accessor.const_vector_attribute(source_tuple);
-
-    return vectors_to_tuples(map);
-}
-
-
 std::tuple<Tuple, Tuple> read_tuple_map_attribute_slow(
     const Mesh& source_mesh,
     TypedAttributeHandle<int64_t> map_handle,

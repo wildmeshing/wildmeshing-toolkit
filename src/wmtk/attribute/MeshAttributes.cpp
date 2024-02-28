@@ -65,20 +65,19 @@ void MeshAttributes<T>::pop_scope(bool apply_updates)
     }
 }
 template <typename T>
-void MeshAttributes<T>::clear_current_scope()
+void MeshAttributes<T>::rollback_current_scope()
 {
     for (auto& attr_ptr : m_attributes) {
-        attr_ptr->clear_current_scope();
+        attr_ptr->rollback_current_scope();
     }
 }
 template <typename T>
 void MeshAttributes<T>::change_to_parent_scope() const
 {
     for (const auto& attr_ptr : m_attributes) {
-        auto ptr = attr_ptr->get_local_scope_stack_ptr();
-        assert(ptr != nullptr);
+        auto& stack = attr_ptr->get_local_scope_stack();
 
-        ptr->change_to_next_scope();
+        stack.change_to_next_scope();
     }
 }
 
@@ -86,7 +85,7 @@ template <typename T>
 void MeshAttributes<T>::change_to_child_scope() const
 {
     for (const auto& attr_ptr : m_attributes) {
-        attr_ptr->get_local_scope_stack_ptr()->change_to_previous_scope();
+        attr_ptr->get_local_scope_stack().change_to_previous_scope();
     }
 }
 

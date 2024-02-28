@@ -25,7 +25,7 @@ void populate(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
         if (for_zeros) {
             v.setZero();
         } else {
-            std::iota(v.begin(), v.end(), dimension * id);
+            std::iota(v.begin(), v.end(), (typename VectorAcc::Scalar)(dimension * id));
         }
     }
 }
@@ -46,7 +46,7 @@ void check(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
             }
         } else {
             auto v = va.vector_attribute(tup);
-            std::iota(x.begin(), x.end(), dimension * id);
+            std::iota(x.begin(), x.end(), (typename VectorAcc::Scalar)(dimension * id));
             CHECK(v == x);
             if (is_scalar) {
                 CHECK(va.const_scalar_attribute(tup) == id);
@@ -203,13 +203,8 @@ TEST_CASE("test_accessor_caching", "[accessor]")
                 int64_t id = m.id(tup);
                 REQUIRE(int64_t_acc.vector_attribute(tup).size() == 1);
                 REQUIRE(double_acc.vector_attribute(tup).size() == 3);
-#if defined(WMTK_FLUSH_ON_FAIL)
                 CHECK(&int64_t_acc.vector_attribute(tup)(0) == int64_t_ptrs[id]);
                 CHECK(&double_acc.vector_attribute(tup)(0) == double_ptrs[id]);
-#else
-                CHECK(&int64_t_acc.vector_attribute(tup)(0) != int64_t_ptrs[id]);
-                CHECK(&double_acc.vector_attribute(tup)(0) != double_ptrs[id]);
-#endif
             }
         }
 
@@ -228,11 +223,11 @@ TEST_CASE("test_accessor_caching", "[accessor]")
 
 
         for (const wmtk::Tuple& tup : vertices) {
-#if defined(WMTK_FLUSH_ON_FAIL)
             auto check_id = [&](const auto& va, int id) {
+                using T = typename std::decay_t<decltype(va)>::T;
                 auto v = va.const_vector_attribute(id);
                 auto x = v.eval();
-                std::iota(x.begin(), x.end(), va.dimension() * id);
+                std::iota(x.begin(), x.end(), T(va.dimension() * id));
                 CHECK(v == x);
                 bool is_scalar = va.dimension() == 1;
                 if (is_scalar) {
@@ -242,11 +237,6 @@ TEST_CASE("test_accessor_caching", "[accessor]")
             int64_t id = m.id(tup);
             check_id(immediate_int64_t_acc, id);
             check_id(immediate_double_acc, id);
-#else
-            int64_t id = m.id(tup);
-            CHECK(immediate_int64_t_acc.const_scalar_attribute(id) == 0);
-            CHECK((immediate_double_acc.const_vector_attribute(id).array() == 0).all());
-#endif
         }
     }
     // test that the accessors above unbuffered when they finished scope
