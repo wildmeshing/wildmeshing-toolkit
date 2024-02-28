@@ -11,6 +11,7 @@
 #include <wmtk/function/utils/amips.hpp>
 
 #include <wmtk/invariants/BoundarySimplexInvariant.hpp>
+#include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/FunctionInvariant.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
@@ -51,6 +52,8 @@ using namespace wmtk::invariants;
 ATOperations::ATOperations(
     ATData& atdata,
     double target_distance,
+    double target_edge_length,
+    double envelope_size,
     double barrier_weight,
     double barrier_triangle_area,
     double distance_weight,
@@ -58,6 +61,8 @@ ATOperations::ATOperations(
     bool area_weighted_amips)
     : m_atdata(atdata)
     , m_target_distance(target_distance)
+    , m_target_edge_length(target_edge_length)
+    , m_envelope_size(envelope_size)
     , m_barrier_weight(barrier_weight)
     , m_barrier_triangle_area(barrier_triangle_area)
     , m_distance_weight(distance_weight)
@@ -189,6 +194,10 @@ void ATOperations::AT_smooth_interior(
     m_ops.back()->add_invariant(
         std::make_shared<SimplexInversionInvariant>(*uv_mesh_ptr, uv_handle.as<double>()));
     m_ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*uv_mesh_ptr));
+    m_ops.back()->add_invariant(std::make_shared<wmtk::invariants::EnvelopeInvariant>(
+        m_atdata.m_uvmesh_xyz_handle,
+        m_envelope_size,
+        m_atdata.m_uvmesh_xyz_handle));
 
     m_ops.back()->add_transfer_strategy(m_uvmesh_xyz_update);
     // {
@@ -198,7 +207,36 @@ void ATOperations::AT_smooth_interior(
 
     m_ops.back()->use_random_priority() = true;
 }
+void ATOperations::AT_3d_edge_split(std::function<std::vector<double>(const Simplex&)>& priority)
+{
+    std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
+    std::shared_ptr<Mesh> position_mesh_ptr = m_atdata.position_mesh_ptr();
 
+    auto split = std::make_shared<wmtk::operations::EdgeSplit>(*uv_mesh_ptr);
+    split->add_invariant(std::make_shared<TodoLargerInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.m_3d_edge_length_handle.as<double>(),
+        m_target_distance));
+    split->add_invariant(std::make_shared<wmtk::invariants::EnvelopeInvariant>(
+        m_atdata.m_uvmesh_xyz_handle,
+        m_envelope_size,
+        m_atdata.m_uvmesh_xyz_handle));
+
+    split->set_priority(priority);
+
+    split->set_new_attribute_strategy(m_atdata.m_uv_handle);
+    split->set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);
+    split->set_new_attribute_strategy(m_atdata.m_distance_error_handle);
+    split->set_new_attribute_strategy(m_atdata.m_amips_error_handle);
+    split->set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
+
+    split->add_transfer_strategy(m_uvmesh_xyz_update);
+
+    split->add_transfer_strategy(m_3d_edge_length_update);
+    split->add_transfer_strategy(m_distance_error_update);
+    split->add_transfer_strategy(m_amips_error_update);
+    m_ops.emplace_back(split);
+}
 
 void ATOperations::AT_edge_split(
     std::function<std::vector<double>(const Simplex&)>& priority,
@@ -326,6 +364,10 @@ void ATOperations::AT_swap_interior(
     swap->add_invariant(std::make_shared<SimplexInversionInvariant>(
         *uv_mesh_ptr,
         m_atdata.uv_handle().as<double>()));
+    swap->add_invariant(std::make_shared<wmtk::invariants::EnvelopeInvariant>(
+        m_atdata.m_uvmesh_xyz_handle,
+        m_envelope_size,
+        m_atdata.m_uvmesh_xyz_handle));
     // swap->add_invariant(
     //     std::make_shared<FunctionInvariant>(uv_mesh_ptr->top_simplex_type(), function_ptr));
     swap->add_invariant(std::make_shared<ValenceImprovementInvariant>(*uv_mesh_ptr));

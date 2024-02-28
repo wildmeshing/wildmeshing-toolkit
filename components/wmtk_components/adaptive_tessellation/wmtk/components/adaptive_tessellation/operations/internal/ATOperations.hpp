@@ -14,8 +14,9 @@ class ATOperations
 {
 public:
     ATData& m_atdata;
-
     double m_target_distance;
+    double m_target_edge_length;
+    double m_envelope_size;
     double m_barrier_weight;
     double m_barrier_triangle_area;
     double m_distance_weight;
@@ -64,6 +65,8 @@ public:
     ATOperations(
         ATData& atdata,
         double target_distance,
+        double target_edge_length,
+        double envelope_size,
         double barrier_weight,
         double barrier_triangle_area,
         double distance_weight,
@@ -79,6 +82,7 @@ public:
     void AT_edge_split(
         std::function<std::vector<double>(const Simplex&)>& priority,
         std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
+    void AT_3d_edge_split(std::function<std::vector<double>(const Simplex&)>& priority);
     void AT_boundary_edge_split(
         std::function<std::vector<double>(const Simplex&)>& priority,
         std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);

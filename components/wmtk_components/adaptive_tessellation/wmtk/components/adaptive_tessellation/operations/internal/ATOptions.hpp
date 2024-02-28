@@ -12,6 +12,8 @@ public:
     std::string uv_output;
     std::string xyz_output;
     double target_distance;
+    double target_edge_length;
+    double envelope_size;
     double barrier_weight;
     double barrier_triangle_area;
     double quadrature_weight;
@@ -31,6 +33,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     uv_output,
     xyz_output,
     target_distance,
+    target_edge_length,
+    envelope_size,
     barrier_weight,
     barrier_triangle_area,
     quadrature_weight,
