@@ -1,7 +1,8 @@
 #pragma once
 
-#include <wmtk/Accessor.hpp>
+#include <wmtk/attribute//MeshAttributeHandle.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+#include <Eigen/Core>
 
 namespace wmtk::function {
 

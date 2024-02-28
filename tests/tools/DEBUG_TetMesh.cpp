@@ -23,7 +23,7 @@ void DEBUG_TetMesh::print_state() const {}
 auto DEBUG_TetMesh::edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2, const int64_t tid)
     const -> Tuple
 {
-    ConstAccessor<int64_t> tv = create_accessor<int64_t>(m_tv_handle);
+    const attribute::Accessor<int64_t> tv = create_const_accessor<int64_t>(m_tv_handle);
     auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
     Tuple tet = tet_tuple_from_id(tid);
     auto tv0 = tv.const_vector_attribute(tet);
@@ -63,7 +63,7 @@ auto DEBUG_TetMesh::edge_tuple_between_v1_v2(
     const int64_t v3,
     const int64_t tid) const -> Tuple
 {
-    ConstAccessor<int64_t> tv = create_accessor<int64_t>(m_tv_handle);
+    const attribute::Accessor<int64_t> tv = create_const_accessor<int64_t>(m_tv_handle);
     auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
     Tuple tet = tet_tuple_from_id(tid);
     auto tv0 = tv.const_vector_attribute(tet);
@@ -113,7 +113,7 @@ auto DEBUG_TetMesh::edge_tuple_between_v1_v2(
 
 auto DEBUG_TetMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple
 {
-    ConstAccessor<int64_t> tv = create_accessor<int64_t>(m_tv_handle);
+    const attribute::Accessor<int64_t> tv = create_const_accessor<int64_t>(m_tv_handle);
     auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
     for (int64_t tid = 0; tid < capacity(PrimitiveType::Tetrahedron); ++tid) {
         Tuple tet = tet_tuple_from_id(tid);
@@ -159,7 +159,7 @@ auto DEBUG_TetMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) con
 auto DEBUG_TetMesh::face_tuple_from_vids(const int64_t v1, const int64_t v2, const int64_t v3) const
     -> Tuple
 {
-    ConstAccessor<int64_t> tv = create_accessor<int64_t>(m_tv_handle);
+    const attribute::Accessor<int64_t> tv = create_const_accessor<int64_t>(m_tv_handle);
     auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
     for (int64_t tid = 0; tid < capacity(PrimitiveType::Tetrahedron); ++tid) {
         Tuple tet = tet_tuple_from_id(tid);
@@ -212,7 +212,7 @@ auto DEBUG_TetMesh::tet_tuple_from_vids(
     const int64_t v3,
     const int64_t v4) const -> Tuple
 {
-    ConstAccessor<int64_t> tv = create_accessor<int64_t>(m_tv_handle);
+    const attribute::Accessor<int64_t> tv = create_const_accessor<int64_t>(m_tv_handle);
     auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
     for (int64_t tid = 0; tid < capacity(PrimitiveType::Tetrahedron); ++tid) {
         Tuple tet = tet_tuple_from_id(tid);
@@ -245,7 +245,7 @@ const TypedAttributeHandle<int64_t>& DEBUG_TetMesh::t_handle(const PrimitiveType
     switch (type) {
     case PrimitiveType::Vertex: return m_tv_handle;
     case PrimitiveType::Edge: return m_te_handle;
-    case PrimitiveType::Face: return m_tf_handle;
+    case PrimitiveType::Triangle: return m_tf_handle;
     case PrimitiveType::Tetrahedron: return m_tt_handle;
     default: throw std::runtime_error("Invalid PrimitiveType");
     }
@@ -271,21 +271,13 @@ void DEBUG_TetMesh::reserve_attributes(PrimitiveType type, int64_t size)
     Mesh::reserve_attributes(type, size);
 }
 
-int64_t DEBUG_TetMesh::id(const Tuple& tuple, PrimitiveType type) const
-{
-    return TetMesh::id(tuple, type);
-}
-int64_t DEBUG_TetMesh::id(const simplex::Simplex& s) const
-{
-    return id(s.tuple(), s.primitive_type());
-}
 
-Accessor<int64_t> DEBUG_TetMesh::get_cell_hash_accessor()
+attribute::Accessor<int64_t> DEBUG_TetMesh::get_cell_hash_accessor()
 {
     return TetMesh::get_cell_hash_accessor();
 }
 
-auto DEBUG_TetMesh::get_tmoe(const Tuple& t, Accessor<int64_t>& hash_accessor)
+auto DEBUG_TetMesh::get_tmoe(const Tuple& t, wmtk::attribute::Accessor<int64_t>& hash_accessor)
     -> TetMeshOperationExecutor
 {
     return TetMeshOperationExecutor(*this, t, hash_accessor);

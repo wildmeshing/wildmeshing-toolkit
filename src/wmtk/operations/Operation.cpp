@@ -59,17 +59,19 @@ void Operation::add_transfer_strategy(
 
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
+    if (!before(simplex)) {
+        return {};
+    }
+
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
 
-    if (before(simplex)) {
-        auto unmods = unmodified_primitives(simplex);
-        auto mods = execute(simplex);
-        if (!mods.empty()) { // success should be marked here
-            apply_attribute_transfer(mods);
-            if (after(unmods, mods)) {
-                return mods; // scope destructor is called
-            }
+    auto unmods = unmodified_primitives(simplex);
+    auto mods = execute(simplex);
+    if (!mods.empty()) { // success should be marked here
+        apply_attribute_transfer(mods);
+        if (after(unmods, mods)) {
+            return mods; // scope destructor is called
         }
     }
     scope.mark_failed();
@@ -78,7 +80,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
 bool Operation::before(const simplex::Simplex& simplex) const
 {
-    ConstAccessor<int64_t> accessor = hash_accessor();
+    const attribute::Accessor<int64_t> accessor = hash_accessor();
 
     if (!mesh().is_valid(simplex.tuple(), accessor)) {
         return false;
@@ -145,12 +147,12 @@ Tuple Operation::resurrect_tuple(const Tuple& tuple) const
     return mesh().resurrect_tuple(tuple, hash_accessor());
 }
 
-Accessor<int64_t> Operation::hash_accessor()
+attribute::Accessor<int64_t> Operation::hash_accessor()
 {
     return m_mesh.get_cell_hash_accessor();
 }
 
-ConstAccessor<int64_t> Operation::hash_accessor() const
+const attribute::Accessor<int64_t> Operation::hash_accessor() const
 {
     return m_mesh.get_const_cell_hash_accessor();
 }

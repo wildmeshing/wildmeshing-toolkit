@@ -42,7 +42,9 @@ public:
 
     void add(const SimplexCollection& simplex_collection);
 
-    void add(const PrimitiveType& ptype, const std::vector<Tuple>& tuple_vec);
+    void add(const PrimitiveType ptype, const std::vector<Tuple>& tuple_vec);
+
+    void add(const PrimitiveType ptype, const Tuple& tuple);
     /**
      * @brief Sort simplex vector and remove duplicates.
      */
@@ -94,6 +96,8 @@ public:
     bool operator==(const SimplexCollection& other) const;
 
     inline size_t size() const { return m_simplices.size(); }
+
+    void reserve(const size_t new_cap);
 
 
 protected:

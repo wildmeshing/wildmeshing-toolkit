@@ -42,7 +42,7 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
     assert(pos_handles.size() == 1);
     auto pos_handle = pos_handles.front();
 
-    if (pos_handle.mesh().top_simplex_type() != PrimitiveType::Face) {
+    if (pos_handle.mesh().top_simplex_type() != PrimitiveType::Triangle) {
         log_and_throw_error(
             "isotropic remeshing works only for triangle meshes: {}",
             mesh_in->top_simplex_type());

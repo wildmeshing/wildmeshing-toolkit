@@ -21,7 +21,7 @@ using namespace operations;
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
 TEST_CASE("test_mesh_virtuals", "[mesh]")
@@ -38,7 +38,7 @@ TEST_CASE("test_mesh_virtuals", "[mesh]")
 
     REQUIRE(pm.top_simplex_type() == wmtk::PrimitiveType::Vertex);
     REQUIRE(em.top_simplex_type() == wmtk::PrimitiveType::Edge);
-    REQUIRE(fm.top_simplex_type() == wmtk::PrimitiveType::Face);
+    REQUIRE(fm.top_simplex_type() == wmtk::PrimitiveType::Triangle);
     REQUIRE(tm.top_simplex_type() == wmtk::PrimitiveType::Tetrahedron);
 }
 
@@ -54,7 +54,7 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
 
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
         auto executor = m.get_emoe(edge, hash_accessor);
@@ -77,7 +77,7 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
         EdgeCollapse collapse(m);
         collapse(simplex::Simplex::edge(edge));
@@ -104,7 +104,7 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
     SECTION("3D")
     {
         wmtk::tests_3d::DEBUG_TetMesh m = wmtk::tests_3d::one_ear();
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);

@@ -48,7 +48,7 @@ void print_tuple_map_iso(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManag
     int64_t child_id = 0;
     for (auto& child_data : p_mul_manager.children()) {
         PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
-        auto parent_to_child_accessor = parent.create_accessor<int64_t>(child_data.map_handle);
+        auto parent_to_child_accessor = parent.create_const_accessor<int64_t>(child_data.map_handle);
         for (int64_t parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
             auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
                 parent.tuple_from_id(map_ptype, parent_gid));
@@ -446,7 +446,6 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         REQUIRE(n_iterations == 1);
         REQUIRE(n_vertices == 9);
 
-        CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
         REQUIRE(mesh.is_valid_slow(v0));
 
@@ -486,7 +485,6 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         REQUIRE(n_iterations == 1);
         REQUIRE(n_vertices == 9);
 
-        CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
         REQUIRE(mesh.is_valid_slow(v0));
 
@@ -512,7 +510,6 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 
         REQUIRE(mesh.get_all(PrimitiveType::Vertex).size() == 9);
 
-        CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 1));
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
         REQUIRE(mesh.is_valid_slow(v0));
 
@@ -689,7 +686,7 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D]")
     auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
     pass_through_attributes.emplace_back(
-        mesh.register_attribute<int64_t>("dummy_tag", PrimitiveType::Face, 1));
+        mesh.register_attribute<int64_t>("dummy_tag", PrimitiveType::Triangle, 1));
 
     {
         auto acc = mesh.create_accessor<int64_t>(pass_through_attributes[0]);

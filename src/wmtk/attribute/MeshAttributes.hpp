@@ -11,6 +11,8 @@
 #include <vector>
 
 
+// TODO: this is just a fancy vector for attributes, perhaps this can be recycled / simplified. The reserved quantiy should be held by a level above this abstraction (as multiple types should all have hte same reservation size)
+
 namespace wmtk {
 
 class MeshWriter;
@@ -70,7 +72,7 @@ public:
     bool operator==(const MeshAttributes<T>& other) const;
     void push_scope();
     void pop_scope(bool apply_updates = true);
-    void clear_current_scope();
+    void rollback_current_scope();
 
     void change_to_parent_scope() const;
     void change_to_child_scope() const;

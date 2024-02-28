@@ -24,7 +24,7 @@ using namespace wmtk::simplex;
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
 {
@@ -38,7 +38,7 @@ TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
 
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
         auto executor = m.get_emoe(edge, hash_accessor);
@@ -61,7 +61,7 @@ TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
         EdgeCollapse collapse(m);
         collapse(simplex::Simplex::edge(edge));
@@ -88,7 +88,7 @@ TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
     SECTION("3D")
     {
         wmtk::tests_3d::DEBUG_TetMesh m = wmtk::tests_3d::one_ear();
-        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
@@ -141,7 +141,6 @@ TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
 }
 
 
-
 TEST_CASE("consolidate_multimesh_splits", "[mesh][consolidate_multimesh]")
 {
     using namespace wmtk::operations;
@@ -155,7 +154,7 @@ TEST_CASE("consolidate_multimesh_splits", "[mesh][consolidate_multimesh]")
 
     for (int j = 0; j < 5; ++j) {
         for (const auto& tup : dptr->get_all(wmtk::PrimitiveType::Edge)) {
-            split_op(simplex::Simplex::edge(tup)).empty();
+            split_op(simplex::Simplex::edge(tup));//.empty();
         }
     }
     DEBUG_TriMesh& debug_d = reinterpret_cast<DEBUG_TriMesh&>(*dptr);

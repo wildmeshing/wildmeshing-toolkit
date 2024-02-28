@@ -3,6 +3,9 @@
 #include <wmtk/simplex/boundary.hpp>
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/faces.hpp>
+#include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/simplex/link.hpp>
+#include <wmtk/simplex/link_single_dimension.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -11,7 +14,7 @@
 namespace wmtk {
 namespace {
 constexpr static PrimitiveType PE = PrimitiveType::Edge;
-constexpr static PrimitiveType PF = PrimitiveType::Face;
+constexpr static PrimitiveType PF = PrimitiveType::Triangle;
 } // namespace
 
 std::tuple<std::vector<Tuple>, std::vector<Tuple>>
@@ -91,8 +94,8 @@ TetMesh::TetMeshOperationExecutor::get_incident_tets_and_faces(Tuple t)
 TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     TetMesh& m,
     const Tuple& operating_tuple,
-    Accessor<int64_t>& hash_acc)
-    : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Face), m.get_flag_accessor(PrimitiveType::Tetrahedron)}}
+    attribute::Accessor<int64_t>& hash_acc)
+    : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Triangle), m.get_flag_accessor(PrimitiveType::Tetrahedron)}}
     , tt_accessor(m.create_accessor<int64_t>(m.m_tt_handle))
     , tf_accessor(m.create_accessor<int64_t>(m.m_tf_handle))
     , te_accessor(m.create_accessor<int64_t>(m.m_te_handle))
@@ -113,8 +116,19 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
 
 
     // get the closed star of the edge
-    const simplex::SimplexCollection edge_closed_star =
-        simplex::closed_star(m_mesh, simplex::Simplex::edge(operating_tuple));
+    simplex::SimplexCollection edge_closed_star_vertices = simplex::link_single_dimension(
+        m_mesh,
+        simplex::Simplex::edge(operating_tuple),
+        PrimitiveType::Vertex);
+
+    simplex::faces_single_dimension(
+        edge_closed_star_vertices,
+        simplex::Simplex::edge(operating_tuple),
+        PrimitiveType::Vertex);
+
+    assert(
+        edge_closed_star_vertices.simplex_vector().size() ==
+        edge_closed_star_vertices.simplex_vector(PrimitiveType::Vertex).size());
 
     // get all tets incident to the edge
     // TODO: having another implementation, remove this here
@@ -124,18 +138,16 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
 
     // update hash on all tets in the two-ring neighborhood
     simplex::SimplexCollection hash_update_region(m);
-    for (const simplex::Simplex& v : edge_closed_star.simplex_vector(PrimitiveType::Vertex)) {
-        const simplex::SimplexCollection v_closed_star =
-            simplex::top_dimension_cofaces(m_mesh, v, false);
-        hash_update_region.add(v_closed_star);
+    for (const simplex::Simplex& v : edge_closed_star_vertices.simplex_vector()) {
+        simplex::top_dimension_cofaces(v, hash_update_region, false);
     }
     hash_update_region.sort_and_clean();
 
     global_simplex_ids_with_potentially_modified_hashes.resize(4);
     simplex::SimplexCollection faces(m_mesh);
+    faces.reserve(hash_update_region.simplex_vector().size() * 15);
 
-    for (const simplex::Simplex& t :
-         hash_update_region.simplex_vector(PrimitiveType::Tetrahedron)) {
+    for (const simplex::Simplex& t : hash_update_region.simplex_vector()) {
         cell_ids_to_update_hash.push_back(m_mesh.id(t));
 
         faces.add(wmtk::simplex::faces(m, t, false));
@@ -250,7 +262,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     // create new faces and edges
     std::vector<FaceSplitData> new_incident_face_data;
     for (int64_t i = 0; i < incident_faces.size(); ++i) {
-        std::vector<int64_t> new_fids = this->request_simplex_indices(PrimitiveType::Face, 2);
+        std::vector<int64_t> new_fids = this->request_simplex_indices(PrimitiveType::Triangle, 2);
         std::vector<int64_t> splitting_eids = this->request_simplex_indices(PrimitiveType::Edge, 1);
 
         FaceSplitData fsd;
@@ -273,7 +285,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     for (int64_t i = 0; i < incident_tets.size(); ++i) {
         std::vector<int64_t> new_tids =
             this->request_simplex_indices(PrimitiveType::Tetrahedron, 2);
-        std::vector<int64_t> split_fids = this->request_simplex_indices(PrimitiveType::Face, 1);
+        std::vector<int64_t> split_fids = this->request_simplex_indices(PrimitiveType::Triangle, 1);
 
         IncidentTetData tsd;
         tsd.local_operating_tuple = incident_tets[i];

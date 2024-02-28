@@ -129,7 +129,7 @@ TEST_CASE("topology_of_complex_meshes", "[topology][2D]")
         path.append(name);
         auto tmp = read_mesh(path);
         const auto& mesh = static_cast<wmtk::tests::DEBUG_TriMesh&>(*tmp);
-        const auto& tris = mesh.get_all(PrimitiveType::Face);
+        const auto& tris = mesh.get_all(PrimitiveType::Triangle);
         F.resize(tris.size(), 3);
         for (size_t i = 0; i < tris.size(); ++i) {
             const auto& t = tris[i];
@@ -310,7 +310,7 @@ TEST_CASE("topology_of_tet_bunny", "[topology][3D]")
         auto t2 =
             mesh.switch_tuple(mesh.switch_tuple(t, PrimitiveType::Edge), PrimitiveType::Vertex);
         auto t3 = mesh.switch_tuple(
-            mesh.switch_tuple(mesh.switch_tuple(t, PrimitiveType::Face), PrimitiveType::Edge),
+            mesh.switch_tuple(mesh.switch_tuple(t, PrimitiveType::Triangle), PrimitiveType::Edge),
             PrimitiveType::Vertex);
         int64_t vid0 = mesh.id(t, PrimitiveType::Vertex);
         int64_t vid1 = mesh.id(t1, PrimitiveType::Vertex);

@@ -71,7 +71,7 @@ void TagIntersection::compute_intersection(
         return;
     }
 
-    for (const Tuple& t : m.get_all(PrimitiveType::Face)) {
+    for (const Tuple& t : m.get_all(PrimitiveType::Triangle)) {
         const simplex::Simplex f = simplex::Simplex::face(t);
         if (simplex_is_in_intersection(m, f, input_tag_attributes)) {
             for (TagAttribute& ta : output_tag_attributes) {
