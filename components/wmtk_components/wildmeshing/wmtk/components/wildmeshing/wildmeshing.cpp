@@ -39,8 +39,8 @@
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
-#include <wmtk/invariants/Swap23EnergyBeforeInvariant.hpp>
-// #include <wmtk/invariants/Swap44EnergyBeforeInvariant.hpp>
+// #include <wmtk/invariants/Swap23EnergyBeforeInvariant.hpp>
+#include <wmtk/invariants/Swap44EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
@@ -289,10 +289,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     auto valence_3 = std::make_shared<EdgeValenceInvariant>(*mesh, 3);
     auto valence_4 = std::make_shared<EdgeValenceInvariant>(*mesh, 4);
-    // auto swap44_energy_before =
-    //     std::make_shared<Swap44EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
-    auto swap23_energy_before =
-        std::make_shared<Swap23EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
+    auto swap44_energy_before =
+        std::make_shared<Swap44EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
+    // auto swap23_energy_before =
+    //     std::make_shared<Swap23EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
 
     auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(*mesh);
 
@@ -397,7 +397,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         auto swap44 = std::make_shared<TetEdgeSwap>(*mesh, 0);
         setup_swap(*swap44, swap44->collapse(), swap44->split(), interior_edge);
         swap44->add_invariant(valence_4); // extra edge valance invariant
-        // swap44->add_invariant(swap44_energy_before); // check energy before swap
+        swap44->add_invariant(swap44_energy_before); // check energy before swap
         ops.push_back(swap44);
         ops_name.push_back("swap44");
 

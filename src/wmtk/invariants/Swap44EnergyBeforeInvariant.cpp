@@ -40,13 +40,15 @@ bool Swap44EnergyBeforeInvariant::before(const simplex::Simplex& t) const
 
     std::array<std::array<int, 4>, 4> old_tets = {
         {{{0, 1, 2, 3}}, {{0, 1, 3, 4}}, {{0, 1, 4, 5}}, {{0, 1, 5, 2}}}};
+    // std::array<std::array<int, 4>, 4> new_tets = {
+    //     {{{3, 5, 0, 2}}, {{3, 5, 2, 1}}, {{3, 5, 1, 4}}, {{3, 5, 4, 0}}}};
     std::array<std::array<int, 4>, 4> new_tets = {
-        {{{3, 5, 0, 2}}, {{3, 5, 2, 1}}, {{3, 5, 1, 4}}, {{3, 5, 4, 0}}}};
+        {{{2, 4, 0, 3}}, {{2, 4, 3, 1}}, {{2, 4, 1, 5}}, {{2, 4, 5, 0}}}};
 
     double old_energy_sum = 0;
-    double old_energy_max = std::numeric_limits<double>::min();
+    double old_energy_max = std::numeric_limits<double>::lowest();
     double new_energy_sum = 0;
-    double new_energy_max = std::numeric_limits<double>::min();
+    double new_energy_max = std::numeric_limits<double>::lowest();
 
     for (int i = 0; i < 4; ++i) {
         if (orient3d(

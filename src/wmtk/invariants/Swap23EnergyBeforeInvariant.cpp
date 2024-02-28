@@ -41,9 +41,9 @@ bool Swap23EnergyBeforeInvariant::before(const simplex::Simplex& t) const
     std::array<std::array<int, 4>, 3> new_tets = {{{{3, 4, 0, 1}}, {{3, 4, 1, 2}}, {{3, 4, 2, 0}}}};
 
     double old_energy_sum = 0;
-    double old_energy_max = std::numeric_limits<double>::min();
+    double old_energy_max = std::numeric_limits<double>::lowest();
     double new_energy_sum = 0;
-    double new_energy_max = std::numeric_limits<double>::min();
+    double new_energy_max = std::numeric_limits<double>::lowest();
 
     for (int i = 0; i < 2; ++i) {
         if (orient3d(
