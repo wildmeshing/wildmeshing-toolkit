@@ -7,21 +7,21 @@
 namespace wmtk::attribute::internal {
 
 
-template <size_t N, long long ScalarAttributeMask, typename MeshType, typename... AttributeType>
-CompoundAccessor<N, ScalarAttributeMask, MeshType, AttributeType...>::CompoundAccessor(
+template <size_t N, typename MeshType, typename... AttributeType>
+CompoundAccessor<N, MeshType, AttributeType...>::CompoundAccessor(
     const MeshType& m,
     const TypedAttributeHandle<AttributeType>&... handle)
     : m_base_accessors(Accessor<AttributeType, MeshType>(m, handle)...)
 {}
-template <size_t N, long long ScalarAttributeMask, typename MeshType, typename... AttributeType>
-CompoundAccessor<N, ScalarAttributeMask, MeshType, AttributeType...>::CompoundAccessor(
+template <size_t N, typename MeshType, typename... AttributeType>
+CompoundAccessor<N, MeshType, AttributeType...>::CompoundAccessor(
     MeshType& m,
     const TypedAttributeHandle<AttributeType>&... handle)
     : CompoundAccessor(const_cast<const MeshType&>(m), handle...)
 {}
-template <size_t N, long long ScalarAttributeMask, typename MeshType, typename... AttributeType>
+template <size_t N, typename MeshType, typename... AttributeType>
 template <typename FirstAccType, int FirstDim, typename... AccTypes, int... Dims>
-CompoundAccessor<N, ScalarAttributeMask, MeshType, AttributeType...>::CompoundAccessor(
+CompoundAccessor<N, MeshType, AttributeType...>::CompoundAccessor(
     const Accessor<FirstAccType, MeshType, FirstDim>& acc,
     const Accessor<AccTypes, MeshType, Dims>&... accs)
     //: m_base_accessors(accs...)
