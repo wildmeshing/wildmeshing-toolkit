@@ -81,11 +81,11 @@ TEST_CASE("smoothing_Newton_Method")
         auto stats = scheduler.run_operation_on_all(op);
         REQUIRE(stats.number_of_successful_operations() > 0);
     }
-    const attribute::Accessor<double> pos = mesh.create_const_accessor<double>(handler);
+    const attribute::Accessor<double> pos = mesh.create_const_accessor<double,2>(handler);
     Tuple tuple = mesh.tuple_from_face_id(0);
-    Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
-    Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));
-    Eigen::Vector2d uv2 = pos.const_vector_attribute(mesh.switch_vertex(mesh.switch_edge(tuple)));
+    auto uv0 = pos.const_vector_attribute(tuple);
+    auto uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));
+    auto uv2 = pos.const_vector_attribute(mesh.switch_vertex(mesh.switch_edge(tuple)));
 
     CHECK((uv0 - uv1).norm() - (uv1 - uv2).norm() < 1e-6);
     CHECK((uv0 - uv1).norm() - (uv0 - uv2).norm() < 1e-6);
@@ -135,7 +135,7 @@ TEST_CASE("smoothing_Gradient_Descent")
     auto target_coordinate_handle =
         mesh.register_attribute<double>("target_coordinate", PrimitiveType::Vertex, 2);
 
-    auto target_acc = mesh.create_accessor<double>(target_coordinate_handle);
+    auto target_acc = mesh.create_accessor<double,2>(target_coordinate_handle);
 
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 0)) << 0, 0;
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 1)) << 1, 0;
@@ -165,7 +165,7 @@ TEST_CASE("smoothing_Gradient_Descent")
     do {
         stats = scheduler.run_operation_on_all(op);
     } while (get_min_grad_norm() > 1e-3 && stats.number_of_successful_operations() > 0);
-    const attribute::Accessor<double> pos = mesh.create_const_accessor<double>(handle);
+    const attribute::Accessor<double> pos = mesh.create_const_accessor<double,2>(handle);
     Tuple tuple = mesh.tuple_from_face_id(0);
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
     Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));

@@ -24,6 +24,8 @@ public:
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     template <typename U, typename MeshType>
     friend class attribute::Accessor;
+    using MeshCRTP<TriMesh>::create_accessor;
+    using MeshCRTP<TriMesh>::create_const_accessor;
     TriMesh();
     TriMesh(const TriMesh& o) = delete;
     TriMesh& operator=(const TriMesh& o) = delete;

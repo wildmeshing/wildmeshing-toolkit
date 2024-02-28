@@ -18,7 +18,7 @@ namespace wmtk {
 class MeshWriter;
 class Mesh;
 namespace attribute {
-template <typename T>
+template <typename T, int Dim>
 class AccessorBase;
 
 /**
@@ -28,7 +28,8 @@ class AccessorBase;
 template <typename T>
 class MeshAttributes : public wmtk::utils::MerkleTreeInteriorNode
 {
-    friend class AccessorBase<T>;
+    template <typename U, int D>
+    friend class AccessorBase;
     friend class wmtk::Mesh;
 
     typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;

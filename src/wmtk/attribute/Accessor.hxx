@@ -4,65 +4,68 @@
 
 namespace wmtk::attribute {
 
-template <typename T, typename MeshType>
-Accessor<T, MeshType>::Accessor(MeshType& m, const TypedAttributeHandle<T>& h)
+template <typename T, typename MeshType, int Dim>
+Accessor<T, MeshType, Dim>::Accessor(MeshType& m, const TypedAttributeHandle<T>& h)
     : CachingBaseType(m, h)
 {}
-template <typename T, typename MeshType>
-Accessor<T, MeshType>::Accessor(const MeshType& m, const TypedAttributeHandle<T>& h)
+template <typename T, typename MeshType, int Dim>
+Accessor<T, MeshType, Dim>::Accessor(const MeshType& m, const TypedAttributeHandle<T>& h)
     : CachingBaseType(m, h)
 {}
-template <typename T, typename MeshType>
-template <typename OMType>
-Accessor<T, MeshType>::Accessor(const Accessor<T, OMType>& o)
-    : Accessor(o.mesh(), o.handle())
-{}
+template <typename T, typename MeshType, int Dim>
+template <typename OMType, int D>
+Accessor<T, MeshType, Dim>::Accessor(const Accessor<T, OMType, D>& o)
+    : Accessor(static_cast<const MeshType&>(o.mesh()), o.handle())
+{
+    static_assert(Dim == Eigen::Dynamic || D == Eigen::Dynamic || Dim == D);
+}
 
-template <typename T, typename MeshType>
+template <typename T, typename MeshType, int Dim>
 template <int D>
-auto Accessor<T, MeshType>::const_vector_attribute(const Tuple& t) const -> ConstMapResult<D>
+auto Accessor<T, MeshType, Dim>::const_vector_attribute(const Tuple& t) const -> ConstMapResult<D>
 {
     const int64_t idx = index(t);
     return CachingBaseType::template const_vector_attribute<D>(idx);
 }
 
-template <typename T, typename MeshType>
+template <typename T, typename MeshType, int Dim>
 template <int D>
-auto Accessor<T, MeshType>::vector_attribute(const Tuple& t) -> MapResult<D>
+auto Accessor<T, MeshType, Dim>::vector_attribute(const Tuple& t) -> MapResult<D>
 {
     const int64_t idx = index(t);
     return CachingBaseType::template vector_attribute<D>(idx);
 }
 
-template <typename T, typename MeshType>
-auto Accessor<T, MeshType>::scalar_attribute(const Tuple& t) -> T&
+template <typename T, typename MeshType, int Dim>
+auto Accessor<T, MeshType, Dim>::scalar_attribute(const Tuple& t) -> T&
 {
     const int64_t idx = index(t);
     return CachingBaseType::scalar_attribute(idx);
 }
 
-template <typename T, typename MeshType>
-T Accessor<T, MeshType>::const_scalar_attribute(const Tuple& t) const
+template <typename T, typename MeshType, int Dim>
+T Accessor<T, MeshType, Dim>::const_scalar_attribute(const Tuple& t) const
 {
     const int64_t idx = index(t);
     return CachingBaseType::const_scalar_attribute(idx);
 }
-template <typename T, typename MeshType>
-int64_t Accessor<T, MeshType>::index(const Tuple& t) const
+template <typename T, typename MeshType, int Dim>
+int64_t Accessor<T, MeshType, Dim>::index(const Tuple& t) const
 {
     assert(mesh().is_valid_slow(t));
     return static_cast<const MeshType&>(mesh()).id(t, BaseType::typed_handle().primitive_type());
 }
 
-template <typename T, typename MeshType>
-auto Accessor<T, MeshType>::topological_scalar_attribute(const Tuple& t) -> T&
+template <typename T, typename MeshType, int Dim>
+auto Accessor<T, MeshType, Dim>::topological_scalar_attribute(const Tuple& t) -> T&
 {
     const int64_t idx = index(t);
     return CachingBaseType::scalar_attribute(idx);
 }
 
-template <typename T, typename MeshType>
-T Accessor<T, MeshType>::const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const
+template <typename T, typename MeshType, int Dim>
+T Accessor<T, MeshType, Dim>::const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt)
+    const
 {
     assert(mesh().top_simplex_type() == BaseType::primitive_type());
     switch (pt) {

@@ -18,8 +18,8 @@ namespace wmtk::attribute {
  * As global simplex ids should not be publicly available, this accessor uses the Mesh.id() function
  * to map from a tuple to the global simplex id.
  */
-template <typename T, typename MeshType = Mesh>
-class Accessor : protected CachingAccessor<T>
+template <typename T, typename MeshType = Mesh, int Dim = Eigen::Dynamic>
+class Accessor : protected CachingAccessor<T, Dim>
 {
 public:
     friend class wmtk::Mesh;
@@ -30,22 +30,22 @@ public:
     using Scalar = T;
 
     friend class AttributeCache<T>;
-    using BaseType = AccessorBase<T>;
-    using CachingBaseType = CachingAccessor<T>;
+    using BaseType = AccessorBase<T, Dim>;
+    using CachingBaseType = CachingAccessor<T, Dim>;
 
     // Eigen::Map<VectorX<T>>
-    template <int D = Eigen::Dynamic>
+    template <int D = Dim>
     using MapResult = internal::MapResult<T, D>;
     // Eigen::Map<const VectorX<T>>
-    template <int D = Eigen::Dynamic>
+    template <int D = Dim>
     using ConstMapResult = internal::ConstMapResult<T, D>;
 
 
     Accessor(MeshType& m, const TypedAttributeHandle<T>& handle);
     Accessor(const MeshType& m, const TypedAttributeHandle<T>& handle);
 
-    template <typename OMType>
-    Accessor(const Accessor<T, OMType>& o);
+    template <typename OMType, int D>
+    Accessor(const Accessor<T, OMType, D>& o);
 
 
     T const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const;
@@ -54,9 +54,9 @@ public:
     T const_scalar_attribute(const Tuple& t) const;
     T& scalar_attribute(const Tuple& t);
 
-    template <int D = Eigen::Dynamic>
+    template <int D = Dim>
     ConstMapResult<D> const_vector_attribute(const Tuple& t) const;
-    template <int D = Eigen::Dynamic>
+    template <int D = Dim>
     MapResult<D> vector_attribute(const Tuple& t);
 
 

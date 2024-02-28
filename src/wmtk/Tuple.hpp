@@ -11,7 +11,7 @@ class TriMesh;
 class EdgeMesh;
 class TetMesh;
 namespace attribute {
-template <typename T, typename MeshType>
+template <typename T, typename MeshType, int Dim>
 class Accessor;
 }
 namespace utils {
@@ -46,7 +46,7 @@ public:
     friend class TriMesh;
     friend class TetMesh;
     friend class multimesh::MultiMeshManager;
-    template <typename T, typename MeshType>
+    template <typename T, typename MeshType, int Dim>
     friend class attribute::Accessor;
     friend class operations::Operation;
     friend class utils::TupleCellLessThan;
