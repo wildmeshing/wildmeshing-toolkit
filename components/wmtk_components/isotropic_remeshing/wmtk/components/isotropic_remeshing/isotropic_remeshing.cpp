@@ -28,6 +28,29 @@ double relative_to_absolute_length(
     return length_rel * diag_length;
 }
 
+double envelope_size(
+    const attribute::MeshAttributeHandle& pos_handle,
+    const double envelope_size_rel)
+{
+    auto pos = pos_handle.mesh().create_const_accessor<double>(pos_handle);
+    const auto vertices = pos_handle.mesh().get_all(PrimitiveType::Vertex);
+    Eigen::VectorXd bmin(3);
+    bmin.setConstant(std::numeric_limits<double>::max());
+    Eigen::VectorXd bmax(3);
+    bmax.setConstant(std::numeric_limits<double>::min());
+
+    for (const auto& v : vertices) {
+        const auto p = pos.vector_attribute(v);
+        for (int64_t d = 0; d < bmax.size(); ++d) {
+            bmin[d] = std::min(bmin[d], p[d]);
+            bmax[d] = std::max(bmax[d], p[d]);
+        }
+    }
+
+    const double bbdiag = (bmax - bmin).norm();
+    return bbdiag * envelope_size_rel;
+}
+
 
 void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
@@ -91,6 +114,7 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
         options.lock_boundary,
         options.use_for_periodic,
         options.iterations,
+        envelope_size(pos_handle, options.envelope_size_rel),
         other_positions,
         options.attributes.update_other_positions,
         position_for_inversion);

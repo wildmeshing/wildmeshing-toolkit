@@ -23,6 +23,7 @@ struct IsotropicRemeshingOptions
 {
     std::string input;
     std::string output;
+    double envelope_size_rel;
     IsotropicRemeshingAttributes attributes;
     nlohmann::json pass_through;
     int64_t iterations;
@@ -36,6 +37,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     IsotropicRemeshingOptions,
     input,
     output,
+    envelope_size_rel,
     attributes,
     pass_through,
     length_abs,

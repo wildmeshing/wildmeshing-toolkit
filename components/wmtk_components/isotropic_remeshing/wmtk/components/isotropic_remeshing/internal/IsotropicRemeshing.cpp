@@ -2,6 +2,7 @@
 
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Scheduler.hpp>
+#include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/FusionEdgeInvariant.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
@@ -30,6 +31,7 @@ void isotropic_remeshing(
     const bool lock_boundary,
     const bool use_for_periodic,
     const int64_t iterations,
+    const double envelope_size,
     const std::vector<attribute::MeshAttributeHandle>& other_positions,
     bool update_other_positions,
     const std::optional<attribute::MeshAttributeHandle>& position_for_inversion)
@@ -37,12 +39,15 @@ void isotropic_remeshing(
     assert(dynamic_cast<TriMesh*>(&position.mesh()) != nullptr);
 
     TriMesh& mesh = static_cast<TriMesh&>(position.mesh());
-
+    auto pos_accessor = mesh.create_const_accessor<double>(position);
     const double length_min = (4. / 5.) * length;
     const double length_max = (4. / 3.) * length;
 
     std::vector<attribute::MeshAttributeHandle> positions = other_positions;
     positions.push_back(position);
+
+    auto invariant_envelope =
+        std::make_shared<wmtk::invariants::EnvelopeInvariant>(position, envelope_size, position);
 
     auto invariant_link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(mesh);
 
@@ -91,11 +96,31 @@ void isotropic_remeshing(
 
     assert(mesh.is_connectivity_valid());
 
+
+    auto long_edges_first = [&](const simplex::Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        auto p1 = pos_accessor.vector_attribute(s.tuple());
+        auto other_vertex = mesh.switch_vertex(s.tuple());
+        auto p2 = pos_accessor.vector_attribute(other_vertex);
+        return std::vector<double>({-(p1 - p2).norm()});
+    };
+    auto short_edges_first = [&](const simplex::Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        auto p1 = pos_accessor.vector_attribute(s.tuple());
+        auto other_vertex = mesh.switch_vertex(s.tuple());
+        auto p2 = pos_accessor.vector_attribute(other_vertex);
+        return std::vector<double>({(p1 - p2).norm()});
+    };
+
+
     std::vector<std::shared_ptr<Operation>> ops;
 
     // split
     auto op_split = std::make_shared<EdgeSplit>(mesh);
     op_split->add_invariant(invariant_min_edge_length);
+    if (envelope_size > 0) {
+        op_split->add_invariant(invariant_envelope);
+    }
     if (lock_boundary && !use_for_periodic) {
         op_split->add_invariant(invariant_interior_edge);
     }
@@ -108,6 +133,7 @@ void isotropic_remeshing(
     for (const auto& attr : pass_through_attributes) {
         op_split->set_new_attribute_strategy(attr);
     }
+    op_split->set_priority(long_edges_first);
     ops.push_back(op_split);
 
 
@@ -122,6 +148,9 @@ void isotropic_remeshing(
     }
     op_collapse->add_invariant(invariant_max_edge_length);
     op_collapse->add_invariant(invariant_mm_map);
+    if (envelope_size > 0) {
+        op_collapse->add_invariant(invariant_envelope);
+    }
     if (lock_boundary && !use_for_periodic) {
         op_collapse->add_invariant(invariant_interior_edge);
         // set collapse towards boundary
@@ -145,6 +174,7 @@ void isotropic_remeshing(
     for (const auto& attr : pass_through_attributes) {
         op_collapse->set_new_attribute_strategy(attr);
     }
+    op_collapse->set_priority(short_edges_first);
     ops.push_back(op_collapse);
 
 
@@ -153,6 +183,9 @@ void isotropic_remeshing(
     auto op_swap = std::make_shared<composite::TriEdgeSwap>(mesh);
     op_swap->add_invariant(invariant_interior_edge);
     op_swap->add_invariant(invariant_valence_improve);
+    if (envelope_size > 0) {
+        op_swap->add_invariant(invariant_envelope);
+    }
     op_swap->collapse().add_invariant(invariant_link_condition);
     op_swap->collapse().add_invariant(invariant_mm_map);
     for (auto& p : positions) {
@@ -191,6 +224,9 @@ void isotropic_remeshing(
         op_smooth->add_invariant(std::make_shared<SimplexInversionInvariant>(
             position_for_inversion.value().mesh(),
             position_for_inversion.value().as<double>()));
+    }
+    if (envelope_size > 0) {
+        op_smooth->add_invariant(invariant_envelope);
     }
     if (update_position) op_smooth->add_transfer_strategy(update_position);
     ops.push_back(op_smooth);
