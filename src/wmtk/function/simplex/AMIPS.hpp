@@ -35,4 +35,5 @@ private:
         const simplex::Simplex& domain_simplex,
         const std::optional<simplex::Simplex>& variable_simplex = {}) const;
 };
+
 } // namespace wmtk::function

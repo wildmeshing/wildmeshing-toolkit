@@ -57,5 +57,10 @@ set(SRC_FILES
 
     internal/ConstantInvariant.hpp
     internal/ConstantInvariant.cpp
+
+    # Swap44EnergyBeforeInvariant.hpp
+    # Swap44EnergyBeforeInvariant.cpp
+    Swap23EnergyBeforeInvariant.hpp
+    Swap23EnergyBeforeInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
