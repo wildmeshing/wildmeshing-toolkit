@@ -39,8 +39,10 @@
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
-// #include <wmtk/invariants/Swap23EnergyBeforeInvariant.hpp>
+#include <wmtk/invariants/Swap23EnergyBeforeInvariant.hpp>
+#include <wmtk/invariants/Swap32EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/Swap44EnergyBeforeInvariant.hpp>
+#include <wmtk/invariants/Swap44_2EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
@@ -291,8 +293,12 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto valence_4 = std::make_shared<EdgeValenceInvariant>(*mesh, 4);
     auto swap44_energy_before =
         std::make_shared<Swap44EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
-    // auto swap23_energy_before =
-    //     std::make_shared<Swap23EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
+    auto swap44_2_energy_before =
+        std::make_shared<Swap44_2EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
+    auto swap32_energy_before =
+        std::make_shared<Swap32EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
+    auto swap23_energy_before =
+        std::make_shared<Swap23EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
 
     auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(*mesh);
 
@@ -405,6 +411,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         auto swap44_2 = std::make_shared<TetEdgeSwap>(*mesh, 1);
         setup_swap(*swap44_2, swap44_2->collapse(), swap44_2->split(), interior_edge);
         swap44_2->add_invariant(valence_4); // extra edge valance invariant
+        swap44_2->add_invariant(swap44_2_energy_before); // check energy before swap
         ops.push_back(swap44_2);
         ops_name.push_back("swap44_2");
 
@@ -412,13 +419,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         auto swap32 = std::make_shared<TetEdgeSwap>(*mesh, 0);
         setup_swap(*swap32, swap32->collapse(), swap32->split(), interior_edge);
         swap32->add_invariant(valence_3); // extra edge valance invariant
+        swap32->add_invariant(swap32_energy_before); // check energy before swap
         ops.push_back(swap32);
         ops_name.push_back("swap32");
 
         // 3 - 3) TetFaceSwap 2-3
         auto swap23 = std::make_shared<TetFaceSwap>(*mesh);
         setup_swap(*swap23, swap23->collapse(), swap23->split(), interior_face);
-        // swap23->add_invariant(swap23_energy_before); // check energy before swap
+        swap23->add_invariant(swap23_energy_before); // check energy before swap
         ops.push_back(swap23);
         ops_name.push_back("swap23");
     }

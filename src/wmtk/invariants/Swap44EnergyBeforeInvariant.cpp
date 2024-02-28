@@ -1,6 +1,6 @@
 #include "Swap44EnergyBeforeInvariant.hpp"
 #include <wmtk/Mesh.hpp>
-#include <wmtk/function/simplex/AMIPS.cpp>
+#include <wmtk/function/utils/amips.hpp>
 #include "predicates.h"
 
 namespace wmtk {
@@ -15,15 +15,15 @@ bool Swap44EnergyBeforeInvariant::before(const simplex::Simplex& t) const
 {
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
-    constexpr static PrimitiveType PF = PrimitiveType::Face;
+    constexpr static PrimitiveType PF = PrimitiveType::Triangle;
     constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
 
-    ConstAccessor<double> accessor = mesh().create_accessor(m_coordinate_handle);
+    auto accessor = mesh().create_const_accessor(m_coordinate_handle);
 
     // get the coords of the vertices
     // input edge end points
     const Tuple v0 = t.tuple();
-    const Tuple v1 = mesh().switch_vertex(v0);
+    const Tuple v1 = mesh().switch_tuple(v0, PV);
     // other four vertices
     const Tuple v2 = mesh().switch_tuples(v0, {PE, PV});
     const Tuple v3 = mesh().switch_tuples(v0, {PF, PE, PV});
@@ -56,7 +56,7 @@ bool Swap44EnergyBeforeInvariant::before(const simplex::Simplex& t) const
                 positions[old_tets[i][1]].data(),
                 positions[old_tets[i][2]].data(),
                 positions[old_tets[i][3]].data()) > 0) {
-            auto energy = wmtk::function::Tet_AMIPS_energy({{
+            auto energy = wmtk::function::utils::Tet_AMIPS_energy({{
                 positions[old_tets[i][0]][0],
                 positions[old_tets[i][0]][1],
                 positions[old_tets[i][0]][2],
@@ -76,7 +76,7 @@ bool Swap44EnergyBeforeInvariant::before(const simplex::Simplex& t) const
             old_energy_sum += energy;
             if (energy > old_energy_max) old_energy_max = energy;
         } else {
-            auto energy = wmtk::function::Tet_AMIPS_energy({{
+            auto energy = wmtk::function::utils::Tet_AMIPS_energy({{
                 positions[old_tets[i][1]][0],
                 positions[old_tets[i][1]][1],
                 positions[old_tets[i][1]][2],
@@ -103,7 +103,7 @@ bool Swap44EnergyBeforeInvariant::before(const simplex::Simplex& t) const
                 positions[new_tets[i][1]].data(),
                 positions[new_tets[i][2]].data(),
                 positions[new_tets[i][3]].data()) > 0) {
-            auto energy = wmtk::function::Tet_AMIPS_energy({{
+            auto energy = wmtk::function::utils::Tet_AMIPS_energy({{
                 positions[new_tets[i][0]][0],
                 positions[new_tets[i][0]][1],
                 positions[new_tets[i][0]][2],
@@ -124,7 +124,7 @@ bool Swap44EnergyBeforeInvariant::before(const simplex::Simplex& t) const
             new_energy_sum += energy;
             if (energy > new_energy_max) new_energy_max = energy;
         } else {
-            auto energy = wmtk::function::Tet_AMIPS_energy({{
+            auto energy = wmtk::function::utils::Tet_AMIPS_energy({{
                 positions[new_tets[i][1]][0],
                 positions[new_tets[i][1]][1],
                 positions[new_tets[i][1]][2],
