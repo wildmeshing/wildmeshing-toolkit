@@ -42,8 +42,6 @@ bool Swap44_2EnergyBeforeInvariant::before(const simplex::Simplex& t) const
         {{{0, 1, 2, 3}}, {{0, 1, 3, 4}}, {{0, 1, 4, 5}}, {{0, 1, 5, 2}}}};
     std::array<std::array<int, 4>, 4> new_tets = {
         {{{3, 5, 0, 2}}, {{3, 5, 2, 1}}, {{3, 5, 1, 4}}, {{3, 5, 4, 0}}}};
-    // std::array<std::array<int, 4>, 4> new_tets = {
-    //     {{{2, 4, 0, 3}}, {{2, 4, 3, 1}}, {{2, 4, 1, 5}}, {{2, 4, 5, 0}}}};
 
     double old_energy_sum = 0;
     double old_energy_max = std::numeric_limits<double>::lowest();
