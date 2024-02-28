@@ -66,7 +66,6 @@ bool Swap32EnergyBeforeInvariant::before(const simplex::Simplex& t) const
                 positions[old_tets[i][3]][2],
             }});
 
-            if (energy < 0) std::cout << "amip < 0 !!!!!" << std::endl;
 
             old_energy_sum += energy;
             if (energy > old_energy_max) old_energy_max = energy;
@@ -85,8 +84,6 @@ bool Swap32EnergyBeforeInvariant::before(const simplex::Simplex& t) const
                 positions[old_tets[i][3]][1],
                 positions[old_tets[i][3]][2],
             }});
-
-            if (energy < 0) std::cout << "amip < 0 !!!!!" << std::endl;
 
 
             old_energy_sum += energy;
@@ -115,8 +112,6 @@ bool Swap32EnergyBeforeInvariant::before(const simplex::Simplex& t) const
                 positions[new_tets[i][3]][2],
             }});
 
-            if (energy < 0) std::cout << "amip < 0 !!!!!" << std::endl;
-
 
             new_energy_sum += energy;
             if (energy > new_energy_max) new_energy_max = energy;
@@ -135,8 +130,6 @@ bool Swap32EnergyBeforeInvariant::before(const simplex::Simplex& t) const
                 positions[new_tets[i][3]][1],
                 positions[new_tets[i][3]][2],
             }});
-
-            if (energy < 0) std::cout << "amip < 0 !!!!!" << std::endl;
 
 
             new_energy_sum += energy;
