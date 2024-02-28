@@ -11,7 +11,7 @@ struct MeshDecimationOptions
     std::string input;
     std::string output;
     double target_len;
-    std::string cell_constrait_tag_name;
+    std::string cell_constraint_tag_name;
     std::vector<std::string> attributes;
     std::vector<std::string> pass_through;
 };

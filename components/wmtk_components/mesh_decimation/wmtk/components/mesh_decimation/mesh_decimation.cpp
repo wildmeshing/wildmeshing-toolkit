@@ -18,7 +18,7 @@ void mesh_decimation(const base::Paths& paths, const nlohmann::json& j, io::Cach
     auto pass_through_attributes = base::get_attributes(cache, mesh, options.pass_through);
     auto original_attributes = base::get_attributes(cache, mesh, options.attributes);
     auto cell_constrait_tag_handle = mesh.get_attribute_handle<int64_t>(
-        options.cell_constrait_tag_name,
+        options.cell_constraint_tag_name,
         mesh.top_simplex_type());
 
     // clear attributes

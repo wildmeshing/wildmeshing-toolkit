@@ -31,7 +31,7 @@ TEST_CASE("component_mesh_decimation_options", "[components][mesh_decimation]")
         {"input", "input_mesh"},
         {"output", "output_mesh"},
         {"target_len", 1.0},
-        {"cell_constrait_tag_name", "tag"},
+        {"cell_constraint_tag_name", "tag"},
         {"attributes", {"vertices", "tag"}},
         {"pass_through", {"dummy"}}};
 
@@ -41,6 +41,7 @@ TEST_CASE("component_mesh_decimation_options", "[components][mesh_decimation]")
 TEST_CASE("decimation_test", "[components][2D][3D]")
 {
     using namespace wmtk::components;
+    wmtk::io::Cache cache("wmtk_cache", ".");
 
     SECTION("3D")
     {
@@ -57,14 +58,10 @@ TEST_CASE("decimation_test", "[components][2D][3D]")
         mesh.clear_attributes(keep);
 
         std::vector<wmtk::attribute::MeshAttributeHandle> pass_though;
-        internal::MeshDecimation MD(mesh, constrait_cell_tag_handle, 5, pass_though);
-        MD.process();
+        internal::MeshDecimation md(mesh, constrait_cell_tag_handle, 5, pass_though);
+        md.process();
 
-        if (false) {
-            wmtk::io::ParaviewWriter
-                writer(data_dir / "out3d.hdf", "vertices", mesh, false, true, true, true);
-            mesh.serialize(writer);
-        }
+        cache.write_mesh(mesh, "out3d");
     }
 
     SECTION("2D")
@@ -82,13 +79,9 @@ TEST_CASE("decimation_test", "[components][2D][3D]")
         mesh.clear_attributes(keep);
 
         std::vector<wmtk::attribute::MeshAttributeHandle> pass_though;
-        internal::MeshDecimation MD(mesh, constrait_cell_tag_handle, 5, pass_though);
-        MD.process();
+        internal::MeshDecimation md(mesh, constrait_cell_tag_handle, 5, pass_though);
+        md.process();
 
-        if (false) {
-            wmtk::io::ParaviewWriter
-                writer(data_dir / "out2d.hdf", "vertices", mesh, false, true, true, false);
-            mesh.serialize(writer);
-        }
+        cache.write_mesh(mesh, "out2d");
     }
 }

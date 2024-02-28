@@ -6,7 +6,7 @@
       "input",
       "output",
       "target_len",
-      "cell_constrait_tag_name",
+      "cell_constraint_tag_name",
       "attributes"
     ],
     "optional": [
@@ -24,9 +24,9 @@
     "doc": "output mesh"
   },
   {
-    "pointer": "/cell_constrait_tag_name",
+    "pointer": "/cell_constraint_tag_name",
     "type": "string",
-    "doc": "constrait_tag_handle's name"
+    "doc": "constraint_tag_handle's name"
   },
   {
     "pointer": "/target_len",
