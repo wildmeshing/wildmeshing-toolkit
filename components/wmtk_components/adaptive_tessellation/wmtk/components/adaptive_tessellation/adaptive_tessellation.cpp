@@ -64,30 +64,27 @@ void write(
     const std::shared_ptr<Mesh>& uv_mesh,
     const std::string& uv_output,
     const std::string& xyz_output,
-    const int64_t index,
-    const bool intermediate_output)
+    const int64_t index)
 {
-    if (intermediate_output) {
-        const std::filesystem::path data_dir = "";
-        wmtk::io::ParaviewWriter writer(
-            data_dir / (uv_output + "_" + std::to_string(index)),
-            "vertices",
-            *uv_mesh,
-            true,
-            true,
-            true,
-            false);
-        uv_mesh->serialize(writer);
-        wmtk::io::ParaviewWriter writer3d(
-            data_dir / (xyz_output + "_" + std::to_string(index)),
-            "positions",
-            *uv_mesh,
-            true,
-            true,
-            true,
-            false);
-        uv_mesh->serialize(writer3d);
-    }
+    const std::filesystem::path data_dir = "";
+    wmtk::io::ParaviewWriter writer(
+        data_dir / (uv_output + "_" + std::to_string(index)),
+        "vertices",
+        *uv_mesh,
+        true,
+        true,
+        true,
+        false);
+    uv_mesh->serialize(writer);
+    wmtk::io::ParaviewWriter writer3d(
+        data_dir / (xyz_output + "_" + std::to_string(index)),
+        "positions",
+        *uv_mesh,
+        true,
+        true,
+        true,
+        false);
+    uv_mesh->serialize(writer3d);
 }
 void write_face_attr(
     const std::shared_ptr<Mesh>& mesh,
@@ -126,36 +123,36 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
     //////////////////////////////////
     // Storing edge lengths
-    wmtk::logger().critical("///// using terrain displacement /////");
-    std::array<std::shared_ptr<image::Sampling>, 3> funcs = {
-        {std::make_shared<image::SamplingAnalyticFunction>(
-             image::SamplingAnalyticFunction_FunctionType::Linear,
-             1,
-             0,
-             0.),
-         std::make_shared<image::SamplingAnalyticFunction>(
-             image::SamplingAnalyticFunction_FunctionType::Linear,
-             0,
-             1,
-             0.),
-         // std::make_shared<image::SamplingAnalyticFunction>(
-         //     image::SamplingAnalyticFunction_FunctionType::Linear,
-         //     0,
-         //     0,
-         //     1.)
-         // std::make_shared<image::SamplingAnalyticFunction>(
-         //     image::SamplingAnalyticFunction_FunctionType::Periodic,
-         //     2,
-         //     2,
-         //     1.)
-         // std::make_shared<image::SamplingAnalyticFunction>(
-         //     image::SamplingAnalyticFunction_FunctionType::Gaussian,
-         //     0.5,
-         //     0.5,
-         //     1.)
-         std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
+    wmtk::logger().critical("///// using gaussian displacement /////");
+    std::array<std::shared_ptr<image::Sampling>, 3> funcs = {{
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Linear,
+            1,
+            0,
+            0.),
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Linear,
+            0,
+            1,
+            0.),
+        // std::make_shared<image::SamplingAnalyticFunction>(
+        //     image::SamplingAnalyticFunction_FunctionType::Linear,
+        //     0,
+        //     0,
+        //     1.)
+        // std::make_shared<image::SamplingAnalyticFunction>(
+        //     image::SamplingAnalyticFunction_FunctionType::Periodic,
+        //     2,
+        //     2,
+        //     1.)
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Gaussian,
+            0.5,
+            0.5,
+            1.)
+        //  std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
 
-        }};
+    }};
 
     // std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
     //     ->convert_to_exr(512, 512);
@@ -186,7 +183,9 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
     AT::operations::internal::ATOperations at_ops(
         atdata,
+        options.target_distance,
         options.target_edge_length,
+        options.envelope_size,
         options.barrier_weight,
         options.barrier_triangle_area,
         options.quadrature_weight,
@@ -195,23 +194,58 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
 
     at_ops.set_energies();
-    nlohmann::ordered_json FaceErrorJson_distance;
-    nlohmann::ordered_json FaceErrorJson_amips;
-    write(
-        position_mesh_ptr,
-        uv_mesh_ptr,
-        options.uv_output,
-        options.xyz_output,
-        0,
-        options.intermediate_output);
+    /////////////////////////////////////////////////
+    // mesh refinement to decrease distance error
+    {
+        nlohmann::ordered_json FaceErrorJson_distance;
+        nlohmann::ordered_json FaceErrorJson_amips;
+        write(position_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, 0);
 
-    opt_logger().set_level(spdlog::level::level_enum::critical);
+        opt_logger().set_level(spdlog::level::level_enum::critical);
 
+        at_ops.AT_edge_split(at_ops.m_high_distance_faces_first, at_ops.m_3d_amips_energy);
+        Scheduler scheduler;
+        int success = 0;
 
-    // 1.5) FaceSplit
-    // at_ops.AT_face_split(at_ops.m_high_distance_faces_first, at_ops.m_distance_nondiff_energy);
+        int64_t i = 0;
+        do {
+            logger().info("Pass {}", i);
+            std::vector<wmtk::simplex::Simplex> all_edge_of_all_triangles =
+                at_ops.get_all_edges_of_all_triangles_with_triangle_filter(
+                    uv_mesh_ptr,
+                    at_ops.m_distance_error_accessor,
+                    at_ops.m_target_distance);
+            if (options.one_operation_per_pass) {
+                success = at_ops
+                              .run_operation_on_top_of_given_simplices(
+                                  all_edge_of_all_triangles,
+                                  *at_ops.m_ops[0],
+                                  at_ops.m_triangle_distance_edge_length)
+                              .number_of_successful_operations();
+            } else {
+                success = at_ops
+                              .run_operation_on_all_given_simplices(
+                                  all_edge_of_all_triangles,
+                                  *at_ops.m_ops[0],
+                                  at_ops.m_triangle_distance_edge_length)
+                              .number_of_successful_operations();
+            }
+            write(uv_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, i + 1);
+            i++;
+        } while (success > 0);
+
+        // write_face_attr(
+        //     uv_mesh_ptr,
+        //     at_ops.m_distance_error_accessor,
+        //     FaceErrorJson_distance,
+        //     i,
+        //     options.uv_output + "_distance_error.json");
+    }
+
+    at_ops.m_ops.clear();
+
     // 1) wmtk::operations::EdgeSplit
-    // at_ops.AT_edge_split(at_ops.m_high_distance_edges_first, at_ops.m_distance_nondiff_energy);
+    // at_ops.AT_3d_edge_split(at_ops.m_long_edges_first);
     // at_ops.AT_boundary_edge_split(
     //     at_ops.m_high_distance_edges_first,
     //     at_ops.m_distance_nondiff_energy);
@@ -219,88 +253,13 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     // at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first, at_ops.m_distance_nondiff_energy);
 
     // 4) Smoothing
-    // at_ops.AT_smooth_interior(at_ops.m_distance_energy);
+    // at_ops.AT_smooth_interior(at_ops.m_3d_amips_energy);
 
-    /// split on amips error
+    std::vector<attribute::MeshAttributeHandle> keeps;
+    keeps.emplace_back(atdata.m_uvmesh_xyz_handle);
+    uv_mesh_ptr->clear_attributes(keeps);
 
-    at_ops.AT_edge_split(at_ops.m_high_distance_faces_first, at_ops.m_3d_amips_energy);
-    Scheduler scheduler;
-    bool success = true;
-    int64_t i = 0;
-    do {
-        i++;
-        logger().info("Pass {}", i);
-        SchedulerStats pass_stats;
-
-        success =
-            at_ops.single_split_execution(*at_ops.m_ops[0], at_ops.m_triangle_distance_edge_length);
-        // only output the log if it is 100 modulo
-        if (i % 100 == 0) {
-            logger().info("Executed {} op Succeed? {}", i, success);
-        }
-
-    } while (success);
-    write(
-        uv_mesh_ptr,
-        uv_mesh_ptr,
-        options.uv_output,
-        options.xyz_output,
-        i + 1,
-        options.intermediate_output);
-    write_face_attr(
-        uv_mesh_ptr,
-        at_ops.m_distance_error_accessor,
-        FaceErrorJson_distance,
-        i + 1,
-        options.uv_output + "_distance_error.json");
-    // at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first, at_ops.m_3d_amips_energy);
-    at_ops.m_ops.clear();
-    at_ops.AT_smooth_interior(at_ops.m_2d_amips_energy);
-
-
-    // nlohmann::ordered_json FaceErrorJson;
-    //////////////////////////////////
-    // Running all ops in order n times
-    // Scheduler scheduler;
-    // opt_logger().set_level(spdlog::level::level_enum::debug);
-    for (int64_t i = 0; i < 0; ++i) {
-        logger().info("Pass {}", i);
-        SchedulerStats pass_stats;
-        for (auto& op : at_ops.m_ops) pass_stats += scheduler.run_operation_on_all(*op);
-
-        // cache.write_mesh(*uv_mesh_ptr, "bumpyDice_debug_" + std::to_string(i));
-        logger().info(
-            "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
-            pass_stats.number_of_performed_operations(),
-            pass_stats.number_of_successful_operations(),
-            pass_stats.number_of_failed_operations(),
-            pass_stats.collecting_time,
-            pass_stats.sorting_time,
-            pass_stats.executing_time);
-
-        // write_face_attr(
-        //     uv_mesh_ptr,
-        //     at_ops.m_distance_error_accessor,
-        //     FaceErrorJson_sum,
-        //     i + 1,
-        //     options.uv_output + "_distance_error.json");
-        write_face_attr(
-            uv_mesh_ptr,
-            at_ops.m_amips_error_accessor,
-            FaceErrorJson_amips,
-            i + 1,
-            options.uv_output + "_2d_amips_error.json");
-
-        write(
-            uv_mesh_ptr,
-            uv_mesh_ptr,
-            options.uv_output,
-            options.xyz_output,
-            i + 1,
-            options.intermediate_output);
-    }
-
-    // write(mesh, "no_operation", 0, options.intermediate_output);
+    cache.write_mesh(*uv_mesh_ptr, options.uv_output);
 }
 
 } // namespace wmtk::components

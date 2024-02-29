@@ -19,10 +19,11 @@ public:
     double quadrature_weight;
     double amips_weight;
     bool area_weighted_amips;
-    bool intermediate_output;
     std::string position_path;
     std::string normal_path;
     std::string height_path;
+
+    bool one_operation_per_pass;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
@@ -40,9 +41,9 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     quadrature_weight,
     amips_weight,
     area_weighted_amips,
-    intermediate_output,
     position_path,
     normal_path,
-    height_path);
+    height_path,
+    one_operation_per_pass);
 
 } // namespace wmtk::components
