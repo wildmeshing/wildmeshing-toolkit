@@ -22,7 +22,7 @@ public:
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
-    template <typename U, typename MeshType>
+    template <typename U, typename MeshType, int Dim>
     friend class attribute::Accessor;
     using MeshCRTP<TriMesh>::create_accessor;
     using MeshCRTP<TriMesh>::create_const_accessor;
