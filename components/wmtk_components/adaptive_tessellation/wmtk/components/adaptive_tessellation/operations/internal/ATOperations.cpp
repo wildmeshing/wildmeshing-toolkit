@@ -447,14 +447,20 @@ void ATOperations::AT_collapse_interior(
     throw std::runtime_error("AT collapse not implemented");
 }
 
-bool ATOperations::single_split_execution(
+wmtk::SchedulerStats ATOperations::single_split_execution(
     wmtk::operations::Operation& edge_split_op,
-    std::function<std::vector<double>(const wmtk::simplex::Simplex&)>& edge_priority)
+    std::function<std::vector<double>(const wmtk::simplex::Simplex&)>& edge_priority,
+    wmtk::attribute::Accessor<double>& face_attr_accessor,
+    double target_distance)
 {
     auto& uv_mesh = m_atdata.uv_mesh();
     const auto tups = edge_split_op.mesh().get_all(PrimitiveType::Triangle);
     std::vector<wmtk::simplex::Simplex> edge_simplices;
     for (const auto& tup : tups) {
+        double face_attr = face_attr_accessor.scalar_attribute(tup);
+        if (face_attr < target_distance) {
+            continue;
+        }
         // get all the edges simplices of each triangle tuple
         // current edge
         edge_simplices.emplace_back(wmtk::simplex::Simplex(PrimitiveType::Edge, tup));
@@ -465,6 +471,8 @@ bool ATOperations::single_split_execution(
             PrimitiveType::Edge);
         edge_simplices.emplace_back(wmtk::simplex::Simplex(PrimitiveType::Edge, next_next_edge));
     }
+    wmtk::SchedulerStats res;
+
     std::stable_sort(
         edge_simplices.begin(),
         edge_simplices.end(),
@@ -472,8 +480,22 @@ bool ATOperations::single_split_execution(
             return edge_priority(s_a) < edge_priority(s_b);
         });
     assert(edge_simplices.size() > 0);
-    auto mods = edge_split_op(edge_simplices[0]);
-    return !mods.empty();
+    for (const wmtk::simplex::Simplex& s : edge_simplices) {
+        auto mods = edge_split_op(s);
+        if (mods.empty())
+            res.fail();
+        else
+            res.succeed();
+    }
+    logger().info(
+        "Ran {} ops, {} succeeded, {} failed",
+        res.number_of_performed_operations(),
+        res.number_of_successful_operations(),
+        res.number_of_failed_operations());
+
+    // auto mods = edge_split_op(edge_simplices[0]);
+    // return !mods.empty();
+    return res;
 }
 
 } // namespace wmtk::components::operations::internal

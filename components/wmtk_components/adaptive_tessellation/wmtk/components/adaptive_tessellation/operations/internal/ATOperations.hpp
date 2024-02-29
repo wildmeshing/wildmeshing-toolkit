@@ -1,5 +1,6 @@
 #pragma once
 #include <nlohmann/json.hpp>
+#include <wmtk/Scheduler.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/DistanceEnergy.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/DistanceEnergyNonDiff.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/SumEnergy.hpp>
@@ -9,6 +10,7 @@
 #include <wmtk/operations/Operation.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include "ATData.hpp"
+using namespace wmtk;
 namespace wmtk::components::operations::internal {
 class ATOperations
 {
@@ -104,8 +106,11 @@ public:
     void initialize_distance_error();
     void set_3d_amips_error_update_rule();
     void initialize_3d_amips_error();
-    bool single_split_execution(
+    /// scheduler
+    wmtk::SchedulerStats single_split_execution(
         wmtk::operations::Operation& edge_split_op,
-        std::function<std::vector<double>(const Simplex&)>& edge_priority);
+        std::function<std::vector<double>(const Simplex&)>& edge_priority,
+        wmtk::attribute::Accessor<double>& face_accessor,
+        double target_distance);
 };
 } // namespace wmtk::components::operations::internal
