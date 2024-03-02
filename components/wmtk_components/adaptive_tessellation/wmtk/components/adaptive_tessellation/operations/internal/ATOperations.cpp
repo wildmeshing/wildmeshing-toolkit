@@ -4,6 +4,7 @@
 #include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/area_barrier.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/RGRefine.hpp>
 
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/function/simplex/AMIPS.hpp>
@@ -314,7 +315,6 @@ void ATOperations::AT_face_split(
 {
     std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
     std::shared_ptr<Mesh> position_mesh_ptr = m_atdata.position_mesh_ptr();
-    wmtk::attribute::MeshAttributeHandle uv_handle = m_atdata.uv_handle();
 
     auto face_split = std::make_shared<TriFaceSplit>(*uv_mesh_ptr);
     face_split->add_invariant(
@@ -426,7 +426,6 @@ void ATOperations::AT_split_single_edge_mesh(Mesh* edge_meshi_ptr)
 void ATOperations::AT_split_boundary()
 {
     auto& uv_mesh = m_atdata.uv_mesh();
-    auto uv_handle = m_atdata.uv_handle();
     int64_t num_edge_meshes = m_atdata.num_edge_meshes();
 
     // 1) EdgeSplit on boundary
@@ -445,6 +444,85 @@ void ATOperations::AT_collapse_interior(
     std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
 {
     throw std::runtime_error("AT collapse not implemented");
+}
+void ATOperations::AT_rg_refine(std::function<std::vector<double>(const Simplex&)>& priority)
+{
+    std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
+    wmtk::attribute::MeshAttributeHandle edge_length_handle = m_atdata.m_3d_edge_length_handle;
+
+    auto rg_refine =
+        std::make_shared<wmtk::operations::composite::RGRefine>(*uv_mesh_ptr, edge_length_handle);
+    rg_refine->split().add_invariant(std::make_shared<TodoLargerInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.m_distance_error_handle.as<double>(),
+        m_target_distance));
+
+    rg_refine->set_priority(priority);
+    rg_refine->swap().add_invariant(std::make_shared<SimplexInversionInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.uv_handle().as<double>()));
+
+    rg_refine->split().set_new_attribute_strategy(m_atdata.uv_handle());
+    rg_refine->second_split().set_new_attribute_strategy(m_atdata.uv_handle());
+    rg_refine->swap().split().set_new_attribute_strategy(m_atdata.uv_handle());
+    rg_refine->swap().collapse().set_new_attribute_strategy(
+        m_atdata.uv_handle(),
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+
+    rg_refine->split().set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);
+    rg_refine->second_split().set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);
+    rg_refine->swap().split().set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);
+    rg_refine->swap().collapse().set_new_attribute_strategy(
+        m_atdata.m_uvmesh_xyz_handle,
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+
+    rg_refine->split().set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
+    rg_refine->second_split().set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
+    rg_refine->swap().split().set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
+    rg_refine->swap().collapse().set_new_attribute_strategy(
+        m_atdata.m_3d_edge_length_handle,
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+
+    // the update strategy that doesn't matter
+    rg_refine->split().set_new_attribute_strategy(m_atdata.m_distance_error_handle);
+    rg_refine->second_split().set_new_attribute_strategy(m_atdata.m_distance_error_handle);
+    rg_refine->swap().split().set_new_attribute_strategy(m_atdata.m_distance_error_handle);
+    rg_refine->swap().collapse().set_new_attribute_strategy(
+        m_atdata.m_distance_error_handle,
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+
+    rg_refine->split().set_new_attribute_strategy(
+        m_atdata.m_amips_error_handle,
+        SplitBasicStrategy::None,
+        SplitRibBasicStrategy::Mean);
+    rg_refine->second_split().set_new_attribute_strategy(
+        m_atdata.m_amips_error_handle,
+        SplitBasicStrategy::None,
+        SplitRibBasicStrategy::Mean);
+    rg_refine->swap().split().set_new_attribute_strategy(
+        m_atdata.m_amips_error_handle,
+        SplitBasicStrategy::None,
+        SplitRibBasicStrategy::Mean);
+    rg_refine->swap().collapse().set_new_attribute_strategy(
+        m_atdata.m_amips_error_handle,
+        wmtk::operations::CollapseBasicStrategy::Mean);
+
+    rg_refine->split().add_transfer_strategy(m_uvmesh_xyz_update);
+    rg_refine->split().add_transfer_strategy(m_amips_error_update);
+    rg_refine->split().add_transfer_strategy(m_distance_error_update);
+    rg_refine->split().add_transfer_strategy(m_3d_edge_length_update);
+
+    rg_refine->second_split().add_transfer_strategy(m_uvmesh_xyz_update);
+    rg_refine->second_split().add_transfer_strategy(m_amips_error_update);
+    rg_refine->second_split().add_transfer_strategy(m_distance_error_update);
+    rg_refine->second_split().add_transfer_strategy(m_3d_edge_length_update);
+
+
+    rg_refine->swap().add_transfer_strategy(m_uvmesh_xyz_update);
+    rg_refine->swap().add_transfer_strategy(m_amips_error_update);
+    rg_refine->swap().add_transfer_strategy(m_distance_error_update);
+    rg_refine->swap().add_transfer_strategy(m_3d_edge_length_update);
+    m_ops.push_back(rg_refine);
 }
 
 } // namespace wmtk::components::operations::internal

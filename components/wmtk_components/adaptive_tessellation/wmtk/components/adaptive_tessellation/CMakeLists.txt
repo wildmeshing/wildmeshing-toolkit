@@ -11,7 +11,7 @@ adaptive_tessellation.cpp
 target_sources(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${SRC_FILES})
 
 add_subdirectory(image)
-add_subdirectory(operations/internal)
+add_subdirectory(operations)
 add_subdirectory(quadrature)
 add_subdirectory(function)
 add_subdirectory(multimesh/utils)

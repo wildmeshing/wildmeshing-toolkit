@@ -96,7 +96,7 @@ public:
     void AT_swap_interior(
         std::function<std::vector<double>(const Simplex&)>& priority,
         std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
-
+    void AT_rg_refine(std::function<std::vector<double>(const Simplex&)>& priority);
     ///// update
     void set_uvmesh_xyz_update_rule_initialize();
 
