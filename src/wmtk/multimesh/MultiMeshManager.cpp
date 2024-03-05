@@ -243,6 +243,45 @@ void MultiMeshManager::register_child_mesh(
     }
 }
 
+void MultiMeshManager::deregister_child_mesh(
+    Mesh& my_mesh,
+    const std::shared_ptr<Mesh>& child_mesh_ptr)
+{
+    Mesh& child_mesh = *child_mesh_ptr;
+
+    MultiMeshManager& child_manager = child_mesh.m_multi_mesh_manager;
+    MultiMeshManager& parent_manager = my_mesh.m_multi_mesh_manager;
+
+
+    auto& child_to_parent_handle = child_manager.map_to_parent_handle;
+
+    const int64_t child_id = child_manager.child_id();
+    ChildData& child_data = parent_manager.m_children[child_id];
+    auto& parent_to_child_handle = child_data.map_handle;
+
+    assert(child_data.mesh == child_mesh_ptr);
+
+    // remove map attribute from parent
+    my_mesh.m_attribute_manager.get<int64_t>(my_mesh.top_simplex_type())
+        .remove_attributes({parent_to_child_handle.base_handle()});
+
+    // remove map attribute from child
+    child_mesh.m_attribute_manager.get<int64_t>(my_mesh.top_simplex_type())
+        .remove_attributes({child_to_parent_handle.base_handle()});
+
+    // set child_id to -1 --> make it a root
+    child_manager.m_child_id = -1;
+    // remove parent pointer
+    child_manager.m_parent = nullptr;
+
+    // remove child_data from parent and update child ids for all other children
+    auto& children = parent_manager.m_children;
+    children.erase(children.begin() + child_id);
+    for (size_t i = 0; i < children.size(); ++i) {
+        children[i].mesh->m_multi_mesh_manager.m_child_id = i;
+    }
+}
+
 std::vector<wmtk::attribute::TypedAttributeHandle<int64_t>> MultiMeshManager::map_handles() const
 {
     std::vector<wmtk::attribute::TypedAttributeHandle<int64_t>> handles;

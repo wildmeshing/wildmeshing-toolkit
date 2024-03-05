@@ -138,7 +138,7 @@ public:
      * mesh becomes the new root for its own children. Attribute handles for the child and parent
      * mesh will be invalidated by deregistration.
      */
-    void deregister_child_mesh(Mesh& my_mesh, Mesh& child_mesh);
+    void deregister_child_mesh(Mesh& my_mesh, const std::shared_ptr<Mesh>& child_mesh_ptr);
 
 
     // bool are_maps_valid(const Mesh& my_mesh) const;

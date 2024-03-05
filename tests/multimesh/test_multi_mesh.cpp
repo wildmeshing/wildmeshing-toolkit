@@ -1266,3 +1266,41 @@ TEST_CASE("test_split_multi_mesh_1D_2D_single_triangle", "[multimesh][1D][2D]")
 
     print_tuple_map(parent, p_mul_manager);
 }
+
+TEST_CASE("test_deregister_child_mesh", "[multimesh]")
+{
+    DEBUG_TriMesh parent = two_neighbors();
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(single_triangle());
+    std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
+
+
+    auto& child0 = *child0_ptr;
+    auto& child1 = *child1_ptr;
+
+    {
+        auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {2});
+        auto child1_map = multimesh::same_simplex_dimension_surjection(parent, child1, {0, 1});
+
+        parent.register_child_mesh(child0_ptr, child0_map);
+        parent.register_child_mesh(child1_ptr, child1_map);
+    }
+
+    REQUIRE(parent.get_child_meshes().size() == 2);
+    const auto& p_mul_manager = parent.multi_mesh_manager();
+    const auto& c0_mul_manager = child0.multi_mesh_manager();
+    const auto& c1_mul_manager = child1.multi_mesh_manager();
+    REQUIRE(p_mul_manager.get_child_meshes().size() == 2);
+    REQUIRE(p_mul_manager.children().size() == 2);
+    REQUIRE(p_mul_manager.children()[0].mesh == child0_ptr);
+    REQUIRE(p_mul_manager.children()[1].mesh == child1_ptr);
+    REQUIRE(c0_mul_manager.children().size() == 0);
+    REQUIRE(c1_mul_manager.children().size() == 0);
+    REQUIRE(&c0_mul_manager.get_root_mesh(child0) == &parent);
+    REQUIRE(&c1_mul_manager.get_root_mesh(child1) == &parent);
+
+    REQUIRE(p_mul_manager.is_root());
+    REQUIRE(!c0_mul_manager.is_root());
+    REQUIRE(!c1_mul_manager.is_root());
+
+    parent.deregister_child_mesh(child0_ptr);
+}
