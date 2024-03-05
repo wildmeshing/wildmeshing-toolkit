@@ -7,6 +7,7 @@
 #include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/internal/ATEnergies.cpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/LineQuadrature.hpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/Quadrature.hpp>
 #include <wmtk/components/input/input.hpp>
@@ -449,33 +450,9 @@ TEST_CASE("line_quadrature")
         double u1 = dist(rng);
         double v1 = dist(rng);
         Eigen::Vector2d uv0(u0, v0), uv1(u1, v1);
+        double arc_length =
+            wmtk::components::operations::internal::geodesic_distance(uv0, uv1, m_evaluator_ptr);
 
-        auto displacement =
-            [&m_evaluator_ptr](const Eigen::Vector2d& x) -> Eigen::Matrix<double, 3, 2> {
-            Eigen::Matrix<double, 3, 2> Jac;
-            for (int i = 0; i < 3; ++i) {
-                auto disp_i = [&i, &m_evaluator_ptr](const Eigen::Vector2d& x) -> double {
-                    return m_evaluator_ptr->uv_to_position(x)(i);
-                };
-                Eigen::VectorXd grad_i;
-                fd::finite_gradient(x, disp_i, grad_i, fd::AccuracyOrder::FOURTH);
-                Jac.row(i) = grad_i;
-            }
-            return Jac;
-        };
-
-
-        wmtk::Quadrature quadrature;
-        wmtk::LineQuadrature line_quadrature;
-        line_quadrature.get_quadrature(6, quadrature);
-
-        double arc_length = 0;
-        logger().set_level(spdlog::level::debug);
-        for (auto i = 0; i < quadrature.size(); ++i) {
-            Eigen::Vector2d quad_point_uv = quadrature.points()(i) * (uv1 - uv0) + uv0;
-            Eigen::Matrix<double, 3, 2> Jac = displacement(quad_point_uv);
-            arc_length += quadrature.weights()[i] * (Jac * (uv1 - uv0)).norm();
-        }
         REQUIRE(
             pow(arc_length -
                     (m_evaluator_ptr->uv_to_position(uv1) - m_evaluator_ptr->uv_to_position(uv0))

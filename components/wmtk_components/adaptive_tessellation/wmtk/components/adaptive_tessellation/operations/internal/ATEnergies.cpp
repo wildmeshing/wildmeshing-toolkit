@@ -17,6 +17,11 @@
 #include <iostream>
 
 #include "ATOperations.hpp"
+
+#include <finitediff.hpp>
+#include <wmtk/components/adaptive_tessellation/quadrature/LineQuadrature.hpp>
+#include <wmtk/components/adaptive_tessellation/quadrature/Quadrature.hpp>
+
 namespace wmtk::components::operations::internal {
 void ATOperations::set_energies()
 {
@@ -203,4 +208,38 @@ void ATOperations::initialize_3d_edge_length()
         m_3d_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
     }
 }
+
+double geodesic_distance(
+    const Eigen::Vector2d& uv0,
+    const Eigen::Vector2d& uv1,
+    const std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
+        m_evaluator_ptr)
+{
+    auto displacement =
+        [&m_evaluator_ptr](const Eigen::Vector2d& x) -> Eigen::Matrix<double, 3, 2> {
+        Eigen::Matrix<double, 3, 2> Jac;
+        for (int i = 0; i < 3; ++i) {
+            auto disp_i = [&i, &m_evaluator_ptr](const Eigen::Vector2d& uv) -> double {
+                return m_evaluator_ptr->uv_to_position(uv)(i);
+            };
+            Eigen::VectorXd grad_i;
+            fd::finite_gradient(x, disp_i, grad_i, fd::AccuracyOrder::FOURTH);
+            Jac.row(i) = grad_i;
+        }
+        return Jac;
+    };
+
+    wmtk::Quadrature quadrature;
+    wmtk::LineQuadrature line_quadrature;
+    line_quadrature.get_quadrature(6, quadrature);
+
+    double arc_length = 0;
+    for (auto i = 0; i < quadrature.size(); ++i) {
+        Eigen::Vector2d quad_point_uv = quadrature.points()(i) * (uv1 - uv0) + uv0;
+        Eigen::Matrix<double, 3, 2> Jac = displacement(quad_point_uv);
+        arc_length += quadrature.weights()[i] * (Jac * (uv1 - uv0)).norm();
+    }
+    return arc_length;
+}
+
 } // namespace wmtk::components::operations::internal
