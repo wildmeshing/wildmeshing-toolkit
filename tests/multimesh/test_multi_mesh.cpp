@@ -1302,5 +1302,36 @@ TEST_CASE("test_deregister_child_mesh", "[multimesh]")
     REQUIRE(!c0_mul_manager.is_root());
     REQUIRE(!c1_mul_manager.is_root());
 
-    parent.deregister_child_mesh(child0_ptr);
+    SECTION("remove_0")
+    {
+        parent.deregister_child_mesh(child0_ptr);
+        CHECK(parent.get_child_meshes().size() == 1);
+        CHECK(p_mul_manager.get_child_meshes().size() == 1);
+        CHECK(p_mul_manager.children().size() == 1);
+        CHECK(p_mul_manager.children()[0].mesh == child1_ptr);
+        CHECK(c0_mul_manager.children().size() == 0);
+        CHECK(c1_mul_manager.children().size() == 0);
+        CHECK(c0_mul_manager.get_root_mesh(child0) == *child0_ptr);
+        CHECK(c1_mul_manager.get_root_mesh(child1) == parent);
+
+        CHECK(p_mul_manager.is_root());
+        CHECK(c0_mul_manager.is_root());
+        CHECK_FALSE(c1_mul_manager.is_root());
+    }
+    SECTION("remove_1")
+    {
+        parent.deregister_child_mesh(child1_ptr);
+        CHECK(parent.get_child_meshes().size() == 1);
+        CHECK(p_mul_manager.get_child_meshes().size() == 1);
+        CHECK(p_mul_manager.children().size() == 1);
+        CHECK(p_mul_manager.children()[0].mesh == child0_ptr);
+        CHECK(c0_mul_manager.children().size() == 0);
+        CHECK(c1_mul_manager.children().size() == 0);
+        CHECK(c0_mul_manager.get_root_mesh(child0) == parent);
+        CHECK(c1_mul_manager.get_root_mesh(child1) == *child1_ptr);
+
+        CHECK(p_mul_manager.is_root());
+        CHECK(c1_mul_manager.is_root());
+        CHECK_FALSE(c0_mul_manager.is_root());
+    }
 }
