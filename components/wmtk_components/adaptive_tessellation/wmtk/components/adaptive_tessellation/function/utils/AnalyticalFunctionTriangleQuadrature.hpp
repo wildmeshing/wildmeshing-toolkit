@@ -110,14 +110,19 @@ public:
             Vector3<T> texture_position = m_three_channel_evaluator.uv_to_position(quad_point_uv);
             Vector3<T> position = position_triangle_ColMajor * bary.get(quad_point_uv);
             Vector3<T> diffp = texture_position - position;
+            if (m_debug) {
+                value += T(tmp.weights()[i]);
+            }
             value += squared_norm_T(diffp) * T(tmp.weights()[i]);
         }
         // scaling by jacobian
         // value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);
         // value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
-        value = value * wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
         return value;
     }
+
+public:
+    bool m_debug = false;
 
 protected:
     const ThreeChannelPositionMapEvaluator& m_three_channel_evaluator;

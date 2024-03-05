@@ -18,6 +18,7 @@
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/utils/triangle_areas.hpp>
 
 #include <chrono>
 #include <polysolve/Utils.hpp>
@@ -359,4 +360,45 @@ TEST_CASE("3damips_autodiff_correctness")
 //     atdata.uv_handle(),
 //     image_evaluator,
 //     func_evaluator);
+TEST_CASE("distance_energy_correctness")
+{
+    std::array<std::shared_ptr<image::Sampling>, 3> funcs = {
+        {std::make_shared<image::SamplingAnalyticFunction>(
+             image::SamplingAnalyticFunction_FunctionType::Linear,
+             1,
+             0,
+             0.),
+         std::make_shared<image::SamplingAnalyticFunction>(
+             image::SamplingAnalyticFunction_FunctionType::Linear,
+             0,
+             1,
+             0.),
+         std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
+
+        }};
+    std::shared_ptr<function::utils::ThreeChannelPositionMapEvaluator> m_evaluator_ptr =
+        std::make_shared<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
+            funcs,
+            image::SAMPLING_METHOD::Analytical);
+    Eigen::Vector2d t0_uv0(0.109375, 0.578125), t0_uv1(0.109375, 0.453125), t0_uv2(0.125, 0.625);
+    Eigen::Vector2d t1_uv0(0.5, 0.75), t1_uv1(0.375, 0.625), t1_uv2(0.625, 0.625);
+    std::shared_ptr<wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature>
+        analytical_function_distance_error = std::make_shared<
+            wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature>(
+            *m_evaluator_ptr);
+    analytical_function_distance_error->m_debug = true;
+    auto error_t0 =
+        analytical_function_distance_error->get_error_one_triangle_exact(t0_uv0, t0_uv1, t0_uv2);
+    auto area_t0 = wmtk::utils::triangle_unsigned_2d_area(t0_uv0, t0_uv1, t0_uv2);
+    auto error_t1 =
+        analytical_function_distance_error->get_error_one_triangle_exact(t1_uv0, t1_uv1, t1_uv2);
+    auto area_t1 = wmtk::utils::triangle_unsigned_2d_area(t1_uv0, t1_uv1, t1_uv2);
+    // logger().set_level(spdlog::level::debug);
+    logger().debug("error_t0: {}", error_t0);
+    logger().debug("area_t0: {}", area_t0);
+    logger().debug("error_t1: {}", error_t1);
+    logger().debug("area_t1: {}", area_t1);
+    REQUIRE(pow(error_t0 - area_t0, 2) < 1e-5);
+    REQUIRE(pow(error_t1 - area_t1, 2) < 1e-5);
+}
 } // namespace wmtk::components
