@@ -7,6 +7,8 @@
 #include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
+#include <wmtk/components/adaptive_tessellation/quadrature/LineQuadrature.hpp>
+#include <wmtk/components/adaptive_tessellation/quadrature/Quadrature.hpp>
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/function/PerSimplexAutodiffFunction.cpp>
 #include <wmtk/function/simplex/AMIPS.cpp>
@@ -25,6 +27,8 @@
 #include <wmtk/utils/Logger.hpp>
 
 #include <finitediff.hpp>
+
+#include <random>
 
 using namespace wmtk;
 using namespace wmtk::tests;
@@ -400,5 +404,83 @@ TEST_CASE("distance_energy_correctness")
     logger().debug("area_t1: {}", area_t1);
     REQUIRE(pow(error_t0 - area_t0, 2) < 1e-5);
     REQUIRE(pow(error_t1 - area_t1, 2) < 1e-5);
+}
+
+TEST_CASE("line_quadrature")
+{
+    std::array<std::shared_ptr<image::Sampling>, 3> funcs = {
+        {std::make_shared<image::SamplingAnalyticFunction>(
+             image::SamplingAnalyticFunction_FunctionType::Linear,
+             1,
+             0,
+             0.),
+         std::make_shared<image::SamplingAnalyticFunction>(
+             image::SamplingAnalyticFunction_FunctionType::Linear,
+             0,
+             1,
+             0.),
+         std::make_shared<image::SamplingAnalyticFunction>(
+             image::SamplingAnalyticFunction_FunctionType::Linear,
+             0,
+             0,
+             1.)
+
+        }};
+    std::shared_ptr<function::utils::ThreeChannelPositionMapEvaluator> m_evaluator_ptr =
+        std::make_shared<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
+            funcs,
+            image::SAMPLING_METHOD::Analytical);
+
+    // Seed the random number generator
+    std::mt19937 rng(std::random_device{}());
+
+    // Define the range for the random double values
+    double min = 0.0;
+    double max = 100.0;
+
+    // Create a uniform_real_distribution object
+    std::uniform_real_distribution<double> dist(min, max);
+
+    for (int rand_trail = 0; rand_trail < 100; ++rand_trail) {
+        // Generate a random double value
+        double u0 = dist(rng);
+        double v0 = dist(rng);
+
+        double u1 = dist(rng);
+        double v1 = dist(rng);
+        Eigen::Vector2d uv0(u0, v0), uv1(u1, v1);
+
+        auto displacement =
+            [&m_evaluator_ptr](const Eigen::Vector2d& x) -> Eigen::Matrix<double, 3, 2> {
+            Eigen::Matrix<double, 3, 2> Jac;
+            for (int i = 0; i < 3; ++i) {
+                auto disp_i = [&i, &m_evaluator_ptr](const Eigen::Vector2d& x) -> double {
+                    return m_evaluator_ptr->uv_to_position(x)(i);
+                };
+                Eigen::VectorXd grad_i;
+                fd::finite_gradient(x, disp_i, grad_i, fd::AccuracyOrder::FOURTH);
+                Jac.row(i) = grad_i;
+            }
+            return Jac;
+        };
+
+
+        wmtk::Quadrature quadrature;
+        wmtk::LineQuadrature line_quadrature;
+        line_quadrature.get_quadrature(6, quadrature);
+
+        double arc_length = 0;
+        logger().set_level(spdlog::level::debug);
+        for (auto i = 0; i < quadrature.size(); ++i) {
+            Eigen::Vector2d quad_point_uv = quadrature.points()(i) * (uv1 - uv0) + uv0;
+            Eigen::Matrix<double, 3, 2> Jac = displacement(quad_point_uv);
+            arc_length += quadrature.weights()[i] * (Jac * (uv1 - uv0)).norm();
+        }
+        REQUIRE(
+            pow(arc_length -
+                    (m_evaluator_ptr->uv_to_position(uv1) - m_evaluator_ptr->uv_to_position(uv0))
+                        .norm(),
+                2) < 1e-5);
+    }
 }
 } // namespace wmtk::components
