@@ -263,13 +263,16 @@ std::string MeshAttributes<T>::get_name(const AttributeHandle& handle) const
 template <typename T>
 void MeshAttributes<T>::set_name(const AttributeHandle& handle, const std::string& name)
 {
-    assert(m_handles.count(name) == 0); // name should not exist already
-
     const std::string old_name = get_name(handle);
 
-    auto& attr = m_attributes[handle.index];
+    if (old_name == name) {
+        return;
+    }
 
+    auto& attr = m_attributes[handle.index];
     assert(attr->m_name == old_name);
+
+    assert(m_handles.count(name) == 0); // name should not exist already
 
     attr->m_name = name;
     m_handles[name] = m_handles[old_name];
