@@ -174,8 +174,8 @@ public:
         const = 0;
 
 
-    std::vector<attribute::TypedAttributeHandleVariant> builtin_attributes() const;
-    std::vector<attribute::TypedAttributeHandleVariant> custom_attributes() const;
+    std::vector<attribute::MeshAttributeHandle::HandleVariant> builtin_attributes() const;
+    std::vector<attribute::MeshAttributeHandle::HandleVariant> custom_attributes() const;
 
 
     /* @brief registers an attribute without assuming the mesh exists */
@@ -235,7 +235,8 @@ public:
     template <typename T>
     std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;
 
-    std::string get_attribute_name(const attribute::TypedAttributeHandleVariant& handle) const;
+    std::string get_attribute_name(
+        const attribute::MeshAttributeHandle::HandleVariant& handle) const;
 
     /**
      * @brief Remove all custom attributes besides the one passed in.
@@ -243,7 +244,7 @@ public:
      * @param custom_attributes Vector of attributes that should be kept
      */
     void clear_attributes(
-        const std::vector<attribute::TypedAttributeHandleVariant>& keep_attributes);
+        const std::vector<attribute::MeshAttributeHandle::HandleVariant>& keep_attributes);
     void clear_attributes();
     void clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes);
 

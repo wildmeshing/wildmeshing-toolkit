@@ -4,7 +4,9 @@
 namespace wmtk::attribute::utils {
 
 template <typename T>
-bool variant_comparison(const TypedAttributeHandle<T>& a, const TypedAttributeHandleVariant& var)
+bool variant_comparison(
+    const TypedAttributeHandle<T>& a,
+    const MeshAttributeHandle::HandleVariant& var)
 {
     return std::visit(
         [&](const auto& v) noexcept {

@@ -35,6 +35,7 @@ class MultiMeshVisitorExecutor;
 } // namespace multimesh
 class Mesh;
 namespace simplex {
+    class Simplex;
 class SimplexCollection;
 }
 }
