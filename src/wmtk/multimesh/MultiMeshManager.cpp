@@ -266,7 +266,7 @@ void MultiMeshManager::deregister_child_mesh(
         .remove_attributes({parent_to_child_handle.base_handle()});
 
     // remove map attribute from child
-    child_mesh.m_attribute_manager.get<int64_t>(my_mesh.top_simplex_type())
+    child_mesh.m_attribute_manager.get<int64_t>(child_mesh.top_simplex_type())
         .remove_attributes({child_to_parent_handle.base_handle()});
 
     // set child_id to -1 --> make it a root
