@@ -43,9 +43,7 @@ bool Swap44_2EnergyBeforeInvariant::before(const simplex::Simplex& t) const
     std::array<std::array<int, 4>, 4> new_tets = {
         {{{3, 5, 0, 2}}, {{3, 5, 2, 1}}, {{3, 5, 1, 4}}, {{3, 5, 4, 0}}}};
 
-    double old_energy_sum = 0;
     double old_energy_max = std::numeric_limits<double>::lowest();
-    double new_energy_sum = 0;
     double new_energy_max = std::numeric_limits<double>::lowest();
 
     for (int i = 0; i < 4; ++i) {
@@ -69,8 +67,6 @@ bool Swap44_2EnergyBeforeInvariant::before(const simplex::Simplex& t) const
                 positions[old_tets[i][3]][2],
             }});
 
-
-            old_energy_sum += energy;
             if (energy > old_energy_max) old_energy_max = energy;
         } else {
             auto energy = wmtk::function::utils::Tet_AMIPS_energy({{
@@ -88,8 +84,6 @@ bool Swap44_2EnergyBeforeInvariant::before(const simplex::Simplex& t) const
                 positions[old_tets[i][3]][2],
             }});
 
-
-            old_energy_sum += energy;
             if (energy > old_energy_max) old_energy_max = energy;
         }
 
@@ -113,8 +107,6 @@ bool Swap44_2EnergyBeforeInvariant::before(const simplex::Simplex& t) const
                 positions[new_tets[i][3]][2],
             }});
 
-
-            new_energy_sum += energy;
             if (energy > new_energy_max) new_energy_max = energy;
         } else {
             auto energy = wmtk::function::utils::Tet_AMIPS_energy({{
@@ -132,8 +124,6 @@ bool Swap44_2EnergyBeforeInvariant::before(const simplex::Simplex& t) const
                 positions[new_tets[i][3]][2],
             }});
 
-
-            new_energy_sum += energy;
             if (energy > new_energy_max) new_energy_max = energy;
         }
     }
