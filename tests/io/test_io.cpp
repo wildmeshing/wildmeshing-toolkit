@@ -3,6 +3,7 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <wmtk/io/MshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
@@ -25,6 +26,8 @@ namespace fs = std::filesystem;
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
+constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
 TEST_CASE("hdf5_2d", "[io]")
 {
@@ -147,19 +150,72 @@ TEST_CASE("paraview_3d", "[io]")
 
 TEST_CASE("msh_3d", "[io]")
 {
-    auto mesh = read_mesh(WMTK_DATA_DIR "/sphere_delaunay.msh");
+    // auto mesh = read_mesh(WMTK_DATA_DIR "/sphere_delaunay.msh");
+}
+
+TEST_CASE("msh_3d_tetwild_middle", "[io][man-ext]")
+{
+    // std::shared_ptr<Mesh> mesh_final = read_mesh(WMTK_DATA_DIR "/tetwild_fig8_final.msh");
+    // mesh_final = std::dynamic_pointer_cast<TetMesh>(mesh_final);
+    // CHECK(mesh_final != nullptr);
+    // CHECK(mesh_final->top_cell_dimension() == 3);
+    // std::cout << "final tet count = " <<
+    // mesh_final->get_all(mesh_final->top_simplex_type()).size()
+    //           << std::endl;
+
+    MshReader reader;
+    std::shared_ptr<Mesh> mesh_middle = reader.read(WMTK_DATA_DIR "/tetwild_fig8_mid.msh");
+
+    std::cout << "in/out, 0 = " << reader.extract_element_attribute("in/out", 0) << std::endl;
+    std::cout << "in/out, 1 = " << reader.extract_element_attribute("in/out", 1) << std::endl;
+    std::cout << "in/out, 2 = " << reader.extract_element_attribute("in/out", 2) << std::endl;
+    std::cout << "in/out, 3 = " << reader.extract_element_attribute("in/out", 3) << std::endl;
+
+    std::vector<std::string> attribute_names0 = reader.get_element_attribute_names(0);
+    std::cout << attribute_names0.size() << " attributes found" << std::endl;
+    std::vector<std::string> attribute_names1 = reader.get_element_attribute_names(1);
+    std::cout << attribute_names1.size() << " attributes found" << std::endl;
+    std::vector<std::string> attribute_names2 = reader.get_element_attribute_names(2);
+    std::cout << attribute_names2.size() << " attributes found" << std::endl;
+    std::vector<std::string> attribute_names3 = reader.get_element_attribute_names(3);
+    std::cout << attribute_names3.size() << " attributes found" << std::endl;
+    // for (const std::string& name : attribute_names0) {
+    //     std::cout << "Extracting attribute " << name << std::endl;
+    // }
+    // for (const std::string& name : attribute_names1) {
+    //     std::cout << "Extracting attribute " << name << std::endl;
+    // }
+    // for (const std::string& name : attribute_names2) {
+    //     std::cout << "Extracting attribute " << name << std::endl;
+    // }
+    // for (const std::string& name : attribute_names3) {
+    //     std::cout << "Extracting attribute " << name << std::endl;
+    // }
+    mesh_middle = std::dynamic_pointer_cast<TetMesh>(mesh_middle);
+    CHECK(mesh_middle != nullptr);
+    CHECK(mesh_middle->top_cell_dimension() == 3);
+    std::cout << "middle tet count = "
+              << mesh_middle->get_all(mesh_middle->top_simplex_type()).size() << std::endl;
+    // wmtk::attribute::TypedAttributeHandle<double> pos_handle =
+    //     mesh_middle->get_attribute_handle<double>(std::string("vertices"), PV).as<double>();
+    // wmtk::attribute::Accessor<double> acc_attribute =
+    // mesh_middle->create_accessor<double>(pos_handle);
+    // wmtk::attribute::TypedAttributeHandle<double> in_out_handle =
+    //     mesh_middle->get_attribute_handle<double>(std::string("in_out"), PT).as<double>();
 }
 
 TEST_CASE("attribute_after_split", "[io][.]")
 {
     DEBUG_TriMesh m = single_equilateral_triangle();
-    auto attribute_handle = m.register_attribute<int64_t>(std::string("test_attribute"), PE, 1).as<int64_t>();
+    auto attribute_handle =
+        m.register_attribute<int64_t>(std::string("test_attribute"), PE, 1).as<int64_t>();
 
     wmtk::attribute::TypedAttributeHandle<double> pos_handle =
         m.get_attribute_handle<double>(std::string("vertices"), PV).as<double>();
 
     {
-        wmtk::attribute::Accessor<int64_t> acc_attribute = m.create_accessor<int64_t>(attribute_handle);
+        wmtk::attribute::Accessor<int64_t> acc_attribute =
+            m.create_accessor<int64_t>(attribute_handle);
         wmtk::attribute::Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 0);
@@ -192,7 +248,7 @@ TEST_CASE("attribute_after_split", "[io][.]")
             {
                 // set the strategies
                 op.set_new_attribute_strategy(
-                    wmtk::attribute::MeshAttributeHandle(m,attribute_handle),
+                    wmtk::attribute::MeshAttributeHandle(m, attribute_handle),
                     wmtk::operations::SplitBasicStrategy::Copy,
                     wmtk::operations::SplitRibBasicStrategy::CopyTuple);
             }
@@ -211,7 +267,8 @@ TEST_CASE("attribute_after_split", "[io][.]")
     } // end of scope for the accessors
 
     {
-        wmtk::attribute::Accessor<int64_t> acc_attribute = m.create_accessor<int64_t>(attribute_handle);
+        wmtk::attribute::Accessor<int64_t> acc_attribute =
+            m.create_accessor<int64_t>(attribute_handle);
         for (const Tuple& t : m.get_all(PE)) {
             CHECK(acc_attribute.scalar_attribute(t) == 0);
         }
