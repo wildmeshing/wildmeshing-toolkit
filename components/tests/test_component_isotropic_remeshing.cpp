@@ -48,7 +48,8 @@ void print_tuple_map_iso(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManag
     int64_t child_id = 0;
     for (auto& child_data : p_mul_manager.children()) {
         PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
-        auto parent_to_child_accessor = parent.create_const_accessor<int64_t>(child_data.map_handle);
+        auto parent_to_child_accessor =
+            parent.create_const_accessor<int64_t>(child_data.map_handle);
         for (int64_t parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
             auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
                 parent.tuple_from_id(map_ptype, parent_gid));
@@ -646,7 +647,8 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         "length_abs": 0.003,
         "length_rel": -1,
         "lock_boundary": true,
-        "use_for_periodic": false
+        "use_for_periodic": false,
+        "dont_disable_split": false
     })"_json;
         REQUIRE_NOTHROW(
             wmtk::components::isotropic_remeshing(Paths(), mesh_isotropic_remeshing_json, cache));
@@ -702,6 +704,7 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D]")
         true,
         false,
         false,
+        false,
         10));
 
     {
@@ -737,6 +740,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
             false,
             false,
             false,
+            false,
             5);
 
         size_t n_boundary_edges = 0;
@@ -767,6 +771,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
             pass_through_attributes,
             0.5,
             true,
+            false,
             false,
             false,
             5);
@@ -835,6 +840,7 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
         /*lock_boundary*/ false,
         true,
         true,
+        false,
         5);
 
     REQUIRE(mesh.is_connectivity_valid());
@@ -910,6 +916,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
             0.05,
             false,
             true,
+            false,
             false,
             1);
         REQUIRE(mesh.is_connectivity_valid());
@@ -1003,6 +1010,7 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
         0.5,
         false,
         true,
+        false,
         false,
         25);
 

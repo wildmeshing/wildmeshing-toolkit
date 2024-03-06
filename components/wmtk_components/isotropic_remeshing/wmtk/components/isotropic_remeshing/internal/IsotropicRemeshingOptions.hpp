@@ -31,6 +31,7 @@ struct IsotropicRemeshingOptions
     bool lock_boundary;
     bool use_for_periodic;
     bool dont_disable_split;
+    bool fix_uv_seam;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(

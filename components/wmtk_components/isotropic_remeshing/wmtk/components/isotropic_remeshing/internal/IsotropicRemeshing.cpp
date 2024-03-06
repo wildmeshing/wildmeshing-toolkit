@@ -31,6 +31,7 @@ void isotropic_remeshing(
     const bool lock_boundary,
     const bool use_for_periodic,
     const bool dont_disable_split,
+    const bool fix_uv_seam,
     const int64_t iterations,
     const std::vector<attribute::MeshAttributeHandle>& other_positions,
     bool update_other_positions,
@@ -127,8 +128,10 @@ void isotropic_remeshing(
     op_collapse->add_invariant(invariant_mm_map);
 
     // hack for uv
-    op_collapse->add_invariant(
-        std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
+    if (fix_uv_seam) {
+        op_collapse->add_invariant(
+            std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
+    }
 
     if (lock_boundary && !use_for_periodic) {
         op_collapse->add_invariant(invariant_interior_edge);
@@ -164,8 +167,10 @@ void isotropic_remeshing(
     op_swap->add_invariant(invariant_interior_edge);
 
     // hack for uv
-    op_swap->add_invariant(
-        std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
+    if (fix_uv_seam) {
+        op_swap->add_invariant(
+            std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
+    }
 
     op_swap->add_invariant(invariant_valence_improve);
     op_swap->collapse().add_invariant(invariant_link_condition);
@@ -205,8 +210,10 @@ void isotropic_remeshing(
     }
 
     // hack for uv
-    op_smooth->add_invariant(
-        std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
+    if (fix_uv_seam) {
+        op_smooth->add_invariant(
+            std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
+    }
 
     if (position_for_inversion) {
         op_smooth->add_invariant(std::make_shared<SimplexInversionInvariant>(

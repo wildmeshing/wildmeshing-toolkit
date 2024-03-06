@@ -18,6 +18,7 @@ void isotropic_remeshing(
     const bool lock_boundary,
     const bool use_for_periodic,
     const bool dont_disable_split,
+    const bool fix_uv_seam,
     const int64_t iterations,
     const std::vector<attribute::MeshAttributeHandle>& other_positions = {},
     bool update_other_positions = false,

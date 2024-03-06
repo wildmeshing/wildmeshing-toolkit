@@ -104,6 +104,10 @@
     "pointer": "/dont_disable_split",
     "type": "bool",
     "default": false
+  },
+  {
+    "pointer": "/fix_uv_seam",
+    "type": "bool",
+    "default": false
   }
-
 ]
