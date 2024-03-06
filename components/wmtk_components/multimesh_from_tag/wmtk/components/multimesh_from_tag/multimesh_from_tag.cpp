@@ -33,6 +33,7 @@ void multimesh_from_tag(const base::Paths& paths, const nlohmann::json& j, io::C
 
     MultiMeshFromTag mmft(mesh, substructure_label, substructure_value);
     mmft.compute_substructure_mesh();
+    mmft.remove_soup();
 
     // clear attributes
     {

@@ -73,6 +73,10 @@ TEST_CASE("multimesh_from_tag_tri_tri", "[components][multimesh][multimesh_from_
     CHECK(m.get_child_meshes().size() == 2);
     CHECK(m.is_multi_mesh_root());
 
+    mmft.remove_soup();
+    CHECK(m.get_child_meshes().size() == 1);
+    CHECK(m.is_multi_mesh_root());
+
     auto substructure_mesh_ptr = mmft.substructure();
     Mesh& sub_mesh = *substructure_mesh_ptr;
 
@@ -153,6 +157,10 @@ TEST_CASE("multimesh_from_tag_tri_edge", "[components][multimesh][multimesh_from
     CHECK(m.get_child_meshes().size() == 2);
     CHECK(m.is_multi_mesh_root());
 
+    mmft.remove_soup();
+    CHECK(m.get_child_meshes().size() == 1);
+    CHECK(m.is_multi_mesh_root());
+
     auto substructure_mesh_ptr = mmft.substructure();
     Mesh& sub_mesh = *substructure_mesh_ptr;
 
@@ -194,6 +202,10 @@ TEST_CASE("multimesh_from_tag_tri_point", "[components][multimesh][multimesh_fro
     mmft.compute_substructure_mesh();
 
     CHECK(m.get_child_meshes().size() == 2);
+    CHECK(m.is_multi_mesh_root());
+
+    mmft.remove_soup();
+    CHECK(m.get_child_meshes().size() == 1);
     CHECK(m.is_multi_mesh_root());
 
     auto substructure_mesh_ptr = mmft.substructure();
@@ -269,6 +281,10 @@ TEST_CASE("multimesh_from_tag_tet_tet", "[components][multimesh][multimesh_from_
     mmft.compute_substructure_mesh();
 
     CHECK(m.get_child_meshes().size() == 2);
+    CHECK(m.is_multi_mesh_root());
+
+    mmft.remove_soup();
+    CHECK(m.get_child_meshes().size() == 1);
     CHECK(m.is_multi_mesh_root());
 
     auto substructure_mesh_ptr = mmft.substructure();
@@ -365,6 +381,10 @@ TEST_CASE("multimesh_from_tag_tet_tri", "[components][multimesh][multimesh_from_
     mmft.compute_substructure_mesh();
 
     CHECK(m.get_child_meshes().size() == 2);
+    CHECK(m.is_multi_mesh_root());
+
+    mmft.remove_soup();
+    CHECK(m.get_child_meshes().size() == 1);
     CHECK(m.is_multi_mesh_root());
 
     auto substructure_mesh_ptr = mmft.substructure();

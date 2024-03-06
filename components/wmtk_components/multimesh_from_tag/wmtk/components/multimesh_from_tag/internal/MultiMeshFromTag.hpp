@@ -55,6 +55,15 @@ public:
 
     bool is_root_simplex_manifold(const simplex::Simplex& s) const;
 
+    /**
+     * @brief Remove the substructure soup from the multimesh.
+     *
+     * The substructure soup is used as an intermediate representation to construct the manifold
+     * substructure mesh. This method removes the soup from the multimesh and is therefore necessary
+     * to get a clean multimesh.
+     */
+    void remove_soup();
+
 private:
     /**
      * @brief Compute the ids of the manifold substructure.

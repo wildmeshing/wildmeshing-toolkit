@@ -53,6 +53,11 @@ std::shared_ptr<Mesh> MultiMeshFromTag::substructure() const
     return m_substructure_ptr;
 }
 
+void MultiMeshFromTag::remove_soup()
+{
+    m_mesh.deregister_child_mesh(m_soup_ptr);
+}
+
 void MultiMeshFromTag::compute_substructure_ids()
 {
     Mesh& child = *m_soup_ptr;
