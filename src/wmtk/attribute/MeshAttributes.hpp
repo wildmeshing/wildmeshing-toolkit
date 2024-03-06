@@ -81,6 +81,8 @@ public:
     int64_t dimension(const AttributeHandle& handle) const;
     std::string get_name(const AttributeHandle& handle) const;
 
+    void set_name(const AttributeHandle& handle, const std::string& name);
+
     bool has_attribute(const std::string& name) const;
 
     // the number of attributes held in this object
