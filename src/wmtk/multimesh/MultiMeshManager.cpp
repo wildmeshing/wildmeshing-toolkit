@@ -262,7 +262,7 @@ void MultiMeshManager::deregister_child_mesh(
     assert(child_data.mesh == child_mesh_ptr);
 
     // remove map attribute from parent
-    my_mesh.m_attribute_manager.get<int64_t>(my_mesh.top_simplex_type())
+    my_mesh.m_attribute_manager.get<int64_t>(child_mesh.top_simplex_type())
         .remove_attributes({parent_to_child_handle.base_handle()});
 
     // remove map attribute from child
