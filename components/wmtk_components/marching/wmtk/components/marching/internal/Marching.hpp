@@ -9,6 +9,8 @@ class Marching
 public:
     Marching(
         Mesh& mesh,
+        attribute::MeshAttributeHandle& marching_edge_tag_handle,
+        attribute::MeshAttributeHandle& marching_face_tag_handle,
         attribute::MeshAttributeHandle& vertex_label,
         const std::vector<int64_t>& input_values,
         const int64_t output_value,
@@ -21,6 +23,8 @@ public:
 
 private:
     Mesh& m_mesh;
+    attribute::MeshAttributeHandle m_marching_edge_tag_handle;
+    attribute::MeshAttributeHandle m_marching_face_tag_handle;
 
     attribute::MeshAttributeHandle m_vertex_label;
     std::vector<int64_t> m_input_values;

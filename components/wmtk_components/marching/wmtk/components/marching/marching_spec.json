@@ -10,6 +10,8 @@
       "output_value"
     ],
     "optional": [
+      "marching_edge_tag_name",
+      "marching_face_tag_name",
       "pass_through",
       "filter_values",
       "weight"
@@ -30,6 +32,28 @@
     "type": "float",
     "default": 0.5,
     "doc": "isovalue"
+  },
+  {
+    "pointer": "/marching_edge_tag_name",
+    "type": "list",
+    "default": [],
+    "doc": "an optional container for marching_edge_tag handle's name"
+  },
+  {
+    "pointer": "/marching_edge_tag_name/*",
+    "type": "string",
+    "doc": "a name for the marching_edge_tag_handle"
+  },
+  {
+    "pointer": "/marching_face_tag_name",
+    "type": "list",
+    "default": [],
+    "doc": "a name for the marching_edge_tag_handle"
+  },
+  {
+    "pointer": "/marching_face_tag_name/*",
+    "type": "string",
+    "doc": "an optional container for marching_face_tag handle's name"
   },
   {
     "pointer": "/attributes",

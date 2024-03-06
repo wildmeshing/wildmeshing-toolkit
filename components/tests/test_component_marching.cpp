@@ -25,6 +25,8 @@ TEST_CASE("component_marching_options", "[components][marching]")
     json o = {
         {"input", "input_mesh"},
         {"output", "output_mesh"},
+        {"marching_edge_tag_name", {"marching_edge_tag_name"}},
+        {"marching_face_tag_name", {"marching_face_tag_name"}},
         {"attributes", {{"vertex_label", "v"}, {"filter_labels", json::array({})}}},
         {"input_values", {0, 1}},
         {"output_value", 2},
@@ -54,6 +56,12 @@ TEST_CASE("marching_component_tri", "[components][marching]")
         1,
         false,
         input_tag_value_0);
+
+    attribute::MeshAttributeHandle marching_edge_tag_handle =
+        m.register_attribute<int64_t>("marching_edge_tag", PrimitiveType::Edge, 1);
+
+    attribute::MeshAttributeHandle marching_face_tag_handle =
+        m.register_attribute<int64_t>("marching_face_tag", PrimitiveType::Triangle, 1);
 
     const std::vector<int64_t> input_values = {input_tag_value_0, input_tag_value_1};
     const int64_t output_value = isosurface_tag_value;
@@ -128,6 +136,8 @@ TEST_CASE("marching_component_tri", "[components][marching]")
 
     components::internal::Marching mc(
         m,
+        marching_edge_tag_handle,
+        marching_face_tag_handle,
         vertex_tag_handle,
         input_values,
         output_value,
@@ -153,9 +163,8 @@ TEST_CASE("marching_component_tri", "[components][marching]")
     }
 
     const auto& edges = m.get_all(PrimitiveType::Edge);
-    wmtk::attribute::MeshAttributeHandle edge_tag_handle =
-        m.get_attribute_handle<int64_t>("marching_edge_tag", PrimitiveType::Edge);
-    wmtk::attribute::Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
+    wmtk::attribute::Accessor<int64_t> acc_edge_tag =
+        m.create_accessor<int64_t>(marching_edge_tag_handle);
     // edge number should be correct
     {
         int64_t isosurface_edge_num = 0;
@@ -190,15 +199,9 @@ TEST_CASE("marching_component_tri", "[components][marching]")
         }
     }
 
-    if (true) {
-        wmtk::io::ParaviewWriter writer(
-            "/home/zhouyuan/workplace/toolkit/wildmeshing-toolkit/data/marching_2d_result",
-            "vertices",
-            m,
-            true,
-            true,
-            true,
-            false);
+    if (false) {
+        wmtk::io::ParaviewWriter
+            writer("marching_2d_result", "vertices", m, true, true, true, false);
         m.serialize(writer);
     }
 }
@@ -225,6 +228,12 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
         1,
         false,
         input_tag_value_0);
+
+    attribute::MeshAttributeHandle marching_edge_tag_handle =
+        m.register_attribute<int64_t>("marching_edge_tag", PrimitiveType::Edge, 1);
+
+    attribute::MeshAttributeHandle marching_face_tag_handle =
+        m.register_attribute<int64_t>("marching_face_tag", PrimitiveType::Triangle, 1);
 
     const std::vector<int64_t> input_values = {input_tag_value_0, input_tag_value_1};
     const int64_t output_value = isosurface_tag_value;
@@ -281,6 +290,8 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
 
     components::internal::Marching mc(
         m,
+        marching_edge_tag_handle,
+        marching_face_tag_handle,
         vertex_tag_handle,
         input_values,
         output_value,

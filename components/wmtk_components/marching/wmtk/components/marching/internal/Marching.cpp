@@ -31,10 +31,10 @@ public:
     TagAttribute(TagAttribute&) = delete;
 };
 
-/*
-
 Marching::Marching(
     Mesh& mesh,
+    attribute::MeshAttributeHandle& marching_edge_tag_handle,
+    attribute::MeshAttributeHandle& marching_face_tag_handle,
     attribute::MeshAttributeHandle& vertex_label,
     const std::vector<int64_t>& input_values,
     const int64_t output_value,
@@ -43,33 +43,15 @@ Marching::Marching(
     const std::vector<int64_t>& filter_values,
     const std::vector<attribute::MeshAttributeHandle>& pass_through_attributes)
     : m_mesh(mesh)
+    , m_marching_edge_tag_handle(marching_edge_tag_handle)
+    , m_marching_face_tag_handle(marching_face_tag_handle)
     , m_vertex_label(vertex_label)
     , m_input_values(input_values)
     , m_output_value(output_value)
-    , m_weight(weight)
     , m_filter_labels(filter_labels)
     , m_filter_values(filter_values)
     , m_pass_through_attributes(pass_through_attributes)
-{}
-*/
-
-Marching::Marching(
-    Mesh& mesh,
-    attribute::MeshAttributeHandle& vertex_label,
-    const std::vector<int64_t>& input_values,
-    const int64_t output_value,
-    const double weight,
-    std::vector<attribute::MeshAttributeHandle>& filter_labels,
-    const std::vector<int64_t>& filter_values,
-    const std::vector<attribute::MeshAttributeHandle>& pass_through_attributes)
-    : m_mesh(mesh)
-    , m_vertex_label(vertex_label)
-    , m_input_values(input_values)
-    , m_output_value(output_value)
     , m_weight(weight)
-    , m_filter_labels(filter_labels)
-    , m_filter_values(filter_values)
-    , m_pass_through_attributes(pass_through_attributes)
 {}
 
 void Marching::process()
@@ -137,41 +119,34 @@ void Marching::process()
             return Eigen::VectorX<int64_t>::Constant(1, 0);
         };
 
-        // get edge_handle
-        auto edge_tag_handle =
-            m_mesh.register_attribute<int64_t>("marching_edge_tag", wmtk::PrimitiveType::Edge, 1);
-
         std::shared_ptr etag_strategy =
             std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<int64_t, int64_t>>(
-                edge_tag_handle,
+                m_marching_edge_tag_handle,
                 m_vertex_label,
                 compute_edge_label);
 
         op_split.add_transfer_strategy(etag_strategy);
+        op_split.set_new_attribute_strategy(m_marching_edge_tag_handle);
 
         /**************************face tag******************************/
         auto compute_face_label =
             [this](const Eigen::MatrixX<int64_t>& labels) -> Eigen::VectorX<int64_t> {
             assert(labels.cols() == 3);
             if (labels(0, 0) == m_output_value && labels(0, 1) == m_output_value &&
-                labels(0, 2) == m_output_value)
+                labels(0, 2) == m_output_value) {
                 return Eigen::VectorX<int64_t>::Constant(1, m_output_value);
+            }
             return Eigen::VectorX<int64_t>::Constant(1, 0);
         };
 
-        // get face_handle
-        auto face_tag_handle = m_mesh.register_attribute<int64_t>(
-            "marching_face_tag",
-            wmtk::PrimitiveType::Triangle,
-            1);
-
         std::shared_ptr ftag_strategy =
             std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<int64_t, int64_t>>(
-                face_tag_handle,
-                edge_tag_handle,
+                m_marching_face_tag_handle,
+                m_marching_edge_tag_handle,
                 compute_face_label);
 
         op_split.add_transfer_strategy(ftag_strategy);
+        op_split.set_new_attribute_strategy(m_marching_face_tag_handle);
 
 
         auto tmp = std::make_shared<SplitNewAttributeStrategy<int64_t>>(m_vertex_label);

@@ -17,6 +17,8 @@ struct MarchingOptions
 {
     std::string input; // mesh input dir
     std::string output; // mesh output dir
+    std::vector<std::string> marching_edge_tag_name;
+    std::vector<std::string> marching_face_tag_name;
     MarchingAttributes attributes;
     std::vector<int64_t> input_values;
     int64_t output_value;
