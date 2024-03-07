@@ -181,6 +181,11 @@ void ATData::initialize_handles()
         m_uv_mesh_ptr->register_attribute<double>("amips_error", PrimitiveType::Triangle, 1, true);
     m_3d_edge_length_handle =
         m_uv_mesh_ptr->register_attribute<double>("3d_edge_length", PrimitiveType::Edge, 1, true);
+    m_curved_edge_length_handle = m_uv_mesh_ptr->register_attribute<double>(
+        "curved_edge_length",
+        PrimitiveType::Edge,
+        1,
+        true);
 }
 
 const std::array<std::shared_ptr<image::Image>, 3>& ATData::images() const
