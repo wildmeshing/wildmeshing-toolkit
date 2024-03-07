@@ -260,6 +260,9 @@ void MultiMeshManager::deregister_child_mesh(
     auto& parent_to_child_handle = child_data.map_handle;
 
     assert(child_data.mesh == child_mesh_ptr);
+    assert(child_manager.children()
+               .empty()); // The current implementation does not update the attributes properly for
+                          // the case that the child also has children
 
     // remove map attribute from parent
     my_mesh.m_attribute_manager.get<int64_t>(child_mesh.top_simplex_type())
