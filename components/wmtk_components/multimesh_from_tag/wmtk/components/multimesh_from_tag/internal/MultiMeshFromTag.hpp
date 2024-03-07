@@ -1,13 +1,6 @@
 #pragma once
 
-#include <deque>
-#include <wmtk/TetMesh.hpp>
-#include <wmtk/TriMesh.hpp>
-#include <wmtk/io/HDF5Writer.hpp>
-#include <wmtk/io/MeshReader.hpp>
-#include <wmtk/simplex/Simplex.hpp>
-#include <wmtk/simplex/open_star.hpp>
-#include <wmtk/utils/Logger.hpp>
+#include <wmtk/Mesh.hpp>
 
 namespace wmtk::components::internal {
 

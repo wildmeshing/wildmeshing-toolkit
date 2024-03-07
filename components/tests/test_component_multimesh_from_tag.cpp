@@ -9,7 +9,8 @@
 #include <wmtk/components/multimesh_from_tag/multimesh_from_tag.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
-#include <wmtk/simplex/RawSimplex.hpp>
+#include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 
 using json = nlohmann::json;
@@ -300,7 +301,6 @@ TEST_CASE("multimesh_from_tag_tet_tet", "[components][multimesh][multimesh_from_
     for (const PrimitiveType pt : utils::primitive_below(m.top_simplex_type())) {
         for (const Tuple& t : m.get_all(pt)) {
             const simplex::Simplex s(pt, t);
-            const simplex::RawSimplex rs(m, s);
             if (non_manifold_root_simplices.contains(s)) {
                 CHECK_FALSE(mmft.is_root_simplex_manifold(s));
             } else {

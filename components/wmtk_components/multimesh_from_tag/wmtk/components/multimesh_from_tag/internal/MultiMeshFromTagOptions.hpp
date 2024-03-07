@@ -3,7 +3,6 @@
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 #include <vector>
-#include <wmtk/PrimitiveType.hpp>
 
 namespace wmtk::components::internal {
 
