@@ -163,7 +163,6 @@ public:
         // // scaling by jacobian
         // value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);
         // value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
-        value = value * wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
         return value;
     }
 
