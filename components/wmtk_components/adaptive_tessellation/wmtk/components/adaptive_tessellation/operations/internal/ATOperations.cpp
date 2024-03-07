@@ -80,6 +80,8 @@ ATOperations::ATOperations(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_amips_error_handle.as<double>()))
     , m_3d_edge_length_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_3d_edge_length_handle.as<double>()))
+    , m_curved_edge_length_accessor(
+          m_atdata.uv_mesh().create_accessor(m_atdata.m_curved_edge_length_handle.as<double>()))
 {
     m_ops.clear();
     if (m_atdata.funcs()[0]) {
@@ -115,6 +117,9 @@ ATOperations::ATOperations(
     set_3d_amips_error_update_rule();
     initialize_3d_amips_error();
 
+    set_curved_edge_length_update_rule();
+    initialize_curved_edge_length();
+
     // Lambdas for priority
     m_valence_improvement = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
@@ -144,7 +149,7 @@ ATOperations::ATOperations(
         assert(s.primitive_type() == PrimitiveType::Edge);
         return std::vector<double>(
             {-m_distance_error_accessor.scalar_attribute(s.tuple()),
-             -m_3d_edge_length_accessor.scalar_attribute(s.tuple())});
+             -m_curved_edge_length_accessor.scalar_attribute(s.tuple())});
     };
 
     m_high_amips_edges_first = [&](const Simplex& s) {
@@ -159,7 +164,7 @@ ATOperations::ATOperations(
     };
     m_long_edges_first = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
-        return std::vector<double>({-m_3d_edge_length_accessor.scalar_attribute(s.tuple())});
+        return std::vector<double>({-m_curved_edge_length_accessor.scalar_attribute(s.tuple())});
     };
     m_edge_length_weighted_distance_priority = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
@@ -230,28 +235,28 @@ void ATOperations::AT_3d_edge_split(std::function<std::vector<double>(const Simp
     split->set_new_attribute_strategy(m_atdata.m_distance_error_handle);
     split->set_new_attribute_strategy(m_atdata.m_amips_error_handle);
     split->set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
+    split->set_new_attribute_strategy(m_atdata.m_curved_edge_length_handle);
 
     split->add_transfer_strategy(m_uvmesh_xyz_update);
 
     split->add_transfer_strategy(m_3d_edge_length_update);
     split->add_transfer_strategy(m_distance_error_update);
     split->add_transfer_strategy(m_amips_error_update);
+    split->add_transfer_strategy(m_curved_edge_length_update);
     m_ops.emplace_back(split);
 }
 
-void ATOperations::AT_edge_split(
-    std::function<std::vector<double>(const Simplex&)>& priority,
-    std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
+void ATOperations::AT_edge_split(std::function<std::vector<double>(const Simplex&)>& priority)
 {
     std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
     std::shared_ptr<Mesh> position_mesh_ptr = m_atdata.position_mesh_ptr();
 
     // 1) EdgeSplit
     auto split = std::make_shared<wmtk::operations::EdgeSplit>(*uv_mesh_ptr);
-    split->add_invariant(std::make_shared<TodoLargerInvariant>(
-        *uv_mesh_ptr,
-        m_atdata.m_distance_error_handle.as<double>(),
-        m_target_distance));
+    // split->add_invariant(std::make_shared<TodoLargerInvariant>(
+    //     *uv_mesh_ptr,
+    //     m_atdata.m_distance_error_handle.as<double>(),
+    //     m_target_distance));
     // split->add_invariant(
     //     std::make_shared<BoundarySimplexInvariant>(*uv_mesh_ptr, PrimitiveType::Edge));
     // split->add_invariant(
@@ -266,12 +271,14 @@ void ATOperations::AT_edge_split(
     split->set_new_attribute_strategy(m_atdata.m_distance_error_handle);
     split->set_new_attribute_strategy(m_atdata.m_amips_error_handle);
     split->set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
+    split->set_new_attribute_strategy(m_atdata.m_curved_edge_length_handle);
 
     split->add_transfer_strategy(m_uvmesh_xyz_update);
 
     split->add_transfer_strategy(m_3d_edge_length_update);
     split->add_transfer_strategy(m_distance_error_update);
     split->add_transfer_strategy(m_amips_error_update);
+    split->add_transfer_strategy(m_curved_edge_length_update);
     m_ops.emplace_back(split);
 }
 
@@ -402,12 +409,19 @@ void ATOperations::AT_swap_interior(
         swap->collapse().set_new_attribute_strategy(
             m_atdata.m_3d_edge_length_handle,
             wmtk::operations::CollapseBasicStrategy::CopyOther);
+        swap->split().set_new_attribute_strategy(
+            m_atdata.m_curved_edge_length_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+        swap->collapse().set_new_attribute_strategy(
+            m_atdata.m_curved_edge_length_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
     }
     swap->add_transfer_strategy(m_uvmesh_xyz_update);
     swap->add_transfer_strategy(m_amips_error_update);
     swap->add_transfer_strategy(m_distance_error_update);
     swap->add_transfer_strategy(m_3d_edge_length_update);
-
+    swap->add_transfer_strategy(m_curved_edge_length_update);
     m_ops.push_back(swap);
 }
 
@@ -507,21 +521,31 @@ void ATOperations::AT_rg_refine(std::function<std::vector<double>(const Simplex&
         m_atdata.m_amips_error_handle,
         wmtk::operations::CollapseBasicStrategy::Mean);
 
+    rg_refine->split().set_new_attribute_strategy(m_atdata.m_curved_edge_length_handle);
+    rg_refine->second_split().set_new_attribute_strategy(m_atdata.m_curved_edge_length_handle);
+    rg_refine->swap().split().set_new_attribute_strategy(m_atdata.m_curved_edge_length_handle);
+    rg_refine->swap().collapse().set_new_attribute_strategy(
+        m_atdata.m_curved_edge_length_handle,
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+
     rg_refine->split().add_transfer_strategy(m_uvmesh_xyz_update);
     rg_refine->split().add_transfer_strategy(m_amips_error_update);
     rg_refine->split().add_transfer_strategy(m_distance_error_update);
     rg_refine->split().add_transfer_strategy(m_3d_edge_length_update);
+    rg_refine->split().add_transfer_strategy(m_curved_edge_length_update);
 
     rg_refine->second_split().add_transfer_strategy(m_uvmesh_xyz_update);
     rg_refine->second_split().add_transfer_strategy(m_amips_error_update);
     rg_refine->second_split().add_transfer_strategy(m_distance_error_update);
     rg_refine->second_split().add_transfer_strategy(m_3d_edge_length_update);
+    rg_refine->second_split().add_transfer_strategy(m_curved_edge_length_update);
 
 
     rg_refine->swap().add_transfer_strategy(m_uvmesh_xyz_update);
     rg_refine->swap().add_transfer_strategy(m_amips_error_update);
     rg_refine->swap().add_transfer_strategy(m_distance_error_update);
     rg_refine->swap().add_transfer_strategy(m_3d_edge_length_update);
+    rg_refine->swap().add_transfer_strategy(m_curved_edge_length_update);
     m_ops.push_back(rg_refine);
 }
 

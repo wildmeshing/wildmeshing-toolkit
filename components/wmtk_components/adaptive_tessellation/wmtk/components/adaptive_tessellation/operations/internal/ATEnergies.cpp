@@ -208,8 +208,37 @@ void ATOperations::initialize_3d_edge_length()
         m_3d_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
     }
 }
+void ATOperations::set_curved_edge_length_update_rule()
+{
+    auto compute_curved_edge_length = [&](const Eigen::Matrix<double, 2, 2>& P) -> Eigen::VectorXd {
+        assert(P.cols() == 2);
+        assert(P.rows() == 2);
+        Eigen::Vector2<double> uv0 = P.col(0);
+        Eigen::Vector2<double> uv1 = P.col(1);
 
-double geodesic_distance(
+        Eigen::VectorXd error(1);
+        error(0) = curved_edge_length_on_displaced_surface(uv0, uv1, m_evaluator_ptr);
+        return error;
+    };
+    m_curved_edge_length_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            m_atdata.m_curved_edge_length_handle,
+            m_atdata.m_uv_handle,
+            compute_curved_edge_length);
+}
+void ATOperations::initialize_curved_edge_length()
+{
+    // initialize edge length values
+    for (auto& e : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Edge)) {
+        const auto uv0 = m_uv_accessor.vector_attribute(e);
+        const auto uv1 = m_uv_accessor.vector_attribute(
+            m_atdata.uv_mesh_ptr()->switch_tuple(e, PrimitiveType::Vertex));
+        m_curved_edge_length_accessor.scalar_attribute(e) =
+            curved_edge_length_on_displaced_surface(uv0, uv1, m_evaluator_ptr);
+    }
+}
+
+double ATOperations::curved_edge_length_on_displaced_surface(
     const Eigen::Vector2d& uv0,
     const Eigen::Vector2d& uv1,
     const std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>

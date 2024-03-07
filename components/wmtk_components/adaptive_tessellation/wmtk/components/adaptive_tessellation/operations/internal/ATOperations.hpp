@@ -30,6 +30,7 @@ public:
     wmtk::attribute::Accessor<double> m_distance_error_accessor;
     wmtk::attribute::Accessor<double> m_amips_error_accessor;
     wmtk::attribute::Accessor<double> m_3d_edge_length_accessor;
+    wmtk::attribute::Accessor<double> m_curved_edge_length_accessor;
 
     std::vector<std::shared_ptr<wmtk::operations::Operation>> m_ops;
     std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
@@ -45,6 +46,8 @@ public:
         m_distance_error_update;
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_amips_error_update;
+    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
+        m_curved_edge_length_update;
 
     std::function<std::vector<double>(const Simplex&)> m_high_error_edges_first;
     std::function<std::vector<double>(const Simplex&)> m_high_distance_edges_first;
@@ -81,9 +84,7 @@ public:
         Eigen::Vector2<double>& uv2);
     void AT_split_single_edge_mesh(Mesh* edge_meshi_ptr);
     void AT_smooth_interior(std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
-    void AT_edge_split(
-        std::function<std::vector<double>(const Simplex&)>& priority,
-        std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
+    void AT_edge_split(std::function<std::vector<double>(const Simplex&)>& priority);
     void AT_3d_edge_split(std::function<std::vector<double>(const Simplex&)>& priority);
     void AT_boundary_edge_split(
         std::function<std::vector<double>(const Simplex&)>& priority,
@@ -106,6 +107,14 @@ public:
     void initialize_distance_error();
     void set_3d_amips_error_update_rule();
     void initialize_3d_amips_error();
+    void set_curved_edge_length_update_rule();
+    void initialize_curved_edge_length();
+
+    static double curved_edge_length_on_displaced_surface(
+        const Eigen::Vector2d& uv0,
+        const Eigen::Vector2d& uv1,
+        const std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
+            m_evaluator_ptr);
     /// scheduler
     std::vector<wmtk::simplex::Simplex> get_all_edges_of_all_triangles_with_triangle_filter(
         std::shared_ptr<wmtk::Mesh> uv_mesh_ptr,
