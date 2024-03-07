@@ -47,8 +47,6 @@ void multimesh_from_tag(const base::Paths& paths, const nlohmann::json& j, io::C
         std::map<std::string, std::vector<int64_t>> names;
         names[options.input] = mesh.absolute_multi_mesh_id();
         names[options.output] = mmft.substructure()->absolute_multi_mesh_id();
-        names[options.output + "_soup"] =
-            mmft.substructure_soup()->absolute_multi_mesh_id(); // TODOfix: should be deleted
         cache.write_mesh(mesh, options.output, names); // TODOfix: not sure if that is sufficient
     }
 }

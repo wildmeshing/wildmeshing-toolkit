@@ -90,19 +90,11 @@ private:
 private:
     Mesh& m_mesh;
 
-    attribute::MeshAttributeHandle m_tag_handle;
     const attribute::Accessor<int64_t> m_tag_acc;
     const int64_t m_tag_value;
     const PrimitiveType m_tag_ptype;
 
     std::map<PrimitiveType, attribute::MeshAttributeHandle> m_new_id_handles;
-
-    std::array<std::array<int64_t, 4>, 4> m_n_local_ids = {{
-        {{1, 0, 0, 0}}, // PointMesh
-        {{2, 1, 0, 0}}, // EdgeMesh
-        {{3, 3, 1, 0}}, // TriMesh
-        {{4, 6, 4, 1}} //  TetMesh
-    }};
 
     attribute::MeshAttributeHandle m_adjacency_handle;
     Eigen::MatrixX<int64_t> m_adjacency_matrix;

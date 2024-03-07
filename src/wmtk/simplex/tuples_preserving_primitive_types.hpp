@@ -7,7 +7,8 @@
 namespace wmtk::simplex {
 
 /**
- * @brief Compute all tuples that contain simplex(ptype1, t) and simplex(ptype2, t).
+ * @brief Compute all tuples that contain simplex(ptype1, t) and that are contained by
+ * simplex(ptype2, t).
  *
  * If ptype1 and ptype2 are the same, only the input tuple is returned.
  *

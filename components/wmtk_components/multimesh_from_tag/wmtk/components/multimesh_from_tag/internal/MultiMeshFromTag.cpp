@@ -13,14 +13,20 @@
 
 namespace wmtk::components::internal {
 
+constexpr static std::array<std::array<int64_t, 4>, 4> n_local_ids = {{
+    {{1, 0, 0, 0}}, // PointMesh
+    {{2, 1, 0, 0}}, // EdgeMesh
+    {{3, 3, 1, 0}}, // TriMesh
+    {{4, 6, 4, 1}} //  TetMesh
+}};
+
 MultiMeshFromTag::MultiMeshFromTag(
     Mesh& mesh,
     const attribute::MeshAttributeHandle& tag_handle,
     const int64_t tag_value)
     : m_mesh(mesh)
-    , m_tag_handle(tag_handle)
     , m_tag_value(tag_value)
-    , m_tag_acc(m_mesh.create_const_accessor<int64_t>(m_tag_handle))
+    , m_tag_acc(m_mesh.create_const_accessor<int64_t>(tag_handle))
     , m_tag_ptype(tag_handle.primitive_type())
 {
     assert(m_mesh.get_child_meshes().empty());
@@ -242,7 +248,7 @@ void MultiMeshFromTag::build_adjacency_matrix()
     m_adjacency_handle = child.register_attribute<int64_t>(
         "multimesh_from_tag_adjacency",
         m_tag_ptype,
-        m_n_local_ids[tag_ptype_id][connecting_pt_id],
+        n_local_ids[tag_ptype_id][connecting_pt_id],
         false,
         -1);
 
@@ -314,7 +320,7 @@ void MultiMeshFromTag::build_adjacency_matrix()
 
 void MultiMeshFromTag::create_substructure_soup()
 {
-    const int64_t n_vertices_per_simplex = m_n_local_ids[get_primitive_type_id(m_tag_ptype)][0];
+    const int64_t n_vertices_per_simplex = n_local_ids[get_primitive_type_id(m_tag_ptype)][0];
 
     std::vector<Tuple> tagged_tuples;
     {
@@ -388,7 +394,7 @@ void MultiMeshFromTag::compute_substructure_mesh()
 
         const int64_t pt_id = get_primitive_type_id(pt);
 
-        const int64_t n_ids = m_n_local_ids[get_primitive_type_id(m_tag_ptype)][pt_id];
+        const int64_t n_ids = n_local_ids[get_primitive_type_id(m_tag_ptype)][pt_id];
 
         m_new_id_handles[pt] = child.register_attribute<int64_t>(
             std::string("multimesh_from_tag_new_ids_") + std::to_string(pt_id),
