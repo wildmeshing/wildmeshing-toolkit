@@ -201,8 +201,8 @@ Functions</h2></td></tr>
 <tr class="separator:ad6ff5945e175fd6e1b15537435aa22bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a81fce5e5de645986df7e56f010ca2886"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a81fce5e5de645986df7e56f010ca2886">generate_background_mesh</a> (const <a class="el" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> &amp;bbox_min, const <a class="el" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> &amp;bbox_max, const std::array&lt; int64_t, 3 &gt; &amp;resolution, <a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> &amp;background_TV, <a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> &amp;background_V)</td></tr>
 <tr class="separator:a81fce5e5de645986df7e56f010ca2886"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a092fbbebc775373c2abaeb5cd43716de"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; int64_t, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a092fbbebc775373c2abaeb5cd43716de">triangulate_polygon_face</a> (std::vector&lt; <a class="el" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> &gt; points)</td></tr>
-<tr class="separator:a092fbbebc775373c2abaeb5cd43716de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa7ad5fef5b4d54d3da8204235650f6e8"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; int64_t, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#aa7ad5fef5b4d54d3da8204235650f6e8">triangulate_polygon_face</a> (std::vector&lt; <a class="el" href="namespacewmtk.html#a0d65e04e0096a0de2da1771c32b380ef">Vector3r</a> &gt; points)</td></tr>
+<tr class="separator:aa7ad5fef5b4d54d3da8204235650f6e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8d59b38c3560ad4f49865c212b854456"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt;, std::vector&lt; std::array&lt; bool, 4 &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456">generate_raw_tetmesh_from_input_surface</a> (const <a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> &amp;V, const <a class="el" href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">RowVectors3l</a> &amp;F, const double eps_target, const <a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> &amp;bgV=<a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a>(), const <a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> &amp;bgF=<a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a>())</td></tr>
 <tr class="memdesc:a8d59b38c3560ad4f49865c212b854456"><td class="mdescLeft">&#160;</td><td class="mdescRight">input a triangle surface mesh, embed it into a regular grid and generate a tetmesh, track the input surfaces on the tetmesh  <a href="namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456">More...</a><br /></td></tr>
 <tr class="separator:a8d59b38c3560ad4f49865c212b854456"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -277,7 +277,7 @@ template&lt;PrimitiveType pt&gt; </div>
 
 <p class="reference">References <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00027">v_index()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00133">generate_raw_tetmesh_from_input_surface()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00142">generate_raw_tetmesh_from_input_surface()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -348,11 +348,11 @@ Here is the caller graph for this function:</div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>[tetmesh ptr, tet local faces on input surface] </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00133">133</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00142">142</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00033">generate_background_mesh()</a>, <a class="el" href="_logger_8cpp_source.html#l00093">wmtk::log_and_throw_error()</a>, <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="mesh__utils_8hpp_source.html#l00009">wmtk::mesh_utils::set_matrix_attribute()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00084">triangulate_polygon_face()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00021">vector_unique()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00577">generate_raw_tetmesh_with_surface_from_input()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00565">generate_raw_tetmesh_with_surface_from_input()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -412,9 +412,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00577">577</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00565">565</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00157">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00133">generate_raw_tetmesh_from_input_surface()</a>, <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00017">wmtk::PE</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">PF</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00006">PT</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00016">wmtk::PV</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00157">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00142">generate_raw_tetmesh_from_input_surface()</a>, <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00017">wmtk::PE</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">PF</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00006">PT</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00016">wmtk::PV</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="triangle__insertion_8cpp_source.html#l00016">wmtk::components::triangle_insertion()</a>.</p>
 <div class="dynheader">
@@ -830,8 +830,8 @@ template&lt;typename ADerived , typename BDerived , typename CDerived &gt; </div
 
 </div>
 </div>
-<a id="a092fbbebc775373c2abaeb5cd43716de"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a092fbbebc775373c2abaeb5cd43716de">&#9670;&nbsp;</a></span>triangulate_polygon_face()</h2>
+<a id="aa7ad5fef5b4d54d3da8204235650f6e8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa7ad5fef5b4d54d3da8204235650f6e8">&#9670;&nbsp;</a></span>triangulate_polygon_face()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -839,7 +839,7 @@ template&lt;typename ADerived , typename BDerived , typename CDerived &gt; </div
         <tr>
           <td class="memname">std::vector&lt;std::array&lt;int64_t, 3&gt; &gt; wmtk::utils::triangulate_polygon_face </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> &gt;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="namespacewmtk.html#a0d65e04e0096a0de2da1771c32b380ef">Vector3r</a> &gt;&#160;</td>
           <td class="paramname"><em>points</em></td><td>)</td>
           <td></td>
         </tr>
@@ -848,11 +848,11 @@ template&lt;typename ADerived , typename BDerived , typename CDerived &gt; </div
 
 <p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00084">84</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00133">generate_raw_tetmesh_from_input_surface()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00142">generate_raw_tetmesh_from_input_surface()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a092fbbebc775373c2abaeb5cd43716de_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_aa7ad5fef5b4d54d3da8204235650f6e8_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -886,11 +886,11 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00027">27</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00033">generate_background_mesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00033">generate_background_mesh()</a>, and <a class="el" href="to__points_8cpp_source.html#l00018">wmtk::components::to_points()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_ad6ff5945e175fd6e1b15537435aa22bd_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_ad6ff5945e175fd6e1b15537435aa22bd_icgraph.svg" width="100%" height="394"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -1050,7 +1050,7 @@ template&lt;class T &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00021">21</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00133">generate_raw_tetmesh_from_input_surface()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00142">generate_raw_tetmesh_from_input_surface()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">

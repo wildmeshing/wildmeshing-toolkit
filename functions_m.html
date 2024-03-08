@@ -154,6 +154,9 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 <li>m_before
 : <a class="el" href="classwmtk_1_1invariants_1_1internal_1_1_constant_invariant.html#a3eb76c184bfee58ba11590012c98945f">wmtk::invariants::internal::ConstantInvariant</a>
 </li>
+<li>m_boundary_checker
+: <a class="el" href="classwmtk_1_1invariants_1_1_interior_simplex_invariant.html#a25f549bee0042fefa52c7fa150f44ba2">wmtk::invariants::InteriorSimplexInvariant</a>
+</li>
 <li>m_bvh
 : <a class="el" href="classwmtk_1_1invariants_1_1_envelope_invariant.html#abce7700146882e35e1136041e53d6e26">wmtk::invariants::EnvelopeInvariant</a>
 , <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_project_operation.html#a3be09be7533d8f2e34612b6e2a7541a9">wmtk::operations::composite::ProjectOperation</a>
@@ -216,6 +219,10 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 , <a class="el" href="classwmtk_1_1_max_edge_length_invariant.html#a6b1b2ee4014a5047bb33e22656f2f9c0">wmtk::MaxEdgeLengthInvariant</a>
 , <a class="el" href="classwmtk_1_1_min_edge_length_invariant.html#a3f08f7d6f8e0717daaaffa365edfd7e8">wmtk::MinEdgeLengthInvariant</a>
 , <a class="el" href="classwmtk_1_1_simplex_inversion_invariant.html#aa4929b25b76e3ccfb66177dc1d2401d1">wmtk::SimplexInversionInvariant</a>
+, <a class="el" href="classwmtk_1_1_swap23_energy_before_invariant.html#af1294632bd08ec96df84677deaf5d761">wmtk::Swap23EnergyBeforeInvariant</a>
+, <a class="el" href="classwmtk_1_1_swap32_energy_before_invariant.html#a08e53946d8484251a6cc6537abd55c26">wmtk::Swap32EnergyBeforeInvariant</a>
+, <a class="el" href="classwmtk_1_1_swap44__2_energy_before_invariant.html#ad5874728bc924030bea9b518ade88228">wmtk::Swap44_2EnergyBeforeInvariant</a>
+, <a class="el" href="classwmtk_1_1_swap44_energy_before_invariant.html#a124d838a09c4aa277bf923ded2f7a321">wmtk::Swap44EnergyBeforeInvariant</a>
 </li>
 <li>m_critical_points
 : <a class="el" href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#aea5d78d589e51a908246569981f9a910">wmtk::multimesh::utils::internal::TupleTag</a>
@@ -712,6 +719,9 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 <li>m_use_random_priority
 : <a class="el" href="classwmtk_1_1operations_1_1_operation.html#ad6face771ab900e9c86723f72e6f312e">wmtk::operations::Operation</a>
 </li>
+<li>m_uv_mesh
+: <a class="el" href="classwmtk_1_1invariants_1_1uv_edge_invariant.html#ab8a1c04606ea40465f890ecdbcaae3fe">wmtk::invariants::uvEdgeInvariant</a>
+</li>
 <li>m_val
 : <a class="el" href="classwmtk_1_1components_1_1internal_1_1_tag_attribute.html#a64dea5e113690a98f120b2b9ec380fc2">wmtk::components::internal::TagAttribute</a>
 , <a class="el" href="classwmtk_1_1_todo_invariant.html#ae5416abe02f847d279f5114e699b32db">wmtk::TodoInvariant</a>
@@ -897,11 +907,11 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 , <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a1dde056d7565157cb53e8b808b257244">wmtk::operations::CollapseNewAttributeTopoInfo</a>
 , <a class="el" href="classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_topo_info.html#af551e3bd90b91b9f1d187427660c3fdd">wmtk::operations::edge_mesh::CollapseNewAttributeTopoInfo</a>
 , <a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_topo_info.html#a4d80968c55031cb27caf3a5b09d79507">wmtk::operations::tet_mesh::CollapseNewAttributeTopoInfo</a>
-, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html#acbba0b976e6fd3d1c93eee417bacb7e8">wmtk::operations::tri_mesh::CollapseNewAttributeTopoInfo</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html#ad62f4f6e69a6bb038ae1cfd3021e8f4a">wmtk::operations::tri_mesh::CollapseNewAttributeTopoInfo</a>
 </li>
 <li>mesh()
-: <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#a1aaeaebad641a7f9e15b5e4719dc4906">wmtk::attribute::Accessor&lt; T, MeshType &gt;</a>
-, <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#a14633a151b43a44226e5e3b3f9fb938b">wmtk::attribute::AccessorBase&lt; _T &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#a8b87a47a6b7217b38953c7e822c854df">wmtk::attribute::Accessor&lt; T, MeshType &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#ac6c48d82818148360fa7e9efd10e3112">wmtk::attribute::AccessorBase&lt; _T &gt;</a>
 </li>
 <li>Mesh
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_handle.html#aa41a130f156b145bffb3f4b5172c4c93">wmtk::attribute::AttributeHandle</a>
@@ -917,7 +927,7 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 </li>
 <li>Mesh()
 : <a class="el" href="classwmtk_1_1_mesh.html#a169bfa91876ab0af8a9f65d7ef666160">wmtk::Mesh</a>
-, <a class="el" href="classwmtk_1_1_mesh_c_r_t_p.html#a169bfa91876ab0af8a9f65d7ef666160">wmtk::MeshCRTP&lt; Derived &gt;</a>
+, <a class="el" href="classwmtk_1_1_mesh_c_r_t_p.html#aac1b58f33df36fc07f54dbe8e9abceb0">wmtk::MeshCRTP&lt; Derived &gt;</a>
 </li>
 <li>mesh()
 : <a class="el" href="classwmtk_1_1multimesh_1_1attribute_1_1_collapse_new_value_applicator_base.html#ac876a3013f4970f9cb1e190248842fb6">wmtk::multimesh::attribute::CollapseNewValueApplicatorBase</a>
@@ -928,7 +938,7 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 , <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#a0bb6dc4a95fd8943760cce7d23e40478">wmtk::operations::AttributeTransferStrategyBase</a>
 , <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a643a1eb55b6f91f93055616d59fa0488">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;</a>
 , <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#af0bf0b5d09ece987dcb12d524729bd1d">wmtk::operations::NewAttributeStrategy</a>
-, <a class="el" href="classwmtk_1_1operations_1_1_operation.html#a64b6eee318eedb346d4be7352be38006">wmtk::operations::Operation</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_operation.html#a524a78a76bb262cffcaafdd36afa037b">wmtk::operations::Operation</a>
 , <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a95eebb873a5127cd4780eed44be6444b">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>
 , <a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a0d0c1765c4ed8ffd0f163661111bfb08">wmtk::simplex::SimplexCollection</a>
 </li>
@@ -939,7 +949,7 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 : <a class="el" href="classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4.html#ae0414ed707e0bc6bee07025e8e031822">wmtk::hash&lt; wmtk::attribute::MeshAttributeHandle &gt;</a>
 </li>
 <li>MeshAttributeHandle()
-: <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#af406505d419182a1087c58e9b1599c26">wmtk::attribute::MeshAttributeHandle</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a5fe50d83a9037a913577e81b88cb2f7b">wmtk::attribute::MeshAttributeHandle</a>
 </li>
 <li>MeshAttributes
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_handle.html#a1a112efd2989574c775df21798c3db51">wmtk::attribute::AttributeHandle</a>
@@ -975,6 +985,9 @@ $(document).ready(function(){initNavTree('functions_m.html',''); initResizable()
 <li>min()
 : <a class="el" href="classstd_1_1numeric__limits_3_01_d_scalar1_3_01___scalar_00_01___gradient_01_4_01_4.html#a860f478143a35985250e3e30be84d5da">std::numeric_limits&lt; DScalar1&lt; _Scalar, _Gradient &gt; &gt;</a>
 , <a class="el" href="classstd_1_1numeric__limits_3_01_d_scalar2_3_01___scalar_00_01___gradient_00_01___hessian_01_4_01_4.html#a20c975fd3c885435dab68b930cb6f007">std::numeric_limits&lt; DScalar2&lt; _Scalar, _Gradient, _Hessian &gt; &gt;</a>
+</li>
+<li>min_dist
+: <a class="el" href="structwmtk_1_1components_1_1_to_pts_options.html#afa4331f070db9b6b1b9f4c52c2fd1309">wmtk::components::ToPtsOptions</a>
 </li>
 <li>min_exponent
 : <a class="el" href="classstd_1_1numeric__limits_3_01_d_scalar1_3_01___scalar_00_01___gradient_01_4_01_4.html#a1c60bf2e5de327d5837dfc00bb061277">std::numeric_limits&lt; DScalar1&lt; _Scalar, _Gradient &gt; &gt;</a>

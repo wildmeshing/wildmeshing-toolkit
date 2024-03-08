@@ -198,14 +198,14 @@ $(document).ready(function(){initNavTree('_volume_remesher_triangle_insertion_8c
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    }</div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;}</div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
-<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1utils.html#a092fbbebc775373c2abaeb5cd43716de">   84</a></span>&#160;std::vector&lt;std::array&lt;int64_t, 3&gt;&gt; <a class="code" href="namespacewmtk_1_1utils.html#a092fbbebc775373c2abaeb5cd43716de">triangulate_polygon_face</a>(std::vector&lt;Vector3d&gt; points)</div>
+<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1utils.html#aa7ad5fef5b4d54d3da8204235650f6e8">   84</a></span>&#160;std::vector&lt;std::array&lt;int64_t, 3&gt;&gt; <a class="code" href="namespacewmtk_1_1utils.html#aa7ad5fef5b4d54d3da8204235650f6e8">triangulate_polygon_face</a>(std::vector&lt;Vector3r&gt; points)</div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;{</div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="comment">// triangulate weak convex polygons</span></div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    std::vector&lt;std::array&lt;int64_t, 3&gt;&gt; triangulated_faces;</div>
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    std::vector&lt;std::pair&lt;Vector3d, int64_t&gt;&gt; points_vector;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    std::vector&lt;std::pair&lt;Vector3r, int64_t&gt;&gt; points_vector;</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; points.size(); ++i) {</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        points_vector.push_back(std::pair&lt;Vector3d, int64_t&gt;(points[i], i));</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        points_vector.push_back(std::pair&lt;Vector3r, int64_t&gt;(points[i], i));</div>
 <div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    }</div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="comment">// find the first colinear ABC with nonlinear BCD and delete C from vector</span></div>
@@ -218,531 +218,519 @@ $(document).ready(function(){initNavTree('_volume_remesher_triangle_insertion_8c
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            <span class="keyword">auto</span> nextnext = points_vector[(i + 2) % points_vector.size()];</div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            <span class="comment">// TODO: check if orient2d == 0 works for check colinearity</span></div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            <span class="keywordflow">if</span> (orient2d(prev.first.data(), cur.first.data(), next.first.data()) == 0 &amp;&amp;</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                orient2d(cur.first.data(), next.first.data(), nextnext.first.data()) != 0) {</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                no_colinear = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;                std::array&lt;int64_t, 3&gt; t = {{cur.second, next.second, nextnext.second}};</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                triangulated_faces.push_back(t);</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                points_vector.erase(points_vector.begin() + ((i + 1) % points_vector.size()));</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;            } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            }</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        }</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        <span class="keywordflow">if</span> (no_colinear) <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    }</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="comment">// cleanup convex polygon</span></div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="keywordflow">while</span> (points_vector.size() &gt;= 3) {</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        std::array&lt;int64_t, 3&gt; t = {</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            {points_vector[0].second,</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;             points_vector[1].second,</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;             points_vector[points_vector.size() - 1].second}};</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        triangulated_faces.push_back(t);</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        points_vector.erase(points_vector.begin());</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    }</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160; </div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <span class="keywordflow">return</span> triangulated_faces;</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;}</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;std::tuple&lt;std::shared_ptr&lt;wmtk::TetMesh&gt;, std::vector&lt;std::array&lt;bool, 4&gt;&gt;&gt;</div>
-<div class="line"><a name="l00133"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456">  133</a></span>&#160;<a class="code" href="namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456">generate_raw_tetmesh_from_input_surface</a>(</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a>&amp; V,</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">RowVectors3l</a>&amp; F,</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> eps_target,</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a>&amp; bgV,</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a>&amp; bgT)</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;{</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="comment">// for predicates</span></div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    exactinit();</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160; </div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    <span class="comment">// compute bounding box</span></div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> bbox_min = V.colwise().minCoeff();</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> bbox_max = V.colwise().maxCoeff();</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    <span class="keywordtype">double</span> diag_length = (bbox_max - bbox_min).norm();</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    <span class="keywordtype">double</span> eps = 1 / 15.0; <span class="comment">// TODO: set this flexible</span></div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="keywordtype">double</span> delta = diag_length * eps;</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    bbox_min -= <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a>(delta, delta, delta);</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    bbox_max += <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a>(delta, delta, delta);</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    <span class="keywordtype">double</span> target_edge_length = diag_length * eps_target;</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    <span class="comment">// compute resolution</span></div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    std::array&lt;int64_t, 3&gt; resolution = {</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;        {(int64_t)((bbox_max[0] - bbox_min[0]) / target_edge_length),</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;         (int64_t)((bbox_max[1] - bbox_min[1]) / target_edge_length),</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;         (int64_t)((bbox_max[2] - bbox_min[2]) / target_edge_length)}};</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160; </div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    <span class="comment">// generate background mesh</span></div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    <a class="code" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> background_TV;</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> background_V;</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    <span class="keywordflow">if</span> (bgV.size() == 0) {</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        <a class="code" href="namespacewmtk_1_1utils.html#a81fce5e5de645986df7e56f010ca2886">generate_background_mesh</a>(bbox_min, bbox_max, resolution, background_TV, background_V);</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160; </div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;        <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;            <span class="stringliteral">&quot;generated background mesh with resolution {} {} {}&quot;</span>,</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;            resolution[0],</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;            resolution[1],</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;            resolution[2]);</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;        assert(bgT.size() != 0);</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;        background_TV = bgT;</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;        background_V = bgV;</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;    }</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160; </div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160; </div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    <span class="comment">// prepare data for volume remesher</span></div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    <span class="comment">// inputs</span></div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    std::vector&lt;double&gt; tri_vrt_coords(V.rows() * 3);</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;    std::vector&lt;uint32_t&gt; triangle_indices(F.rows() * 3);</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;    std::vector&lt;double&gt; tet_vrt_coords(background_V.rows() * 3);</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;    std::vector&lt;uint32_t&gt; tet_indices(background_TV.rows() * 4);</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160; </div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; V.rows(); ++i) {</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;        tri_vrt_coords[i * 3 + 0] = V(i, 0);</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;        tri_vrt_coords[i * 3 + 1] = V(i, 1);</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        tri_vrt_coords[i * 3 + 2] = V(i, 2);</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    }</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160; </div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; F.rows(); ++i) {</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;        triangle_indices[i * 3 + 0] = F(i, 0);</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;        triangle_indices[i * 3 + 1] = F(i, 1);</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;        triangle_indices[i * 3 + 2] = F(i, 2);</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    }</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160; </div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; background_V.rows(); ++i) {</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;        tet_vrt_coords[i * 3 + 0] = background_V(i, 0);</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;        tet_vrt_coords[i * 3 + 1] = background_V(i, 1);</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;        tet_vrt_coords[i * 3 + 2] = background_V(i, 2);</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160; </div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        <span class="comment">// debug code</span></div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        <span class="comment">// std::cout &lt;&lt; background_V.row(i) &lt;&lt; std::endl &lt;&lt; std::endl;</span></div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            <span class="comment">// if (orient2d(prev.first.data(), cur.first.data(), next.first.data()) == 0 &amp;&amp;</span></div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            <span class="comment">//     orient2d(cur.first.data(), next.first.data(), nextnext.first.data()) != 0) {</span></div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            <a class="code" href="namespacewmtk.html#a0d65e04e0096a0de2da1771c32b380ef">Vector3r</a> a = cur.first - prev.first;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;            <a class="code" href="namespacewmtk.html#a0d65e04e0096a0de2da1771c32b380ef">Vector3r</a> b = next.first - cur.first;</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;            <a class="code" href="namespacewmtk.html#a0d65e04e0096a0de2da1771c32b380ef">Vector3r</a> c = nextnext.first - next.first;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;            <span class="keywordflow">if</span> (((a[0] * b[1] - a[1] * b[0]) == 0 &amp;&amp; (a[1] * b[2] - a[2] * b[1]) == 0 &amp;&amp;</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                 (a[0] * b[2] - a[2] * b[0]) == 0) &amp;&amp;</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;                (((b[0] * c[1] - b[1] * c[0]) != 0 || (b[1] * c[2] - b[2] * c[1]) != 0 ||</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;                  (b[0] * c[2] - b[2] * c[0]) != 0))) {</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;                no_colinear = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;                std::array&lt;int64_t, 3&gt; t = {{cur.second, next.second, nextnext.second}};</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;                triangulated_faces.push_back(t);</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;                points_vector.erase(points_vector.begin() + ((i + 1) % points_vector.size()));</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;                <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            }</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        }</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        <span class="keywordflow">if</span> (no_colinear) <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    }</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="comment">// cleanup convex polygon</span></div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <span class="keywordflow">while</span> (points_vector.size() &gt;= 3) {</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        std::array&lt;int64_t, 3&gt; t = {</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;            {points_vector[0].second,</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;             points_vector[1].second,</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;             points_vector[points_vector.size() - 1].second}};</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        triangulated_faces.push_back(t);</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        points_vector.erase(points_vector.begin());</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    }</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160; </div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    <span class="keywordflow">return</span> triangulated_faces;</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;}</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160; </div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;std::tuple&lt;std::shared_ptr&lt;wmtk::TetMesh&gt;, std::vector&lt;std::array&lt;bool, 4&gt;&gt;&gt;</div>
+<div class="line"><a name="l00142"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456">  142</a></span>&#160;<a class="code" href="namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456">generate_raw_tetmesh_from_input_surface</a>(</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a>&amp; V,</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">RowVectors3l</a>&amp; F,</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> eps_target,</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a>&amp; bgV,</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a>&amp; bgT)</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;{</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    <span class="comment">// for predicates</span></div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    exactinit();</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160; </div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    <span class="comment">// compute bounding box</span></div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> bbox_min = V.colwise().minCoeff();</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> bbox_max = V.colwise().maxCoeff();</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    <span class="keywordtype">double</span> diag_length = (bbox_max - bbox_min).norm();</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;    <span class="keywordtype">double</span> eps = 1 / 15.0; <span class="comment">// TODO: set this flexible</span></div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    <span class="keywordtype">double</span> delta = diag_length * eps;</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    bbox_min -= <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a>(delta, delta, delta);</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    bbox_max += <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a>(delta, delta, delta);</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    <span class="keywordtype">double</span> target_edge_length = diag_length * eps_target;</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160; </div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    <span class="comment">// compute resolution</span></div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    std::array&lt;int64_t, 3&gt; resolution = {</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        {(int64_t)((bbox_max[0] - bbox_min[0]) / target_edge_length),</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;         (int64_t)((bbox_max[1] - bbox_min[1]) / target_edge_length),</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;         (int64_t)((bbox_max[2] - bbox_min[2]) / target_edge_length)}};</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160; </div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    <span class="comment">// generate background mesh</span></div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    <a class="code" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> background_TV;</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> background_V;</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <span class="keywordflow">if</span> (bgV.size() == 0) {</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;        <a class="code" href="namespacewmtk_1_1utils.html#a81fce5e5de645986df7e56f010ca2886">generate_background_mesh</a>(bbox_min, bbox_max, resolution, background_TV, background_V);</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160; </div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;        <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;            <span class="stringliteral">&quot;generated background mesh with resolution {} {} {}&quot;</span>,</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;            resolution[0],</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;            resolution[1],</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;            resolution[2]);</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        assert(bgT.size() != 0);</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;        background_TV = bgT;</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;        background_V = bgV;</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    }</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160; </div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160; </div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <span class="comment">// prepare data for volume remesher</span></div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    <span class="comment">// inputs</span></div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    std::vector&lt;double&gt; tri_vrt_coords(V.rows() * 3);</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    std::vector&lt;uint32_t&gt; triangle_indices(F.rows() * 3);</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    std::vector&lt;double&gt; tet_vrt_coords(background_V.rows() * 3);</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    std::vector&lt;uint32_t&gt; tet_indices(background_TV.rows() * 4);</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160; </div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; V.rows(); ++i) {</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;        tri_vrt_coords[i * 3 + 0] = V(i, 0);</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;        tri_vrt_coords[i * 3 + 1] = V(i, 1);</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;        tri_vrt_coords[i * 3 + 2] = V(i, 2);</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;    }</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160; </div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; F.rows(); ++i) {</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;        triangle_indices[i * 3 + 0] = F(i, 0);</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        triangle_indices[i * 3 + 1] = F(i, 1);</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        triangle_indices[i * 3 + 2] = F(i, 2);</div>
 <div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    }</div>
 <div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160; </div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; background_TV.rows(); ++i) {</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;        tet_indices[i * 4 + 0] = background_TV(i, 0);</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;        tet_indices[i * 4 + 1] = background_TV(i, 1);</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;        tet_indices[i * 4 + 2] = background_TV(i, 2);</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;        tet_indices[i * 4 + 3] = background_TV(i, 3);</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    }</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160; </div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    <span class="comment">// outputs</span></div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;    std::vector&lt;vol_rem::bigrational&gt; embedded_vertices;</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    std::vector&lt;uint32_t&gt; embedded_facets;</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    std::vector&lt;uint32_t&gt; embedded_cells;</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    std::vector&lt;uint32_t&gt; embedded_facets_on_input;</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; background_V.rows(); ++i) {</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;        tet_vrt_coords[i * 3 + 0] = background_V(i, 0);</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;        tet_vrt_coords[i * 3 + 1] = background_V(i, 1);</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;        tet_vrt_coords[i * 3 + 2] = background_V(i, 2);</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    }</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160; </div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; background_TV.rows(); ++i) {</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;        tet_indices[i * 4 + 0] = background_TV(i, 0);</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;        tet_indices[i * 4 + 1] = background_TV(i, 1);</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;        tet_indices[i * 4 + 2] = background_TV(i, 2);</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;        tet_indices[i * 4 + 3] = background_TV(i, 3);</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    }</div>
 <div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160; </div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    <span class="comment">// run volume remesher</span></div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    vol_rem::embed_tri_in_poly_mesh(</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;        tri_vrt_coords,</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        triangle_indices,</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;        tet_vrt_coords,</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        tet_indices,</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        embedded_vertices,</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;        embedded_facets,</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;        embedded_cells,</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;        embedded_facets_on_input,</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160; </div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;volume remesher finished, polycell mesh generated&quot;</span>);</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160; </div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    <span class="comment">// convert to double and readable format</span></div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    std::vector&lt;Vector3d&gt; v_coords; <span class="comment">// vertex coordinates</span></div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    std::vector&lt;std::vector&lt;int64_t&gt;&gt; polygon_faces; <span class="comment">// index of vertices</span></div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    std::vector&lt;std::vector&lt;int64_t&gt;&gt; polygon_cells; <span class="comment">// index of faces</span></div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    std::vector&lt;bool&gt; polygon_faces_on_input; <span class="comment">// whether the face is on input surface</span></div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    std::vector&lt;std::array&lt;int64_t, 4&gt;&gt; tets_final; <span class="comment">// final tets</span></div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    std::vector&lt;std::array&lt;bool, 4&gt;&gt; tet_face_on_input_surface; <span class="comment">// tet local face on input surface</span></div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160; </div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; embedded_vertices.size() / 3; ++i) {</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;        v_coords.emplace_back(</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;            embedded_vertices[i * 3 + 0].get_d(),</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;            embedded_vertices[i * 3 + 1].get_d(),</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;            embedded_vertices[i * 3 + 2].get_d());</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    }</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    <span class="comment">// outputs</span></div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    std::vector&lt;vol_rem::bigrational&gt; embedded_vertices;</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;    std::vector&lt;uint32_t&gt; embedded_facets;</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;    std::vector&lt;uint32_t&gt; embedded_cells;</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;    std::vector&lt;uint32_t&gt; embedded_facets_on_input;</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160; </div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;    <span class="comment">// run volume remesher</span></div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    vol_rem::embed_tri_in_poly_mesh(</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;        tri_vrt_coords,</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;        triangle_indices,</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        tet_vrt_coords,</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        tet_indices,</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;        embedded_vertices,</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;        embedded_facets,</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;        embedded_cells,</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;        embedded_facets_on_input,</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;        <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160; </div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;volume remesher finished, polycell mesh generated&quot;</span>);</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160; </div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    <span class="comment">// convert to double and readable format</span></div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    <span class="comment">// std::vector&lt;Vector3d&gt; v_coords; // vertex coordinates</span></div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    std::vector&lt;Vector3r&gt; v_coords; <span class="comment">// vertex coordinates</span></div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;    std::vector&lt;std::vector&lt;int64_t&gt;&gt; polygon_faces; <span class="comment">// index of vertices</span></div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;    std::vector&lt;std::vector&lt;int64_t&gt;&gt; polygon_cells; <span class="comment">// index of faces</span></div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    std::vector&lt;bool&gt; polygon_faces_on_input; <span class="comment">// whether the face is on input surface</span></div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    std::vector&lt;std::array&lt;int64_t, 4&gt;&gt; tets_final; <span class="comment">// final tets</span></div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    std::vector&lt;std::array&lt;bool, 4&gt;&gt; tet_face_on_input_surface; <span class="comment">// tet local face on input surface</span></div>
 <div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160; </div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160; </div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    <span class="comment">// debug code</span></div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    <span class="comment">// for (int64_t i = 0; i &lt; embedded_vertices.size(); ++i) {</span></div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    <span class="comment">//     wmtk::Rational v1, v2, v3;</span></div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    <span class="comment">//     v1.init(embedded_vertices[i * 3 + 0].get_mpq_t());</span></div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    <span class="comment">//     v2.init(embedded_vertices[i * 3 + 1].get_mpq_t());</span></div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    <span class="comment">//     v3.init(embedded_vertices[i * 3 + 2].get_mpq_t());</span></div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    <span class="comment">//     std::cout &lt;&lt; v1.to_double() &lt;&lt; &quot; &quot; &lt;&lt; v2.to_double() &lt;&lt; &quot; &quot; &lt;&lt; v3.to_double() &lt;&lt; &quot; &quot;</span></div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    <span class="comment">//               &lt;&lt; std::endl;</span></div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    <span class="comment">// }</span></div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;    <span class="comment">// return std::make_tuple(nullptr, tet_face_on_input_surface);</span></div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160; </div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; embedded_facets.size(); ++i) {</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;        int64_t polysize = embedded_facets[i];</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        std::vector&lt;int64_t&gt; polygon;</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        <span class="keywordflow">for</span> (int64_t j = i + 1; j &lt;= i + polysize; ++j) {</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;            polygon.push_back(embedded_facets[j]);</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;        }</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;        polygon_faces.push_back(polygon);</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;        i += polysize; <span class="comment">// dangerous behavior, but working now</span></div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    }</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160; </div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; embedded_cells.size(); ++i) {</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;        std::vector&lt;int64_t&gt; polygon_cell;</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;        int64_t cellsize = embedded_cells[i];</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;        <span class="keywordflow">for</span> (int64_t j = i + 1; j &lt;= i + cellsize; ++j) {</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;            polygon_cell.push_back(embedded_cells[j]);</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;        }</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;        polygon_cells.push_back(polygon_cell);</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;        i += cellsize; <span class="comment">// dangerous behavior, but working now</span></div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    }</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160; </div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    polygon_faces_on_input.resize(polygon_faces.size(), <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160; </div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; embedded_facets_on_input.size(); ++i) {</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;        polygon_faces_on_input[embedded_facets_on_input[i]] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    }</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160; </div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    <span class="comment">// triangulate polygon faces</span></div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    std::vector&lt;std::array&lt;int64_t, 3&gt;&gt; triangulated_faces;</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;    std::vector&lt;bool&gt; triangulated_faces_on_input;</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;    std::vector&lt;std::vector&lt;int64_t&gt;&gt; map_poly_to_tri_face(polygon_faces.size());</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160; </div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; polygon_faces.size(); ++i) {</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;        <span class="comment">// already clipped in other polygon</span></div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;        <span class="keywordflow">if</span> (map_poly_to_tri_face[i].size() != 0) <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160; </div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;        <span class="comment">// new polygon face to clip</span></div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;        std::vector&lt;std::array&lt;int64_t, 3&gt;&gt; clipped_indices;</div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;        std::vector&lt;Vector3d&gt; poly_coordinates;</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;        std::vector&lt;int64_t&gt; polygon_face = polygon_faces[i];</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;        assert(polygon_face.size() &gt;= 3);</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160; </div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;        <span class="keywordflow">if</span> (polygon_face.size() == 3) {</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;            <span class="comment">// already a triangle, don&#39;t need to clip</span></div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;            std::array&lt;int64_t, 3&gt; triangle_face = {</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;                {polygon_face[0], polygon_face[1], polygon_face[2]}};</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;            int64_t idx = triangulated_faces.size();</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;            triangulated_faces.push_back(triangle_face);</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;            <span class="keywordflow">if</span> (polygon_faces_on_input[i]) {</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                triangulated_faces_on_input.push_back(<span class="keyword">true</span>);</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;            } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;                triangulated_faces_on_input.push_back(<span class="keyword">false</span>);</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;            }</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;            map_poly_to_tri_face[i].push_back(idx);</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;            <span class="comment">// not a triangle, need to clip</span></div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;            <span class="keywordflow">for</span> (int64_t j = 0; j &lt; polygon_faces[i].size(); ++j) {</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;                poly_coordinates.push_back(v_coords[polygon_face[j]]);</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;            }</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160; </div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;            <span class="comment">// clip polygon face</span></div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;            clipped_indices = <a class="code" href="namespacewmtk_1_1utils.html#a092fbbebc775373c2abaeb5cd43716de">triangulate_polygon_face</a>(poly_coordinates);</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160; </div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;            <span class="keywordflow">for</span> (int64_t j = 0; j &lt; clipped_indices.size(); ++j) {</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;                <span class="comment">// need to map oldface index to new face indices</span></div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                std::array&lt;int64_t, 3&gt; triangle_face = {</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;                    {polygon_face[clipped_indices[j][0]],</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;                     polygon_face[clipped_indices[j][1]],</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;                     polygon_face[clipped_indices[j][2]]}};</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160; </div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;                int64_t idx = triangulated_faces.size();</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                triangulated_faces.push_back(triangle_face);</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160; </div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;                <span class="comment">// track input faces</span></div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                <span class="keywordflow">if</span> (polygon_faces_on_input[i]) {</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                    triangulated_faces_on_input.push_back(<span class="keyword">true</span>);</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;                } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;                    triangulated_faces_on_input.push_back(<span class="keyword">false</span>);</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                }</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                map_poly_to_tri_face[i].push_back(idx);</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;            }</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;        }</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;    }</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160; </div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;triangulation finished.&quot;</span>);</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160; </div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;    <span class="comment">// tetrahedralization polygon cells</span></div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;    <span class="comment">// int64_t was_tet_cnt = 0;</span></div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; polygon_cells.size(); ++i) {</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;        <span class="keyword">auto</span> polygon_cell = polygon_cells[i];</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160; </div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;        <span class="comment">// get polygon vertices</span></div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;        std::vector&lt;int64_t&gt; polygon_vertices;</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> f : polygon_cell) {</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> v : polygon_faces[f]) {</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;                polygon_vertices.push_back(v);</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;            }</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;        }</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;        <a class="code" href="namespacewmtk_1_1utils.html#ae2c7b3137347cfeaffd619c0f6511b85">vector_unique</a>(polygon_vertices);</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160; </div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;        <span class="comment">// compute number of triangle faces</span></div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;        int64_t num_faces = 0;</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> f : polygon_cell) {</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;            num_faces += map_poly_to_tri_face[f].size();</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;        }</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160; </div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;        <span class="comment">// polygon already a tet</span></div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;        <span class="keywordflow">if</span> (num_faces == 4) {</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;            <span class="comment">// was_tet_cnt++;</span></div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;            assert(polygon_vertices.size() == 4);</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;            <span class="comment">// get the correct orientation here</span></div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;            int64_t v0 = polygon_faces[polygon_cell[0]][0];</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;            int64_t v1 = polygon_faces[polygon_cell[0]][1];</div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;            int64_t v2 = polygon_faces[polygon_cell[0]][2];</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;            int64_t v3 = -1;</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> v : polygon_faces[polygon_cell[1]]) {</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;                <span class="keywordflow">if</span> (v != v0 &amp;&amp; v != v1 &amp;&amp; v != v2) {</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;                    v3 = v;</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;                }</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;            }</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160; </div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;            assert(v3 != -1);</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160; </div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;            std::array&lt;int64_t, 4&gt; tetra = {{v0, v1, v2, v3}};</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160; </div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            <span class="comment">// if inverted then fix the orientation</span></div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;            <span class="keywordflow">if</span> (orient3d(</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;                    v_coords[v0].data(),</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;                    v_coords[v1].data(),</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;                    v_coords[v2].data(),</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;                    v_coords[v3].data()) &lt; 0) {</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; embedded_vertices.size() / 3; ++i) {</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;<span class="preprocessor">#ifdef USE_GNU_GMP_CLASSES</span></div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;        v_coords.emplace_back();</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        v_coords.back()[0].init(embedded_vertices[3 * i + 0].get_mpq_t());</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        v_coords.back()[1].init(embedded_vertices[3 * i + 1].get_mpq_t());</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        v_coords.back()[2].init(embedded_vertices[3 * i + 2].get_mpq_t());</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;<span class="preprocessor">#else</span></div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        v_coords.emplace_back();</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        v_coords.back()[0].init_from_binary(embedded_vertices[3 * i + 0].get_str());</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;        v_coords.back()[1].init_from_binary(embedded_vertices[3 * i + 1].get_str());</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        v_coords.back()[2].init_from_binary(embedded_vertices[3 * i + 2].get_str());</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    }</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160; </div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; embedded_facets.size(); ++i) {</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        int64_t polysize = embedded_facets[i];</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        std::vector&lt;int64_t&gt; polygon;</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;        <span class="keywordflow">for</span> (int64_t j = i + 1; j &lt;= i + polysize; ++j) {</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;            polygon.push_back(embedded_facets[j]);</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;        }</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;        polygon_faces.push_back(polygon);</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;        i += polysize; <span class="comment">// dangerous behavior, but working now</span></div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    }</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160; </div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; embedded_cells.size(); ++i) {</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;        std::vector&lt;int64_t&gt; polygon_cell;</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;        int64_t cellsize = embedded_cells[i];</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;        <span class="keywordflow">for</span> (int64_t j = i + 1; j &lt;= i + cellsize; ++j) {</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;            polygon_cell.push_back(embedded_cells[j]);</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;        }</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;        polygon_cells.push_back(polygon_cell);</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;        i += cellsize; <span class="comment">// dangerous behavior, but working now</span></div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    }</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160; </div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    polygon_faces_on_input.resize(polygon_faces.size(), <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160; </div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; embedded_facets_on_input.size(); ++i) {</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;        polygon_faces_on_input[embedded_facets_on_input[i]] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    }</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160; </div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    <span class="comment">// triangulate polygon faces</span></div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;    std::vector&lt;std::array&lt;int64_t, 3&gt;&gt; triangulated_faces;</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;    std::vector&lt;bool&gt; triangulated_faces_on_input;</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;    std::vector&lt;std::vector&lt;int64_t&gt;&gt; map_poly_to_tri_face(polygon_faces.size());</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160; </div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; polygon_faces.size(); ++i) {</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;        <span class="comment">// already clipped in other polygon</span></div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;        <span class="keywordflow">if</span> (map_poly_to_tri_face[i].size() != 0) <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160; </div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;        <span class="comment">// new polygon face to clip</span></div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;        std::vector&lt;std::array&lt;int64_t, 3&gt;&gt; clipped_indices;</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;        std::vector&lt;Vector3r&gt; poly_coordinates;</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;        std::vector&lt;int64_t&gt; polygon_face = polygon_faces[i];</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;        assert(polygon_face.size() &gt;= 3);</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160; </div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;        <span class="keywordflow">if</span> (polygon_face.size() == 3) {</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;            <span class="comment">// already a triangle, don&#39;t need to clip</span></div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;            std::array&lt;int64_t, 3&gt; triangle_face = {</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;                {polygon_face[0], polygon_face[1], polygon_face[2]}};</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;            int64_t idx = triangulated_faces.size();</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;            triangulated_faces.push_back(triangle_face);</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;            <span class="keywordflow">if</span> (polygon_faces_on_input[i]) {</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;                triangulated_faces_on_input.push_back(<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;            } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;                triangulated_faces_on_input.push_back(<span class="keyword">false</span>);</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;            }</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;            map_poly_to_tri_face[i].push_back(idx);</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;            <span class="comment">// not a triangle, need to clip</span></div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;            <span class="keywordflow">for</span> (int64_t j = 0; j &lt; polygon_faces[i].size(); ++j) {</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;                poly_coordinates.push_back(v_coords[polygon_face[j]]);</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;            }</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160; </div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;            <span class="comment">// clip polygon face</span></div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;            clipped_indices = <a class="code" href="namespacewmtk_1_1utils.html#aa7ad5fef5b4d54d3da8204235650f6e8">triangulate_polygon_face</a>(poly_coordinates);</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160; </div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;            <span class="keywordflow">for</span> (int64_t j = 0; j &lt; clipped_indices.size(); ++j) {</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                <span class="comment">// need to map oldface index to new face indices</span></div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;                std::array&lt;int64_t, 3&gt; triangle_face = {</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;                    {polygon_face[clipped_indices[j][0]],</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;                     polygon_face[clipped_indices[j][1]],</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;                     polygon_face[clipped_indices[j][2]]}};</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160; </div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                int64_t idx = triangulated_faces.size();</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;                triangulated_faces.push_back(triangle_face);</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160; </div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                <span class="comment">// track input faces</span></div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                <span class="keywordflow">if</span> (polygon_faces_on_input[i]) {</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;                    triangulated_faces_on_input.push_back(<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;                } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                    triangulated_faces_on_input.push_back(<span class="keyword">false</span>);</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                }</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;                map_poly_to_tri_face[i].push_back(idx);</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;            }</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;        }</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;    }</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160; </div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;triangulation finished.&quot;</span>);</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160; </div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;    <span class="comment">// tetrahedralization polygon cells</span></div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;    <span class="comment">// int64_t was_tet_cnt = 0;</span></div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; polygon_cells.size(); ++i) {</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;        <span class="keyword">auto</span> polygon_cell = polygon_cells[i];</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160; </div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;        <span class="comment">// get polygon vertices</span></div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;        std::vector&lt;int64_t&gt; polygon_vertices;</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> f : polygon_cell) {</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> v : polygon_faces[f]) {</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;                polygon_vertices.push_back(v);</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;            }</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;        }</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;        <a class="code" href="namespacewmtk_1_1utils.html#ae2c7b3137347cfeaffd619c0f6511b85">vector_unique</a>(polygon_vertices);</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160; </div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;        <span class="comment">// compute number of triangle faces</span></div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;        int64_t num_faces = 0;</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> f : polygon_cell) {</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;            num_faces += map_poly_to_tri_face[f].size();</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;        }</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160; </div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;        <span class="comment">// polygon already a tet</span></div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;        <span class="keywordflow">if</span> (num_faces == 4) {</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;            <span class="comment">// was_tet_cnt++;</span></div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;            assert(polygon_vertices.size() == 4);</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;            <span class="comment">// get the correct orientation here</span></div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;            int64_t v0 = polygon_faces[polygon_cell[0]][0];</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;            int64_t v1 = polygon_faces[polygon_cell[0]][1];</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;            int64_t v2 = polygon_faces[polygon_cell[0]][2];</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;            int64_t v3 = -1;</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> v : polygon_faces[polygon_cell[1]]) {</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;                <span class="keywordflow">if</span> (v != v0 &amp;&amp; v != v1 &amp;&amp; v != v2) {</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;                    v3 = v;</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;                }</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;            }</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160; </div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;            assert(v3 != -1);</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160; </div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;            std::array&lt;int64_t, 4&gt; tetra = {{v0, v1, v2, v3}};</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160; </div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160; </div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;            <a class="code" href="namespacewmtk.html#a0d65e04e0096a0de2da1771c32b380ef">Vector3r</a> v0v1 = v_coords[v1] - v_coords[v0];</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;            <a class="code" href="namespacewmtk.html#a0d65e04e0096a0de2da1771c32b380ef">Vector3r</a> v0v2 = v_coords[v2] - v_coords[v0];</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;            <a class="code" href="namespacewmtk.html#a0d65e04e0096a0de2da1771c32b380ef">Vector3r</a> v0v3 = v_coords[v3] - v_coords[v0];</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;            <span class="keywordflow">if</span> ((v0v1.cross(v0v2)).dot(v0v3) &gt; 0) {</div>
 <div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;                tetra = {{v1, v0, v2, v3}};</div>
 <div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;            }</div>
 <div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160; </div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;            <span class="keywordflow">if</span> (orient3d(</div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;                    v_coords[tetra[0]].data(),</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;                    v_coords[tetra[1]].data(),</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;                    v_coords[tetra[2]].data(),</div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;                    v_coords[tetra[3]].data()) &lt;= 0) {</div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;                Eigen::Matrix3d tmp;</div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;                tmp.col(0) = v_coords[tetra[1]] - v_coords[tetra[0]];</div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;                tmp.col(1) = v_coords[tetra[2]] - v_coords[tetra[0]];</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;                tmp.col(2) = v_coords[tetra[3]] - v_coords[tetra[0]];</div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;                <a class="code" href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">log_and_throw_error</a>(</div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;                    <span class="stringliteral">&quot;flipped tet=({},{},{},{}) crash vol={} orient={}&quot;</span>,</div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;                    tetra[0],</div>
-<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;                    tetra[1],</div>
-<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;                    tetra[2],</div>
-<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;                    tetra[3],</div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;                    tmp.determinant(),</div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;                    orient3d(</div>
-<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;                        v_coords[tetra[0]].data(),</div>
-<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;                        v_coords[tetra[1]].data(),</div>
-<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;                        v_coords[tetra[2]].data(),</div>
-<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;                        v_coords[tetra[3]].data()));</div>
-<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;            }</div>
-<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160; </div>
-<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;            <span class="comment">// push the tet to final queue;</span></div>
-<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;            tets_final.push_back(tetra);</div>
-<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160; </div>
-<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;            std::set&lt;int64_t&gt; local_f0 = {tetra[1], tetra[2], tetra[3]};</div>
-<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;            std::set&lt;int64_t&gt; local_f1 = {tetra[0], tetra[2], tetra[3]};</div>
-<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;            std::set&lt;int64_t&gt; local_f2 = {tetra[0], tetra[1], tetra[3]};</div>
-<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;            std::set&lt;int64_t&gt; local_f3 = {tetra[0], tetra[1], tetra[2]};</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160; </div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;            <span class="comment">// push the tet to final queue;</span></div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;            tets_final.push_back(tetra);</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160; </div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;            std::set&lt;int64_t&gt; local_f0 = {tetra[1], tetra[2], tetra[3]};</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;            std::set&lt;int64_t&gt; local_f1 = {tetra[0], tetra[2], tetra[3]};</div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;            std::set&lt;int64_t&gt; local_f2 = {tetra[0], tetra[1], tetra[3]};</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;            std::set&lt;int64_t&gt; local_f3 = {tetra[0], tetra[1], tetra[2]};</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160; </div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;            <span class="comment">// track surface</span></div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;            std::array&lt;bool, 4&gt; tet_face_on_input;</div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> f : polygon_cell) {</div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;                std::set&lt;int64_t&gt; f_vs = {</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;                    polygon_faces[f][0],</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;                    polygon_faces[f][1],</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;                    polygon_faces[f][2]};</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160; </div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;                int64_t local_f_idx;</div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160; </div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;                <span class="comment">// decide which face it is</span></div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160; </div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;                <span class="keywordflow">if</span> (f_vs == local_f0) {</div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;                    local_f_idx = 0;</div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;                } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (f_vs == local_f1) {</div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;                    local_f_idx = 1;</div>
+<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;                } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (f_vs == local_f2) {</div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;                    local_f_idx = 2;</div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;                } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;                    local_f_idx = 3;</div>
+<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;                }</div>
 <div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160; </div>
-<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;            <span class="comment">// track surface</span></div>
-<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;            std::array&lt;bool, 4&gt; tet_face_on_input;</div>
-<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> f : polygon_cell) {</div>
-<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;                std::set&lt;int64_t&gt; f_vs = {</div>
-<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;                    polygon_faces[f][0],</div>
-<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;                    polygon_faces[f][1],</div>
-<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;                    polygon_faces[f][2]};</div>
-<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160; </div>
-<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;                int64_t local_f_idx;</div>
-<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160; </div>
-<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;                <span class="comment">// decide which face it is</span></div>
-<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160; </div>
-<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;                <span class="keywordflow">if</span> (f_vs == local_f0) {</div>
-<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;                    local_f_idx = 0;</div>
-<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;                } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (f_vs == local_f1) {</div>
-<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;                    local_f_idx = 1;</div>
-<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;                } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (f_vs == local_f2) {</div>
-<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;                    local_f_idx = 2;</div>
-<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;                } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;                    local_f_idx = 3;</div>
-<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;                }</div>
-<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160; </div>
-<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;                tet_face_on_input[local_f_idx] = polygon_faces_on_input[f];</div>
-<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;            }</div>
-<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160; </div>
-<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160; </div>
-<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;            tet_face_on_input_surface.push_back(tet_face_on_input);</div>
-<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160; </div>
-<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;            <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;        }</div>
-<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160; </div>
-<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;        <span class="comment">// not a tet initially</span></div>
-<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;        <span class="comment">// compute centroid</span></div>
-<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;        <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> centroid(0, 0, 0);</div>
-<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> v : polygon_vertices) {</div>
-<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;            centroid = centroid + v_coords[v];</div>
-<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;        }</div>
-<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;        centroid = centroid / polygon_vertices.size();</div>
-<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160; </div>
-<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;        <span class="comment">// trahedralize</span></div>
-<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;        int64_t centroid_idx = v_coords.size();</div>
-<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;        v_coords.push_back(centroid);</div>
+<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;                tet_face_on_input[local_f_idx] = polygon_faces_on_input[f];</div>
+<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;            }</div>
+<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160; </div>
+<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160; </div>
+<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;            tet_face_on_input_surface.push_back(tet_face_on_input);</div>
+<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160; </div>
+<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;            <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;        }</div>
+<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160; </div>
+<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;        <span class="comment">// not a tet initially</span></div>
+<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;        <span class="comment">// compute centroid</span></div>
+<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;        <a class="code" href="namespacewmtk.html#a0d65e04e0096a0de2da1771c32b380ef">Vector3r</a> centroid(0, 0, 0);</div>
+<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> v : polygon_vertices) {</div>
+<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;            centroid = centroid + v_coords[v];</div>
+<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;        }</div>
+<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;        centroid = centroid / polygon_vertices.size();</div>
+<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160; </div>
+<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;        <span class="comment">// trahedralize</span></div>
+<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;        int64_t centroid_idx = v_coords.size();</div>
+<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;        v_coords.push_back(centroid);</div>
+<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160; </div>
+<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> f : polygon_cell) {</div>
+<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> t : map_poly_to_tri_face[f]) {</div>
+<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;                std::array&lt;int64_t, 4&gt; tetra = {</div>
+<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;                    {triangulated_faces[t][0],</div>
+<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;                     triangulated_faces[t][1],</div>
+<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;                     triangulated_faces[t][2],</div>
+<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;                     centroid_idx}};</div>
+<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160; </div>
+<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;                <a class="code" href="namespacewmtk.html#a0d65e04e0096a0de2da1771c32b380ef">Vector3r</a> v0v1 = v_coords[tetra[1]] - v_coords[tetra[0]];</div>
+<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;                <a class="code" href="namespacewmtk.html#a0d65e04e0096a0de2da1771c32b380ef">Vector3r</a> v0v2 = v_coords[tetra[2]] - v_coords[tetra[0]];</div>
+<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;                <a class="code" href="namespacewmtk.html#a0d65e04e0096a0de2da1771c32b380ef">Vector3r</a> v0v3 = v_coords[tetra[3]] - v_coords[tetra[0]];</div>
+<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;                <span class="keywordflow">if</span> ((v0v1.cross(v0v2)).dot(v0v3) &gt; 0) {</div>
+<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;                    tetra = {</div>
+<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;                        {triangulated_faces[t][1],</div>
+<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;                         triangulated_faces[t][0],</div>
+<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;                         triangulated_faces[t][2],</div>
+<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;                         centroid_idx}};</div>
+<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;                }</div>
+<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160; </div>
+<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;                tets_final.push_back(tetra);</div>
+<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160; </div>
 <div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160; </div>
-<div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> f : polygon_cell) {</div>
-<div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> t : map_poly_to_tri_face[f]) {</div>
-<div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160;                std::array&lt;int64_t, 4&gt; tetra = {</div>
-<div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;                    {triangulated_faces[t][0],</div>
-<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;                     triangulated_faces[t][1],</div>
-<div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;                     triangulated_faces[t][2],</div>
-<div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;                     centroid_idx}};</div>
+<div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160;                tet_face_on_input_surface.push_back(</div>
+<div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;                    {{<span class="keyword">false</span>, <span class="keyword">false</span>, <span class="keyword">false</span>, triangulated_faces_on_input[t]}});</div>
+<div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160;            }</div>
+<div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;        }</div>
+<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;    }</div>
+<div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160; </div>
+<div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;tetrahedralization finished.&quot;</span>);</div>
 <div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160; </div>
-<div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;                <span class="comment">// check inverted tet and fix</span></div>
-<div class="line"><a name="l00477"></a><span class="lineno">  477</span>&#160;                <span class="keywordflow">if</span> (orient3d(</div>
-<div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160;                        v_coords[tetra[0]].data(),</div>
-<div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;                        v_coords[tetra[1]].data(),</div>
-<div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160;                        v_coords[tetra[2]].data(),</div>
-<div class="line"><a name="l00481"></a><span class="lineno">  481</span>&#160;                        v_coords[tetra[3]].data()) &lt; 0) {</div>
-<div class="line"><a name="l00482"></a><span class="lineno">  482</span>&#160;                    tetra = {</div>
-<div class="line"><a name="l00483"></a><span class="lineno">  483</span>&#160;                        {triangulated_faces[t][1],</div>
-<div class="line"><a name="l00484"></a><span class="lineno">  484</span>&#160;                         triangulated_faces[t][0],</div>
-<div class="line"><a name="l00485"></a><span class="lineno">  485</span>&#160;                         triangulated_faces[t][2],</div>
-<div class="line"><a name="l00486"></a><span class="lineno">  486</span>&#160;                         centroid_idx}};</div>
-<div class="line"><a name="l00487"></a><span class="lineno">  487</span>&#160;                }</div>
-<div class="line"><a name="l00488"></a><span class="lineno">  488</span>&#160; </div>
-<div class="line"><a name="l00489"></a><span class="lineno">  489</span>&#160;                <span class="keywordflow">if</span> (orient3d(</div>
-<div class="line"><a name="l00490"></a><span class="lineno">  490</span>&#160;                        v_coords[tetra[0]].data(),</div>
-<div class="line"><a name="l00491"></a><span class="lineno">  491</span>&#160;                        v_coords[tetra[1]].data(),</div>
-<div class="line"><a name="l00492"></a><span class="lineno">  492</span>&#160;                        v_coords[tetra[2]].data(),</div>
-<div class="line"><a name="l00493"></a><span class="lineno">  493</span>&#160;                        v_coords[tetra[3]].data()) &lt;= 0) {</div>
-<div class="line"><a name="l00494"></a><span class="lineno">  494</span>&#160;                    Eigen::Matrix3d tmp;</div>
-<div class="line"><a name="l00495"></a><span class="lineno">  495</span>&#160;                    tmp.col(0) = v_coords[tetra[1]] - v_coords[tetra[0]];</div>
-<div class="line"><a name="l00496"></a><span class="lineno">  496</span>&#160;                    tmp.col(1) = v_coords[tetra[2]] - v_coords[tetra[0]];</div>
-<div class="line"><a name="l00497"></a><span class="lineno">  497</span>&#160;                    tmp.col(2) = v_coords[tetra[3]] - v_coords[tetra[0]];</div>
-<div class="line"><a name="l00498"></a><span class="lineno">  498</span>&#160;                    <a class="code" href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">log_and_throw_error</a>(</div>
-<div class="line"><a name="l00499"></a><span class="lineno">  499</span>&#160;                        <span class="stringliteral">&quot;flipped for poly tet=({},{},{},{}) crash vol={} orient={}. Coords {} {} &quot;</span></div>
-<div class="line"><a name="l00500"></a><span class="lineno">  500</span>&#160;                        <span class="stringliteral">&quot;{} {}&quot;</span>,</div>
-<div class="line"><a name="l00501"></a><span class="lineno">  501</span>&#160;                        tetra[0],</div>
-<div class="line"><a name="l00502"></a><span class="lineno">  502</span>&#160;                        tetra[1],</div>
-<div class="line"><a name="l00503"></a><span class="lineno">  503</span>&#160;                        tetra[2],</div>
-<div class="line"><a name="l00504"></a><span class="lineno">  504</span>&#160;                        tetra[3],</div>
-<div class="line"><a name="l00505"></a><span class="lineno">  505</span>&#160;                        tmp.determinant(),</div>
-<div class="line"><a name="l00506"></a><span class="lineno">  506</span>&#160;                        orient3d(</div>
-<div class="line"><a name="l00507"></a><span class="lineno">  507</span>&#160;                            v_coords[tetra[0]].data(),</div>
-<div class="line"><a name="l00508"></a><span class="lineno">  508</span>&#160;                            v_coords[tetra[1]].data(),</div>
-<div class="line"><a name="l00509"></a><span class="lineno">  509</span>&#160;                            v_coords[tetra[2]].data(),</div>
-<div class="line"><a name="l00510"></a><span class="lineno">  510</span>&#160;                            v_coords[tetra[3]].data()),</div>
-<div class="line"><a name="l00511"></a><span class="lineno">  511</span>&#160;                        v_coords[tetra[0]].transpose(),</div>
-<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;                        v_coords[tetra[1]].transpose(),</div>
-<div class="line"><a name="l00513"></a><span class="lineno">  513</span>&#160;                        v_coords[tetra[2]].transpose(),</div>
-<div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160;                        v_coords[tetra[3]].transpose());</div>
-<div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160;                }</div>
-<div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160; </div>
-<div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160;                tets_final.push_back(tetra);</div>
-<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160; </div>
-<div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160; </div>
-<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;                tet_face_on_input_surface.push_back(</div>
-<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;                    {{<span class="keyword">false</span>, <span class="keyword">false</span>, <span class="keyword">false</span>, triangulated_faces_on_input[t]}});</div>
-<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;            }</div>
-<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;        }</div>
-<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;    }</div>
-<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160; </div>
-<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;tetrahedralization finished.&quot;</span>);</div>
-<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160; </div>
-<div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;    <span class="comment">// remove unused vertices and map</span></div>
-<div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;    std::vector&lt;bool&gt; v_is_used_in_tet(v_coords.size(), <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; t : tets_final) {</div>
-<div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> v : t) {</div>
-<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160;            v_is_used_in_tet[v] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;        }</div>
-<div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;    }</div>
+<div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;    <span class="comment">// remove unused vertices and map</span></div>
+<div class="line"><a name="l00477"></a><span class="lineno">  477</span>&#160;    std::vector&lt;bool&gt; v_is_used_in_tet(v_coords.size(), <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; t : tets_final) {</div>
+<div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; v : t) {</div>
+<div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160;            v_is_used_in_tet[v] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00481"></a><span class="lineno">  481</span>&#160;        }</div>
+<div class="line"><a name="l00482"></a><span class="lineno">  482</span>&#160;    }</div>
+<div class="line"><a name="l00483"></a><span class="lineno">  483</span>&#160; </div>
+<div class="line"><a name="l00484"></a><span class="lineno">  484</span>&#160;    std::map&lt;int64_t, int64_t&gt; v_map;</div>
+<div class="line"><a name="l00485"></a><span class="lineno">  485</span>&#160;    std::vector&lt;Vector3d&gt; v_coords_final;</div>
+<div class="line"><a name="l00486"></a><span class="lineno">  486</span>&#160;    <span class="comment">// for (int64_t i = 0; i &lt; v_coords.size(); ++i) {</span></div>
+<div class="line"><a name="l00487"></a><span class="lineno">  487</span>&#160;    <span class="comment">//     if (v_is_used_in_tet[i]) {</span></div>
+<div class="line"><a name="l00488"></a><span class="lineno">  488</span>&#160;    <span class="comment">//         v_map[i] = v_coords_final.size();</span></div>
+<div class="line"><a name="l00489"></a><span class="lineno">  489</span>&#160;    <span class="comment">//         v_coords_final.push_back(v_coords[i]);</span></div>
+<div class="line"><a name="l00490"></a><span class="lineno">  490</span>&#160;    <span class="comment">//     }</span></div>
+<div class="line"><a name="l00491"></a><span class="lineno">  491</span>&#160;    <span class="comment">// }</span></div>
+<div class="line"><a name="l00492"></a><span class="lineno">  492</span>&#160; </div>
+<div class="line"><a name="l00493"></a><span class="lineno">  493</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; v_coords.size(); ++i) {</div>
+<div class="line"><a name="l00494"></a><span class="lineno">  494</span>&#160;        <span class="keywordflow">if</span> (v_is_used_in_tet[i]) {</div>
+<div class="line"><a name="l00495"></a><span class="lineno">  495</span>&#160;            v_map[i] = v_coords_final.size();</div>
+<div class="line"><a name="l00496"></a><span class="lineno">  496</span>&#160;            v_coords_final.emplace_back(</div>
+<div class="line"><a name="l00497"></a><span class="lineno">  497</span>&#160;                v_coords[i][0].to_double(),</div>
+<div class="line"><a name="l00498"></a><span class="lineno">  498</span>&#160;                v_coords[i][1].to_double(),</div>
+<div class="line"><a name="l00499"></a><span class="lineno">  499</span>&#160;                v_coords[i][2].to_double());</div>
+<div class="line"><a name="l00500"></a><span class="lineno">  500</span>&#160;        }</div>
+<div class="line"><a name="l00501"></a><span class="lineno">  501</span>&#160;    }</div>
+<div class="line"><a name="l00502"></a><span class="lineno">  502</span>&#160; </div>
+<div class="line"><a name="l00503"></a><span class="lineno">  503</span>&#160;    <span class="comment">// remap tets</span></div>
+<div class="line"><a name="l00504"></a><span class="lineno">  504</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; t : tets_final) {</div>
+<div class="line"><a name="l00505"></a><span class="lineno">  505</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 4; ++i) {</div>
+<div class="line"><a name="l00506"></a><span class="lineno">  506</span>&#160;            t[i] = v_map[t[i]];</div>
+<div class="line"><a name="l00507"></a><span class="lineno">  507</span>&#160;        }</div>
+<div class="line"><a name="l00508"></a><span class="lineno">  508</span>&#160; </div>
+<div class="line"><a name="l00509"></a><span class="lineno">  509</span>&#160;        <span class="keywordflow">if</span> (orient3d(</div>
+<div class="line"><a name="l00510"></a><span class="lineno">  510</span>&#160;                v_coords_final[t[0]].data(),</div>
+<div class="line"><a name="l00511"></a><span class="lineno">  511</span>&#160;                v_coords_final[t[1]].data(),</div>
+<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;                v_coords_final[t[2]].data(),</div>
+<div class="line"><a name="l00513"></a><span class="lineno">  513</span>&#160;                v_coords_final[t[3]].data()) &lt;= 0) {</div>
+<div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160;            Eigen::Matrix3d tmp;</div>
+<div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160;            tmp.col(0) = v_coords_final[t[1]] - v_coords_final[t[0]];</div>
+<div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160;            tmp.col(1) = v_coords_final[t[2]] - v_coords_final[t[0]];</div>
+<div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160;            tmp.col(2) = v_coords_final[t[3]] - v_coords_final[t[0]];</div>
+<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;            <a class="code" href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">log_and_throw_error</a>(</div>
+<div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;                <span class="stringliteral">&quot;flipped tet=({},{},{},{}) crash vol={} orient={}&quot;</span>,</div>
+<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;                t[0],</div>
+<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;                t[1],</div>
+<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;                t[2],</div>
+<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;                t[3],</div>
+<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;                tmp.determinant(),</div>
+<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;                orient3d(</div>
+<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;                    v_coords_final[t[0]].data(),</div>
+<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;                    v_coords_final[t[1]].data(),</div>
+<div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;                    v_coords_final[t[2]].data(),</div>
+<div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;                    v_coords_final[t[3]].data()));</div>
+<div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;        }</div>
+<div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160;    }</div>
+<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160; </div>
+<div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;    <span class="comment">// transfer v_coords_final to V matrix and tets_final to TV matrix</span></div>
+<div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;    <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> V_final(v_coords_final.size(), 3);</div>
 <div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160; </div>
-<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;    std::map&lt;int64_t, int64_t&gt; v_map;</div>
-<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;    std::vector&lt;Vector3d&gt; v_coords_final;</div>
-<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; v_coords.size(); ++i) {</div>
-<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;        <span class="keywordflow">if</span> (v_is_used_in_tet[i]) {</div>
-<div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;            v_map[i] = v_coords_final.size();</div>
-<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;            v_coords_final.push_back(v_coords[i]);</div>
-<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;        }</div>
-<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;    }</div>
-<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160; </div>
-<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;    <span class="comment">// remap tets</span></div>
-<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; t : tets_final) {</div>
-<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 4; ++i) {</div>
-<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;            t[i] = v_map[t[i]];</div>
-<div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;        }</div>
-<div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;    }</div>
-<div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160; </div>
-<div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;    <span class="comment">// transfer v_coords_final to V matrix and tets_final to TV matrix</span></div>
-<div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;    <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> V_final(v_coords_final.size(), 3);</div>
-<div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160;    <a class="code" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> TV_final(tets_final.size(), 4);</div>
+<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;    <a class="code" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> TV_final(tets_final.size(), 4);</div>
+<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160; </div>
+<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160; </div>
+<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; v_coords_final.size(); ++i) {</div>
+<div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;        V_final.row(i) = v_coords_final[i];</div>
+<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;    }</div>
+<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160; </div>
+<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; tets_final.size(); ++i) {</div>
+<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;        TV_final.row(i) &lt;&lt; tets_final[i][0], tets_final[i][1], tets_final[i][2], tets_final[i][3];</div>
+<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;    }</div>
+<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160; </div>
+<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;remove unused vertices finished.&quot;</span>);</div>
+<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160; </div>
+<div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;    <span class="comment">// initialize tetmesh</span></div>
+<div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;    std::shared_ptr&lt;wmtk::TetMesh&gt; m = std::make_shared&lt;wmtk::TetMesh&gt;();</div>
+<div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;    m-&gt;initialize(TV_final);</div>
+<div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;    <a class="code" href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">mesh_utils::set_matrix_attribute</a>(V_final, <span class="stringliteral">&quot;vertices&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>, *m);</div>
+<div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160; </div>
+<div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;init tetmesh finished.&quot;</span>);</div>
 <div class="line"><a name="l00555"></a><span class="lineno">  555</span>&#160; </div>
-<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; v_coords_final.size(); ++i) {</div>
-<div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;        V_final.row(i) = v_coords_final[i];</div>
-<div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160;    }</div>
-<div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160; </div>
-<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; tets_final.size(); ++i) {</div>
-<div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;        TV_final.row(i) &lt;&lt; tets_final[i][0], tets_final[i][1], tets_final[i][2], tets_final[i][3];</div>
-<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;    }</div>
+<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;    <span class="keywordflow">if</span> (!m-&gt;is_connectivity_valid()) {</div>
+<div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;        <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().error(<span class="stringliteral">&quot;invalid tetmesh connectivity after insertion&quot;</span>);</div>
+<div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160;        <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;invalid tetmesh connectivity by insertion&quot;</span>);</div>
+<div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160;    }</div>
+<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160; </div>
+<div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;    <span class="keywordflow">return</span> std::make_tuple(m, tet_face_on_input_surface);</div>
+<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;}</div>
 <div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160; </div>
-<div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;remove unused vertices finished.&quot;</span>);</div>
-<div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160; </div>
-<div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;    <span class="comment">// initialize tetmesh</span></div>
-<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;    std::shared_ptr&lt;wmtk::TetMesh&gt; m = std::make_shared&lt;wmtk::TetMesh&gt;();</div>
-<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;    m-&gt;initialize(TV_final);</div>
-<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;    <a class="code" href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">mesh_utils::set_matrix_attribute</a>(V_final, <span class="stringliteral">&quot;vertices&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>, *m);</div>
-<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160; </div>
-<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;init tetmesh finished.&quot;</span>);</div>
-<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160; </div>
-<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;    <span class="keywordflow">return</span> std::make_tuple(m, tet_face_on_input_surface);</div>
-<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;}</div>
-<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160; </div>
-<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;std::tuple&lt;std::shared_ptr&lt;wmtk::TetMesh&gt;, std::shared_ptr&lt;wmtk::Mesh&gt;&gt;</div>
-<div class="line"><a name="l00577"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1utils.html#a4ea0d7c148b4066c6692a8e31c7b7b7a">  577</a></span>&#160;<a class="code" href="namespacewmtk_1_1utils.html#a4ea0d7c148b4066c6692a8e31c7b7b7a">generate_raw_tetmesh_with_surface_from_input</a>(</div>
-<div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a>&amp; V,</div>
-<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">RowVectors3l</a>&amp; F,</div>
-<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> eps_target,</div>
-<div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a>&amp; bgV,</div>
-<div class="line"><a name="l00582"></a><span class="lineno">  582</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a>&amp; bgF)</div>
-<div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160;{</div>
-<div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160;    constexpr <span class="keyword">static</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> <a class="code" href="namespacewmtk.html#a58dd3fc1aea35c1d3871f975a5517df9">PV</a> = <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>;</div>
-<div class="line"><a name="l00585"></a><span class="lineno">  585</span>&#160;    constexpr <span class="keyword">static</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> <a class="code" href="namespacewmtk.html#aa59092a2882e8bac80b672e28353f6d1">PE</a> = <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>;</div>
-<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;    constexpr <span class="keyword">static</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> <a class="code" href="faces__single__dimension_8cpp.html#ac8466d694539772016768a9f430a8e7c">PF</a> = <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>;</div>
-<div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;    constexpr <span class="keyword">static</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> <a class="code" href="faces__single__dimension_8cpp.html#a8f0d4ed5c261b1c8de925a7bba2b0f03">PT</a> = <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>;</div>
-<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160; </div>
-<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;    <span class="keyword">auto</span> [tetmesh, tet_face_on_input_surface] =</div>
-<div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;        <a class="code" href="namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456">generate_raw_tetmesh_from_input_surface</a>(V, F, eps_target, bgV, bgF);</div>
-<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160; </div>
-<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;    <span class="keyword">auto</span> surface_handle =</div>
-<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;        tetmesh-&gt;register_attribute&lt;int64_t&gt;(<span class="stringliteral">&quot;surface&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>, 1);</div>
-<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;    <span class="keyword">auto</span> surface_accessor = tetmesh-&gt;create_accessor&lt;int64_t&gt;(surface_handle);</div>
-<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160; </div>
-<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span>&amp; tets = tetmesh-&gt;get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>);</div>
-<div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;    assert(tets.size() == tet_face_on_input_surface.size());</div>
-<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160; </div>
-<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; tets.size(); ++i) {</div>
-<div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; t = tets[i]; <span class="comment">// local face 2</span></div>
-<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;        std::array&lt;Tuple, 4&gt; fs = {</div>
-<div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;            {tetmesh-&gt;switch_tuples(t, {<a class="code" href="namespacewmtk.html#a58dd3fc1aea35c1d3871f975a5517df9">PV</a>, <a class="code" href="namespacewmtk.html#aa59092a2882e8bac80b672e28353f6d1">PE</a>, <a class="code" href="faces__single__dimension_8cpp.html#ac8466d694539772016768a9f430a8e7c">PF</a>}),</div>
-<div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160;             tetmesh-&gt;switch_tuples(t, {PE, PF}),</div>
-<div class="line"><a name="l00604"></a><span class="lineno">  604</span>&#160;             t,</div>
-<div class="line"><a name="l00605"></a><span class="lineno">  605</span>&#160;             tetmesh-&gt;switch_tuples(t, {<a class="code" href="faces__single__dimension_8cpp.html#ac8466d694539772016768a9f430a8e7c">PF</a>})}};</div>
-<div class="line"><a name="l00606"></a><span class="lineno">  606</span>&#160; </div>
-<div class="line"><a name="l00607"></a><span class="lineno">  607</span>&#160;        <span class="keywordflow">for</span> (int64_t j = 0; j &lt; 4; ++j) {</div>
-<div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160;            <span class="keywordflow">if</span> (tet_face_on_input_surface[i][j]) {</div>
-<div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160;                surface_accessor.scalar_attribute(fs[j]) = 1;</div>
-<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;            } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;                surface_accessor.scalar_attribute(fs[j]) = 0;</div>
-<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;            }</div>
-<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;        }</div>
-<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;    }</div>
+<div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;std::tuple&lt;std::shared_ptr&lt;wmtk::TetMesh&gt;, std::shared_ptr&lt;wmtk::Mesh&gt;&gt;</div>
+<div class="line"><a name="l00565"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1utils.html#a4ea0d7c148b4066c6692a8e31c7b7b7a">  565</a></span>&#160;<a class="code" href="namespacewmtk_1_1utils.html#a4ea0d7c148b4066c6692a8e31c7b7b7a">generate_raw_tetmesh_with_surface_from_input</a>(</div>
+<div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a>&amp; V,</div>
+<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">RowVectors3l</a>&amp; F,</div>
+<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> eps_target,</div>
+<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a>&amp; bgV,</div>
+<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a>&amp; bgF)</div>
+<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;{</div>
+<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;    constexpr <span class="keyword">static</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> <a class="code" href="namespacewmtk.html#a58dd3fc1aea35c1d3871f975a5517df9">PV</a> = <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>;</div>
+<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;    constexpr <span class="keyword">static</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> <a class="code" href="namespacewmtk.html#aa59092a2882e8bac80b672e28353f6d1">PE</a> = <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>;</div>
+<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;    constexpr <span class="keyword">static</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> <a class="code" href="faces__single__dimension_8cpp.html#ac8466d694539772016768a9f430a8e7c">PF</a> = <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>;</div>
+<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;    constexpr <span class="keyword">static</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> <a class="code" href="faces__single__dimension_8cpp.html#a8f0d4ed5c261b1c8de925a7bba2b0f03">PT</a> = <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>;</div>
+<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160; </div>
+<div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;    <span class="keyword">auto</span> [tetmesh, tet_face_on_input_surface] =</div>
+<div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;        <a class="code" href="namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456">generate_raw_tetmesh_from_input_surface</a>(V, F, eps_target, bgV, bgF);</div>
+<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160; </div>
+<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;    <span class="keyword">auto</span> surface_handle =</div>
+<div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160;        tetmesh-&gt;register_attribute&lt;int64_t&gt;(<span class="stringliteral">&quot;surface&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>, 1);</div>
+<div class="line"><a name="l00582"></a><span class="lineno">  582</span>&#160;    <span class="keyword">auto</span> surface_accessor = tetmesh-&gt;create_accessor&lt;int64_t&gt;(surface_handle);</div>
+<div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160; </div>
+<div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span>&amp; tets = tetmesh-&gt;get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>);</div>
+<div class="line"><a name="l00585"></a><span class="lineno">  585</span>&#160;    assert(tets.size() == tet_face_on_input_surface.size());</div>
+<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160; </div>
+<div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; tets.size(); ++i) {</div>
+<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; t = tets[i]; <span class="comment">// local face 2</span></div>
+<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;        std::array&lt;Tuple, 4&gt; fs = {</div>
+<div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;            {tetmesh-&gt;switch_tuples(t, {<a class="code" href="namespacewmtk.html#a58dd3fc1aea35c1d3871f975a5517df9">PV</a>, <a class="code" href="namespacewmtk.html#aa59092a2882e8bac80b672e28353f6d1">PE</a>, <a class="code" href="faces__single__dimension_8cpp.html#ac8466d694539772016768a9f430a8e7c">PF</a>}),</div>
+<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;             tetmesh-&gt;switch_tuples(t, {PE, PF}),</div>
+<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;             t,</div>
+<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;             tetmesh-&gt;switch_tuples(t, {<a class="code" href="faces__single__dimension_8cpp.html#ac8466d694539772016768a9f430a8e7c">PF</a>})}};</div>
+<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160; </div>
+<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160;        <span class="keywordflow">for</span> (int64_t j = 0; j &lt; 4; ++j) {</div>
+<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;            <span class="keywordflow">if</span> (tet_face_on_input_surface[i][j]) {</div>
+<div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;                surface_accessor.scalar_attribute(fs[j]) = 1;</div>
+<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;            } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;                surface_accessor.scalar_attribute(fs[j]) = 0;</div>
+<div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160;            }</div>
+<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;        }</div>
+<div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;    }</div>
+<div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160; </div>
+<div class="line"><a name="l00604"></a><span class="lineno">  604</span>&#160;    <span class="keyword">auto</span> child_ptr = <a class="code" href="namespacewmtk_1_1multimesh_1_1utils.html#a9349b24597b61459c9d98753ae5234f1">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag</a>(</div>
+<div class="line"><a name="l00605"></a><span class="lineno">  605</span>&#160;        *tetmesh,</div>
+<div class="line"><a name="l00606"></a><span class="lineno">  606</span>&#160;        <span class="stringliteral">&quot;surface&quot;</span>,</div>
+<div class="line"><a name="l00607"></a><span class="lineno">  607</span>&#160;        1,</div>
+<div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160;        <a class="code" href="faces__single__dimension_8cpp.html#ac8466d694539772016768a9f430a8e7c">PF</a>);</div>
+<div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160; </div>
+<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;registered surface child mesh to tetmesh. Tetmesh has face attribute with &quot;</span></div>
+<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;                        <span class="stringliteral">&quot;name \&quot;surface\&quot;&quot;</span>);</div>
+<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160; </div>
+<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;    <span class="keywordflow">return</span> std::make_tuple(tetmesh, child_ptr);</div>
+<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;}</div>
 <div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160; </div>
-<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;    <span class="keyword">auto</span> child_ptr = <a class="code" href="namespacewmtk_1_1multimesh_1_1utils.html#a9349b24597b61459c9d98753ae5234f1">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag</a>(</div>
-<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;        *tetmesh,</div>
-<div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160;        <span class="stringliteral">&quot;surface&quot;</span>,</div>
-<div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160;        1,</div>
-<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;        <a class="code" href="faces__single__dimension_8cpp.html#ac8466d694539772016768a9f430a8e7c">PF</a>);</div>
-<div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160; </div>
-<div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;registered surface child mesh to tetmesh. Tetmesh has face attribute with &quot;</span></div>
-<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;                        <span class="stringliteral">&quot;name \&quot;surface\&quot;&quot;</span>);</div>
-<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160; </div>
-<div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;    <span class="keywordflow">return</span> std::make_tuple(tetmesh, child_ptr);</div>
-<div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;}</div>
-<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160; </div>
-<div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;} <span class="comment">// namespace wmtk::utils</span></div>
+<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;} <span class="comment">// namespace wmtk::utils</span></div>
 <div class="ttc" id="a_logger_8hpp_html"><div class="ttname"><a href="_logger_8hpp.html">Logger.hpp</a></div></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="a_rational_8hpp_html"><div class="ttname"><a href="_rational_8hpp.html">Rational.hpp</a></div></div>
@@ -755,19 +743,20 @@ $(document).ready(function(){initNavTree('_volume_remesher_triangle_insertion_8c
 <div class="ttc" id="anamespacewmtk_1_1mesh__utils_html_ad92eb4095d516f6a20e25587f9effe80"><div class="ttname"><a href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">wmtk::mesh_utils::set_matrix_attribute</a></div><div class="ttdeci">attribute::MeshAttributeHandle set_matrix_attribute(const Mat &amp;data, const std::string &amp;name, const PrimitiveType &amp;type, Mesh &amp;mesh)</div><div class="ttdef"><b>Definition:</b> <a href="mesh__utils_8hpp_source.html#l00009">mesh_utils.hpp:9</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1multimesh_1_1utils_html_a9349b24597b61459c9d98753ae5234f1"><div class="ttname"><a href="namespacewmtk_1_1multimesh_1_1utils.html#a9349b24597b61459c9d98753ae5234f1">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; extract_and_register_child_mesh_from_tag(Mesh &amp;m, const std::string &amp;tag, const int64_t tag_value, const PrimitiveType pt)</div><div class="ttdoc">extract a child mesh based on the given tag and tag value, and register it to the input (parent) mesh</div><div class="ttdef"><b>Definition:</b> <a href="extract__child__mesh__from__tag_8cpp_source.html#l00157">extract_child_mesh_from_tag.cpp:157</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1utils_html"><div class="ttname"><a href="namespacewmtk_1_1utils.html">wmtk::utils</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00017">Tuple.hpp:17</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1utils_html_a092fbbebc775373c2abaeb5cd43716de"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a092fbbebc775373c2abaeb5cd43716de">wmtk::utils::triangulate_polygon_face</a></div><div class="ttdeci">std::vector&lt; std::array&lt; int64_t, 3 &gt; &gt; triangulate_polygon_face(std::vector&lt; Vector3d &gt; points)</div><div class="ttdef"><b>Definition:</b> <a href="_volume_remesher_triangle_insertion_8cpp_source.html#l00084">VolumeRemesherTriangleInsertion.cpp:84</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1utils_html_a4ea0d7c148b4066c6692a8e31c7b7b7a"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a4ea0d7c148b4066c6692a8e31c7b7b7a">wmtk::utils::generate_raw_tetmesh_with_surface_from_input</a></div><div class="ttdeci">std::tuple&lt; std::shared_ptr&lt; wmtk::TetMesh &gt;, std::shared_ptr&lt; wmtk::Mesh &gt; &gt; generate_raw_tetmesh_with_surface_from_input(const RowVectors3d &amp;V, const RowVectors3l &amp;F, const double eps_target, const RowVectors3d &amp;bgV, const RowVectors4l &amp;bgF)</div><div class="ttdef"><b>Definition:</b> <a href="_volume_remesher_triangle_insertion_8cpp_source.html#l00577">VolumeRemesherTriangleInsertion.cpp:577</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1utils_html_a4ea0d7c148b4066c6692a8e31c7b7b7a"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a4ea0d7c148b4066c6692a8e31c7b7b7a">wmtk::utils::generate_raw_tetmesh_with_surface_from_input</a></div><div class="ttdeci">std::tuple&lt; std::shared_ptr&lt; wmtk::TetMesh &gt;, std::shared_ptr&lt; wmtk::Mesh &gt; &gt; generate_raw_tetmesh_with_surface_from_input(const RowVectors3d &amp;V, const RowVectors3l &amp;F, const double eps_target, const RowVectors3d &amp;bgV, const RowVectors4l &amp;bgF)</div><div class="ttdef"><b>Definition:</b> <a href="_volume_remesher_triangle_insertion_8cpp_source.html#l00565">VolumeRemesherTriangleInsertion.cpp:565</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1utils_html_a81fce5e5de645986df7e56f010ca2886"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a81fce5e5de645986df7e56f010ca2886">wmtk::utils::generate_background_mesh</a></div><div class="ttdeci">void generate_background_mesh(const Vector3d &amp;bbox_min, const Vector3d &amp;bbox_max, const std::array&lt; int64_t, 3 &gt; &amp;resolution, RowVectors4l &amp;background_TV, RowVectors3d &amp;background_V)</div><div class="ttdef"><b>Definition:</b> <a href="_volume_remesher_triangle_insertion_8cpp_source.html#l00033">VolumeRemesherTriangleInsertion.cpp:33</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1utils_html_a8d59b38c3560ad4f49865c212b854456"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456">wmtk::utils::generate_raw_tetmesh_from_input_surface</a></div><div class="ttdeci">std::tuple&lt; std::shared_ptr&lt; wmtk::TetMesh &gt;, std::vector&lt; std::array&lt; bool, 4 &gt; &gt; &gt; generate_raw_tetmesh_from_input_surface(const RowVectors3d &amp;V, const RowVectors3l &amp;F, const double eps_target, const RowVectors3d &amp;bgV, const RowVectors4l &amp;bgT)</div><div class="ttdoc">input a triangle surface mesh, embed it into a regular grid and generate a tetmesh,...</div><div class="ttdef"><b>Definition:</b> <a href="_volume_remesher_triangle_insertion_8cpp_source.html#l00133">VolumeRemesherTriangleInsertion.cpp:133</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1utils_html_a8d59b38c3560ad4f49865c212b854456"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456">wmtk::utils::generate_raw_tetmesh_from_input_surface</a></div><div class="ttdeci">std::tuple&lt; std::shared_ptr&lt; wmtk::TetMesh &gt;, std::vector&lt; std::array&lt; bool, 4 &gt; &gt; &gt; generate_raw_tetmesh_from_input_surface(const RowVectors3d &amp;V, const RowVectors3l &amp;F, const double eps_target, const RowVectors3d &amp;bgV, const RowVectors4l &amp;bgT)</div><div class="ttdoc">input a triangle surface mesh, embed it into a regular grid and generate a tetmesh,...</div><div class="ttdef"><b>Definition:</b> <a href="_volume_remesher_triangle_insertion_8cpp_source.html#l00142">VolumeRemesherTriangleInsertion.cpp:142</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1utils_html_aa7ad5fef5b4d54d3da8204235650f6e8"><div class="ttname"><a href="namespacewmtk_1_1utils.html#aa7ad5fef5b4d54d3da8204235650f6e8">wmtk::utils::triangulate_polygon_face</a></div><div class="ttdeci">std::vector&lt; std::array&lt; int64_t, 3 &gt; &gt; triangulate_polygon_face(std::vector&lt; Vector3r &gt; points)</div><div class="ttdef"><b>Definition:</b> <a href="_volume_remesher_triangle_insertion_8cpp_source.html#l00084">VolumeRemesherTriangleInsertion.cpp:84</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1utils_html_ad6ff5945e175fd6e1b15537435aa22bd"><div class="ttname"><a href="namespacewmtk_1_1utils.html#ad6ff5945e175fd6e1b15537435aa22bd">wmtk::utils::v_index</a></div><div class="ttdeci">int64_t v_index(const std::array&lt; int64_t, 3 &gt; &amp;resolution, const std::array&lt; int64_t, 3 &gt; &amp;index)</div><div class="ttdef"><b>Definition:</b> <a href="_volume_remesher_triangle_insertion_8cpp_source.html#l00027">VolumeRemesherTriangleInsertion.cpp:27</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1utils_html_ae2c7b3137347cfeaffd619c0f6511b85"><div class="ttname"><a href="namespacewmtk_1_1utils.html#ae2c7b3137347cfeaffd619c0f6511b85">wmtk::utils::vector_unique</a></div><div class="ttdeci">void vector_unique(std::vector&lt; T &gt; &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="_volume_remesher_triangle_insertion_8cpp_source.html#l00021">VolumeRemesherTriangleInsertion.cpp:21</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_a37203f2b30de348a8320e593889600ee"><div class="ttname"><a href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">wmtk::RowVectors3l</a></div><div class="ttdeci">RowVectors&lt; int64_t, 3 &gt; RowVectors3l</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00044">Types.hpp:44</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_a0d65e04e0096a0de2da1771c32b380ef"><div class="ttname"><a href="namespacewmtk.html#a0d65e04e0096a0de2da1771c32b380ef">wmtk::Vector3r</a></div><div class="ttdeci">Vector&lt; Rational, 3 &gt; Vector3r</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00041">Types.hpp:41</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_a37203f2b30de348a8320e593889600ee"><div class="ttname"><a href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">wmtk::RowVectors3l</a></div><div class="ttdeci">RowVectors&lt; int64_t, 3 &gt; RowVectors3l</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00046">Types.hpp:46</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_a441d6ad4f19569c7d4946e743da1a925"><div class="ttname"><a href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">wmtk::log_and_throw_error</a></div><div class="ttdeci">void log_and_throw_error(const std::string &amp;msg)</div><div class="ttdef"><b>Definition:</b> <a href="_logger_8cpp_source.html#l00093">Logger.cpp:93</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_a58dd3fc1aea35c1d3871f975a5517df9"><div class="ttname"><a href="namespacewmtk.html#a58dd3fc1aea35c1d3871f975a5517df9">wmtk::PV</a></div><div class="ttdeci">constexpr PrimitiveType PV</div><div class="ttdef"><b>Definition:</b> <a href="_envelope_invariant_8cpp_source.html#l00016">EnvelopeInvariant.cpp:16</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_a68b3d5c28c73e45250340c19898d8ed1"><div class="ttname"><a href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">wmtk::RowVectors4l</a></div><div class="ttdeci">RowVectors&lt; int64_t, 4 &gt; RowVectors4l</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00045">Types.hpp:45</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_a68b3d5c28c73e45250340c19898d8ed1"><div class="ttname"><a href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">wmtk::RowVectors4l</a></div><div class="ttdeci">RowVectors&lt; int64_t, 4 &gt; RowVectors4l</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00047">Types.hpp:47</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_a6a35f11c12436093d26fdd8be6fecc06"><div class="ttname"><a href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a></div><div class="ttdeci">spdlog::logger &amp; logger()</div><div class="ttdoc">Retrieves the current logger.</div><div class="ttdef"><b>Definition:</b> <a href="_logger_8cpp_source.html#l00050">Logger.cpp:50</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_a8f74118e77f6f9bce5ebc12a1be515f3"><div class="ttname"><a href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">wmtk::Vector3d</a></div><div class="ttdeci">Vector&lt; double, 3 &gt; Vector3d</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00038">Types.hpp:38</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_a9726dab4eead2fc65c8d06890a5ee8fd"><div class="ttname"><a href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">wmtk::RowVectors3d</a></div><div class="ttdeci">RowVectors&lt; double, 3 &gt; RowVectors3d</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00048">Types.hpp:48</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_a8f74118e77f6f9bce5ebc12a1be515f3"><div class="ttname"><a href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">wmtk::Vector3d</a></div><div class="ttdeci">Vector&lt; double, 3 &gt; Vector3d</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00039">Types.hpp:39</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_a9726dab4eead2fc65c8d06890a5ee8fd"><div class="ttname"><a href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">wmtk::RowVectors3d</a></div><div class="ttdeci">RowVectors&lt; double, 3 &gt; RowVectors3d</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00050">Types.hpp:50</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_aa59092a2882e8bac80b672e28353f6d1"><div class="ttname"><a href="namespacewmtk.html#aa59092a2882e8bac80b672e28353f6d1">wmtk::PE</a></div><div class="ttdeci">constexpr PrimitiveType PE</div><div class="ttdef"><b>Definition:</b> <a href="_envelope_invariant_8cpp_source.html#l00017">EnvelopeInvariant.cpp:17</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">wmtk::PrimitiveType</a></div><div class="ttdeci">PrimitiveType</div><div class="ttdef"><b>Definition:</b> <a href="_primitive_type_8hpp_source.html#l00009">PrimitiveType.hpp:9</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::PrimitiveType::Triangle</a></div><div class="ttdeci">@ Triangle</div></div>

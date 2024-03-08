@@ -68,6 +68,22 @@ var dir_5421ed8c8fde3f7a08a046a47d931eae =
     [ "SimplexInversionInvariant.hpp", "_simplex_inversion_invariant_8hpp.html", [
       [ "SimplexInversionInvariant", "classwmtk_1_1_simplex_inversion_invariant.html", "classwmtk_1_1_simplex_inversion_invariant" ]
     ] ],
+    [ "Swap23EnergyBeforeInvariant.cpp", "_swap23_energy_before_invariant_8cpp.html", null ],
+    [ "Swap23EnergyBeforeInvariant.hpp", "_swap23_energy_before_invariant_8hpp.html", [
+      [ "Swap23EnergyBeforeInvariant", "classwmtk_1_1_swap23_energy_before_invariant.html", "classwmtk_1_1_swap23_energy_before_invariant" ]
+    ] ],
+    [ "Swap32EnergyBeforeInvariant.cpp", "_swap32_energy_before_invariant_8cpp.html", null ],
+    [ "Swap32EnergyBeforeInvariant.hpp", "_swap32_energy_before_invariant_8hpp.html", [
+      [ "Swap32EnergyBeforeInvariant", "classwmtk_1_1_swap32_energy_before_invariant.html", "classwmtk_1_1_swap32_energy_before_invariant" ]
+    ] ],
+    [ "Swap44_2EnergyBeforeInvariant.cpp", "_swap44__2_energy_before_invariant_8cpp.html", null ],
+    [ "Swap44_2EnergyBeforeInvariant.hpp", "_swap44__2_energy_before_invariant_8hpp.html", [
+      [ "Swap44_2EnergyBeforeInvariant", "classwmtk_1_1_swap44__2_energy_before_invariant.html", "classwmtk_1_1_swap44__2_energy_before_invariant" ]
+    ] ],
+    [ "Swap44EnergyBeforeInvariant.cpp", "_swap44_energy_before_invariant_8cpp.html", null ],
+    [ "Swap44EnergyBeforeInvariant.hpp", "_swap44_energy_before_invariant_8hpp.html", [
+      [ "Swap44EnergyBeforeInvariant", "classwmtk_1_1_swap44_energy_before_invariant.html", "classwmtk_1_1_swap44_energy_before_invariant" ]
+    ] ],
     [ "TetMeshSubstructureTopologyPreservingInvariant.cpp", "_tet_mesh_substructure_topology_preserving_invariant_8cpp.html", null ],
     [ "TetMeshSubstructureTopologyPreservingInvariant.hpp", "_tet_mesh_substructure_topology_preserving_invariant_8hpp.html", [
       [ "TetMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html", "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant" ]
@@ -81,6 +97,10 @@ var dir_5421ed8c8fde3f7a08a046a47d931eae =
     [ "TriMeshSubstructureTopologyPreservingInvariant.cpp", "_tri_mesh_substructure_topology_preserving_invariant_8cpp.html", null ],
     [ "TriMeshSubstructureTopologyPreservingInvariant.hpp", "_tri_mesh_substructure_topology_preserving_invariant_8hpp.html", [
       [ "TriMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html", "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant" ]
+    ] ],
+    [ "uvEdgeInvariant.cpp", "uv_edge_invariant_8cpp.html", null ],
+    [ "uvEdgeInvariant.hpp", "uv_edge_invariant_8hpp.html", [
+      [ "uvEdgeInvariant", "classwmtk_1_1invariants_1_1uv_edge_invariant.html", "classwmtk_1_1invariants_1_1uv_edge_invariant" ]
     ] ],
     [ "ValenceImprovementInvariant.cpp", "_valence_improvement_invariant_8cpp.html", null ],
     [ "ValenceImprovementInvariant.hpp", "_valence_improvement_invariant_8hpp.html", [

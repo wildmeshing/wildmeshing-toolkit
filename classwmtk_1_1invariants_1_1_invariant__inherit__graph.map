@@ -1,27 +1,32 @@
 <map id="wmtk::invariants::Invariant" name="wmtk::invariants::Invariant">
-<area shape="rect" id="node1" title=" " alt="" coords="5,599,204,625"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,763,204,789"/>
 <area shape="rect" id="node2" href="$classwmtk_1_1_max_edge_length_invariant.html" title=" " alt="" coords="264,5,493,32"/>
 <area shape="rect" id="node3" href="$classwmtk_1_1_min_edge_length_invariant.html" title=" " alt="" coords="266,56,491,83"/>
 <area shape="rect" id="node4" href="$classwmtk_1_1_multi_mesh_edge_topology_invariant.html" title=" " alt="" coords="266,107,491,149"/>
 <area shape="rect" id="node5" href="$classwmtk_1_1_multi_mesh_link_condition_invariant.html" title=" " alt="" coords="267,173,491,214"/>
 <area shape="rect" id="node6" href="$classwmtk_1_1_multi_mesh_map_valid_invariant.html" title=" " alt="" coords="252,239,505,265"/>
 <area shape="rect" id="node7" href="$classwmtk_1_1_simplex_inversion_invariant.html" title=" " alt="" coords="259,289,498,316"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1_todo_invariant.html" title=" " alt="" coords="301,340,456,367"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1_todo_larger_invariant.html" title=" " alt="" coords="281,391,477,417"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1_todo_smaller_invariant.html" title=" " alt="" coords="276,441,481,468"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1invariants_1_1_edge_valence_invariant.html" title="for edge swap in tetmesh." alt="" coords="267,493,490,534"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1invariants_1_1_envelope_invariant.html" title=" " alt="" coords="279,558,479,599"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1invariants_1_1_function_invariant.html" title=" " alt="" coords="281,623,476,665"/>
-<area shape="rect" id="node14" href="$classwmtk_1_1invariants_1_1_fusion_edge_invariant.html" title=" " alt="" coords="287,689,470,730"/>
-<area shape="rect" id="node15" href="$classwmtk_1_1invariants_1_1_interior_simplex_invariant.html" title=" " alt="" coords="285,754,472,795"/>
-<area shape="rect" id="node18" href="$classwmtk_1_1invariants_1_1_invariant_collection.html" title=" " alt="" coords="279,819,478,861"/>
-<area shape="rect" id="node19" href="$classwmtk_1_1invariants_1_1_max_function_invariant.html" title=" " alt="" coords="267,885,490,926"/>
-<area shape="rect" id="node20" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html" title="Invariant for minimum valence on both incident vertices of an edge." alt="" coords="271,950,487,991"/>
-<area shape="rect" id="node21" href="$classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant.html" title=" " alt="" coords="269,1015,489,1057"/>
-<area shape="rect" id="node22" href="$classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html" title=" " alt="" coords="263,1081,494,1137"/>
-<area shape="rect" id="node23" href="$classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html" title=" " alt="" coords="263,1161,494,1217"/>
-<area shape="rect" id="node24" href="$classwmtk_1_1invariants_1_1_valence_improvement_invariant.html" title=" " alt="" coords="283,1242,474,1283"/>
-<area shape="rect" id="node25" href="$classwmtk_1_1invariants_1_1internal_1_1_constant_invariant.html" title=" " alt="" coords="283,1307,474,1349"/>
-<area shape="rect" id="node16" href="$classwmtk_1_1invariants_1_1_interior_edge_invariant.html" title=" " alt="" coords="553,722,740,763"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1invariants_1_1_interior_vertex_invariant.html" title=" " alt="" coords="553,787,740,829"/>
+<area shape="rect" id="node8" href="$classwmtk_1_1_swap23_energy_before_invariant.html" title=" " alt="" coords="275,341,482,382"/>
+<area shape="rect" id="node9" href="$classwmtk_1_1_swap32_energy_before_invariant.html" title=" " alt="" coords="275,406,482,447"/>
+<area shape="rect" id="node10" href="$classwmtk_1_1_swap44_energy_before_invariant.html" title=" " alt="" coords="275,471,482,513"/>
+<area shape="rect" id="node11" href="$classwmtk_1_1_swap44__2_energy_before_invariant.html" title=" " alt="" coords="268,537,489,578"/>
+<area shape="rect" id="node12" href="$classwmtk_1_1_todo_invariant.html" title=" " alt="" coords="301,603,456,629"/>
+<area shape="rect" id="node13" href="$classwmtk_1_1_todo_larger_invariant.html" title=" " alt="" coords="281,653,477,680"/>
+<area shape="rect" id="node14" href="$classwmtk_1_1_todo_smaller_invariant.html" title=" " alt="" coords="276,704,481,731"/>
+<area shape="rect" id="node15" href="$classwmtk_1_1invariants_1_1_edge_valence_invariant.html" title="for edge swap in tetmesh." alt="" coords="267,755,490,797"/>
+<area shape="rect" id="node16" href="$classwmtk_1_1invariants_1_1_envelope_invariant.html" title=" " alt="" coords="279,821,479,862"/>
+<area shape="rect" id="node17" href="$classwmtk_1_1invariants_1_1_function_invariant.html" title=" " alt="" coords="281,886,476,927"/>
+<area shape="rect" id="node18" href="$classwmtk_1_1invariants_1_1_fusion_edge_invariant.html" title=" " alt="" coords="287,951,470,993"/>
+<area shape="rect" id="node19" href="$classwmtk_1_1invariants_1_1_interior_simplex_invariant.html" title=" " alt="" coords="285,1017,472,1058"/>
+<area shape="rect" id="node22" href="$classwmtk_1_1invariants_1_1_invariant_collection.html" title=" " alt="" coords="279,1082,478,1123"/>
+<area shape="rect" id="node23" href="$classwmtk_1_1invariants_1_1_max_function_invariant.html" title=" " alt="" coords="267,1147,490,1189"/>
+<area shape="rect" id="node24" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html" title="Invariant for minimum valence on both incident vertices of an edge." alt="" coords="271,1213,487,1254"/>
+<area shape="rect" id="node25" href="$classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant.html" title=" " alt="" coords="269,1278,489,1319"/>
+<area shape="rect" id="node26" href="$classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html" title=" " alt="" coords="263,1344,494,1400"/>
+<area shape="rect" id="node27" href="$classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html" title=" " alt="" coords="263,1424,494,1480"/>
+<area shape="rect" id="node28" href="$classwmtk_1_1invariants_1_1_valence_improvement_invariant.html" title=" " alt="" coords="283,1505,474,1546"/>
+<area shape="rect" id="node29" href="$classwmtk_1_1invariants_1_1internal_1_1_constant_invariant.html" title=" " alt="" coords="283,1570,474,1611"/>
+<area shape="rect" id="node30" href="$classwmtk_1_1invariants_1_1uv_edge_invariant.html" title=" " alt="" coords="285,1635,473,1677"/>
+<area shape="rect" id="node20" href="$classwmtk_1_1invariants_1_1_interior_edge_invariant.html" title=" " alt="" coords="553,985,740,1026"/>
+<area shape="rect" id="node21" href="$classwmtk_1_1invariants_1_1_interior_vertex_invariant.html" title=" " alt="" coords="553,1050,740,1091"/>
 </map>

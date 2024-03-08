@@ -10,6 +10,7 @@ var classwmtk_1_1_rational =
     [ "denominator", "classwmtk_1_1_rational.html#ac5466cdeb4d85645a3b561eff4a7a789", null ],
     [ "get_sign", "classwmtk_1_1_rational.html#a132cfb3d9c40a0c81338170a20564446", null ],
     [ "init", "classwmtk_1_1_rational.html#ae958421d3fd1c5b085b9e31dc2c21dab", null ],
+    [ "init_from_binary", "classwmtk_1_1_rational.html#aafdd2d4d5ec5db312372bfb3bf0ee86d", null ],
     [ "numerator", "classwmtk_1_1_rational.html#a585d80cbd7a5edaa47538ebe6e63ccbb", null ],
     [ "operator double", "classwmtk_1_1_rational.html#a2c521dde557b4e0f9e0f0b54f5612ea8", null ],
     [ "operator=", "classwmtk_1_1_rational.html#a7ac64d8eb71e0f5a2f28c8437a36fd00", null ],

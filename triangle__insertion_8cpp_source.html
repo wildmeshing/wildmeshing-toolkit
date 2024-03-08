@@ -165,27 +165,33 @@ $(document).ready(function(){initNavTree('triangle__insertion_8cpp_source.html',
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keyword">auto</span> [tetmesh, facemesh] =</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <a class="code" href="namespacewmtk_1_1utils.html#a4ea0d7c148b4066c6692a8e31c7b7b7a">utils::generate_raw_tetmesh_with_surface_from_input</a>(V, F, 0.1, Vbg, Fbg);</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">auto</span> pt_attribute =</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        tetmesh-&gt;get_attribute_handle&lt;<span class="keywordtype">double</span>&gt;(options.<a class="code" href="structwmtk_1_1components_1_1_tri_ins_options.html#abbc22f971fbc69c256073e34a0aa8daf">input_position</a>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keyword">auto</span> child_position_handle = facemesh-&gt;register_attribute&lt;<span class="keywordtype">double</span>&gt;(</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        options.<a class="code" href="structwmtk_1_1components_1_1_tri_ins_options.html#abbc22f971fbc69c256073e34a0aa8daf">input_position</a>,</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>,</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        tetmesh-&gt;get_attribute_dimension(pt_attribute.as&lt;<span class="keywordtype">double</span>&gt;()));</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">auto</span> propagate_to_child_position = [](<span class="keyword">const</span> Eigen::MatrixXd&amp; P) -&gt; Eigen::VectorXd {</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <span class="keywordflow">return</span> P;</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    };</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">auto</span> update_child_positon =</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        std::make_shared&lt;wmtk::operations::SingleAttributeTransferStrategy&lt;double, double&gt;&gt;(</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            child_position_handle,</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            pt_attribute,</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            propagate_to_child_position);</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    update_child_positon-&gt;run_on_all();</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a512b2d7adaeb163afee61b194eb802fd">write_mesh</a>(*tetmesh, options.<a class="code" href="structwmtk_1_1components_1_1_tri_ins_options.html#a3e2d6777b5b88ec1f0b5e413e9ec2171">name</a>);</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;}</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keyword">auto</span> pt_attribute =</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        tetmesh-&gt;get_attribute_handle&lt;<span class="keywordtype">double</span>&gt;(options.<a class="code" href="structwmtk_1_1components_1_1_tri_ins_options.html#abbc22f971fbc69c256073e34a0aa8daf">input_position</a>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keyword">auto</span> child_position_handle = facemesh-&gt;register_attribute&lt;<span class="keywordtype">double</span>&gt;(</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        options.<a class="code" href="structwmtk_1_1components_1_1_tri_ins_options.html#abbc22f971fbc69c256073e34a0aa8daf">input_position</a>,</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>,</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        tetmesh-&gt;get_attribute_dimension(pt_attribute.as&lt;<span class="keywordtype">double</span>&gt;()));</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keyword">auto</span> propagate_to_child_position = [](<span class="keyword">const</span> Eigen::MatrixXd&amp; P) -&gt; Eigen::VectorXd {</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="keywordflow">return</span> P;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    };</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">auto</span> update_child_positon =</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        std::make_shared&lt;wmtk::operations::SingleAttributeTransferStrategy&lt;double, double&gt;&gt;(</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            child_position_handle,</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            pt_attribute,</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;            propagate_to_child_position);</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    update_child_positon-&gt;run_on_all();</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    std::map&lt;std::string, std::vector&lt;int64_t&gt;&gt; names;</div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    names[<span class="stringliteral">&quot;tetmesh&quot;</span>] = tetmesh-&gt;absolute_multi_mesh_id();</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    names[<span class="stringliteral">&quot;surface_mesh&quot;</span>] = facemesh-&gt;absolute_multi_mesh_id();</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a512b2d7adaeb163afee61b194eb802fd">write_mesh</a>(*tetmesh, options.<a class="code" href="structwmtk_1_1components_1_1_tri_ins_options.html#a3e2d6777b5b88ec1f0b5e413e9ec2171">name</a>, names);</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;}</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
 <div class="ttc" id="a_attribute_transfer_strategy_8hpp_html"><div class="ttname"><a href="_attribute_transfer_strategy_8hpp.html">AttributeTransferStrategy.hpp</a></div></div>
 <div class="ttc" id="a_eigen_matrix_writer_8hpp_html"><div class="ttname"><a href="_eigen_matrix_writer_8hpp.html">EigenMatrixWriter.hpp</a></div></div>
 <div class="ttc" id="a_logger_8hpp_html"><div class="ttname"><a href="_logger_8hpp.html">Logger.hpp</a></div></div>
@@ -204,7 +210,7 @@ $(document).ready(function(){initNavTree('triangle__insertion_8cpp_source.html',
 <div class="ttc" id="aintegration__test_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="integration__test_8cpp_source.html#l00015">integration_test.cpp:15</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="bicubic__interpolation_8cpp_source.html#l00005">bicubic_interpolation.cpp:5</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html_ad26e15d638e76cf767b43e34d5d68465"><div class="ttname"><a href="namespacewmtk_1_1components.html#ad26e15d638e76cf767b43e34d5d68465">wmtk::components::triangle_insertion</a></div><div class="ttdeci">void triangle_insertion(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="triangle__insertion_8cpp_source.html#l00016">triangle_insertion.cpp:16</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1utils_html_a4ea0d7c148b4066c6692a8e31c7b7b7a"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a4ea0d7c148b4066c6692a8e31c7b7b7a">wmtk::utils::generate_raw_tetmesh_with_surface_from_input</a></div><div class="ttdeci">std::tuple&lt; std::shared_ptr&lt; wmtk::TetMesh &gt;, std::shared_ptr&lt; wmtk::Mesh &gt; &gt; generate_raw_tetmesh_with_surface_from_input(const RowVectors3d &amp;V, const RowVectors3l &amp;F, const double eps_target, const RowVectors3d &amp;bgV, const RowVectors4l &amp;bgF)</div><div class="ttdef"><b>Definition:</b> <a href="_volume_remesher_triangle_insertion_8cpp_source.html#l00577">VolumeRemesherTriangleInsertion.cpp:577</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1utils_html_a4ea0d7c148b4066c6692a8e31c7b7b7a"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a4ea0d7c148b4066c6692a8e31c7b7b7a">wmtk::utils::generate_raw_tetmesh_with_surface_from_input</a></div><div class="ttdeci">std::tuple&lt; std::shared_ptr&lt; wmtk::TetMesh &gt;, std::shared_ptr&lt; wmtk::Mesh &gt; &gt; generate_raw_tetmesh_with_surface_from_input(const RowVectors3d &amp;V, const RowVectors3l &amp;F, const double eps_target, const RowVectors3d &amp;bgV, const RowVectors4l &amp;bgF)</div><div class="ttdef"><b>Definition:</b> <a href="_volume_remesher_triangle_insertion_8cpp_source.html#l00565">VolumeRemesherTriangleInsertion.cpp:565</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_a441d6ad4f19569c7d4946e743da1a925"><div class="ttname"><a href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">wmtk::log_and_throw_error</a></div><div class="ttdeci">void log_and_throw_error(const std::string &amp;msg)</div><div class="ttdef"><b>Definition:</b> <a href="_logger_8cpp_source.html#l00093">Logger.cpp:93</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::PrimitiveType::Triangle</a></div><div class="ttdeci">@ Triangle</div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a></div><div class="ttdeci">@ Vertex</div></div>

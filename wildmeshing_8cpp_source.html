@@ -156,424 +156,467 @@ $(document).ready(function(){initNavTree('wildmeshing_8cpp_source.html',''); ini
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_multi_mesh_map_valid_invariant_8hpp.html">wmtk/invariants/MultiMeshMapValidInvariant.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_no_boundary_collapse_to_interior_invariant_8hpp.html">wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_simplex_inversion_invariant_8hpp.html">wmtk/invariants/SimplexInversionInvariant.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_todo_invariant_8hpp.html">wmtk/invariants/TodoInvariant.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="extract__child__mesh__from__tag_8hpp.html">wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_reader_8hpp.html">wmtk/io/MeshReader.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_paraview_writer_8hpp.html">wmtk/io/ParaviewWriter.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_swap23_energy_before_invariant_8hpp.html">wmtk/invariants/Swap23EnergyBeforeInvariant.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_swap32_energy_before_invariant_8hpp.html">wmtk/invariants/Swap32EnergyBeforeInvariant.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_swap44_energy_before_invariant_8hpp.html">wmtk/invariants/Swap44EnergyBeforeInvariant.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_swap44__2_energy_before_invariant_8hpp.html">wmtk/invariants/Swap44_2EnergyBeforeInvariant.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_todo_invariant_8hpp.html">wmtk/invariants/TodoInvariant.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="extract__child__mesh__from__tag_8hpp.html">wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="keyword">using namespace </span>simplex;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keyword">using namespace </span>operations;</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="keyword">using namespace </span>operations::tri_mesh;</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="keyword">using namespace </span>operations::tet_mesh;</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="keyword">using namespace </span>operations::composite;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="keyword">using namespace </span>function;</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="keyword">using namespace </span>invariants;</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="keyword">namespace </span>{</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="keywordtype">void</span> write(</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">const</span> std::shared_ptr&lt;Mesh&gt;&amp; mesh,</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keyword">const</span> std::string&amp; out_dir,</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keyword">const</span> std::string&amp; name,</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keyword">const</span> std::string&amp; vname,</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keyword">const</span> int64_t index,</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">bool</span> intermediate_output)</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;{</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordflow">if</span> (intermediate_output) {</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keywordflow">if</span> (mesh-&gt;top_simplex_type() == <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>) {</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            <span class="comment">// write trimesh</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            <span class="keyword">const</span> std::filesystem::path <a class="code" href="test__component__delaunay_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> = <span class="stringliteral">&quot;&quot;</span>;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            <a class="code" href="classwmtk_1_1io_1_1_paraview_writer.html">wmtk::io::ParaviewWriter</a> writer(</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                <a class="code" href="test__component__delaunay_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> / (name + <span class="stringliteral">&quot;_&quot;</span> + std::to_string(index)),</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;                <span class="stringliteral">&quot;vertices&quot;</span>,</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                *mesh,</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;                <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;                <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;                <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            mesh-&gt;serialize(writer);</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (mesh-&gt;top_simplex_type() == <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>) {</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            <span class="comment">// write tetmesh</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            <span class="keyword">const</span> std::filesystem::path <a class="code" href="test__component__delaunay_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> = <span class="stringliteral">&quot;&quot;</span>;</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            <a class="code" href="classwmtk_1_1io_1_1_paraview_writer.html">wmtk::io::ParaviewWriter</a> writer(</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;                <a class="code" href="test__component__delaunay_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> / (name + <span class="stringliteral">&quot;_&quot;</span> + std::to_string(index)),</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                <span class="stringliteral">&quot;vertices&quot;</span>,</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;                *mesh,</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;                <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;                <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;                <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;                <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            mesh-&gt;serialize(writer);</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (mesh-&gt;top_simplex_type() == <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>) {</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;            <span class="comment">// write edgemesh</span></div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;            <span class="keyword">const</span> std::filesystem::path <a class="code" href="test__component__delaunay_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> = <span class="stringliteral">&quot;&quot;</span>;</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;            <a class="code" href="classwmtk_1_1io_1_1_paraview_writer.html">wmtk::io::ParaviewWriter</a> writer(</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;                <a class="code" href="test__component__delaunay_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> / (name + <span class="stringliteral">&quot;_&quot;</span> + std::to_string(index)),</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                <span class="stringliteral">&quot;vertices&quot;</span>,</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;                *mesh,</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;                <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;                <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;                <span class="keyword">false</span>,</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;                <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            mesh-&gt;serialize(writer);</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        }</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    }</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;}</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;} <span class="comment">// namespace</span></div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
-<div class="line"><a name="l00112"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0">  112</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0">wildmeshing</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">base::Paths</a>&amp; paths, <span class="keyword">const</span> <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; j, <a class="code" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a>&amp; cache)</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;{</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="comment">// Load mesh from settings</span></div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html">WildmeshingOptions</a> options = j.get&lt;<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html">WildmeshingOptions</a>&gt;();</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="keyword">const</span> std::filesystem::path&amp; file = options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#aca0ec181b65ad829121c780e0416d78d">input</a>;</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keyword">auto</span> mesh = cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">read_mesh</a>(options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#aca0ec181b65ad829121c780e0416d78d">input</a>);</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160; </div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160; </div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="comment">// Retriving vertices</span></div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    <span class="keyword">auto</span> pt_attribute =</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        mesh-&gt;get_attribute_handle&lt;<span class="keywordtype">double</span>&gt;(options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a79ab238bf5be44539f98c354cfc3fcdc">attributes</a>.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options_attributes.html#aeb39f9ec53b32d23af17d38c9323ea11">position</a>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <span class="keyword">auto</span> pt_accessor = mesh-&gt;create_accessor(pt_attribute.as&lt;<span class="keywordtype">double</span>&gt;());</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160; </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_reader_8hpp.html">wmtk/io/MeshReader.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_paraview_writer_8hpp.html">wmtk/io/ParaviewWriter.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="keyword">using namespace </span>simplex;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="keyword">using namespace </span>operations;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="keyword">using namespace </span>operations::tri_mesh;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keyword">using namespace </span>operations::tet_mesh;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="keyword">using namespace </span>operations::composite;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="keyword">using namespace </span>function;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="keyword">using namespace </span>invariants;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="keyword">namespace </span>{</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="keywordtype">void</span> write(</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keyword">const</span> std::shared_ptr&lt;Mesh&gt;&amp; mesh,</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keyword">const</span> std::string&amp; out_dir,</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keyword">const</span> std::string&amp; name,</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keyword">const</span> std::string&amp; vname,</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keyword">const</span> int64_t index,</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">bool</span> intermediate_output)</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;{</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keywordflow">if</span> (intermediate_output) {</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="keywordflow">if</span> (mesh-&gt;top_simplex_type() == <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>) {</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            <span class="comment">// write trimesh</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            <span class="keyword">const</span> std::filesystem::path <a class="code" href="test__component__delaunay_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> = <span class="stringliteral">&quot;&quot;</span>;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <a class="code" href="classwmtk_1_1io_1_1_paraview_writer.html">wmtk::io::ParaviewWriter</a> writer(</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;                <a class="code" href="test__component__delaunay_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> / (name + <span class="stringliteral">&quot;_&quot;</span> + std::to_string(index)),</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;                <span class="stringliteral">&quot;vertices&quot;</span>,</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                *mesh,</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;                <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;                <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            mesh-&gt;serialize(writer);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (mesh-&gt;top_simplex_type() == <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>) {</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            <span class="comment">// write tetmesh</span></div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            <span class="keyword">const</span> std::filesystem::path <a class="code" href="test__component__delaunay_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> = <span class="stringliteral">&quot;&quot;</span>;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            <a class="code" href="classwmtk_1_1io_1_1_paraview_writer.html">wmtk::io::ParaviewWriter</a> writer(</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;                <a class="code" href="test__component__delaunay_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> / (name + <span class="stringliteral">&quot;_&quot;</span> + std::to_string(index)),</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;                <span class="stringliteral">&quot;vertices&quot;</span>,</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;                *mesh,</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;                <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;            mesh-&gt;serialize(writer);</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (mesh-&gt;top_simplex_type() == <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>) {</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;            <span class="comment">// write edgemesh</span></div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            <span class="keyword">const</span> std::filesystem::path <a class="code" href="test__component__delaunay_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> = <span class="stringliteral">&quot;&quot;</span>;</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            <a class="code" href="classwmtk_1_1io_1_1_paraview_writer.html">wmtk::io::ParaviewWriter</a> writer(</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;                <a class="code" href="test__component__delaunay_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> / (name + <span class="stringliteral">&quot;_&quot;</span> + std::to_string(index)),</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;                <span class="stringliteral">&quot;vertices&quot;</span>,</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;                *mesh,</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;                <span class="keyword">false</span>,</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;            mesh-&gt;serialize(writer);</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        }</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    }</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;}</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;} <span class="comment">// namespace</span></div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
+<div class="line"><a name="l00116"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0">  116</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0">wildmeshing</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">base::Paths</a>&amp; paths, <span class="keyword">const</span> <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; j, <a class="code" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a>&amp; cache)</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;{</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="comment">// Load mesh from settings</span></div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html">WildmeshingOptions</a> options = j.get&lt;<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html">WildmeshingOptions</a>&gt;();</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keyword">const</span> std::filesystem::path&amp; file = options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#aca0ec181b65ad829121c780e0416d78d">input</a>;</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="keyword">auto</span> mesh = cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">read_mesh</a>(options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#aca0ec181b65ad829121c780e0416d78d">input</a>);</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160; </div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    <span class="keywordflow">if</span> (!mesh-&gt;is_connectivity_valid()) {</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;input mesh for wildmeshing connectivity invalid&quot;</span>);</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    }</div>
 <div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <span class="comment">// Storing edge lengths</span></div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    <span class="keyword">auto</span> edge_length_attribute =</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        mesh-&gt;register_attribute&lt;<span class="keywordtype">double</span>&gt;(<span class="stringliteral">&quot;edge_length&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>, 1);</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    <span class="keyword">auto</span> edge_length_accessor = mesh-&gt;create_accessor(edge_length_attribute.as&lt;<span class="keywordtype">double</span>&gt;());</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <span class="comment">// Edge length update</span></div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <span class="keyword">auto</span> compute_edge_length = [](<span class="keyword">const</span> Eigen::MatrixXd&amp; P) -&gt; Eigen::VectorXd {</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        assert(P.cols() == 2);</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        assert(P.rows() == 2 || P.rows() == 3);</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        <span class="keywordflow">return</span> Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    };</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    <span class="keyword">auto</span> edge_length_update =</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;        std::make_shared&lt;wmtk::operations::SingleAttributeTransferStrategy&lt;double, double&gt;&gt;(</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;            edge_length_attribute,</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;            pt_attribute,</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;            compute_edge_length);</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    edge_length_update-&gt;run_on_all();</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160; </div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160; </div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="comment">// computng bbox diagonal</span></div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    Eigen::VectorXd bmin(mesh-&gt;top_cell_dimension());</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    bmin.setConstant(std::numeric_limits&lt;double&gt;::max());</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    Eigen::VectorXd bmax(mesh-&gt;top_cell_dimension());</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    bmax.setConstant(std::numeric_limits&lt;double&gt;::min());</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160; </div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    <span class="comment">// Retriving vertices</span></div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    <span class="keyword">auto</span> pt_attribute =</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        mesh-&gt;get_attribute_handle&lt;<span class="keywordtype">double</span>&gt;(options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a79ab238bf5be44539f98c354cfc3fcdc">attributes</a>.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options_attributes.html#aeb39f9ec53b32d23af17d38c9323ea11">position</a>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <span class="keyword">auto</span> pt_accessor = mesh-&gt;create_accessor(pt_attribute.as&lt;<span class="keywordtype">double</span>&gt;());</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160; </div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160; </div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    <span class="comment">// Storing edge lengths</span></div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    <span class="keyword">auto</span> edge_length_attribute =</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;        mesh-&gt;register_attribute&lt;<span class="keywordtype">double</span>&gt;(<span class="stringliteral">&quot;edge_length&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>, 1);</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="keyword">auto</span> edge_length_accessor = mesh-&gt;create_accessor(edge_length_attribute.as&lt;<span class="keywordtype">double</span>&gt;());</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    <span class="comment">// Edge length update</span></div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;    <span class="keyword">auto</span> compute_edge_length = [](<span class="keyword">const</span> Eigen::MatrixXd&amp; P) -&gt; Eigen::VectorXd {</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;        assert(P.cols() == 2);</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;        assert(P.rows() == 2 || P.rows() == 3);</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;        <span class="keywordflow">return</span> Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    };</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    <span class="keyword">auto</span> edge_length_update =</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;        std::make_shared&lt;wmtk::operations::SingleAttributeTransferStrategy&lt;double, double&gt;&gt;(</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;            edge_length_attribute,</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;            pt_attribute,</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;            compute_edge_length);</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    edge_length_update-&gt;run_on_all();</div>
 <div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160; </div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> <a class="code" href="namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455">vertices</a> = mesh-&gt;get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; v : <a class="code" href="namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455">vertices</a>) {</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> p = pt_accessor.vector_attribute(v);</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;        <span class="keywordflow">for</span> (int64_t d = 0; d &lt; bmax.size(); ++d) {</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;            bmin[d] = std::min(bmin[d], p[d]);</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;            bmax[d] = std::max(bmax[d], p[d]);</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;        }</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    }</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160; </div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> bbdiag = (bmax - bmin).norm();</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> target_edge_length = options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a24a40853fa3bfdf1fca1a1ce95565daa">target_edge_length</a> * bbdiag;</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160; </div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    <span class="comment">// default transfer</span></div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    <span class="keyword">auto</span> pass_through_attributes = <a class="code" href="namespacewmtk_1_1components_1_1base.html#a10f2459af7435b17959170960a9a6a27">base::get_attributes</a>(cache, *mesh, options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a59660158f8a2710928e1cd4e3f4f5a50">pass_through</a>);</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    pass_through_attributes.push_back(edge_length_attribute);</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160; </div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;    <span class="comment">// computng bbox diagonal</span></div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    Eigen::VectorXd bmin(mesh-&gt;top_cell_dimension());</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    bmin.setConstant(std::numeric_limits&lt;double&gt;::max());</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    Eigen::VectorXd bmax(mesh-&gt;top_cell_dimension());</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    bmax.setConstant(std::numeric_limits&lt;double&gt;::min());</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160; </div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> <a class="code" href="namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455">vertices</a> = mesh-&gt;get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; v : <a class="code" href="namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455">vertices</a>) {</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> p = pt_accessor.vector_attribute(v);</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;        <span class="keywordflow">for</span> (int64_t d = 0; d &lt; bmax.size(); ++d) {</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;            bmin[d] = std::min(bmin[d], p[d]);</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;            bmax[d] = std::max(bmax[d], p[d]);</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;        }</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    }</div>
 <div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160; </div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    <span class="comment">// Lambdas for priority</span></div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;<span class="comment"></span>    <span class="keyword">auto</span> long_edges_first = [&amp;](<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; s) {</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;        assert(s.primitive_type() == <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>);</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        <span class="keywordflow">return</span> std::vector&lt;double&gt;({-edge_length_accessor.scalar_attribute(s.tuple())});</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    };</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    <span class="keyword">auto</span> short_edges_first = [&amp;](<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; s) {</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        assert(s.primitive_type() == <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>);</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        <span class="keywordflow">return</span> std::vector&lt;double&gt;({edge_length_accessor.scalar_attribute(s.tuple())});</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;    };</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160; </div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160; </div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    <span class="comment">// envelopes</span></div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;<span class="comment"></span> </div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <span class="keyword">auto</span> propagate_to_child_position = [](<span class="keyword">const</span> Eigen::MatrixXd&amp; P) -&gt; Eigen::VectorXd {</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;        <span class="keywordflow">return</span> P;</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    };</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> bbdiag = (bmax - bmin).norm();</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> target_edge_length = options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a24a40853fa3bfdf1fca1a1ce95565daa">target_edge_length</a> * bbdiag;</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160; </div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    <span class="comment">// default transfer</span></div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;    <span class="keyword">auto</span> pass_through_attributes = <a class="code" href="namespacewmtk_1_1components_1_1base.html#a10f2459af7435b17959170960a9a6a27">base::get_attributes</a>(cache, *mesh, options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a0f3e642bc2ef1e5f0b823b3062e6c6b3">pass_through</a>);</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    pass_through_attributes.push_back(edge_length_attribute);</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160; </div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;    <span class="comment">// Lambdas for priority</span></div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;<span class="comment"></span>    <span class="keyword">auto</span> long_edges_first = [&amp;](<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; s) {</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;        assert(s.primitive_type() == <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>);</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        <span class="keywordflow">return</span> std::vector&lt;double&gt;({-edge_length_accessor.scalar_attribute(s.tuple())});</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    };</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <span class="keyword">auto</span> short_edges_first = [&amp;](<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; s) {</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        assert(s.primitive_type() == <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>);</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;        <span class="keywordflow">return</span> std::vector&lt;double&gt;({edge_length_accessor.scalar_attribute(s.tuple())});</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    };</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160; </div>
 <div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160; </div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;    <span class="keyword">auto</span> propagate_to_parent_position = [](<span class="keyword">const</span> Eigen::MatrixXd&amp; P) -&gt; Eigen::VectorXd {</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;        assert(P.cols() == 1);</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;        <span class="keywordflow">return</span> P.col(0);</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    };</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    <span class="keyword">using</span> MeshConstrainPair = <a class="code" href="classwmtk_1_1operations_1_1composite_1_1_project_operation.html#ae3bbb7041dbc062c7c98bdea1a33e541">ProjectOperation::MeshConstrainPair</a>;</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160; </div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    <span class="keyword">auto</span> envelope_invariant = std::make_shared&lt;InvariantCollection&gt;(*mesh);</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    std::vector&lt;std::shared_ptr&lt;SingleAttributeTransferStrategy&lt;double, double&gt;&gt;&gt;</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;        update_child_positon, update_parent_positon;</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;    std::vector&lt;std::shared_ptr&lt;Mesh&gt;&gt; envelopes;</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;    std::vector&lt;MeshConstrainPair&gt; mesh_constaint_pairs;</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160; </div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; v : options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a3c4cbfa10547af66229dab6e4b36d172">envelopes</a>) {</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;        <span class="keyword">auto</span> envelope = cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">read_mesh</a>(v.geometry.mesh);</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;        envelopes.emplace_back(envelope);</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160; </div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;        <span class="keyword">auto</span> constrained = <a class="code" href="namespacewmtk_1_1components_1_1base.html#a10f2459af7435b17959170960a9a6a27">base::get_attributes</a>(cache, *mesh, v.constrained_position);</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;        assert(constrained.size() == 1);</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;        pass_through_attributes.emplace_back(constrained.front());</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    <span class="comment">// envelopes</span></div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;<span class="comment"></span> </div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    <span class="keyword">auto</span> propagate_to_child_position = [](<span class="keyword">const</span> Eigen::MatrixXd&amp; P) -&gt; Eigen::VectorXd {</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;        <span class="keywordflow">return</span> P;</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    };</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160; </div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    <span class="keyword">auto</span> propagate_to_parent_position = [](<span class="keyword">const</span> Eigen::MatrixXd&amp; P) -&gt; Eigen::VectorXd {</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        assert(P.cols() == 1);</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        <span class="keywordflow">return</span> P.col(0);</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    };</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    <span class="keyword">using</span> MeshConstrainPair = <a class="code" href="classwmtk_1_1operations_1_1composite_1_1_project_operation.html#ae3bbb7041dbc062c7c98bdea1a33e541">ProjectOperation::MeshConstrainPair</a>;</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160; </div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <span class="keyword">auto</span> envelope_invariant = std::make_shared&lt;InvariantCollection&gt;(*mesh);</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    std::vector&lt;std::shared_ptr&lt;SingleAttributeTransferStrategy&lt;double, double&gt;&gt;&gt;</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;        update_child_positon, update_parent_positon;</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    std::vector&lt;std::shared_ptr&lt;Mesh&gt;&gt; envelopes;</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    std::vector&lt;MeshConstrainPair&gt; mesh_constaint_pairs;</div>
 <div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160; </div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;        <span class="keyword">auto</span> envelope_position_handle =</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;            envelope-&gt;get_attribute_handle&lt;<span class="keywordtype">double</span>&gt;(v.geometry.position, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160; </div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;        mesh_constaint_pairs.emplace_back(envelope_position_handle, constrained.front());</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160; </div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;        envelope_invariant-&gt;add(std::make_shared&lt;EnvelopeInvariant&gt;(</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;            envelope_position_handle,</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;            v.thickness * bbdiag,</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;            constrained.front()));</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160; </div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;        update_child_positon.emplace_back(</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;            std::make_shared&lt;<a class="code" href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html">SingleAttributeTransferStrategy&lt;double, double&gt;</a>&gt;(</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;                constrained.front(),</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;                pt_attribute,</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;                propagate_to_child_position));</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    std::vector&lt;std::shared_ptr&lt;Mesh&gt;&gt; multimesh_meshes;</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160; </div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; v : options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a3c4cbfa10547af66229dab6e4b36d172">envelopes</a>) {</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;        <span class="keyword">auto</span> envelope = cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">read_mesh</a>(v.geometry.mesh);</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;        envelopes.emplace_back(envelope);</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160; </div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;        <span class="keyword">auto</span> constrained = <a class="code" href="namespacewmtk_1_1components_1_1base.html#a10f2459af7435b17959170960a9a6a27">base::get_attributes</a>(cache, *mesh, v.constrained_position);</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;        multimesh_meshes.push_back(constrained.front().mesh().shared_from_this());</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;        assert(constrained.size() == 1);</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        pass_through_attributes.emplace_back(constrained.front());</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160; </div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        <span class="keyword">auto</span> envelope_position_handle =</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;            envelope-&gt;get_attribute_handle&lt;<span class="keywordtype">double</span>&gt;(v.geometry.position, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160; </div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;        mesh_constaint_pairs.emplace_back(envelope_position_handle, constrained.front());</div>
 <div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160; </div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160; </div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        update_parent_positon.emplace_back(</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;            std::make_shared&lt;<a class="code" href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html">SingleAttributeTransferStrategy&lt;double, double&gt;</a>&gt;(</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                pt_attribute,</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;                constrained.front(),</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;                propagate_to_parent_position));</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    }</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160; </div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    <span class="comment">// collapse transfer</span></div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;<span class="comment"></span>    <span class="keyword">auto</span> clps_strat = std::make_shared&lt;CollapseNewAttributeStrategy&lt;double&gt;&gt;(pt_attribute);</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    clps_strat-&gt;set_simplex_predicate(BasicSimplexPredicate::IsInterior);</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;    clps_strat-&gt;set_strategy(CollapseBasicStrategy::Default);</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160; </div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160; </div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        envelope_invariant-&gt;add(std::make_shared&lt;EnvelopeInvariant&gt;(</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;            envelope_position_handle,</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;            v.thickness * bbdiag,</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;            constrained.front()));</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160; </div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;        update_child_positon.emplace_back(</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;            std::make_shared&lt;<a class="code" href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html">SingleAttributeTransferStrategy&lt;double, double&gt;</a>&gt;(</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;                constrained.front(),</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;                pt_attribute,</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;                propagate_to_child_position));</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160; </div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160; </div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        update_parent_positon.emplace_back(</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            std::make_shared&lt;<a class="code" href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html">SingleAttributeTransferStrategy&lt;double, double&gt;</a>&gt;(</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;                pt_attribute,</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;                constrained.front(),</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;                propagate_to_parent_position));</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    }</div>
 <div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160; </div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    <span class="comment">// Invariants</span></div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;<span class="comment"></span> </div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    <span class="keyword">auto</span> inversion_invariant =</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        std::make_shared&lt;SimplexInversionInvariant&gt;(*mesh, pt_attribute.as&lt;<span class="keywordtype">double</span>&gt;());</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    <span class="comment">// collapse transfer</span></div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;<span class="comment"></span>    <span class="keyword">auto</span> clps_strat = std::make_shared&lt;CollapseNewAttributeStrategy&lt;double&gt;&gt;(pt_attribute);</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    clps_strat-&gt;set_simplex_predicate(BasicSimplexPredicate::IsInterior);</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    clps_strat-&gt;set_strategy(CollapseBasicStrategy::Default);</div>
 <div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    std::shared_ptr&lt;function::PerSimplexFunction&gt; <a class="code" href="namespacewmtk_1_1function_1_1utils.html#a5566d601b7700a203e925d5eaca49ddd">amips</a> =</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        std::make_shared&lt;AMIPS&gt;(*mesh, pt_attribute);</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    <span class="comment">// auto function_invariant = std::make_shared&lt;FunctionInvariant&gt;(mesh-&gt;top_simplex_type(),</span></div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    <span class="comment">// amips);</span></div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;    <span class="keyword">auto</span> function_invariant =</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;        std::make_shared&lt;MaxFunctionInvariant&gt;(mesh-&gt;top_simplex_type(), <a class="code" href="namespacewmtk_1_1function_1_1utils.html#a5566d601b7700a203e925d5eaca49ddd">amips</a>);</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160; </div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    <span class="keyword">auto</span> <a class="code" href="namespacewmtk_1_1simplex.html#a0ca1602c328b51a103411fcac3d70ebe">link_condition</a> = std::make_shared&lt;MultiMeshLinkConditionInvariant&gt;(*mesh);</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160; </div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    <span class="keyword">auto</span> todo_larger = std::make_shared&lt;TodoLargerInvariant&gt;(</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;        *mesh,</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;        edge_length_attribute.as&lt;<span class="keywordtype">double</span>&gt;(),</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;        4.0 / 3.0 * target_edge_length);</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160; </div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    <span class="keyword">auto</span> todo_smaller = std::make_shared&lt;TodoSmallerInvariant&gt;(</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;        *mesh,</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        edge_length_attribute.as&lt;<span class="keywordtype">double</span>&gt;(),</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;        4.0 / 5.0 * target_edge_length);</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160; </div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <span class="keyword">auto</span> interior_edge = std::make_shared&lt;InteriorEdgeInvariant&gt;(*mesh);</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <span class="keyword">auto</span> interior_face = std::make_shared&lt;InteriorSimplexInvariant&gt;(*mesh, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>);</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160; </div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    <span class="keyword">auto</span> valence_3 = std::make_shared&lt;EdgeValenceInvariant&gt;(*mesh, 3);</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    <span class="keyword">auto</span> valence_4 = std::make_shared&lt;EdgeValenceInvariant&gt;(*mesh, 4);</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160; </div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160; </div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160; </div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    <span class="comment">// Invariants</span></div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;<span class="comment"></span> </div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    <span class="keyword">auto</span> inversion_invariant =</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        std::make_shared&lt;SimplexInversionInvariant&gt;(*mesh, pt_attribute.as&lt;<span class="keywordtype">double</span>&gt;());</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160; </div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    std::shared_ptr&lt;function::PerSimplexFunction&gt; <a class="code" href="namespacewmtk_1_1function_1_1utils.html#a5566d601b7700a203e925d5eaca49ddd">amips</a> =</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;        std::make_shared&lt;AMIPS&gt;(*mesh, pt_attribute);</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    <span class="comment">// auto function_invariant = std::make_shared&lt;FunctionInvariant&gt;(mesh-&gt;top_simplex_type(),</span></div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    <span class="comment">// amips);</span></div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    <span class="keyword">auto</span> function_invariant =</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        std::make_shared&lt;MaxFunctionInvariant&gt;(mesh-&gt;top_simplex_type(), <a class="code" href="namespacewmtk_1_1function_1_1utils.html#a5566d601b7700a203e925d5eaca49ddd">amips</a>);</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160; </div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    <span class="keyword">auto</span> <a class="code" href="namespacewmtk_1_1simplex.html#a0ca1602c328b51a103411fcac3d70ebe">link_condition</a> = std::make_shared&lt;MultiMeshLinkConditionInvariant&gt;(*mesh);</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160; </div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <span class="keyword">auto</span> todo_larger = std::make_shared&lt;TodoLargerInvariant&gt;(</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;        *mesh,</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;        edge_length_attribute.as&lt;<span class="keywordtype">double</span>&gt;(),</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;        4.0 / 3.0 * target_edge_length);</div>
 <div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160; </div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <span class="keyword">auto</span> invariant_mm_map = std::make_shared&lt;MultiMeshMapValidInvariant&gt;(*mesh);</div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160; </div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160; </div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <span class="comment">// Creation of the 4 ops</span></div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;<span class="comment"></span>    std::vector&lt;std::shared_ptr&lt;Operation&gt;&gt; ops;</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    std::vector&lt;std::string&gt; ops_name;</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160; </div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;    <span class="comment">// 1) EdgeSplit</span></div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;<span class="comment"></span>    <span class="keyword">auto</span> split = std::make_shared&lt;EdgeSplit&gt;(*mesh);</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    split-&gt;set_priority(long_edges_first);</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160; </div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    split-&gt;add_invariant(todo_larger);</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160; </div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;    split-&gt;set_new_attribute_strategy(pt_attribute);</div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; attr : pass_through_attributes) {</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;        split-&gt;set_new_attribute_strategy(attr);</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;    }</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160; </div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;    split-&gt;add_transfer_strategy(edge_length_update);</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : update_child_positon) split-&gt;add_transfer_strategy(s);</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160; </div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;    ops.emplace_back(split);</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    ops_name.emplace_back(<span class="stringliteral">&quot;split&quot;</span>);</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160; </div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    <span class="comment">// 2) EdgeCollapse</span></div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;<span class="comment"></span>    <span class="keyword">auto</span> collapse = std::make_shared&lt;EdgeCollapse&gt;(*mesh);</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;    collapse-&gt;add_invariant(<a class="code" href="namespacewmtk_1_1simplex.html#a0ca1602c328b51a103411fcac3d70ebe">link_condition</a>);</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    collapse-&gt;add_invariant(inversion_invariant);</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    collapse-&gt;add_invariant(invariant_mm_map);</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160; </div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;    collapse-&gt;set_new_attribute_strategy(pt_attribute, clps_strat);</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; attr : pass_through_attributes) {</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        collapse-&gt;set_new_attribute_strategy(attr);</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;    }</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : update_child_positon) collapse-&gt;add_transfer_strategy(s);</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160; </div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;    <span class="keyword">auto</span> proj_collapse = std::make_shared&lt;ProjectOperation&gt;(collapse, mesh_constaint_pairs);</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;    proj_collapse-&gt;set_priority(short_edges_first);</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160; </div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;    proj_collapse-&gt;add_invariant(todo_smaller);</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;    proj_collapse-&gt;add_invariant(envelope_invariant);</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;    proj_collapse-&gt;add_invariant(inversion_invariant);</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;    proj_collapse-&gt;add_invariant(function_invariant);</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160; </div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    proj_collapse-&gt;add_transfer_strategy(edge_length_update);</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : update_parent_positon) proj_collapse-&gt;add_transfer_strategy(s);</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160; </div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;    ops.emplace_back(proj_collapse);</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;    ops_name.emplace_back(<span class="stringliteral">&quot;collapse&quot;</span>);</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160; </div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160; </div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;    <span class="comment">// 3) Swap</span></div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;<span class="comment"></span> </div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;    <span class="keyword">auto</span> setup_swap = [&amp;](<a class="code" href="classwmtk_1_1operations_1_1_operation.html">Operation</a>&amp; op,</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;                          <a class="code" href="classwmtk_1_1operations_1_1_edge_collapse.html">EdgeCollapse</a>&amp; collapse,</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;                          <a class="code" href="classwmtk_1_1operations_1_1_edge_split.html">EdgeSplit</a>&amp; split,</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;                          std::shared_ptr&lt;Invariant&gt; simplex_invariant) {</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;        op.<a class="code" href="classwmtk_1_1operations_1_1_operation.html#afbd6dcef97f60e4109029fc8b985ddc0">set_priority</a>(long_edges_first);</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160; </div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;        op.<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a15a2b269f98ec16b4b8d1d88feb60b85">add_invariant</a>(simplex_invariant);</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;        op.<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a15a2b269f98ec16b4b8d1d88feb60b85">add_invariant</a>(inversion_invariant);</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;        op.<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a15a2b269f98ec16b4b8d1d88feb60b85">add_invariant</a>(function_invariant);</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160; </div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;        op.<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a426832d3c5fc10064b52f72ac2959b0e">add_transfer_strategy</a>(edge_length_update);</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : update_child_positon) op.<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a426832d3c5fc10064b52f72ac2959b0e">add_transfer_strategy</a>(s);</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <span class="keyword">auto</span> todo_smaller = std::make_shared&lt;TodoSmallerInvariant&gt;(</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;        *mesh,</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;        edge_length_attribute.as&lt;<span class="keywordtype">double</span>&gt;(),</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;        4.0 / 5.0 * target_edge_length);</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160; </div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    <span class="keyword">auto</span> interior_edge = std::make_shared&lt;InteriorEdgeInvariant&gt;(*mesh);</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    <span class="keyword">auto</span> interior_face = std::make_shared&lt;InteriorSimplexInvariant&gt;(*mesh, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>);</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160; </div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; em : multimesh_meshes) {</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;        interior_edge-&gt;add_boundary(*em);</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;        interior_face-&gt;add_boundary(*em);</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;    }</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160; </div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    <span class="keyword">auto</span> valence_3 = std::make_shared&lt;EdgeValenceInvariant&gt;(*mesh, 3);</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;    <span class="keyword">auto</span> valence_4 = std::make_shared&lt;EdgeValenceInvariant&gt;(*mesh, 4);</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    <span class="keyword">auto</span> swap44_energy_before =</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;        std::make_shared&lt;Swap44EnergyBeforeInvariant&gt;(*mesh, pt_attribute.as&lt;<span class="keywordtype">double</span>&gt;());</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;    <span class="keyword">auto</span> swap44_2_energy_before =</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;        std::make_shared&lt;Swap44_2EnergyBeforeInvariant&gt;(*mesh, pt_attribute.as&lt;<span class="keywordtype">double</span>&gt;());</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;    <span class="keyword">auto</span> swap32_energy_before =</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;        std::make_shared&lt;Swap32EnergyBeforeInvariant&gt;(*mesh, pt_attribute.as&lt;<span class="keywordtype">double</span>&gt;());</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;    <span class="keyword">auto</span> swap23_energy_before =</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;        std::make_shared&lt;Swap23EnergyBeforeInvariant&gt;(*mesh, pt_attribute.as&lt;<span class="keywordtype">double</span>&gt;());</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160; </div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    <span class="keyword">auto</span> invariant_mm_map = std::make_shared&lt;MultiMeshMapValidInvariant&gt;(*mesh);</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160; </div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160; </div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    <span class="comment">// Creation of the 4 ops</span></div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;<span class="comment"></span>    std::vector&lt;std::shared_ptr&lt;Operation&gt;&gt; ops;</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    std::vector&lt;std::string&gt; ops_name;</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160; </div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    <span class="comment">// 1) EdgeSplit</span></div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;<span class="comment"></span>    <span class="keyword">auto</span> split = std::make_shared&lt;EdgeSplit&gt;(*mesh);</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;    split-&gt;set_priority(long_edges_first);</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160; </div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;    split-&gt;add_invariant(todo_larger);</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160; </div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;    split-&gt;set_new_attribute_strategy(pt_attribute);</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; attr : pass_through_attributes) {</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;        split-&gt;set_new_attribute_strategy(attr);</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;    }</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160; </div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;    split-&gt;add_transfer_strategy(edge_length_update);</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : update_child_positon) split-&gt;add_transfer_strategy(s);</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160; </div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    ops.emplace_back(split);</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    ops_name.emplace_back(<span class="stringliteral">&quot;split&quot;</span>);</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160; </div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;    <span class="comment">// 2) EdgeCollapse</span></div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;<span class="comment"></span>    <span class="keyword">auto</span> collapse = std::make_shared&lt;EdgeCollapse&gt;(*mesh);</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;    collapse-&gt;add_invariant(<a class="code" href="namespacewmtk_1_1simplex.html#a0ca1602c328b51a103411fcac3d70ebe">link_condition</a>);</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;    collapse-&gt;add_invariant(inversion_invariant);</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;    collapse-&gt;add_invariant(invariant_mm_map);</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160; </div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;    collapse-&gt;set_new_attribute_strategy(pt_attribute, clps_strat);</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; attr : pass_through_attributes) {</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;        collapse-&gt;set_new_attribute_strategy(attr);</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;    }</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : update_child_positon) collapse-&gt;add_transfer_strategy(s);</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160; </div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;    <span class="keyword">auto</span> proj_collapse = std::make_shared&lt;ProjectOperation&gt;(collapse, mesh_constaint_pairs);</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;    proj_collapse-&gt;set_priority(short_edges_first);</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160; </div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;    proj_collapse-&gt;add_invariant(todo_smaller);</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;    proj_collapse-&gt;add_invariant(envelope_invariant);</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;    proj_collapse-&gt;add_invariant(inversion_invariant);</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;    proj_collapse-&gt;add_invariant(function_invariant);</div>
 <div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160; </div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        <span class="comment">// collapse.add_invariant(link_condition);</span></div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160; </div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;        collapse.set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::CopyOther);</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;        split.set_new_attribute_strategy(pt_attribute);</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160; </div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;        <span class="comment">// this might not be necessary</span></div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : update_child_positon) {</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;            collapse.add_transfer_strategy(s);</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;            split.add_transfer_strategy(s);</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;        }</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160; </div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160; </div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; attr : pass_through_attributes) {</div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;            split.set_new_attribute_strategy(attr);</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;            collapse.set_new_attribute_strategy(attr);</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;        }</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;    };</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160; </div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160; </div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;    <span class="keywordflow">if</span> (mesh-&gt;top_simplex_type() == <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>) {</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;        <span class="keyword">auto</span> swap = std::make_shared&lt;TriEdgeSwap&gt;(*mesh);</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;        setup_swap(*swap, swap-&gt;collapse(), swap-&gt;split(), interior_edge);</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;        ops.push_back(swap);</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;        ops_name.push_back(<span class="stringliteral">&quot;swap&quot;</span>);</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (mesh-&gt;top_simplex_type() == <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>) {</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;        <span class="comment">// 3 - 1 - 1) TetEdgeSwap 4-4 1</span></div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;        <span class="keyword">auto</span> swap44 = std::make_shared&lt;TetEdgeSwap&gt;(*mesh, 0);</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        setup_swap(*swap44, swap44-&gt;collapse(), swap44-&gt;split(), interior_edge);</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;        swap44-&gt;add_invariant(valence_4); <span class="comment">// extra edge valance invariant</span></div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;        ops.push_back(swap44);</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;        ops_name.push_back(<span class="stringliteral">&quot;swap44&quot;</span>);</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160; </div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;        <span class="comment">// 3 - 1 - 2) TetEdgeSwap 4-4 2</span></div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;        <span class="keyword">auto</span> swap44_2 = std::make_shared&lt;TetEdgeSwap&gt;(*mesh, 1);</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;        setup_swap(*swap44_2, swap44_2-&gt;collapse(), swap44_2-&gt;split(), interior_edge);</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;        swap44_2-&gt;add_invariant(valence_4); <span class="comment">// extra edge valance invariant</span></div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;        ops.push_back(swap44_2);</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;        ops_name.push_back(<span class="stringliteral">&quot;swap44_2&quot;</span>);</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160; </div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;        <span class="comment">// 3 - 2) TetEdgeSwap 3-2</span></div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;        <span class="keyword">auto</span> swap32 = std::make_shared&lt;TetEdgeSwap&gt;(*mesh, 0);</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;        setup_swap(*swap32, swap32-&gt;collapse(), swap32-&gt;split(), interior_edge);</div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;        swap32-&gt;add_invariant(valence_3); <span class="comment">// extra edge valance invariant</span></div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;        ops.push_back(swap32);</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;        ops_name.push_back(<span class="stringliteral">&quot;swap32&quot;</span>);</div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160; </div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;        <span class="comment">// 3 - 3) TetFaceSwap 2-3</span></div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;        <span class="comment">// auto swap23 = std::make_shared&lt;TetFaceSwap&gt;(*mesh);</span></div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;        <span class="comment">// setup_swap(*swap23, swap23-&gt;collapse(), swap23-&gt;split(), interior_face);</span></div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;        <span class="comment">// ops.push_back(swap23);</span></div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;        <span class="comment">// ops_name.push_back(&quot;swap23&quot;);</span></div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;    }</div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160; </div>
-<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;    <span class="comment">// 4) Smoothing</span></div>
-<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;    <span class="keyword">auto</span> energy =</div>
-<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;        std::make_shared&lt;function::LocalNeighborsSumFunction&gt;(*mesh, pt_attribute, *<a class="code" href="namespacewmtk_1_1function_1_1utils.html#a5566d601b7700a203e925d5eaca49ddd">amips</a>);</div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;    <span class="keyword">auto</span> smoothing = std::make_shared&lt;OptimizationSmoothing&gt;(energy);</div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;    smoothing-&gt;add_invariant(inversion_invariant);</div>
-<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : update_child_positon) smoothing-&gt;add_transfer_strategy(s);</div>
-<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160; </div>
-<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;    <span class="keyword">auto</span> proj_smoothing = std::make_shared&lt;ProjectOperation&gt;(smoothing, mesh_constaint_pairs);</div>
-<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;    proj_smoothing-&gt;use_random_priority() = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160; </div>
-<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;    proj_smoothing-&gt;add_invariant(envelope_invariant);</div>
-<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;    proj_smoothing-&gt;add_invariant(inversion_invariant);</div>
-<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160; </div>
-<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;    proj_smoothing-&gt;add_transfer_strategy(edge_length_update);</div>
-<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : update_parent_positon) proj_smoothing-&gt;add_transfer_strategy(s);</div>
-<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;    ops.push_back(proj_smoothing);</div>
-<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;    ops_name.push_back(<span class="stringliteral">&quot;smoothing&quot;</span>);</div>
-<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160; </div>
-<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;    write(</div>
-<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;        mesh,</div>
-<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;        paths.<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html#a9913b456cca2bbfa60a8a2fac6b25979">output_dir</a>,</div>
-<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;        options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a49af2c4f737f53ab6fdc8b2854e36442">output</a>,</div>
-<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;        options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a79ab238bf5be44539f98c354cfc3fcdc">attributes</a>.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options_attributes.html#aeb39f9ec53b32d23af17d38c9323ea11">position</a>,</div>
-<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;        0,</div>
-<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;        options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#ad60d810f34783559e16a972e6390b2ad">intermediate_output</a>);</div>
-<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160; </div>
-<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;    <span class="comment">// Running all ops in order n times</span></div>
-<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;    <a class="code" href="classwmtk_1_1_scheduler.html">Scheduler</a> scheduler;</div>
-<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;    <span class="keywordtype">int</span> iii = 0;</div>
-<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a7b02467b85dfa9fb29740720de89fcad">passes</a>; ++i) {</div>
-<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;        <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">logger</a>().info(<span class="stringliteral">&quot;Pass {}&quot;</span>, i);</div>
-<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;        <a class="code" href="classwmtk_1_1_scheduler_stats.html">SchedulerStats</a> pass_stats;</div>
-<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;        <span class="keywordtype">int</span> jj = 0;</div>
-<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; op : ops) {</div>
-<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;            <span class="keyword">auto</span> stats = scheduler.<a class="code" href="classwmtk_1_1_scheduler.html#a246ccf6605333ebb7c020aa8fae1e959">run_operation_on_all</a>(*op);</div>
-<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;            pass_stats += stats;</div>
-<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;            <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">logger</a>().info(</div>
-<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;                <span class="stringliteral">&quot;Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, &quot;</span></div>
-<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;                <span class="stringliteral">&quot;executing: {}&quot;</span>,</div>
-<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;                ops_name[jj],</div>
-<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;                stats.number_of_performed_operations(),</div>
-<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;                stats.number_of_successful_operations(),</div>
-<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;                stats.number_of_failed_operations(),</div>
-<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;                stats.collecting_time,</div>
-<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;                stats.sorting_time,</div>
-<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;                stats.executing_time);</div>
-<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;            ++jj;</div>
-<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;        }</div>
-<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160; </div>
-<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;        <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">logger</a>().info(</div>
-<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;            <span class="stringliteral">&quot;Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}&quot;</span>,</div>
-<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;            pass_stats.<a class="code" href="classwmtk_1_1_scheduler_stats.html#a6eb636bacf541d1f62a86bfffa3b4b0e">number_of_performed_operations</a>(),</div>
-<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;            pass_stats.<a class="code" href="classwmtk_1_1_scheduler_stats.html#ae6e50990c7c4705a810c633755e9c2c0">number_of_successful_operations</a>(),</div>
-<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;            pass_stats.<a class="code" href="classwmtk_1_1_scheduler_stats.html#a621a52d1a1a294fa9915e12df4604dc8">number_of_failed_operations</a>(),</div>
-<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;            pass_stats.<a class="code" href="classwmtk_1_1_scheduler_stats.html#a8a547725b5afb794478dcaee161cd5e3">collecting_time</a>,</div>
-<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;            pass_stats.<a class="code" href="classwmtk_1_1_scheduler_stats.html#ac19aa99b03c45e0b51c2cf3a4aa18de1">sorting_time</a>,</div>
-<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;            pass_stats.<a class="code" href="classwmtk_1_1_scheduler_stats.html#a938490720dd56f5aa6b87ecd34574bd3">executing_time</a>);</div>
-<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160; </div>
-<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;        <a class="code" href="namespacewmtk_1_1multimesh.html#a75477c4fe069fcdff90f57a76087afe0">multimesh::consolidate</a>(*mesh);</div>
-<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160; </div>
-<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;        write(</div>
-<div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160;            mesh,</div>
-<div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;            paths.<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html#a9913b456cca2bbfa60a8a2fac6b25979">output_dir</a>,</div>
-<div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160;            options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a49af2c4f737f53ab6fdc8b2854e36442">output</a>,</div>
-<div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;            options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a79ab238bf5be44539f98c354cfc3fcdc">attributes</a>.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options_attributes.html#aeb39f9ec53b32d23af17d38c9323ea11">position</a>,</div>
-<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;            i + 1,</div>
-<div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;            options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#ad60d810f34783559e16a972e6390b2ad">intermediate_output</a>);</div>
-<div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160; </div>
-<div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160;        assert(mesh-&gt;is_connectivity_valid());</div>
-<div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;    }</div>
-<div class="line"><a name="l00477"></a><span class="lineno">  477</span>&#160; </div>
-<div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160; </div>
-<div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;    <span class="comment">// output</span></div>
-<div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160;    cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a512b2d7adaeb163afee61b194eb802fd">write_mesh</a>(*mesh, options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a49af2c4f737f53ab6fdc8b2854e36442">output</a>);</div>
-<div class="line"><a name="l00481"></a><span class="lineno">  481</span>&#160;}</div>
-<div class="line"><a name="l00482"></a><span class="lineno">  482</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;    proj_collapse-&gt;add_transfer_strategy(edge_length_update);</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : update_parent_positon) proj_collapse-&gt;add_transfer_strategy(s);</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160; </div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;    ops.emplace_back(proj_collapse);</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;    ops_name.emplace_back(<span class="stringliteral">&quot;collapse&quot;</span>);</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160; </div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160; </div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;    <span class="comment">// 3) Swap</span></div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;<span class="comment"></span> </div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    <span class="keyword">auto</span> setup_swap = [&amp;](<a class="code" href="classwmtk_1_1operations_1_1_operation.html">Operation</a>&amp; op,</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;                          <a class="code" href="classwmtk_1_1operations_1_1_edge_collapse.html">EdgeCollapse</a>&amp; collapse,</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;                          <a class="code" href="classwmtk_1_1operations_1_1_edge_split.html">EdgeSplit</a>&amp; split,</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;                          std::shared_ptr&lt;Invariant&gt; simplex_invariant) {</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;        op.<a class="code" href="classwmtk_1_1operations_1_1_operation.html#afbd6dcef97f60e4109029fc8b985ddc0">set_priority</a>(long_edges_first);</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160; </div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;        op.<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a15a2b269f98ec16b4b8d1d88feb60b85">add_invariant</a>(simplex_invariant);</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;        op.<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a15a2b269f98ec16b4b8d1d88feb60b85">add_invariant</a>(inversion_invariant);</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;        <span class="comment">// op.add_invariant(function_invariant);</span></div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160; </div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;        op.<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a426832d3c5fc10064b52f72ac2959b0e">add_transfer_strategy</a>(edge_length_update);</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : update_child_positon) op.<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a426832d3c5fc10064b52f72ac2959b0e">add_transfer_strategy</a>(s);</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160; </div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;        collapse.add_invariant(<a class="code" href="namespacewmtk_1_1simplex.html#a0ca1602c328b51a103411fcac3d70ebe">link_condition</a>);</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160; </div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;        collapse.set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::CopyOther);</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        split.set_new_attribute_strategy(pt_attribute);</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160; </div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;        <span class="comment">// this might not be necessary</span></div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : update_child_positon) {</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;            collapse.add_transfer_strategy(s);</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            split.add_transfer_strategy(s);</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;        }</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160; </div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160; </div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; attr : pass_through_attributes) {</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;            split.set_new_attribute_strategy(attr);</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;            collapse.set_new_attribute_strategy(attr);</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;        }</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    };</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160; </div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160; </div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;    <span class="keywordflow">if</span> (mesh-&gt;top_simplex_type() == <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>) {</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;        <span class="keyword">auto</span> swap = std::make_shared&lt;TriEdgeSwap&gt;(*mesh);</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;        setup_swap(*swap, swap-&gt;collapse(), swap-&gt;split(), interior_edge);</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;        ops.push_back(swap);</div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;        ops_name.push_back(<span class="stringliteral">&quot;swap&quot;</span>);</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (mesh-&gt;top_simplex_type() == <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>) {</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;        <span class="comment">// 3 - 1 - 1) TetEdgeSwap 4-4 1</span></div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;        <span class="keyword">auto</span> swap44 = std::make_shared&lt;TetEdgeSwap&gt;(*mesh, 0);</div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;        setup_swap(*swap44, swap44-&gt;collapse(), swap44-&gt;split(), interior_edge);</div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;        swap44-&gt;add_invariant(valence_4); <span class="comment">// extra edge valance invariant</span></div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;        swap44-&gt;add_invariant(swap44_energy_before); <span class="comment">// check energy before swap</span></div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;        ops.push_back(swap44);</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;        ops_name.push_back(<span class="stringliteral">&quot;swap44&quot;</span>);</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160; </div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;        <span class="comment">// 3 - 1 - 2) TetEdgeSwap 4-4 2</span></div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;        <span class="keyword">auto</span> swap44_2 = std::make_shared&lt;TetEdgeSwap&gt;(*mesh, 1);</div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;        setup_swap(*swap44_2, swap44_2-&gt;collapse(), swap44_2-&gt;split(), interior_edge);</div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;        swap44_2-&gt;add_invariant(valence_4); <span class="comment">// extra edge valance invariant</span></div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;        swap44_2-&gt;add_invariant(swap44_2_energy_before); <span class="comment">// check energy before swap</span></div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;        ops.push_back(swap44_2);</div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;        ops_name.push_back(<span class="stringliteral">&quot;swap44_2&quot;</span>);</div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160; </div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;        <span class="comment">// 3 - 2) TetEdgeSwap 3-2</span></div>
+<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;        <span class="keyword">auto</span> swap32 = std::make_shared&lt;TetEdgeSwap&gt;(*mesh, 0);</div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;        setup_swap(*swap32, swap32-&gt;collapse(), swap32-&gt;split(), interior_edge);</div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;        swap32-&gt;add_invariant(valence_3); <span class="comment">// extra edge valance invariant</span></div>
+<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;        swap32-&gt;add_invariant(swap32_energy_before); <span class="comment">// check energy before swap</span></div>
+<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;        ops.push_back(swap32);</div>
+<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;        ops_name.push_back(<span class="stringliteral">&quot;swap32&quot;</span>);</div>
+<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160; </div>
+<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;        <span class="comment">// 3 - 3) TetFaceSwap 2-3</span></div>
+<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;        <span class="keyword">auto</span> swap23 = std::make_shared&lt;TetFaceSwap&gt;(*mesh);</div>
+<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;        setup_swap(*swap23, swap23-&gt;collapse(), swap23-&gt;split(), interior_face);</div>
+<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;        swap23-&gt;add_invariant(swap23_energy_before); <span class="comment">// check energy before swap</span></div>
+<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;        ops.push_back(swap23);</div>
+<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;        ops_name.push_back(<span class="stringliteral">&quot;swap23&quot;</span>);</div>
+<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;    }</div>
+<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160; </div>
+<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;    <span class="comment">// 4) Smoothing</span></div>
+<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;    <span class="keyword">auto</span> energy =</div>
+<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;        std::make_shared&lt;function::LocalNeighborsSumFunction&gt;(*mesh, pt_attribute, *<a class="code" href="namespacewmtk_1_1function_1_1utils.html#a5566d601b7700a203e925d5eaca49ddd">amips</a>);</div>
+<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;    <span class="keyword">auto</span> smoothing = std::make_shared&lt;OptimizationSmoothing&gt;(energy);</div>
+<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;    smoothing-&gt;add_invariant(inversion_invariant);</div>
+<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : update_child_positon) smoothing-&gt;add_transfer_strategy(s);</div>
+<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160; </div>
+<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;    <span class="keyword">auto</span> proj_smoothing = std::make_shared&lt;ProjectOperation&gt;(smoothing, mesh_constaint_pairs);</div>
+<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;    proj_smoothing-&gt;use_random_priority() = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160; </div>
+<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;    proj_smoothing-&gt;add_invariant(envelope_invariant);</div>
+<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;    proj_smoothing-&gt;add_invariant(inversion_invariant);</div>
+<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160; </div>
+<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;    proj_smoothing-&gt;add_transfer_strategy(edge_length_update);</div>
+<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : update_parent_positon) proj_smoothing-&gt;add_transfer_strategy(s);</div>
+<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;    ops.push_back(proj_smoothing);</div>
+<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;    ops_name.push_back(<span class="stringliteral">&quot;smoothing&quot;</span>);</div>
+<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160; </div>
+<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;    write(</div>
+<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;        mesh,</div>
+<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;        paths.<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html#a9913b456cca2bbfa60a8a2fac6b25979">output_dir</a>,</div>
+<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;        options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a49af2c4f737f53ab6fdc8b2854e36442">output</a>,</div>
+<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;        options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a79ab238bf5be44539f98c354cfc3fcdc">attributes</a>.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options_attributes.html#aeb39f9ec53b32d23af17d38c9323ea11">position</a>,</div>
+<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;        0,</div>
+<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;        options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#ad60d810f34783559e16a972e6390b2ad">intermediate_output</a>);</div>
+<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160; </div>
+<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;    <span class="comment">// Running all ops in order n times</span></div>
+<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;    <a class="code" href="classwmtk_1_1_scheduler.html">Scheduler</a> scheduler;</div>
+<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;    <span class="keywordtype">int</span> iii = 0;</div>
+<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a7b02467b85dfa9fb29740720de89fcad">passes</a>; ++i) {</div>
+<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;        <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">logger</a>().info(<span class="stringliteral">&quot;Pass {}&quot;</span>, i);</div>
+<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;        <a class="code" href="classwmtk_1_1_scheduler_stats.html">SchedulerStats</a> pass_stats;</div>
+<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;        <span class="keywordtype">int</span> jj = 0;</div>
+<div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; op : ops) {</div>
+<div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;            <span class="keyword">auto</span> stats = scheduler.<a class="code" href="classwmtk_1_1_scheduler.html#a246ccf6605333ebb7c020aa8fae1e959">run_operation_on_all</a>(*op);</div>
+<div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160;            pass_stats += stats;</div>
+<div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;            <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">logger</a>().info(</div>
+<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;                <span class="stringliteral">&quot;Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, &quot;</span></div>
+<div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;                <span class="stringliteral">&quot;executing: {}&quot;</span>,</div>
+<div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;                ops_name[jj],</div>
+<div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160;                stats.number_of_performed_operations(),</div>
+<div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;                stats.number_of_successful_operations(),</div>
+<div class="line"><a name="l00477"></a><span class="lineno">  477</span>&#160;                stats.number_of_failed_operations(),</div>
+<div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160;                stats.collecting_time,</div>
+<div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;                stats.sorting_time,</div>
+<div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160;                stats.executing_time);</div>
+<div class="line"><a name="l00481"></a><span class="lineno">  481</span>&#160;            ++jj;</div>
+<div class="line"><a name="l00482"></a><span class="lineno">  482</span>&#160; </div>
+<div class="line"><a name="l00483"></a><span class="lineno">  483</span>&#160;            <span class="comment">// if (!mesh-&gt;is_connectivity_valid()) {</span></div>
+<div class="line"><a name="l00484"></a><span class="lineno">  484</span>&#160;            <span class="comment">//     std::cout &lt;&lt; &quot;invalid connectivity after &quot; + ops_name[jj] &lt;&lt; std::endl;</span></div>
+<div class="line"><a name="l00485"></a><span class="lineno">  485</span>&#160;            <span class="comment">//     throw std::runtime_error(&quot;input mesh for wildmeshing connectivity invalid&quot;);</span></div>
+<div class="line"><a name="l00486"></a><span class="lineno">  486</span>&#160;            <span class="comment">// }</span></div>
+<div class="line"><a name="l00487"></a><span class="lineno">  487</span>&#160;        }</div>
+<div class="line"><a name="l00488"></a><span class="lineno">  488</span>&#160; </div>
+<div class="line"><a name="l00489"></a><span class="lineno">  489</span>&#160;        <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">logger</a>().info(</div>
+<div class="line"><a name="l00490"></a><span class="lineno">  490</span>&#160;            <span class="stringliteral">&quot;Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}&quot;</span>,</div>
+<div class="line"><a name="l00491"></a><span class="lineno">  491</span>&#160;            pass_stats.<a class="code" href="classwmtk_1_1_scheduler_stats.html#a6eb636bacf541d1f62a86bfffa3b4b0e">number_of_performed_operations</a>(),</div>
+<div class="line"><a name="l00492"></a><span class="lineno">  492</span>&#160;            pass_stats.<a class="code" href="classwmtk_1_1_scheduler_stats.html#ae6e50990c7c4705a810c633755e9c2c0">number_of_successful_operations</a>(),</div>
+<div class="line"><a name="l00493"></a><span class="lineno">  493</span>&#160;            pass_stats.<a class="code" href="classwmtk_1_1_scheduler_stats.html#a621a52d1a1a294fa9915e12df4604dc8">number_of_failed_operations</a>(),</div>
+<div class="line"><a name="l00494"></a><span class="lineno">  494</span>&#160;            pass_stats.<a class="code" href="classwmtk_1_1_scheduler_stats.html#a8a547725b5afb794478dcaee161cd5e3">collecting_time</a>,</div>
+<div class="line"><a name="l00495"></a><span class="lineno">  495</span>&#160;            pass_stats.<a class="code" href="classwmtk_1_1_scheduler_stats.html#ac19aa99b03c45e0b51c2cf3a4aa18de1">sorting_time</a>,</div>
+<div class="line"><a name="l00496"></a><span class="lineno">  496</span>&#160;            pass_stats.<a class="code" href="classwmtk_1_1_scheduler_stats.html#a938490720dd56f5aa6b87ecd34574bd3">executing_time</a>);</div>
+<div class="line"><a name="l00497"></a><span class="lineno">  497</span>&#160; </div>
+<div class="line"><a name="l00498"></a><span class="lineno">  498</span>&#160;        <span class="comment">// if (!mesh-&gt;is_connectivity_valid()) {</span></div>
+<div class="line"><a name="l00499"></a><span class="lineno">  499</span>&#160;        <span class="comment">//     std::cout &lt;&lt; &quot;invalid connectivity before consolidate&quot; &lt;&lt; std::endl;</span></div>
+<div class="line"><a name="l00500"></a><span class="lineno">  500</span>&#160;        <span class="comment">//     throw std::runtime_error(&quot;input mesh for wildmeshing connectivity invalid&quot;);</span></div>
+<div class="line"><a name="l00501"></a><span class="lineno">  501</span>&#160;        <span class="comment">// }</span></div>
+<div class="line"><a name="l00502"></a><span class="lineno">  502</span>&#160; </div>
+<div class="line"><a name="l00503"></a><span class="lineno">  503</span>&#160;        <a class="code" href="namespacewmtk_1_1multimesh.html#a75477c4fe069fcdff90f57a76087afe0">multimesh::consolidate</a>(*mesh);</div>
+<div class="line"><a name="l00504"></a><span class="lineno">  504</span>&#160; </div>
+<div class="line"><a name="l00505"></a><span class="lineno">  505</span>&#160;        <span class="comment">// if (!mesh-&gt;is_connectivity_valid()) {</span></div>
+<div class="line"><a name="l00506"></a><span class="lineno">  506</span>&#160;        <span class="comment">//     std::cout &lt;&lt; &quot;invalid connectivity after consolidate&quot; &lt;&lt; std::endl;</span></div>
+<div class="line"><a name="l00507"></a><span class="lineno">  507</span>&#160;        <span class="comment">//     throw std::runtime_error(&quot;input mesh for wildmeshing connectivity invalid&quot;);</span></div>
+<div class="line"><a name="l00508"></a><span class="lineno">  508</span>&#160;        <span class="comment">// }</span></div>
+<div class="line"><a name="l00509"></a><span class="lineno">  509</span>&#160; </div>
+<div class="line"><a name="l00510"></a><span class="lineno">  510</span>&#160;        write(</div>
+<div class="line"><a name="l00511"></a><span class="lineno">  511</span>&#160;            mesh,</div>
+<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;            paths.<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html#a9913b456cca2bbfa60a8a2fac6b25979">output_dir</a>,</div>
+<div class="line"><a name="l00513"></a><span class="lineno">  513</span>&#160;            options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a49af2c4f737f53ab6fdc8b2854e36442">output</a>,</div>
+<div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160;            options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a79ab238bf5be44539f98c354cfc3fcdc">attributes</a>.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options_attributes.html#aeb39f9ec53b32d23af17d38c9323ea11">position</a>,</div>
+<div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160;            i + 1,</div>
+<div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160;            options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#ad60d810f34783559e16a972e6390b2ad">intermediate_output</a>);</div>
+<div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160; </div>
+<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;        assert(mesh-&gt;is_connectivity_valid());</div>
+<div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;    }</div>
+<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160; </div>
+<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160; </div>
+<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;    <span class="comment">// output</span></div>
+<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;    cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a512b2d7adaeb163afee61b194eb802fd">write_mesh</a>(*mesh, options.<a class="code" href="structwmtk_1_1components_1_1_wildmeshing_options.html#a49af2c4f737f53ab6fdc8b2854e36442">output</a>);</div>
+<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;}</div>
+<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
 <div class="ttc" id="a_attribute_transfer_strategy_8hpp_html"><div class="ttname"><a href="_attribute_transfer_strategy_8hpp.html">AttributeTransferStrategy.hpp</a></div></div>
 <div class="ttc" id="a_edge_collapse_8hpp_html"><div class="ttname"><a href="_edge_collapse_8hpp.html">EdgeCollapse.hpp</a></div></div>
 <div class="ttc" id="a_edge_split_8hpp_html"><div class="ttname"><a href="_edge_split_8hpp.html">EdgeSplit.hpp</a></div></div>
@@ -598,6 +641,10 @@ $(document).ready(function(){initNavTree('wildmeshing_8cpp_source.html',''); ini
 <div class="ttc" id="a_scheduler_8hpp_html"><div class="ttname"><a href="_scheduler_8hpp.html">Scheduler.hpp</a></div></div>
 <div class="ttc" id="a_simplex_inversion_invariant_8hpp_html"><div class="ttname"><a href="_simplex_inversion_invariant_8hpp.html">SimplexInversionInvariant.hpp</a></div></div>
 <div class="ttc" id="a_split_new_attribute_strategy_8hpp_html"><div class="ttname"><a href="_split_new_attribute_strategy_8hpp.html">SplitNewAttributeStrategy.hpp</a></div></div>
+<div class="ttc" id="a_swap23_energy_before_invariant_8hpp_html"><div class="ttname"><a href="_swap23_energy_before_invariant_8hpp.html">Swap23EnergyBeforeInvariant.hpp</a></div></div>
+<div class="ttc" id="a_swap32_energy_before_invariant_8hpp_html"><div class="ttname"><a href="_swap32_energy_before_invariant_8hpp.html">Swap32EnergyBeforeInvariant.hpp</a></div></div>
+<div class="ttc" id="a_swap44__2_energy_before_invariant_8hpp_html"><div class="ttname"><a href="_swap44__2_energy_before_invariant_8hpp.html">Swap44_2EnergyBeforeInvariant.hpp</a></div></div>
+<div class="ttc" id="a_swap44_energy_before_invariant_8hpp_html"><div class="ttname"><a href="_swap44_energy_before_invariant_8hpp.html">Swap44EnergyBeforeInvariant.hpp</a></div></div>
 <div class="ttc" id="a_tet_edge_swap_8hpp_html"><div class="ttname"><a href="_tet_edge_swap_8hpp.html">TetEdgeSwap.hpp</a></div></div>
 <div class="ttc" id="a_tet_face_swap_8hpp_html"><div class="ttname"><a href="_tet_face_swap_8hpp.html">TetFaceSwap.hpp</a></div></div>
 <div class="ttc" id="a_tet_mesh_8hpp_html"><div class="ttname"><a href="_tet_mesh_8hpp.html">TetMesh.hpp</a></div></div>
@@ -635,7 +682,7 @@ $(document).ready(function(){initNavTree('wildmeshing_8cpp_source.html',''); ini
 <div class="ttc" id="aintegration__test_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="integration__test_8cpp_source.html#l00015">integration_test.cpp:15</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_1_1base_html_a10f2459af7435b17959170960a9a6a27"><div class="ttname"><a href="namespacewmtk_1_1components_1_1base.html#a10f2459af7435b17959170960a9a6a27">wmtk::components::base::get_attributes</a></div><div class="ttdeci">std::vector&lt; attribute::MeshAttributeHandle &gt; get_attributes(const io::Cache &amp;cache, const Mesh &amp;m, const nlohmann::json &amp;attribute_names)</div><div class="ttdef"><b>Definition:</b> <a href="get__attributes_8cpp_source.html#l00074">get_attributes.cpp:74</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="bicubic__interpolation_8cpp_source.html#l00005">bicubic_interpolation.cpp:5</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a503af91b8a2d86f4b9af9dbded55bec0"><div class="ttname"><a href="namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0">wmtk::components::wildmeshing</a></div><div class="ttdeci">void wildmeshing(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="wildmeshing_8cpp_source.html#l00112">wildmeshing.cpp:112</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_a503af91b8a2d86f4b9af9dbded55bec0"><div class="ttname"><a href="namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0">wmtk::components::wildmeshing</a></div><div class="ttdeci">void wildmeshing(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="wildmeshing_8cpp_source.html#l00116">wildmeshing.cpp:116</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1function_1_1utils_html_a5566d601b7700a203e925d5eaca49ddd"><div class="ttname"><a href="namespacewmtk_1_1function_1_1utils.html#a5566d601b7700a203e925d5eaca49ddd">wmtk::function::utils::amips</a></div><div class="ttdeci">auto amips(const Eigen::MatrixBase&lt; Derived &gt; &amp;B)</div><div class="ttdef"><b>Definition:</b> <a href="utils_2_a_m_i_p_s_8hpp_source.html#l00020">amips.hpp:20</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1multimesh_html_a75477c4fe069fcdff90f57a76087afe0"><div class="ttname"><a href="namespacewmtk_1_1multimesh.html#a75477c4fe069fcdff90f57a76087afe0">wmtk::multimesh::consolidate</a></div><div class="ttdeci">void consolidate(Mesh &amp;mesh)</div><div class="ttdef"><b>Definition:</b> <a href="consolidate_8cpp_source.html#l00013">consolidate.cpp:13</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1simplex_html_a0ca1602c328b51a103411fcac3d70ebe"><div class="ttname"><a href="namespacewmtk_1_1simplex.html#a0ca1602c328b51a103411fcac3d70ebe">wmtk::simplex::link_condition</a></div><div class="ttdeci">bool link_condition(const EdgeMesh &amp;mesh, const Tuple &amp;edge)</div><div class="ttdoc">Check if the edge to collapse satisfying the link condition.</div><div class="ttdef"><b>Definition:</b> <a href="link__condition_8cpp_source.html#l00024">link_condition.cpp:24</a></div></div>
@@ -648,10 +695,10 @@ $(document).ready(function(){initNavTree('wildmeshing_8cpp_source.html',''); ini
 <div class="ttc" id="asimplex_2_a_m_i_p_s_8hpp_html"><div class="ttname"><a href="simplex_2_a_m_i_p_s_8hpp.html">AMIPS.hpp</a></div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1_wildmeshing_options_attributes_html_aeb39f9ec53b32d23af17d38c9323ea11"><div class="ttname"><a href="structwmtk_1_1components_1_1_wildmeshing_options_attributes.html#aeb39f9ec53b32d23af17d38c9323ea11">wmtk::components::WildmeshingOptionsAttributes::position</a></div><div class="ttdeci">nlohmann::json position</div><div class="ttdef"><b>Definition:</b> <a href="_wildmeshing_options_8hpp_source.html#l00008">WildmeshingOptions.hpp:8</a></div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1_wildmeshing_options_html"><div class="ttname"><a href="structwmtk_1_1components_1_1_wildmeshing_options.html">wmtk::components::WildmeshingOptions</a></div><div class="ttdef"><b>Definition:</b> <a href="_wildmeshing_options_8hpp_source.html#l00032">WildmeshingOptions.hpp:33</a></div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1_wildmeshing_options_html_a0f3e642bc2ef1e5f0b823b3062e6c6b3"><div class="ttname"><a href="structwmtk_1_1components_1_1_wildmeshing_options.html#a0f3e642bc2ef1e5f0b823b3062e6c6b3">wmtk::components::WildmeshingOptions::pass_through</a></div><div class="ttdeci">std::vector&lt; nlohmann::json &gt; pass_through</div><div class="ttdef"><b>Definition:</b> <a href="_wildmeshing_options_8hpp_source.html#l00038">WildmeshingOptions.hpp:38</a></div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1_wildmeshing_options_html_a24a40853fa3bfdf1fca1a1ce95565daa"><div class="ttname"><a href="structwmtk_1_1components_1_1_wildmeshing_options.html#a24a40853fa3bfdf1fca1a1ce95565daa">wmtk::components::WildmeshingOptions::target_edge_length</a></div><div class="ttdeci">double target_edge_length</div><div class="ttdef"><b>Definition:</b> <a href="_wildmeshing_options_8hpp_source.html#l00042">WildmeshingOptions.hpp:42</a></div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1_wildmeshing_options_html_a3c4cbfa10547af66229dab6e4b36d172"><div class="ttname"><a href="structwmtk_1_1components_1_1_wildmeshing_options.html#a3c4cbfa10547af66229dab6e4b36d172">wmtk::components::WildmeshingOptions::envelopes</a></div><div class="ttdeci">std::vector&lt; WildmeshingOptionsEnvelope &gt; envelopes</div><div class="ttdef"><b>Definition:</b> <a href="_wildmeshing_options_8hpp_source.html#l00039">WildmeshingOptions.hpp:39</a></div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1_wildmeshing_options_html_a49af2c4f737f53ab6fdc8b2854e36442"><div class="ttname"><a href="structwmtk_1_1components_1_1_wildmeshing_options.html#a49af2c4f737f53ab6fdc8b2854e36442">wmtk::components::WildmeshingOptions::output</a></div><div class="ttdeci">std::string output</div><div class="ttdef"><b>Definition:</b> <a href="_wildmeshing_options_8hpp_source.html#l00036">WildmeshingOptions.hpp:36</a></div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1_wildmeshing_options_html_a59660158f8a2710928e1cd4e3f4f5a50"><div class="ttname"><a href="structwmtk_1_1components_1_1_wildmeshing_options.html#a59660158f8a2710928e1cd4e3f4f5a50">wmtk::components::WildmeshingOptions::pass_through</a></div><div class="ttdeci">std::vector&lt; std::string &gt; pass_through</div><div class="ttdef"><b>Definition:</b> <a href="_wildmeshing_options_8hpp_source.html#l00038">WildmeshingOptions.hpp:38</a></div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1_wildmeshing_options_html_a79ab238bf5be44539f98c354cfc3fcdc"><div class="ttname"><a href="structwmtk_1_1components_1_1_wildmeshing_options.html#a79ab238bf5be44539f98c354cfc3fcdc">wmtk::components::WildmeshingOptions::attributes</a></div><div class="ttdeci">WildmeshingOptionsAttributes attributes</div><div class="ttdef"><b>Definition:</b> <a href="_wildmeshing_options_8hpp_source.html#l00037">WildmeshingOptions.hpp:37</a></div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1_wildmeshing_options_html_a7b02467b85dfa9fb29740720de89fcad"><div class="ttname"><a href="structwmtk_1_1components_1_1_wildmeshing_options.html#a7b02467b85dfa9fb29740720de89fcad">wmtk::components::WildmeshingOptions::passes</a></div><div class="ttdeci">int64_t passes</div><div class="ttdef"><b>Definition:</b> <a href="_wildmeshing_options_8hpp_source.html#l00041">WildmeshingOptions.hpp:41</a></div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1_wildmeshing_options_html_aca0ec181b65ad829121c780e0416d78d"><div class="ttname"><a href="structwmtk_1_1components_1_1_wildmeshing_options.html#aca0ec181b65ad829121c780e0416d78d">wmtk::components::WildmeshingOptions::input</a></div><div class="ttdeci">std::string input</div><div class="ttdef"><b>Definition:</b> <a href="_wildmeshing_options_8hpp_source.html#l00035">WildmeshingOptions.hpp:35</a></div></div>

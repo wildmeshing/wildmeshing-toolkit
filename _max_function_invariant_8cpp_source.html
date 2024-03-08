@@ -125,7 +125,7 @@ $(document).ready(function(){initNavTree('_max_function_invariant_8cpp_source.ht
 <div class="line"><a name="l00008"></a><span class="lineno"><a class="line" href="classwmtk_1_1invariants_1_1_max_function_invariant.html#a3ef7ba7c3cdbfdb24af694a0efef8777">    8</a></span>&#160;<a class="code" href="classwmtk_1_1invariants_1_1_max_function_invariant.html#a3ef7ba7c3cdbfdb24af694a0efef8777">MaxFunctionInvariant::MaxFunctionInvariant</a>(</div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type,</div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;    <span class="keyword">const</span> std::shared_ptr&lt;function::PerSimplexFunction&gt;&amp; func)</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    : <a class="code" href="classwmtk_1_1invariants_1_1_invariant.html">Invariant</a>(func-&gt;mesh())</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    : <a class="code" href="classwmtk_1_1invariants_1_1_invariant.html">Invariant</a>(func-&gt;mesh(), false, true, true)</div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    , m_func(func)</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    , m_type(type)</div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;{}</div>
@@ -134,22 +134,28 @@ $(document).ready(function(){initNavTree('_max_function_invariant_8cpp_source.ht
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; top_dimension_tuples_before,</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; top_dimension_tuples_after)<span class="keyword"> const</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keyword">auto</span> max = [&amp;](<span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; tuples) {</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        <span class="keywordtype">double</span> value = std::numeric_limits&lt;double&gt;::lowest();</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; t : tuples)</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;            value = std::max(value, <a class="code" href="classwmtk_1_1invariants_1_1_max_function_invariant.html#a37d423d139971158c0e1d740730b83bf">m_func</a>-&gt;get_value(<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>(<a class="code" href="classwmtk_1_1invariants_1_1_max_function_invariant.html#a8d08d0d125d713bef7c5206e1bdb3a8d">m_type</a>, t)));</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        <span class="keywordflow">return</span> value;</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    };</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> <a class="code" href="classwmtk_1_1invariants_1_1_invariant.html#ae43f95bda332585aa73a8fd0624a39d3">before</a> = <a class="code" href="classwmtk_1_1invariants_1_1_invariant.html#ac97548bf5f1167cd85081d1bde011139">mesh</a>().<a class="code" href="classwmtk_1_1_mesh.html#ac5778c1f8afef3a2b1b1c33a140b3166">parent_scope</a>(max, top_dimension_tuples_before);</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keyword">auto</span> max = [&amp;](<span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; tuples) {</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;        <span class="keywordtype">double</span> value = std::numeric_limits&lt;double&gt;::lowest();</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; t : tuples)</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;            value = std::max(value, <a class="code" href="classwmtk_1_1invariants_1_1_max_function_invariant.html#a37d423d139971158c0e1d740730b83bf">m_func</a>-&gt;get_value(<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>(<a class="code" href="classwmtk_1_1invariants_1_1_max_function_invariant.html#a8d08d0d125d713bef7c5206e1bdb3a8d">m_type</a>, t)));</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        <span class="keywordflow">return</span> value;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    };</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> <a class="code" href="classwmtk_1_1invariants_1_1_invariant.html#ae43f95bda332585aa73a8fd0624a39d3">before</a> = <a class="code" href="classwmtk_1_1invariants_1_1_invariant.html#ac97548bf5f1167cd85081d1bde011139">mesh</a>().<a class="code" href="classwmtk_1_1_mesh.html#ac5778c1f8afef3a2b1b1c33a140b3166">parent_scope</a>(max, top_dimension_tuples_before);</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> <a class="code" href="classwmtk_1_1invariants_1_1_max_function_invariant.html#a1b7bbbbc2040253d110ed100054c9cb4">after</a> = max(top_dimension_tuples_after);</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classwmtk_1_1invariants_1_1_max_function_invariant.html#a1b7bbbbc2040253d110ed100054c9cb4">after</a> &lt; <a class="code" href="classwmtk_1_1invariants_1_1_invariant.html#ae43f95bda332585aa73a8fd0624a39d3">before</a>;</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;}</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;} <span class="comment">// namespace wmtk::invariants</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> <a class="code" href="classwmtk_1_1invariants_1_1_max_function_invariant.html#a1b7bbbbc2040253d110ed100054c9cb4">after</a> = max(top_dimension_tuples_after);</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="comment">// debug code</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="comment">// if (!(after &lt; before)) {</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="comment">//     std::cout &lt;&lt; &quot;after check: before: &quot; &lt;&lt; before &lt;&lt; &quot;, after: &quot; &lt;&lt; after &lt;&lt; std::endl;</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="comment">//     std::cout &lt;&lt; &quot;before tet size: &quot; &lt;&lt; top_dimension_tuples_before.size()</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="comment">//               &lt;&lt; &quot;, after tet size: &quot; &lt;&lt; top_dimension_tuples_after.size() &lt;&lt; std::endl;</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="comment">// }</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classwmtk_1_1invariants_1_1_max_function_invariant.html#a1b7bbbbc2040253d110ed100054c9cb4">after</a> &lt; <a class="code" href="classwmtk_1_1invariants_1_1_invariant.html#ae43f95bda332585aa73a8fd0624a39d3">before</a>;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;}</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;} <span class="comment">// namespace wmtk::invariants</span></div>
 <div class="ttc" id="a_max_function_invariant_8hpp_html"><div class="ttname"><a href="_max_function_invariant_8hpp.html">MaxFunctionInvariant.hpp</a></div></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="a_per_simplex_function_8hpp_html"><div class="ttname"><a href="_per_simplex_function_8hpp.html">PerSimplexFunction.hpp</a></div></div>

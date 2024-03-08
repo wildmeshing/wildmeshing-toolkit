@@ -14,5 +14,9 @@ var namespacewmtk_1_1function_1_1utils =
     [ "get_simplex_attributes", "namespacewmtk_1_1function_1_1utils.html#ab8499e1d9a778486c7ce86426bc43b91", null ],
     [ "get_simplex_attributes", "namespacewmtk_1_1function_1_1utils.html#ad875347d7be1124d3e413056c254d633", null ],
     [ "get_simplex_attributes", "namespacewmtk_1_1function_1_1utils.html#a10708966079a04e25ba0ea7953479662", null ],
-    [ "make_DScalar_matrix", "namespacewmtk_1_1function_1_1utils.html#a274758923a5bae49855a5984fdd6e737", null ]
+    [ "make_DScalar_matrix", "namespacewmtk_1_1function_1_1utils.html#a274758923a5bae49855a5984fdd6e737", null ],
+    [ "Tet_AMIPS_energy", "namespacewmtk_1_1function_1_1utils.html#a818b9b16f06339c34d08eceeb5342470", null ],
+    [ "Tet_AMIPS_energy_aux", "namespacewmtk_1_1function_1_1utils.html#a25934673337031320046c5f37c450d0c", null ],
+    [ "Tet_AMIPS_hessian", "namespacewmtk_1_1function_1_1utils.html#aed8c811c20a1f0b8ddb471028e0dbab8", null ],
+    [ "Tet_AMIPS_jacobian", "namespacewmtk_1_1function_1_1utils.html#a30d0a98f6851e8c66d5035c2f1b26909", null ]
 ];

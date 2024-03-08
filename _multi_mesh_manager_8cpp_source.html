@@ -494,8 +494,8 @@ $(document).ready(function(){initNavTree('_multi_mesh_manager_8cpp_source.html',
 <div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;        cur_mesh = cur_mesh-&gt;<a class="code" href="classwmtk_1_1_mesh.html#a74dc5eaa8112266a82dd9f5126d305ea">m_multi_mesh_manager</a>.<a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a2759f2683646326bd4340b8f608128fa">m_parent</a>;</div>
 <div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;        assert(cur_mesh != <span class="keyword">nullptr</span>);</div>
 <div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;    }</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;    assert(cur_mesh-&gt;<a class="code" href="classwmtk_1_1_mesh.html#a74dc5eaa8112266a82dd9f5126d305ea">m_multi_mesh_manager</a></div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;               .<a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a7d39339adb56b1798fe817d81bfcc67c">is_root</a>()); <span class="comment">// cur_mesh == nullptr if we just walked past the root node so we stop</span></div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;    <span class="comment">// assert(cur_mesh-&gt;m_multi_mesh_manager</span></div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    <span class="comment">//            .is_root()); // cur_mesh == nullptr if we just walked past the root node so we stop</span></div>
 <div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160; </div>
 <div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;    <span class="comment">// bieng lazy about how i set cur_mesh to nullptr above - could simplify the loop to optimize</span></div>
 <div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;    <span class="keywordflow">return</span> std::pair&lt;const Mesh&amp;, Tuple&gt;(*cur_mesh, cur_tuple);</div>
