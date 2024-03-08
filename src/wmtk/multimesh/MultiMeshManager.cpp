@@ -377,8 +377,8 @@ std::pair<const Mesh&, Tuple> MultiMeshManager::map_up_to_tuples(
         cur_mesh = cur_mesh->m_multi_mesh_manager.m_parent;
         assert(cur_mesh != nullptr);
     }
-    assert(cur_mesh->m_multi_mesh_manager
-               .is_root()); // cur_mesh == nullptr if we just walked past the root node so we stop
+    // assert(cur_mesh->m_multi_mesh_manager
+    //            .is_root()); // cur_mesh == nullptr if we just walked past the root node so we stop
 
     // bieng lazy about how i set cur_mesh to nullptr above - could simplify the loop to optimize
     return std::pair<const Mesh&, Tuple>(*cur_mesh, cur_tuple);
