@@ -495,11 +495,70 @@ TEST_CASE("rgb_split")
             m,
             m_face_rgb_state_handle,
             m_edge_rgb_state_handle);
+        op.split().set_new_attribute_strategy(
+            m_uv_handle,
+            wmtk::operations::SplitBasicStrategy::None,
+            wmtk::operations::SplitRibBasicStrategy::Mean);
+        op.split().set_new_attribute_strategy(
+            m_face_rgb_state_handle,
+            wmtk::operations::SplitBasicStrategy::None,
+            wmtk::operations::SplitRibBasicStrategy::None);
+        op.split().set_new_attribute_strategy(
+            m_edge_rgb_state_handle,
+            wmtk::operations::SplitBasicStrategy::None,
+            wmtk::operations::SplitRibBasicStrategy::None);
         wmtk::simplex::Simplex middle_edge =
             wmtk::simplex::Simplex(PrimitiveType::Edge, m.edge_tuple_between_v1_v2(0, 1, 0));
         auto mods = op(middle_edge);
         REQUIRE(!mods.empty());
+        REQUIRE(mods.size() == 1);
         // all faces should be (red, 0)
+        for (auto& f : m.get_all(PrimitiveType::Triangle)) {
+            REQUIRE(m_face_rgb_state_accessor.vector_attribute(f) == Eigen::Vector2<int64_t>(1, 0));
+        }
+        Tuple split_return = mods.front().tuple();
+        // the edge should be (green, 1)
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(split_return) ==
+            Eigen::Vector2<int64_t>(0, 1));
+        Tuple other_new_edge = m.switch_tuples(
+            split_return,
+            {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Edge});
+        // the other edge should be (green, 1)
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(other_new_edge) ==
+            Eigen::Vector2<int64_t>(0, 1));
+
+        Tuple rib_edge0 = m.switch_tuple(split_return, {PrimitiveType::Edge});
+        Tuple rib_edge1 =
+            m.switch_tuples(split_return, {PrimitiveType::Triangle, PrimitiveType::Edge});
+        // the rib edge should be (red, 0)
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(rib_edge0) == Eigen::Vector2<int64_t>(1, 0));
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(rib_edge1) == Eigen::Vector2<int64_t>(1, 0));
+
+        Tuple ear_edge0 =
+            m.switch_tuples(split_return, {PrimitiveType::Vertex, PrimitiveType::Edge});
+        Tuple ear_edge1 = m.switch_tuples(
+            rib_edge0,
+            {PrimitiveType::Triangle, PrimitiveType::Vertex, PrimitiveType::Edge});
+        Tuple ear_edge2 = m.switch_tuples(
+            split_return,
+            {PrimitiveType::Triangle, PrimitiveType::Vertex, PrimitiveType::Edge});
+        Tuple ear_edge3 = m.switch_tuples(
+            rib_edge1,
+            {PrimitiveType::Triangle, PrimitiveType::Vertex, PrimitiveType::Edge});
+
+        // the ear edges should be (green, 0)
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(ear_edge0) == Eigen::Vector2<int64_t>(0, 0));
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(ear_edge1) == Eigen::Vector2<int64_t>(0, 0));
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(ear_edge2) == Eigen::Vector2<int64_t>(0, 0));
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(ear_edge3) == Eigen::Vector2<int64_t>(0, 0));
     }
     SECTION("RR") {}
     SECTION("RG") {}
