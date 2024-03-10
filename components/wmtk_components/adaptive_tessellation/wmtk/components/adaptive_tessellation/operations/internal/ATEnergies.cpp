@@ -271,4 +271,22 @@ double ATOperations::curved_edge_length_on_displaced_surface(
     return arc_length;
 }
 
+
+void ATOperations::initialize_face_rgb_state()
+{
+    // initialize face error values
+    // all faces set to green at level 0
+    for (auto& f : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Triangle)) {
+        m_face_rgb_state_accessor.vector_attribute(f) = Eigen::Vector2<int64_t>(0, 0);
+    }
+}
+void ATOperations::initialize_edge_rgb_state()
+{
+    // initialize edge error values
+    // all edges set to green at level 0
+    for (auto& e : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Edge)) {
+        m_edge_rgb_state_accessor.vector_attribute(e) = Eigen::Vector2<int64_t>(0, 0);
+    }
+}
+
 } // namespace wmtk::components::operations::internal

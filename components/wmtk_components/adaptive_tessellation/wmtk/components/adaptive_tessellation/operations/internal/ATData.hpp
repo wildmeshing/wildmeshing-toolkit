@@ -41,6 +41,8 @@ public:
     wmtk::attribute::MeshAttributeHandle m_amips_error_handle;
     wmtk::attribute::MeshAttributeHandle m_3d_edge_length_handle;
     wmtk::attribute::MeshAttributeHandle m_curved_edge_length_handle;
+    wmtk::attribute::MeshAttributeHandle m_face_rgb_state_handle;
+    wmtk::attribute::MeshAttributeHandle m_edge_rgb_state_handle;
 
     // ATData(
     //     std::shared_ptr<Mesh> uv_mesh,
