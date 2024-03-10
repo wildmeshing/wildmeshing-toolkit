@@ -1,6 +1,8 @@
 set(SRC_FILES
     RGRefine.cpp
     RGRefine.hpp
+    RGBSplit.hpp
+    RGBSplit.cpp
 )
 
 
