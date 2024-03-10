@@ -31,6 +31,10 @@
 
 #include <random>
 
+#include <tools/DEBUG_TriMesh.hpp>
+#include <tools/TriMesh_examples.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/RGBSplit.hpp>
+
 using namespace wmtk;
 using namespace wmtk::tests;
 using DSVec = wmtk::function::PerSimplexAutodiffFunction::DSVec;
@@ -407,7 +411,7 @@ TEST_CASE("distance_energy_correctness")
     REQUIRE(pow(error_t1 - area_t1, 2) < 1e-5);
 }
 
-TEST_CASE("line_quadrature")
+TEST_CASE("curved_edge_length_line_quadrature")
 {
     std::array<std::shared_ptr<image::Sampling>, 3> funcs = {
         {std::make_shared<image::SamplingAnalyticFunction>(
@@ -450,8 +454,8 @@ TEST_CASE("line_quadrature")
         double u1 = dist(rng);
         double v1 = dist(rng);
         Eigen::Vector2d uv0(u0, v0), uv1(u1, v1);
-        double arc_length =
-            wmtk::components::operations::internal::geodesic_distance(uv0, uv1, m_evaluator_ptr);
+        double arc_length = wmtk::components::operations::internal::ATOperations::
+            curved_edge_length_on_displaced_surface(uv0, uv1, m_evaluator_ptr);
 
         REQUIRE(
             pow(arc_length -
@@ -459,5 +463,45 @@ TEST_CASE("line_quadrature")
                         .norm(),
                 2) < 1e-5);
     }
+}
+
+TEST_CASE("rgb_split")
+{
+    tests::DEBUG_TriMesh m = tests::unit_squre();
+
+    wmtk::attribute::MeshAttributeHandle m_uv_handle =
+        m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    wmtk::attribute::MeshAttributeHandle m_face_rgb_state_handle =
+        m.register_attribute<int64_t>("face_rgb_state", PrimitiveType::Triangle, 2, true);
+    wmtk::attribute::MeshAttributeHandle m_edge_rgb_state_handle =
+        m.register_attribute<int64_t>("edge_rgb_state", PrimitiveType::Edge, 2, true);
+    wmtk::attribute::Accessor<int64_t> m_face_rgb_state_accessor =
+        m.create_accessor(m_face_rgb_state_handle.as<int64_t>());
+    wmtk::attribute::Accessor<int64_t> m_edge_rgb_state_accessor =
+        m.create_accessor(m_edge_rgb_state_handle.as<int64_t>());
+    wmtk::attribute::Accessor<double> m_uv_accessor = m.create_accessor(m_uv_handle.as<double>());
+
+    // all faces set to green at level 0
+    for (auto& f : m.get_all(PrimitiveType::Triangle)) {
+        m_face_rgb_state_accessor.vector_attribute(f) = Eigen::Vector2<int64_t>(0, 0);
+    }
+    // all edges set to green at level 0
+    for (auto& e : m.get_all(PrimitiveType::Edge)) {
+        m_edge_rgb_state_accessor.vector_attribute(e) = Eigen::Vector2<int64_t>(0, 0);
+    }
+    SECTION("GG")
+    {
+        wmtk::operations::composite::RGBSplit op(
+            m,
+            m_face_rgb_state_handle,
+            m_edge_rgb_state_handle);
+        wmtk::simplex::Simplex middle_edge =
+            wmtk::simplex::Simplex(PrimitiveType::Edge, m.edge_tuple_between_v1_v2(0, 1, 0));
+        auto mods = op(middle_edge);
+        REQUIRE(!mods.empty());
+        // all faces should be (red, 0)
+    }
+    SECTION("RR") {}
+    SECTION("RG") {}
 }
 } // namespace wmtk::components
