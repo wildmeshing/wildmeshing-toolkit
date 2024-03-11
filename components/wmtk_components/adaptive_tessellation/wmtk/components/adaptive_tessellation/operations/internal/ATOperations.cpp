@@ -4,13 +4,15 @@
 #include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/area_barrier.hpp>
-#include <wmtk/components/adaptive_tessellation/operations/RGRefine.hpp>
+
 
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/function/simplex/AMIPS.hpp>
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/function/utils/amips.hpp>
 
+#include <wmtk/components/adaptive_tessellation/invariants/RGBSplitInvariant.hpp>
+#include <wmtk/components/adaptive_tessellation/invariants/RGBSwapInvariant.hpp>
 #include <wmtk/invariants/BoundarySimplexInvariant.hpp>
 #include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/FunctionInvariant.hpp>
@@ -27,6 +29,10 @@
 #include <wmtk/operations/OptimizationSmoothing.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 #include <wmtk/operations/composite/TriFaceSplit.hpp>
+
+#include <wmtk/components/adaptive_tessellation/operations/RGBSplit.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/RGBSwap.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/RGRefine.hpp>
 
 #include <wmtk/simplex/Simplex.hpp>
 
@@ -82,6 +88,11 @@ ATOperations::ATOperations(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_3d_edge_length_handle.as<double>()))
     , m_curved_edge_length_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_curved_edge_length_handle.as<double>()))
+    , m_face_rgb_state_accessor(
+          m_atdata.uv_mesh().create_accessor(m_atdata.m_face_rgb_state_handle.as<int64_t>()))
+    , m_edge_rgb_state_accessor(
+          m_atdata.uv_mesh().create_accessor(m_atdata.m_edge_rgb_state_handle.as<int64_t>()))
+
 {
     m_ops.clear();
     if (m_atdata.funcs()[0]) {
@@ -119,6 +130,9 @@ ATOperations::ATOperations(
 
     set_curved_edge_length_update_rule();
     initialize_curved_edge_length();
+
+    initialize_face_rgb_state();
+    initialize_edge_rgb_state();
 
     // Lambdas for priority
     m_valence_improvement = [&](const Simplex& s) {
@@ -253,19 +267,8 @@ void ATOperations::AT_edge_split(std::function<std::vector<double>(const Simplex
 
     // 1) EdgeSplit
     auto split = std::make_shared<wmtk::operations::EdgeSplit>(*uv_mesh_ptr);
-    // split->add_invariant(std::make_shared<TodoLargerInvariant>(
-    //     *uv_mesh_ptr,
-    //     m_atdata.m_distance_error_handle.as<double>(),
-    //     m_target_distance));
-    // split->add_invariant(
-    //     std::make_shared<BoundarySimplexInvariant>(*uv_mesh_ptr, PrimitiveType::Edge));
-    // split->add_invariant(
-    //     std::make_shared<FunctionInvariant>(uv_mesh_ptr->top_simplex_type(), function_ptr));
-    // split->add_invariant(
-    //     std::make_shared<StateChanges>(uv_mesh_ptr->top_simplex_type(), function_ptr));
-    split->set_priority(priority);
-    // split->use_random_priority() = true;
 
+    split->set_priority(priority);
     split->set_new_attribute_strategy(m_atdata.m_uv_handle);
     split->set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);
     split->set_new_attribute_strategy(m_atdata.m_distance_error_handle);
@@ -282,83 +285,6 @@ void ATOperations::AT_edge_split(std::function<std::vector<double>(const Simplex
     m_ops.emplace_back(split);
 }
 
-void ATOperations::AT_boundary_edge_split(
-    std::function<std::vector<double>(const Simplex&)>& priority,
-    std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
-{
-    std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
-    std::shared_ptr<Mesh> position_mesh_ptr = m_atdata.position_mesh_ptr();
-
-    // 1) EdgeSplit
-    auto split = std::make_shared<wmtk::operations::EdgeSplit>(*uv_mesh_ptr);
-    // split->add_invariant(std::make_shared<TodoAvgEnergyLargerInvariant>(
-    //     *uv_mesh_ptr,
-    //     m_atdata.m_sum_error_handle.as<double>(),
-    //     m_target_distance));
-    split->add_invariant(
-        std::make_shared<BoundarySimplexInvariant>(*uv_mesh_ptr, PrimitiveType::Edge));
-    // split->add_invariant(
-    //     std::make_shared<FunctionInvariant>(uv_mesh_ptr->top_simplex_type(), function_ptr));
-    split->add_invariant(
-        std::make_shared<StateChanges>(uv_mesh_ptr->top_simplex_type(), function_ptr));
-    split->set_priority(priority);
-
-    split->set_new_attribute_strategy(m_atdata.m_uv_handle);
-    split->set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);
-    split->set_new_attribute_strategy(m_atdata.m_distance_error_handle);
-    split->set_new_attribute_strategy(m_atdata.m_amips_error_handle);
-
-    split->add_transfer_strategy(m_uvmesh_xyz_update);
-
-    // split->add_transfer_strategy(m_edge_length_update);
-    split->add_transfer_strategy(m_distance_error_update);
-    split->add_transfer_strategy(m_amips_error_update);
-    m_ops.emplace_back(split);
-}
-
-void ATOperations::AT_face_split(
-    std::function<std::vector<double>(const Simplex&)>& priority,
-    std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
-{
-    std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
-    std::shared_ptr<Mesh> position_mesh_ptr = m_atdata.position_mesh_ptr();
-
-    auto face_split = std::make_shared<TriFaceSplit>(*uv_mesh_ptr);
-    face_split->add_invariant(
-        std::make_shared<StateChanges>(uv_mesh_ptr->top_simplex_type(), function_ptr));
-    face_split->add_invariant(std::make_shared<SimplexInversionInvariant>(
-        *uv_mesh_ptr,
-        m_atdata.uv_handle().as<double>()));
-    face_split->set_priority(priority);
-
-    face_split->split().set_new_attribute_strategy(m_atdata.uv_handle());
-    face_split->collapse().set_new_attribute_strategy(
-        m_atdata.uv_handle(),
-        wmtk::operations::CollapseBasicStrategy::CopyOther);
-
-    face_split->split().set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);
-    face_split->collapse().set_new_attribute_strategy(
-        m_atdata.m_uvmesh_xyz_handle,
-        wmtk::operations::CollapseBasicStrategy::CopyOther);
-    {
-        // the update strategy that doesn't matter
-        face_split->split().set_new_attribute_strategy(m_atdata.m_distance_error_handle);
-        face_split->collapse().set_new_attribute_strategy(
-            m_atdata.m_distance_error_handle,
-            wmtk::operations::CollapseBasicStrategy::CopyOther);
-        face_split->split().set_new_attribute_strategy(
-            m_atdata.m_amips_error_handle,
-            SplitBasicStrategy::None,
-            SplitRibBasicStrategy::Mean);
-        face_split->collapse().set_new_attribute_strategy(
-            m_atdata.m_amips_error_handle,
-            wmtk::operations::CollapseBasicStrategy::Mean);
-    }
-    face_split->add_transfer_strategy(m_uvmesh_xyz_update);
-    face_split->add_transfer_strategy(m_amips_error_update);
-    face_split->add_transfer_strategy(m_distance_error_update);
-    m_ops.push_back(face_split);
-}
 
 void ATOperations::AT_swap_interior(
     std::function<std::vector<double>(const Simplex&)>& priority,
@@ -425,17 +351,6 @@ void ATOperations::AT_swap_interior(
     m_ops.push_back(swap);
 }
 
-void ATOperations::AT_split_single_edge_mesh(Mesh* edge_meshi_ptr)
-{
-    auto m_t_handle = edge_meshi_ptr->get_attribute_handle<double>("t", PrimitiveType::Vertex);
-    auto split = std::make_shared<wmtk::operations::EdgeSplit>(*edge_meshi_ptr);
-    split->set_priority(m_long_edges_first);
-
-    split->set_new_attribute_strategy(m_atdata.m_uv_handle);
-    split->set_new_attribute_strategy(m_t_handle);
-
-    m_ops.emplace_back(split);
-}
 
 void ATOperations::AT_split_boundary()
 {
@@ -446,19 +361,14 @@ void ATOperations::AT_split_boundary()
     for (int64_t i = 0; i < num_edge_meshes; ++i) {
         std::shared_ptr<Mesh> edge_meshi_ptr = m_atdata.edge_mesh_i_ptr(i);
         Mesh* sibling_mesh_ptr = m_atdata.sibling_edge_mesh_ptr(edge_meshi_ptr.get());
-        AT_split_single_edge_mesh(edge_meshi_ptr.get());
+        // AT_split_single_edge_mesh(edge_meshi_ptr.get());
         if (sibling_mesh_ptr == nullptr) {
             continue;
         }
-        AT_split_single_edge_mesh(sibling_mesh_ptr);
+        // AT_split_single_edge_mesh(sibling_mesh_ptr);
     }
 }
 
-void ATOperations::AT_collapse_interior(
-    std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
-{
-    throw std::runtime_error("AT collapse not implemented");
-}
 void ATOperations::AT_rg_refine(std::function<std::vector<double>(const Simplex&)>& priority)
 {
     std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
@@ -549,4 +459,125 @@ void ATOperations::AT_rg_refine(std::function<std::vector<double>(const Simplex&
     m_ops.push_back(rg_refine);
 }
 
+void ATOperations::AT_rgb_split()
+{
+    std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
+
+    auto rgb_split = std::make_shared<wmtk::operations::composite::RGBSplit>(
+        *uv_mesh_ptr,
+        m_atdata.m_face_rgb_state_handle,
+        m_atdata.m_edge_rgb_state_handle);
+
+    rgb_split->split().set_new_attribute_strategy(m_atdata.m_uv_handle);
+    rgb_split->split().set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);
+    rgb_split->split().set_new_attribute_strategy(m_atdata.m_distance_error_handle);
+    rgb_split->split().set_new_attribute_strategy(m_atdata.m_amips_error_handle);
+    rgb_split->split().set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
+    rgb_split->split().set_new_attribute_strategy(m_atdata.m_curved_edge_length_handle);
+
+    rgb_split->split().add_transfer_strategy(m_uvmesh_xyz_update);
+    rgb_split->split().add_transfer_strategy(m_3d_edge_length_update);
+    rgb_split->split().add_transfer_strategy(m_distance_error_update);
+    rgb_split->split().add_transfer_strategy(m_amips_error_update);
+    rgb_split->split().add_transfer_strategy(m_curved_edge_length_update);
+
+
+    rgb_split->split().set_new_attribute_strategy(
+        m_atdata.m_face_rgb_state_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    rgb_split->split().set_new_attribute_strategy(
+        m_atdata.m_edge_rgb_state_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    rgb_split->add_invariant(std::make_shared<wmtk::RGBSplitInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.m_face_rgb_state_handle.as<int64_t>(),
+        m_atdata.m_edge_rgb_state_handle.as<int64_t>()));
+    m_ops.emplace_back(rgb_split);
+}
+
+void ATOperations::AT_rgb_swap()
+{
+    std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
+
+    auto rgb_swap = std::make_shared<wmtk::operations::composite::RGBSwap>(
+        *uv_mesh_ptr,
+        m_atdata.m_face_rgb_state_handle,
+        m_atdata.m_edge_rgb_state_handle);
+
+    rgb_swap->add_invariant(std::make_shared<wmtk::RGBSwapInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.m_face_rgb_state_handle.as<int64_t>(),
+        m_atdata.m_edge_rgb_state_handle.as<int64_t>()));
+    rgb_swap->swap().collapse().add_invariant(
+        std::make_shared<MultiMeshLinkConditionInvariant>(*uv_mesh_ptr));
+    rgb_swap->add_invariant(std::make_shared<InteriorEdgeInvariant>(*uv_mesh_ptr));
+    rgb_swap->add_invariant(std::make_shared<SimplexInversionInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.uv_handle().as<double>()));
+
+
+    rgb_swap->swap().split().set_new_attribute_strategy(
+        m_atdata.uv_handle(),
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::Mean);
+    rgb_swap->swap().collapse().set_new_attribute_strategy(
+        m_atdata.uv_handle(),
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+    rgb_swap->swap().split().set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);
+    rgb_swap->swap().collapse().set_new_attribute_strategy(
+        m_atdata.m_uvmesh_xyz_handle,
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+    {
+        // the update strategy that doesn't matter
+        rgb_swap->swap().split().set_new_attribute_strategy(m_atdata.m_distance_error_handle);
+        rgb_swap->swap().collapse().set_new_attribute_strategy(
+            m_atdata.m_distance_error_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
+        rgb_swap->swap().split().set_new_attribute_strategy(
+            m_atdata.m_amips_error_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+        rgb_swap->swap().collapse().set_new_attribute_strategy(
+            m_atdata.m_amips_error_handle,
+            wmtk::operations::CollapseBasicStrategy::Mean);
+        rgb_swap->swap().split().set_new_attribute_strategy(
+            m_atdata.m_3d_edge_length_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+        rgb_swap->swap().collapse().set_new_attribute_strategy(
+            m_atdata.m_3d_edge_length_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
+        rgb_swap->swap().split().set_new_attribute_strategy(
+            m_atdata.m_curved_edge_length_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+        rgb_swap->swap().collapse().set_new_attribute_strategy(
+            m_atdata.m_curved_edge_length_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
+    }
+    rgb_swap->add_transfer_strategy(m_uvmesh_xyz_update);
+    rgb_swap->add_transfer_strategy(m_amips_error_update);
+    rgb_swap->add_transfer_strategy(m_distance_error_update);
+    rgb_swap->add_transfer_strategy(m_3d_edge_length_update);
+    rgb_swap->add_transfer_strategy(m_curved_edge_length_update);
+
+    rgb_swap->swap().split().set_new_attribute_strategy(
+        m_atdata.m_face_rgb_state_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    rgb_swap->swap().collapse().set_new_attribute_strategy(
+        m_atdata.m_face_rgb_state_handle,
+        wmtk::operations::CollapseBasicStrategy::None);
+    rgb_swap->swap().split().set_new_attribute_strategy(
+        m_atdata.m_edge_rgb_state_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    rgb_swap->swap().collapse().set_new_attribute_strategy(
+        m_atdata.m_edge_rgb_state_handle,
+        wmtk::operations::CollapseBasicStrategy::None);
+
+    m_ops.emplace_back(rgb_swap);
+}
 } // namespace wmtk::components::operations::internal

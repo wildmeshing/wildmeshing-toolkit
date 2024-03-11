@@ -32,6 +32,9 @@ public:
     wmtk::attribute::Accessor<double> m_3d_edge_length_accessor;
     wmtk::attribute::Accessor<double> m_curved_edge_length_accessor;
 
+    wmtk::attribute::Accessor<int64_t> m_face_rgb_state_accessor;
+    wmtk::attribute::Accessor<int64_t> m_edge_rgb_state_accessor;
+
     std::vector<std::shared_ptr<wmtk::operations::Operation>> m_ops;
     std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
         m_evaluator_ptr;
@@ -82,22 +85,17 @@ public:
         Eigen::Vector2<double>& uv0,
         Eigen::Vector2<double>& uv1,
         Eigen::Vector2<double>& uv2);
-    void AT_split_single_edge_mesh(Mesh* edge_meshi_ptr);
     void AT_smooth_interior(std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
     void AT_edge_split(std::function<std::vector<double>(const Simplex&)>& priority);
     void AT_3d_edge_split(std::function<std::vector<double>(const Simplex&)>& priority);
-    void AT_boundary_edge_split(
-        std::function<std::vector<double>(const Simplex&)>& priority,
-        std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
-    void AT_face_split(
-        std::function<std::vector<double>(const Simplex&)>& priority,
-        std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
     void AT_split_boundary();
-    void AT_collapse_interior(std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
     void AT_swap_interior(
         std::function<std::vector<double>(const Simplex&)>& priority,
         std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
     void AT_rg_refine(std::function<std::vector<double>(const Simplex&)>& priority);
+
+    void AT_rgb_split();
+    void AT_rgb_swap();
     ///// update
     void set_uvmesh_xyz_update_rule_initialize();
 
@@ -110,11 +108,15 @@ public:
     void set_curved_edge_length_update_rule();
     void initialize_curved_edge_length();
 
+    void initialize_face_rgb_state();
+    void initialize_edge_rgb_state();
+
     static double curved_edge_length_on_displaced_surface(
         const Eigen::Vector2d& uv0,
         const Eigen::Vector2d& uv1,
         const std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
             m_evaluator_ptr);
+
     /// scheduler
     std::vector<wmtk::simplex::Simplex> get_all_edges_of_all_triangles_with_triangle_filter(
         std::shared_ptr<wmtk::Mesh> uv_mesh_ptr,
