@@ -15,6 +15,7 @@ add_subdirectory(operations)
 add_subdirectory(quadrature)
 add_subdirectory(function)
 add_subdirectory(multimesh/utils)
+add_subdirectory(invariants)
     
 #add_subdirectory(tests)
 

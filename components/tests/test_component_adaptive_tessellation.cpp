@@ -33,7 +33,10 @@
 
 #include <tools/DEBUG_TriMesh.hpp>
 #include <tools/TriMesh_examples.hpp>
+#include <wmtk/components/adaptive_tessellation/invariants/RGBSplitInvariant.hpp>
+#include <wmtk/components/adaptive_tessellation/invariants/RGBSwapInvariant.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/RGBSplit.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/RGBSwap.hpp>
 
 using namespace wmtk;
 using namespace wmtk::tests;
@@ -784,6 +787,20 @@ TEST_CASE("rgb_split")
         REQUIRE(
             m_face_rgb_state_accessor.vector_attribute(other_green_ear1) ==
             Eigen::Vector2<int64_t>(1, 0));
+    }
+    SECTION("split_invariant")
+    {
+        op.add_invariant(std::make_shared<wmtk::RGBSplitInvariant>(
+            m,
+            m_face_rgb_state_handle.as<int64_t>(),
+            m_edge_rgb_state_handle.as<int64_t>()));
+
+        auto mods = op(simplex::Simplex(PrimitiveType::Edge, m.edge_tuple_between_v1_v2(0, 1, 0)));
+        REQUIRE(!mods.empty());
+        REQUIRE(mods.size() == 1);
+        Tuple red_edge = m.switch_tuple(mods.front().tuple(), PrimitiveType::Edge);
+        mods = op(simplex::Simplex(PrimitiveType::Edge, red_edge));
+        REQUIRE(mods.empty());
     }
 }
 } // namespace wmtk::components
