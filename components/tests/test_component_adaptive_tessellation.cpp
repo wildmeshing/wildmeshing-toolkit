@@ -489,24 +489,21 @@ TEST_CASE("rgb_split")
     for (auto& e : m.get_all(PrimitiveType::Edge)) {
         m_edge_rgb_state_accessor.vector_attribute(e) = Eigen::Vector2<int64_t>(0, 0);
     }
+    wmtk::operations::composite::RGBSplit op(m, m_face_rgb_state_handle, m_edge_rgb_state_handle);
+    op.split().set_new_attribute_strategy(
+        m_uv_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::Mean);
+    op.split().set_new_attribute_strategy(
+        m_face_rgb_state_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    op.split().set_new_attribute_strategy(
+        m_edge_rgb_state_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
     SECTION("GG")
     {
-        wmtk::operations::composite::RGBSplit op(
-            m,
-            m_face_rgb_state_handle,
-            m_edge_rgb_state_handle);
-        op.split().set_new_attribute_strategy(
-            m_uv_handle,
-            wmtk::operations::SplitBasicStrategy::None,
-            wmtk::operations::SplitRibBasicStrategy::Mean);
-        op.split().set_new_attribute_strategy(
-            m_face_rgb_state_handle,
-            wmtk::operations::SplitBasicStrategy::None,
-            wmtk::operations::SplitRibBasicStrategy::None);
-        op.split().set_new_attribute_strategy(
-            m_edge_rgb_state_handle,
-            wmtk::operations::SplitBasicStrategy::None,
-            wmtk::operations::SplitRibBasicStrategy::None);
         wmtk::simplex::Simplex middle_edge =
             wmtk::simplex::Simplex(PrimitiveType::Edge, m.edge_tuple_between_v1_v2(0, 1, 0));
         auto mods = op(middle_edge);
@@ -560,7 +557,84 @@ TEST_CASE("rgb_split")
         REQUIRE(
             m_edge_rgb_state_accessor.vector_attribute(ear_edge3) == Eigen::Vector2<int64_t>(0, 0));
     }
-    SECTION("RR") {}
+    SECTION("RR")
+    {
+        Tuple bnd_edge0 = m.edge_tuple_between_v1_v2(0, 2, 0);
+        auto mods = op(wmtk::simplex::Simplex(PrimitiveType::Edge, bnd_edge0));
+        REQUIRE(!mods.empty());
+        REQUIRE(mods.size() == 1);
+        REQUIRE(
+            m_face_rgb_state_accessor.vector_attribute(mods.front().tuple()) ==
+            Eigen::Vector2<int64_t>(1, 0));
+        REQUIRE(
+            m_face_rgb_state_accessor.vector_attribute(m.switch_tuples(
+                mods.front().tuple(),
+                {PrimitiveType::Edge, PrimitiveType::Triangle})) == Eigen::Vector2<int64_t>(1, 0));
+        Tuple bnd_edge1 = m.edge_tuple_between_v1_v2(1, 3, 1);
+        mods = op(wmtk::simplex::Simplex(PrimitiveType::Edge, bnd_edge1));
+        REQUIRE(!mods.empty());
+        REQUIRE(mods.size() == 1);
+        REQUIRE(
+            m_face_rgb_state_accessor.vector_attribute(mods.front().tuple()) ==
+            Eigen::Vector2<int64_t>(1, 0));
+        REQUIRE(
+            m_face_rgb_state_accessor.vector_attribute(m.switch_tuples(
+                mods.front().tuple(),
+                {PrimitiveType::Edge, PrimitiveType::Triangle})) == Eigen::Vector2<int64_t>(1, 0));
+        Tuple edge = m.edge_tuple_from_vids(0, 1);
+        // the input face is red
+        REQUIRE(m_face_rgb_state_accessor.vector_attribute(edge) == Eigen::Vector2<int64_t>(1, 0));
+        mods = op(simplex::Simplex(PrimitiveType::Edge, edge));
+        REQUIRE(!mods.empty());
+        REQUIRE(mods.size() == 1);
+        Tuple split_return = mods.front().tuple();
+        // the edge should be (green, 1)
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(split_return) ==
+            Eigen::Vector2<int64_t>(0, 1));
+        // the other new edge should also be (green, 1)
+        Tuple other_new_edge = m.switch_tuples(
+            split_return,
+            {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Edge});
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(other_new_edge) ==
+            Eigen::Vector2<int64_t>(0, 1));
+        // rib edges should be (green,1)
+        Tuple rib_edge0 = m.switch_tuple(split_return, {PrimitiveType::Edge});
+
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(rib_edge0) == Eigen::Vector2<int64_t>(0, 1));
+        // the ear edge that is red has face (blue, 0)
+        // the ear edge that is green has face (green, 1)
+        Tuple ear_edge0 =
+            m.switch_tuples(split_return, {PrimitiveType::Vertex, PrimitiveType::Edge});
+        Tuple ear_edge1 = m.switch_tuples(
+            rib_edge0,
+            {PrimitiveType::Triangle, PrimitiveType::Vertex, PrimitiveType::Edge});
+        REQUIRE(
+            ((m_edge_rgb_state_accessor.vector_attribute(ear_edge0) ==
+              Eigen::Vector2<int64_t>(1, 0)) ||
+             (m_edge_rgb_state_accessor.vector_attribute(ear_edge1) ==
+              Eigen::Vector2<int64_t>(1, 0))));
+        Tuple blue_ear, green_ear;
+        if (m_edge_rgb_state_accessor.vector_attribute(ear_edge0) ==
+            Eigen::Vector2<int64_t>(1, 0)) {
+            blue_ear = ear_edge0;
+            green_ear = ear_edge1;
+        } else if (
+            m_edge_rgb_state_accessor.vector_attribute(ear_edge1) ==
+            Eigen::Vector2<int64_t>(1, 0)) {
+            blue_ear = ear_edge1;
+            green_ear = ear_edge0;
+        } else {
+            REQUIRE(false);
+        }
+
+        REQUIRE(
+            m_face_rgb_state_accessor.vector_attribute(blue_ear) == Eigen::Vector2<int64_t>(2, 0));
+        REQUIRE(
+            m_face_rgb_state_accessor.vector_attribute(green_ear) == Eigen::Vector2<int64_t>(0, 1));
+    }
     SECTION("RG") {}
 }
 } // namespace wmtk::components
