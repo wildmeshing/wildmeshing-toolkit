@@ -1,11 +1,13 @@
 #include "RGBSwapInvariant.hpp"
+#include <wmtk/Mesh.hpp>
 
 namespace wmtk {
 RGBSwapInvariant::RGBSwapInvariant(
     const Mesh& m,
     const TypedAttributeHandle<int64_t>& face_rgb_state_handle,
     const TypedAttributeHandle<int64_t>& edge_rgb_state_handle)
-    : m_face_rgb_state_handle(face_rgb_state_handle)
+    : Invariant(m, true, false, false)
+    , m_face_rgb_state_handle(face_rgb_state_handle)
     , m_edge_rgb_state_handle(edge_rgb_state_handle)
 {}
 
@@ -43,8 +45,6 @@ bool RGBSwapInvariant::before(const simplex::Simplex& t) const
     // red edge
     if (edge_color_level[0] != 1) return false;
 
-    Eigen::Vector2<int64_t> other_face_color_level =
-        face_rbg_state_accessor.const_vector_attribute<2>(other_face);
     return can_swap(edge_color_level, my_face_color_level) &&
            can_swap(edge_color_level, other_face_color_level);
 }
