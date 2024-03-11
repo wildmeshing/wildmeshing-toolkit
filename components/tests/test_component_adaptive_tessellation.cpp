@@ -635,6 +635,155 @@ TEST_CASE("rgb_split")
         REQUIRE(
             m_face_rgb_state_accessor.vector_attribute(green_ear) == Eigen::Vector2<int64_t>(0, 1));
     }
-    SECTION("RG") {}
+    SECTION("RG")
+    {
+        Tuple bnd_edge0 = m.edge_tuple_between_v1_v2(0, 2, 0);
+        auto mods = op(wmtk::simplex::Simplex(PrimitiveType::Edge, bnd_edge0));
+        REQUIRE(!mods.empty());
+        REQUIRE(mods.size() == 1);
+        REQUIRE(
+            m_face_rgb_state_accessor.vector_attribute(mods.front().tuple()) ==
+            Eigen::Vector2<int64_t>(1, 0));
+        REQUIRE(
+            m_face_rgb_state_accessor.vector_attribute(m.switch_tuples(
+                mods.front().tuple(),
+                {PrimitiveType::Edge, PrimitiveType::Triangle})) == Eigen::Vector2<int64_t>(1, 0));
+        Tuple edge = m.edge_tuple_from_vids(0, 1);
+        // the input has one side green, one side red
+        // same_side_red is true is the face of the edge tuple is red
+        bool same_side_red = false;
+
+        if (m_face_rgb_state_accessor.vector_attribute(edge) == Eigen::Vector2<int64_t>(1, 0)) {
+            REQUIRE(
+                m_face_rgb_state_accessor.vector_attribute(
+                    m.switch_tuple(edge, PrimitiveType::Triangle)) ==
+                Eigen::Vector2<int64_t>(0, 0));
+            same_side_red = true;
+        } else if (
+            m_face_rgb_state_accessor.vector_attribute(edge) == Eigen::Vector2<int64_t>(0, 0)) {
+            REQUIRE(
+                m_face_rgb_state_accessor.vector_attribute(
+                    m.switch_tuple(edge, PrimitiveType::Triangle)) ==
+                Eigen::Vector2<int64_t>(1, 0));
+        } else {
+            REQUIRE(false);
+        }
+
+        mods = op(simplex::Simplex(PrimitiveType::Edge, edge));
+        REQUIRE(!mods.empty());
+        REQUIRE(mods.size() == 1);
+        Tuple split_return = mods.front().tuple();
+        // the edge should be (green, 1)
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(split_return) ==
+            Eigen::Vector2<int64_t>(0, 1));
+        // the other new edge should also be (green, 1)
+        Tuple other_new_edge = m.switch_tuples(
+            split_return,
+            {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Edge});
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(other_new_edge) ==
+            Eigen::Vector2<int64_t>(0, 1));
+        // if same_side_red is true, then this side of facs are (blue, 0) or (green, 1) given the
+        // ear edge colors
+        // If the ear edge is (red, 0) then the face is (blue, 0)
+        // If the ear edge is (green, 1) then the face is (green, 1)
+        Tuple ear_edge0 =
+            m.switch_tuples(split_return, {PrimitiveType::Vertex, PrimitiveType::Edge});
+        Tuple rib_edge0 = m.switch_tuple(split_return, {PrimitiveType::Edge});
+        Tuple ear_edge1 = m.switch_tuples(
+            rib_edge0,
+            {PrimitiveType::Triangle, PrimitiveType::Vertex, PrimitiveType::Edge});
+        Tuple ear_edge2 = m.switch_tuples(
+            split_return,
+            {PrimitiveType::Triangle, PrimitiveType::Vertex, PrimitiveType::Edge});
+        Tuple rib_edge1 =
+            m.switch_tuples(split_return, {PrimitiveType::Triangle, PrimitiveType::Edge});
+        Tuple ear_edge3 = m.switch_tuples(
+            rib_edge1,
+            {PrimitiveType::Triangle, PrimitiveType::Vertex, PrimitiveType::Edge});
+        Tuple red_side_rib, other_side_rib;
+        Tuple red_ear, green_ear, other_green_ear0, other_green_ear1;
+
+        if (same_side_red) {
+            // rib edge of this side should be (green, 1)
+            other_side_rib = rib_edge0;
+            // rib edge of the other side should be (red, 0)
+            red_side_rib = rib_edge1;
+            // other side should be green ears after split
+            other_green_ear0 = ear_edge2;
+            other_green_ear1 = ear_edge3;
+            // ear0, ear1 one should be (green,1), the other should be (red,0)
+            // and the face should accordingly be (green,1) or (blue,0)
+            if (m_edge_rgb_state_accessor.vector_attribute(ear_edge0) ==
+                Eigen::Vector2<int64_t>(0, 1)) {
+                green_ear = ear_edge0;
+                red_ear = ear_edge1;
+
+            } else if (
+                m_edge_rgb_state_accessor.vector_attribute(ear_edge0) ==
+                Eigen::Vector2<int64_t>(1, 0)) {
+                green_ear = ear_edge1;
+                red_ear = ear_edge0;
+
+            } else {
+                REQUIRE(false);
+            }
+        } else {
+            // rib edge of this this should be (red, 0)
+            red_side_rib = rib_edge0;
+            // rib edge of the other side should be (green, 1)
+            other_side_rib = rib_edge1;
+            // this side should be green ears after split
+            other_green_ear0 = ear_edge0;
+            other_green_ear1 = ear_edge1;
+            // ear2, ear3 one should be (green,1), the other should be (red,0)
+            // and the face should accordingly be (green,1) or (blue,0)
+            if (m_edge_rgb_state_accessor.vector_attribute(ear_edge2) ==
+                Eigen::Vector2<int64_t>(0, 1)) {
+                green_ear = ear_edge2;
+                red_ear = ear_edge3;
+
+            } else if (
+                m_edge_rgb_state_accessor.vector_attribute(ear_edge2) ==
+                Eigen::Vector2<int64_t>(1, 0)) {
+                green_ear = ear_edge3;
+                red_ear = ear_edge2;
+
+            } else {
+                REQUIRE(false);
+            }
+        }
+
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(other_side_rib) ==
+            Eigen::Vector2<int64_t>(0, 1));
+
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(red_side_rib) ==
+            Eigen::Vector2<int64_t>(1, 0));
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(red_ear) == Eigen::Vector2<int64_t>(1, 0));
+        REQUIRE(
+            m_face_rgb_state_accessor.vector_attribute(red_ear) == Eigen::Vector2<int64_t>(2, 0));
+
+        REQUIRE(
+            m_face_rgb_state_accessor.vector_attribute(green_ear) == Eigen::Vector2<int64_t>(0, 1));
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(green_ear) == Eigen::Vector2<int64_t>(0, 1));
+
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(other_green_ear0) ==
+            Eigen::Vector2<int64_t>(0, 0));
+        REQUIRE(
+            m_edge_rgb_state_accessor.vector_attribute(other_green_ear1) ==
+            Eigen::Vector2<int64_t>(0, 0));
+        REQUIRE(
+            m_face_rgb_state_accessor.vector_attribute(other_green_ear0) ==
+            Eigen::Vector2<int64_t>(1, 0));
+        REQUIRE(
+            m_face_rgb_state_accessor.vector_attribute(other_green_ear1) ==
+            Eigen::Vector2<int64_t>(1, 0));
+    }
 }
 } // namespace wmtk::components
