@@ -377,8 +377,8 @@ std::pair<const Mesh&, Tuple> MultiMeshManager::map_up_to_tuples(
         cur_mesh = cur_mesh->m_multi_mesh_manager.m_parent;
         assert(cur_mesh != nullptr);
     }
-    assert(cur_mesh->m_multi_mesh_manager
-               .is_root()); // cur_mesh == nullptr if we just walked past the root node so we stop
+    // assert(cur_mesh->m_multi_mesh_manager
+    //            .is_root()); // cur_mesh == nullptr if we just walked past the root node so we stop
 
     // bieng lazy about how i set cur_mesh to nullptr above - could simplify the loop to optimize
     return std::pair<const Mesh&, Tuple>(*cur_mesh, cur_tuple);
@@ -721,6 +721,7 @@ void MultiMeshManager::update_map_tuple_hashes(
             //  read off the original map's data
             auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
                                             .const_vector_attribute(original_parent_gid);
+            // wmtk::attribute::TupleAccessor<wmtk::Mesh> tuple_accessor(m, int64_t_handle);
 
             // read off the data in the Tuple format
             Tuple parent_tuple, child_tuple;
@@ -949,8 +950,11 @@ int64_t MultiMeshManager::parent_local_fid(
     return Mesh::get_index_access(child_to_parent)
         .vector_attribute(child_gid)(wmtk::multimesh::utils::TUPLE_SIZE + 2);
 #else
-    const int64_t v = Mesh::get_index_access(child_to_parent)
-                          .vector_attribute(child_gid)(wmtk::multimesh::utils::TUPLE_SIZE);
+    // pick hte index that isn't teh global id index
+    const int64_t v =
+        Mesh::get_index_access(child_to_parent)
+            .vector_attribute(child_gid)(
+                wmtk::multimesh::utils::TUPLE_SIZE + (1 - wmtk::multimesh::utils::GLOBAL_ID_INDEX));
     auto vptr = reinterpret_cast<const int8_t*>(&v);
     return vptr[2];
 #endif

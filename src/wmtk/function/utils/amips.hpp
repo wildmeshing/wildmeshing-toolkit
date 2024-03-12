@@ -108,4 +108,9 @@ auto amips(
 
     return amips(Dm);
 }
+
+double Tet_AMIPS_energy(const std::array<double, 12>& T);
+void Tet_AMIPS_hessian(const std::array<double, 12>& T, Eigen::Matrix3d& result_0);
+void Tet_AMIPS_jacobian(const std::array<double, 12>& T, Eigen::Vector3d& result_0);
+
 } // namespace wmtk::function::utils

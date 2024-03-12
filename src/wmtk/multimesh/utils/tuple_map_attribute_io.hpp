@@ -1,5 +1,5 @@
-#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 
 // #define WMTK_DISABLE_COMPRESSED_MULTIMESH_TUPLE
 namespace wmtk::multimesh::utils {
@@ -8,7 +8,7 @@ constexpr static int64_t TUPLE_SIZE = 5; // in terms of int64_t
 constexpr static int64_t GLOBAL_ID_INDEX = 3;
 #else
 constexpr static int64_t TUPLE_SIZE = 2; // in terms of int64_t
-constexpr static int64_t GLOBAL_ID_INDEX = 1;
+constexpr static int64_t GLOBAL_ID_INDEX = 0;
 #endif
 constexpr static int64_t DEFAULT_TUPLES_VALUES = -1;
 constexpr static int64_t TWO_TUPLE_SIZE = TUPLE_SIZE * 2; // in terms of int64_t

@@ -54,8 +54,19 @@ set(SRC_FILES
 
     SmallerFunctionInvariant.hpp
     SmallerFunctionInvariant.cpp
+    uvEdgeInvariant.hpp
+    uvEdgeInvariant.cpp
 
     internal/ConstantInvariant.hpp
     internal/ConstantInvariant.cpp
+
+    Swap44EnergyBeforeInvariant.hpp
+    Swap44EnergyBeforeInvariant.cpp
+    Swap44_2EnergyBeforeInvariant.hpp
+    Swap44_2EnergyBeforeInvariant.cpp
+    Swap32EnergyBeforeInvariant.hpp
+    Swap32EnergyBeforeInvariant.cpp
+    Swap23EnergyBeforeInvariant.hpp
+    Swap23EnergyBeforeInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
