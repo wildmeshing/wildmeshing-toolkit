@@ -155,16 +155,10 @@ TEST_CASE("msh_3d", "[io]")
 
 TEST_CASE("msh_3d_tetwild_middle", "[io][man-ext]")
 {
-    // std::shared_ptr<Mesh> mesh_final = read_mesh(WMTK_DATA_DIR "/tetwild_fig8_final.msh");
-    // mesh_final = std::dynamic_pointer_cast<TetMesh>(mesh_final);
-    // CHECK(mesh_final != nullptr);
-    // CHECK(mesh_final->top_cell_dimension() == 3);
-    // std::cout << "final tet count = " <<
-    // mesh_final->get_all(mesh_final->top_simplex_type()).size()
-    //           << std::endl;
-    // auto set_attr = [](size_t tag, const std::vector<double>& data) { return; };
     MshReader reader;
-    std::shared_ptr<Mesh> mesh_middle = reader.read(WMTK_DATA_DIR "/tetwild_fig8_mid.msh");
+    std::vector<std::string> attrs = {"in/out", "min_dihedral_angle", "energy"};
+    std::shared_ptr<Mesh> mesh_middle =
+        reader.read(WMTK_DATA_DIR "/tetwild_fig8_mid.msh", false, attrs);
 
     mesh_middle = std::dynamic_pointer_cast<TetMesh>(mesh_middle);
     CHECK(mesh_middle != nullptr);
@@ -176,6 +170,15 @@ TEST_CASE("msh_3d_tetwild_middle", "[io][man-ext]")
         mesh_middle->create_accessor<double>(pos_handle);
     wmtk::attribute::TypedAttributeHandle<double> in_out_handle =
         mesh_middle->get_attribute_handle<double>(std::string("in/out"), PT).as<double>();
+    wmtk::attribute::TypedAttributeHandle<double> min_dih_handle =
+        mesh_middle->get_attribute_handle<double>(std::string("min_dihedral_angle"), PT)
+            .as<double>();
+    wmtk::attribute::TypedAttributeHandle<double> energy_handle =
+        mesh_middle->get_attribute_handle<double>(std::string("energy"), PT).as<double>();
+    CHECK(in_out_handle.is_valid());
+    CHECK(min_dih_handle.is_valid());
+    CHECK(energy_handle.is_valid());
+
     ParaviewWriter
         writer("middle_mesh_with_in_out_attr", "vertices", *mesh_middle, true, true, true, false);
     mesh_middle->serialize(writer);

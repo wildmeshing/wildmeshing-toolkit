@@ -13,7 +13,7 @@ namespace wmtk {
 class MshReader
 {
 public:
-    std::shared_ptr<Mesh> read(const std::filesystem::path& filename, const bool ignore_z = false);
+    std::shared_ptr<Mesh> read(const std::filesystem::path& filename, const bool ignore_z = false, const std::vector<std::string>& attrs = {});
 
 private:
     void set_vertex(size_t i, double x, double y, double z)

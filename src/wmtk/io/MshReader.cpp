@@ -11,8 +11,11 @@
 
 namespace wmtk {
 
-
-std::shared_ptr<Mesh> MshReader::read(const std::filesystem::path& filename, bool ignore_z)
+// preserve the specified attributes for a tetmesh
+std::shared_ptr<Mesh> MshReader::read(
+    const std::filesystem::path& filename,
+    bool ignore_z,
+    const std::vector<std::string>& attrs)
 {
     m_spec = mshio::load_msh(filename.string());
     m_ignore_z = ignore_z;
@@ -20,10 +23,6 @@ std::shared_ptr<Mesh> MshReader::read(const std::filesystem::path& filename, boo
     std::shared_ptr<Mesh> res;
 
     if (get_num_tets() > 0) {
-        for (const auto& data : m_spec.element_data) {
-            const auto& int_tags = data.header.int_tags;
-            // std::cout << data.header.string_tags.front() << std::endl;
-        }
         assert(!m_ignore_z);
         V.resize(get_num_tet_vertices(), 3);
         S.resize(get_num_tets(), 4);
@@ -67,8 +66,19 @@ std::shared_ptr<Mesh> MshReader::read(const std::filesystem::path& filename, boo
 
         auto tmp = std::make_shared<TetMesh>();
         tmp->initialize(S);
-        // auto attr_acc =
-        extract_element_attribute(tmp, "in/out", 3);
+        {
+            // set tet attribute
+            std::vector<std::string> valid_attr_names;
+            for (const auto& data : m_spec.element_data)
+                valid_attr_names.emplace_back(data.header.string_tags.front());
+            for (const std::string& attr_str : attrs) {
+                if (std::find(valid_attr_names.begin(), valid_attr_names.end(), attr_str) ==
+                    attrs.end())
+                    log_and_throw_error(
+                        "Attribute " + attr_str + " does not exist in the msh file.");
+            }
+            for (const std::string& attr_str : attrs) extract_element_attribute(tmp, attr_str, 3);
+        }
         res = tmp;
     } else if (get_num_faces() > 0) {
         V.resize(get_num_face_vertices(), m_ignore_z ? 2 : 3);
