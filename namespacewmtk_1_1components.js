@@ -23,6 +23,7 @@ var namespacewmtk_1_1components =
     [ "gather_attributes", "namespacewmtk_1_1components.html#a0271fbc50dba277ddd2d1d3e32d1fb3d", null ],
     [ "gather_attributes", "namespacewmtk_1_1components.html#a7447d90d4590819b69239d895ea5dc86", null ],
     [ "get_all_meshes", "namespacewmtk_1_1components.html#acacc2b8923eea46d8d2c892cf3decfe8", null ],
+    [ "get_marching_attributes", "namespacewmtk_1_1components.html#a0aa72b2eb3eae59cd85fd6f348a06faa", null ],
     [ "import_cache", "namespacewmtk_1_1components.html#a8cd85970ef9fa9710aa4ed2ae53ddb4f", null ],
     [ "input", "namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3", null ],
     [ "isotropic_remeshing", "namespacewmtk_1_1components.html#a1a5ffb0788dc02e8b355a7a1ad447c7f", null ],

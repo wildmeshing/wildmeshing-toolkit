@@ -6,5 +6,6 @@ var structwmtk_1_1components_1_1internal_1_1_marching_options =
     [ "input_values", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#a30f30178ba3283a4907e964244014ff4", null ],
     [ "output", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#a6e186c62caaf6b02c4e8d45f89aead69", null ],
     [ "output_value", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#a853f3b36e95da64770d62c88e4881e42", null ],
-    [ "pass_through", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#a311952989da75b2cca4b3b8f541b555c", null ]
+    [ "pass_through", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#a311952989da75b2cca4b3b8f541b555c", null ],
+    [ "weight", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#a6acd4c5792c11d0f226d309dee74567d", null ]
 ];

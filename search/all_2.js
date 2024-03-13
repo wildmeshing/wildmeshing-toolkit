@@ -1,8 +1,9 @@
 var searchData=
 [
-  ['c_180',['C',['../classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#abb3e31fbc8f093bac3b5f50ee9593ab6',1,'wmtk::components::adaptive_tessellation::image::SamplingAnalyticFunction']]],
+  ['c_179',['C',['../classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#abb3e31fbc8f093bac3b5f50ee9593ab6',1,'wmtk::components::adaptive_tessellation::image::SamplingAnalyticFunction']]],
+  ['cache_180',['Cache',['../classwmtk_1_1io_1_1_cache.html#ae067982081d3cae31672319ad678c270',1,'wmtk::io::Cache::Cache(const std::string &amp;prefix, const std::filesystem::path directory=&quot;&quot;, bool delete_cache=true)'],['../classwmtk_1_1io_1_1_cache.html#a36314e66c9c3851a370b45adbe68ea16',1,'wmtk::io::Cache::Cache(Cache &amp;&amp;)']]],
   ['cache_181',['cache',['../classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#ace67ce5f404dcd2f9787727dbbe76181',1,'wmtk::multimesh::MultiMeshSimplexVisitor']]],
-  ['cache_182',['Cache',['../classwmtk_1_1io_1_1_cache.html#ae067982081d3cae31672319ad678c270',1,'wmtk::io::Cache::Cache(const std::string &amp;prefix, const std::filesystem::path directory=&quot;&quot;, bool delete_cache=true)'],['../classwmtk_1_1io_1_1_cache.html#a36314e66c9c3851a370b45adbe68ea16',1,'wmtk::io::Cache::Cache(Cache &amp;&amp;)'],['../classwmtk_1_1io_1_1_cache.html',1,'wmtk::io::Cache']]],
+  ['cache_182',['Cache',['../classwmtk_1_1io_1_1_cache.html',1,'wmtk::io']]],
   ['cache_2ecpp_183',['Cache.cpp',['../_cache_8cpp.html',1,'']]],
   ['cache_2ehpp_184',['Cache.hpp',['../_cache_8hpp.html',1,'']]],
   ['cachedmultimesh_185',['CachedMultiMesh',['../classwmtk_1_1io_1_1_cached_multi_mesh.html#aa9a113cd500eece600b76b8f52df9c38',1,'wmtk::io::CachedMultiMesh::CachedMultiMesh(const std::string &amp;name, std::map&lt; std::string, std::vector&lt; int64_t &gt;&gt; multimesh_names, std::shared_ptr&lt; Mesh &gt; root=nullptr)'],['../classwmtk_1_1io_1_1_cached_multi_mesh.html#af36bafce0fdfd68c7613da2961566916',1,'wmtk::io::CachedMultiMesh::CachedMultiMesh(CachedMultiMesh &amp;&amp;)'],['../classwmtk_1_1io_1_1_cached_multi_mesh.html',1,'wmtk::io::CachedMultiMesh']]],
