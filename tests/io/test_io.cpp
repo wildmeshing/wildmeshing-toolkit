@@ -192,9 +192,12 @@ TEST_CASE("msh_3d_tetwild_middle", "[io][man-ext]")
     wmtk::attribute::TypedAttributeHandle<double> pos_handle =
         mesh_middle->get_attribute_handle<double>(std::string("vertices"), PV).as<double>();
     wmtk::attribute::Accessor<double> acc_attribute =
-    mesh_middle->create_accessor<double>(pos_handle);
+        mesh_middle->create_accessor<double>(pos_handle);
     wmtk::attribute::TypedAttributeHandle<double> in_out_handle =
         mesh_middle->get_attribute_handle<double>(std::string("in/out"), PT).as<double>();
+    ParaviewWriter
+        writer("middle_mesh_with_in_out_attr", "vertices", *mesh_middle, true, true, true, false);
+    mesh_middle->serialize(writer);
 }
 
 TEST_CASE("attribute_after_split", "[io][.]")
