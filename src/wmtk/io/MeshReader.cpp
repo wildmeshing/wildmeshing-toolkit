@@ -1,7 +1,4 @@
 #include "MeshReader.hpp"
-
-// #include <wmtk/Mesh.hpp>
-
 #include "HDF5Reader.hpp"
 
 #include <memory>

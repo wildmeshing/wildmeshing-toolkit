@@ -11,7 +11,8 @@
 
 namespace wmtk {
 
-// preserve the specified attributes for a tetmesh
+// reading from an msh file while preserve the specified attributes, only supports valid scalar
+// attributes on tets in a tetmesh
 std::shared_ptr<Mesh> MshReader::read(
     const std::filesystem::path& filename,
     bool ignore_z,
@@ -67,11 +68,17 @@ std::shared_ptr<Mesh> MshReader::read(
         auto tmp = std::make_shared<TetMesh>();
         tmp->initialize(S);
         {
-            // set tet attribute
+            // save all valid scalar attributes on tets
             std::vector<std::string> valid_attr_names;
-            for (const auto& data : m_spec.element_data)
+            for (const auto& data : m_spec.element_data) {
+                // validness: last component in int_tags stores the dimension of an element_data,
+                // which should match the size of tets
+                if (data.header.int_tags[data.header.int_tags.size() - 1] != get_num_tets())
+                    continue;
                 valid_attr_names.emplace_back(data.header.string_tags.front());
+            }
             for (const std::string& attr_str : attrs) {
+                // only save the valid attributes
                 if (std::find(valid_attr_names.begin(), valid_attr_names.end(), attr_str) ==
                     attrs.end())
                     log_and_throw_error(
@@ -389,25 +396,23 @@ void MshReader::extract_element_attribute(
     int DIM)
 {
     const auto* element_block = get_simplex_element_block(DIM);
+    const auto tuples = m->get_all(m->top_simplex_type());
     const size_t tag_offset = element_block->data.front();
     for (const auto& data : m_spec.element_data) {
         if (data.header.string_tags.front() != attr_name) continue;
-        Eigen::VectorX<double> eigendata;
-        eigendata.resize(data.entries.size());
-        long index = 0;
-        for (const auto& entry : data.entries) {
-            const size_t tag = entry.tag - tag_offset;
-            assert(tag < element_block->num_elements_in_block);
-            eigendata.row(index) << entry.data[0];
-            index++;
-        }
+        assert(data.entries.size() == tuples.size());
         wmtk::TypedAttributeHandle<double> tag_handle =
             m->register_attribute_typed<double>(attr_name, PrimitiveType::Tetrahedron, 1);
         auto acc = m->create_accessor<double>(tag_handle);
-        const auto tuples = m->get_all(m->top_simplex_type());
-        for (size_t i = 0; i < tuples.size(); ++i)
-            acc.scalar_attribute(tuples[i]) = eigendata.row(i)[0];
+        // A serious issue: the order of the data in the msh file is not guaranteed to be the same
+        // as the order of the tets in the mesh. NEED to figure out a way to match them.
+        for (size_t i = 0; i < tuples.size(); ++i) {
+            const auto& entry = data.entries[i];
+            const size_t tag = entry.tag - tag_offset;
+            assert(tag < element_block->num_elements_in_block);
+            acc.scalar_attribute(tuples[i]) = entry.data[0];
+        }
+        return;
     }
 }
-
 } // namespace wmtk
