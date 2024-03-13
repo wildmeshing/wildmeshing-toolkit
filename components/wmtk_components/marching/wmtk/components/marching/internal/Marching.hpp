@@ -9,9 +9,9 @@ class Marching
 public:
     Marching(
         Mesh& mesh,
-        attribute::MeshAttributeHandle& marching_edge_tag_handle,
-        attribute::MeshAttributeHandle& marching_face_tag_handle,
         attribute::MeshAttributeHandle& vertex_label,
+        std::optional<attribute::MeshAttributeHandle>& edge_tag_handle,
+        std::optional<attribute::MeshAttributeHandle>& face_tag_handle,
         const std::vector<int64_t>& input_values,
         const int64_t output_value,
         const double weight,
@@ -23,10 +23,10 @@ public:
 
 private:
     Mesh& m_mesh;
-    attribute::MeshAttributeHandle m_marching_edge_tag_handle;
-    attribute::MeshAttributeHandle m_marching_face_tag_handle;
 
-    attribute::MeshAttributeHandle m_vertex_label;
+    attribute::MeshAttributeHandle m_vertex_tag_handle;
+    std::optional<attribute::MeshAttributeHandle> m_edge_tag_handle;
+    std::optional<attribute::MeshAttributeHandle> m_face_tag_handle;
     std::vector<int64_t> m_input_values;
     int64_t m_output_value;
 

@@ -28,58 +28,34 @@ auto gather_attributes(io::Cache& cache, const Mesh& mesh, const internal::March
 
 auto get_marching_attributes(io::Cache& cache, Mesh& mesh, const internal::MarchingOptions& options)
 {
-    std::vector<attribute::MeshAttributeHandle> marching_handles;
+    std::optional<attribute::MeshAttributeHandle> edge_tag_handle;
+    std::optional<attribute::MeshAttributeHandle> face_tag_handle;
 
-    if (!options.marching_edge_tag_name.empty() &&
-        mesh.has_attribute<int64_t>(options.marching_edge_tag_name[0], PrimitiveType::Edge)) {
-        marching_handles.emplace_back(mesh.get_attribute_handle<int64_t>(
-            options.marching_edge_tag_name[0],
-            PrimitiveType::Edge));
-    } else if (!options.marching_edge_tag_name.empty()) {
-        auto handle = mesh.register_attribute<int64_t>(
-            options.marching_edge_tag_name[0],
-            PrimitiveType::Edge,
-            1);
-        marching_handles.emplace_back(handle);
-    } else {
-        if (mesh.has_attribute<int64_t>("marching_edge_tag", PrimitiveType::Edge)) {
-            auto handle =
-                mesh.get_attribute_handle<int64_t>("marching_edge_tag", PrimitiveType::Edge);
-            marching_handles.emplace_back(handle);
+    if (!options.attributes.edge_label.empty()) {
+        assert(options.attributes.edge_label.size() == 1);
+        const std::string& edge_label_name = options.attributes.edge_label[0];
+        if (mesh.has_attribute<int64_t>(edge_label_name, PrimitiveType::Edge)) {
+            edge_tag_handle =
+                mesh.get_attribute_handle<int64_t>(edge_label_name, PrimitiveType::Edge);
         } else {
-            auto handle =
-                mesh.register_attribute<int64_t>("marching_edge_tag", PrimitiveType::Edge, 1);
-            marching_handles.emplace_back(handle);
+            edge_tag_handle =
+                mesh.register_attribute<int64_t>(edge_label_name, PrimitiveType::Edge, 1);
         }
     }
 
-    if (!options.marching_face_tag_name.empty() &&
-        mesh.has_attribute<int64_t>(options.marching_face_tag_name[0], PrimitiveType::Triangle)) {
-        marching_handles.emplace_back(mesh.get_attribute_handle<int64_t>(
-            options.marching_face_tag_name[0],
-            PrimitiveType::Triangle));
-    } else if (!options.marching_face_tag_name.empty()) {
-        auto handle = mesh.register_attribute<int64_t>(
-            options.marching_face_tag_name[0],
-            PrimitiveType::Triangle,
-            1);
-        marching_handles.emplace_back(handle);
-    } else {
-        if (mesh.has_attribute<int64_t>("marching_face_tag", PrimitiveType::Triangle)) {
-            auto handle =
-                mesh.get_attribute_handle<int64_t>("marching_face_tag", PrimitiveType::Triangle);
-            marching_handles.emplace_back(handle);
+    if (!options.attributes.face_label.empty()) {
+        assert(options.attributes.face_label.size() == 1);
+        const std::string& face_label_name = options.attributes.face_label[0];
+        if (mesh.has_attribute<int64_t>(face_label_name, PrimitiveType::Triangle)) {
+            face_tag_handle =
+                mesh.get_attribute_handle<int64_t>(face_label_name, PrimitiveType::Triangle);
         } else {
-            auto handle =
-                mesh.register_attribute<int64_t>("marching_face_tag", PrimitiveType::Triangle, 1);
-            marching_handles.emplace_back(handle);
+            face_tag_handle =
+                mesh.register_attribute<int64_t>(face_label_name, PrimitiveType::Triangle, 1);
         }
     }
 
-
-    assert(marching_handles.size() == 2);
-
-    return std::make_tuple(marching_handles[0], marching_handles[1]);
+    return std::make_tuple(edge_tag_handle, face_tag_handle);
 }
 
 void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
@@ -98,15 +74,18 @@ void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cach
     auto [vertex_tag_handle, filter_labels, pass_through_attributes] =
         gather_attributes(cache, mesh, options);
 
-    auto [marching_edge_tag_handle, marching_face_tag_handle] =
-        get_marching_attributes(cache, mesh, options);
+    auto [edge_tag_handle, face_tag_handle] = get_marching_attributes(cache, mesh, options);
 
     // clear attributes
     {
         std::vector<attribute::MeshAttributeHandle> keeps = pass_through_attributes;
         keeps.emplace_back(vertex_tag_handle);
-        keeps.emplace_back(marching_edge_tag_handle);
-        keeps.emplace_back(marching_face_tag_handle);
+        if (edge_tag_handle.has_value()) {
+            keeps.emplace_back(edge_tag_handle.value());
+        }
+        if (face_tag_handle.has_value()) {
+            keeps.emplace_back(face_tag_handle.value());
+        }
         keeps.insert(keeps.end(), filter_labels.begin(), filter_labels.end());
         mesh.clear_attributes(keeps);
     }
@@ -114,8 +93,7 @@ void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cach
     std::tie(vertex_tag_handle, filter_labels, pass_through_attributes) =
         gather_attributes(cache, mesh, options);
 
-    std::tie(marching_edge_tag_handle, marching_face_tag_handle) =
-        get_marching_attributes(cache, mesh, options);
+    std::tie(edge_tag_handle, face_tag_handle) = get_marching_attributes(cache, mesh, options);
 
     switch (mesh.top_cell_dimension()) {
     case 2:
@@ -123,9 +101,9 @@ void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cach
         // Marching mc(mesh, vertex_tags, options.output_vertex_tag, edge_filter_tags);
         Marching mc(
             mesh,
-            marching_edge_tag_handle,
-            marching_face_tag_handle,
             vertex_tag_handle,
+            edge_tag_handle,
+            face_tag_handle,
             options.input_values,
             options.output_value,
             options.weight,
@@ -141,8 +119,12 @@ void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cach
     {
         std::vector<attribute::MeshAttributeHandle> keeps = pass_through_attributes;
         keeps.emplace_back(vertex_tag_handle);
-        keeps.emplace_back(marching_edge_tag_handle);
-        keeps.emplace_back(marching_face_tag_handle);
+        if (edge_tag_handle.has_value()) {
+            keeps.emplace_back(edge_tag_handle.value());
+        }
+        if (face_tag_handle.has_value()) {
+            keeps.emplace_back(face_tag_handle.value());
+        }
         keeps.insert(keeps.end(), filter_labels.begin(), filter_labels.end());
         mesh.clear_attributes(keeps);
     }

@@ -25,9 +25,11 @@ TEST_CASE("component_marching_options", "[components][marching]")
     json o = {
         {"input", "input_mesh"},
         {"output", "output_mesh"},
-        {"marching_edge_tag_name", {"marching_edge_tag_name"}},
-        {"marching_face_tag_name", {"marching_face_tag_name"}},
-        {"attributes", {{"vertex_label", "v"}, {"filter_labels", json::array({})}}},
+        {"attributes",
+         {{"vertex_label", "v"},
+          {"filter_labels", json::array({})},
+          {"edge_label", json::array({})},
+          {"face_label", json::array({})}}},
         {"input_values", {0, 1}},
         {"output_value", 2},
         {"weight", 0.5},
@@ -57,10 +59,10 @@ TEST_CASE("marching_component_tri", "[components][marching]")
         false,
         input_tag_value_0);
 
-    attribute::MeshAttributeHandle marching_edge_tag_handle =
+    std::optional<attribute::MeshAttributeHandle> marching_edge_tag_handle =
         m.register_attribute<int64_t>("marching_edge_tag", PrimitiveType::Edge, 1);
 
-    attribute::MeshAttributeHandle marching_face_tag_handle =
+    std::optional<attribute::MeshAttributeHandle> marching_face_tag_handle =
         m.register_attribute<int64_t>("marching_face_tag", PrimitiveType::Triangle, 1);
 
     const std::vector<int64_t> input_values = {input_tag_value_0, input_tag_value_1};
@@ -136,9 +138,9 @@ TEST_CASE("marching_component_tri", "[components][marching]")
 
     components::internal::Marching mc(
         m,
+        vertex_tag_handle,
         marching_edge_tag_handle,
         marching_face_tag_handle,
-        vertex_tag_handle,
         input_values,
         output_value,
         0.1,
@@ -164,7 +166,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
 
     const auto& edges = m.get_all(PrimitiveType::Edge);
     wmtk::attribute::Accessor<int64_t> acc_edge_tag =
-        m.create_accessor<int64_t>(marching_edge_tag_handle);
+        m.create_accessor<int64_t>(marching_edge_tag_handle.value());
     // edge number should be correct
     {
         int64_t isosurface_edge_num = 0;
@@ -229,10 +231,10 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
         false,
         input_tag_value_0);
 
-    attribute::MeshAttributeHandle marching_edge_tag_handle =
+    std::optional<attribute::MeshAttributeHandle> edge_tag_handle =
         m.register_attribute<int64_t>("marching_edge_tag", PrimitiveType::Edge, 1);
 
-    attribute::MeshAttributeHandle marching_face_tag_handle =
+    std::optional<attribute::MeshAttributeHandle> face_tag_handle =
         m.register_attribute<int64_t>("marching_face_tag", PrimitiveType::Triangle, 1);
 
     const std::vector<int64_t> input_values = {input_tag_value_0, input_tag_value_1};
@@ -290,9 +292,9 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
 
     components::internal::Marching mc(
         m,
-        marching_edge_tag_handle,
-        marching_face_tag_handle,
         vertex_tag_handle,
+        edge_tag_handle,
+        face_tag_handle,
         input_values,
         output_value,
         0.1,
@@ -318,9 +320,8 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
 
     // face number should be correct
     const auto& faces = m.get_all(PrimitiveType::Triangle);
-    wmtk::attribute::MeshAttributeHandle face_tag_handle =
-        m.get_attribute_handle<int64_t>("marching_face_tag", PrimitiveType::Triangle);
-    wmtk::attribute::Accessor<int64_t> acc_face_tag = m.create_accessor<int64_t>(face_tag_handle);
+    wmtk::attribute::Accessor<int64_t> acc_face_tag =
+        m.create_accessor<int64_t>(face_tag_handle.value());
     {
         int64_t isosurface_face_num = 0;
         for (const Tuple& f : faces) {
