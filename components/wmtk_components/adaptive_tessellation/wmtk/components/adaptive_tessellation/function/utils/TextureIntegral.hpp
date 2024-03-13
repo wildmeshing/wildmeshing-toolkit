@@ -127,7 +127,7 @@ public:
         auto squared_norm_T = [&](const Eigen::Matrix<T, 3, 1>& row_v) -> T {
             T ret = T(0.);
             for (auto i = 0; i < row_v.rows(); i++) {
-                ret += pow(row_v(i, 0), 4);
+                ret += pow(row_v(i, 0), 6);
             }
             return ret;
         };
@@ -162,7 +162,7 @@ public:
         }
         // // scaling by jacobian
         // value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);
-        // value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
+        value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
         return value;
     }
 

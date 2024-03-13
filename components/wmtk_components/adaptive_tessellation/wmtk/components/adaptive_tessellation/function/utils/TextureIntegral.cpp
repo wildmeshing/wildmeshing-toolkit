@@ -90,7 +90,7 @@ double TextureIntegral::get_error_one_triangle_exact(
     auto squared_norm_T = [&](const Eigen::Matrix<double, 3, 1>& row_v) -> double {
         double ret = 0.;
         for (auto i = 0; i < row_v.rows(); i++) {
-            ret += pow(row_v(i, 0), 4);
+            ret += pow(row_v(i, 0), 6);
         }
         return ret;
     };
@@ -99,7 +99,6 @@ double TextureIntegral::get_error_one_triangle_exact(
     auto [num_pixels, pixel_size] = pixel_num_size_of_uv_triangle(bbox);
     // auto [num_pixels, pixel_size] = pixel_size_of_uv_triangle(3, bbox);
 
-    wmtk::logger().info("num_pixels {} pixel_size {}", num_pixels, pixel_size);
     for (auto y = 0; y < num_pixels; ++y) {
         for (auto x = 0; x < num_pixels; ++x) {
             Eigen::AlignedBox2d box;
@@ -135,7 +134,7 @@ double TextureIntegral::get_error_one_triangle_exact(
     }
     // // scaling by jacobian
     // value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);
-    // value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
+    value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
     return value;
 }
 DScalar TextureIntegral::get_error_one_triangle_exact(
