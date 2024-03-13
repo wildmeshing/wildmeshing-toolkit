@@ -162,46 +162,39 @@ TEST_CASE("msh_3d_tetwild_middle", "[io][man-ext]")
     // std::cout << "final tet count = " <<
     // mesh_final->get_all(mesh_final->top_simplex_type()).size()
     //           << std::endl;
-
+    // auto set_attr = [](size_t tag, const std::vector<double>& data) { return; };
     MshReader reader;
+    std::cout << "Reading middle mesh" << std::endl;
     std::shared_ptr<Mesh> mesh_middle = reader.read(WMTK_DATA_DIR "/tetwild_fig8_mid.msh");
+    // std::cout << "Reading final mesh" << std::endl;
+    // std::shared_ptr<Mesh> mesh_final = reader.read(WMTK_DATA_DIR "/tetwild_fig8_final.msh");
 
-    std::cout << "in/out, 0 = " << reader.extract_element_attribute("in/out", 0) << std::endl;
-    std::cout << "in/out, 1 = " << reader.extract_element_attribute("in/out", 1) << std::endl;
-    std::cout << "in/out, 2 = " << reader.extract_element_attribute("in/out", 2) << std::endl;
-    std::cout << "in/out, 3 = " << reader.extract_element_attribute("in/out", 3) << std::endl;
+    // reader.extract_vertex_attribute<0>("in/out", set_attr);
+    // reader.extract_vertex_attribute<1>("in/out", set_attr);
+    // reader.extract_vertex_attribute<2>("in/out", set_attr);
+    // reader.extract_vertex_attribute<3>("in/out", set_attr);
+    // std::cout << "in/out, 0 = " <<     << std::endl;
+    // std::cout << "in/out, 1 = " << reader.extract_element_attribute<1>("in/out", set_attr)
+    //           << std::endl;
+    // std::cout << "in/out, 2 = " << reader.extract_element_attribute<2>("in/out", set_attr)
+    //           << std::endl;
+    // std::cout << "in/out, 3 = " << reader.extract_element_attribute<3>("in/out", set_attr)
+    //           << std::endl;
 
-    std::vector<std::string> attribute_names0 = reader.get_element_attribute_names(0);
-    std::cout << attribute_names0.size() << " attributes found" << std::endl;
-    std::vector<std::string> attribute_names1 = reader.get_element_attribute_names(1);
-    std::cout << attribute_names1.size() << " attributes found" << std::endl;
-    std::vector<std::string> attribute_names2 = reader.get_element_attribute_names(2);
-    std::cout << attribute_names2.size() << " attributes found" << std::endl;
-    std::vector<std::string> attribute_names3 = reader.get_element_attribute_names(3);
-    std::cout << attribute_names3.size() << " attributes found" << std::endl;
-    // for (const std::string& name : attribute_names0) {
-    //     std::cout << "Extracting attribute " << name << std::endl;
-    // }
-    // for (const std::string& name : attribute_names1) {
-    //     std::cout << "Extracting attribute " << name << std::endl;
-    // }
-    // for (const std::string& name : attribute_names2) {
-    //     std::cout << "Extracting attribute " << name << std::endl;
-    // }
-    // for (const std::string& name : attribute_names3) {
-    //     std::cout << "Extracting attribute " << name << std::endl;
-    // }
     mesh_middle = std::dynamic_pointer_cast<TetMesh>(mesh_middle);
     CHECK(mesh_middle != nullptr);
     CHECK(mesh_middle->top_cell_dimension() == 3);
     std::cout << "middle tet count = "
               << mesh_middle->get_all(mesh_middle->top_simplex_type()).size() << std::endl;
-    // wmtk::attribute::TypedAttributeHandle<double> pos_handle =
-    //     mesh_middle->get_attribute_handle<double>(std::string("vertices"), PV).as<double>();
-    // wmtk::attribute::Accessor<double> acc_attribute =
-    // mesh_middle->create_accessor<double>(pos_handle);
-    // wmtk::attribute::TypedAttributeHandle<double> in_out_handle =
-    //     mesh_middle->get_attribute_handle<double>(std::string("in_out"), PT).as<double>();
+    // std::cout << "final tet count = "
+    //           << mesh_final->get_all(mesh_final->top_simplex_type()).size() << std::endl;
+
+    wmtk::attribute::TypedAttributeHandle<double> pos_handle =
+        mesh_middle->get_attribute_handle<double>(std::string("vertices"), PV).as<double>();
+    wmtk::attribute::Accessor<double> acc_attribute =
+    mesh_middle->create_accessor<double>(pos_handle);
+    wmtk::attribute::TypedAttributeHandle<double> in_out_handle =
+        mesh_middle->get_attribute_handle<double>(std::string("in/out"), PT).as<double>();
 }
 
 TEST_CASE("attribute_after_split", "[io][.]")
