@@ -48,6 +48,8 @@
 
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 
+#include <wmtk/components/adaptive_tessellation/image/utils/load_image_exr.hpp>
+
 #include <fstream>
 #include <iostream>
 #include <wmtk/components/adaptive_tessellation/operations/internal/AT_debug.cpp>
@@ -153,13 +155,14 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         //  std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
 
     }};
-
+    auto [w_h, h_h, index_red_h, index_green_h, index_blue_h, buffer_r_h, buffer_g_h, buffer_b_h] =
+        wmtk::components::image::load_image_exr_split_3channels(options.height_path);
     // std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
     //     ->convert_to_exr(512, 512);
     std::array<std::shared_ptr<image::Image>, 3> images = {
-        {std::make_shared<image::Image>(500, 500),
-         std::make_shared<image::Image>(500, 500),
-         std::make_shared<image::Image>(500, 500)}};
+        {std::make_shared<image::Image>(w_h, h_h),
+         std::make_shared<image::Image>(w_h, h_h),
+         std::make_shared<image::Image>(w_h, h_h)}};
 
     auto u_func = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
     auto v_func = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
@@ -169,8 +172,11 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     };
     images[0]->set(u_func);
     images[1]->set(v_func);
-    images[2]->set(height_function);
+    // images[2]->set(height_function);
 
+    images[2] = std::make_shared<wmtk::components::image::Image>(
+        wmtk::components::image::buffer_to_image(buffer_r_h, w_h, h_h));
+    logger().warn("height image loaded size {}", w_h);
 
     // AT::operations::internal::ATData atdata(
     //     position_mesh_ptr,
@@ -178,8 +184,8 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     //     options.position_path,
     //     options.normal_path,
     //     options.height_path);
-    // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
-    AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, funcs);
+    AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
+    // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, funcs);
 
     AT::operations::internal::ATOperations at_ops(
         atdata,
@@ -237,22 +243,22 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
                 // success = scheduler.run_operation_on_all(*at_ops.m_ops[0])
                 //               .number_of_successful_operations();
             }
-            write(
-                uv_mesh_ptr,
-                uv_mesh_ptr,
-                options.uv_output + "_after_split",
-                options.xyz_output + "_after_split",
-                i + 1);
+            // write(
+            //     uv_mesh_ptr,
+            //     uv_mesh_ptr,
+            //     options.uv_output + "_after_split",
+            //     options.xyz_output + "_after_split",
+            //     i + 1);
             do {
                 swap_success = scheduler.run_operation_on_all(*at_ops.m_ops[1])
                                    .number_of_successful_operations();
             } while (swap_success > 0);
-            write(
-                uv_mesh_ptr,
-                uv_mesh_ptr,
-                options.uv_output + "_after_swap",
-                options.xyz_output + "_after_swap",
-                i + 1);
+            // write(
+            //     uv_mesh_ptr,
+            //     uv_mesh_ptr,
+            //     options.uv_output + "_after_swap",
+            //     options.xyz_output + "_after_swap",
+            //     i + 1);
 
             i++;
         } while (split_success > 0);
@@ -263,6 +269,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         //     FaceErrorJson_distance,
         //     i,
         //     options.uv_output + "_distance_error.json");
+        write(uv_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, i + 1);
     }
 
     at_ops.m_ops.clear();
