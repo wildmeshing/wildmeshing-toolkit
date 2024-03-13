@@ -6,6 +6,7 @@
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
+#include <wmtk/invariants/uvEdgeInvariant.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/multimesh/consolidate.hpp>
@@ -29,6 +30,8 @@ void isotropic_remeshing(
     const double length,
     const bool lock_boundary,
     const bool use_for_periodic,
+    const bool dont_disable_split,
+    const bool fix_uv_seam,
     const int64_t iterations,
     const std::vector<attribute::MeshAttributeHandle>& other_positions,
     bool update_other_positions,
@@ -96,7 +99,7 @@ void isotropic_remeshing(
     // split
     auto op_split = std::make_shared<EdgeSplit>(mesh);
     op_split->add_invariant(invariant_min_edge_length);
-    if (lock_boundary && !use_for_periodic) {
+    if (lock_boundary && !use_for_periodic && !dont_disable_split) {
         op_split->add_invariant(invariant_interior_edge);
     }
     for (auto& p : positions) {
@@ -120,8 +123,16 @@ void isotropic_remeshing(
             position_for_inversion.value().mesh(),
             position_for_inversion.value().as<double>()));
     }
+
     op_collapse->add_invariant(invariant_max_edge_length);
     op_collapse->add_invariant(invariant_mm_map);
+
+    // hack for uv
+    if (fix_uv_seam) {
+        op_collapse->add_invariant(
+            std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
+    }
+
     if (lock_boundary && !use_for_periodic) {
         op_collapse->add_invariant(invariant_interior_edge);
         // set collapse towards boundary
@@ -142,6 +153,8 @@ void isotropic_remeshing(
             op_collapse->set_new_attribute_strategy(p, CollapseBasicStrategy::Mean);
         }
     }
+
+
     for (const auto& attr : pass_through_attributes) {
         op_collapse->set_new_attribute_strategy(attr);
     }
@@ -152,6 +165,13 @@ void isotropic_remeshing(
     // swap
     auto op_swap = std::make_shared<composite::TriEdgeSwap>(mesh);
     op_swap->add_invariant(invariant_interior_edge);
+
+    // hack for uv
+    if (fix_uv_seam) {
+        op_swap->add_invariant(
+            std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
+    }
+
     op_swap->add_invariant(invariant_valence_improve);
     op_swap->collapse().add_invariant(invariant_link_condition);
     op_swap->collapse().add_invariant(invariant_mm_map);
@@ -166,6 +186,7 @@ void isotropic_remeshing(
             position_for_inversion.value().mesh(),
             position_for_inversion.value().as<double>()));
     }
+
     for (auto& p : positions)
         op_swap->collapse().set_new_attribute_strategy(p, CollapseBasicStrategy::CopyOther);
     for (const auto& attr : pass_through_attributes) {
@@ -187,11 +208,19 @@ void isotropic_remeshing(
     if (lock_boundary) {
         op_smooth->add_invariant(invariant_interior_vertex);
     }
+
+    // hack for uv
+    if (fix_uv_seam) {
+        op_smooth->add_invariant(
+            std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
+    }
+
     if (position_for_inversion) {
         op_smooth->add_invariant(std::make_shared<SimplexInversionInvariant>(
             position_for_inversion.value().mesh(),
             position_for_inversion.value().as<double>()));
     }
+
     if (update_position) op_smooth->add_transfer_strategy(update_position);
     ops.push_back(op_smooth);
 

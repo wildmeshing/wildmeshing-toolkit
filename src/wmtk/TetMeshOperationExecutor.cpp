@@ -726,12 +726,6 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     update_cell_hash();
     delete_simplices();
 
-    // Tuple ret = m_mesh.edge_tuple_from_id(new_eids[0]);
-    // std::cout << "return_tid: " << return_tid << std::endl;
-    // std::cout << "return_local_vid: " << return_local_vid << std::endl;
-    // std::cout << "return_local_eid: " << return_local_eid << std::endl;
-    // std::cout << "return_local_fid: " << return_local_fid << std::endl;
-
 
     assert(return_tid > -1);
     assert(return_local_vid > -1);
@@ -1052,11 +1046,6 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
 
     // debug code
     assert(m_mesh.is_connectivity_valid());
-
-    // std::cout << "return_tid: " << return_tid << std::endl;
-    // std::cout << "return_local_vid: " << return_local_vid << std::endl;
-    // std::cout << "return_local_eid: " << return_local_eid << std::endl;
-    // std::cout << "return_local_fid: " << return_local_fid << std::endl;
     assert(return_tid > -1);
     assert(return_local_fid > -1);
     assert(return_local_eid > -1);

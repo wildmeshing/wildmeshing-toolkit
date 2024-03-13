@@ -1,6 +1,6 @@
+#include <fmt/format.h>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
-#include <fmt/format.h>
 
 #include "CachedMultiMesh.hpp"
 namespace wmtk::io {
@@ -84,6 +84,11 @@ const std::vector<int64_t>& CachedMultiMesh::get_id_from_path(const std::string&
     const std::string subname = name.substr(idx + 1);
     // extracts uv and calls get
     return get_id(subname);
+}
+
+const std::map<std::string, std::vector<int64_t>>& CachedMultiMesh::get_multimesh_names() const
+{
+    return m_multimesh_names;
 }
 
 CachedMultiMesh::CachedMultiMesh(CachedMultiMesh&&) = default;
