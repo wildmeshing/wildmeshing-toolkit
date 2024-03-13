@@ -15,7 +15,7 @@ class MshReader
 public:
     std::shared_ptr<Mesh> read(const std::filesystem::path& filename, const bool ignore_z = false);
 
-    // private:
+private:
     void set_vertex(size_t i, double x, double y, double z)
     {
         if (m_ignore_z)
@@ -97,15 +97,19 @@ public:
     // template <int DIM>
     std::vector<std::string> get_element_attribute_names(int DIM) const;
 
-    // template <int DIM, typename Fn>
-    void extract_vertex_attribute(std::shared_ptr<wmtk::TetMesh> m, const std::string& attr_name, int DIM);
+    void extract_vertex_attribute(
+        std::shared_ptr<wmtk::TetMesh> m,
+        const std::string& attr_name,
+        int DIM);
 
-    // wmtk::attribute::Accessor<int64_t, wmtk::TetMesh> 
-    void extract_element_attribute(std::shared_ptr<wmtk::TetMesh> m, const std::string& attr_name, int DIM);
+    void extract_element_attribute(
+        std::shared_ptr<wmtk::TetMesh> m,
+        const std::string& attr_name,
+        int DIM);
 
     // template <int DIM, typename Fn>
     // bool extract_element_attribute(const std::string& attr_name, int DIM);
-    
+
 
     // template <int DIM, typename Fn>
     // void extract_element_attribute(const std::string& attr_name, Fn&& set_attr);

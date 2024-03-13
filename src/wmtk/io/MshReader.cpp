@@ -20,21 +20,9 @@ std::shared_ptr<Mesh> MshReader::read(const std::filesystem::path& filename, boo
     std::shared_ptr<Mesh> res;
 
     if (get_num_tets() > 0) {
-        // std::cout << "Tetmesh!" << std::endl;
-        // std::cout << get_num_tet_vertices() << std::endl;
-        // std::cout << get_num_tets() << std::endl;
-        // std::cout << "element_data_size = " << m_spec.element_data.size() << std::endl;
-        // std::cout << "node_data_size = " << m_spec.node_data.size() << std::endl;
         for (const auto& data : m_spec.element_data) {
             const auto& int_tags = data.header.int_tags;
-            // std::cout << "element_data_int_tags = " << int_tags.size() << std::endl;
-            std::cout << data.header.string_tags.front() << std::endl;
-            // for (auto tag : int_tags) {
-            //     std::cout << "tag = " << tag << std::endl;
-            // }
-            // if (int_tags.size() >= 5 && int_tags[4] == DIM) {
-            //     attr_names.push_back(data.header.string_tags.front());
-            // }
+            // std::cout << data.header.string_tags.front() << std::endl;
         }
         assert(!m_ignore_z);
         V.resize(get_num_tet_vertices(), 3);
@@ -384,7 +372,7 @@ void MshReader::extract_vertex_attribute(
     }
 }
 
-// template <int DIM, typename Fn>
+// for now, this function only supports reading a single attribute on the tet mesh
 void MshReader::extract_element_attribute(
     std::shared_ptr<wmtk::TetMesh> m,
     const std::string& attr_name,
@@ -396,7 +384,6 @@ void MshReader::extract_element_attribute(
         if (data.header.string_tags.front() != attr_name) continue;
         Eigen::VectorX<double> eigendata;
         eigendata.resize(data.entries.size());
-        std::cout << "data.entries.size() = " << data.entries.size() << std::endl;
         long index = 0;
         for (const auto& entry : data.entries) {
             const size_t tag = entry.tag - tag_offset;
@@ -404,8 +391,6 @@ void MshReader::extract_element_attribute(
             eigendata.row(index) << entry.data[0];
             index++;
         }
-        // std::cout << m->get_all(m->top_simplex_type()).size() << std::endl;
-        std::cout << "registering new attribute name = " << attr_name << std::endl;
         wmtk::TypedAttributeHandle<double> tag_handle =
             m->register_attribute_typed<double>(attr_name, PrimitiveType::Tetrahedron, 1);
         auto acc = m->create_accessor<double>(tag_handle);
@@ -413,8 +398,6 @@ void MshReader::extract_element_attribute(
         for (size_t i = 0; i < tuples.size(); ++i)
             acc.scalar_attribute(tuples[i]) = eigendata.row(i)[0];
     }
-    // return tag_handle;
-    // return false;
 }
 
 } // namespace wmtk
