@@ -248,8 +248,8 @@ double ATOperations::curved_edge_length_on_displaced_surface(
         [&m_evaluator_ptr](const Eigen::Vector2d& x) -> Eigen::Matrix<double, 3, 2> {
         Eigen::Matrix<double, 3, 2> Jac;
         for (int i = 0; i < 3; ++i) {
-            auto disp_i = [&i, &m_evaluator_ptr](const Eigen::Vector2d& uv) -> double {
-                return m_evaluator_ptr->uv_to_position(uv)(i);
+            auto disp_i = [&i, &x, &m_evaluator_ptr](const Eigen::Vector2d& uv) -> double {
+                return m_evaluator_ptr->uv_to_position(x)(i);
             };
             Eigen::VectorXd grad_i;
             fd::finite_gradient(x, disp_i, grad_i, fd::AccuracyOrder::FOURTH);
