@@ -404,8 +404,6 @@ void MshReader::extract_element_attribute(
         wmtk::TypedAttributeHandle<double> tag_handle =
             m->register_attribute_typed<double>(attr_name, PrimitiveType::Tetrahedron, 1);
         auto acc = m->create_accessor<double>(tag_handle);
-        // A serious issue: the order of the data in the msh file is not guaranteed to be the same
-        // as the order of the tets in the mesh. NEED to figure out a way to match them.
         for (size_t i = 0; i < tuples.size(); ++i) {
             const auto& entry = data.entries[i];
             const size_t tag = entry.tag - tag_offset;
