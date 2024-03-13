@@ -10,8 +10,29 @@ public:
     Marching(
         Mesh& mesh,
         attribute::MeshAttributeHandle& vertex_label,
-        std::optional<attribute::MeshAttributeHandle>& edge_tag_handle,
-        std::optional<attribute::MeshAttributeHandle>& face_tag_handle,
+        const std::vector<int64_t>& input_values,
+        const int64_t output_value,
+        const double weight,
+        std::vector<attribute::MeshAttributeHandle>& filter_labels,
+        const std::vector<int64_t>& filter_values,
+        const std::vector<attribute::MeshAttributeHandle>& pass_through_attributes);
+
+    Marching(
+        Mesh& mesh,
+        attribute::MeshAttributeHandle& vertex_label,
+        attribute::MeshAttributeHandle& edge_tag_handle,
+        const std::vector<int64_t>& input_values,
+        const int64_t output_value,
+        const double weight,
+        std::vector<attribute::MeshAttributeHandle>& filter_labels,
+        const std::vector<int64_t>& filter_values,
+        const std::vector<attribute::MeshAttributeHandle>& pass_through_attributes);
+
+    Marching(
+        Mesh& mesh,
+        attribute::MeshAttributeHandle& vertex_label,
+        attribute::MeshAttributeHandle& edge_tag_handle,
+        attribute::MeshAttributeHandle& face_tag_handle,
         const std::vector<int64_t>& input_values,
         const int64_t output_value,
         const double weight,

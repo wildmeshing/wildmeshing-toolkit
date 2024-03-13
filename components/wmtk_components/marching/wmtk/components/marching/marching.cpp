@@ -95,15 +95,41 @@ void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cach
 
     std::tie(edge_tag_handle, face_tag_handle) = get_marching_attributes(cache, mesh, options);
 
-    switch (mesh.top_cell_dimension()) {
-    case 2:
-    case 3: {
-        // Marching mc(mesh, vertex_tags, options.output_vertex_tag, edge_filter_tags);
+    assert(
+        mesh.top_simplex_type() == PrimitiveType::Triangle ||
+        mesh.top_simplex_type() == PrimitiveType::Tetrahedron);
+
+    if (edge_tag_handle.has_value()) {
+        if (face_tag_handle.has_value()) {
+            Marching mc(
+                mesh,
+                vertex_tag_handle,
+                edge_tag_handle.value(),
+                face_tag_handle.value(),
+                options.input_values,
+                options.output_value,
+                options.weight,
+                filter_labels,
+                options.filter_values,
+                pass_through_attributes);
+            mc.process();
+        } else {
+            Marching mc(
+                mesh,
+                vertex_tag_handle,
+                edge_tag_handle.value(),
+                options.input_values,
+                options.output_value,
+                options.weight,
+                filter_labels,
+                options.filter_values,
+                pass_through_attributes);
+            mc.process();
+        }
+    } else {
         Marching mc(
             mesh,
             vertex_tag_handle,
-            edge_tag_handle,
-            face_tag_handle,
             options.input_values,
             options.output_value,
             options.weight,
@@ -111,8 +137,6 @@ void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cach
             options.filter_values,
             pass_through_attributes);
         mc.process();
-    } break;
-    default: throw std::runtime_error("dimension setting error!"); break;
     }
 
     // clear attributes

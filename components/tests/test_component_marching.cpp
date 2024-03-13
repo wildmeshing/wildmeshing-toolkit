@@ -59,10 +59,10 @@ TEST_CASE("marching_component_tri", "[components][marching]")
         false,
         input_tag_value_0);
 
-    std::optional<attribute::MeshAttributeHandle> marching_edge_tag_handle =
+    attribute::MeshAttributeHandle marching_edge_tag_handle =
         m.register_attribute<int64_t>("marching_edge_tag", PrimitiveType::Edge, 1);
 
-    std::optional<attribute::MeshAttributeHandle> marching_face_tag_handle =
+    attribute::MeshAttributeHandle marching_face_tag_handle =
         m.register_attribute<int64_t>("marching_face_tag", PrimitiveType::Triangle, 1);
 
     const std::vector<int64_t> input_values = {input_tag_value_0, input_tag_value_1};
@@ -166,7 +166,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
 
     const auto& edges = m.get_all(PrimitiveType::Edge);
     wmtk::attribute::Accessor<int64_t> acc_edge_tag =
-        m.create_accessor<int64_t>(marching_edge_tag_handle.value());
+        m.create_accessor<int64_t>(marching_edge_tag_handle);
     // edge number should be correct
     {
         int64_t isosurface_edge_num = 0;
@@ -231,10 +231,10 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
         false,
         input_tag_value_0);
 
-    std::optional<attribute::MeshAttributeHandle> edge_tag_handle =
+    attribute::MeshAttributeHandle edge_tag_handle =
         m.register_attribute<int64_t>("marching_edge_tag", PrimitiveType::Edge, 1);
 
-    std::optional<attribute::MeshAttributeHandle> face_tag_handle =
+    attribute::MeshAttributeHandle face_tag_handle =
         m.register_attribute<int64_t>("marching_face_tag", PrimitiveType::Triangle, 1);
 
     const std::vector<int64_t> input_values = {input_tag_value_0, input_tag_value_1};
@@ -320,8 +320,7 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
 
     // face number should be correct
     const auto& faces = m.get_all(PrimitiveType::Triangle);
-    wmtk::attribute::Accessor<int64_t> acc_face_tag =
-        m.create_accessor<int64_t>(face_tag_handle.value());
+    wmtk::attribute::Accessor<int64_t> acc_face_tag = m.create_accessor<int64_t>(face_tag_handle);
     {
         int64_t isosurface_face_num = 0;
         for (const Tuple& f : faces) {

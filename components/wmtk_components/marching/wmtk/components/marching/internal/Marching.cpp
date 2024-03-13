@@ -34,8 +34,48 @@ public:
 Marching::Marching(
     Mesh& mesh,
     attribute::MeshAttributeHandle& vertex_tag_handle,
-    std::optional<attribute::MeshAttributeHandle>& edge_tag_handle,
-    std::optional<attribute::MeshAttributeHandle>& face_tag_handle,
+    const std::vector<int64_t>& input_values,
+    const int64_t output_value,
+    const double weight,
+    std::vector<attribute::MeshAttributeHandle>& filter_labels,
+    const std::vector<int64_t>& filter_values,
+    const std::vector<attribute::MeshAttributeHandle>& pass_through_attributes)
+    : m_mesh(mesh)
+    , m_vertex_tag_handle(vertex_tag_handle)
+    , m_input_values(input_values)
+    , m_output_value(output_value)
+    , m_filter_labels(filter_labels)
+    , m_filter_values(filter_values)
+    , m_pass_through_attributes(pass_through_attributes)
+    , m_weight(weight)
+{}
+
+Marching::Marching(
+    Mesh& mesh,
+    attribute::MeshAttributeHandle& vertex_tag_handle,
+    attribute::MeshAttributeHandle& edge_tag_handle,
+    const std::vector<int64_t>& input_values,
+    const int64_t output_value,
+    const double weight,
+    std::vector<attribute::MeshAttributeHandle>& filter_labels,
+    const std::vector<int64_t>& filter_values,
+    const std::vector<attribute::MeshAttributeHandle>& pass_through_attributes)
+    : m_mesh(mesh)
+    , m_edge_tag_handle(edge_tag_handle)
+    , m_vertex_tag_handle(vertex_tag_handle)
+    , m_input_values(input_values)
+    , m_output_value(output_value)
+    , m_filter_labels(filter_labels)
+    , m_filter_values(filter_values)
+    , m_pass_through_attributes(pass_through_attributes)
+    , m_weight(weight)
+{}
+
+Marching::Marching(
+    Mesh& mesh,
+    attribute::MeshAttributeHandle& vertex_tag_handle,
+    attribute::MeshAttributeHandle& edge_tag_handle,
+    attribute::MeshAttributeHandle& face_tag_handle,
     const std::vector<int64_t>& input_values,
     const int64_t output_value,
     const double weight,
