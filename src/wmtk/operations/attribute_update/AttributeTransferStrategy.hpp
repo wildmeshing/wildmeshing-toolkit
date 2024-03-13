@@ -152,5 +152,4 @@ PrimitiveType SingleAttributeTransferStrategy<MyType, ParentType>::parent_primit
     return m_parent_handle.primitive_type();
 }
 
-
 } // namespace wmtk::operations
