@@ -9,13 +9,7 @@
       "input_values",
       "output_value"
     ],
-    "optional": [
-      "marching_edge_tag_name",
-      "marching_face_tag_name",
-      "pass_through",
-      "filter_values",
-      "weight"
-    ]
+    "optional": ["pass_through", "filter_values", "weight"]
   },
   {
     "pointer": "/input",
@@ -34,32 +28,10 @@
     "doc": "isovalue"
   },
   {
-    "pointer": "/marching_edge_tag_name",
-    "type": "list",
-    "default": [],
-    "doc": "an optional container for marching_edge_tag handle's name"
-  },
-  {
-    "pointer": "/marching_edge_tag_name/*",
-    "type": "string",
-    "doc": "a name for the marching_edge_tag_handle"
-  },
-  {
-    "pointer": "/marching_face_tag_name",
-    "type": "list",
-    "default": [],
-    "doc": "a name for the marching_edge_tag_handle"
-  },
-  {
-    "pointer": "/marching_face_tag_name/*",
-    "type": "string",
-    "doc": "an optional container for marching_face_tag handle's name"
-  },
-  {
     "pointer": "/attributes",
     "type": "object",
     "required": "vertex_label",
-    "optional": "filter_labels",
+    "optional": ["filter_labels", "edge_label", "face_label"],
     "doc": "all attributes required for this component"
   },
   {
@@ -77,6 +49,26 @@
     "pointer": "/attributes/filter_labels/*",
     "type": "string",
     "doc": "Name of the edge int64_t attribute that is used as filter."
+  },
+  {
+    "pointer": "/attributes/edge_label",
+    "type": "list",
+    "default": [],
+    "doc": "an optional container for an edge label to which the output value is written"
+  },
+  {
+    "pointer": "/attributes/edge_label/*",
+    "type": "string"
+  },
+  {
+    "pointer": "/attributes/face_label",
+    "type": "list",
+    "default": [],
+    "doc": "an optional container for an face label to which the output value is written"
+  },
+  {
+    "pointer": "/attributes/face_label/*",
+    "type": "string"
   },
   {
     "pointer": "/input_values",
