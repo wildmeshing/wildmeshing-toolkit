@@ -459,7 +459,7 @@ void ATOperations::AT_rg_refine(std::function<std::vector<double>(const Simplex&
     m_ops.push_back(rg_refine);
 }
 
-void ATOperations::AT_rgb_split()
+int64_t ATOperations::AT_rgb_split()
 {
     std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
 
@@ -490,14 +490,20 @@ void ATOperations::AT_rgb_split()
         m_atdata.m_edge_rgb_state_handle,
         wmtk::operations::SplitBasicStrategy::None,
         wmtk::operations::SplitRibBasicStrategy::None);
+    rgb_split->split().set_new_attribute_strategy(
+        m_atdata.m_edge_todo_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+
     rgb_split->add_invariant(std::make_shared<wmtk::RGBSplitInvariant>(
         *uv_mesh_ptr,
         m_atdata.m_face_rgb_state_handle.as<int64_t>(),
         m_atdata.m_edge_rgb_state_handle.as<int64_t>()));
     m_ops.emplace_back(rgb_split);
+    return m_ops.size() - 1;
 }
 
-void ATOperations::AT_rgb_swap()
+int64_t ATOperations::AT_rgb_swap()
 {
     std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
 
@@ -577,7 +583,15 @@ void ATOperations::AT_rgb_swap()
     rgb_swap->swap().collapse().set_new_attribute_strategy(
         m_atdata.m_edge_rgb_state_handle,
         wmtk::operations::CollapseBasicStrategy::None);
+    rgb_swap->swap().split().set_new_attribute_strategy(
+        m_atdata.m_edge_todo_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    rgb_swap->swap().collapse().set_new_attribute_strategy(
+        m_atdata.m_edge_todo_handle,
+        wmtk::operations::CollapseBasicStrategy::None);
 
     m_ops.emplace_back(rgb_swap);
+    return m_ops.size() - 1;
 }
 } // namespace wmtk::components::operations::internal

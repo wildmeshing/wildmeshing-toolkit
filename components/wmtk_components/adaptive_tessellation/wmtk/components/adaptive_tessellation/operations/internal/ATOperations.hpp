@@ -94,8 +94,8 @@ public:
         std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
     void AT_rg_refine(std::function<std::vector<double>(const Simplex&)>& priority);
 
-    void AT_rgb_split();
-    void AT_rgb_swap();
+    int64_t AT_rgb_split();
+    int64_t AT_rgb_swap();
     ///// update
     void set_uvmesh_xyz_update_rule_initialize();
 
