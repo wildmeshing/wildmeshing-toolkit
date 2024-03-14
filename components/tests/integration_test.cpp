@@ -64,7 +64,6 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
         return 2;
     }
 
-
     // in_args["settings"] = R"({
     //     "log_level": 5,
     //     "opt_log_level": 5
@@ -202,3 +201,4 @@ WMTK_INTEGRATION("disk_fan_mm", false);
 WMTK_INTEGRATION("wildmeshing_2d", false);
 WMTK_INTEGRATION("wildmeshing_3d", false);
 WMTK_INTEGRATION("mesh_decimation", false);
+WMTK_INTEGRATION("marching", false);
