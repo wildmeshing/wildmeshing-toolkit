@@ -37,6 +37,18 @@ public:
     {
         return _const_value(t, std::make_integer_sequence<size_t, N>{});
     }
+
+    template <size_t Index>
+    const auto& get() const
+    {
+        return std::get<Index>(m_base_accessors);
+    }
+    template <size_t Index>
+    auto& get()
+    {
+        return std::get<Index>(m_base_accessors);
+    }
+
     // Eigen::Map<VectorX<T>>
     // template <int D = Eigen::Dynamic>
     // using MapResult = internal::MapResult<Compound, D>;
