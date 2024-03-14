@@ -11,3 +11,4 @@ set(SRC_FILES
 target_sources(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${SRC_FILES})
 
 add_subdirectory(internal)
+add_subdirectory(utils)

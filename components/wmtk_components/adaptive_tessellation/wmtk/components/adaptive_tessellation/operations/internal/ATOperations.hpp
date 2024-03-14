@@ -116,20 +116,5 @@ public:
         const Eigen::Vector2d& uv1,
         const std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
             m_evaluator_ptr);
-
-    /// scheduler
-    std::vector<wmtk::simplex::Simplex> get_all_edges_of_all_triangles_with_triangle_filter(
-        std::shared_ptr<wmtk::Mesh> uv_mesh_ptr,
-        wmtk::attribute::Accessor<double>& face_attr_accessor,
-        double face_attr_filter_threshold);
-
-    wmtk::SchedulerStats run_operation_on_top_of_given_simplices(
-        std::vector<wmtk::simplex::Simplex>& edge_simplices,
-        wmtk::operations::Operation& edge_op,
-        std::function<std::vector<double>(const wmtk::simplex::Simplex&)>& edge_priority);
-    wmtk::SchedulerStats run_operation_on_all_given_simplices(
-        std::vector<wmtk::simplex::Simplex>& edge_simplices,
-        wmtk::operations::Operation& edge_op,
-        std::function<std::vector<double>(const wmtk::simplex::Simplex&)>& edge_priority);
 };
 } // namespace wmtk::components::operations::internal
