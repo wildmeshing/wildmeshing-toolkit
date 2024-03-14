@@ -108,9 +108,6 @@ public:
     void set_curved_edge_length_update_rule();
     void initialize_curved_edge_length();
 
-    void initialize_face_rgb_state();
-    void initialize_edge_rgb_state();
-
     static double curved_edge_length_on_displaced_surface(
         const Eigen::Vector2d& uv0,
         const Eigen::Vector2d& uv1,

@@ -186,15 +186,14 @@ void ATData::initialize_handles()
         PrimitiveType::Edge,
         1,
         true);
-    m_face_rgb_state_handle = m_uv_mesh_ptr->register_attribute<int64_t>(
-        "face_rgb_state",
-        PrimitiveType::Triangle,
-        2,
-        true);
+    m_face_rgb_state_handle =
+        m_uv_mesh_ptr
+            ->register_attribute<int64_t>("face_rgb_state", PrimitiveType::Triangle, 2, true, 0);
     m_edge_rgb_state_handle =
-        m_uv_mesh_ptr->register_attribute<int64_t>("edge_rgb_state", PrimitiveType::Edge, 2, true);
+        m_uv_mesh_ptr
+            ->register_attribute<int64_t>("edge_rgb_state", PrimitiveType::Edge, 2, true, 0);
     m_edge_todo_handle =
-        m_uv_mesh_ptr->register_attribute<int64_t>("edge_todo", PrimitiveType::Edge, 1, true);
+        m_uv_mesh_ptr->register_attribute<int64_t>("edge_todo", PrimitiveType::Edge, 1, true, 0);
 }
 
 const std::array<std::shared_ptr<image::Image>, 3>& ATData::images() const

@@ -131,9 +131,6 @@ ATOperations::ATOperations(
     set_curved_edge_length_update_rule();
     initialize_curved_edge_length();
 
-    initialize_face_rgb_state();
-    initialize_edge_rgb_state();
-
     // Lambdas for priority
     m_valence_improvement = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
