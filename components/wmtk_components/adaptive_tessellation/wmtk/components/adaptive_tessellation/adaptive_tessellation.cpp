@@ -45,6 +45,8 @@
 
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATData.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATOperations.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/internal/ATScheduler.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/utils/tag_todo_edges.hpp>
 
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 
@@ -53,6 +55,7 @@
 #include <fstream>
 #include <iostream>
 #include <wmtk/components/adaptive_tessellation/operations/internal/AT_debug.cpp>
+
 
 namespace wmtk::components {
 using namespace operations;
@@ -184,8 +187,8 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     //     options.position_path,
     //     options.normal_path,
     //     options.height_path);
-    AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
-    // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, funcs);
+    // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
+    AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, funcs);
 
     AT::operations::internal::ATOperations at_ops(
         atdata,
@@ -209,66 +212,20 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
         opt_logger().set_level(spdlog::level::level_enum::critical);
 
-        // at_ops.AT_edge_split(at_ops.m_long_edges_first);
-        at_ops.AT_rgb_split();
-        at_ops.AT_rgb_swap();
-        // at_ops.AT_rg_refine(at_ops.m_triangle_distance_edge_length);
-        Scheduler scheduler;
+
+        int64_t rgb_split_index = at_ops.AT_rgb_split();
+        int64_t rgb_swap_index = at_ops.AT_rgb_swap();
+        ATScheduler scheduler;
         int64_t split_success = 0;
         int64_t swap_success = 0;
         int64_t i = 0;
-        do {
-            logger().info("Pass {}", i);
-            std::vector<wmtk::simplex::Simplex> all_edge_of_all_triangles =
-                at_ops.get_all_edges_of_all_triangles_with_triangle_filter(
-                    uv_mesh_ptr,
-                    at_ops.m_distance_error_accessor,
-                    at_ops.m_target_distance);
-            if (options.one_operation_per_pass) {
-                split_success = at_ops
-                                    .run_operation_on_top_of_given_simplices(
-                                        all_edge_of_all_triangles,
-                                        *at_ops.m_ops[0],
-                                        at_ops.m_triangle_distance_edge_length)
-                                    .number_of_successful_operations();
-                // split_scheduler.run_operation_on_all(*at_ops.m_ops[0])
-                //               .number_of_successful_operations();
-            } else {
-                split_success = at_ops
-                                    .run_operation_on_all_given_simplices(
-                                        all_edge_of_all_triangles,
-                                        *at_ops.m_ops[0],
-                                        at_ops.m_triangle_distance_edge_length)
-                                    .number_of_successful_operations();
-                // success = scheduler.run_operation_on_all(*at_ops.m_ops[0])
-                //               .number_of_successful_operations();
-            }
-            // write(
-            //     uv_mesh_ptr,
-            //     uv_mesh_ptr,
-            //     options.uv_output + "_after_split",
-            //     options.xyz_output + "_after_split",
-            //     i + 1);
-            do {
-                swap_success = scheduler.run_operation_on_all(*at_ops.m_ops[1])
-                                   .number_of_successful_operations();
-            } while (swap_success > 0);
-            // write(
-            //     uv_mesh_ptr,
-            //     uv_mesh_ptr,
-            //     options.uv_output + "_after_swap",
-            //     options.xyz_output + "_after_swap",
-            //     i + 1);
-
-            i++;
-        } while (split_success > 0);
-
-        // write_face_attr(
-        //     uv_mesh_ptr,
-        //     at_ops.m_distance_error_accessor,
-        //     FaceErrorJson_distance,
-        //     i,
-        //     options.uv_output + "_distance_error.json");
+        scheduler.rgb_split_and_swap(
+            uv_mesh_ptr,
+            at_ops.m_distance_error_accessor,
+            *at_ops.m_ops[rgb_split_index],
+            *at_ops.m_ops[rgb_swap_index],
+            options.target_distance,
+            at_ops.m_triangle_distance_edge_length);
         write(uv_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, i + 1);
     }
 
