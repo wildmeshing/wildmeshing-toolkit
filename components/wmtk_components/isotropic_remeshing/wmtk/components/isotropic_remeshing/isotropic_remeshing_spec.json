@@ -13,7 +13,8 @@
       "length_abs",
       "length_rel",
       "lock_boundary",
-      "use_for_periodic"
+      "use_for_periodic",
+      "dont_disable_split"
     ]
   },
   {
@@ -98,6 +99,15 @@
     "pointer": "/use_for_periodic",
     "type": "bool",
     "default": false
+  },
+  {
+    "pointer": "/dont_disable_split",
+    "type": "bool",
+    "default": false
+  },
+  {
+    "pointer": "/fix_uv_seam",
+    "type": "bool",
+    "default": false
   }
-
 ]

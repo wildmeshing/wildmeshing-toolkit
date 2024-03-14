@@ -8,7 +8,6 @@ namespace wmtk {
 class Rational
 {
 public:
-    mpq_t value;
     void canonicalize() { mpq_canonicalize(value); }
     int get_sign() { return mpq_sgn(value); }
 
@@ -186,6 +185,11 @@ public:
     {
         mpq_set(value, v);
     }
+
+    void init_from_binary(const std::string& v) { mpq_set_str(value, v.c_str(), 2); }
+
+private:
+    mpq_t value;
 };
 
 

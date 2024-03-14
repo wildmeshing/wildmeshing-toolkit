@@ -27,7 +27,8 @@ std::vector<simplex::Simplex> TetEdgeSwap::execute(const simplex::Simplex& simpl
     std::vector<Tuple> candidate_edge_tuples;
     while (true) {
         candidate_edge_tuples.push_back(mesh().switch_tuple(iter_tuple, PrimitiveType::Edge));
-        iter_tuple = mesh().switch_tuples(iter_tuple, {PrimitiveType::Triangle, PrimitiveType::Tetrahedron});
+        iter_tuple =
+            mesh().switch_tuples(iter_tuple, {PrimitiveType::Triangle, PrimitiveType::Tetrahedron});
         if (iter_tuple == split_ret) {
             break;
         }
@@ -98,6 +99,7 @@ std::vector<simplex::Simplex> TetEdgeSwap::execute(const simplex::Simplex& simpl
             (simplices_generated_by_split[1].size() - simplices_deleted_by_collapse[1].size()));
     } else {
         // return face
+        // std::cout << "swap returns face" << std::endl;
         assert(simplices_generated_by_split[2].size() >= simplices_deleted_by_collapse[2].size());
 
         std::sort(
@@ -120,6 +122,12 @@ std::vector<simplex::Simplex> TetEdgeSwap::execute(const simplex::Simplex& simpl
         assert(
             faces_generated_by_swap.size() ==
             (simplices_generated_by_split[2].size() - simplices_deleted_by_collapse[2].size()));
+        assert(faces_generated_by_swap.size() == 1);
+
+        if (faces_generated_by_swap.size() != 1) {
+            std::cout << "swap return more than one face!!" << std::endl;
+            throw std::runtime_error("faces_generated_by_swap.size() != 1");
+        }
     }
 
 
@@ -139,7 +147,7 @@ std::vector<simplex::Simplex> TetEdgeSwap::execute(const simplex::Simplex& simpl
     } else {
         for (int64_t i = 0; i < faces_generated_by_swap.size(); ++i) {
             faces_generated_by_swap[i] =
-                simplex::Simplex::edge(resurrect_tuple(faces_generated_by_swap[i].tuple()));
+                simplex::Simplex::face(resurrect_tuple(faces_generated_by_swap[i].tuple()));
         }
 
         return faces_generated_by_swap;

@@ -32,9 +32,11 @@ public:
     const std::vector<int64_t>& get_id(const std::string& name) const;
     const std::vector<int64_t>& get_id_from_path(const std::string& name) const;
 
+    const std::map<std::string, std::vector<int64_t>>& get_multimesh_names() const;
 
-    CachedMultiMesh(CachedMultiMesh&&) ;
-    CachedMultiMesh& operator=(CachedMultiMesh&&) ;
+
+    CachedMultiMesh(CachedMultiMesh&&);
+    CachedMultiMesh& operator=(CachedMultiMesh&&);
 
 private:
     std::string m_name;
