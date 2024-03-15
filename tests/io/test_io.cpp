@@ -1,6 +1,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/io/Cache.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/MshReader.hpp>
@@ -179,7 +180,7 @@ TEST_CASE("msh_3d_with_tet_attribute", "[io]")
     }
 }
 
-TEST_CASE("msh_3d_convert_tetwild_to_wmtk", "[io]")
+TEST_CASE("msh_3d_convert_tetwild_to_wmtk", "[io][.]")
 {
     constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
@@ -210,6 +211,9 @@ TEST_CASE("msh_3d_convert_tetwild_to_wmtk", "[io]")
         mesh->clear_attributes({tag_handle, pos_handle});
     }
 
+    io::Cache cache("wmtk_cache", ".");
+    cache.write_mesh(*mesh, mesh_name);
+    cache.export_cache(mesh_name + "_converted_from_tetwild");
 
     if (true) {
         ParaviewWriter writer(mesh_name, "vertices", *mesh, true, true, true, true);
