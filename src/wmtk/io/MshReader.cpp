@@ -240,7 +240,6 @@ void MshReader::extract_tets()
 // }
 
 
-// template <int DIM>
 const mshio::NodeBlock* MshReader::get_vertex_block(int DIM) const
 {
     for (const auto& block : m_spec.nodes.entity_blocks) {
@@ -251,7 +250,6 @@ const mshio::NodeBlock* MshReader::get_vertex_block(int DIM) const
     return nullptr;
 }
 
-// template <int DIM>
 const mshio::ElementBlock* MshReader::get_simplex_element_block(int DIM) const
 {
     for (const auto& block : m_spec.elements.entity_blocks) {
@@ -339,84 +337,81 @@ void MshReader::extract_simplex_elements()
 }
 
 // Old code to read attribute, we might need it in the future
-// template <int DIM>
-std::vector<std::string> MshReader::get_vertex_attribute_names(int DIM) const
-{
-    std::vector<std::string> attr_names;
-    attr_names.reserve(m_spec.node_data.size());
-    for (const auto& data : m_spec.node_data) {
-        const auto& int_tags = data.header.int_tags;
-        if (int_tags.size() >= 5 && int_tags[4] == DIM) {
-            attr_names.push_back(data.header.string_tags.front());
-        }
-    }
-    return attr_names;
-}
+// std::vector<std::string> MshReader::get_vertex_attribute_names(int DIM) const
+//{
+//    std::vector<std::string> attr_names;
+//    attr_names.reserve(m_spec.node_data.size());
+//    for (const auto& data : m_spec.node_data) {
+//        const auto& int_tags = data.header.int_tags;
+//        if (int_tags.size() >= 5 && int_tags[4] == DIM) {
+//            attr_names.push_back(data.header.string_tags.front());
+//        }
+//    }
+//    return attr_names;
+//}
 
-// template <int DIM>
-std::vector<std::string> MshReader::get_element_attribute_names(int DIM) const
-{
-    std::vector<std::string> attr_names;
-    attr_names.reserve(m_spec.element_data.size());
-    for (const auto& data : m_spec.element_data) {
-        const auto& int_tags = data.header.int_tags;
-        if (int_tags.size() >= 5 && int_tags[4] == DIM) {
-            attr_names.push_back(data.header.string_tags.front());
-        }
-    }
-    return attr_names;
-}
+// std::vector<std::string> MshReader::get_element_attribute_names(int DIM) const
+//{
+//     std::vector<std::string> attr_names;
+//     attr_names.reserve(m_spec.element_data.size());
+//     for (const auto& data : m_spec.element_data) {
+//         const auto& int_tags = data.header.int_tags;
+//         if (int_tags.size() >= 5 && int_tags[4] == DIM) {
+//             attr_names.push_back(data.header.string_tags.front());
+//         }
+//     }
+//     return attr_names;
+// }
 
-// template <int DIM, typename Fn>
-void MshReader::extract_vertex_attribute(
-    std::shared_ptr<wmtk::TetMesh> m,
-    const std::string& attr_name,
-    int DIM)
-{
-    const auto* vertex_block = get_vertex_block(DIM);
-    const size_t tag_offset = vertex_block->tags.front();
-    for (const auto& data : m_spec.node_data) {
-        if (data.header.string_tags.front() != attr_name) continue;
-        if (data.header.int_tags.size() >= 5 && data.header.int_tags[4] != DIM) {
-            throw std::runtime_error("Attribute " + attr_name + " is of the wrong DIM.");
-        }
-
-        // for (const auto& entry : data.entries) {
-        //     const size_t tag = entry.tag - tag_offset;
-        //     assert(tag < vertex_block->num_nodes_in_block);
-        //     set_attr(tag, entry.data);
-        // }
-
-        // figure out what data type the attribute stores
-        // ...
-
-        for (const auto& entry : data.entries) {
-            // auto attr_handle = m->register_attribute<double>(
-            //     std::string(attr_name) + std::to_string(index),
-            //     PrimitiveType::Tetrahedron,
-            //     m->get_all(m->top_simplex_type()).size());
-            // auto acc = m->create_accessor<double>(attr_handle);
-            const size_t tag = entry.tag - tag_offset;
-            assert(tag < vertex_block->num_nodes_in_block);
-            // set_attr(tag, entry.data);
-
-            Eigen::VectorX<long> eigendata;
-            eigendata.resize(entry.data.size());
-            for (int i = 0; i < entry.data.size(); ++i) {
-                eigendata.row(i) << entry.data[i];
-            }
-            // wmtk::attribute::MeshAttributeHandle tag_handle =
-            //     wmtk::mesh_utils::set_matrix_attribute(
-            //         eigendata,
-            //         std::string(attr_name) + std::to_string(index),
-            //         PrimitiveType::Tetrahedron,
-            //         *(m.get()));
-            // for (const wmtk::Tuple& tup : m->get_all(m->top_simplex_type())) {
-            //     acc.scalar_attribute(tup) = entry.data;
-            // }
-        }
-    }
-}
+// void MshReader::extract_vertex_attribute(
+//     std::shared_ptr<wmtk::TetMesh> m,
+//     const std::string& attr_name,
+//     int DIM)
+//{
+//     const auto* vertex_block = get_vertex_block(DIM);
+//     const size_t tag_offset = vertex_block->tags.front();
+//     for (const auto& data : m_spec.node_data) {
+//         if (data.header.string_tags.front() != attr_name) continue;
+//         if (data.header.int_tags.size() >= 5 && data.header.int_tags[4] != DIM) {
+//             throw std::runtime_error("Attribute " + attr_name + " is of the wrong DIM.");
+//         }
+//
+//        // for (const auto& entry : data.entries) {
+//        //     const size_t tag = entry.tag - tag_offset;
+//        //     assert(tag < vertex_block->num_nodes_in_block);
+//        //     set_attr(tag, entry.data);
+//        // }
+//
+//        // figure out what data type the attribute stores
+//        // ...
+//
+//        for (const auto& entry : data.entries) {
+//            // auto attr_handle = m->register_attribute<double>(
+//            //     std::string(attr_name) + std::to_string(index),
+//            //     PrimitiveType::Tetrahedron,
+//            //     m->get_all(m->top_simplex_type()).size());
+//            // auto acc = m->create_accessor<double>(attr_handle);
+//            const size_t tag = entry.tag - tag_offset;
+//            assert(tag < vertex_block->num_nodes_in_block);
+//            // set_attr(tag, entry.data);
+//
+//            Eigen::VectorX<long> eigendata;
+//            eigendata.resize(entry.data.size());
+//            for (int i = 0; i < entry.data.size(); ++i) {
+//                eigendata.row(i) << entry.data[i];
+//            }
+//            // wmtk::attribute::MeshAttributeHandle tag_handle =
+//            //     wmtk::mesh_utils::set_matrix_attribute(
+//            //         eigendata,
+//            //         std::string(attr_name) + std::to_string(index),
+//            //         PrimitiveType::Tetrahedron,
+//            //         *(m.get()));
+//            // for (const wmtk::Tuple& tup : m->get_all(m->top_simplex_type())) {
+//            //     acc.scalar_attribute(tup) = entry.data;
+//            // }
+//        }
+//    }
+//}
 
 // for now, this function only supports reading a single attribute on the tet mesh
 void MshReader::extract_element_attribute(

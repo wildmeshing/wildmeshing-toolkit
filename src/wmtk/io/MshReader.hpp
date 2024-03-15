@@ -13,7 +13,10 @@ namespace wmtk {
 class MshReader
 {
 public:
-    std::shared_ptr<Mesh> read(const std::filesystem::path& filename, const bool ignore_z = false, const std::vector<std::string>& attrs = {});
+    std::shared_ptr<Mesh> read(
+        const std::filesystem::path& filename,
+        const bool ignore_z = false,
+        const std::vector<std::string>& attrs = {});
 
 private:
     void set_vertex(size_t i, double x, double y, double z)
@@ -72,10 +75,8 @@ private:
     // template <int DIM, typename Fn>
     // void extract_tet_attribute(const std::string& attr_name, Fn&& set_attr);
 
-    // template <int DIM>
     const mshio::NodeBlock* get_vertex_block(int DIM) const;
 
-    // template <int DIM>
     const mshio::ElementBlock* get_simplex_element_block(int DIM) const;
 
     template <int DIM>
@@ -91,16 +92,14 @@ private:
     void extract_simplex_elements();
 
 
-    // template <int DIM>
-    std::vector<std::string> get_vertex_attribute_names(int DIM) const;
+    // std::vector<std::string> get_vertex_attribute_names(int DIM) const;
 
-    // template <int DIM>
-    std::vector<std::string> get_element_attribute_names(int DIM) const;
+    // std::vector<std::string> get_element_attribute_names(int DIM) const;
 
-    void extract_vertex_attribute(
-        std::shared_ptr<wmtk::TetMesh> m,
-        const std::string& attr_name,
-        int DIM);
+    // void extract_vertex_attribute(
+    //     std::shared_ptr<wmtk::TetMesh> m,
+    //     const std::string& attr_name,
+    //     int DIM);
 
     void extract_element_attribute(
         std::shared_ptr<wmtk::TetMesh> m,
