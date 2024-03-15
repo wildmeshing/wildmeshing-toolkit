@@ -178,10 +178,10 @@ void MeshDecimation::process()
     while (true) {
         Scheduler scheduler;
         SchedulerStats pass_stats = scheduler.run_operation_on_all(*op_collapse);
+        m_mesh.consolidate();
         if (pass_stats.number_of_successful_operations() == 0) {
             break;
         }
-        m_mesh.consolidate();
     }
 }
 
