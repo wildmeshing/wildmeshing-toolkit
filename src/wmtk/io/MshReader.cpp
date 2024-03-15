@@ -382,9 +382,7 @@ void MshReader::extract_vertex_attribute(
         // figure out what data type the attribute stores
         // ...
 
-        int index = 0;
         for (const auto& entry : data.entries) {
-            ++index;
             // auto attr_handle = m->register_attribute<double>(
             //     std::string(attr_name) + std::to_string(index),
             //     PrimitiveType::Tetrahedron,
