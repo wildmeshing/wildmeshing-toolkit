@@ -34,6 +34,7 @@ public:
 
     wmtk::attribute::Accessor<int64_t> m_face_rgb_state_accessor;
     wmtk::attribute::Accessor<int64_t> m_edge_rgb_state_accessor;
+    wmtk::attribute::Accessor<int64_t> m_edge_todo_accessor;
 
     std::vector<std::shared_ptr<wmtk::operations::Operation>> m_ops;
     std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>

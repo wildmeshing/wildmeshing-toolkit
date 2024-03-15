@@ -475,23 +475,14 @@ TEST_CASE("rgb_split")
     wmtk::attribute::MeshAttributeHandle m_uv_handle =
         m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     wmtk::attribute::MeshAttributeHandle m_face_rgb_state_handle =
-        m.register_attribute<int64_t>("face_rgb_state", PrimitiveType::Triangle, 2, true);
+        m.register_attribute<int64_t>("face_rgb_state", PrimitiveType::Triangle, 2, true, 0);
     wmtk::attribute::MeshAttributeHandle m_edge_rgb_state_handle =
-        m.register_attribute<int64_t>("edge_rgb_state", PrimitiveType::Edge, 2, true);
+        m.register_attribute<int64_t>("edge_rgb_state", PrimitiveType::Edge, 2, true, 0);
     wmtk::attribute::Accessor<int64_t> m_face_rgb_state_accessor =
         m.create_accessor(m_face_rgb_state_handle.as<int64_t>());
     wmtk::attribute::Accessor<int64_t> m_edge_rgb_state_accessor =
         m.create_accessor(m_edge_rgb_state_handle.as<int64_t>());
     wmtk::attribute::Accessor<double> m_uv_accessor = m.create_accessor(m_uv_handle.as<double>());
-
-    // all faces set to green at level 0
-    for (auto& f : m.get_all(PrimitiveType::Triangle)) {
-        m_face_rgb_state_accessor.vector_attribute(f) = Eigen::Vector2<int64_t>(0, 0);
-    }
-    // all edges set to green at level 0
-    for (auto& e : m.get_all(PrimitiveType::Edge)) {
-        m_edge_rgb_state_accessor.vector_attribute(e) = Eigen::Vector2<int64_t>(0, 0);
-    }
     wmtk::operations::composite::RGBSplit op(m, m_face_rgb_state_handle, m_edge_rgb_state_handle);
     op.split().set_new_attribute_strategy(
         m_uv_handle,
@@ -811,23 +802,18 @@ TEST_CASE("rgb_swap")
     wmtk::attribute::MeshAttributeHandle m_uv_handle =
         m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     wmtk::attribute::MeshAttributeHandle m_face_rgb_state_handle =
-        m.register_attribute<int64_t>("face_rgb_state", PrimitiveType::Triangle, 2, true);
+        m.register_attribute<int64_t>("face_rgb_state", PrimitiveType::Triangle, 2, true, 0);
     wmtk::attribute::MeshAttributeHandle m_edge_rgb_state_handle =
-        m.register_attribute<int64_t>("edge_rgb_state", PrimitiveType::Edge, 2, true);
+        m.register_attribute<int64_t>("edge_rgb_state", PrimitiveType::Edge, 2, true, 0);
+    wmtk::attribute::MeshAttributeHandle m_edge_todo_handle =
+        m.register_attribute<int64_t>("edge_todo", PrimitiveType::Edge, 1, true, 0);
     wmtk::attribute::Accessor<int64_t> m_face_rgb_state_accessor =
         m.create_accessor(m_face_rgb_state_handle.as<int64_t>());
     wmtk::attribute::Accessor<int64_t> m_edge_rgb_state_accessor =
         m.create_accessor(m_edge_rgb_state_handle.as<int64_t>());
     wmtk::attribute::Accessor<double> m_uv_accessor = m.create_accessor(m_uv_handle.as<double>());
-
-    // all faces set to green at level 0
-    for (auto& f : m.get_all(PrimitiveType::Triangle)) {
-        m_face_rgb_state_accessor.vector_attribute(f) = Eigen::Vector2<int64_t>(0, 0);
-    }
-    // all edges set to green at level 0
-    for (auto& e : m.get_all(PrimitiveType::Edge)) {
-        m_edge_rgb_state_accessor.vector_attribute(e) = Eigen::Vector2<int64_t>(0, 0);
-    }
+    wmtk::attribute::Accessor<int64_t> m_edge_todo_accessor =
+        m.create_accessor(m_edge_todo_handle.as<int64_t>());
     wmtk::operations::composite::RGBSplit op_split(
         m,
         m_face_rgb_state_handle,
@@ -844,6 +830,10 @@ TEST_CASE("rgb_swap")
         m_edge_rgb_state_handle,
         wmtk::operations::SplitBasicStrategy::None,
         wmtk::operations::SplitRibBasicStrategy::None);
+    op_split.split().set_new_attribute_strategy(
+        m_edge_todo_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
     op_split.add_invariant(std::make_shared<wmtk::RGBSplitInvariant>(
         m,
         m_face_rgb_state_handle.as<int64_t>(),
@@ -852,7 +842,8 @@ TEST_CASE("rgb_swap")
     wmtk::operations::composite::RGBSwap op_swap(
         m,
         m_face_rgb_state_handle,
-        m_edge_rgb_state_handle);
+        m_edge_rgb_state_handle,
+        m_edge_todo_handle);
 
     op_swap.swap().split().set_new_attribute_strategy(
         m_uv_handle,
@@ -875,6 +866,15 @@ TEST_CASE("rgb_swap")
     op_swap.swap().collapse().set_new_attribute_strategy(
         m_edge_rgb_state_handle,
         wmtk::operations::CollapseBasicStrategy::None);
+
+    op_swap.swap().split().set_new_attribute_strategy(
+        m_edge_todo_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    op_swap.swap().collapse().set_new_attribute_strategy(
+        m_edge_todo_handle,
+        wmtk::operations::CollapseBasicStrategy::None);
+
     op_swap.add_invariant(std::make_shared<wmtk::RGBSwapInvariant>(
         m,
         m_face_rgb_state_handle.as<int64_t>(),
@@ -882,6 +882,8 @@ TEST_CASE("rgb_swap")
 
     //  create blue_face/ red_edge/ blue_face configuration
     Tuple edge = m.edge_tuple_from_vids(1, 2);
+    // tag this edge
+    m_edge_todo_accessor.scalar_attribute(edge) = 1;
     auto mods = op_split(simplex::Simplex(PrimitiveType::Edge, edge));
     REQUIRE(!mods.empty());
     REQUIRE(mods.size() == 1);
@@ -890,6 +892,13 @@ TEST_CASE("rgb_swap")
     REQUIRE(
         m_edge_rgb_state_accessor.vector_attribute(split_return) == Eigen::Vector2<int64_t>(0, 1));
     REQUIRE(m_edge_rgb_state_accessor.vector_attribute(rib_edge) == Eigen::Vector2<int64_t>(1, 0));
+    // and both the return edge and the rib should have tag 0
+    REQUIRE(m_edge_todo_accessor.scalar_attribute(split_return) == 0);
+    REQUIRE(m_edge_todo_accessor.scalar_attribute(rib_edge) == 0);
+    // the other new edge should also has tag 0
+    REQUIRE(
+        m_edge_todo_accessor.scalar_attribute(
+            m.switch_tuples(rib_edge, {PrimitiveType::Triangle, PrimitiveType::Edge})) == 0);
 
     Tuple ear0 = m.switch_tuples(split_return, {PrimitiveType::Vertex, PrimitiveType::Edge});
     mods = op_split(simplex::Simplex(PrimitiveType::Edge, ear0));
@@ -928,14 +937,18 @@ TEST_CASE("rgb_swap")
     // this is not a valid swap
     REQUIRE(mods.empty());
 
-    // now we do a valid swap
+    // tag the swap edge and now we do a valid swap
+    m_edge_todo_accessor.scalar_attribute(red_edge_tuple) = 1;
     mods = op_swap(simplex::Simplex(PrimitiveType::Edge, red_edge_tuple));
+
     REQUIRE(!mods.empty());
     REQUIRE(mods.size() == 1);
     // swap return edge tuple should be (green, 1)
     Tuple swap_return = mods.front().tuple();
     REQUIRE(
         m_edge_rgb_state_accessor.vector_attribute(swap_return) == Eigen::Vector2<int64_t>(0, 1));
+    // and the return edge tuple tag should be 1
+    REQUIRE(m_edge_todo_accessor.scalar_attribute(swap_return) == 1);
 
     // all the triangles shoul dbe (green, 1)
     for (auto& f : m.get_all(PrimitiveType::Triangle)) {

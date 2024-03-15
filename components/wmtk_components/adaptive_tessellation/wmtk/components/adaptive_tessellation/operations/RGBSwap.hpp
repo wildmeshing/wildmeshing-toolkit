@@ -13,7 +13,8 @@ public:
     RGBSwap(
         Mesh& m,
         attribute::MeshAttributeHandle& triangle_rgb_state_handle,
-        attribute::MeshAttributeHandle& edge_rgb_state_handle);
+        attribute::MeshAttributeHandle& edge_rgb_state_handle,
+        attribute::MeshAttributeHandle& edge_todo_tag_handle);
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 
@@ -28,8 +29,10 @@ private:
     TriEdgeSwap m_swap;
     attribute::MeshAttributeHandle m_triangle_rgb_state_handle;
     attribute::MeshAttributeHandle m_edge_rgb_state_handle;
+    attribute::MeshAttributeHandle m_edge_todo_tag_handle;
     attribute::Accessor<int64_t> m_triangle_rgb_state_accessor;
     attribute::Accessor<int64_t> m_edge_rgb_state_accessor;
+    attribute::Accessor<int64_t> m_edge_todo_tag_accessor;
 };
 
 } // namespace wmtk::operations::composite

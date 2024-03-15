@@ -76,10 +76,8 @@ ATOperations::ATOperations(
     , m_amips_weight(amips_weight)
     , m_area_weighted_amips(area_weighted_amips)
     , m_uv_accessor(m_atdata.uv_mesh().create_accessor(m_atdata.m_uv_handle.as<double>()))
-
     , m_uvmesh_xyz_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_uvmesh_xyz_handle.as<double>()))
-
     , m_distance_error_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_distance_error_handle.as<double>()))
     , m_amips_error_accessor(
@@ -92,6 +90,8 @@ ATOperations::ATOperations(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_face_rgb_state_handle.as<int64_t>()))
     , m_edge_rgb_state_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_edge_rgb_state_handle.as<int64_t>()))
+    , m_edge_todo_accessor(
+          m_atdata.uv_mesh().create_accessor(m_atdata.m_edge_todo_handle.as<int64_t>()))
 
 {
     m_ops.clear();
@@ -507,7 +507,8 @@ int64_t ATOperations::AT_rgb_swap()
     auto rgb_swap = std::make_shared<wmtk::operations::composite::RGBSwap>(
         *uv_mesh_ptr,
         m_atdata.m_face_rgb_state_handle,
-        m_atdata.m_edge_rgb_state_handle);
+        m_atdata.m_edge_rgb_state_handle,
+        m_atdata.m_edge_todo_handle);
 
     rgb_swap->add_invariant(std::make_shared<wmtk::RGBSwapInvariant>(
         *uv_mesh_ptr,
