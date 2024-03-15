@@ -94,6 +94,29 @@ std::shared_ptr<Mesh> MshReader::read(
         extract_face_vertices();
         extract_faces();
 
+        exactinit();
+
+        // {
+        //     int64_t inverted_cnt = 0;
+        //     // fix invertion
+        //     for (int64_t i = 0; i < S.rows(); i++) {
+        //         Eigen::VectorXd p0 = V.row(S(i, 0));
+        //         Eigen::VectorXd p1 = V.row(S(i, 1));
+        //         Eigen::VectorXd p2 = V.row(S(i, 2));
+
+        //         if (orient2d(p0.data(), p1.data(), p2.data()) < 0) {
+        //             int64_t tmp = S(i, 0);
+        //             S(i, 0) = S(i, 1);
+        //             S(i, 1) = tmp;
+        //             inverted_cnt++;
+        //         }
+        //     }
+
+        //     wmtk::logger().info(
+        //         "get {} inverted faces, swap col 0 and col 1 of those faces",
+        //         inverted_cnt);
+        // }
+
         auto tmp = std::make_shared<TriMesh>();
         tmp->initialize(S);
         res = tmp;

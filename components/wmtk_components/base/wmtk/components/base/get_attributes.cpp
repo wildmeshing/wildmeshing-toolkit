@@ -36,7 +36,7 @@ attribute::MeshAttributeHandle get_attribute(const Mesh& m, const std::string& n
     }
 
     if (handles.empty()) {
-        log_and_throw_error("Attribute with name {} was not found.");
+        log_and_throw_error("Attribute with name {} was not found.", name);
     }
     if (handles.size() > 1) {
         log_and_throw_error(
