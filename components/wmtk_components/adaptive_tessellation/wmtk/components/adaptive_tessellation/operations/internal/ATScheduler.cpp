@@ -110,8 +110,11 @@ void ATScheduler::rgb_split_and_swap(
 
 void ATScheduler::rgb_split_scheduling(
     std::shared_ptr<wmtk::Mesh>& uv_mesh_ptr,
-    wmtk::attribute::Accessor<double>& edge_todo_accessor,
-    wmtk::operations::Operation& split)
+    wmtk::attribute::Accessor<int64_t>& face_rgb_state_accessor,
+    wmtk::attribute::Accessor<int64_t>& edge_rgb_state_accessor,
+    wmtk::attribute::Accessor<int64_t>& edge_todo_accessor,
+    wmtk::operations::Operation& split,
+    wmtk::operations::Operation& swap)
 {
     while (true) {
         while (true) {
@@ -120,12 +123,21 @@ void ATScheduler::rgb_split_scheduling(
                 break;
             }
         }
+        while (true) {
+            const auto stats = run_operation_on_all(swap);
+            if (stats.number_of_successful_operations() == 0) {
+                break;
+            }
+        }
         int64_t todo_edge_cnt = 0;
         for (auto& e : uv_mesh_ptr->get_all(wmtk::PrimitiveType::Edge)) {
             if (edge_todo_accessor.scalar_attribute(e) == 1) {
-                // for (auto& neighbor_e : one_ring(e)) {
-                //     edge_todo_accessor.scalar_attribute(neighbor_e) = 1;
-                // }
+                wmtk::components::operations::utils::tag_secondary_split_edges(
+                    uv_mesh_ptr,
+                    face_rgb_state_accessor,
+                    edge_rgb_state_accessor,
+                    edge_todo_accessor,
+                    e);
                 todo_edge_cnt++;
             }
         }

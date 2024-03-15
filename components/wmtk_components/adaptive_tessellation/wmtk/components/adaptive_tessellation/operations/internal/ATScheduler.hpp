@@ -25,8 +25,11 @@ public:
         bool one_operation_per_pass = false);
     void rgb_split_scheduling(
         std::shared_ptr<wmtk::Mesh>& uv_mesh_ptr,
-        wmtk::attribute::Accessor<double>& edge_todo_accessor,
-        wmtk::operations::Operation& split);
+        wmtk::attribute::Accessor<int64_t>& face_rgb_state_accessor,
+        wmtk::attribute::Accessor<int64_t>& edge_rgb_state_accessor,
+        wmtk::attribute::Accessor<int64_t>& edge_todo_accessor,
+        wmtk::operations::Operation& split,
+        wmtk::operations::Operation& swap);
 
 protected:
     SchedulerStats m_at_stats;
