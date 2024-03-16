@@ -37,7 +37,9 @@
 #include <wmtk/components/adaptive_tessellation/invariants/RGBSwapInvariant.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/RGBSplit.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/RGBSwap.hpp>
-
+#include <wmtk/components/adaptive_tessellation/operations/internal/ATScheduler.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/utils/tag_todo_edges.hpp>
+#include <wmtk/invariants/TodoInvariant.hpp>
 using namespace wmtk;
 using namespace wmtk::tests;
 using DSVec = wmtk::function::PerSimplexAutodiffFunction::DSVec;
@@ -794,6 +796,93 @@ TEST_CASE("rgb_split")
         REQUIRE(mods.empty());
     }
 }
+std::shared_ptr<wmtk::operations::Operation> rgb_split(
+    wmtk::Mesh& m,
+    wmtk::attribute::MeshAttributeHandle& m_uv_handle,
+    wmtk::attribute::MeshAttributeHandle& m_face_rgb_state_handle,
+    wmtk::attribute::MeshAttributeHandle& m_edge_rgb_state_handle,
+    wmtk::attribute::MeshAttributeHandle& m_edge_todo_handle)
+{
+    std::shared_ptr<wmtk::operations::composite::RGBSplit> op_split =
+        std::make_shared<wmtk::operations::composite::RGBSplit>(
+            m,
+            m_face_rgb_state_handle,
+            m_edge_rgb_state_handle);
+    op_split->split().set_new_attribute_strategy(
+        m_uv_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::Mean);
+    op_split->split().set_new_attribute_strategy(
+        m_face_rgb_state_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    op_split->split().set_new_attribute_strategy(
+        m_edge_rgb_state_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    op_split->split().set_new_attribute_strategy(
+        m_edge_todo_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    op_split->add_invariant(std::make_shared<wmtk::RGBSplitInvariant>(
+        m,
+        m_face_rgb_state_handle.as<int64_t>(),
+        m_edge_rgb_state_handle.as<int64_t>()));
+    op_split->add_invariant(
+        std::make_shared<wmtk::TodoInvariant>(m, m_edge_todo_handle.as<int64_t>(), 1));
+    return op_split;
+}
+
+std::shared_ptr<wmtk::operations::Operation> rgb_swap(
+    wmtk::Mesh& m,
+    wmtk::attribute::MeshAttributeHandle& m_uv_handle,
+    wmtk::attribute::MeshAttributeHandle& m_face_rgb_state_handle,
+    wmtk::attribute::MeshAttributeHandle& m_edge_rgb_state_handle,
+    wmtk::attribute::MeshAttributeHandle& m_edge_todo_handle)
+{
+    std::shared_ptr<wmtk::operations::composite::RGBSwap> op_swap =
+        std::make_shared<wmtk::operations::composite::RGBSwap>(
+            m,
+            m_face_rgb_state_handle,
+            m_edge_rgb_state_handle,
+            m_edge_todo_handle);
+
+    op_swap->swap().split().set_new_attribute_strategy(
+        m_uv_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::Mean);
+    op_swap->swap().collapse().set_new_attribute_strategy(
+        m_uv_handle,
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+    op_swap->swap().split().set_new_attribute_strategy(
+        m_face_rgb_state_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    op_swap->swap().collapse().set_new_attribute_strategy(
+        m_face_rgb_state_handle,
+        wmtk::operations::CollapseBasicStrategy::None);
+    op_swap->swap().split().set_new_attribute_strategy(
+        m_edge_rgb_state_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    op_swap->swap().collapse().set_new_attribute_strategy(
+        m_edge_rgb_state_handle,
+        wmtk::operations::CollapseBasicStrategy::None);
+
+    op_swap->swap().split().set_new_attribute_strategy(
+        m_edge_todo_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    op_swap->swap().collapse().set_new_attribute_strategy(
+        m_edge_todo_handle,
+        wmtk::operations::CollapseBasicStrategy::None);
+
+    op_swap->add_invariant(std::make_shared<wmtk::RGBSwapInvariant>(
+        m,
+        m_face_rgb_state_handle.as<int64_t>(),
+        m_edge_rgb_state_handle.as<int64_t>()));
+    return op_swap;
+}
 
 TEST_CASE("rgb_swap")
 {
@@ -814,77 +903,27 @@ TEST_CASE("rgb_swap")
     wmtk::attribute::Accessor<double> m_uv_accessor = m.create_accessor(m_uv_handle.as<double>());
     wmtk::attribute::Accessor<int64_t> m_edge_todo_accessor =
         m.create_accessor(m_edge_todo_handle.as<int64_t>());
-    wmtk::operations::composite::RGBSplit op_split(
-        m,
-        m_face_rgb_state_handle,
-        m_edge_rgb_state_handle);
-    op_split.split().set_new_attribute_strategy(
-        m_uv_handle,
-        wmtk::operations::SplitBasicStrategy::None,
-        wmtk::operations::SplitRibBasicStrategy::Mean);
-    op_split.split().set_new_attribute_strategy(
-        m_face_rgb_state_handle,
-        wmtk::operations::SplitBasicStrategy::None,
-        wmtk::operations::SplitRibBasicStrategy::None);
-    op_split.split().set_new_attribute_strategy(
-        m_edge_rgb_state_handle,
-        wmtk::operations::SplitBasicStrategy::None,
-        wmtk::operations::SplitRibBasicStrategy::None);
-    op_split.split().set_new_attribute_strategy(
-        m_edge_todo_handle,
-        wmtk::operations::SplitBasicStrategy::None,
-        wmtk::operations::SplitRibBasicStrategy::None);
-    op_split.add_invariant(std::make_shared<wmtk::RGBSplitInvariant>(
-        m,
-        m_face_rgb_state_handle.as<int64_t>(),
-        m_edge_rgb_state_handle.as<int64_t>()));
 
-    wmtk::operations::composite::RGBSwap op_swap(
+    auto op_split = rgb_split(
         m,
+        m_uv_handle,
         m_face_rgb_state_handle,
         m_edge_rgb_state_handle,
         m_edge_todo_handle);
 
-    op_swap.swap().split().set_new_attribute_strategy(
-        m_uv_handle,
-        wmtk::operations::SplitBasicStrategy::None,
-        wmtk::operations::SplitRibBasicStrategy::Mean);
-    op_swap.swap().collapse().set_new_attribute_strategy(
-        m_uv_handle,
-        wmtk::operations::CollapseBasicStrategy::CopyOther);
-    op_swap.swap().split().set_new_attribute_strategy(
-        m_face_rgb_state_handle,
-        wmtk::operations::SplitBasicStrategy::None,
-        wmtk::operations::SplitRibBasicStrategy::None);
-    op_swap.swap().collapse().set_new_attribute_strategy(
-        m_face_rgb_state_handle,
-        wmtk::operations::CollapseBasicStrategy::None);
-    op_swap.swap().split().set_new_attribute_strategy(
-        m_edge_rgb_state_handle,
-        wmtk::operations::SplitBasicStrategy::None,
-        wmtk::operations::SplitRibBasicStrategy::None);
-    op_swap.swap().collapse().set_new_attribute_strategy(
-        m_edge_rgb_state_handle,
-        wmtk::operations::CollapseBasicStrategy::None);
-
-    op_swap.swap().split().set_new_attribute_strategy(
-        m_edge_todo_handle,
-        wmtk::operations::SplitBasicStrategy::None,
-        wmtk::operations::SplitRibBasicStrategy::None);
-    op_swap.swap().collapse().set_new_attribute_strategy(
-        m_edge_todo_handle,
-        wmtk::operations::CollapseBasicStrategy::None);
-
-    op_swap.add_invariant(std::make_shared<wmtk::RGBSwapInvariant>(
+    auto op_swap = rgb_swap(
         m,
-        m_face_rgb_state_handle.as<int64_t>(),
-        m_edge_rgb_state_handle.as<int64_t>()));
+        m_uv_handle,
+        m_face_rgb_state_handle,
+        m_edge_rgb_state_handle,
+        m_edge_todo_handle);
+
 
     //  create blue_face/ red_edge/ blue_face configuration
     Tuple edge = m.edge_tuple_from_vids(1, 2);
     // tag this edge
     m_edge_todo_accessor.scalar_attribute(edge) = 1;
-    auto mods = op_split(simplex::Simplex(PrimitiveType::Edge, edge));
+    auto mods = (*op_split)(simplex::Simplex(PrimitiveType::Edge, edge));
     REQUIRE(!mods.empty());
     REQUIRE(mods.size() == 1);
     Tuple split_return = mods.front().tuple();
@@ -901,15 +940,22 @@ TEST_CASE("rgb_swap")
             m.switch_tuples(rib_edge, {PrimitiveType::Triangle, PrimitiveType::Edge})) == 0);
 
     Tuple ear0 = m.switch_tuples(split_return, {PrimitiveType::Vertex, PrimitiveType::Edge});
-    mods = op_split(simplex::Simplex(PrimitiveType::Edge, ear0));
+    // set this ear0 to have tag 1
+    m_edge_todo_accessor.scalar_attribute(ear0) = 1;
+    mods = (*op_split)(simplex::Simplex(PrimitiveType::Edge, ear0));
     REQUIRE(!mods.empty());
     REQUIRE(mods.size() == 1);
+    REQUIRE(m_edge_todo_accessor.scalar_attribute(mods.front().tuple()) == 0);
+
     Tuple ear1 = m.switch_tuples(
         mods.front().tuple(),
         {PrimitiveType::Vertex, PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Edge});
-    mods = op_split(simplex::Simplex(PrimitiveType::Edge, ear1));
+    // set this ear1 to have tag 1
+    m_edge_todo_accessor.scalar_attribute(ear1) = 1;
+    mods = (*op_split)(simplex::Simplex(PrimitiveType::Edge, ear1));
     REQUIRE(!mods.empty());
     REQUIRE(mods.size() == 1);
+    REQUIRE(m_edge_todo_accessor.scalar_attribute(mods.front().tuple()) == 0);
     // at this point there should be only one red edge of (red, 0)
     // on the two sides of this red edge are face of (blue, 0)
     //  all the other edges are (green, 1)
@@ -933,13 +979,13 @@ TEST_CASE("rgb_swap")
         }
     }
     // test swap invariant
-    mods = op_swap(simplex::Simplex(PrimitiveType::Edge, mods.front().tuple()));
+    mods = (*op_swap)(simplex::Simplex(PrimitiveType::Edge, mods.front().tuple()));
     // this is not a valid swap
     REQUIRE(mods.empty());
 
     // tag the swap edge and now we do a valid swap
     m_edge_todo_accessor.scalar_attribute(red_edge_tuple) = 1;
-    mods = op_swap(simplex::Simplex(PrimitiveType::Edge, red_edge_tuple));
+    mods = (*op_swap)(simplex::Simplex(PrimitiveType::Edge, red_edge_tuple));
 
     REQUIRE(!mods.empty());
     REQUIRE(mods.size() == 1);
@@ -956,7 +1002,269 @@ TEST_CASE("rgb_swap")
     }
 
     // test swap invariant
-    mods = op_swap(simplex::Simplex(PrimitiveType::Edge, swap_return));
+    mods = (*op_swap)(simplex::Simplex(PrimitiveType::Edge, swap_return));
     REQUIRE(mods.empty());
 }
+
+TEST_CASE("recursive_rgb_split")
+{
+    const std::filesystem::path mesh_path =
+        data_dir / "adaptive_tessellation_test/upsample_square.msh";
+
+    std::shared_ptr<Mesh> m_ptr = read_mesh(mesh_path, true);
+    wmtk::attribute::MeshAttributeHandle m_uv_handle =
+        m_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    wmtk::attribute::MeshAttributeHandle m_face_rgb_state_handle =
+        m_ptr->register_attribute<int64_t>("face_rgb_state", PrimitiveType::Triangle, 2, true, 0);
+    wmtk::attribute::MeshAttributeHandle m_edge_rgb_state_handle =
+        m_ptr->register_attribute<int64_t>("edge_rgb_state", PrimitiveType::Edge, 2, true, 0);
+
+    // we want to split every edge
+    wmtk::attribute::MeshAttributeHandle m_edge_todo_handle =
+        m_ptr->register_attribute<int64_t>("edge_todo", PrimitiveType::Edge, 1, true, 0);
+    wmtk::attribute::Accessor<int64_t> m_face_rgb_state_accessor =
+        m_ptr->create_accessor(m_face_rgb_state_handle.as<int64_t>());
+    wmtk::attribute::Accessor<int64_t> m_edge_rgb_state_accessor =
+        m_ptr->create_accessor(m_edge_rgb_state_handle.as<int64_t>());
+    wmtk::attribute::Accessor<double> m_uv_accessor =
+        m_ptr->create_accessor(m_uv_handle.as<double>());
+    wmtk::attribute::Accessor<int64_t> m_edge_todo_accessor =
+        m_ptr->create_accessor(m_edge_todo_handle.as<int64_t>());
+    auto op_split = rgb_split(
+        *m_ptr,
+        m_uv_handle,
+        m_face_rgb_state_handle,
+        m_edge_rgb_state_handle,
+        m_edge_todo_handle);
+
+    auto op_swap = rgb_swap(
+        *m_ptr,
+        m_uv_handle,
+        m_face_rgb_state_handle,
+        m_edge_rgb_state_handle,
+        m_edge_todo_handle);
+    wmtk::ATScheduler scheduler;
+    // tag all edges to be 1
+    for (auto& e : m_ptr->get_all(PrimitiveType::Edge)) {
+        m_edge_todo_accessor.scalar_attribute(e) = 1;
+    }
+
+
+    while (true) {
+        const auto stats = scheduler.run_operation_on_all(*op_split);
+        if (stats.number_of_successful_operations() == 0) {
+            break;
+        }
+    }
+
+    for (auto& e : m_ptr->get_all(PrimitiveType::Edge)) {
+        REQUIRE(m_edge_todo_accessor.scalar_attribute(e) == 0);
+    }
+    for (auto& f : m_ptr->get_all(PrimitiveType::Triangle)) {
+        if (m_face_rgb_state_accessor.vector_attribute(f)[0] == 2) {
+            REQUIRE(
+                ((m_edge_rgb_state_accessor.vector_attribute(f)[0] == 1) ||
+                 (m_edge_rgb_state_accessor.vector_attribute(
+                      m_ptr->switch_tuple(f, PrimitiveType::Edge))[0] == 1) ||
+                 (m_edge_rgb_state_accessor.vector_attribute(
+                      m_ptr->switch_tuples(f, {PrimitiveType::Vertex, PrimitiveType::Edge}))[0] ==
+                  1)));
+        }
+    }
+
+    // a lambda function that checks the (red, l) edge case for split edge
+    auto check_red_edge = [&](Tuple edge) {
+        // case 1: the edge is a (red, l)
+        //  it can be ajcent to (red,l) or (blue,l) faces. Onlyt the red face can have (green,l)
+        //  edge
+        // Tag the red face's (green, l) edges as todo
+        REQUIRE(m_edge_rgb_state_accessor.vector_attribute(edge)[0] == 1);
+        Tuple f0 = edge;
+        Tuple f1 = m_ptr->switch_tuple(edge, PrimitiveType::Triangle);
+        auto f0_color_level = m_face_rgb_state_accessor.vector_attribute(f0);
+        auto f1_color_level = m_face_rgb_state_accessor.vector_attribute(f1);
+
+        REQUIRE(((f0_color_level[0] == 1) || (f1_color_level[0] == 2)));
+        REQUIRE(((f1_color_level[0] == 1) || (f1_color_level[0] == 2)));
+        Tuple red_face = f0_color_level[0] == 1 ? f0 : f1;
+        Tuple blue_face = f0_color_level[0] == 2 ? f0 : f1;
+        // the red face has two green ear edges
+        // one is the same level as the edge and the face, the other is l+1
+        Tuple red_ear0 = m_ptr->switch_tuple(red_face, PrimitiveType::Edge);
+        Tuple red_ear1 =
+            m_ptr->switch_tuples(red_face, {PrimitiveType::Vertex, PrimitiveType::Edge});
+        REQUIRE(m_edge_rgb_state_accessor.vector_attribute(red_ear0)[0] == 0);
+        REQUIRE(m_edge_rgb_state_accessor.vector_attribute(red_ear1)[0] == 0);
+        REQUIRE(
+            (m_edge_rgb_state_accessor.vector_attribute(red_ear0)[1] ==
+                 m_edge_rgb_state_accessor.vector_attribute(edge)[1] ||
+             m_edge_rgb_state_accessor.vector_attribute(red_ear0)[1] ==
+                 m_edge_rgb_state_accessor.vector_attribute(edge)[1] + 1));
+        REQUIRE(
+            (m_edge_rgb_state_accessor.vector_attribute(red_ear1)[1] ==
+                 m_edge_rgb_state_accessor.vector_attribute(edge)[1] ||
+             m_edge_rgb_state_accessor.vector_attribute(red_ear1)[1] ==
+                 m_edge_rgb_state_accessor.vector_attribute(edge)[1] + 1));
+
+        // blue face has two green ears
+        Tuple blue_ear0 = m_ptr->switch_tuple(blue_face, PrimitiveType::Edge);
+        Tuple blue_ear1 =
+            m_ptr->switch_tuples(blue_face, {PrimitiveType::Vertex, PrimitiveType::Edge});
+        REQUIRE(m_edge_rgb_state_accessor.vector_attribute(blue_ear0)[0] == 0);
+        REQUIRE(m_edge_rgb_state_accessor.vector_attribute(blue_ear1)[0] == 0);
+        REQUIRE(
+            (m_edge_rgb_state_accessor.vector_attribute(blue_ear0)[1] ==
+             m_edge_rgb_state_accessor.vector_attribute(edge)[1] + 1));
+        REQUIRE(
+            (m_edge_rgb_state_accessor.vector_attribute(blue_ear1)[1] ==
+             m_edge_rgb_state_accessor.vector_attribute(edge)[1] + 1));
+    };
+
+
+    // check green edge
+    auto check_green_edge = [&](Tuple edge) {
+        // case 2: the edge is a (green, l)
+        REQUIRE(m_edge_rgb_state_accessor.vector_attribute(edge)[0] == 0);
+        Tuple f0 = edge;
+        auto edge_color_level = m_edge_rgb_state_accessor.vector_attribute(edge);
+        auto f0_color_level = m_face_rgb_state_accessor.vector_attribute(f0);
+        // the face of the edge can be a green face, a blue face, or a red face
+
+        if (f0_color_level[0] == 0) {
+            // green face:
+            // the other face must be blue face or red face.
+            Tuple other_face = m_ptr->switch_tuple(edge, PrimitiveType::Triangle);
+            REQUIRE(m_face_rgb_state_accessor.vector_attribute(other_face)[0] != 0);
+            if (m_face_rgb_state_accessor.vector_attribute(other_face)[0] == 1) {
+                // red face
+                // it must be a red, l-1 face
+                REQUIRE(
+                    m_face_rgb_state_accessor.vector_attribute(other_face)[1] ==
+                    edge_color_level[1] - 1);
+            } else if (m_face_rgb_state_accessor.vector_attribute(other_face)[0] == 2) {
+                // blue face
+                // it must be a blue, l-1 face
+                REQUIRE(
+                    m_face_rgb_state_accessor.vector_attribute(other_face)[1] ==
+                    edge_color_level[1] - 1);
+            } else {
+                REQUIRE(false);
+            }
+        }
+        if (f0_color_level[0] == 1) {
+            // red face:
+            // it must be a red, l-1 face
+            REQUIRE(m_face_rgb_state_accessor.vector_attribute(f0)[1] == edge_color_level[1] - 1);
+            // among the two ear edges must exist a green, l-1
+            Tuple ear0 = m_ptr->switch_tuple(edge, PrimitiveType::Edge);
+            Tuple ear1 = m_ptr->switch_tuples(edge, {PrimitiveType::Vertex, PrimitiveType::Edge});
+            REQUIRE(
+                (m_edge_rgb_state_accessor.vector_attribute(ear0)[0] == 0 ||
+                 m_edge_rgb_state_accessor.vector_attribute(ear1)[0] == 0));
+            REQUIRE(
+                (m_edge_rgb_state_accessor.vector_attribute(ear0)[1] == edge_color_level[1] - 1 ||
+                 m_edge_rgb_state_accessor.vector_attribute(ear1)[1] == edge_color_level[1] - 1));
+        }
+        if (f0_color_level[0] == 2) {
+            // blue face:
+            // it must be a blue, l-1 face
+            REQUIRE(m_face_rgb_state_accessor.vector_attribute(f0)[1] == edge_color_level[1] - 1);
+            // among the two ear edges must exist a red, l-1
+            Tuple ear0 = m_ptr->switch_tuple(edge, PrimitiveType::Edge);
+            Tuple ear1 = m_ptr->switch_tuples(edge, {PrimitiveType::Vertex, PrimitiveType::Edge});
+            REQUIRE(
+                (m_edge_rgb_state_accessor.vector_attribute(ear0)[0] == 1 ||
+                 m_edge_rgb_state_accessor.vector_attribute(ear1)[0] == 1));
+            REQUIRE(
+                (m_edge_rgb_state_accessor.vector_attribute(ear0)[1] == edge_color_level[1] - 1 ||
+                 m_edge_rgb_state_accessor.vector_attribute(ear1)[1] == edge_color_level[1] - 1));
+
+            // get the red edge
+            Tuple red_edge = m_edge_rgb_state_accessor.vector_attribute(ear0)[0] == 1 ? ear0 : ear1;
+            if (m_ptr->is_boundary(simplex::Simplex(PrimitiveType::Edge, red_edge))) return;
+            // the adjacent face to the red_edge is either blue or red
+            Tuple other_face_red_edge = m_ptr->switch_tuple(red_edge, PrimitiveType::Triangle);
+            REQUIRE(m_face_rgb_state_accessor.vector_attribute(other_face_red_edge)[0] != 0);
+        }
+    };
+    wmtk::RGBSplitInvariant rgb_split_invariant(
+        *m_ptr,
+        m_face_rgb_state_handle.as<int64_t>(),
+        m_edge_rgb_state_handle.as<int64_t>());
+
+
+    for (auto& e : m_ptr->get_all(PrimitiveType::Edge)) {
+        if (m_edge_rgb_state_accessor.vector_attribute(e)[0] == 1) {
+            // case 1: the edge is a (red, l)
+            //  it can be ajcent to (red,l) or (blue,l) faces. Onlyt the red face can have (green,l)
+            //  edge
+            REQUIRE(!rgb_split_invariant.before(simplex::Simplex(PrimitiveType::Edge, e)));
+            check_red_edge(e);
+        } else if (
+            m_edge_rgb_state_accessor.vector_attribute(e)[0] == 0 &&
+            !rgb_split_invariant.before(simplex::Simplex(PrimitiveType::Edge, e))) {
+            check_green_edge(e);
+            if (m_ptr->is_boundary(simplex::Simplex(PrimitiveType::Edge, e))) continue;
+
+            check_green_edge(m_ptr->switch_tuple(e, PrimitiveType::Triangle));
+            break;
+        }
+    }
+
+    for (auto& e : m_ptr->get_all(PrimitiveType::Edge)) {
+        if (m_edge_rgb_state_accessor.vector_attribute(e)[0] == 1) {
+            REQUIRE(!rgb_split_invariant.before(simplex::Simplex(PrimitiveType::Edge, e)));
+            // tag this edge
+            m_edge_todo_accessor.scalar_attribute(e) = 1;
+            wmtk::components::operations::utils::tag_secondary_split_edges(
+                m_ptr,
+                m_face_rgb_state_accessor,
+                m_edge_rgb_state_accessor,
+                m_edge_todo_accessor,
+                e);
+            scheduler.rgb_split_scheduling(
+                m_ptr,
+                m_face_rgb_state_accessor,
+                m_edge_rgb_state_accessor,
+                m_edge_todo_accessor,
+                *op_split,
+                *op_swap);
+            for (auto& inner_e : m_ptr->get_all(PrimitiveType::Edge)) {
+                if (m_edge_rgb_state_accessor.vector_attribute(inner_e)[0] == 1) {
+                    REQUIRE(m_edge_todo_accessor.scalar_attribute(inner_e) == 0);
+                }
+            }
+            break;
+        }
+    }
+    for (auto& e : m_ptr->get_all(PrimitiveType::Edge)) {
+        if (m_edge_rgb_state_accessor.vector_attribute(e)[0] == 0 &&
+            !rgb_split_invariant.before(simplex::Simplex(PrimitiveType::Edge, e))) {
+            REQUIRE(!rgb_split_invariant.before(simplex::Simplex(PrimitiveType::Edge, e)));
+            // tag this edge
+            m_edge_todo_accessor.scalar_attribute(e) = 1;
+            wmtk::components::operations::utils::tag_secondary_split_edges(
+                m_ptr,
+                m_face_rgb_state_accessor,
+                m_edge_rgb_state_accessor,
+                m_edge_todo_accessor,
+                e);
+            scheduler.rgb_split_scheduling(
+                m_ptr,
+                m_face_rgb_state_accessor,
+                m_edge_rgb_state_accessor,
+                m_edge_todo_accessor,
+                *op_split,
+                *op_swap);
+            for (auto& inner_e : m_ptr->get_all(PrimitiveType::Edge)) {
+                if (m_edge_rgb_state_accessor.vector_attribute(inner_e)[0] == 1) {
+                    REQUIRE(m_edge_todo_accessor.scalar_attribute(inner_e) == 0);
+                }
+            }
+            break;
+        }
+    }
+}
+
+
 } // namespace wmtk::components
