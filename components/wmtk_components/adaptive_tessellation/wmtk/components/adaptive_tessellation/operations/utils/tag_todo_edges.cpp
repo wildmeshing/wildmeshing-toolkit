@@ -55,7 +55,22 @@ void tag_secondary_split_edges(
         // b. it's adjacent to (blue, l-1). Find the (red, l-1) edge of the blue face.
         // This edge must be  adjacent to a (red, l-1) face. Find that red face and tag its (green,
         // l-1) edge as todo
-
+        tag_green_edge_secondary_edges(
+            uv_mesh_ptr,
+            face_rgb_state_accessor,
+            edge_rgb_state_accessor,
+            edge_todo_accessor,
+            edge);
+        if (!uv_mesh_ptr->is_boundary(wmtk::simplex::Simplex(PrimitiveType::Edge, edge))) {
+            // if the edge is a boundary edge, tag the other edge as todo
+            Tuple other_edge = uv_mesh_ptr->switch_tuple(edge, PrimitiveType::Triangle);
+            tag_green_edge_secondary_edges(
+                uv_mesh_ptr,
+                face_rgb_state_accessor,
+                edge_rgb_state_accessor,
+                edge_todo_accessor,
+                other_edge);
+        }
         break;
     case 1: {
         // case 1: the edge is a (red, l)
@@ -112,7 +127,10 @@ void tag_green_edge_secondary_edges(
         Tuple ear0 = uv_mesh_ptr->switch_tuple(edge, PrimitiveType::Edge);
         Tuple ear1 = uv_mesh_ptr->switch_tuples(edge, {PrimitiveType::Vertex, PrimitiveType::Edge});
         Tuple red_edge = edge_rgb_state_accessor.vector_attribute(ear0)[0] == 1 ? ear0 : ear1;
+        assert(edge_rgb_state_accessor.vector_attribute(red_edge)[0] == 1);
         if (uv_mesh_ptr->is_boundary(wmtk::simplex::Simplex(PrimitiveType::Edge, red_edge))) {
+            // this can't happen
+            assert(false);
             break;
         }
         // if the red edge is not a boundary edge find the other face
@@ -132,6 +150,8 @@ void tag_green_edge_secondary_edges(
             other_face);
         break;
     }
+
+
     default: throw std::runtime_error("tag_green_edge_secondary_edges: invalid face color");
     }
 }
@@ -177,11 +197,25 @@ void tag_red_l_face_green_l_edge(
 {
     Eigen::Vector2<int64_t> face_color_level = face_rgb_state_accessor.vector_attribute(edge);
     assert(face_color_level[0] == 1);
+    Tuple red_edge = edge;
+    auto edge_color_level = edge_rgb_state_accessor.vector_attribute(red_edge);
     Tuple ear0 = uv_mesh_ptr->switch_tuple(edge, PrimitiveType::Edge);
     Tuple ear1 = uv_mesh_ptr->switch_tuples(edge, {PrimitiveType::Vertex, PrimitiveType::Edge});
     auto ear0_color_level = edge_rgb_state_accessor.vector_attribute(ear0);
     auto ear1_color_level = edge_rgb_state_accessor.vector_attribute(ear1);
+    if (ear0_color_level[0] == 1) {
+        assert(edge_color_level[0] == 0);
+        red_edge = ear0;
+        ear0 = edge;
+        ear0_color_level = edge_rgb_state_accessor.vector_attribute(ear0);
+    } else if (ear1_color_level[0] == 1) {
+        assert(edge_color_level[0] == 0);
+        red_edge = ear1;
+        ear1 = edge;
+        ear1_color_level = edge_rgb_state_accessor.vector_attribute(ear1);
+    }
     // they must both be green
+
     assert(ear0_color_level[0] == 0);
     assert(ear1_color_level[0] == 0);
     if (ear0_color_level[1] == face_color_level[1]) {

@@ -34,6 +34,8 @@ void tag_red_edge_secondary_edges(
     wmtk::attribute::Accessor<int64_t>& edge_rgb_state_accessor,
     wmtk::attribute::Accessor<int64_t>& edge_todo_accessor,
     Tuple& edge);
+
+// the edge input only has information about the face. It is essentially a face tuple
 void tag_red_l_face_green_l_edge(
     std::shared_ptr<wmtk::Mesh> uv_mesh_ptr,
     wmtk::attribute::Accessor<int64_t>& face_rgb_state_accessor,
