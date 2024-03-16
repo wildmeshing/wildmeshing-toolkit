@@ -496,6 +496,11 @@ int64_t ATOperations::AT_rgb_split()
         *uv_mesh_ptr,
         m_atdata.m_face_rgb_state_handle.as<int64_t>(),
         m_atdata.m_edge_rgb_state_handle.as<int64_t>()));
+
+    rgb_split->add_invariant(std::make_shared<wmtk::TodoInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.m_edge_todo_handle.as<int64_t>(),
+        1));
     m_ops.emplace_back(rgb_split);
     return m_ops.size() - 1;
 }
