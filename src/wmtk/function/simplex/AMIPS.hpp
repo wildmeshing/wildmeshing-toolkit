@@ -1,9 +1,14 @@
 #pragma once
 
 #include <optional>
-#include <wmtk/attribute/MeshAttributes.hpp>
 #include <wmtk/function/PerSimplexFunction.hpp>
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
 
+namespace wmtk {
+    namespace simplex {
+        class Simplex;
+    }
+}
 namespace wmtk::function {
 
 class AMIPS : public PerSimplexFunction
