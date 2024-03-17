@@ -3,12 +3,13 @@
 #include <optional>
 #include <wmtk/function/PerSimplexFunction.hpp>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
-namespace wmtk {
-    namespace simplex {
-        class Simplex;
-    }
-}
+//namespace wmtk {
+//    namespace simplex {
+//        class Simplex;
+//    }
+//}
 namespace wmtk::function {
 
 class AMIPS : public PerSimplexFunction
