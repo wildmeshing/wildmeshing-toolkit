@@ -182,13 +182,13 @@ TEST_CASE("msh_3d_with_tet_attribute", "[io]")
 
 TEST_CASE("msh_3d_convert_tetwild_to_wmtk", "[io][.]")
 {
+    // This is an example showing how to convert a tetwild msh file into our wmtk format and transfering the in/out attribute into a tag attribute.
+
     constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
     const std::string mesh_name = "tetwild_fig8_mid";
 
-    MshReader reader;
-    std::shared_ptr<Mesh> mesh =
-        reader.read(wmtk_data_dir / (mesh_name + ".msh"), false, {"in/out"});
+    std::shared_ptr<Mesh> mesh = read_mesh(wmtk_data_dir / (mesh_name + ".msh"), false, {"in/out"});
 
     CHECK(mesh != nullptr);
     CHECK(mesh->top_simplex_type() == PT);
@@ -201,7 +201,7 @@ TEST_CASE("msh_3d_convert_tetwild_to_wmtk", "[io][.]")
         auto tag_acc = mesh->create_accessor<int64_t>(tag_handle);
 
         for (const Tuple& t : mesh->get_all(PT)) {
-            if (in_out_acc.const_scalar_attribute(t) == 0) {
+            if (in_out_acc.const_scalar_attribute(t) < 0.5) {
                 tag_acc.scalar_attribute(t) = 1;
             }
         }

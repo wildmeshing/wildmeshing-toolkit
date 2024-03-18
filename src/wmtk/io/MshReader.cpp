@@ -18,7 +18,7 @@ namespace wmtk {
 std::shared_ptr<Mesh> MshReader::read(
     const std::filesystem::path& filename,
     bool ignore_z,
-    const std::vector<std::string>& attribute_names)
+    const std::vector<std::string>& tetrahedron_attributes)
 {
     m_spec = mshio::load_msh(filename.string());
     m_ignore_z = ignore_z;
@@ -80,7 +80,7 @@ std::shared_ptr<Mesh> MshReader::read(
                 }
                 valid_attr_names.insert(data.header.string_tags.front());
             }
-            for (const std::string& attr : attribute_names) {
+            for (const std::string& attr : tetrahedron_attributes) {
                 if (valid_attr_names.count(attr) == 0) {
                     log_and_throw_error("Attribute " + attr + " does not exist in the msh file.");
                 }
@@ -89,7 +89,7 @@ std::shared_ptr<Mesh> MshReader::read(
         }
         res = tmp;
     } else if (get_num_faces() > 0) {
-        assert(attribute_names.empty());
+        assert(tetrahedron_attributes.empty());
 
         V.resize(get_num_face_vertices(), m_ignore_z ? 2 : 3);
         S.resize(get_num_faces(), 3);
@@ -125,7 +125,7 @@ std::shared_ptr<Mesh> MshReader::read(
         res = tmp;
 
     } else if (get_num_edges() > 0) {
-        assert(attribute_names.empty());
+        assert(tetrahedron_attributes.empty());
 
         V.resize(get_num_face_vertices(), m_ignore_z ? 2 : 3);
         S.resize(get_num_edges(), 2);
@@ -137,7 +137,7 @@ std::shared_ptr<Mesh> MshReader::read(
         tmp->initialize(S);
         res = tmp;
     } else {
-        assert(attribute_names.empty());
+        assert(tetrahedron_attributes.empty());
 
         res = std::make_shared<PointMesh>();
     }
