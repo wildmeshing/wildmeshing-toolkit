@@ -167,7 +167,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             std::array<double, 6> pts;
             for (size_t i = 0; i < 3; ++i) {
                 for (size_t j = 0; j < 2; ++j) {
-                    pts[2 * i + j] = P(i, j);
+                    pts[2 * i + j] = P(j, i);
                 }
             }
             const double a = Tri_AMIPS_energy(pts);
@@ -178,7 +178,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             std::array<double, 12> pts;
             for (size_t i = 0; i < 4; ++i) {
                 for (size_t j = 0; j < 3; ++j) {
-                    pts[3 * i + j] = P(i, j);
+                    pts[3 * i + j] = P(j, i);
                 }
             }
             const double a = Tet_AMIPS_energy(pts);
@@ -206,28 +206,31 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto compute_target_edge_length =
         [target_edge_length, min_edge_length, target_edge_length_attribute, &mesh](
             const Eigen::MatrixXd& P,
-            const std::vector<Tuple>& neighs) {
-            auto target_edge_length_accessor =
-                mesh->create_accessor(target_edge_length_attribute.as<double>());
+            const std::vector<Tuple>& neighs) -> Eigen::VectorXd {
+        auto target_edge_length_accessor =
+            mesh->create_accessor(target_edge_length_attribute.as<double>());
 
-            assert(P.rows() == 1); // rows --> attribute dimension
-            assert(!neighs.empty());
-            assert(P.cols() == neighs.size());
-            const double current_target_edge_length =
-                target_edge_length_accessor.const_scalar_attribute(neighs[0]);
-            const double max_amips = P.maxCoeff();
+        assert(P.rows() == 1); // rows --> attribute dimension
+        assert(!neighs.empty());
+        assert(P.cols() == neighs.size());
+        const double current_target_edge_length =
+            target_edge_length_accessor.const_scalar_attribute(neighs[0]);
+        const double max_amips = P.maxCoeff();
 
-            double new_target_edge_length = current_target_edge_length;
-            if (max_amips > 100) {
-                new_target_edge_length *= 0.5;
-            } else {
-                new_target_edge_length *= 1.5;
-            }
-            new_target_edge_length =
-                std::min(new_target_edge_length, target_edge_length); // upper bound
-            new_target_edge_length =
-                std::max(new_target_edge_length, min_edge_length); // lower bound
-        };
+        double new_target_edge_length = current_target_edge_length;
+        if (max_amips > 100) {
+            new_target_edge_length *= 0.5;
+        } else {
+            new_target_edge_length *= 1.5;
+        }
+        new_target_edge_length =
+            std::min(new_target_edge_length, target_edge_length); // upper bound
+        new_target_edge_length = std::max(new_target_edge_length, min_edge_length); // lower bound
+
+        return Eigen::VectorXd::Constant(1, new_target_edge_length);
+
+        // return Eigen::VectorXd::Constant(1, target_edge_length); // <-- no quality dependent size adaptation
+    };
     auto target_edge_length_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
             target_edge_length_attribute,
