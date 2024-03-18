@@ -49,6 +49,10 @@ public:
         return std::get<Index>(m_base_accessors);
     }
 
+
+    /// returns the primitive type of the Index'th type
+    template <size_t Index>
+    PrimitiveType primitive_type() const;
     // Eigen::Map<VectorX<T>>
     // template <int D = Eigen::Dynamic>
     // using MapResult = internal::MapResult<Compound, D>;

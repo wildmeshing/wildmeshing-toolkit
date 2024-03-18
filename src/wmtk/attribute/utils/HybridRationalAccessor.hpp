@@ -7,7 +7,7 @@
 namespace wmtk::attribute::utils {
 
 
-template <int D, typename MeshType>
+template <int D = Eigen::Dynamic, typename MeshType = wmtk::Mesh>
 class HybridRationalAccessor
     : public attribute::internal::CompoundAccessor<3, MeshType, char, wmtk::Rational, double>
 {
@@ -21,6 +21,10 @@ public:
     HybridRationalAccessor(MeshType& m, const HybridRationalAttribute<D>& attr)
         : Base(m, std::get<0>(attr), std::get<1>(attr), std::get<2>(attr))
     {}
+
+    PrimitiveType primitive_type() const { return Base::template primitive_type<0>(); }
+
+
     void round(const Tuple& t)
     {
         auto [c, r, d] = value(t);
@@ -66,9 +70,11 @@ public:
     bool is_rounded(const Tuple& t) { return char_const_value(t) == 1; }
 
 
-    template <size_t T>
-    auto single_value(const Tuple& t)
-    {}
+    // template <size_t T>
+    // auto single_value(const Tuple& t)
+    //{
+    //     return
+    // }
 };
 
 

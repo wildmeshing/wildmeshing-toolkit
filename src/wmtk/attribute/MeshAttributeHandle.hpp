@@ -2,6 +2,7 @@
 #include <wmtk/utils/Rational.hpp>
 //
 #include "TypedAttributeHandle.hpp"
+#include "internal/HybridRationalAttribute.hpp"
 
 #include <variant>
 
@@ -25,11 +26,12 @@ public:
         TypedAttributeHandle<char>,
         TypedAttributeHandle<int64_t>,
         TypedAttributeHandle<double>,
-        TypedAttributeHandle<wmtk::Rational>>;
+        TypedAttributeHandle<wmtk::Rational>,
+        internal::HybridRationalAttribute<>>;
 
     using ValueVariant = std::variant<char, int64_t, double, wmtk::Rational>;
 
-    enum class HeldType { Char = 0, Int64 = 1, Double = 2, Rational = 3 };
+    enum class HeldType { Char = 0, Int64 = 1, Double = 2, Rational = 3, HybridRational = 4 };
 
     template <HeldType Type>
     using held_handle_type = std::variant_alternative<size_t(Type), HandleVariant>;
