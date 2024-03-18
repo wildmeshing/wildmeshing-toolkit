@@ -113,7 +113,8 @@ $(document).ready(function(){initNavTree('namespacewmtk_1_1attribute_1_1internal
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#typedef-members">Typedefs</a>  </div>
+<a href="#typedef-members">Typedefs</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">wmtk::attribute::internal Namespace Reference</div>  </div>
 </div><!--header-->
@@ -122,6 +123,8 @@ $(document).ready(function(){initNavTree('namespacewmtk_1_1attribute_1_1internal
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope.html">CheckpointScope</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html">CompoundAccessor</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
@@ -137,6 +140,15 @@ Typedefs</h2></td></tr>
 <tr class="memitem:a7caa4ffd737983d08ee3d548457d6c7b"><td class="memTemplParams" colspan="2">template&lt;typename T , int R = Eigen::Dynamic&gt; </td></tr>
 <tr class="memitem:a7caa4ffd737983d08ee3d548457d6c7b"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#a7caa4ffd737983d08ee3d548457d6c7b">ConstMapResult</a> = typename <a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#aac8278f58adccaf282751aeb7ef536f7">VectorResult</a>&lt; T, R &gt;::ConstMapType</td></tr>
 <tr class="separator:a7caa4ffd737983d08ee3d548457d6c7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:a4f525a7955c1b09da8cd34ba70d4e9ca"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , typename... AttrType&gt; </td></tr>
+<tr class="memitem:a4f525a7955c1b09da8cd34ba70d4e9ca"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#a4f525a7955c1b09da8cd34ba70d4e9ca">CompoundAccessor</a> (MeshType &amp;m, const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; AttrType &gt; &amp;... handle) -&gt; <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html">CompoundAccessor</a>&lt; sizeof...(AttrType), MeshType, AttrType... &gt;</td></tr>
+<tr class="separator:a4f525a7955c1b09da8cd34ba70d4e9ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00332ca62d98be304cf78f4b9725116c"><td class="memTemplParams" colspan="2">template&lt;typename FirstAcc , typename MeshType , int FirstDim, typename... AccTypes, int... Dims&gt; </td></tr>
+<tr class="memitem:a00332ca62d98be304cf78f4b9725116c"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#a00332ca62d98be304cf78f4b9725116c">CompoundAccessor</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">Accessor</a>&lt; FirstAcc, MeshType, FirstDim &gt; &amp;, const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">Accessor</a>&lt; AccTypes, MeshType, Dims &gt; &amp;...) -&gt; <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html">CompoundAccessor</a>&lt; sizeof...(AccTypes)+1, MeshType, FirstAcc, AccTypes... &gt;</td></tr>
+<tr class="separator:a00332ca62d98be304cf78f4b9725116c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Typedef Documentation</h2>
 <a id="a7caa4ffd737983d08ee3d548457d6c7b"></a>
@@ -195,6 +207,67 @@ template&lt;typename T , int R = Eigen::Dynamic&gt; </div>
 <p>Underlying vector type used by attribute is dynamically sized but bounded. </p>
 
 <p class="definition">Definition at line <a class="el" href="internal_2_map_types_8hpp_source.html#l00015">15</a> of file <a class="el" href="internal_2_map_types_8hpp_source.html">MapTypes.hpp</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="a00332ca62d98be304cf78f4b9725116c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a00332ca62d98be304cf78f4b9725116c">&#9670;&nbsp;</a></span>CompoundAccessor() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FirstAcc , typename MeshType , int FirstDim, typename... AccTypes, int... Dims&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html">wmtk::attribute::internal::CompoundAccessor</a> </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">Accessor</a>&lt; FirstAcc, MeshType, FirstDim &gt; &amp;&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">Accessor</a>&lt; AccTypes, MeshType, Dims &gt; &amp;&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> -&gt;  <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html">CompoundAccessor</a>&lt; sizeof...(AccTypes)+1, MeshType, FirstAcc, AccTypes... &gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4f525a7955c1b09da8cd34ba70d4e9ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4f525a7955c1b09da8cd34ba70d4e9ca">&#9670;&nbsp;</a></span>CompoundAccessor() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , typename... AttrType&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html">wmtk::attribute::internal::CompoundAccessor</a> </td>
+          <td>(</td>
+          <td class="paramtype">MeshType &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; AttrType &gt; &amp;...&#160;</td>
+          <td class="paramname"><em>handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> -&gt;  <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html">CompoundAccessor</a>&lt; sizeof...(AttrType), MeshType, AttrType... &gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>

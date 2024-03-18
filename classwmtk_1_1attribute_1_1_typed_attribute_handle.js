@@ -15,12 +15,13 @@ var classwmtk_1_1attribute_1_1_typed_attribute_handle =
     [ "operator=", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a68ca8cf09c1603716e510c8bc9b7ceef", null ],
     [ "operator==", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a0d95a76412b6bdcf9f04da85fc7e348d", null ],
     [ "primitive_type", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a07ea6bc844be27a48fde619a3578b128", null ],
-    [ "Accessor", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a45f1f17a4c7a4a8b2d68c864efa01439", null ],
-    [ "AccessorBase< T >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a576fbc1c35e2c7785c1f26a6ac22e61d", null ],
+    [ "Accessor", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a3b700009b89852955aced5e7940d0261", null ],
+    [ "AccessorBase", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a45a470617083e2afdca1b76b5c0377c7", null ],
     [ "AttributeManager", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a667110497747903023648e2ef6ff02ea", null ],
     [ "MeshAttributes< T >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a8665d99a647fdffe278f2e4745ffd726", null ],
+    [ "utils::HybridRationalAttribute", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a3701286e442216dda37135cd40b97168", null ],
     [ "wmtk::hash< TypedAttributeHandle< T > >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a9bda601960cf5f161ccd0250714d1d22", null ],
     [ "wmtk::Mesh", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a40e16ebf947f9980244ad9e954e38aa3", null ],
-    [ "m_base_handle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a62604c0627ef1d827b82cdd747c6c1ed", null ],
-    [ "m_primitive_type", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ade22570c7d6628b7ce7ba82c6a0581fd", null ]
+    [ "m_base_handle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ade337a19e83a2c6a2386dc8e5386bb89", null ],
+    [ "m_primitive_type", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#afd9ad7a40bd8e443de2e3a1e9a044631", null ]
 ];

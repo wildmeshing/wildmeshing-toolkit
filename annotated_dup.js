@@ -16,7 +16,12 @@ var annotated_dup =
     [ "wmtk", "namespacewmtk.html", [
       [ "attribute", "namespacewmtk_1_1attribute.html", [
         [ "internal", "namespacewmtk_1_1attribute_1_1internal.html", [
-          [ "CheckpointScope", "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope.html", "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope" ]
+          [ "CheckpointScope", "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope.html", "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope" ],
+          [ "CompoundAccessor", "classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html", "classwmtk_1_1attribute_1_1internal_1_1_compound_accessor" ]
+        ] ],
+        [ "utils", "namespacewmtk_1_1attribute_1_1utils.html", [
+          [ "HybridRationalAttribute", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute" ],
+          [ "HybridRationalAccessor", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_accessor.html", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_accessor" ]
         ] ],
         [ "Accessor", "classwmtk_1_1attribute_1_1_accessor.html", "classwmtk_1_1attribute_1_1_accessor" ],
         [ "Attribute", "classwmtk_1_1attribute_1_1_attribute.html", "classwmtk_1_1attribute_1_1_attribute" ],

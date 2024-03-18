@@ -143,7 +143,7 @@ Functions</h2></td></tr>
 <tr class="memitem:a3ba02c50321ce0e6095c107cbb5edc13"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a3ba02c50321ce0e6095c107cbb5edc13">extract_and_register_child_mesh_from_tag_handle</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">wmtk::attribute::TypedAttributeHandle</a>&lt; int64_t &gt; &amp;tag_handle, const int64_t tag_value)</td></tr>
 <tr class="memdesc:a3ba02c50321ce0e6095c107cbb5edc13"><td class="mdescLeft">&#160;</td><td class="mdescRight">extract a child mesh based on the tag handle and the tag value, and register it to the input (parent) mesh  <a href="namespacewmtk_1_1multimesh_1_1utils.html#a3ba02c50321ce0e6095c107cbb5edc13">More...</a><br /></td></tr>
 <tr class="separator:a3ba02c50321ce0e6095c107cbb5edc13"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a197be9245149c7042613aeacf231ec1d"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a197be9245149c7042613aeacf231ec1d">extract_and_register_child_mesh_from_tag</a> (<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a> &amp;tag_handle, const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#acff4902e30e2b962b3bcf96c357bb79f">wmtk::attribute::MeshAttributeHandle::ValueVariant</a> &amp;tag_value)</td></tr>
+<tr class="memitem:a197be9245149c7042613aeacf231ec1d"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a197be9245149c7042613aeacf231ec1d">extract_and_register_child_mesh_from_tag</a> (<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a> &amp;tag_handle, const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad94661ff02ac9b1927259f0aa4553298">wmtk::attribute::MeshAttributeHandle::ValueVariant</a> &amp;tag_value)</td></tr>
 <tr class="memdesc:a197be9245149c7042613aeacf231ec1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">extract a child mesh based on the tag handle and the tag value, and register it to the input (parent) mesh  <a href="namespacewmtk_1_1multimesh_1_1utils.html#a197be9245149c7042613aeacf231ec1d">More...</a><br /></td></tr>
 <tr class="separator:a197be9245149c7042613aeacf231ec1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a99cdf56ec6abe68409d30e0b67f4ce82"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a99cdf56ec6abe68409d30e0b67f4ce82">find_local_switch_sequence</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;target, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> primitive_type)</td></tr>
@@ -337,7 +337,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00157">157</a> of file <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html">extract_child_mesh_from_tag.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00168">extract_and_register_child_mesh_from_tag_handle()</a>, <a class="el" href="_mesh_8hpp_source.html#l00908">wmtk::Mesh::get_attribute_handle()</a>, and <a class="el" href="_mesh_8hpp_source.html#l00983">wmtk::Mesh::top_simplex_type()</a>.</p>
+<p class="reference">References <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00168">extract_and_register_child_mesh_from_tag_handle()</a>, <a class="el" href="_mesh_8hpp_source.html#l00902">wmtk::Mesh::get_attribute_handle()</a>, and <a class="el" href="_mesh_8hpp_source.html#l00977">wmtk::Mesh::top_simplex_type()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00565">wmtk::utils::generate_raw_tetmesh_with_surface_from_input()</a>, <a class="el" href="multimesh_8cpp_source.html#l00012">wmtk::components::multimesh()</a>, and <a class="el" href="test__component__isotropic__remeshing_8cpp_source.html#l00802">TEST_CASE()</a>.</p>
 <div class="dynheader">
@@ -370,7 +370,7 @@ Here is the caller graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#acff4902e30e2b962b3bcf96c357bb79f">wmtk::attribute::MeshAttributeHandle::ValueVariant</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad94661ff02ac9b1927259f0aa4553298">wmtk::attribute::MeshAttributeHandle::ValueVariant</a> &amp;&#160;</td>
           <td class="paramname"><em>tag_value</em>&#160;</td>
         </tr>
         <tr>
@@ -394,7 +394,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00179">179</a> of file <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html">extract_child_mesh_from_tag.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00020">wmtk::multimesh::utils::internal::TupleTag::extract_and_register_child_mesh_from_tag_handle()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00089">wmtk::attribute::MeshAttributeHandle::handle()</a>, and <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00018">wmtk::attribute::MeshAttributeHandle::mesh()</a>.</p>
+<p class="reference">References <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00020">wmtk::multimesh::utils::internal::TupleTag::extract_and_register_child_mesh_from_tag_handle()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00091">wmtk::attribute::MeshAttributeHandle::handle()</a>, and <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00018">wmtk::attribute::MeshAttributeHandle::mesh()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -685,13 +685,13 @@ template&lt;typename MeshType &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00079">79</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#a02b9afd258380cfdafdac411b30d48af">wmtk::attribute::Accessor&lt; T, MeshType &gt;::const_vector_attribute()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a85c2639f896bdbb1ffdaa262402675a0">wmtk::attribute::TupleAccessor&lt; MeshType &gt;::const_vector_attribute()</a>, <a class="el" href="_accessor_base_8hxx_source.html#l00055">wmtk::attribute::AccessorBase&lt; _T &gt;::dimension()</a>, and <a class="el" href="_tuple_accessor_8hpp_source.html#l00033">wmtk::attribute::TupleAccessor&lt; MeshType &gt;::dimension()</a>.</p>
+<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a02e28a9bbd718342f581c95bbe9710a7">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="_accessor_base_8hxx_source.html#l00055">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::dimension()</a>, and <a class="el" href="_tuple_accessor_8hpp_source.html#l00034">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;::dimension()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00024">wmtk::multimesh::MultiMeshManager::map_tuple_between_meshes()</a>, <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00159">read_tuple_map_attribute_slow()</a>, <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00064">wmtk::operations::utils::update_vertex_operation_multimesh_map_hash()</a>, and <a class="el" href="_multi_mesh_manager_8cpp_source.html#l01019">wmtk::multimesh::MultiMeshManager::update_vertex_operation_multimesh_map_hash_internal()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_a7d748ef4839b09a5460e8af97b9fa678_cgraph.svg" width="480" height="272"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_a7d748ef4839b09a5460e8af97b9fa678_cgraph.svg" width="480" height="248"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 <div class="dynheader">
@@ -849,13 +849,13 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00159">159</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00890">wmtk::Mesh::create_const_accessor()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00079">read_tuple_map_attribute()</a>.</p>
+<p class="reference">References <a class="el" href="classwmtk_1_1_mesh.html#a4a20dcdac339e7a4f6f8a6570114cbe6">wmtk::Mesh::create_const_accessor()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00079">read_tuple_map_attribute()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_multi_mesh_manager_8cpp_source.html#l01064">wmtk::multimesh::MultiMeshManager::check_child_map_valid()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_ad94e77dd28232bdd696412d346f30f62_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_ad94e77dd28232bdd696412d346f30f62_cgraph.svg" width="100%" height="486"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
@@ -915,7 +915,7 @@ template&lt;typename MeshA , typename MeshB &gt; </div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_ab19d57f46b80f20b1b4685ed83e305d5_cgraph.svg" width="100%" height="504"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_ab19d57f46b80f20b1b4685ed83e305d5_cgraph.svg" width="100%" height="486"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
@@ -1293,13 +1293,13 @@ template&lt;typename MeshType &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00113">113</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#a02b9afd258380cfdafdac411b30d48af">wmtk::attribute::Accessor&lt; T, MeshType &gt;::const_vector_attribute()</a>, <a class="el" href="_accessor_base_8hxx_source.html#l00055">wmtk::attribute::AccessorBase&lt; _T &gt;::dimension()</a>, <a class="el" href="_tuple_accessor_8hpp_source.html#l00033">wmtk::attribute::TupleAccessor&lt; MeshType &gt;::dimension()</a>, and <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a1c36d7761592c90e452ebef6aa4ffaa2">wmtk::attribute::TupleAccessor&lt; MeshType &gt;::vector_attribute()</a>.</p>
+<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="_accessor_base_8hxx_source.html#l00055">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::dimension()</a>, <a class="el" href="_tuple_accessor_8hpp_source.html#l00034">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;::dimension()</a>, and <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a52f1474c822d1a3d910b74793830014e">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;::vector_attribute()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8hpp_source.html#l00039">symmetric_write_tuple_map_attributes()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00150">write_tuple_map_attribute_slow()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_aa965e96578f254d53e7ca53d617f5c6a_cgraph.svg" width="484" height="272"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_aa965e96578f254d53e7ca53d617f5c6a_cgraph.svg" width="484" height="248"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 <div class="dynheader">
@@ -1487,11 +1487,11 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00150">150</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00882">wmtk::Mesh::create_accessor()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00113">write_tuple_map_attribute()</a>.</p>
+<p class="reference">References <a class="el" href="classwmtk_1_1_mesh.html#aa2b952c0d3894043f513a86fbbd910ff">wmtk::Mesh::create_accessor()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00113">write_tuple_map_attribute()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_ab96c92511f3311e2c2aa44286a401c5c_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1multimesh_1_1utils_ab96c92511f3311e2c2aa44286a401c5c_cgraph.svg" width="100%" height="486"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 

@@ -38,7 +38,7 @@ var classwmtk_1_1attribute_1_1_attribute =
     [ "vector_attribute", "classwmtk_1_1attribute_1_1_attribute.html#a8392f2a6ed4a61ac92d533b7e7d36136", null ],
     [ "vector_attribute", "classwmtk_1_1attribute_1_1_attribute.html#a417672bcebe725ef0dca50886dfb4fac", null ],
     [ "vector_attribute", "classwmtk_1_1attribute_1_1_attribute.html#ace52f07e437772cfc94cb33c74411b34", null ],
-    [ "AccessorBase< T >", "classwmtk_1_1attribute_1_1_attribute.html#a576fbc1c35e2c7785c1f26a6ac22e61d", null ],
+    [ "AccessorBase", "classwmtk_1_1attribute_1_1_attribute.html#a45a470617083e2afdca1b76b5c0377c7", null ],
     [ "AttributeCache< T >", "classwmtk_1_1attribute_1_1_attribute.html#aa64f80146e88c4d60aa0e3ff360c4ebb", null ],
     [ "m_data", "classwmtk_1_1attribute_1_1_attribute.html#abd4ae2278ecfb722ba3cb8e1c0f18b77", null ],
     [ "m_default_value", "classwmtk_1_1attribute_1_1_attribute.html#a03af7f23d69aacf3f0fba85fa19d5646", null ],

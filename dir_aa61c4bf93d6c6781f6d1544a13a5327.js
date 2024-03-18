@@ -4,6 +4,8 @@ var dir_aa61c4bf93d6c6781f6d1544a13a5327 =
     [ "CheckpointScope.hpp", "_checkpoint_scope_8hpp.html", [
       [ "CheckpointScope", "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope.html", "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope" ]
     ] ],
+    [ "CompoundAccessor.hpp", "_compound_accessor_8hpp.html", "_compound_accessor_8hpp" ],
+    [ "CompoundAccessor.hxx", "_compound_accessor_8hxx.html", null ],
     [ "hash.cpp", "hash_8cpp.html", null ],
     [ "hash.hpp", "hash_8hpp.html", [
       [ "hash", "classwmtk_1_1hash.html", null ],

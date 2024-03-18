@@ -137,7 +137,7 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 : <a class="el" href="classwmtk_1_1operations_1_1_operation.html#afcc1ed4d86610e9cdbce5f3b7c8e2868">wmtk::operations::Operation</a>
 </li>
 <li>m_attribute
-: <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#af0e1e1793cd386b34d47950578eadd4a">wmtk::attribute::AccessorBase&lt; _T &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#a9ad37b5ac2487d4f4c7a39cb637c8d7e">wmtk::attribute::AccessorBase&lt; _T, Dim &gt;</a>
 </li>
 <li>m_attribute_manager
 : <a class="el" href="classwmtk_1_1_mesh.html#af64daf6aaf6ffd14ce791695d6428cbc">wmtk::Mesh</a>
@@ -146,10 +146,13 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 : <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a0f5e1ce753026d570ed579f1120879d6">wmtk::attribute::MeshAttributes&lt; T &gt;</a>
 </li>
 <li>m_base_accessor
-: <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a8b9f0ba98e0dc5014a4200ef43e7de67">wmtk::attribute::TupleAccessor&lt; MeshType &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ab40235638cf16caebfc97a449f38d484">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;</a>
+</li>
+<li>m_base_accessors
+: <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html#a477d91ee868ebc5055a3629a9f356447">wmtk::attribute::internal::CompoundAccessor&lt; N, MeshType, AttributeType &gt;</a>
 </li>
 <li>m_base_handle
-: <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a62604c0627ef1d827b82cdd747c6c1ed">wmtk::attribute::TypedAttributeHandle&lt; T &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ade337a19e83a2c6a2386dc8e5386bb89">wmtk::attribute::TypedAttributeHandle&lt; T &gt;</a>
 </li>
 <li>m_before
 : <a class="el" href="classwmtk_1_1invariants_1_1internal_1_1_constant_invariant.html#a3eb76c184bfee58ba11590012c98945f">wmtk::invariants::internal::ConstantInvariant</a>
@@ -171,7 +174,7 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 : <a class="el" href="classwmtk_1_1io_1_1_cache.html#affff86466804a066815b4ca15c3829bb">wmtk::io::Cache</a>
 </li>
 <li>m_cache_stack
-: <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#a236ef64700046d9e5f05cc32a794b6c1">wmtk::attribute::CachingAccessor&lt; T &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#af8ade52bb21786a60c29a4f700a9cceb">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;</a>
 </li>
 <li>m_caches
 : <a class="el" href="classwmtk_1_1io_1_1_cache_stack.html#aaacaf2a344bf256ee74106e251089609">wmtk::io::CacheStack</a>
@@ -219,10 +222,10 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 , <a class="el" href="classwmtk_1_1_max_edge_length_invariant.html#a6b1b2ee4014a5047bb33e22656f2f9c0">wmtk::MaxEdgeLengthInvariant</a>
 , <a class="el" href="classwmtk_1_1_min_edge_length_invariant.html#a3f08f7d6f8e0717daaaffa365edfd7e8">wmtk::MinEdgeLengthInvariant</a>
 , <a class="el" href="classwmtk_1_1_simplex_inversion_invariant.html#aa4929b25b76e3ccfb66177dc1d2401d1">wmtk::SimplexInversionInvariant</a>
-, <a class="el" href="classwmtk_1_1_swap23_energy_before_invariant.html#af1294632bd08ec96df84677deaf5d761">wmtk::Swap23EnergyBeforeInvariant</a>
-, <a class="el" href="classwmtk_1_1_swap32_energy_before_invariant.html#a08e53946d8484251a6cc6537abd55c26">wmtk::Swap32EnergyBeforeInvariant</a>
-, <a class="el" href="classwmtk_1_1_swap44__2_energy_before_invariant.html#ad5874728bc924030bea9b518ade88228">wmtk::Swap44_2EnergyBeforeInvariant</a>
-, <a class="el" href="classwmtk_1_1_swap44_energy_before_invariant.html#a124d838a09c4aa277bf923ded2f7a321">wmtk::Swap44EnergyBeforeInvariant</a>
+, <a class="el" href="classwmtk_1_1_swap23_energy_before_invariant.html#a4abb35e8e370eddbe4bdc59d116f208d">wmtk::Swap23EnergyBeforeInvariant</a>
+, <a class="el" href="classwmtk_1_1_swap32_energy_before_invariant.html#a4687afe953da5a10f7e2371194ff19fa">wmtk::Swap32EnergyBeforeInvariant</a>
+, <a class="el" href="classwmtk_1_1_swap44__2_energy_before_invariant.html#af3a5a3cefad1dabd9b962f00fe41e35d">wmtk::Swap44_2EnergyBeforeInvariant</a>
+, <a class="el" href="classwmtk_1_1_swap44_energy_before_invariant.html#afd54dd4859f040ae1c505e2c48df2ace">wmtk::Swap44EnergyBeforeInvariant</a>
 </li>
 <li>m_critical_points
 : <a class="el" href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#aea5d78d589e51a908246569981f9a910">wmtk::multimesh::utils::internal::TupleTag</a>
@@ -243,7 +246,7 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 </li>
 <li>m_dimension
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a3d2b408cca634ef9ab1a93106514d4f2">wmtk::attribute::Attribute&lt; T &gt;</a>
-, <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ae62f4993b6581aee895fb05fa987c7ce">wmtk::attribute::TupleAccessor&lt; MeshType &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ad402a1947de22a9e2e11fbb9e04a9656">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;</a>
 , <a class="el" href="classwmtk_1_1_cell.html#a0c66199df63b67ab0a9add8180f88e3d">wmtk::Cell</a>
 </li>
 <li>m_domain_simplex_type
@@ -362,7 +365,7 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 : <a class="el" href="classwmtk_1_1_tuple.html#aa9bafeb81b4d3fd6270e3455d7b15e69">wmtk::Tuple</a>
 </li>
 <li>m_handle
-: <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#ab382d5dea9897aa5c00ecf944c0d8469">wmtk::attribute::AccessorBase&lt; _T &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#a42fc83877ab82ce231ce126b75245ee3">wmtk::attribute::AccessorBase&lt; _T, Dim &gt;</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a1d9b995056615e22b42c6a101d4314e8">wmtk::attribute::MeshAttributeHandle</a>
 , <a class="el" href="classwmtk_1_1function_1_1_function.html#a8e9dc1f2fb5a0d2a197e0147366deb5c">wmtk::function::Function</a>
 , <a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#ab66bc21cb55b5597badaeabd5a32874c">wmtk::function::PerSimplexFunction</a>
@@ -439,7 +442,7 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 : <a class="el" href="classwmtk_1_1multimesh_1_1_mappable_container.html#ae71ff7df3eccf86c19a6140dc52a711b">wmtk::multimesh::MappableContainer</a>
 </li>
 <li>m_mesh
-: <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#a9e62d9e7f94c35b1591ff708c79023e0">wmtk::attribute::AccessorBase&lt; _T &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#a2aed50d9ed5335a532bbb9cbf35ade8a">wmtk::attribute::AccessorBase&lt; _T, Dim &gt;</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a581a7733744c671289d7062785a4f044">wmtk::attribute::MeshAttributeHandle</a>
 , <a class="el" href="classwmtk_1_1components_1_1internal_1_1_marching.html#a2b346a8176ea0eb2e9bfbdc1b6e66151">wmtk::components::internal::Marching</a>
 , <a class="el" href="classwmtk_1_1components_1_1internal_1_1_regular_space.html#a4346093021531fc39343ca4be9e74b85">wmtk::components::internal::RegularSpace</a>
@@ -552,7 +555,7 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 : <a class="el" href="classwmtk_1_1function_1_1utils_1_1_auto_diff_r_a_i_i.html#ad0808ed576521cb93d2d72a47d671f5a">wmtk::function::utils::AutoDiffRAII</a>
 </li>
 <li>m_primitive_type
-: <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ade22570c7d6628b7ce7ba82c6a0581fd">wmtk::attribute::TypedAttributeHandle&lt; T &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#afd9ad7a40bd8e443de2e3a1e9a044631">wmtk::attribute::TypedAttributeHandle&lt; T &gt;</a>
 , <a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#aed97ff72388ff27c322e9cf2695c44f2">wmtk::function::PerSimplexFunction</a>
 , <a class="el" href="classwmtk_1_1invariants_1_1_interior_simplex_invariant.html#ac87912a079fe83a815428bd5774273b5">wmtk::invariants::InteriorSimplexInvariant</a>
 , <a class="el" href="classwmtk_1_1_primitive.html#a085fabdbc5c46405992bdbe470e39479">wmtk::Primitive</a>

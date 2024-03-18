@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 2399;
+var viewWidth = 2814;
 var viewHeight = 222;
 var sectionId = 'dynsection-0';
 </script>
@@ -58,8 +58,8 @@ var sectionId = 'dynsection-0';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="2215,-44 2215,-63 2391,-63 2391,-44 2215,-44"/>
-<text text-anchor="middle" x="2303" y="-51" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::components::TagAttribute</text>
+<polygon fill="#bfbfbf" stroke="black" points="2630,-65 2630,-84 2806,-84 2806,-65 2630,-65"/>
+<text text-anchor="middle" x="2718" y="-72" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::components::TagAttribute</text>
 </a>
 </g>
 </g>
@@ -67,66 +67,67 @@ var sectionId = 'dynsection-0';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="1955,-38.5 1955,-68.5 2097,-68.5 2097,-38.5 1955,-38.5"/>
-<text text-anchor="start" x="1963" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
-<text text-anchor="middle" x="2026" y="-45.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; int64_t &gt;</text>
+<polygon fill="none" stroke="black" points="2370,-59.5 2370,-89.5 2512,-89.5 2512,-59.5 2370,-59.5"/>
+<text text-anchor="start" x="2378" y="-77.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
+<text text-anchor="middle" x="2441" y="-66.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; int64_t &gt;</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M2107.38,-53.5C2141.09,-53.5 2180.37,-53.5 2214.79,-53.5"/>
-<polygon fill="#9a32cd" stroke="#9a32cd" points="2107.11,-50 2097.11,-53.5 2107.11,-57 2107.11,-50"/>
-<text text-anchor="middle" x="2156" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00"> m_tag_accessor</text>
+<path fill="none" stroke="#9a32cd" stroke-dasharray="5,2" d="M2522.38,-74.5C2556.09,-74.5 2595.37,-74.5 2629.79,-74.5"/>
+<polygon fill="#9a32cd" stroke="#9a32cd" points="2522.11,-71 2512.11,-74.5 2522.11,-78 2522.11,-71"/>
+<text text-anchor="middle" x="2571" y="-77.5" font-family="Helvetica,sans-Serif" font-size="10.00"> m_tag_accessor</text>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classwmtk_1_1attribute_1_1_caching_accessor.html" target="_top" xlink:title="An accessor for cached attribute values.">
-<polygon fill="none" stroke="black" points="1543,-38.5 1543,-68.5 1680,-68.5 1680,-38.5 1543,-38.5"/>
-<text text-anchor="start" x="1551" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Caching</text>
-<text text-anchor="middle" x="1611.5" y="-45.5" font-family="Helvetica,sans-Serif" font-size="10.00">Accessor&lt; T &gt;</text>
+<polygon fill="none" stroke="black" points="1636,-66.5 1636,-96.5 1773,-96.5 1773,-66.5 1636,-66.5"/>
+<text text-anchor="start" x="1644" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Caching</text>
+<text text-anchor="middle" x="1704.5" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">Accessor&lt; T, Dim &gt;</text>
 </a>
 </g>
 </g>
 <!-- Node3&#45;&gt;Node2 -->
 <g id="edge2" class="edge">
 <title>Node3&#45;&gt;Node2</title>
-<path fill="none" stroke="darkgreen" d="M1690.55,-57.86C1756.29,-60.89 1852.82,-63.84 1937,-60.5 1942.82,-60.27 1948.85,-59.95 1954.9,-59.58"/>
-<polygon fill="darkgreen" stroke="darkgreen" points="1690.42,-54.35 1680.27,-57.38 1690.09,-61.34 1690.42,-54.35"/>
+<path fill="none" stroke="darkgreen" d="M1783.29,-82.45C1785.89,-82.47 1788.47,-82.49 1791,-82.5 1842.11,-82.8 1854.89,-82.61 1906,-82.5 2104.22,-82.06 2153.91,-87.69 2352,-80.5 2357.82,-80.29 2363.84,-80.01 2369.89,-79.68"/>
+<polygon fill="darkgreen" stroke="darkgreen" points="1783.2,-78.95 1773.17,-82.36 1783.14,-85.95 1783.2,-78.95"/>
 </g>
-<!-- Node15 -->
-<g id="node15" class="node">
-<title>Node15</title>
-<g id="a_node15"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html" target="_top" xlink:title="A CachingAccessor that uses tuples for accessing attributes instead of indices.">
-<polygon fill="none" stroke="black" points="1717,-16.5 1717,-46.5 1859,-46.5 1859,-16.5 1717,-16.5"/>
-<text text-anchor="start" x="1725" y="-34.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
-<text text-anchor="middle" x="1788" y="-23.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; T, MeshType &gt;</text>
+<!-- Node16 -->
+<g id="node16" class="node">
+<title>Node16</title>
+<g id="a_node16"><a xlink:href="classwmtk_1_1attribute_1_1_caching_accessor.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="1924,-37.5 1924,-67.5 2095,-67.5 2095,-37.5 1924,-37.5"/>
+<text text-anchor="start" x="1932" y="-55.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Caching</text>
+<text text-anchor="middle" x="2009.5" y="-44.5" font-family="Helvetica,sans-Serif" font-size="10.00">Accessor&lt; T, Eigen::Dynamic &gt;</text>
 </a>
 </g>
 </g>
-<!-- Node3&#45;&gt;Node15 -->
-<g id="edge19" class="edge">
-<title>Node3&#45;&gt;Node15</title>
-<path fill="none" stroke="darkgreen" d="M1690.66,-43.65C1699.41,-42.54 1708.28,-41.42 1716.92,-40.34"/>
-<polygon fill="darkgreen" stroke="darkgreen" points="1689.95,-40.21 1680.47,-44.93 1690.83,-47.15 1689.95,-40.21"/>
+<!-- Node3&#45;&gt;Node16 -->
+<g id="edge21" class="edge">
+<title>Node3&#45;&gt;Node16</title>
+<path fill="none" stroke="orange" stroke-dasharray="5,2" d="M1783.28,-72.3C1785.88,-72.03 1788.46,-71.76 1791,-71.5 1834.74,-67.03 1883.5,-62.71 1923.75,-59.32"/>
+<polygon fill="orange" stroke="orange" points="1782.72,-68.85 1773.15,-73.4 1783.47,-75.8 1782.72,-68.85"/>
+<text text-anchor="middle" x="1848.5" y="-74.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &lt; T, Eigen::Dynamic &gt;</text>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:href="classwmtk_1_1attribute_1_1_accessor_base.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="1364,-38.5 1364,-68.5 1506,-68.5 1506,-38.5 1364,-38.5"/>
-<text text-anchor="start" x="1372" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
-<text text-anchor="middle" x="1435" y="-45.5" font-family="Helvetica,sans-Serif" font-size="10.00">Base&lt; T &gt;</text>
+<polygon fill="none" stroke="black" points="1447,-66.5 1447,-96.5 1599,-96.5 1599,-66.5 1447,-66.5"/>
+<text text-anchor="start" x="1455" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
+<text text-anchor="middle" x="1523" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">Base&lt; T, Eigen::Dynamic &gt;</text>
 </a>
 </g>
 </g>
 <!-- Node4&#45;&gt;Node3 -->
 <g id="edge3" class="edge">
 <title>Node4&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M1516.25,-53.5C1525.18,-53.5 1534.22,-53.5 1542.97,-53.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="1516.22,-50 1506.22,-53.5 1516.22,-57 1516.22,-50"/>
+<path fill="none" stroke="midnightblue" d="M1609.16,-81.5C1618.12,-81.5 1627.14,-81.5 1635.87,-81.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="1609.08,-78 1599.08,-81.5 1609.08,-85 1609.08,-78"/>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
@@ -134,16 +135,22 @@ var sectionId = 'dynsection-0';
 <g id="a_node5"><a xlink:href="classwmtk_1_1attribute_1_1_accessor_base.html" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="1145,-38.5 1145,-68.5 1287,-68.5 1287,-38.5 1145,-38.5"/>
 <text text-anchor="start" x="1153" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
-<text text-anchor="middle" x="1216" y="-45.5" font-family="Helvetica,sans-Serif" font-size="10.00">Base&lt; _T &gt;</text>
+<text text-anchor="middle" x="1216" y="-45.5" font-family="Helvetica,sans-Serif" font-size="10.00">Base&lt; _T, Dim &gt;</text>
 </a>
 </g>
 </g>
 <!-- Node5&#45;&gt;Node4 -->
 <g id="edge4" class="edge">
 <title>Node5&#45;&gt;Node4</title>
-<path fill="none" stroke="orange" stroke-dasharray="5,2" d="M1297.36,-53.5C1319.14,-53.5 1342.54,-53.5 1363.72,-53.5"/>
-<polygon fill="orange" stroke="orange" points="1297.15,-50 1287.15,-53.5 1297.15,-57 1297.15,-50"/>
-<text text-anchor="middle" x="1330" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &lt; T &gt;</text>
+<path fill="none" stroke="orange" stroke-dasharray="5,2" d="M1297.36,-60.88C1343.68,-65.13 1401.54,-70.44 1446.94,-74.61"/>
+<polygon fill="orange" stroke="orange" points="1297.63,-57.39 1287.36,-59.96 1296.99,-64.36 1297.63,-57.39"/>
+<text text-anchor="middle" x="1371.5" y="-74.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &lt; T, Eigen::Dynamic &gt;</text>
+</g>
+<!-- Node5&#45;&gt;Node16 -->
+<g id="edge20" class="edge">
+<title>Node5&#45;&gt;Node16</title>
+<path fill="none" stroke="midnightblue" d="M1297.33,-53.4C1447.72,-53.21 1770.42,-52.8 1923.96,-52.61"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="1297.24,-49.9 1287.24,-53.41 1297.24,-56.9 1297.24,-49.9"/>
 </g>
 <!-- Node6 -->
 <g id="node6" class="node">
@@ -318,12 +325,28 @@ var sectionId = 'dynsection-0';
 <polygon fill="#9a32cd" stroke="#9a32cd" points="1125.45,-123.99 1135.88,-122.09 1126.54,-117.08 1125.45,-123.99"/>
 <text text-anchor="middle" x="1055.5" y="-121.5" font-family="Helvetica,sans-Serif" font-size="10.00"> m_multi_mesh_manager</text>
 </g>
+<!-- Node15 -->
+<g id="node15" class="node">
+<title>Node15</title>
+<g id="a_node15"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html" target="_top" xlink:title="A CachingAccessor that uses tuples for accessing attributes instead of indices.">
+<polygon fill="none" stroke="black" points="2132,-37.5 2132,-67.5 2274,-67.5 2274,-37.5 2132,-37.5"/>
+<text text-anchor="start" x="2140" y="-55.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
+<text text-anchor="middle" x="2203" y="-44.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; T, MeshType, Dim &gt;</text>
+</a>
+</g>
+</g>
 <!-- Node15&#45;&gt;Node2 -->
 <g id="edge18" class="edge">
 <title>Node15&#45;&gt;Node2</title>
-<path fill="none" stroke="orange" stroke-dasharray="5,2" d="M1869.23,-38.98C1896.97,-41.56 1927.82,-44.44 1954.69,-46.95"/>
-<polygon fill="orange" stroke="orange" points="1869.45,-35.48 1859.17,-38.04 1868.8,-42.45 1869.45,-35.48"/>
-<text text-anchor="middle" x="1907" y="-48.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &lt; int64_t &gt;</text>
+<path fill="none" stroke="orange" stroke-dasharray="5,2" d="M2284.23,-59.98C2311.97,-62.56 2342.82,-65.44 2369.69,-67.95"/>
+<polygon fill="orange" stroke="orange" points="2284.45,-56.48 2274.17,-59.04 2283.8,-63.45 2284.45,-56.48"/>
+<text text-anchor="middle" x="2322" y="-68.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &lt; int64_t &gt;</text>
+</g>
+<!-- Node16&#45;&gt;Node15 -->
+<g id="edge19" class="edge">
+<title>Node16&#45;&gt;Node15</title>
+<path fill="none" stroke="darkgreen" d="M2105.2,-52.5C2114.21,-52.5 2123.23,-52.5 2131.95,-52.5"/>
+<polygon fill="darkgreen" stroke="darkgreen" points="2105.05,-49 2095.05,-52.5 2105.05,-56 2105.05,-49"/>
 </g>
 </g>
 </svg>

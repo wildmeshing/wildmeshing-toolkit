@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: wmtk::attribute::TupleAccessor&lt; MeshType &gt; Class Template Reference</title>
+<title>Wildmeshing Toolkit: wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt; Class Template Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -117,13 +117,13 @@ $(document).ready(function(){initNavTree('classwmtk_1_1attribute_1_1_tuple_acces
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1attribute_1_1_tuple_accessor-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">wmtk::attribute::TupleAccessor&lt; MeshType &gt; Class Template Reference</div>  </div>
+<div class="title">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
 <p><code>#include &lt;<a class="el" href="_tuple_accessor_8hpp_source.html">TupleAccessor.hpp</a>&gt;</code></p>
 <div class="dynheader">
-Collaboration diagram for wmtk::attribute::TupleAccessor&lt; MeshType &gt;:</div>
+Collaboration diagram for wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;:</div>
 <div class="dyncontent">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_tuple_accessor__coll__graph.svg" width="100%" height="522"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
@@ -131,105 +131,106 @@ Collaboration diagram for wmtk::attribute::TupleAccessor&lt; MeshType &gt;:</div
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:ae7a308391f7f4913dbb3cff0742ce7b2"><td class="memTemplParams" colspan="2">template&lt;int D = Eigen::Dynamic&gt; </td></tr>
-<tr class="memitem:ae7a308391f7f4913dbb3cff0742ce7b2"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ae7a308391f7f4913dbb3cff0742ce7b2">MapResult</a> = <a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#a749270beef01f0db2a68e6d89aa8d6b5">internal::MapResult</a>&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, D &gt;</td></tr>
-<tr class="separator:ae7a308391f7f4913dbb3cff0742ce7b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa9c1129ae5c7b11aaa555b7f03ba8eeb"><td class="memTemplParams" colspan="2">template&lt;int D = Eigen::Dynamic&gt; </td></tr>
-<tr class="memitem:aa9c1129ae5c7b11aaa555b7f03ba8eeb"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#aa9c1129ae5c7b11aaa555b7f03ba8eeb">ConstMapResult</a> = <a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#a7caa4ffd737983d08ee3d548457d6c7b">internal::ConstMapResult</a>&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, D &gt;</td></tr>
-<tr class="separator:aa9c1129ae5c7b11aaa555b7f03ba8eeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1149c06b609653ec38776f214562a77"><td class="memTemplParams" colspan="2">template&lt;int D = Dim&gt; </td></tr>
+<tr class="memitem:ae1149c06b609653ec38776f214562a77"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ae1149c06b609653ec38776f214562a77">MapResult</a> = <a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#a749270beef01f0db2a68e6d89aa8d6b5">internal::MapResult</a>&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, D &gt;</td></tr>
+<tr class="separator:ae1149c06b609653ec38776f214562a77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d75842971c0f7d25913d4b341a7eb71"><td class="memTemplParams" colspan="2">template&lt;int D = Dim&gt; </td></tr>
+<tr class="memitem:a4d75842971c0f7d25913d4b341a7eb71"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a4d75842971c0f7d25913d4b341a7eb71">ConstMapResult</a> = <a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#a7caa4ffd737983d08ee3d548457d6c7b">internal::ConstMapResult</a>&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, D &gt;</td></tr>
+<tr class="separator:a4d75842971c0f7d25913d4b341a7eb71"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a4393ec0f14c6b4155bca69912e0f0a01"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a4393ec0f14c6b4155bca69912e0f0a01">TupleAccessor</a> (MeshType &amp;m, const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; int64_t &gt; &amp;handle)</td></tr>
-<tr class="separator:a4393ec0f14c6b4155bca69912e0f0a01"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adbe0ef6f3d7a95e47a9d5ee3c2b93afe"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#adbe0ef6f3d7a95e47a9d5ee3c2b93afe">TupleAccessor</a> (const MeshType &amp;m, const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; int64_t &gt; &amp;handle)</td></tr>
-<tr class="separator:adbe0ef6f3d7a95e47a9d5ee3c2b93afe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2fa93ff7799c2cfb15a97d48f5eb81d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#af2fa93ff7799c2cfb15a97d48f5eb81d">TupleAccessor</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">Accessor</a>&lt; int64_t, MeshType &gt; &amp;accessor)</td></tr>
-<tr class="separator:af2fa93ff7799c2cfb15a97d48f5eb81d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c8b1d90a50224ea7f42d518c46920bb"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a4c8b1d90a50224ea7f42d518c46920bb">const_scalar_attribute</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
-<tr class="separator:a4c8b1d90a50224ea7f42d518c46920bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9dbccf3aff07655c0b833723b07eb06e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a9dbccf3aff07655c0b833723b07eb06e">scalar_attribute</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="separator:a9dbccf3aff07655c0b833723b07eb06e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85c2639f896bdbb1ffdaa262402675a0"><td class="memTemplParams" colspan="2">template&lt;int D = Eigen::Dynamic&gt; </td></tr>
-<tr class="memitem:a85c2639f896bdbb1ffdaa262402675a0"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#aa9c1129ae5c7b11aaa555b7f03ba8eeb">ConstMapResult</a>&lt; D &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a85c2639f896bdbb1ffdaa262402675a0">const_vector_attribute</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
-<tr class="separator:a85c2639f896bdbb1ffdaa262402675a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c36d7761592c90e452ebef6aa4ffaa2"><td class="memTemplParams" colspan="2">template&lt;int D = Eigen::Dynamic&gt; </td></tr>
-<tr class="memitem:a1c36d7761592c90e452ebef6aa4ffaa2"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ae7a308391f7f4913dbb3cff0742ce7b2">MapResult</a>&lt; D &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a1c36d7761592c90e452ebef6aa4ffaa2">vector_attribute</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="separator:a1c36d7761592c90e452ebef6aa4ffaa2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab480573b617217cca508c586f2753080"><td class="memItemLeft" align="right" valign="top">Eigen::Index&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ab480573b617217cca508c586f2753080">dimension</a> () const</td></tr>
-<tr class="separator:ab480573b617217cca508c586f2753080"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a63a63e12b360a7bbe44fc9855945ceeb"><td class="memTemplParams" colspan="2">template&lt;int D&gt; </td></tr>
-<tr class="memitem:a63a63e12b360a7bbe44fc9855945ceeb"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a63a63e12b360a7bbe44fc9855945ceeb">const_vector_attribute</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t) const -&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#aa9c1129ae5c7b11aaa555b7f03ba8eeb">ConstMapResult</a>&lt; D &gt;</td></tr>
-<tr class="separator:a63a63e12b360a7bbe44fc9855945ceeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab497496ecd6370962fe8e9fb32f264bc"><td class="memTemplParams" colspan="2">template&lt;int D&gt; </td></tr>
-<tr class="memitem:ab497496ecd6370962fe8e9fb32f264bc"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ab497496ecd6370962fe8e9fb32f264bc">vector_attribute</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t) -&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ae7a308391f7f4913dbb3cff0742ce7b2">MapResult</a>&lt; D &gt;</td></tr>
-<tr class="separator:ab497496ecd6370962fe8e9fb32f264bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a946f894a8f271354f8d45b87b7348f9a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a946f894a8f271354f8d45b87b7348f9a">TupleAccessor</a> (MeshType &amp;m, const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; int64_t &gt; &amp;handle)</td></tr>
+<tr class="separator:a946f894a8f271354f8d45b87b7348f9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae45b756425136a2f995f3641426a0cd8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ae45b756425136a2f995f3641426a0cd8">TupleAccessor</a> (const MeshType &amp;m, const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; int64_t &gt; &amp;handle)</td></tr>
+<tr class="separator:ae45b756425136a2f995f3641426a0cd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a63e4542e9cb6e1844b27a5e402de5662"><td class="memTemplParams" colspan="2">template&lt;int Dim2&gt; </td></tr>
+<tr class="memitem:a63e4542e9cb6e1844b27a5e402de5662"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a63e4542e9cb6e1844b27a5e402de5662">TupleAccessor</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">Accessor</a>&lt; int64_t, MeshType, Dim2 &gt; &amp;accessor)</td></tr>
+<tr class="separator:a63e4542e9cb6e1844b27a5e402de5662"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4818a6153d6d9d7c3e6b180c5a93b342"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a4818a6153d6d9d7c3e6b180c5a93b342">const_scalar_attribute</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="separator:a4818a6153d6d9d7c3e6b180c5a93b342"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa918e413e1d1d46699d12fab44504705"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#aa918e413e1d1d46699d12fab44504705">scalar_attribute</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
+<tr class="separator:aa918e413e1d1d46699d12fab44504705"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02e28a9bbd718342f581c95bbe9710a7"><td class="memTemplParams" colspan="2">template&lt;int D = Dim&gt; </td></tr>
+<tr class="memitem:a02e28a9bbd718342f581c95bbe9710a7"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a4d75842971c0f7d25913d4b341a7eb71">ConstMapResult</a>&lt; D &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a02e28a9bbd718342f581c95bbe9710a7">const_vector_attribute</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="separator:a02e28a9bbd718342f581c95bbe9710a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52f1474c822d1a3d910b74793830014e"><td class="memTemplParams" colspan="2">template&lt;int D = Dim&gt; </td></tr>
+<tr class="memitem:a52f1474c822d1a3d910b74793830014e"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ae1149c06b609653ec38776f214562a77">MapResult</a>&lt; D &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a52f1474c822d1a3d910b74793830014e">vector_attribute</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
+<tr class="separator:a52f1474c822d1a3d910b74793830014e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d04c3529eb7adeead49e8faa7a119db"><td class="memItemLeft" align="right" valign="top">Eigen::Index&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a8d04c3529eb7adeead49e8faa7a119db">dimension</a> () const</td></tr>
+<tr class="separator:a8d04c3529eb7adeead49e8faa7a119db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6dcb903eb6a998cca3e480c53a2d40cb"><td class="memTemplParams" colspan="2">template&lt;int D&gt; </td></tr>
+<tr class="memitem:a6dcb903eb6a998cca3e480c53a2d40cb"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a6dcb903eb6a998cca3e480c53a2d40cb">const_vector_attribute</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t) const -&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a4d75842971c0f7d25913d4b341a7eb71">ConstMapResult</a>&lt; D &gt;</td></tr>
+<tr class="separator:a6dcb903eb6a998cca3e480c53a2d40cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03791204b37be9d577c2f0fba500e106"><td class="memTemplParams" colspan="2">template&lt;int D&gt; </td></tr>
+<tr class="memitem:a03791204b37be9d577c2f0fba500e106"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a03791204b37be9d577c2f0fba500e106">vector_attribute</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t) -&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ae1149c06b609653ec38776f214562a77">MapResult</a>&lt; D &gt;</td></tr>
+<tr class="separator:a03791204b37be9d577c2f0fba500e106"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a8b9f0ba98e0dc5014a4200ef43e7de67"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">Accessor</a>&lt; int64_t, MeshType &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a8b9f0ba98e0dc5014a4200ef43e7de67">m_base_accessor</a></td></tr>
-<tr class="separator:a8b9f0ba98e0dc5014a4200ef43e7de67"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae62f4993b6581aee895fb05fa987c7ce"><td class="memItemLeft" align="right" valign="top">Eigen::Index&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ae62f4993b6581aee895fb05fa987c7ce">m_dimension</a></td></tr>
-<tr class="separator:ae62f4993b6581aee895fb05fa987c7ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab40235638cf16caebfc97a449f38d484"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">Accessor</a>&lt; int64_t, MeshType &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ab40235638cf16caebfc97a449f38d484">m_base_accessor</a></td></tr>
+<tr class="separator:ab40235638cf16caebfc97a449f38d484"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad402a1947de22a9e2e11fbb9e04a9656"><td class="memItemLeft" align="right" valign="top">Eigen::Index&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ad402a1947de22a9e2e11fbb9e04a9656">m_dimension</a></td></tr>
+<tr class="separator:ad402a1947de22a9e2e11fbb9e04a9656"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><h3>template&lt;typename MeshType&gt;<br />
-class wmtk::attribute::TupleAccessor&lt; MeshType &gt;</h3>
+<div class="textblock"><h3>template&lt;typename MeshType, int Dim = Eigen::Dynamic&gt;<br />
+class wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;</h3>
 
 
 <p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hpp_source.html#l00010">10</a> of file <a class="el" href="_tuple_accessor_8hpp_source.html">TupleAccessor.hpp</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="aa9c1129ae5c7b11aaa555b7f03ba8eeb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa9c1129ae5c7b11aaa555b7f03ba8eeb">&#9670;&nbsp;</a></span>ConstMapResult</h2>
+<a id="a4d75842971c0f7d25913d4b341a7eb71"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d75842971c0f7d25913d4b341a7eb71">&#9670;&nbsp;</a></span>ConstMapResult</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename MeshType &gt; </div>
+template&lt;typename MeshType , int Dim = Eigen::Dynamic&gt; </div>
 <div class="memtemplate">
-template&lt;int D = Eigen::Dynamic&gt; </div>
+template&lt;int D = Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#aa9c1129ae5c7b11aaa555b7f03ba8eeb">ConstMapResult</a> =  <a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#a7caa4ffd737983d08ee3d548457d6c7b">internal::ConstMapResult</a>&lt;<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, D&gt;</td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType, Dim &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a4d75842971c0f7d25913d4b341a7eb71">ConstMapResult</a> =  <a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#a7caa4ffd737983d08ee3d548457d6c7b">internal::ConstMapResult</a>&lt;<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, D&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hpp_source.html#l00022">22</a> of file <a class="el" href="_tuple_accessor_8hpp_source.html">TupleAccessor.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hpp_source.html#l00023">23</a> of file <a class="el" href="_tuple_accessor_8hpp_source.html">TupleAccessor.hpp</a>.</p>
 
 </div>
 </div>
-<a id="ae7a308391f7f4913dbb3cff0742ce7b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae7a308391f7f4913dbb3cff0742ce7b2">&#9670;&nbsp;</a></span>MapResult</h2>
+<a id="ae1149c06b609653ec38776f214562a77"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae1149c06b609653ec38776f214562a77">&#9670;&nbsp;</a></span>MapResult</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename MeshType &gt; </div>
+template&lt;typename MeshType , int Dim = Eigen::Dynamic&gt; </div>
 <div class="memtemplate">
-template&lt;int D = Eigen::Dynamic&gt; </div>
+template&lt;int D = Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ae7a308391f7f4913dbb3cff0742ce7b2">MapResult</a> =  <a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#a749270beef01f0db2a68e6d89aa8d6b5">internal::MapResult</a>&lt;<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, D&gt;</td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType, Dim &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ae1149c06b609653ec38776f214562a77">MapResult</a> =  <a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#a749270beef01f0db2a68e6d89aa8d6b5">internal::MapResult</a>&lt;<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, D&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hpp_source.html#l00019">19</a> of file <a class="el" href="_tuple_accessor_8hpp_source.html">TupleAccessor.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hpp_source.html#l00020">20</a> of file <a class="el" href="_tuple_accessor_8hpp_source.html">TupleAccessor.hpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a4393ec0f14c6b4155bca69912e0f0a01"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4393ec0f14c6b4155bca69912e0f0a01">&#9670;&nbsp;</a></span>TupleAccessor() <span class="overload">[1/3]</span></h2>
+<a id="a946f894a8f271354f8d45b87b7348f9a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a946f894a8f271354f8d45b87b7348f9a">&#9670;&nbsp;</a></span>TupleAccessor() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename MeshType &gt; </div>
+template&lt;typename MeshType , int Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">TupleAccessor</a> </td>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType, Dim &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">TupleAccessor</a> </td>
           <td>(</td>
           <td class="paramtype">MeshType &amp;&#160;</td>
           <td class="paramname"><em>m</em>, </td>
@@ -252,16 +253,16 @@ template&lt;typename MeshType &gt; </div>
 
 </div>
 </div>
-<a id="adbe0ef6f3d7a95e47a9d5ee3c2b93afe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adbe0ef6f3d7a95e47a9d5ee3c2b93afe">&#9670;&nbsp;</a></span>TupleAccessor() <span class="overload">[2/3]</span></h2>
+<a id="ae45b756425136a2f995f3641426a0cd8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae45b756425136a2f995f3641426a0cd8">&#9670;&nbsp;</a></span>TupleAccessor() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename MeshType &gt; </div>
+template&lt;typename MeshType , int Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">TupleAccessor</a> </td>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType, Dim &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">TupleAccessor</a> </td>
           <td>(</td>
           <td class="paramtype">const MeshType &amp;&#160;</td>
           <td class="paramname"><em>m</em>, </td>
@@ -284,39 +285,41 @@ template&lt;typename MeshType &gt; </div>
 
 </div>
 </div>
-<a id="af2fa93ff7799c2cfb15a97d48f5eb81d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af2fa93ff7799c2cfb15a97d48f5eb81d">&#9670;&nbsp;</a></span>TupleAccessor() <span class="overload">[3/3]</span></h2>
+<a id="a63e4542e9cb6e1844b27a5e402de5662"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a63e4542e9cb6e1844b27a5e402de5662">&#9670;&nbsp;</a></span>TupleAccessor() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename MeshType &gt; </div>
+template&lt;typename MeshType , int Dim&gt; </div>
+<div class="memtemplate">
+template&lt;int Dim2&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">TupleAccessor</a> </td>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType, Dim &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">TupleAccessor</a> </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">Accessor</a>&lt; int64_t, MeshType &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">Accessor</a>&lt; int64_t, MeshType, Dim2 &gt; &amp;&#160;</td>
           <td class="paramname"><em>accessor</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hxx_source.html#l00021">21</a> of file <a class="el" href="_tuple_accessor_8hxx_source.html">TupleAccessor.hxx</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hxx_source.html#l00022">22</a> of file <a class="el" href="_tuple_accessor_8hxx_source.html">TupleAccessor.hxx</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a4c8b1d90a50224ea7f42d518c46920bb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4c8b1d90a50224ea7f42d518c46920bb">&#9670;&nbsp;</a></span>const_scalar_attribute()</h2>
+<a id="a4818a6153d6d9d7c3e6b180c5a93b342"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4818a6153d6d9d7c3e6b180c5a93b342">&#9670;&nbsp;</a></span>const_scalar_attribute()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename MeshType &gt; </div>
+template&lt;typename MeshType , int Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">auto <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType &gt;::const_scalar_attribute </td>
+          <td class="memname">auto <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType, Dim &gt;::const_scalar_attribute </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
@@ -325,22 +328,22 @@ template&lt;typename MeshType &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hxx_source.html#l00056">56</a> of file <a class="el" href="_tuple_accessor_8hxx_source.html">TupleAccessor.hxx</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hxx_source.html#l00059">59</a> of file <a class="el" href="_tuple_accessor_8hxx_source.html">TupleAccessor.hxx</a>.</p>
 
 </div>
 </div>
-<a id="a85c2639f896bdbb1ffdaa262402675a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a85c2639f896bdbb1ffdaa262402675a0">&#9670;&nbsp;</a></span>const_vector_attribute() <span class="overload">[1/2]</span></h2>
+<a id="a02e28a9bbd718342f581c95bbe9710a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02e28a9bbd718342f581c95bbe9710a7">&#9670;&nbsp;</a></span>const_vector_attribute() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename MeshType &gt; </div>
+template&lt;typename MeshType , int Dim = Eigen::Dynamic&gt; </div>
 <div class="memtemplate">
-template&lt;int D = Eigen::Dynamic&gt; </div>
+template&lt;int D = Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#aa9c1129ae5c7b11aaa555b7f03ba8eeb">ConstMapResult</a>&lt;D&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType &gt;::const_vector_attribute </td>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a4d75842971c0f7d25913d4b341a7eb71">ConstMapResult</a>&lt;D&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType, Dim &gt;::const_vector_attribute </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
@@ -353,50 +356,50 @@ template&lt;int D = Eigen::Dynamic&gt; </div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_tuple_accessor_a85c2639f896bdbb1ffdaa262402675a0_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_tuple_accessor_a02e28a9bbd718342f581c95bbe9710a7_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
 </div>
 </div>
-<a id="a63a63e12b360a7bbe44fc9855945ceeb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a63a63e12b360a7bbe44fc9855945ceeb">&#9670;&nbsp;</a></span>const_vector_attribute() <span class="overload">[2/2]</span></h2>
+<a id="a6dcb903eb6a998cca3e480c53a2d40cb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6dcb903eb6a998cca3e480c53a2d40cb">&#9670;&nbsp;</a></span>const_vector_attribute() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename MeshType &gt; </div>
+template&lt;typename MeshType , int Dim = Eigen::Dynamic&gt; </div>
 <div class="memtemplate">
 template&lt;int D&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">auto <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType &gt;::const_vector_attribute </td>
+          <td class="memname">auto <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType, Dim &gt;::const_vector_attribute </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
-          <td> const -&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#aa9c1129ae5c7b11aaa555b7f03ba8eeb">ConstMapResult</a>&lt;D&gt;
+          <td> const -&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a4d75842971c0f7d25913d4b341a7eb71">ConstMapResult</a>&lt;D&gt;
 </td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hxx_source.html#l00027">27</a> of file <a class="el" href="_tuple_accessor_8hxx_source.html">TupleAccessor.hxx</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hxx_source.html#l00030">30</a> of file <a class="el" href="_tuple_accessor_8hxx_source.html">TupleAccessor.hxx</a>.</p>
 
 </div>
 </div>
-<a id="ab480573b617217cca508c586f2753080"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab480573b617217cca508c586f2753080">&#9670;&nbsp;</a></span>dimension()</h2>
+<a id="a8d04c3529eb7adeead49e8faa7a119db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d04c3529eb7adeead49e8faa7a119db">&#9670;&nbsp;</a></span>dimension()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename MeshType &gt; </div>
+template&lt;typename MeshType , int Dim = Eigen::Dynamic&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Eigen::Index <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType &gt;::dimension </td>
+          <td class="memname">Eigen::Index <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType, Dim &gt;::dimension </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -409,30 +412,30 @@ template&lt;typename MeshType &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hpp_source.html#l00033">33</a> of file <a class="el" href="_tuple_accessor_8hpp_source.html">TupleAccessor.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hpp_source.html#l00034">34</a> of file <a class="el" href="_tuple_accessor_8hpp_source.html">TupleAccessor.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tuple_accessor_8hpp_source.html#l00037">wmtk::attribute::TupleAccessor&lt; MeshType &gt;::m_dimension</a>.</p>
+<p class="reference">References <a class="el" href="_tuple_accessor_8hpp_source.html#l00038">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;::m_dimension</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00079">wmtk::multimesh::utils::read_tuple_map_attribute()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00113">wmtk::multimesh::utils::write_tuple_map_attribute()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_tuple_accessor_ab480573b617217cca508c586f2753080_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_tuple_accessor_a8d04c3529eb7adeead49e8faa7a119db_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
 </div>
 </div>
-<a id="a9dbccf3aff07655c0b833723b07eb06e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9dbccf3aff07655c0b833723b07eb06e">&#9670;&nbsp;</a></span>scalar_attribute()</h2>
+<a id="aa918e413e1d1d46699d12fab44504705"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa918e413e1d1d46699d12fab44504705">&#9670;&nbsp;</a></span>scalar_attribute()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename MeshType &gt; </div>
+template&lt;typename MeshType , int Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">auto <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType &gt;::scalar_attribute </td>
+          <td class="memname">auto <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType, Dim &gt;::scalar_attribute </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
@@ -441,22 +444,22 @@ template&lt;typename MeshType &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hxx_source.html#l00047">47</a> of file <a class="el" href="_tuple_accessor_8hxx_source.html">TupleAccessor.hxx</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hxx_source.html#l00050">50</a> of file <a class="el" href="_tuple_accessor_8hxx_source.html">TupleAccessor.hxx</a>.</p>
 
 </div>
 </div>
-<a id="a1c36d7761592c90e452ebef6aa4ffaa2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1c36d7761592c90e452ebef6aa4ffaa2">&#9670;&nbsp;</a></span>vector_attribute() <span class="overload">[1/2]</span></h2>
+<a id="a52f1474c822d1a3d910b74793830014e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52f1474c822d1a3d910b74793830014e">&#9670;&nbsp;</a></span>vector_attribute() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename MeshType &gt; </div>
+template&lt;typename MeshType , int Dim = Eigen::Dynamic&gt; </div>
 <div class="memtemplate">
-template&lt;int D = Eigen::Dynamic&gt; </div>
+template&lt;int D = Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ae7a308391f7f4913dbb3cff0742ce7b2">MapResult</a>&lt;D&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType &gt;::vector_attribute </td>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ae1149c06b609653ec38776f214562a77">MapResult</a>&lt;D&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType, Dim &gt;::vector_attribute </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
@@ -469,77 +472,51 @@ template&lt;int D = Eigen::Dynamic&gt; </div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_tuple_accessor_a1c36d7761592c90e452ebef6aa4ffaa2_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_tuple_accessor_a52f1474c822d1a3d910b74793830014e_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
 </div>
 </div>
-<a id="ab497496ecd6370962fe8e9fb32f264bc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab497496ecd6370962fe8e9fb32f264bc">&#9670;&nbsp;</a></span>vector_attribute() <span class="overload">[2/2]</span></h2>
+<a id="a03791204b37be9d577c2f0fba500e106"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03791204b37be9d577c2f0fba500e106">&#9670;&nbsp;</a></span>vector_attribute() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename MeshType &gt; </div>
+template&lt;typename MeshType , int Dim = Eigen::Dynamic&gt; </div>
 <div class="memtemplate">
 template&lt;int D&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">auto <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType &gt;::vector_attribute </td>
+          <td class="memname">auto <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType, Dim &gt;::vector_attribute </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
-          <td> -&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ae7a308391f7f4913dbb3cff0742ce7b2">MapResult</a>&lt;D&gt;
+          <td> -&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#ae1149c06b609653ec38776f214562a77">MapResult</a>&lt;D&gt;
 </td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hxx_source.html#l00038">38</a> of file <a class="el" href="_tuple_accessor_8hxx_source.html">TupleAccessor.hxx</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hxx_source.html#l00041">41</a> of file <a class="el" href="_tuple_accessor_8hxx_source.html">TupleAccessor.hxx</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a8b9f0ba98e0dc5014a4200ef43e7de67"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8b9f0ba98e0dc5014a4200ef43e7de67">&#9670;&nbsp;</a></span>m_base_accessor</h2>
+<a id="ab40235638cf16caebfc97a449f38d484"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab40235638cf16caebfc97a449f38d484">&#9670;&nbsp;</a></span>m_base_accessor</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename MeshType &gt; </div>
+template&lt;typename MeshType , int Dim = Eigen::Dynamic&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">Accessor</a>&lt;int64_t, MeshType&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType &gt;::m_base_accessor</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hpp_source.html#l00036">36</a> of file <a class="el" href="_tuple_accessor_8hpp_source.html">TupleAccessor.hpp</a>.</p>
-
-</div>
-</div>
-<a id="ae62f4993b6581aee895fb05fa987c7ce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae62f4993b6581aee895fb05fa987c7ce">&#9670;&nbsp;</a></span>m_dimension</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename MeshType &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">Eigen::Index <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType &gt;::m_dimension</td>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">Accessor</a>&lt;int64_t, MeshType&gt; <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType, Dim &gt;::m_base_accessor</td>
         </tr>
       </table>
   </td>
@@ -551,7 +528,33 @@ template&lt;typename MeshType &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hpp_source.html#l00037">37</a> of file <a class="el" href="_tuple_accessor_8hpp_source.html">TupleAccessor.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tuple_accessor_8hpp_source.html#l00033">wmtk::attribute::TupleAccessor&lt; MeshType &gt;::dimension()</a>.</p>
+</div>
+</div>
+<a id="ad402a1947de22a9e2e11fbb9e04a9656"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad402a1947de22a9e2e11fbb9e04a9656">&#9670;&nbsp;</a></span>m_dimension</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , int Dim = Eigen::Dynamic&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Eigen::Index <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a>&lt; MeshType, Dim &gt;::m_dimension</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tuple_accessor_8hpp_source.html#l00038">38</a> of file <a class="el" href="_tuple_accessor_8hpp_source.html">TupleAccessor.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_tuple_accessor_8hpp_source.html#l00034">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;::dimension()</a>.</p>
 
 </div>
 </div>

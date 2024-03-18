@@ -32,7 +32,7 @@ var classwmtk_1_1attribute_1_1_mesh_attributes =
     [ "rollback_current_scope", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a16932c078046d99c5d63b7fcce12b0c4", null ],
     [ "serialize", "classwmtk_1_1attribute_1_1_mesh_attributes.html#af3755612144a52fb4d518894186b882b", null ],
     [ "set", "classwmtk_1_1attribute_1_1_mesh_attributes.html#abadd5d73274cea6db874ede4ecfdb825", null ],
-    [ "AccessorBase< T >", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a576fbc1c35e2c7785c1f26a6ac22e61d", null ],
+    [ "AccessorBase", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a45a470617083e2afdca1b76b5c0377c7", null ],
     [ "wmtk::Mesh", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a40e16ebf947f9980244ad9e954e38aa3", null ],
     [ "m_attributes", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a0f5e1ce753026d570ed579f1120879d6", null ],
     [ "m_handles", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a5a1f05a517e3cf5e2578cfc1b58b7fd0", null ],

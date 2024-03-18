@@ -11,10 +11,10 @@ var classwmtk_1_1attribute_1_1_attribute_scope =
     [ "apply", "classwmtk_1_1attribute_1_1_attribute_scope.html#ac538298fbdb6cb6db1b40d9a68d87337", null ],
     [ "apply", "classwmtk_1_1attribute_1_1_attribute_scope.html#a37e2a2de25455ed933e400664af4eaf7", null ],
     [ "get_cache", "classwmtk_1_1attribute_1_1_attribute_scope.html#abe78e80f66b2e0edec6ed2e5d592d16d", null ],
-    [ "load_const_cached_scalar_value", "classwmtk_1_1attribute_1_1_attribute_scope.html#ac0b687fc920ea2ef40c0143d09967db3", null ],
-    [ "load_const_cached_vector_value", "classwmtk_1_1attribute_1_1_attribute_scope.html#a65a9dae2b006237cfeb84fe649955c0b", null ],
+    [ "load_const_cached_scalar_value", "classwmtk_1_1attribute_1_1_attribute_scope.html#ac3c8eb6229d9a1ed8d4d767ef61f5c0f", null ],
+    [ "load_const_cached_vector_value", "classwmtk_1_1attribute_1_1_attribute_scope.html#a5c29b7ffe679e8acd6f00d85f9dd4350", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_attribute_scope.html#a605e1a7a0b1f2dd2e97fb4806295151a", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_attribute_scope.html#a05cf652b98ce554e1960017b0267fb8b", null ],
     [ "AttributeScopeStack< T >", "classwmtk_1_1attribute_1_1_attribute_scope.html#ae8140b04fe2c11b9d85d7beb2474c99a", null ],
-    [ "CachingAccessor< T >", "classwmtk_1_1attribute_1_1_attribute_scope.html#a8ca966affe6cd5bf9c4b2d80c85fb58f", null ]
+    [ "CachingAccessor", "classwmtk_1_1attribute_1_1_attribute_scope.html#a5031d6d5de6cc3cf7f984dba227e475e", null ]
 ];
