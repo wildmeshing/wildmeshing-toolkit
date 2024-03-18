@@ -6,25 +6,28 @@
 namespace wmtk::attribute {
 
 
-template <typename MeshType>
-TupleAccessor<MeshType>::TupleAccessor(MeshType& m, const TypedAttributeHandle<int64_t>& handle)
+template <typename MeshType, int Dim>
+TupleAccessor<MeshType, Dim>::TupleAccessor(MeshType& m, const TypedAttributeHandle<int64_t>& handle)
     : m_base_accessor(m, handle)
     , m_dimension(m_base_accessor.dimension() / (sizeof(Tuple) / sizeof(int64_t)))
 {}
-template <typename MeshType>
-TupleAccessor<MeshType>::TupleAccessor(
+template <typename MeshType, int Dim>
+TupleAccessor<MeshType, Dim>::TupleAccessor(
     const MeshType& m,
     const TypedAttributeHandle<int64_t>& handle)
     : TupleAccessor(const_cast<MeshType&>(m), handle)
 {}
-template <typename MeshType>
-TupleAccessor<MeshType>::TupleAccessor(const Accessor<int64_t, MeshType>& accessor)
+template <typename MeshType, int Dim>
+template <int Dim2>
+TupleAccessor<MeshType, Dim>::TupleAccessor(const Accessor<int64_t, MeshType, Dim2>& accessor)
     : TupleAccessor(accessor.mesh(), accessor.typed_handle())
-{}
+{
+    static_assert(Dim == Eigen::Dynamic || Dim2 == Eigen::Dynamic || Dim == Dim2);
+}
 
-template <typename MeshType>
+template <typename MeshType, int Dim>
 template <int D>
-auto TupleAccessor<MeshType>::const_vector_attribute(const Tuple& t) const -> ConstMapResult<D>
+auto TupleAccessor<MeshType, Dim>::const_vector_attribute(const Tuple& t) const -> ConstMapResult<D>
 {
     auto base_map = m_base_accessor.template const_vector_attribute<D>(t);
 
@@ -33,9 +36,9 @@ auto TupleAccessor<MeshType>::const_vector_attribute(const Tuple& t) const -> Co
     return ConstMapResult<D>(data, dimension());
 }
 
-template <typename MeshType>
+template <typename MeshType, int Dim>
 template <int D>
-auto TupleAccessor<MeshType>::vector_attribute(const Tuple& t) -> MapResult<D>
+auto TupleAccessor<MeshType, Dim>::vector_attribute(const Tuple& t) -> MapResult<D>
 {
     auto base_map = m_base_accessor.template vector_attribute<D>(t);
     int64_t* int_data = base_map.data();
@@ -43,8 +46,8 @@ auto TupleAccessor<MeshType>::vector_attribute(const Tuple& t) -> MapResult<D>
     return MapResult<D>(data, dimension());
 }
 
-template <typename MeshType>
-auto TupleAccessor<MeshType>::scalar_attribute(const Tuple& t) -> Tuple&
+template <typename MeshType, int Dim>
+auto TupleAccessor<MeshType, Dim>::scalar_attribute(const Tuple& t) -> Tuple&
 {
     auto base_map = m_base_accessor.template vector_attribute<2>(t);
 
@@ -52,8 +55,8 @@ auto TupleAccessor<MeshType>::scalar_attribute(const Tuple& t) -> Tuple&
     return *reinterpret_cast<Tuple*>(base_map.data());
 }
 
-template <typename MeshType>
-auto TupleAccessor<MeshType>::const_scalar_attribute(const Tuple& t) const -> const Tuple&
+template <typename MeshType, int Dim>
+auto TupleAccessor<MeshType, Dim>::const_scalar_attribute(const Tuple& t) const -> const Tuple&
 {
     assert(m_dimension == 1);
     auto base_map = m_base_accessor.template const_vector_attribute<2>(t);

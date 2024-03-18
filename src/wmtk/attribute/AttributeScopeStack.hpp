@@ -11,7 +11,7 @@ class Mesh;
 namespace attribute {
 template <typename T>
 class Attribute;
-template <typename T>
+template <typename T, int Dim>
 class AccessorBase;
 template <typename T>
 class AttributeScope;
@@ -48,21 +48,23 @@ public:
 
 
     /// default mutable vector access
-    template <int D = Eigen::Dynamic>
-    MapResult<D> vector_attribute(AccessorBase<T>& accessor, int64_t index);
+    template <int D = Eigen::Dynamic, int D2 = Eigen::Dynamic>
+    MapResult<D> vector_attribute(AccessorBase<T,D2>& accessor, int64_t index);
     /// default immutable vector access
 
-    template <int D = Eigen::Dynamic>
-    ConstMapResult<D> const_vector_attribute(const AccessorBase<T>& accessor, int64_t index) const;
+    template <int D = Eigen::Dynamic, int D2 = Eigen::Dynamic>
+    ConstMapResult<D> const_vector_attribute(const AccessorBase<T, D2>& accessor, int64_t index) const;
     /// default mutable scalar access
-    T& scalar_attribute(AccessorBase<T>& accessor, int64_t index);
+    template <int D2>
+    T& scalar_attribute(AccessorBase<T,D2>& accessor, int64_t index);
 
     /// default immutable scalar access
-    T const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index) const;
+    template <int D = Eigen::Dynamic>
+    T const_scalar_attribute(const AccessorBase<T,D>& accessor, int64_t index) const;
 
     template <int D = Eigen::Dynamic>
     /// specialized immutable scalar access useful for topological operations
-    T const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index, int8_t offset) const;
+    T const_scalar_attribute(const AccessorBase<T, D>& accessor, int64_t index, int8_t offset) const;
 
     void emplace();
     void pop(Attribute<T>& attribute, bool preserve_changes);
@@ -109,8 +111,8 @@ inline void AttributeScopeStack<T>::rollback_current_scope(Attribute<T>& attr)
 }
 
 template <typename T>
-template <int D>
-inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index)
+template <int D, int D2>
+inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T, D2>& accessor, int64_t index)
     -> MapResult<D>
 {
     assert(writing_enabled());
@@ -123,9 +125,9 @@ inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, 
 }
 
 template <typename T>
-template <int D>
+template <int D, int D2>
 inline auto AttributeScopeStack<T>::const_vector_attribute(
-    const AccessorBase<T>& accessor,
+    const AccessorBase<T, D2>& accessor,
     int64_t index) const -> ConstMapResult<D>
 {
     if (!at_current_scope()) {
@@ -144,7 +146,8 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
 }
 
 template <typename T>
-inline auto AttributeScopeStack<T>::scalar_attribute(AccessorBase<T>& accessor, int64_t index) -> T&
+template <int D2>
+inline auto AttributeScopeStack<T>::scalar_attribute(AccessorBase<T, D2>& accessor, int64_t index) -> T&
 {
     assert(writing_enabled());
     T& value = accessor.scalar_attribute(index);
@@ -155,21 +158,22 @@ inline auto AttributeScopeStack<T>::scalar_attribute(AccessorBase<T>& accessor, 
 }
 
 template <typename T>
+template <int D2>
 inline auto AttributeScopeStack<T>::const_scalar_attribute(
-    const AccessorBase<T>& accessor,
+    const AccessorBase<T, D2>& accessor,
     int64_t index) const -> T
 {
     return const_vector_attribute<1>(accessor, index)(0);
 }
 template <typename T>
-template <int D>
+template <int D2>
 inline auto AttributeScopeStack<T>::const_scalar_attribute(
-    const AccessorBase<T>& accessor,
+    const AccessorBase<T, D2>& accessor,
     int64_t index,
     int8_t offset) const -> T
 {
     if (!at_current_scope()) {
-        return const_vector_attribute<D>(accessor, index)(offset);
+        return const_vector_attribute<D2>(accessor, index)(offset);
     } else {
         return accessor.const_scalar_attribute(index, offset);
     }

@@ -1,3 +1,5 @@
+#include <wmtk/simplex/Simplex.hpp>
+#include "Cell.hpp"
 #include "Primitive.hpp"
 #include <tuple>
 

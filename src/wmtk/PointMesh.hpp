@@ -15,7 +15,7 @@ private:
 
 public:
     friend class MeshCRTP<PointMesh>;
-    template <typename U, typename MeshType>
+    template <typename U, typename MeshType, int Dim>
     friend class attribute::Accessor;
     PointMesh();
     PointMesh(int64_t size);

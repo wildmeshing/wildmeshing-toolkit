@@ -42,7 +42,7 @@ namespace wmtk {
 // thread management tool that we will PImpl
 namespace attribute {
 class AttributeManager;
-template <typename T, typename MeshType>
+template <typename T, typename MeshType, int Dim>
 class Accessor;
 
 } // namespace attribute
@@ -92,9 +92,9 @@ class TupleTag;
 class Mesh : public std::enable_shared_from_this<Mesh>, public wmtk::utils::MerkleTreeInteriorNode
 {
 public:
-    template <typename T>
+    template <typename T, int Dim>
     friend class attribute::AccessorBase;
-    template <typename T, typename MeshType>
+    template <typename T, typename MeshType, int Dim>
     friend class attribute::Accessor;
     friend class io::ParaviewWriter;
     friend class HDF5Reader;
@@ -174,8 +174,8 @@ public:
         const = 0;
 
 
-    std::vector<attribute::TypedAttributeHandleVariant> builtin_attributes() const;
-    std::vector<attribute::TypedAttributeHandleVariant> custom_attributes() const;
+    std::vector<attribute::MeshAttributeHandle::HandleVariant> builtin_attributes() const;
+    std::vector<attribute::MeshAttributeHandle::HandleVariant> custom_attributes() const;
 
 
     /* @brief registers an attribute without assuming the mesh exists */
@@ -214,21 +214,20 @@ public:
         const PrimitiveType ptype) const; // block standard topology tools
 
 
-    template <typename T>
-    attribute::Accessor<T> create_accessor(const attribute::MeshAttributeHandle& handle);
-    template <typename T>
-    const attribute::Accessor<T> create_const_accessor(
-        const attribute::MeshAttributeHandle& handle);
+    template <typename T, int D = Eigen::Dynamic>
+    attribute::Accessor<T, Mesh, D> create_accessor(const attribute::MeshAttributeHandle& handle);
 
-    template <typename T>
-    const attribute::Accessor<T> create_const_accessor(
+
+    template <typename T, int D = Eigen::Dynamic>
+    const attribute::Accessor<T, Mesh, D> create_const_accessor(
         const attribute::MeshAttributeHandle& handle) const;
 
-    template <typename T>
-    attribute::Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
+    template <typename T, int D = Eigen::Dynamic>
+    attribute::Accessor<T, Mesh, D> create_accessor(const TypedAttributeHandle<T>& handle);
 
-    template <typename T>
-    const attribute::Accessor<T> create_const_accessor(const TypedAttributeHandle<T>& handle) const;
+    template <typename T, int D = Eigen::Dynamic>
+    const attribute::Accessor<T, Mesh, D> create_const_accessor(
+        const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
     int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
@@ -236,7 +235,8 @@ public:
     template <typename T>
     std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;
 
-    std::string get_attribute_name(const attribute::TypedAttributeHandleVariant& handle) const;
+    std::string get_attribute_name(
+        const attribute::MeshAttributeHandle::HandleVariant& handle) const;
 
     /**
      * @brief Remove all custom attributes besides the one passed in.
@@ -244,7 +244,7 @@ public:
      * @param custom_attributes Vector of attributes that should be kept
      */
     void clear_attributes(
-        const std::vector<attribute::TypedAttributeHandleVariant>& keep_attributes);
+        const std::vector<attribute::MeshAttributeHandle::HandleVariant>& keep_attributes);
     void clear_attributes();
     void clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes);
 
@@ -866,42 +866,36 @@ private:
 };
 
 
-template <typename T>
-inline attribute::Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
+template <typename T, int D>
+inline auto Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
+    -> attribute::Accessor<T, Mesh, D>
 {
-    return attribute::Accessor<T>(*this, handle);
+    return attribute::Accessor<T, Mesh, D>(*this, handle);
 }
-template <typename T>
-inline const attribute::Accessor<T> Mesh::create_const_accessor(
-    const TypedAttributeHandle<T>& handle) const
+template <typename T, int D>
+inline auto Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
+    -> const attribute::Accessor<T, Mesh, D>
 {
-    return attribute::Accessor<T>(*this, handle);
+    return attribute::Accessor<T, Mesh, D>(*this, handle);
 }
 
-template <typename T>
-inline attribute::Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
+template <typename T, int D>
+inline auto Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
+    -> attribute::Accessor<T, Mesh, D>
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());
-    return create_accessor(handle.as<T>());
+    return create_accessor<T, D>(handle.as<T>());
 }
 
-template <typename T>
-inline const attribute::Accessor<T> Mesh::create_const_accessor(
-    const attribute::MeshAttributeHandle& handle)
+
+template <typename T, int D>
+inline auto Mesh::create_const_accessor(const attribute::MeshAttributeHandle& handle) const
+    -> const attribute::Accessor<T, Mesh, D>
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());
-    return create_const_accessor(handle.as<T>());
-}
-
-template <typename T>
-inline const attribute::Accessor<T> Mesh::create_const_accessor(
-    const attribute::MeshAttributeHandle& handle) const
-{
-    assert(&handle.mesh() == this);
-    assert(handle.holds<T>());
-    return create_const_accessor(handle.as<T>());
+    return create_const_accessor<T, D>(handle.as<T>());
 }
 
 template <typename T>

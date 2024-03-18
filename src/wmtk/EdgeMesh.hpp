@@ -16,7 +16,7 @@ class EdgeMesh : public MeshCRTP<EdgeMesh>
 {
 public:
     friend class MeshCRTP<EdgeMesh>;
-    template <typename U, typename MeshType>
+    template <typename U, typename MeshType, int Dim>
     friend class attribute::Accessor;
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;

@@ -11,7 +11,7 @@ namespace wmtk {
 class MeshWriter;
 
 namespace attribute {
-template <typename T>
+template <typename T, int Dim>
 class AccessorBase;
 
 template <typename T>
@@ -41,7 +41,8 @@ public:
     std::map<std::string, size_t> child_hashes() const override;
 
 
-    friend class AccessorBase<T>;
+    template <typename U, int D>
+    friend class AccessorBase;
     friend class AttributeCache<T>;
     void serialize(const std::string& name, const int dim, MeshWriter& writer) const;
 

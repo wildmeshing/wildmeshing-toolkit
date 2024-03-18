@@ -3,6 +3,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/function/utils/SimplexGetter.hpp>
 #include <wmtk/utils/Rational.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
 
 namespace wmtk::function {

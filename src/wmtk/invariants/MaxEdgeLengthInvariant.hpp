@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wmtk/attribute/AttributeHandle.hpp>
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include "Invariant.hpp"
 
 namespace wmtk {

@@ -69,7 +69,7 @@ public:
         bool replace,
         T default_value);
 
-    std::vector<TypedAttributeHandleVariant> get_all_attributes() const;
+    std::vector<MeshAttributeHandle::HandleVariant> get_all_attributes() const;
 
 
     template <typename T>
@@ -84,7 +84,7 @@ public:
     template <typename T>
     std::string get_name(const TypedAttributeHandle<T>& attr) const;
 
-    std::string get_name(const attribute::TypedAttributeHandleVariant& attr) const;
+    std::string get_name(const attribute::MeshAttributeHandle::HandleVariant& attr) const;
 
     template <typename T>
     const std::vector<MeshAttributes<T>>& get() const;
@@ -114,7 +114,7 @@ public:
      * @param keep_attributes Vector of attributes that should not be removed.
      */
     void clear_attributes(
-        const std::vector<attribute::TypedAttributeHandleVariant>& custom_attributes);
+        const std::vector<attribute::MeshAttributeHandle::HandleVariant>& custom_attributes);
 };
 
 template <typename T>

@@ -11,14 +11,15 @@ namespace wmtk {
 namespace attribute {
 template <typename T>
 class AttributeScopeStack;
-template <typename T>
+template <typename T, int Dim>
 class CachingAccessor;
 
 template <typename T>
 class AttributeScope : public AttributeCache<T>
 {
 public:
-    friend class CachingAccessor<T>;
+    template <typename U, int D>
+    friend class CachingAccessor;
     friend class AttributeScopeStack<T>;
     AttributeScope();
     AttributeScope(const AttributeScope&) = delete;
@@ -41,8 +42,10 @@ private:
     using DataStorage = typename AttributeCache<T>::DataStorage;
     using AttributeCache<T>::m_data;
 
-    ConstMapResult load_const_cached_vector_value(const AccessorBase<T>& accessor, int64_t index)
+    template <int Dim>
+    ConstMapResult load_const_cached_vector_value(const AccessorBase<T, Dim>& accessor, int64_t index)
         const;
+    template <int Dim>
     T load_const_cached_scalar_value(const AccessorBase<T>& accessor, int64_t index) const;
 
     AttributeCache<T>& get_cache() { return static_cast<AttributeCache<T>&>(*this); }
