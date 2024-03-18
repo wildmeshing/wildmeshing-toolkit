@@ -71,6 +71,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
     if (!mods.empty()) { // success should be marked here
         apply_attribute_transfer(mods);
         if (after(unmods, mods)) {
+            std::cout << "operation is successful\n";
             return mods; // scope destructor is called
         }
     }
