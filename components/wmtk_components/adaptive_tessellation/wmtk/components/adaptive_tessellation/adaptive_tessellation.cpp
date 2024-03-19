@@ -128,7 +128,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
     //////////////////////////////////
     // Storing edge lengths
-    wmtk::logger().critical("///// using gaussian displacement /////");
+    // wmtk::logger().critical("///// using gaussian displacement /////");
     std::array<std::shared_ptr<image::Sampling>, 3> funcs = {{
         std::make_shared<image::SamplingAnalyticFunction>(
             image::SamplingAnalyticFunction_FunctionType::Linear,
@@ -187,8 +187,8 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     //     options.position_path,
     //     options.normal_path,
     //     options.height_path);
-    // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
-    AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, funcs);
+    AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
+    // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, funcs);
 
     AT::operations::internal::ATOperations at_ops(
         atdata,
@@ -216,16 +216,27 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         int64_t rgb_split_index = at_ops.AT_rgb_split();
         int64_t rgb_swap_index = at_ops.AT_rgb_swap();
         ATScheduler scheduler;
-        int64_t split_success = 0;
-        int64_t swap_success = 0;
         int64_t i = 0;
-        scheduler.rgb_split_and_swap(
+        // scheduler.rgb_split_and_swap(
+        //     uv_mesh_ptr,
+        //     at_ops.m_distance_error_accessor,
+        //     *at_ops.m_ops[rgb_split_index],
+        //     *at_ops.m_ops[rgb_swap_index],
+        //     options.target_distance,
+        //     at_ops.m_triangle_distance_edge_length);
+
+
+        scheduler.rgb_scheduling(
             uv_mesh_ptr,
-            at_ops.m_distance_error_accessor,
+            atdata.m_face_rgb_state_handle,
+            atdata.m_edge_rgb_state_handle,
+            at_ops.m_edge_todo_accessor,
             *at_ops.m_ops[rgb_split_index],
             *at_ops.m_ops[rgb_swap_index],
-            options.target_distance,
-            at_ops.m_triangle_distance_edge_length);
+            at_ops.m_distance_error_accessor,
+            at_ops.m_curved_edge_length_accessor,
+            options.target_distance);
+
         write(uv_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, i + 1);
     }
 
@@ -237,7 +248,8 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     //     at_ops.m_high_distance_edges_first,
     //     at_ops.m_distance_nondiff_energy);
     // 3) EdgeSwap
-    // at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first, at_ops.m_distance_nondiff_energy);
+    // at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first,
+    // at_ops.m_distance_nondiff_energy);
 
     // 4) Smoothing
     // at_ops.AT_smooth_interior(at_ops.m_3d_amips_energy);
