@@ -122,6 +122,7 @@ OptimizationSmoothing::OptimizationSmoothing(std::shared_ptr<wmtk::function::Fun
     : AttributesUpdate(energy->mesh())
     , m_energy(energy)
 {
+    operation_name = "OptimizationSmoothing";
     m_linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
     m_nonlinear_solver_params = R"({"solver": "DenseNewton", "max_iterations": 20})"_json;
 

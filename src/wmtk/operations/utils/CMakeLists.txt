@@ -12,6 +12,7 @@ set(SRC_FILES
     UpdateVertexMultiMeshMapHash.hpp
     UpdateVertexMultiMeshMapHash.cpp
 
+    get_local_trimesh.cpp
 
     VertexLaplacianSmooth.hpp
     VertexLaplacianSmooth.cpp

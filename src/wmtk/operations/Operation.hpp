@@ -23,6 +23,7 @@ namespace operations {
 class Operation
 {
 public:
+    std::string operation_name;
     // friend class utils::MultiMeshEdgeSplitFunctor;
     // friend class utils::MultiMeshEdgeCollapseFunctor;
 
@@ -51,6 +52,8 @@ public:
     {
         m_priority = func;
     }
+
+    void set_not_record() { m_record = false; }
 
     std::shared_ptr<operations::AttributeTransferStrategyBase> get_transfer_strategy(
         const attribute::MeshAttributeHandle& attribute);
@@ -100,6 +103,8 @@ protected:
 private:
     Mesh& m_mesh;
     bool m_use_random_priority = false;
+    
+    bool m_record = true;
 
     std::function<std::vector<double>(const simplex::Simplex&)> m_priority = nullptr;
 

@@ -8,7 +8,9 @@ TriFaceSplit::TriFaceSplit(Mesh& m)
     : Operation(m)
     , m_split(m)
     , m_collapse(m)
-{}
+{
+    operation_name = "TriFaceSplit";
+}
 
 std::vector<simplex::Simplex> TriFaceSplit::execute(const simplex::Simplex& simplex)
 {

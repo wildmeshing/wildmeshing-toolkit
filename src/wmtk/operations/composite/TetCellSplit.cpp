@@ -9,7 +9,9 @@ TetCellSplit::TetCellSplit(Mesh& m)
     : Operation(m)
     , m_split(m)
     , m_collapse(m)
-{}
+{
+    operation_name = "TetCellSplit";
+}
 
 std::vector<simplex::Simplex> TetCellSplit::execute(const simplex::Simplex& simplex)
 {

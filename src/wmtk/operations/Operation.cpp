@@ -3,8 +3,9 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/simplex/closed_star.hpp>
+#include <fstream>
+#include <wmtk/utils/TupleInspector.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
-
 
 // it's ugly but for teh visitor we need these included
 #include <wmtk/EdgeMesh.hpp>
@@ -59,6 +60,8 @@ void Operation::add_transfer_strategy(
 
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
+    static long succ_operations_count = 0;
+
     if (!before(simplex)) {
         return {};
     }
@@ -71,7 +74,34 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
     if (!mods.empty()) { // success should be marked here
         apply_attribute_transfer(mods);
         if (after(unmods, mods)) {
-            std::cout << "operation is successful\n";
+            // TODO: store local atlas for retrieval
+            if (m_record) {
+                // create a local atlas file
+                std::cout << "operation " << operation_name << " is successful\n";
+                std::string filename = "local_atlas_" + std::to_string(succ_operations_count) + ".txt";
+                std::ofstream local_atlas_file(filename);
+                if (local_atlas_file.is_open()) {
+                    // DELETE: for test purposes
+                    local_atlas_file << "local atlas for operation " << operation_name << std::endl;
+                    for (const auto& s : mods) {
+                        local_atlas_file << "mod simplex type: " << primitive_type_name(s.primitive_type()) << std::endl;
+                        local_atlas_file << wmtk::utils::TupleInspector::as_string(s.tuple()) << std::endl;
+                    }
+
+                    if (mesh().top_simplex_type() == PrimitiveType::Triangle)
+                    {
+                        std::cout << "This is a triangle mesh\n";
+                        auto [F, V, id_map] = utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), mods[0]);
+                        local_atlas_file << "F: " << F << std::endl;
+                        local_atlas_file << "V: " << V << std::endl;
+                    }
+            
+                    local_atlas_file.close();
+                } else {
+                    std::cerr << "unable to open file " << filename << " for writing\n";
+                }
+                std::cout << "total successful operations: " << ++succ_operations_count << "\n";
+            }
             return mods; // scope destructor is called
         }
     }
