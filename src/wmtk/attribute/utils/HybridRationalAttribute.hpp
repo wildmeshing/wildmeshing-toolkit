@@ -21,6 +21,8 @@ public:
         TypedAttributeHandle<wmtk::Rational>,
         TypedAttributeHandle<double>>;
     using TupleType::TupleType;
+    using Type = TupleType;
+    using value_type = Type;
 
     template <size_t Index>
     auto get() const
@@ -38,6 +40,8 @@ public:
     auto get_rational() const { return get<1>(); }
 
     auto get_double() const { return get<2>(); }
+
+    PrimitiveType primitive_type() const { return get_char().primitive_type(); }
 
 public:
     template <typename MeshType>

@@ -25,9 +25,12 @@ EdgeSplit::EdgeSplit(Mesh& m)
                 std::visit(
                     [&](auto&& tah) noexcept {
                         using T = typename std::decay_t<decltype(tah)>::Type;
-                        m_new_attr_strategies.emplace_back(
-                            std::make_shared<operations::SplitNewAttributeStrategy<T>>(
-                                attribute::MeshAttributeHandle(mesh, attr)));
+                        if constexpr (attribute::MeshAttributeHandle::
+                                          template attribute_type_is_basic<T>()) {
+                            m_new_attr_strategies.emplace_back(
+                                std::make_shared<operations::SplitNewAttributeStrategy<T>>(
+                                    attribute::MeshAttributeHandle(mesh, attr)));
+                        }
                     },
                     attr);
             }
@@ -82,15 +85,17 @@ void EdgeSplit::set_new_attribute_strategy(
     const wmtk::operations::SplitRibBasicStrategy& rib)
 {
     std::visit(
-        [&](auto&& val) -> void {
+        [&](auto&& val) noexcept -> void {
             using T = typename std::decay_t<decltype(val)>::Type;
-            using OpType = operations::SplitNewAttributeStrategy<T>;
+            if constexpr (attribute::MeshAttributeHandle::template attribute_type_is_basic<T>()) {
+                using OpType = operations::SplitNewAttributeStrategy<T>;
 
-            std::shared_ptr<OpType> tmp = std::make_shared<OpType>(attribute);
-            tmp->set_strategy(spine);
-            tmp->set_rib_strategy(rib);
+                std::shared_ptr<OpType> tmp = std::make_shared<OpType>(attribute);
+                tmp->set_strategy(spine);
+                tmp->set_rib_strategy(rib);
 
-            set_new_attribute_strategy(attribute, tmp);
+                set_new_attribute_strategy(attribute, tmp);
+            }
         },
         attribute.handle());
 }

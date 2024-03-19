@@ -47,6 +47,19 @@ public:
     inline size_t handle_hash(const wmtk::attribute::MeshAttributeHandle& handle) const noexcept;
     inline size_t mesh_hash(const wmtk::attribute::MeshAttributeHandle& handle) const noexcept;
 };
+template <int D>
+class hash<attribute::utils::HybridRationalAttribute<D>>
+{
+public:
+    size_t operator()(const attribute::utils::HybridRationalAttribute<D>& d) const
+    {
+        std::vector<size_t> data;
+        data.emplace_back(hash<TypedAttributeHandle<char>>{}(d.get_char()));
+        data.emplace_back(hash<TypedAttributeHandle<double>>{}(d.get_double()));
+        data.emplace_back(hash<TypedAttributeHandle<wmtk::Rational>>{}(d.get_rational()));
+        return wmtk::utils::vector_hash(data);
+    }
+};
 } // namespace wmtk
 template <>
 class std::hash<wmtk::attribute::AttributeHandle>
@@ -76,5 +89,11 @@ class std::hash<wmtk::attribute::TypedAttributeHandle<wmtk::Rational>>
 template <>
 class std::hash<wmtk::attribute::MeshAttributeHandle>
     : public wmtk::hash<wmtk::attribute::MeshAttributeHandle>
+{
+};
+template <>
+template <int D>
+class std::hash<wmtk::attribute::utils::HybridRationalAttribute<D>>
+    : public wmtk::hash<wmtk::attribute::utils::HybridRationalAttribute<D>>
 {
 };

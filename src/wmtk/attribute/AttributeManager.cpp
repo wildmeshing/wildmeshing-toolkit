@@ -1,9 +1,9 @@
 #include <spdlog/spdlog.h>
 
-#include "AttributeManager.hpp"
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/vector_hash.hpp>
+#include "AttributeManager.hpp"
 #include "PerThreadAttributeScopeStacks.hpp"
 namespace wmtk::attribute {
 AttributeManager::AttributeManager(int64_t size)
@@ -178,7 +178,8 @@ AttributeScopeHandle AttributeManager::create_scope(Mesh& m)
     return AttributeScopeHandle(*this);
 }
 
-std::string AttributeManager::get_name(const attribute::MeshAttributeHandle::HandleVariant& attr) const
+std::string AttributeManager::get_name(
+    const attribute::MeshAttributeHandle::HandleVariant& attr) const
 {
     std::string name = std::visit(
         [&](auto&& val) {
@@ -325,8 +326,10 @@ void AttributeManager::clear_attributes(
         std::visit(
             [&](auto&& val) {
                 using T = typename std::decay_t<decltype(val)>::Type;
-                customs.get<T>()[get_primitive_type_id(val.primitive_type())].emplace_back(
-                    val.base_handle());
+                if constexpr (MeshAttributeHandle::template attribute_type_is_basic<T>()) {
+                    customs.get<T>()[get_primitive_type_id(val.primitive_type())].emplace_back(
+                        val.base_handle());
+                }
             },
             attr);
     }

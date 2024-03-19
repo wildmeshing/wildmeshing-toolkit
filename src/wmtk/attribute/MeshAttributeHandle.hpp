@@ -2,7 +2,7 @@
 #include <wmtk/utils/Rational.hpp>
 //
 #include "TypedAttributeHandle.hpp"
-#include "internal/HybridRationalAttribute.hpp"
+#include "utils/HybridRationalAttribute.hpp"
 
 #include <variant>
 
@@ -27,7 +27,7 @@ public:
         TypedAttributeHandle<int64_t>,
         TypedAttributeHandle<double>,
         TypedAttributeHandle<wmtk::Rational>,
-        internal::HybridRationalAttribute<>>;
+        utils::HybridRationalAttribute<Eigen::Dynamic>>;
 
     using ValueVariant = std::variant<char, int64_t, double, wmtk::Rational>;
 
@@ -40,6 +40,9 @@ public:
     using held_primitive_type = typename held_handle_type<Type>::Type;
     template <typename T>
     constexpr static HeldType held_type_from_primitive();
+
+    template <typename T>
+    constexpr static bool attribute_type_is_basic();
 
     friend class wmtk::Mesh;
     friend class wmtk::hash<MeshAttributeHandle>;
@@ -80,6 +83,9 @@ public:
     // returns if the held attribute uses the primitive T
     template <typename T>
     bool holds() const;
+
+    // holds basic type
+    bool holds_basic_type() const;
 
     // returns if the held attribute uses the held type primitive Type
     template <HeldType Type>
@@ -130,6 +136,13 @@ inline bool MeshAttributeHandle::holds() const
 {
     return std::holds_alternative<TypedAttributeHandle<T>>(m_handle);
 }
+
+inline bool MeshAttributeHandle::holds_basic_type() const
+{
+    return std::visit(
+        [](const auto& h) -> bool { return attribute_type_is_basic<std::decay_t<decltype(h)>>(); },
+        m_handle);
+}
 template <MeshAttributeHandle::HeldType Type>
 inline auto MeshAttributeHandle::as_from_held_type() const
     -> const TypedAttributeHandle<held_primitive_type<Type>>&
@@ -158,6 +171,10 @@ inline constexpr auto MeshAttributeHandle::held_type_from_primitive() -> HeldTyp
     if constexpr (std::is_same_v<T, wmtk::Rational>) {
         return HeldType::Rational;
     }
+    if constexpr (std::is_same_v<T, utils::HybridRationalAttribute<Eigen::Dynamic>>) {
+        return HeldType::HybridRational;
+    }
+    return HeldType::Char;
 }
 
 inline PrimitiveType MeshAttributeHandle::primitive_type() const
@@ -168,5 +185,13 @@ template <typename T>
 inline PrimitiveType MeshAttributeHandle::primitive_typeT() const
 {
     return std::get<T>(m_handle).primitive_type();
+}
+
+template <typename T>
+constexpr inline bool MeshAttributeHandle::attribute_type_is_basic()
+{
+    return //
+        std::is_same_v<T, double> || std::is_same_v<T, int64_t> || std::is_same_v<T, char> ||
+        std::is_same_v<T, wmtk::Rational>;
 }
 } // namespace wmtk::attribute
