@@ -1,13 +1,15 @@
 #include "tag_todo_edges.hpp"
 #include <Eigen/Dense>
+#include <wmtk/utils/Logger.hpp>
 namespace wmtk::components::operations::utils {
-void tag_longest_edge_of_all_faces(
+int64_t tag_longest_edge_of_all_faces(
     std::shared_ptr<wmtk::Mesh> uv_mesh_ptr,
     wmtk::attribute::Accessor<int64_t>& edge_todo_accessor,
     wmtk::attribute::Accessor<double>& face_attr_accessor,
     wmtk::attribute::Accessor<double>& edge_attr_accessor,
     double face_attr_filter_threshold)
 {
+    int64_t todo_edge_cnt = 0;
     const auto faces = uv_mesh_ptr->get_all(wmtk::PrimitiveType::Triangle);
     for (const auto& face : faces) {
         double face_attr = face_attr_accessor.scalar_attribute(face);
@@ -34,19 +36,21 @@ void tag_longest_edge_of_all_faces(
 
         // set the todo tag of the max_edge_tuple to 1
         edge_todo_accessor.scalar_attribute(max_edge_tuple) = 1;
+        todo_edge_cnt++;
     }
+    return todo_edge_cnt;
 }
 
 void tag_secondary_split_edges(
     std::shared_ptr<wmtk::Mesh> uv_mesh_ptr,
-    wmtk::attribute::Accessor<int64_t>& face_rgb_state_accessor,
-    wmtk::attribute::Accessor<int64_t>& edge_rgb_state_accessor,
+    const wmtk::attribute::Accessor<int64_t>& face_rgb_state_accessor,
+    const wmtk::attribute::Accessor<int64_t>& edge_rgb_state_accessor,
     wmtk::attribute::Accessor<int64_t>& edge_todo_accessor,
     Tuple& edge)
 
 {
     // get the {color, level} of the edge
-    auto edge_color_level = edge_rgb_state_accessor.vector_attribute(edge);
+    const auto edge_color_level = edge_rgb_state_accessor.const_vector_attribute(edge);
     // case switch
     switch (edge_color_level[0]) {
     case 0:
@@ -100,20 +104,27 @@ void tag_secondary_split_edges(
 }
 void tag_green_edge_secondary_edges(
     std::shared_ptr<wmtk::Mesh> uv_mesh_ptr,
-    wmtk::attribute::Accessor<int64_t>& face_rgb_state_accessor,
-    wmtk::attribute::Accessor<int64_t>& edge_rgb_state_accessor,
+    const wmtk::attribute::Accessor<int64_t>& face_rgb_state_accessor,
+    const wmtk::attribute::Accessor<int64_t>& edge_rgb_state_accessor,
     wmtk::attribute::Accessor<int64_t>& edge_todo_accessor,
     Tuple& edge)
 {
-    Eigen::Vector2<int64_t> face_color_level = face_rgb_state_accessor.vector_attribute(edge);
+    const Eigen::Vector2<int64_t> face_color_level =
+        face_rgb_state_accessor.const_vector_attribute(edge);
     switch (face_color_level[0]) {
     case 0: {
         // green face has nothing to be tagged
         break;
     }
     case 1: {
+        // if the red face is not (red, l-1) then nothing can be tagged
+        if (face_color_level[1] != edge_rgb_state_accessor.const_vector_attribute(edge)[1] - 1) {
+            break;
+        }
         // (red, l-1) face tag its (green, l-1) edges as todo
-        assert(face_color_level[1] == edge_rgb_state_accessor.vector_attribute(edge)[1] - 1);
+
+        assert(face_color_level[1] == edge_rgb_state_accessor.const_vector_attribute(edge)[1] - 1);
+
         tag_red_l_face_green_l_edge(
             uv_mesh_ptr,
             face_rgb_state_accessor,
@@ -126,8 +137,8 @@ void tag_green_edge_secondary_edges(
         // find red edge of the blue face
         Tuple ear0 = uv_mesh_ptr->switch_tuple(edge, PrimitiveType::Edge);
         Tuple ear1 = uv_mesh_ptr->switch_tuples(edge, {PrimitiveType::Vertex, PrimitiveType::Edge});
-        Tuple red_edge = edge_rgb_state_accessor.vector_attribute(ear0)[0] == 1 ? ear0 : ear1;
-        assert(edge_rgb_state_accessor.vector_attribute(red_edge)[0] == 1);
+        Tuple red_edge = edge_rgb_state_accessor.const_vector_attribute(ear0)[0] == 1 ? ear0 : ear1;
+        assert(edge_rgb_state_accessor.const_vector_attribute(red_edge)[0] == 1);
         if (uv_mesh_ptr->is_boundary(wmtk::simplex::Simplex(PrimitiveType::Edge, red_edge))) {
             // this can't happen
             assert(false);
@@ -135,12 +146,12 @@ void tag_green_edge_secondary_edges(
         }
         // if the red edge is not a boundary edge find the other face
         Tuple other_face = uv_mesh_ptr->switch_tuple(red_edge, PrimitiveType::Triangle);
-        if (face_rgb_state_accessor.vector_attribute(other_face)[0] == 2) {
+        if (face_rgb_state_accessor.const_vector_attribute(other_face)[0] == 2) {
             // it's blueface/ red edge / blueface config
             // nothing can be tagged
             break;
         }
-        assert(face_rgb_state_accessor.vector_attribute(other_face)[0] == 1);
+        assert(face_rgb_state_accessor.const_vector_attribute(other_face)[0] == 1);
         // tag the red face's (green, l-1) edges as todo
         tag_red_l_face_green_l_edge(
             uv_mesh_ptr,
@@ -157,12 +168,12 @@ void tag_green_edge_secondary_edges(
 }
 void tag_red_edge_secondary_edges(
     std::shared_ptr<wmtk::Mesh> uv_mesh_ptr,
-    wmtk::attribute::Accessor<int64_t>& face_rgb_state_accessor,
-    wmtk::attribute::Accessor<int64_t>& edge_rgb_state_accessor,
+    const wmtk::attribute::Accessor<int64_t>& face_rgb_state_accessor,
+    const wmtk::attribute::Accessor<int64_t>& edge_rgb_state_accessor,
     wmtk::attribute::Accessor<int64_t>& edge_todo_accessor,
     Tuple& edge)
 {
-    Eigen::Vector2<int64_t> face_color_level = face_rgb_state_accessor.vector_attribute(edge);
+    Eigen::Vector2<int64_t> face_color_level = face_rgb_state_accessor.const_vector_attribute(edge);
     switch (face_color_level[0]) {
     case 0: {
         // red edge can't be adjacent to green face
@@ -190,34 +201,36 @@ void tag_red_edge_secondary_edges(
 
 void tag_red_l_face_green_l_edge(
     std::shared_ptr<wmtk::Mesh> uv_mesh_ptr,
-    wmtk::attribute::Accessor<int64_t>& face_rgb_state_accessor,
-    wmtk::attribute::Accessor<int64_t>& edge_rgb_state_accessor,
+    const wmtk::attribute::Accessor<int64_t>& face_rgb_state_accessor,
+    const wmtk::attribute::Accessor<int64_t>& edge_rgb_state_accessor,
     wmtk::attribute::Accessor<int64_t>& edge_todo_accessor,
     Tuple& edge)
 {
-    Eigen::Vector2<int64_t> face_color_level = face_rgb_state_accessor.vector_attribute(edge);
+    const Eigen::Vector2<int64_t> face_color_level =
+        face_rgb_state_accessor.const_vector_attribute(edge);
     assert(face_color_level[0] == 1);
     Tuple red_edge = edge;
-    auto edge_color_level = edge_rgb_state_accessor.vector_attribute(red_edge);
+    auto edge_color_level = edge_rgb_state_accessor.const_vector_attribute(red_edge);
     Tuple ear0 = uv_mesh_ptr->switch_tuple(edge, PrimitiveType::Edge);
     Tuple ear1 = uv_mesh_ptr->switch_tuples(edge, {PrimitiveType::Vertex, PrimitiveType::Edge});
-    auto ear0_color_level = edge_rgb_state_accessor.vector_attribute(ear0);
-    auto ear1_color_level = edge_rgb_state_accessor.vector_attribute(ear1);
+    Eigen::Vector2<int64_t> ear0_color_level = edge_rgb_state_accessor.const_vector_attribute(ear0);
+    Eigen::Vector2<int64_t> ear1_color_level = edge_rgb_state_accessor.const_vector_attribute(ear1);
     if (ear0_color_level[0] == 1) {
         assert(edge_color_level[0] == 0);
         red_edge = ear0;
         ear0 = edge;
-        ear0_color_level = edge_rgb_state_accessor.vector_attribute(ear0);
+        ear0_color_level = edge_rgb_state_accessor.const_vector_attribute(ear0);
     } else if (ear1_color_level[0] == 1) {
         assert(edge_color_level[0] == 0);
         red_edge = ear1;
         ear1 = edge;
-        ear1_color_level = edge_rgb_state_accessor.vector_attribute(ear1);
+        ear1_color_level = edge_rgb_state_accessor.const_vector_attribute(ear1);
     }
     // they must both be green
 
     assert(ear0_color_level[0] == 0);
     assert(ear1_color_level[0] == 0);
+    // tag the green edge with the same level as the red face
     if (ear0_color_level[1] == face_color_level[1]) {
         edge_todo_accessor.scalar_attribute(ear0) = 1;
     } else if (ear1_color_level[1] == face_color_level[1]) {
@@ -227,7 +240,7 @@ void tag_red_l_face_green_l_edge(
         throw std::runtime_error("tag_red_face_secondary_edges: invalid edge level");
     }
     // once unit tested can be replaced by the following
-    // edge_rgb_state_accessor.vector_attribute(ear0)[1] == face_color_level[1]
+    // edge_rgb_state_accessor.const_vector_attribute(ear0)[1] == face_color_level[1]
     //     ? edge_todo_accessor.scalar_attribute(ear0) = 1
     //     : edge_todo_accessor.scalar_attribute(ear1) = 1;
 }

@@ -1,4 +1,5 @@
 #include "ATScheduler.hpp"
+#include <wmtk/components/adaptive_tessellation/invariants/RGBSplitInvariant.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATOperations.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/utils/collect_todo_simplices.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/utils/tag_todo_edges.hpp>
@@ -107,15 +108,18 @@ void ATScheduler::rgb_split_and_swap(
         cnt++;
     } while (split_success > 0);
 }
-
-void ATScheduler::rgb_split_scheduling(
+void ATScheduler::rgb_recursive_split_swap(
     std::shared_ptr<wmtk::Mesh>& uv_mesh_ptr,
-    wmtk::attribute::Accessor<int64_t>& face_rgb_state_accessor,
-    wmtk::attribute::Accessor<int64_t>& edge_rgb_state_accessor,
+    wmtk::attribute::MeshAttributeHandle& face_rgb_state_handle,
+    wmtk::attribute::MeshAttributeHandle& edge_rgb_state_handle,
     wmtk::attribute::Accessor<int64_t>& edge_todo_accessor,
     wmtk::operations::Operation& split,
     wmtk::operations::Operation& swap)
 {
+    const attribute::Accessor<int64_t> face_rgb_state_accessor =
+        uv_mesh_ptr->create_const_accessor(face_rgb_state_handle.as<int64_t>());
+    const attribute::Accessor<int64_t> edge_rgb_state_accessor =
+        uv_mesh_ptr->create_const_accessor(edge_rgb_state_handle.as<int64_t>());
     while (true) {
         while (true) {
             const auto stats = run_operation_on_all(split);
@@ -144,6 +148,43 @@ void ATScheduler::rgb_split_scheduling(
         if (todo_edge_cnt == 0) {
             break;
         }
+    }
+}
+
+void ATScheduler::rgb_scheduling(
+    std::shared_ptr<wmtk::Mesh>& uv_mesh_ptr,
+    wmtk::attribute::MeshAttributeHandle& face_rgb_state_handle,
+    wmtk::attribute::MeshAttributeHandle& edge_rgb_state_handle,
+    wmtk::attribute::Accessor<int64_t>& edge_todo_accessor,
+    wmtk::operations::Operation& split,
+    wmtk::operations::Operation& swap,
+    wmtk::attribute::Accessor<double>& triangle_distance_accessor,
+    wmtk::attribute::Accessor<double>& curved_edge_length_accessor,
+    double target_distance)
+{
+    attribute::Accessor<int64_t> face_rgb_state_accessor =
+        uv_mesh_ptr->create_const_accessor(face_rgb_state_handle.as<int64_t>());
+    attribute::Accessor<int64_t> edge_rgb_state_accessor =
+        uv_mesh_ptr->create_const_accessor(edge_rgb_state_handle.as<int64_t>());
+
+    while (true) {
+        int64_t todo_edge_cnt = wmtk::components::operations::utils::tag_longest_edge_of_all_faces(
+            uv_mesh_ptr,
+            edge_todo_accessor,
+            triangle_distance_accessor,
+            curved_edge_length_accessor,
+            target_distance);
+
+        if (todo_edge_cnt == 0) {
+            break;
+        }
+        rgb_recursive_split_swap(
+            uv_mesh_ptr,
+            face_rgb_state_handle,
+            edge_rgb_state_handle,
+            edge_todo_accessor,
+            split,
+            swap);
     }
 }
 } // namespace wmtk
