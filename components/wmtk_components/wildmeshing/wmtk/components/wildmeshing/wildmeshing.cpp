@@ -202,7 +202,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         target_edge_length); // defaults to target edge length
 
     // Target edge length update
-    const double min_edge_length = 1e-6; // TODOfix: this should be an option
+    const double min_edge_length =
+        options.envelopes.empty()
+            ? 1e-6 // some default value if no envelope exists
+            : options.envelopes[0].thickness; // use envelope thickness if available
+
     auto compute_target_edge_length =
         [target_edge_length, min_edge_length, target_edge_length_attribute, &mesh](
             const Eigen::MatrixXd& P,
@@ -218,7 +222,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         const double max_amips = P.maxCoeff();
 
         double new_target_edge_length = current_target_edge_length;
-        if (max_amips > 100) {
+        if (max_amips > 100) { // TODOfix: this should be a setting
             new_target_edge_length *= 0.5;
         } else {
             new_target_edge_length *= 1.5;
@@ -228,14 +232,27 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         new_target_edge_length = std::max(new_target_edge_length, min_edge_length); // lower bound
 
         return Eigen::VectorXd::Constant(1, new_target_edge_length);
-
-        // return Eigen::VectorXd::Constant(1, target_edge_length); // <-- no quality dependent size adaptation
     };
     auto target_edge_length_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
             target_edge_length_attribute,
             amips_attribute,
             compute_target_edge_length);
+
+    //// Example for some other target edge length
+    // auto compute_target_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+    //    assert(P.cols() == 2); // cols --> number of neighbors
+    //    assert(P.rows() == 2 || P.rows() == 3); // rows --> attribute dimension
+    //    const double x_avg = 0.5 * (P(0, 0) + P(0, 1));
+    //    const double target_length = x_avg * x_avg;
+    //    return Eigen::VectorXd::Constant(1, target_length);
+    //};
+    // auto target_edge_length_update =
+    //    std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+    //        target_edge_length_attribute,
+    //        pt_attribute,
+    //        compute_target_edge_length);
+    target_edge_length_update->run_on_all();
 
 
     //////////////////////////////////
