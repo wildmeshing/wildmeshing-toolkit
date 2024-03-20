@@ -36,8 +36,8 @@
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MaxFunctionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
-#include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
+#include <wmtk/invariants/SeparateSubstructuresInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/Swap23EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/Swap32EnergyBeforeInvariant.hpp>
@@ -294,7 +294,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     std::vector<std::shared_ptr<SingleAttributeTransferStrategy<double, double>>>
         update_child_positon, update_parent_positon;
     std::vector<std::shared_ptr<Mesh>> envelopes;
-    std::vector<MeshConstrainPair> mesh_constaint_pairs;
+    std::vector<MeshConstrainPair> mesh_constraint_pairs;
 
     std::vector<std::shared_ptr<Mesh>> multimesh_meshes;
 
@@ -310,7 +310,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         auto envelope_position_handle =
             envelope->get_attribute_handle<double>(v.geometry.position, PrimitiveType::Vertex);
 
-        mesh_constaint_pairs.emplace_back(envelope_position_handle, constrained.front());
+        mesh_constraint_pairs.emplace_back(envelope_position_handle, constrained.front());
 
         envelope_invariant->add(std::make_shared<EnvelopeInvariant>(
             envelope_position_handle,
@@ -389,7 +389,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto swap23_energy_before =
         std::make_shared<Swap23EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
 
-    auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(*mesh);
+    auto invariant_separate_substructures =
+        std::make_shared<invariants::SeparateSubstructuresInvariant>(*mesh);
 
 
     //////////////////////////////////
@@ -427,7 +428,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto collapse = std::make_shared<EdgeCollapse>(*mesh);
     collapse->add_invariant(link_condition);
     collapse->add_invariant(inversion_invariant);
-    collapse->add_invariant(invariant_mm_map);
+    collapse->add_invariant(invariant_separate_substructures);
 
     collapse->set_new_attribute_strategy(pt_attribute, clps_strat);
     for (const auto& attr : pass_through_attributes) {
@@ -437,18 +438,20 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         collapse->add_transfer_strategy(s);
     }
 
-    auto proj_collapse = std::make_shared<ProjectOperation>(collapse, mesh_constaint_pairs);
+    auto proj_collapse = std::make_shared<ProjectOperation>(collapse, mesh_constraint_pairs);
     proj_collapse->set_priority(short_edges_first);
 
     proj_collapse->add_invariant(todo_smaller);
     proj_collapse->add_invariant(envelope_invariant);
     proj_collapse->add_invariant(inversion_invariant);
-    proj_collapse->add_invariant(function_invariant);
+    // proj_collapse->add_invariant(function_invariant);
 
     proj_collapse->add_transfer_strategy(amips_update);
     proj_collapse->add_transfer_strategy(edge_length_update);
     proj_collapse->add_transfer_strategy(target_edge_length_update);
-    for (auto& s : update_parent_positon) proj_collapse->add_transfer_strategy(s);
+    for (auto& s : update_parent_positon) {
+        proj_collapse->add_transfer_strategy(s);
+    }
 
     ops.emplace_back(proj_collapse);
     ops_name.emplace_back("collapse");
@@ -466,14 +469,17 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         op.add_invariant(simplex_invariant);
         op.add_invariant(inversion_invariant);
-        // op.add_invariant(function_invariant);
+        op.add_invariant(function_invariant);
 
         op.add_transfer_strategy(amips_update);
         op.add_transfer_strategy(edge_length_update);
         op.add_transfer_strategy(target_edge_length_update);
-        for (auto& s : update_child_positon) op.add_transfer_strategy(s);
+        for (auto& s : update_child_positon) {
+            op.add_transfer_strategy(s);
+        }
 
         collapse.add_invariant(link_condition);
+        collapse.add_invariant(invariant_separate_substructures);
 
         collapse.set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::CopyOther);
         split.set_new_attribute_strategy(pt_attribute);
@@ -537,7 +543,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     smoothing->add_invariant(inversion_invariant);
     for (auto& s : update_child_positon) smoothing->add_transfer_strategy(s);
 
-    auto proj_smoothing = std::make_shared<ProjectOperation>(smoothing, mesh_constaint_pairs);
+    auto proj_smoothing = std::make_shared<ProjectOperation>(smoothing, mesh_constraint_pairs);
     proj_smoothing->use_random_priority() = true;
 
     proj_smoothing->add_invariant(envelope_invariant);
@@ -620,7 +626,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         assert(mesh->is_connectivity_valid());
     }
-
 
     // output
     cache.write_mesh(*mesh, options.output);
