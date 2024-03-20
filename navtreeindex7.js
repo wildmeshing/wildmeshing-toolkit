@@ -1,5 +1,6 @@
 var NAVTREEINDEX7 =
 {
+"classwmtk_1_1attribute_1_1_attribute_manager.html#a54f52bbf1b39e0493d82af5cc13b135f":[5,0,2,0,13,28],
 "classwmtk_1_1attribute_1_1_attribute_manager.html#a6b3ba94a0c7c9729fbdf1f42b050bdd4":[5,0,2,0,13,26],
 "classwmtk_1_1attribute_1_1_attribute_manager.html#a7011e43ae5d9d57a905b6daaf75c9ca5":[5,0,2,0,13,5],
 "classwmtk_1_1attribute_1_1_attribute_manager.html#a70e0983f8e1d3e20ddf5b06b90f52cb1":[5,0,2,0,13,6],
@@ -248,6 +249,5 @@ var NAVTREEINDEX7 =
 "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ade337a19e83a2c6a2386dc8e5386bb89":[5,0,2,0,11,22],
 "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#afd9ad7a40bd8e443de2e3a1e9a044631":[5,0,2,0,11,23],
 "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope.html":[5,0,2,0,0,0],
-"classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope.html#ad48de71f0c1ac8f1d0b9516494a91b43":[5,0,2,0,0,0,0],
-"classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope.html#addeb2da2da66196e15c9394a5026eaef":[5,0,2,0,0,0,1]
+"classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope.html#ad48de71f0c1ac8f1d0b9516494a91b43":[5,0,2,0,0,0,0]
 };

@@ -139,63 +139,66 @@ $(document).ready(function(){initNavTree('test__component__input_8cpp_source.htm
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;            {<span class="stringliteral">&quot;type&quot;</span>, <span class="stringliteral">&quot;input&quot;</span>},</div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;            {<span class="stringliteral">&quot;name&quot;</span>, <span class="stringliteral">&quot;input_mesh&quot;</span>},</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;            {<span class="stringliteral">&quot;file&quot;</span>, input_file.string()},</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;            {<span class="stringliteral">&quot;ignore_z&quot;</span>, <span class="keyword">false</span>}};</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;            {<span class="stringliteral">&quot;ignore_z&quot;</span>, <span class="keyword">false</span>},</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;            {<span class="stringliteral">&quot;tetrahedron_attributes&quot;</span>, json::array()}};</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        CHECK_NOTHROW(<a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">wmtk::components::input</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), component_json, cache));</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    }</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    SECTION(<span class="stringliteral">&quot;should throw&quot;</span>)</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    {</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> component_json = {</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;            {<span class="stringliteral">&quot;type&quot;</span>, <span class="stringliteral">&quot;input&quot;</span>},</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;            {<span class="stringliteral">&quot;name&quot;</span>, <span class="stringliteral">&quot;input_mesh&quot;</span>},</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;            {<span class="stringliteral">&quot;file&quot;</span>, <span class="stringliteral">&quot;In case you ever name your file like that: What is wrong with you?&quot;</span>},</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;            {<span class="stringliteral">&quot;ignore_z&quot;</span>, <span class="keyword">false</span>}};</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        CHECK_THROWS(<a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">wmtk::components::input</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), component_json, cache));</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    }</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;}</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="test__component__input_8cpp.html#a97fb6790b608344bdf6e248a85b2ab7a">   43</a></span>&#160;<a class="code" href="test__component__input_8cpp.html#a16c891bca32fed14c4bf443bedbae763">TEST_CASE</a>(<span class="stringliteral">&quot;component_input_point&quot;</span>, <span class="stringliteral">&quot;[components][input][.]&quot;</span>)</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;{</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <a class="code" href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a> cache(<span class="stringliteral">&quot;wmtk_cache&quot;</span>, <span class="stringliteral">&quot;.&quot;</span>);</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="comment">// TODO we need a point cloud to read from</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> component_json = {</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        {<span class="stringliteral">&quot;type&quot;</span>, <span class="stringliteral">&quot;input&quot;</span>},</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        {<span class="stringliteral">&quot;name&quot;</span>, <span class="stringliteral">&quot;input_mesh&quot;</span>},</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        {<span class="stringliteral">&quot;file&quot;</span>, (<a class="code" href="test__component__input_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> / <span class="stringliteral">&quot;point_clouds&quot;</span> / <span class="stringliteral">&quot;bunny_pts.msh&quot;</span>).<span class="keywordtype">string</span>()},</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        {<span class="stringliteral">&quot;ignore_z&quot;</span>, <span class="keyword">false</span>}};</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    std::map&lt;std::string, std::filesystem::path&gt; files;</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    CHECK_NOTHROW(<a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">wmtk::components::input</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), component_json, cache));</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;}</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        CHECK_NOTHROW(<a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">wmtk::components::input</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), component_json, cache));</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    }</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    SECTION(<span class="stringliteral">&quot;should throw&quot;</span>)</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    {</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> component_json = {</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;            {<span class="stringliteral">&quot;type&quot;</span>, <span class="stringliteral">&quot;input&quot;</span>},</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;            {<span class="stringliteral">&quot;name&quot;</span>, <span class="stringliteral">&quot;input_mesh&quot;</span>},</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;            {<span class="stringliteral">&quot;file&quot;</span>, <span class="stringliteral">&quot;In case you ever name your file like that: What is wrong with you?&quot;</span>},</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;            {<span class="stringliteral">&quot;ignore_z&quot;</span>, <span class="keyword">false</span>},</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            {<span class="stringliteral">&quot;tetrahedron_attributes&quot;</span>, json::array()}};</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        CHECK_THROWS(<a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">wmtk::components::input</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), component_json, cache));</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    }</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;}</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="test__component__input_8cpp.html#a97fb6790b608344bdf6e248a85b2ab7a">   45</a></span>&#160;<a class="code" href="test__component__input_8cpp.html#a16c891bca32fed14c4bf443bedbae763">TEST_CASE</a>(<span class="stringliteral">&quot;component_input_point&quot;</span>, <span class="stringliteral">&quot;[components][input][.]&quot;</span>)</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;{</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <a class="code" href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a> cache(<span class="stringliteral">&quot;wmtk_cache&quot;</span>, <span class="stringliteral">&quot;.&quot;</span>);</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="comment">// TODO we need a point cloud to read from</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> component_json = {</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        {<span class="stringliteral">&quot;type&quot;</span>, <span class="stringliteral">&quot;input&quot;</span>},</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        {<span class="stringliteral">&quot;name&quot;</span>, <span class="stringliteral">&quot;input_mesh&quot;</span>},</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        {<span class="stringliteral">&quot;file&quot;</span>, (<a class="code" href="test__component__input_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> / <span class="stringliteral">&quot;point_clouds&quot;</span> / <span class="stringliteral">&quot;bunny_pts.msh&quot;</span>).<span class="keywordtype">string</span>()},</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        {<span class="stringliteral">&quot;ignore_z&quot;</span>, <span class="keyword">false</span>},</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        {<span class="stringliteral">&quot;tetrahedron_attributes&quot;</span>, json::array()}};</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    std::map&lt;std::string, std::filesystem::path&gt; files;</div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00059"></a><span class="lineno"><a class="line" href="test__component__input_8cpp.html#ac75dc6f525d583460008c72f843a1ffc">   59</a></span>&#160;<a class="code" href="test__component__input_8cpp.html#a16c891bca32fed14c4bf443bedbae763">TEST_CASE</a>(<span class="stringliteral">&quot;mesh_with_tag_from_image&quot;</span>, <span class="stringliteral">&quot;[components][input]&quot;</span>)</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;{</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">using namespace </span><a class="code" href="namespacewmtk.html">wmtk</a>;</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <a class="code" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a> cache(<span class="stringliteral">&quot;wmtk_cache&quot;</span>, std::filesystem::current_path());</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    std::filesystem::path img_path = <a class="code" href="test__component__input_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> / <span class="stringliteral">&quot;images/half_white_half_black.png&quot;</span>;</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keyword">const</span> std::string tag_name = <span class="stringliteral">&quot;img_tag&quot;</span>;</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    std::shared_ptr&lt;TriMesh&gt; m;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    REQUIRE_NOTHROW(m = <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a7e292eba37fd37581ede0aa29943c3db">components::internal::mesh_with_tag_from_image</a>(img_path, tag_name));</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <a class="code" href="classwmtk_1_1io_1_1_paraview_writer.html">ParaviewWriter</a> writer(</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a54eccbcd8c17d48e2f5114de944715b3">get_cache_path</a>() / <span class="stringliteral">&quot;mesh_with_tag_from_image&quot;</span>,</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="stringliteral">&quot;vertices&quot;</span>,</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        *m,</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    m-&gt;serialize(writer);</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;}</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    CHECK_NOTHROW(<a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">wmtk::components::input</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), component_json, cache));</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;}</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno"><a class="line" href="test__component__input_8cpp.html#ac75dc6f525d583460008c72f843a1ffc">   62</a></span>&#160;<a class="code" href="test__component__input_8cpp.html#a16c891bca32fed14c4bf443bedbae763">TEST_CASE</a>(<span class="stringliteral">&quot;mesh_with_tag_from_image&quot;</span>, <span class="stringliteral">&quot;[components][input]&quot;</span>)</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;{</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keyword">using namespace </span><a class="code" href="namespacewmtk.html">wmtk</a>;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <a class="code" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a> cache(<span class="stringliteral">&quot;wmtk_cache&quot;</span>, std::filesystem::current_path());</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    std::filesystem::path img_path = <a class="code" href="test__component__input_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> / <span class="stringliteral">&quot;images/half_white_half_black.png&quot;</span>;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keyword">const</span> std::string tag_name = <span class="stringliteral">&quot;img_tag&quot;</span>;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    std::shared_ptr&lt;TriMesh&gt; m;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    REQUIRE_NOTHROW(m = <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a7e292eba37fd37581ede0aa29943c3db">components::internal::mesh_with_tag_from_image</a>(img_path, tag_name));</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <a class="code" href="classwmtk_1_1io_1_1_paraview_writer.html">ParaviewWriter</a> writer(</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a54eccbcd8c17d48e2f5114de944715b3">get_cache_path</a>() / <span class="stringliteral">&quot;mesh_with_tag_from_image&quot;</span>,</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <span class="stringliteral">&quot;vertices&quot;</span>,</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        *m,</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    m-&gt;serialize(writer);</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;}</div>
 <div class="ttc" id="a_cache_8hpp_html"><div class="ttname"><a href="_cache_8hpp.html">Cache.hpp</a></div></div>
 <div class="ttc" id="a_paraview_writer_8hpp_html"><div class="ttname"><a href="_paraview_writer_8hpp.html">ParaviewWriter.hpp</a></div></div>
 <div class="ttc" id="a_paths_8hpp_html"><div class="ttname"><a href="_paths_8hpp.html">Paths.hpp</a></div></div>

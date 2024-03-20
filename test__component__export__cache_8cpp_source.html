@@ -136,22 +136,23 @@ $(document).ready(function(){initNavTree('test__component__export__cache_8cpp_so
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;        <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> component_json = {</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;            {<span class="stringliteral">&quot;name&quot;</span>, <span class="stringliteral">&quot;input_mesh&quot;</span>},</div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;            {<span class="stringliteral">&quot;file&quot;</span>, input_file.string()},</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;            {<span class="stringliteral">&quot;ignore_z&quot;</span>, <span class="keyword">false</span>}};</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;            {<span class="stringliteral">&quot;ignore_z&quot;</span>, <span class="keyword">false</span>},</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;            {<span class="stringliteral">&quot;tetrahedron_attributes&quot;</span>, json::array()}};</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        CHECK_NOTHROW(<a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">wmtk::components::input</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), component_json, cache));</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    }</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <a class="code" href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a> cache_dump(<span class="stringliteral">&quot;wmtk_dump&quot;</span>, <span class="stringliteral">&quot;.&quot;</span>);</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="comment">// export cache</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    {</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> o;</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        o[<span class="stringliteral">&quot;folder&quot;</span>] = cache_dump.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a54eccbcd8c17d48e2f5114de944715b3">get_cache_path</a>() / <span class="stringliteral">&quot;exported_cache&quot;</span>;</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        CHECK_NOTHROW(<a class="code" href="namespacewmtk_1_1components.html#a8e7e5cb6b2980d1e78b254fe003080fd">wmtk::components::export_cache</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), o, cache));</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    }</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;}</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        CHECK_NOTHROW(<a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">wmtk::components::input</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), component_json, cache));</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    }</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <a class="code" href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a> cache_dump(<span class="stringliteral">&quot;wmtk_dump&quot;</span>, <span class="stringliteral">&quot;.&quot;</span>);</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="comment">// export cache</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    {</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> o;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        o[<span class="stringliteral">&quot;folder&quot;</span>] = cache_dump.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a54eccbcd8c17d48e2f5114de944715b3">get_cache_path</a>() / <span class="stringliteral">&quot;exported_cache&quot;</span>;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        CHECK_NOTHROW(<a class="code" href="namespacewmtk_1_1components.html#a8e7e5cb6b2980d1e78b254fe003080fd">wmtk::components::export_cache</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), o, cache));</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    }</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;}</div>
 <div class="ttc" id="a_paths_8hpp_html"><div class="ttname"><a href="_paths_8hpp.html">Paths.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1components_1_1base_1_1_paths_html"><div class="ttname"><a href="classwmtk_1_1components_1_1base_1_1_paths.html">wmtk::components::base::Paths</a></div><div class="ttdef"><b>Definition:</b> <a href="_paths_8hpp_source.html#l00006">Paths.hpp:7</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a></div><div class="ttdef"><b>Definition:</b> <a href="_cache_8hpp_source.html#l00012">Cache.hpp:13</a></div></div>

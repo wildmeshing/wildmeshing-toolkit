@@ -1,5 +1,6 @@
 var NAVTREEINDEX18 =
 {
+"simplex_2_a_m_i_p_s_8hpp.html":[6,0,2,0,2,0,1],
 "simplex_2_a_m_i_p_s_8hpp_source.html":[6,0,2,0,2,0,1],
 "struct_d_scalar1.html":[5,0,4],
 "struct_d_scalar1.html#a09f33bc10c398914a1deba226435c201":[5,0,4,50],
@@ -209,6 +210,7 @@ var NAVTREEINDEX18 =
 "structwmtk_1_1components_1_1internal_1_1_input_options.html":[5,0,2,1,2,4],
 "structwmtk_1_1components_1_1internal_1_1_input_options.html#a32836e99c5a03b8ffe1a3e2150c5f023":[5,0,2,1,2,4,1],
 "structwmtk_1_1components_1_1internal_1_1_input_options.html#a48058d04f07677358a85578420fa4bfd":[5,0,2,1,2,4,2],
+"structwmtk_1_1components_1_1internal_1_1_input_options.html#a952a4d4c48a40dacc6720576c3318aea":[5,0,2,1,2,4,3],
 "structwmtk_1_1components_1_1internal_1_1_input_options.html#ae42ce25fa09ad129f88397869083bf4c":[5,0,2,1,2,4,0],
 "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes.html":[5,0,2,1,2,5],
 "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes.html#a0fb2c9b20a36b540cc6d9e557140876e":[5,0,2,1,2,5,2],
@@ -247,7 +249,5 @@ var NAVTREEINDEX18 =
 "structwmtk_1_1components_1_1internal_1_1_output_attributes.html#a8dee3f67206cb051add020196412c399":[5,0,2,1,2,12,0],
 "structwmtk_1_1components_1_1internal_1_1_output_options.html":[5,0,2,1,2,13],
 "structwmtk_1_1components_1_1internal_1_1_output_options.html#a0b6692eaef10add2d4a79dfed0c175fd":[5,0,2,1,2,13,0],
-"structwmtk_1_1components_1_1internal_1_1_output_options.html#a12f803b862ffae7745a42650d8f069cf":[5,0,2,1,2,13,2],
-"structwmtk_1_1components_1_1internal_1_1_output_options.html#a7e43943b9389f8481fc6be5cde1fdac9":[5,0,2,1,2,13,1],
-"structwmtk_1_1components_1_1internal_1_1_procedural_options.html":[5,0,2,1,2,18]
+"structwmtk_1_1components_1_1internal_1_1_output_options.html#a12f803b862ffae7745a42650d8f069cf":[5,0,2,1,2,13,2]
 };

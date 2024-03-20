@@ -125,8 +125,8 @@ $(document).ready(function(){initNavTree('classwmtk_1_1_msh_reader.html',''); in
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a5eecae37de86c25ce483dbc69f14adac"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#a5eecae37de86c25ce483dbc69f14adac">read</a> (const std::filesystem::path &amp;filename, const bool ignore_z=false)</td></tr>
-<tr class="separator:a5eecae37de86c25ce483dbc69f14adac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd780afbbde030daa41a17137bc37085"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#afd780afbbde030daa41a17137bc37085">read</a> (const std::filesystem::path &amp;filename, const bool ignore_z=false, const std::vector&lt; std::string &gt; &amp;attrs={})</td></tr>
+<tr class="separator:afd780afbbde030daa41a17137bc37085"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -162,12 +162,10 @@ Private Member Functions</h2></td></tr>
 <tr class="separator:a4dc55e5fdde3d97adebe88283914d24c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae4607fef1acf5e758d861002f2a37d07"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#ae4607fef1acf5e758d861002f2a37d07">extract_tets</a> ()</td></tr>
 <tr class="separator:ae4607fef1acf5e758d861002f2a37d07"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acd2510a8a570cc40cdfb9a1d50e4e875"><td class="memTemplParams" colspan="2">template&lt;int DIM&gt; </td></tr>
-<tr class="memitem:acd2510a8a570cc40cdfb9a1d50e4e875"><td class="memTemplItemLeft" align="right" valign="top">const mshio::NodeBlock *&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#acd2510a8a570cc40cdfb9a1d50e4e875">get_vertex_block</a> () const</td></tr>
-<tr class="separator:acd2510a8a570cc40cdfb9a1d50e4e875"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a660837d4912b9ab5b78247b2d4bbbf97"><td class="memTemplParams" colspan="2">template&lt;int DIM&gt; </td></tr>
-<tr class="memitem:a660837d4912b9ab5b78247b2d4bbbf97"><td class="memTemplItemLeft" align="right" valign="top">const mshio::ElementBlock *&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#a660837d4912b9ab5b78247b2d4bbbf97">get_simplex_element_block</a> () const</td></tr>
-<tr class="separator:a660837d4912b9ab5b78247b2d4bbbf97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afbb0a5cde0f43f6ea0e4d52c50eccaee"><td class="memItemLeft" align="right" valign="top">const mshio::NodeBlock *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#afbb0a5cde0f43f6ea0e4d52c50eccaee">get_vertex_block</a> (int DIM) const</td></tr>
+<tr class="separator:afbb0a5cde0f43f6ea0e4d52c50eccaee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c87cee1adfc204dcceb07b91352d1d5"><td class="memItemLeft" align="right" valign="top">const mshio::ElementBlock *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#a7c87cee1adfc204dcceb07b91352d1d5">get_simplex_element_block</a> (int DIM) const</td></tr>
+<tr class="separator:a7c87cee1adfc204dcceb07b91352d1d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5d1ae063b700c70e6bcb405300569203"><td class="memTemplParams" colspan="2">template&lt;int DIM&gt; </td></tr>
 <tr class="memitem:a5d1ae063b700c70e6bcb405300569203"><td class="memTemplItemLeft" align="right" valign="top">size_t&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#a5d1ae063b700c70e6bcb405300569203">get_num_vertices</a> () const</td></tr>
 <tr class="separator:a5d1ae063b700c70e6bcb405300569203"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -180,6 +178,8 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:ad454a4508c7012d7a8dbeb1b5d42ded0"><td class="memTemplParams" colspan="2">template&lt;int DIM&gt; </td></tr>
 <tr class="memitem:ad454a4508c7012d7a8dbeb1b5d42ded0"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#ad454a4508c7012d7a8dbeb1b5d42ded0">extract_simplex_elements</a> ()</td></tr>
 <tr class="separator:ad454a4508c7012d7a8dbeb1b5d42ded0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee1ef092f5560041625ae03009e709e6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#aee1ef092f5560041625ae03009e709e6">extract_element_attribute</a> (std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt; m, const std::string &amp;attr_name, int DIM)</td></tr>
+<tr class="separator:aee1ef092f5560041625ae03009e709e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -194,7 +194,7 @@ Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00010">10</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00012">12</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a3c428a196eb1eb7b632c42fc0b1775e0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3c428a196eb1eb7b632c42fc0b1775e0">&#9670;&nbsp;</a></span>extract_edge_vertices()</h2>
@@ -219,9 +219,9 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00132">132</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00142">142</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00016">read()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -254,13 +254,73 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00137">137</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00147">147</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00016">read()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_msh_reader_ad402a5894549f729431cd9fcc75f7121_icgraph.svg" width="100%" height="542"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="aee1ef092f5560041625ae03009e709e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee1ef092f5560041625ae03009e709e6">&#9670;&nbsp;</a></span>extract_element_attribute()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::MshReader::extract_element_attribute </td>
+          <td>(</td>
+          <td class="paramtype">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>attr_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>DIM</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00397">397</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_msh_reader_8cpp_source.html#l00233">get_simplex_element_block()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00116">m_spec</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_msh_reader_aee1ef092f5560041625ae03009e709e6_cgraph.svg" width="438" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_msh_reader_aee1ef092f5560041625ae03009e709e6_icgraph.svg" width="100%" height="542"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -289,9 +349,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00127">127</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00137">137</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00016">read()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -324,9 +384,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00142">142</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00152">152</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00016">read()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -358,13 +418,13 @@ template&lt;int DIM&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00274">274</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00282">282</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00024">set_edge()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00025">set_face()</a>, and <a class="el" href="_msh_reader_8hpp_source.html#l00030">set_tet()</a>.</p>
+<p class="reference">References <a class="el" href="_msh_reader_8cpp_source.html#l00233">get_simplex_element_block()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00223">get_vertex_block()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00029">set_edge()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00030">set_face()</a>, and <a class="el" href="_msh_reader_8hpp_source.html#l00035">set_tet()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_msh_reader_ad454a4508c7012d7a8dbeb1b5d42ded0_cgraph.svg" width="460" height="139"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_msh_reader_ad454a4508c7012d7a8dbeb1b5d42ded0_cgraph.svg" width="460" height="271"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -393,9 +453,9 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00122">122</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00132">132</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00016">read()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -428,9 +488,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00147">147</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00157">157</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00016">read()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -462,13 +522,13 @@ template&lt;int DIM&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00258">258</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00266">266</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00016">set_vertex()</a>.</p>
+<p class="reference">References <a class="el" href="_msh_reader_8cpp_source.html#l00223">get_vertex_block()</a>, and <a class="el" href="_msh_reader_8hpp_source.html#l00021">set_vertex()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_msh_reader_abdec7b38f8cc2f9c9aff1349cdc6a1ae_cgraph.svg" width="422" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_msh_reader_abdec7b38f8cc2f9c9aff1349cdc6a1ae_cgraph.svg" width="423" height="118"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -497,7 +557,7 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00033">33</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00038">38</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 
 </div>
 </div>
@@ -524,9 +584,9 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00037">37</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00042">42</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00016">read()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -559,9 +619,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00034">34</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00039">39</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00016">read()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -594,9 +654,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00038">38</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00043">43</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00016">read()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -628,7 +688,15 @@ template&lt;int DIM&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00247">247</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00255">255</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_msh_reader_8cpp_source.html#l00233">get_simplex_element_block()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_msh_reader_a18fdddc8dda282549416b5e962be0624_cgraph.svg" width="428" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
 
 </div>
 </div>
@@ -655,9 +723,9 @@ template&lt;int DIM&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00035">35</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00040">40</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00016">read()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -690,9 +758,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00039">39</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00044">44</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00016">read()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -724,23 +792,33 @@ template&lt;int DIM&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00236">236</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00244">244</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_msh_reader_8cpp_source.html#l00223">get_vertex_block()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_msh_reader_a5d1ae063b700c70e6bcb405300569203_cgraph.svg" width="398" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
 
 </div>
 </div>
-<a id="a660837d4912b9ab5b78247b2d4bbbf97"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a660837d4912b9ab5b78247b2d4bbbf97">&#9670;&nbsp;</a></span>get_simplex_element_block()</h2>
+<a id="a7c87cee1adfc204dcceb07b91352d1d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c87cee1adfc204dcceb07b91352d1d5">&#9670;&nbsp;</a></span>get_simplex_element_block()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<div class="memtemplate">
-template&lt;int DIM&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const mshio::ElementBlock * wmtk::MshReader::get_simplex_element_block</td>
+          <td class="memname">const mshio::ElementBlock * wmtk::MshReader::get_simplex_element_block </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>DIM</em></td><td>)</td>
+          <td> const</td>
         </tr>
       </table>
   </td>
@@ -750,25 +828,35 @@ template&lt;int DIM&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00225">225</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00233">233</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00098">m_spec</a>.</p>
+<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00116">m_spec</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00397">extract_element_attribute()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00282">extract_simplex_elements()</a>, and <a class="el" href="_msh_reader_8cpp_source.html#l00255">get_num_simplex_elements()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_msh_reader_a7c87cee1adfc204dcceb07b91352d1d5_icgraph.svg" width="100%" height="542"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
 
 </div>
 </div>
-<a id="acd2510a8a570cc40cdfb9a1d50e4e875"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acd2510a8a570cc40cdfb9a1d50e4e875">&#9670;&nbsp;</a></span>get_vertex_block()</h2>
+<a id="afbb0a5cde0f43f6ea0e4d52c50eccaee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afbb0a5cde0f43f6ea0e4d52c50eccaee">&#9670;&nbsp;</a></span>get_vertex_block()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<div class="memtemplate">
-template&lt;int DIM&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const mshio::NodeBlock * wmtk::MshReader::get_vertex_block</td>
+          <td class="memname">const mshio::NodeBlock * wmtk::MshReader::get_vertex_block </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>DIM</em></td><td>)</td>
+          <td> const</td>
         </tr>
       </table>
   </td>
@@ -778,14 +866,22 @@ template&lt;int DIM&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00214">214</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00223">223</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00098">m_spec</a>.</p>
+<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00116">m_spec</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00282">extract_simplex_elements()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00266">extract_vertices()</a>, and <a class="el" href="_msh_reader_8cpp_source.html#l00244">get_num_vertices()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_msh_reader_afbb0a5cde0f43f6ea0e4d52c50eccaee_icgraph.svg" width="423" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
 
 </div>
 </div>
-<a id="a5eecae37de86c25ce483dbc69f14adac"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5eecae37de86c25ce483dbc69f14adac">&#9670;&nbsp;</a></span>read()</h2>
+<a id="afd780afbbde030daa41a17137bc37085"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd780afbbde030daa41a17137bc37085">&#9670;&nbsp;</a></span>read()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -800,7 +896,13 @@ template&lt;int DIM&gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const bool&#160;</td>
-          <td class="paramname"><em>ignore_z</em> = <code>false</code>&#160;</td>
+          <td class="paramname"><em>ignore_z</em> = <code>false</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::string &gt; &amp;&#160;</td>
+          <td class="paramname"><em>attrs</em> = <code>{}</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -810,21 +912,21 @@ template&lt;int DIM&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00016">16</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00019">19</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_msh_reader_8cpp_source.html#l00132">extract_edge_vertices()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00137">extract_edges()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00127">extract_face_vertices()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00142">extract_faces()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00122">extract_tet_vertices()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00147">extract_tets()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00037">get_num_edges()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00034">get_num_face_vertices()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00038">get_num_faces()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00035">get_num_tet_vertices()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00039">get_num_tets()</a>, <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00099">m_ignore_z</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00098">m_spec</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00103">S</a>, <a class="el" href="mesh__utils_8hpp_source.html#l00009">wmtk::mesh_utils::set_matrix_attribute()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00102">V</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_msh_reader_8cpp_source.html#l00142">extract_edge_vertices()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00147">extract_edges()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00397">extract_element_attribute()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00137">extract_face_vertices()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00152">extract_faces()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00132">extract_tet_vertices()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00157">extract_tets()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00042">get_num_edges()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00039">get_num_face_vertices()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00043">get_num_faces()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00040">get_num_tet_vertices()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00044">get_num_tets()</a>, <a class="el" href="_logger_8cpp_source.html#l00093">wmtk::log_and_throw_error()</a>, <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00117">m_ignore_z</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00116">m_spec</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00121">S</a>, <a class="el" href="mesh__utils_8hpp_source.html#l00009">wmtk::mesh_utils::set_matrix_attribute()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00120">V</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_mesh_reader_8cpp_source.html#l00012">wmtk::read_mesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_mesh_reader_8cpp_source.html#l00008">wmtk::read_mesh()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_msh_reader_a5eecae37de86c25ce483dbc69f14adac_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_msh_reader_afd780afbbde030daa41a17137bc37085_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_msh_reader_a5eecae37de86c25ce483dbc69f14adac_icgraph.svg" width="100%" height="542"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_msh_reader_afd780afbbde030daa41a17137bc37085_icgraph.svg" width="100%" height="542"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -870,11 +972,11 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00024">24</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00029">29</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00103">S</a>.</p>
+<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00121">S</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00274">extract_simplex_elements()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00282">extract_simplex_elements()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -930,11 +1032,11 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00025">25</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00030">30</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00103">S</a>.</p>
+<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00121">S</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00274">extract_simplex_elements()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00282">extract_simplex_elements()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -996,11 +1098,11 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00030">30</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00035">35</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00103">S</a>.</p>
+<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00121">S</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00274">extract_simplex_elements()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00282">extract_simplex_elements()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -1056,11 +1158,11 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00016">16</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00021">21</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00099">m_ignore_z</a>, and <a class="el" href="_msh_reader_8hpp_source.html#l00102">V</a>.</p>
+<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00117">m_ignore_z</a>, and <a class="el" href="_msh_reader_8hpp_source.html#l00120">V</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00258">extract_vertices()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00266">extract_vertices()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -1091,9 +1193,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00099">99</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00117">117</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00016">read()</a>, and <a class="el" href="_msh_reader_8hpp_source.html#l00016">set_vertex()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>, and <a class="el" href="_msh_reader_8hpp_source.html#l00021">set_vertex()</a>.</p>
 
 </div>
 </div>
@@ -1117,9 +1219,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00098">98</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00116">116</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00225">get_simplex_element_block()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00214">get_vertex_block()</a>, and <a class="el" href="_msh_reader_8cpp_source.html#l00016">read()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00397">extract_element_attribute()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00233">get_simplex_element_block()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00223">get_vertex_block()</a>, and <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>.</p>
 
 </div>
 </div>
@@ -1143,9 +1245,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00103">103</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00121">121</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00016">read()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00024">set_edge()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00025">set_face()</a>, and <a class="el" href="_msh_reader_8hpp_source.html#l00030">set_tet()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00029">set_edge()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00030">set_face()</a>, and <a class="el" href="_msh_reader_8hpp_source.html#l00035">set_tet()</a>.</p>
 
 </div>
 </div>
@@ -1169,9 +1271,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00102">102</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00120">120</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00016">read()</a>, and <a class="el" href="_msh_reader_8hpp_source.html#l00016">set_vertex()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00019">read()</a>, and <a class="el" href="_msh_reader_8hpp_source.html#l00021">set_vertex()</a>.</p>
 
 </div>
 </div>
