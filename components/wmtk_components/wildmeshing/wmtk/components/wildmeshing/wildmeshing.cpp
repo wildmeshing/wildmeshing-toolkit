@@ -206,11 +206,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         options.envelopes.empty()
             ? 1e-6 // some default value if no envelope exists
             : options.envelopes[0].thickness; // use envelope thickness if available
+    const double target_max_amips = options.target_max_amips;
 
     auto compute_target_edge_length =
-        [target_edge_length, min_edge_length, target_edge_length_attribute, &mesh](
-            const Eigen::MatrixXd& P,
-            const std::vector<Tuple>& neighs) -> Eigen::VectorXd {
+        [target_edge_length,
+         target_max_amips,
+         min_edge_length,
+         target_edge_length_attribute,
+         &mesh](const Eigen::MatrixXd& P, const std::vector<Tuple>& neighs) -> Eigen::VectorXd {
         auto target_edge_length_accessor =
             mesh->create_accessor(target_edge_length_attribute.as<double>());
 
@@ -222,7 +225,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         const double max_amips = P.maxCoeff();
 
         double new_target_edge_length = current_target_edge_length;
-        if (max_amips > 100) { // TODOfix: this should be a setting
+        if (max_amips > target_max_amips) {
             new_target_edge_length *= 0.5;
         } else {
             new_target_edge_length *= 1.5;
