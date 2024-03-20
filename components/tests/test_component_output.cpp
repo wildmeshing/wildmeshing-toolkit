@@ -20,7 +20,8 @@ TEST_CASE("component_output", "[components][output]")
         {"name", "input_mesh"},
         {"cell_dimension", 2},
         {"file", input_file.string()},
-        {"ignore_z", false}};
+        {"ignore_z", false},
+        {"tetrahedron_attributes", json::array()}};
 
     wmtk::components::input(Paths(), input_component_json, cache);
 
