@@ -2,6 +2,8 @@
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <unordered_map>
+
+// TODO: we also need fid_maps
 namespace wmtk::operations::utils {
     std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t> >
     get_local_trimesh(const wmtk::TriMesh& mesh, const wmtk::simplex::Simplex& simplex)

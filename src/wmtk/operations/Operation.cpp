@@ -93,6 +93,14 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         auto [F, V, id_map] = utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), mods[0]);
                         local_atlas_file << "F_after:\n " << F << std::endl;
                         local_atlas_file << "V_after:\n " << V << std::endl;
+
+                        auto get_mesh = [&](const simplex::Simplex &s)
+                        {
+                            return utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), s);
+                        };
+                        auto [F_before, V_before, id_map_before] = mesh().parent_scope(get_mesh, simplex);
+                        local_atlas_file << "F_before:\n " << F_before << std::endl;
+                        local_atlas_file << "V_before:\n " << V_before << std::endl;
                     }
             
                     local_atlas_file.close();
@@ -100,8 +108,9 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                     std::cerr << "unable to open file " << filename << " for writing\n";
                 }
                 std::cout << "total successful operations: " << ++succ_operations_count << "\n";
+                
 
-                // TODO: get
+
             } // end if (m_record)
             return mods; // scope destructor is called
         }
