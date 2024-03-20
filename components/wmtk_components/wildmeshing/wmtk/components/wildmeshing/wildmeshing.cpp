@@ -489,7 +489,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         op.add_invariant(simplex_invariant);
         op.add_invariant(inversion_invariant);
-        op.add_invariant(function_invariant);
+        // op.add_invariant(function_invariant);
 
         op.add_transfer_strategy(amips_update);
         op.add_transfer_strategy(edge_length_update);
