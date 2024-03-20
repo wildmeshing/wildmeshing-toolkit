@@ -4,7 +4,6 @@
 #include <filesystem>
 #include <memory>
 #include <wmtk/Mesh.hpp>
-// #include "MeshReader.hpp"
 
 #include <mshio/mshio.h>
 
