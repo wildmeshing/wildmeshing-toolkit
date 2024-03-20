@@ -90,10 +90,9 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
                     if (mesh().top_simplex_type() == PrimitiveType::Triangle)
                     {
-                        std::cout << "This is a triangle mesh\n";
                         auto [F, V, id_map] = utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), mods[0]);
-                        local_atlas_file << "F: " << F << std::endl;
-                        local_atlas_file << "V: " << V << std::endl;
+                        local_atlas_file << "F_after:\n " << F << std::endl;
+                        local_atlas_file << "V_after:\n " << V << std::endl;
                     }
             
                     local_atlas_file.close();
@@ -101,7 +100,9 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                     std::cerr << "unable to open file " << filename << " for writing\n";
                 }
                 std::cout << "total successful operations: " << ++succ_operations_count << "\n";
-            }
+
+                // TODO: get
+            } // end if (m_record)
             return mods; // scope destructor is called
         }
     }
