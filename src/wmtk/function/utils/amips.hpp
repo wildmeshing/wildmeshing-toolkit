@@ -97,7 +97,10 @@ auto amips(
 
         // TODO: shouldnt we make sure the normms are over some eps instead of 0?
         auto e0norm = e0.norm();
-        if (e0norm < 1e-12) {
+        if (e0norm < 1e-16) {
+            logger().critical("v0 {}", v0.transpose());
+            logger().critical("v1 {}", v1.transpose());
+            logger().critical("v2 {}", v2.transpose());
             assert(false);
             throw std::runtime_error("3d AMIPS e0 of triangle is too short");
             return static_cast<Scalar>(std::numeric_limits<double>::infinity());
@@ -108,7 +111,10 @@ auto amips(
         Vector3<Scalar> n = e0.cross(e1);
         e1 = n.cross(e0);
         auto e1norm = e1.norm();
-        if (e1norm < 1e-12) {
+        if (e1norm < 1e-16) {
+            logger().critical("v0 {}", v0.transpose());
+            logger().critical("v1 {}", v1.transpose());
+            logger().critical("v2 {}", v2.transpose());
             assert(false);
             throw std::runtime_error("3d AMIPS e1 of triangle is too short");
             return static_cast<Scalar>(std::numeric_limits<double>::infinity());

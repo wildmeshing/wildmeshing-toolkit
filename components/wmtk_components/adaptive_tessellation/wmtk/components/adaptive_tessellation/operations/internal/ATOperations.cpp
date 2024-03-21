@@ -111,7 +111,7 @@ ATOperations::ATOperations(
             std::make_shared<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
                 m_atdata.images(),
                 image::SAMPLING_METHOD::Bilinear,
-                image::IMAGE_WRAPPING_MODE::CLAMP_TO_EDGE);
+                image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
         m_integral_ptr =
             std::make_shared<wmtk::components::function::utils::TextureIntegral>(*m_evaluator_ptr);
     }

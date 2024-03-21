@@ -210,7 +210,7 @@ void tag_red_l_face_green_l_edge(
         face_rgb_state_accessor.const_vector_attribute(edge);
     assert(face_color_level[0] == 1);
     Tuple red_edge = edge;
-    auto edge_color_level = edge_rgb_state_accessor.const_vector_attribute(red_edge);
+    const auto edge_color_level = edge_rgb_state_accessor.const_vector_attribute(red_edge);
     Tuple ear0 = uv_mesh_ptr->switch_tuple(edge, PrimitiveType::Edge);
     Tuple ear1 = uv_mesh_ptr->switch_tuples(edge, {PrimitiveType::Vertex, PrimitiveType::Edge});
     Eigen::Vector2<int64_t> ear0_color_level = edge_rgb_state_accessor.const_vector_attribute(ear0);
