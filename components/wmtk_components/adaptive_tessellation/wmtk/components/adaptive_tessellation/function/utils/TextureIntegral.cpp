@@ -128,7 +128,7 @@ double TextureIntegral::get_error_one_triangle_exact(
                          {"z", texture_position(2)}});
                 }
                 Vector3<double> diffp = texture_position - position;
-                value += squared_norm_T(diffp) * cache.quad.weights()[i];
+                value += diffp.norm() * cache.quad.weights()[i];
             }
         }
     }

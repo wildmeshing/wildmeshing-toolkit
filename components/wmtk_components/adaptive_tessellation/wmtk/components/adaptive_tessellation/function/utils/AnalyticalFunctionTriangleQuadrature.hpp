@@ -93,9 +93,9 @@ public:
         auto squared_norm_T = [&](const Eigen::Matrix<T, 3, 1>& row_v) -> T {
             T ret = T(0.);
             for (auto i = 0; i < row_v.rows(); i++) {
-                ret += pow(row_v(i, 0), 6);
+                ret += pow(row_v(i, 0), 2);
             }
-            return ret;
+            return pow(ret, 0.5);
         };
 
         T value = T(0.);
