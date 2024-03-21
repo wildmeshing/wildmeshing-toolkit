@@ -71,7 +71,8 @@ TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
         {"name", "input_mesh"},
         {"cell_dimension", 2},
         {"file", (data_dir / "bumpyDice.msh").string()},
-        {"ignore_z", false}};
+        {"ignore_z", false},
+        {"tetrahedron_attributes", json::array()}};
     wmtk::components::input(Paths(), input_component_json, cache);
 
 
@@ -633,7 +634,8 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         json input_component_json = {
             {"name", "input_mesh"},
             {"file", input_file.string()},
-            {"ignore_z", false}};
+            {"ignore_z", false},
+            {"tetrahedron_attributes", json::array()}};
         REQUIRE_NOTHROW(wmtk::components::input(Paths(), input_component_json, cache));
     }
 
