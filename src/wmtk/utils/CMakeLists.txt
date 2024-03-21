@@ -57,6 +57,9 @@ set(SRC_FILES
 
     EigenMatrixWriter.hpp
     EigenMatrixWriter.cpp
+
+    edge_insertion.hpp
+    edge_insertion.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
