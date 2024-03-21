@@ -96,6 +96,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
                         auto get_mesh = [&](const simplex::Simplex &s)
                         {
+                            if (operation_name == "EdgeCollapse")
+                                return utils::get_local_trimesh_before_collapse(static_cast<const TriMesh&>(mesh()), s);
                             return utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), s);
                         };
                         auto [F_before, V_before, id_map_before] = mesh().parent_scope(get_mesh, simplex);
