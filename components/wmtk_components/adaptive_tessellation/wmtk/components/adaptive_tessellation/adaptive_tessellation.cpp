@@ -56,7 +56,7 @@
 #include <iostream>
 #include <wmtk/components/adaptive_tessellation/operations/internal/AT_debug.cpp>
 
-
+#include <wmtk/multimesh/consolidate.hpp>
 namespace wmtk::components {
 using namespace operations;
 using namespace function;
@@ -76,8 +76,8 @@ void write(
         data_dir / (uv_output + "_" + std::to_string(index)),
         "vertices",
         *uv_mesh,
-        true,
-        true,
+        false,
+        false,
         true,
         false);
     uv_mesh->serialize(writer);
@@ -85,8 +85,8 @@ void write(
         data_dir / (xyz_output + "_" + std::to_string(index)),
         "positions",
         *uv_mesh,
-        true,
-        true,
+        false,
+        false,
         true,
         false);
     uv_mesh->serialize(writer3d);
@@ -225,19 +225,71 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         //     options.target_distance,
         //     at_ops.m_triangle_distance_edge_length);
 
+        int64_t outter_i = 0;
+        while (true) {
+            int64_t todo_edge_cnt =
+                wmtk::components::operations::utils::tag_longest_edge_of_all_faces(
+                    uv_mesh_ptr,
+                    at_ops.m_edge_todo_accessor,
+                    at_ops.m_distance_error_accessor,
+                    at_ops.m_curved_edge_length_accessor,
+                    options.target_distance);
 
-        scheduler.rgb_scheduling(
-            uv_mesh_ptr,
-            atdata.m_face_rgb_state_handle,
-            atdata.m_edge_rgb_state_handle,
-            at_ops.m_edge_todo_accessor,
-            *at_ops.m_ops[rgb_split_index],
-            *at_ops.m_ops[rgb_swap_index],
-            at_ops.m_distance_error_accessor,
-            at_ops.m_curved_edge_length_accessor,
-            options.target_distance);
+            if (todo_edge_cnt == 0) {
+                break;
+            }
 
-        write(uv_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, i + 1);
+            while (true) {
+                int64_t inner_i = 1;
+                while (true) {
+                    const auto stats =
+                        scheduler.run_operation_on_all(*at_ops.m_ops[rgb_split_index]);
+                    if (stats.number_of_successful_operations() == 0) {
+                        break;
+                    }
+                    // write(
+                    //     uv_mesh_ptr,
+                    //     uv_mesh_ptr,
+                    //     options.uv_output + "_split",
+                    //     options.xyz_output + "_split",
+                    //     outter_i * 10 + inner_i);
+                    logger().warn("inner split cnt: {}", inner_i);
+                    logger().warn("outter split cnt: {}", outter_i);
+                    inner_i++;
+                }
+                logger().warn("Finished split");
+                while (true) {
+                    const auto stats =
+                        scheduler.run_operation_on_all(*at_ops.m_ops[rgb_swap_index]);
+                    if (stats.number_of_successful_operations() == 0) {
+                        break;
+                    }
+                    multimesh::consolidate(*uv_mesh_ptr);
+                }
+                logger().warn("Finished swap");
+
+                int64_t inner_todo_edge_cnt = 0;
+                for (auto& e : uv_mesh_ptr->get_all(wmtk::PrimitiveType::Edge)) {
+                    if (at_ops.m_edge_todo_accessor.scalar_attribute(e) == 1) {
+                        wmtk::components::operations::utils::tag_secondary_split_edges(
+                            uv_mesh_ptr,
+                            at_ops.m_face_rgb_state_accessor,
+                            at_ops.m_edge_rgb_state_accessor,
+                            at_ops.m_edge_todo_accessor,
+                            e);
+                        inner_todo_edge_cnt++;
+                    }
+                }
+                logger().warn("Finished tagging");
+                if (inner_todo_edge_cnt == 0) {
+                    break;
+                }
+                outter_i++;
+            }
+            i++;
+            // write(uv_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, i);
+        }
+        // write(uv_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, i + 1);
     }
 
     at_ops.m_ops.clear();
