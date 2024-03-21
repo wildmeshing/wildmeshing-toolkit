@@ -127,12 +127,15 @@ void ATScheduler::rgb_recursive_split_swap(
                 break;
             }
         }
+        logger().warn("Finished split");
         while (true) {
             const auto stats = run_operation_on_all(swap);
             if (stats.number_of_successful_operations() == 0) {
                 break;
             }
         }
+        logger().warn("Finished swap");
+
         int64_t todo_edge_cnt = 0;
         for (auto& e : uv_mesh_ptr->get_all(wmtk::PrimitiveType::Edge)) {
             if (edge_todo_accessor.scalar_attribute(e) == 1) {
@@ -145,6 +148,7 @@ void ATScheduler::rgb_recursive_split_swap(
                 todo_edge_cnt++;
             }
         }
+        logger().warn("Finished tagging");
         if (todo_edge_cnt == 0) {
             break;
         }
