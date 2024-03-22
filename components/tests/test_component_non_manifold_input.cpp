@@ -24,7 +24,7 @@ TEST_CASE("component_non_manifold_input", "[components][non_manifold_input]")
     {
         const std::filesystem::path input_file = data_dir / "200683_sf.msh";
         j = {
-            {"type", "input"},
+            {"type", "non_manifold_input"},
             {"name", "input_mesh"},
             {"file", input_file.string()},
             {"ignore_z", false},
@@ -37,7 +37,7 @@ TEST_CASE("component_non_manifold_input", "[components][non_manifold_input]")
     {
         const std::filesystem::path input_file = data_dir / "edge_with_four_triangles.msh";
         j = {
-            {"type", "input"},
+            {"type", "non_manifold_input"},
             {"name", "input_mesh"},
             {"file", input_file.string()},
             {"ignore_z", false},
@@ -53,7 +53,7 @@ TEST_CASE("component_non_manifold_input", "[components][non_manifold_input]")
     {
         const std::filesystem::path input_file = data_dir / "hour_glass.msh";
         j = {
-            {"type", "input"},
+            {"type", "non_manifold_input"},
             {"name", "input_mesh"},
             {"file", input_file.string()},
             {"ignore_z", false},
