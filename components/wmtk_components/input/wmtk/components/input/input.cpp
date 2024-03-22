@@ -3,6 +3,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/components/base/resolve_path.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
 #include "internal/InputOptions.hpp"
@@ -22,7 +23,9 @@ void input(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
     }
 
     std::shared_ptr<Mesh> mesh = read_mesh(file, options.ignore_z, options.tetrahedron_attributes);
-    assert(mesh->is_connectivity_valid());
+    if (!mesh->is_connectivity_valid()) {
+        wmtk::logger().warn("Invalid topology! For non-manifold meshes this is expected.");
+    }
 
     cache.write_mesh(*mesh, options.name);
 }
