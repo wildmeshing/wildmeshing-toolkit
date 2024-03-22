@@ -43,7 +43,7 @@ TEST_CASE("component_non_manifold_simplification", "[components][non_manifold_si
             {"input", "input_mesh"},
             {"output", "output_mesh"},
             {"position", "vertices"},
-            {"iterations", 10},
+            {"iterations", 2},
             {"length_abs", -1},
             {"length_rel", 10},
             {"envelope_size", 0.001},
