@@ -19,7 +19,7 @@ TEST_CASE("component_non_manifold_simplification", "[components][non_manifold_si
 
     // input
     {
-        const std::filesystem::path input_file = data_dir / "200683_sf.msh";
+        const std::filesystem::path input_file = data_dir / "hour_glass.msh";
         json j = {
             {"type", "non_manifold_input"},
             {"name", "input_mesh"},
