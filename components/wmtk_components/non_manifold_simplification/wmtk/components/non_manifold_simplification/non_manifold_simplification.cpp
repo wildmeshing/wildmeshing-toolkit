@@ -256,7 +256,7 @@ void non_manifold_simplification(
     proj_smooth->add_invariant(envelope_invariant);
 
 
-    write(m, options.output, 0, true);
+    // write(m, options.output, 0, true);
 
     Scheduler scheduler;
     for (int64_t i = 0; i < options.iterations; ++i) {
@@ -282,7 +282,7 @@ void non_manifold_simplification(
 
         m.consolidate();
 
-        write(m, options.output, i + 1, true);
+        // write(m, options.output, i + 1, true);
     }
 
 
