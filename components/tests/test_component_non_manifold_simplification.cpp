@@ -5,6 +5,7 @@
 #include <wmtk/components/non_manifold_simplification/non_manifold_simplification.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 using namespace wmtk::components::base;
 using json = nlohmann::json;
@@ -15,6 +16,8 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
 TEST_CASE("component_non_manifold_simplification", "[components][non_manifold_simplification]")
 {
+    logger().set_level(spdlog::level::off);
+
     wmtk::io::Cache cache("wmtk_cache", ".");
 
     // input

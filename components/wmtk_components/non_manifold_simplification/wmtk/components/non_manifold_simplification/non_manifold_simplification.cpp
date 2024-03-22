@@ -8,15 +8,20 @@
 
 #include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
+#include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 
+#include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
+#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/composite/ProjectOperation.hpp>
+#include <wmtk/operations/utils/VertexLaplacianSmooth.hpp>
 
 #include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/simplex/link_single_dimension.hpp>
 
 #include "NonManifoldSimplificationOptions.hpp"
 
@@ -135,6 +140,28 @@ void non_manifold_simplification(
         }
     }
 
+    auto edge_length_attribute =
+        m.register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
+    auto edge_length_accessor = m.create_accessor(edge_length_attribute.as<double>());
+    // Edge length update
+    auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        assert(P.cols() == 2);
+        assert(P.rows() == 2 || P.rows() == 3);
+        return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
+    };
+    auto edge_length_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            edge_length_attribute,
+            pos_handle,
+            compute_edge_length);
+    edge_length_update->run_on_all();
+    pass_through_attributes.emplace_back(edge_length_attribute);
+
+    auto short_edges_first = [&](const simplex::Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        return std::vector<double>({edge_length_accessor.scalar_attribute(s.tuple())});
+    };
+
     //////////////////////////////////
     // envelope
     //////////////////////////////////
@@ -162,9 +189,15 @@ void non_manifold_simplification(
         options.length_abs * options.length_abs);
 
     auto interior_edge_invariant = std::make_shared<InteriorEdgeInvariant>(m);
+    auto interior_vertex_invariant = std::make_shared<InteriorVertexInvariant>(m);
 
     auto nme_invariant =
         std::make_shared<TodoInvariant>(m, do_not_collapse_handle.as<int64_t>(), 0);
+
+    auto nmv_invariant = std::make_shared<TodoInvariant>(
+        m,
+        nmv_handle.as<int64_t>(),
+        options.non_manifold_tag_value == 0 ? 1 : 0);
 
     //////////////////////////////////
     // EdgeCollapse
@@ -182,6 +215,9 @@ void non_manifold_simplification(
         collapse->set_new_attribute_strategy(attr);
     }
 
+    collapse->add_transfer_strategy(edge_length_update);
+
+
     auto proj_collapse =
         std::make_shared<operations::composite::ProjectOperation>(collapse, pos_handle, pos_handle);
 
@@ -190,18 +226,59 @@ void non_manifold_simplification(
     proj_collapse->add_invariant(max_edge_length_invariant);
     proj_collapse->add_invariant(envelope_invariant);
 
+    proj_collapse->set_priority(short_edges_first);
+
+    //////////////////////////////////
+    // Smooth
+    //////////////////////////////////
+    auto smooth = std::make_shared<operations::AttributesUpdateWithFunction>(m);
+
+    auto smoothing_function = [pos_handle](Mesh& m, const simplex::Simplex& v) -> bool {
+        auto pos_acc = m.create_accessor<double>(pos_handle);
+
+        const auto neighs = simplex::link_single_dimension(m, v, PrimitiveType::Vertex);
+
+        pos_acc.vector_attribute(v.tuple()).setZero();
+        for (const simplex::Simplex& n : neighs) {
+            pos_acc.vector_attribute(v.tuple()) += pos_acc.const_vector_attribute(n.tuple());
+        }
+        pos_acc.vector_attribute(v.tuple()) /= neighs.size();
+
+        return true;
+    };
+
+    smooth->set_function(smoothing_function);
+    auto proj_smooth =
+        std::make_shared<operations::composite::ProjectOperation>(smooth, pos_handle, pos_handle);
+
+    proj_smooth->add_invariant(interior_vertex_invariant);
+    proj_smooth->add_invariant(nmv_invariant);
+    proj_smooth->add_invariant(envelope_invariant);
+
+
     write(m, options.output, 0, true);
 
     Scheduler scheduler;
     for (int64_t i = 0; i < options.iterations; ++i) {
         logger().info("Pass {}", i);
-        auto stats = scheduler.run_operation_on_all(*proj_collapse);
-        logger().info(
-            "{} ops (S/F) {}/{}. Execution time: {}",
-            stats.number_of_performed_operations(),
-            stats.number_of_successful_operations(),
-            stats.number_of_failed_operations(),
-            stats.executing_time);
+        {
+            auto stats = scheduler.run_operation_on_all(*proj_collapse);
+            logger().info(
+                "Collapse {} ops (S/F) {}/{}. Execution time: {}",
+                stats.number_of_performed_operations(),
+                stats.number_of_successful_operations(),
+                stats.number_of_failed_operations(),
+                stats.executing_time);
+        }
+        {
+            auto stats = scheduler.run_operation_on_all(*proj_smooth);
+            logger().info(
+                "Smooth {} ops (S/F) {}/{}. Execution time: {}",
+                stats.number_of_performed_operations(),
+                stats.number_of_successful_operations(),
+                stats.number_of_failed_operations(),
+                stats.executing_time);
+        }
 
         m.consolidate();
 
