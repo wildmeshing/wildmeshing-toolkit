@@ -269,6 +269,11 @@ void non_manifold_simplification(
                 stats.number_of_successful_operations(),
                 stats.number_of_failed_operations(),
                 stats.executing_time);
+
+            if (stats.number_of_successful_operations() == 0) {
+                logger().info("No collapse performed. Break.");
+                break;
+            }
         }
         {
             auto stats = scheduler.run_operation_on_all(*proj_smooth);
