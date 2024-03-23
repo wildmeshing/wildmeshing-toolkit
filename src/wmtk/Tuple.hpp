@@ -10,6 +10,11 @@ class PointMesh;
 class TriMesh;
 class EdgeMesh;
 class TetMesh;
+
+namespace components::internal {
+class MultiMeshFromTag;
+}
+
 namespace attribute {
 template <typename T, typename MeshType>
 class Accessor;
@@ -51,6 +56,7 @@ public:
     friend class operations::Operation;
     friend class utils::TupleCellLessThan;
     friend class utils::TupleInspector;
+    friend class components::internal::MultiMeshFromTag;
     // friend int64_t Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
     // friend Mesh::is_ccw(const Tuple& tuple) const;
     // friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
@@ -79,6 +85,7 @@ public:
     bool is_null() const;
     Tuple with_updated_hash(int64_t new_hash) const;
 
+private:
     int8_t local_vid() const;
     int8_t local_eid() const;
     int8_t local_fid() const;
