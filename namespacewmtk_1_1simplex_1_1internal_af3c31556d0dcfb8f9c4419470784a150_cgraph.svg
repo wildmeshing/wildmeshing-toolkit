@@ -57,7 +57,7 @@ var sectionId = 'dynsection-4';
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
-<g id="a_node1"><a xlink:title="Returns the boundary of a simplex ignoring some sorts of switches.">
+<g id="a_node1"><a xlink:title="Returns the faces (single&#45;dimension) of a simplex that are also cofaces of a given face.">
 <polygon fill="#bfbfbf" stroke="black" points="0,-49.5 0,-90.5 149,-90.5 149,-49.5 0,-49.5"/>
 <text text-anchor="start" x="8" y="-78.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::simplex::internal</text>
 <text text-anchor="start" x="8" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">::boundary_with_preserved</text>

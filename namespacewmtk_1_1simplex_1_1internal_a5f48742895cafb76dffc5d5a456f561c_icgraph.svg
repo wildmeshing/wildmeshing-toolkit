@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
-<g id="a_node1"><a xlink:title="Returns the boundary of a simplex ignoring some sorts of switches.">
+<g id="a_node1"><a xlink:title="Returns the faces (single&#45;dimension) of a simplex that are also cofaces of a given face.">
 <polygon fill="#bfbfbf" stroke="black" points="185,-0.5 185,-41.5 334,-41.5 334,-0.5 185,-0.5"/>
 <text text-anchor="start" x="193" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::simplex::internal</text>
 <text text-anchor="start" x="193" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">::boundary_with_preserved</text>
@@ -22,7 +22,7 @@
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="namespacewmtk_1_1simplex_1_1internal.html#a79e56c4a28bee846e3eadeb8031c3091" target="_top" xlink:title="Given a simplex and one of its faces, returns.">
+<g id="a_node2"><a xlink:href="namespacewmtk_1_1simplex_1_1internal.html#a79e56c4a28bee846e3eadeb8031c3091" target="_top" xlink:title="Returns the faces (single&#45;dimension) of a simplex that are also cofaces of a given face.">
 <polygon fill="none" stroke="black" points="0,-0.5 0,-41.5 149,-41.5 149,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::simplex::internal</text>
 <text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">::boundary_with_preserved</text>

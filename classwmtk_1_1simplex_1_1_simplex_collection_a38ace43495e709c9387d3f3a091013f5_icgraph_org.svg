@@ -12,9 +12,9 @@
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="Check if simplex is contained in collection.">
-<polygon fill="#bfbfbf" stroke="black" points="937,-213.5 937,-243.5 1121,-243.5 1121,-213.5 937,-213.5"/>
-<text text-anchor="start" x="945" y="-231.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::simplex::SimplexCollection</text>
-<text text-anchor="middle" x="1029" y="-220.5" font-family="Helvetica,sans-Serif" font-size="10.00">::contains</text>
+<polygon fill="#bfbfbf" stroke="black" points="937,-191.5 937,-221.5 1121,-221.5 1121,-191.5 937,-191.5"/>
+<text text-anchor="start" x="945" y="-209.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::simplex::SimplexCollection</text>
+<text text-anchor="middle" x="1029" y="-198.5" font-family="Helvetica,sans-Serif" font-size="10.00">::contains</text>
 </a>
 </g>
 </g>
@@ -31,8 +31,23 @@
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M926.61,-228.5C917.88,-228.5 909.26,-228.5 901.05,-228.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="926.88,-232 936.88,-228.5 926.88,-225 926.88,-232"/>
+<path fill="none" stroke="midnightblue" d="M926.89,-218.49C918.07,-219.54 909.35,-220.57 901.05,-221.56"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="927.36,-221.96 936.88,-217.31 926.54,-215.01 927.36,-221.96"/>
+</g>
+<!-- Node16 -->
+<g id="node16" class="node">
+<title>Node16</title>
+<g id="a_node16"><a xlink:href="test__component__multimesh__from__tag_8cpp.html#a18cd3d411cfadc472201c20662d62869" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="806,-175 806,-194 877,-194 877,-175 806,-175"/>
+<text text-anchor="middle" x="841.5" y="-182" font-family="Helvetica,sans-Serif" font-size="10.00">TEST_CASE</text>
+</a>
+</g>
+</g>
+<!-- Node1&#45;&gt;Node16 -->
+<g id="edge15" class="edge">
+<title>Node1&#45;&gt;Node16</title>
+<path fill="none" stroke="midnightblue" d="M926.92,-194.51C909.05,-192.39 891.59,-190.32 877.23,-188.62"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="926.54,-197.99 936.88,-195.69 927.36,-191.04 926.54,-197.99"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">

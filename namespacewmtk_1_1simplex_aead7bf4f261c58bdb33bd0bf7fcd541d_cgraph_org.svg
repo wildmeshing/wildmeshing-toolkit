@@ -21,7 +21,7 @@
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="namespacewmtk_1_1simplex.html#add076bc746a4cfd29d4766bc1571f31d" target="_top" xlink:title=" ">
+<g id="a_node2"><a xlink:href="namespacewmtk_1_1simplex.html#a822a4b42dd4b13153cbac8ffac5dca9c" target="_top" xlink:title="Returns all cofaces of a simplex that are of the provided primitive type.">
 <polygon fill="none" stroke="black" points="161.5,-575.5 161.5,-605.5 294.5,-605.5 294.5,-575.5 161.5,-575.5"/>
 <text text-anchor="start" x="169.5" y="-593.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::simplex::cofaces</text>
 <text text-anchor="middle" x="228" y="-582.5" font-family="Helvetica,sans-Serif" font-size="10.00">_single_dimension</text>
@@ -212,7 +212,7 @@
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
-<g id="a_node5"><a xlink:href="namespacewmtk_1_1simplex_1_1internal.html#af3c31556d0dcfb8f9c4419470784a150" target="_top" xlink:title="Returns the boundary of a simplex ignoring some sorts of switches.">
+<g id="a_node5"><a xlink:href="namespacewmtk_1_1simplex_1_1internal.html#af3c31556d0dcfb8f9c4419470784a150" target="_top" xlink:title="Returns the faces (single&#45;dimension) of a simplex that are also cofaces of a given face.">
 <polygon fill="none" stroke="black" points="801.5,-887 801.5,-928 950.5,-928 950.5,-887 801.5,-887"/>
 <text text-anchor="start" x="809.5" y="-916" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::simplex::internal</text>
 <text text-anchor="start" x="809.5" y="-905" font-family="Helvetica,sans-Serif" font-size="10.00">::boundary_with_preserved</text>

@@ -131,18 +131,18 @@ $(document).ready(function(){initNavTree('procedural_8cpp_source.html',''); init
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;{</div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">using namespace </span>internal;</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    ProceduralOptions options = j.get&lt;ProceduralOptions&gt;();</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <a class="code" href="structwmtk_1_1components_1_1internal_1_1_procedural_options.html">ProceduralOptions</a> options = j.get&lt;<a class="code" href="structwmtk_1_1components_1_1internal_1_1_procedural_options.html">ProceduralOptions</a>&gt;();</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    std::shared_ptr&lt;Mesh&gt; mesh = std::visit(</div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;        [](<span class="keyword">auto</span>&amp;&amp; op) { <span class="keywordflow">return</span> <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872">wmtk::components::internal::procedural::make_mesh</a>(op); },</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        options.settings);</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        options.<a class="code" href="structwmtk_1_1components_1_1internal_1_1_procedural_options.html#ab0f8c5a589df0ba3495908da56b3499c">settings</a>);</div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="comment">// mesh = create(options);</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keywordflow">if</span> (!<span class="keywordtype">bool</span>(mesh)) {</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;Did not obtain a mesh when generating a procedural one&quot;</span>);</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    }</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a512b2d7adaeb163afee61b194eb802fd">write_mesh</a>(*mesh, options.name);</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a512b2d7adaeb163afee61b194eb802fd">write_mesh</a>(*mesh, options.<a class="code" href="structwmtk_1_1components_1_1internal_1_1_procedural_options.html#adc410496f85869108f655c1563a74d0b">name</a>);</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;}</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
@@ -155,10 +155,13 @@ $(document).ready(function(){initNavTree('procedural_8cpp_source.html',''); init
 <div class="ttc" id="amake__mesh_8hpp_html"><div class="ttname"><a href="make__mesh_8hpp.html">make_mesh.hpp</a></div></div>
 <div class="ttc" id="amesh__utils_8hpp_html"><div class="ttname"><a href="mesh__utils_8hpp.html">mesh_utils.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_1_1internal_1_1procedural_html_a9f9c7ba8540630226be69470ae8ed872"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872">wmtk::components::internal::procedural::make_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; make_mesh(const DiskOptions &amp;opt)</div><div class="ttdef"><b>Definition:</b> <a href="_disk_options_8cpp_source.html#l00011">DiskOptions.cpp:11</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="bicubic__interpolation_8cpp_source.html#l00005">bicubic_interpolation.cpp:5</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html_a59bbaed7b26fb80218677ddfc1a94960"><div class="ttname"><a href="namespacewmtk_1_1components.html#a59bbaed7b26fb80218677ddfc1a94960">wmtk::components::procedural</a></div><div class="ttdeci">void procedural(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="procedural_8cpp_source.html#l00013">procedural.cpp:13</a></div></div>
 <div class="ttc" id="aprocedural_8hpp_html"><div class="ttname"><a href="procedural_8hpp.html">procedural.hpp</a></div></div>
 <div class="ttc" id="aresolve__path_8hpp_html"><div class="ttname"><a href="resolve__path_8hpp.html">resolve_path.hpp</a></div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1internal_1_1_procedural_options_html"><div class="ttname"><a href="structwmtk_1_1components_1_1internal_1_1_procedural_options.html">wmtk::components::internal::ProceduralOptions</a></div><div class="ttdef"><b>Definition:</b> <a href="_procedural_options_8hpp_source.html#l00013">ProceduralOptions.hpp:14</a></div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1internal_1_1_procedural_options_html_ab0f8c5a589df0ba3495908da56b3499c"><div class="ttname"><a href="structwmtk_1_1components_1_1internal_1_1_procedural_options.html#ab0f8c5a589df0ba3495908da56b3499c">wmtk::components::internal::ProceduralOptions::settings</a></div><div class="ttdeci">std::variant&lt; GridOptions, TriangleFanOptions, DiskOptions &gt; settings</div><div class="ttdef"><b>Definition:</b> <a href="_procedural_options_8hpp_source.html#l00016">ProceduralOptions.hpp:16</a></div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1internal_1_1_procedural_options_html_adc410496f85869108f655c1563a74d0b"><div class="ttname"><a href="structwmtk_1_1components_1_1internal_1_1_procedural_options.html#adc410496f85869108f655c1563a74d0b">wmtk::components::internal::ProceduralOptions::name</a></div><div class="ttdeci">std::string name</div><div class="ttdef"><b>Definition:</b> <a href="_procedural_options_8hpp_source.html#l00015">ProceduralOptions.hpp:15</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

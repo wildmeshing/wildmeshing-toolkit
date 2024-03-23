@@ -127,6 +127,12 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 <li>m_active
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a5b294d808846d8cd12e82bbe0e7c8285">wmtk::attribute::AttributeScopeStack&lt; T &gt;</a>
 </li>
+<li>m_adjacency_handle
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#ae9af47f86aa40eaa418369c0d7e6a8ab">wmtk::components::internal::MultiMeshFromTag</a>
+</li>
+<li>m_adjacency_matrix
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#aeccdf62ef2057049d7e5eba558c3a22e">wmtk::components::internal::MultiMeshFromTag</a>
+</li>
 <li>m_after
 : <a class="el" href="classwmtk_1_1invariants_1_1internal_1_1_constant_invariant.html#a0b74eb6267283cb9526ddeab4fd8a3c5">wmtk::invariants::internal::ConstantInvariant</a>
 </li>
@@ -445,6 +451,7 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 : <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#a2aed50d9ed5335a532bbb9cbf35ade8a">wmtk::attribute::AccessorBase&lt; _T, Dim &gt;</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a581a7733744c671289d7062785a4f044">wmtk::attribute::MeshAttributeHandle</a>
 , <a class="el" href="classwmtk_1_1components_1_1internal_1_1_marching.html#a2b346a8176ea0eb2e9bfbdc1b6e66151">wmtk::components::internal::Marching</a>
+, <a class="el" href="classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a91af712035fc412cc6f51fe9fbde39b0">wmtk::components::internal::MultiMeshFromTag</a>
 , <a class="el" href="classwmtk_1_1components_1_1internal_1_1_regular_space.html#a4346093021531fc39343ca4be9e74b85">wmtk::components::internal::RegularSpace</a>
 , <a class="el" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a0021b296dcd26aaea0e07305a7236a5e">wmtk::EdgeMesh::EdgeMeshOperationExecutor</a>
 , <a class="el" href="classwmtk_1_1function_1_1_function.html#a9308d68425a7b012022c4816151a77b8">wmtk::function::Function</a>
@@ -498,6 +505,15 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 <li>m_new_attr_strategies
 : <a class="el" href="classwmtk_1_1operations_1_1_edge_collapse.html#a781135a6a0f34f1007b321bdc0f2a8a7">wmtk::operations::EdgeCollapse</a>
 , <a class="el" href="classwmtk_1_1operations_1_1_edge_split.html#a467c74256f567740ee192ce1c210f8c4">wmtk::operations::EdgeSplit</a>
+</li>
+<li>m_new_id_handles
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#abaa0a88be1f28c0d38cce23a206c4042">wmtk::components::internal::MultiMeshFromTag</a>
+</li>
+<li>m_new_id_matrices
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#ae91ce8021ea075edbb1b1e8dd442f2cc">wmtk::components::internal::MultiMeshFromTag</a>
+</li>
+<li>m_new_top_coface_vectors
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a82d4c73e96a1187c5b510540b31f1cf5">wmtk::components::internal::MultiMeshFromTag</a>
 </li>
 <li>m_node_functor
 : <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#acc72d86ae596839068ab38379d91dd31">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;</a>
@@ -609,6 +625,9 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 <li>m_solver
 : <a class="el" href="classwmtk_1_1operations_1_1_optimization_smoothing.html#a5f4fcb3b31ce0879fc0beffc310c4168">wmtk::operations::OptimizationSmoothing</a>
 </li>
+<li>m_soup_ptr
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a6dc3b8e80374be0fd7a4d8395bfb1774">wmtk::components::internal::MultiMeshFromTag</a>
+</li>
 <li>m_spec
 : <a class="el" href="classwmtk_1_1_msh_reader.html#a04e9e6b7e29357d224131f3003760021">wmtk::MshReader</a>
 </li>
@@ -656,15 +675,27 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 <li>m_substructure_face_tag_handle
 : <a class="el" href="classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#aa6dc014c8027e10d5d86423596a0b582">wmtk::invariants::TetMeshSubstructureTopologyPreservingInvariant</a>
 </li>
+<li>m_substructure_ptr
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a68fd36cbca727c59ff4302dcfab3fd32">wmtk::components::internal::MultiMeshFromTag</a>
+</li>
 <li>m_substructure_tag_value
 : <a class="el" href="classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#aff1a26182c124923c042df408c02a002">wmtk::invariants::TetMeshSubstructureTopologyPreservingInvariant</a>
 , <a class="el" href="classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html#a574ca798f3914b8e6a2901d2a3c0d9fc">wmtk::invariants::TriMeshSubstructureTopologyPreservingInvariant</a>
 </li>
+<li>m_tag_acc
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a58fcdd0ef6e9cc4f1d604b104c88e767">wmtk::components::internal::MultiMeshFromTag</a>
+</li>
 <li>m_tag_accessor
 : <a class="el" href="classwmtk_1_1components_1_1_tag_attribute.html#a4f310bf6d72165ee3fb8f50ce1999a2e">wmtk::components::TagAttribute</a>
 </li>
+<li>m_tag_ptype
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a200916f6703c574e0e1f7da4ade71896">wmtk::components::internal::MultiMeshFromTag</a>
+</li>
 <li>m_tag_val
 : <a class="el" href="classwmtk_1_1components_1_1_tag_attribute.html#ac8ad8ac5cf3c2ad440405cd2b41f2be3">wmtk::components::TagAttribute</a>
+</li>
+<li>m_tag_value
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#ac2e7dc825402a1a30e5603c7805d2926">wmtk::components::internal::MultiMeshFromTag</a>
 </li>
 <li>m_te_accessor
 : <a class="el" href="classwmtk_1_1_tet_mesh.html#a5d0c6426d55b112e1c99b1829b26f613">wmtk::TetMesh</a>

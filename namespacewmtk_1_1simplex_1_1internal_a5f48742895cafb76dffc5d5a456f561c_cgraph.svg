@@ -57,7 +57,7 @@ var sectionId = 'dynsection-1';
 <!-- Node1 -->
 <g id="node1" class="node">
 <title>Node1</title>
-<g id="a_node1"><a xlink:title="Returns the boundary of a simplex ignoring some sorts of switches.">
+<g id="a_node1"><a xlink:title="Returns the faces (single&#45;dimension) of a simplex that are also cofaces of a given face.">
 <polygon fill="#bfbfbf" stroke="black" points="0,-79.5 0,-120.5 149,-120.5 149,-79.5 0,-79.5"/>
 <text text-anchor="start" x="8" y="-108.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::simplex::internal</text>
 <text text-anchor="start" x="8" y="-97.5" font-family="Helvetica,sans-Serif" font-size="10.00">::boundary_with_preserved</text>
@@ -68,7 +68,7 @@ var sectionId = 'dynsection-1';
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="namespacewmtk_1_1simplex_1_1internal.html#af3c31556d0dcfb8f9c4419470784a150" target="_top" xlink:title="Returns the boundary of a simplex ignoring some sorts of switches.">
+<g id="a_node2"><a xlink:href="namespacewmtk_1_1simplex_1_1internal.html#af3c31556d0dcfb8f9c4419470784a150" target="_top" xlink:title="Returns the faces (single&#45;dimension) of a simplex that are also cofaces of a given face.">
 <polygon fill="none" stroke="black" points="197,-159.5 197,-200.5 346,-200.5 346,-159.5 197,-159.5"/>
 <text text-anchor="start" x="205" y="-188.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::simplex::internal</text>
 <text text-anchor="start" x="205" y="-177.5" font-family="Helvetica,sans-Serif" font-size="10.00">::boundary_with_preserved</text>

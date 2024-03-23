@@ -68,6 +68,8 @@ var annotated_dup =
           [ "MarchingAttributes", "structwmtk_1_1components_1_1internal_1_1_marching_attributes.html", "structwmtk_1_1components_1_1internal_1_1_marching_attributes" ],
           [ "MarchingOptions", "structwmtk_1_1components_1_1internal_1_1_marching_options.html", "structwmtk_1_1components_1_1internal_1_1_marching_options" ],
           [ "MeshInfoOptions", "structwmtk_1_1components_1_1internal_1_1_mesh_info_options.html", "structwmtk_1_1components_1_1internal_1_1_mesh_info_options" ],
+          [ "MultiMeshFromTag", "classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html", "classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag" ],
+          [ "MultiMeshFromTagOptions", "structwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag_options.html", "structwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag_options" ],
           [ "OutputAttributes", "structwmtk_1_1components_1_1internal_1_1_output_attributes.html", "structwmtk_1_1components_1_1internal_1_1_output_attributes" ],
           [ "OutputOptions", "structwmtk_1_1components_1_1internal_1_1_output_options.html", "structwmtk_1_1components_1_1internal_1_1_output_options" ],
           [ "DiskOptions", "classwmtk_1_1components_1_1internal_1_1_disk_options.html", "classwmtk_1_1components_1_1internal_1_1_disk_options" ],

@@ -52,5 +52,7 @@ var dir_cbc9327ef122fb9d2e3099bcf15f379f =
     [ "top_dimension_cofaces.cpp", "top__dimension__cofaces_8cpp.html", "top__dimension__cofaces_8cpp" ],
     [ "top_dimension_cofaces.hpp", "top__dimension__cofaces_8hpp.html", "top__dimension__cofaces_8hpp" ],
     [ "top_dimension_cofaces_iterable.cpp", "top__dimension__cofaces__iterable_8cpp.html", "top__dimension__cofaces__iterable_8cpp" ],
-    [ "top_dimension_cofaces_iterable.hpp", "top__dimension__cofaces__iterable_8hpp.html", "top__dimension__cofaces__iterable_8hpp" ]
+    [ "top_dimension_cofaces_iterable.hpp", "top__dimension__cofaces__iterable_8hpp.html", "top__dimension__cofaces__iterable_8hpp" ],
+    [ "tuples_preserving_primitive_types.cpp", "tuples__preserving__primitive__types_8cpp.html", "tuples__preserving__primitive__types_8cpp" ],
+    [ "tuples_preserving_primitive_types.hpp", "tuples__preserving__primitive__types_8hpp.html", "tuples__preserving__primitive__types_8hpp" ]
 ];
