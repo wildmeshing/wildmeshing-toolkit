@@ -16,79 +16,102 @@ std::tuple<RowVectors3l, RowVectors3l, VectorXl, VectorXl> trimesh_topology_init
     // Make sure there are 3 columns
     assert(F.cols() == 3);
 
-    char iv0 = 0;
-    char iv1 = 1;
-    char it = 2;
-    char ii = 3;
+    const char iv0 = 0; // first vertex ID of an edge
+    const char iv1 = 1; // second vertex ID of an edge
+    const char it = 2; // face ID
+    const char ii = 3; // local edge ID
 
+    // This matrix holds a halfedge like data structure. For each edge, it holds the two vertex IDs
+    // in lexicographical order, the incident face ID and its local edge ID.
     std::vector<std::vector<int64_t>> TTT;
 
     int64_t vertex_count = F.maxCoeff() + 1;
 
-    // Build a table for finding Faces and populate the corresponding
+    // Build a table for finding faces and populate the corresponding
     // topology relations
-    {
-        TTT.resize(F.rows() * 3);
-        for (int t = 0; t < F.rows(); ++t) {
-            for (int i = 0; i < 3; ++i) {
-                // v1 v2 v3 f ei
-                const auto& [f0, f1] = wmtk::autogen::tri_mesh::auto_2d_edges[i];
-                int64_t x = F(t, f0);
-                int64_t y = F(t, f1);
-                if (x > y) std::swap(x, y);
 
-                std::vector<int64_t> r(4);
-                r[iv0] = x;
-                r[iv1] = y;
-                r[it] = t;
-                r[ii] = i;
-                TTT[t * 3 + i] = r;
+    TTT.resize(F.rows() * 3);
+    for (int t = 0; t < F.rows(); ++t) {
+        for (int i = 0; i < 3; ++i) {
+            // v1 v2 f ei
+            const auto& [v0, v1] = wmtk::autogen::tri_mesh::auto_2d_edges[i];
+            int64_t x = F(t, v0);
+            int64_t y = F(t, v1);
+            if (x > y) {
+                std::swap(x, y);
             }
+
+            std::vector<int64_t> r(4);
+            r[iv0] = x;
+            r[iv1] = y;
+            r[it] = t;
+            r[ii] = i;
+            TTT[t * 3 + i] = r;
         }
-        std::sort(TTT.begin(), TTT.end());
-
-        // VF
-        VF = VectorXl::Constant(vertex_count, 1, -1);
-        for (int i = 0; i < F.rows(); ++i) {
-            for (int j = 0; j < 3; ++j) {
-                VF[F(i, j)] = i;
-            }
-        }
-
-        // Compute FE, FF, EF
-        FE.resize(F.rows(), 3);
-        FF.resize(F.rows(), 3);
-        std::vector<int64_t> EF_temp;
-
-        // iterate over TTT to find faces
-        // for every entry check if the next is the same, and update the connectivity accordingly
-
-        for (int i = 0; i < TTT.size(); ++i) {
-            if ((i == (TTT.size() - 1)) || (TTT[i][0] != TTT[i + 1][0]) ||
-                (TTT[i][1] != TTT[i + 1][1])) {
-                // If the next tuple is empty, then this is a boundary edge
-                EF_temp.push_back(TTT[i][it]);
-
-                FF(TTT[i][it], TTT[i][ii]) = -1;
-                FE(TTT[i][it], TTT[i][ii]) = EF_temp.size() - 1;
-            } else {
-                // this is an internal edge, update both sides
-                EF_temp.push_back(TTT[i][it]);
-
-                FF(TTT[i][it], TTT[i][ii]) = TTT[i + 1][it];
-                FE(TTT[i][it], TTT[i][ii]) = EF_temp.size() - 1;
-
-                FF(TTT[i + 1][it], TTT[i + 1][ii]) = TTT[i][it];
-                FE(TTT[i + 1][it], TTT[i + 1][ii]) = EF_temp.size() - 1;
-
-                ++i; // skip the other entry
-            }
-        }
-
-        // copy EF
-        EF.resize(EF_temp.size());
-        for (int64_t i = 0; i < EF_temp.size(); ++i) EF(i) = EF_temp[i];
     }
+    std::sort(TTT.begin(), TTT.end());
+
+    // VF
+    VF = VectorXl::Constant(vertex_count, 1, -1);
+    for (int i = 0; i < F.rows(); ++i) {
+        for (int j = 0; j < 3; ++j) {
+            VF[F(i, j)] = i;
+        }
+    }
+
+    // Compute FE, FF, EF
+    FE.resize(F.rows(), 3);
+    FF.resize(F.rows(), 3);
+    std::vector<int64_t> EF_temp;
+
+    // iterate over TTT to find faces
+    // for every entry check if the next is the same, and update the connectivity accordingly
+
+    for (int64_t i = 0; i < TTT.size(); /*increment at the end of the loop*/) {
+        EF_temp.push_back(TTT[i][it]);
+
+        int64_t multiplicity = 0;
+
+        for (int j = i; j < TTT.size(); ++j) {
+            if ((TTT[i][0] == TTT[j][0]) && (TTT[i][1] == TTT[j][1])) {
+                // edges `i` and `j` are the same
+                ++multiplicity;
+
+                FF(TTT[j][it], TTT[j][ii]) = -1;
+                FE(TTT[j][it], TTT[j][ii]) = EF_temp.size() - 1;
+            } else {
+                break;
+            }
+        }
+
+        switch (multiplicity) {
+        case 1:
+            // edge is a boundary
+            break;
+        case 2:
+            // connect faces if edge is manifold
+            FF(TTT[i][it], TTT[i][ii]) = TTT[i + 1][it];
+            FF(TTT[i + 1][it], TTT[i + 1][ii]) = TTT[i][it];
+            break;
+        default:
+            // edge is non-manifold
+            logger().warn(
+                "Non-manifold edge: v0 = {}, v1 = {}. Multiplicity = {}",
+                TTT[i][0],
+                TTT[i][1],
+                multiplicity);
+            break;
+        }
+
+        i += multiplicity; // skip the other entries
+    }
+
+    // copy EF
+    EF.resize(EF_temp.size());
+    for (int64_t i = 0; i < EF_temp.size(); ++i) {
+        EF(i) = EF_temp[i];
+    }
+
 
     return {FE, FF, VF, EF};
 }

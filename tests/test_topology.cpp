@@ -242,6 +242,16 @@ TEST_CASE("topology_of_two_adjacent_tets", "[topology][3D]")
     }
 }
 
+TEST_CASE("topology_non_manifold_face", "[topology][3D]")
+{
+    // Three tetrahedra are sharing one (non-manifold) face
+
+    Eigen::Matrix<int64_t, 3, 4> T;
+    T << 0, 1, 2, 3, 1, 2, 3, 4, 1, 2, 3, 5;
+
+    REQUIRE_THROWS(tetmesh_topology_initialization(T));
+}
+
 TEST_CASE("topology_of_two_independent_tets", "[topology][3D]")
 {
     // Two tetrahedra not sharing anything

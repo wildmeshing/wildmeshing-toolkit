@@ -1,0 +1,73 @@
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": ["input", "output", "position", "envelope_size"],
+    "optional": [
+      "iterations",
+      "length_abs",
+      "length_rel",
+      "non_manifold_vertex_label",
+      "non_manifold_edge_label",
+      "non_manifold_tag_value",
+      "pass_through"
+    ]
+  },
+  {
+    "pointer": "/input",
+    "type": "string"
+  },
+  {
+    "pointer": "/output",
+    "type": "string"
+  },
+  {
+    "pointer": "/position",
+    "type": "string"
+  },
+  {
+    "pointer": "/iterations",
+    "type": "int",
+    "min": 0,
+    "default": 10
+  },
+  {
+    "pointer": "/length_abs",
+    "type": "float",
+    "default": -1
+  },
+  {
+    "pointer": "/length_rel",
+    "type": "float",
+    "default": -1
+  },
+  {
+    "pointer": "/envelope_size",
+    "type": "float"
+  },
+  {
+    "pointer": "/non_manifold_vertex_label",
+    "type": "string",
+    "default": "vertex_non_manifold_tag"
+  },
+  {
+    "pointer": "/non_manifold_edge_label",
+    "type": "string",
+    "default": "edge_non_manifold_tag"
+  },
+  {
+    "pointer": "/non_manifold_tag_value",
+    "type": "int",
+    "default": 1
+  },
+  {
+    "pointer": "/pass_through",
+    "type": "list",
+    "default": [],
+    "doc": "all attributes that are not deleted by the component but also not required"
+  },
+  {
+    "pointer": "/pass_through/*",
+    "type": "string"
+  }
+]

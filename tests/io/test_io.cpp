@@ -40,7 +40,9 @@ TEST_CASE("hdf5_2d", "[io]")
     TriMesh mesh;
     mesh.initialize(tris);
 
-    HDF5Writer writer("hdf5_2d.hdf5");
+    io::Cache cache("wmtk_cache", ".");
+
+    HDF5Writer writer(cache.get_cache_path() / "hdf5_2d.hdf5");
     mesh.serialize(writer);
 }
 
@@ -53,10 +55,12 @@ TEST_CASE("hdf5_2d_read", "[io]")
     TriMesh mesh;
     mesh.initialize(tris);
 
-    HDF5Writer writer("hdf5_2d_read.hdf5");
+    io::Cache cache("wmtk_cache", ".");
+
+    HDF5Writer writer(cache.get_cache_path() / "hdf5_2d_read.hdf5");
     mesh.serialize(writer);
 
-    auto mesh1 = read_mesh("hdf5_2d_read.hdf5");
+    auto mesh1 = read_mesh(cache.get_cache_path() / "hdf5_2d_read.hdf5");
 
     CHECK(*mesh1 == mesh);
 }
@@ -76,10 +80,12 @@ TEST_CASE("hdf5_rational", "[io]")
 
     mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
 
-    HDF5Writer writer("hdf5_rational.hdf5");
+    io::Cache cache("wmtk_cache", ".");
+
+    HDF5Writer writer(cache.get_cache_path() / "hdf5_rational.hdf5");
     mesh.serialize(writer);
 
-    auto mesh1 = read_mesh("hdf5_rational.hdf5");
+    auto mesh1 = read_mesh(cache.get_cache_path() / "hdf5_rational.hdf5");
 
     CHECK(*mesh1 == mesh);
 }
@@ -88,7 +94,10 @@ TEST_CASE("paraview_2d", "[io]")
 {
     auto mesh = read_mesh(WMTK_DATA_DIR "/fan.msh");
 
-    ParaviewWriter writer("paraview_2d", "vertices", *mesh, true, true, true, false);
+    io::Cache cache("wmtk_cache", ".");
+
+    ParaviewWriter
+        writer(cache.get_cache_path() / "paraview_2d", "vertices", *mesh, true, true, true, false);
     mesh->serialize(writer);
 }
 
@@ -99,7 +108,9 @@ TEST_CASE("hdf5_3d", "[io]")
     TetMesh mesh;
     mesh.initialize(T);
 
-    HDF5Writer writer("hdf5_3d.hdf5");
+    io::Cache cache("wmtk_cache", ".");
+
+    HDF5Writer writer(cache.get_cache_path() / "hdf5_3d.hdf5");
     mesh.serialize(writer);
 }
 
@@ -128,10 +139,12 @@ TEST_CASE("hdf5_multimesh", "[io]")
 
     child0.register_child_mesh(child00_ptr, child00_map);
 
-    HDF5Writer writer("hdf5_multimesh.hdf5");
+    io::Cache cache("wmtk_cache", ".");
+
+    HDF5Writer writer(cache.get_cache_path() / "hdf5_multimesh.hdf5");
     parent.serialize(writer);
 
-    auto mesh = read_mesh("hdf5_multimesh.hdf5");
+    auto mesh = read_mesh(cache.get_cache_path() / "hdf5_multimesh.hdf5");
 
     CHECK(*mesh == parent);
 }
@@ -146,7 +159,10 @@ TEST_CASE("paraview_3d", "[io]")
     V.setRandom();
     mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
 
-    ParaviewWriter writer("paraview_3d", "vertices", mesh, true, true, true, true);
+    io::Cache cache("wmtk_cache", ".");
+
+    ParaviewWriter
+        writer(cache.get_cache_path() / "paraview_3d", "vertices", mesh, true, true, true, true);
     mesh.serialize(writer);
 }
 
@@ -215,7 +231,7 @@ TEST_CASE("msh_3d_convert_tetwild_to_wmtk", "[io][.]")
     cache.write_mesh(*mesh, mesh_name);
     cache.export_cache(mesh_name + "_converted_from_tetwild");
 
-    if (true) {
+    if (false) {
         ParaviewWriter writer(mesh_name, "vertices", *mesh, true, true, true, true);
         mesh->serialize(writer);
     }
