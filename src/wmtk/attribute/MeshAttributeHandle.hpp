@@ -1,11 +1,13 @@
 #pragma once
+#include <wmtk/utils/Rational.hpp>
+//
 #include "TypedAttributeHandle.hpp"
 
 #include <variant>
 
 namespace wmtk {
 class Mesh;
-}
+} // namespace wmtk
 
 namespace wmtk::attribute {
 
@@ -23,9 +25,9 @@ public:
         TypedAttributeHandle<char>,
         TypedAttributeHandle<int64_t>,
         TypedAttributeHandle<double>,
-        TypedAttributeHandle<Rational>>;
+        TypedAttributeHandle<wmtk::Rational>>;
 
-    using ValueVariant = std::variant<char, int64_t, double, Rational>;
+    using ValueVariant = std::variant<char, int64_t, double, wmtk::Rational>;
 
     enum class HeldType { Char = 0, Int64 = 1, Double = 2, Rational = 3 };
 
@@ -151,7 +153,7 @@ inline constexpr auto MeshAttributeHandle::held_type_from_primitive() -> HeldTyp
     if constexpr (std::is_same_v<T, int64_t>) {
         return HeldType::Int64;
     }
-    if constexpr (std::is_same_v<T, Rational>) {
+    if constexpr (std::is_same_v<T, wmtk::Rational>) {
         return HeldType::Rational;
     }
 }

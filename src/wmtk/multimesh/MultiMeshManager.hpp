@@ -12,13 +12,13 @@
 
 namespace wmtk {
 
-    class Mesh;
-    class HDF5Reader;
+class Mesh;
+class HDF5Reader;
 namespace operations::utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
 namespace attribute {
-template <typename T, typename MeshType>
+template <typename T, typename MeshType, int Dim>
 class Accessor;
 }
 namespace multimesh {
@@ -35,9 +35,10 @@ class MultiMeshVisitorExecutor;
 } // namespace multimesh
 class Mesh;
 namespace simplex {
+    class Simplex;
 class SimplexCollection;
 }
-}
+} // namespace wmtk
 namespace wmtk::multimesh {
 /**
  * @brief Implementation details for how the Mesh class implements multiple meshes
@@ -130,6 +131,15 @@ public:
         Mesh& my_mesh,
         const std::shared_ptr<Mesh>& child_mesh,
         const std::vector<std::array<Tuple, 2>>& child_tuple_my_tuple_map);
+
+    /**
+     * @brief Deregister a child mesh.
+     *
+     * The child mesh is not deleted. It is only detached from the multi-mesh structure. The child
+     * mesh becomes the new root for its own children. Attribute handles for the child and parent
+     * mesh will be invalidated by deregistration.
+     */
+    void deregister_child_mesh(Mesh& my_mesh, const std::shared_ptr<Mesh>& child_mesh_ptr);
 
 
     // bool are_maps_valid(const Mesh& my_mesh) const;
@@ -533,4 +543,4 @@ public:
 
     void check_child_map_valid(const Mesh& my_mesh, const ChildData& child_data) const;
 };
-} // namespace wmtk
+} // namespace wmtk::multimesh

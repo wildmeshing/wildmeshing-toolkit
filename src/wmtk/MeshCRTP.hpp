@@ -5,21 +5,26 @@
 namespace wmtk {
 
 namespace attribute {
-template <typename T, typename MeshType>
+template <typename T, typename MeshType, int Dim>
 class Accessor;
 }
 
 /**
  * A [Curiously Recurring Template Pattern](https://en.cppreference.com/w/cpp/language/crtp) shim to enable generic specialization of functions.
- * CRTP allows us to shift from dynamic to static (inline-able) polymorphism for functions that are frequently called (like id and switch_tuple).
- * It also allows us to create slightly different interfaces to return different types of accessors to take advantage of the static polymorphism.
- * 
+ * CRTP allows us to shift from dynamic to static (inline-able) polymorphism for functions that are
+ *frequently called (like id and switch_tuple). It also allows us to create slightly different
+ *interfaces to return different types of accessors to take advantage of the static polymorphism.
+ *
  **/
 template <typename Derived>
 class MeshCRTP : public Mesh
 {
+private:
+    // using Mesh::create_accessor;
+    // using Mesh::create_const_accessor;
+
 public:
-    template <typename U, typename MeshType>
+    template <typename U, typename MeshType, int Dim>
     friend class attribute::Accessor;
     using Mesh::Mesh;
     /// CRTP utility to extract the derived type of this
@@ -53,37 +58,39 @@ public:
     }
 
     /// constructs an accessor that is aware of the derived mesh's type
-    template <typename T>
-    inline attribute::Accessor<T, Derived> create_accessor(const TypedAttributeHandle<T>& handle)
+    template <typename T, int Dim = Eigen::Dynamic>
+    inline attribute::Accessor<T, Derived, Dim> create_accessor(
+        const TypedAttributeHandle<T>& handle)
     {
-        return attribute::Accessor<T, Derived>(derived(), handle);
+        return attribute::Accessor<T, Derived, Dim>(derived(), handle);
     }
     /// constructs a const accessor that is aware of the derived mesh's type
-    template <typename T>
-    const attribute::Accessor<T, Derived> create_const_accessor(
-        const TypedAttributeHandle<T>& handle) const
+    template <typename T, int Dim = Eigen::Dynamic>
+    const attribute::Accessor<T, Derived, Dim> create_const_accessor(
+        const attribute::TypedAttributeHandle<T>& handle) const
     {
-        return attribute::Accessor<T, Derived>(derived(), handle);
+        return attribute::Accessor<T, Derived, Dim>(derived(), handle);
     }
 
     /// constructs a accessor that is aware of the derived mesh's type
-    template <typename T>
-    attribute::Accessor<T, Derived> create_accessor(const attribute::MeshAttributeHandle& handle)
+    template <typename T, int Dim = Eigen::Dynamic>
+    inline attribute::Accessor<T, Derived, Dim> create_accessor(
+        const attribute::MeshAttributeHandle& handle)
     {
         assert(&handle.mesh() == this);
         assert(handle.holds<T>());
-        return create_accessor(handle.as<T>());
+        return create_accessor<T, Dim>(handle.as<T>());
     }
 
 
     /// constructs a const accessor that is aware of the derived mesh's type
-    template <typename T>
-    inline const attribute::Accessor<T, Derived> create_const_accessor(
+    template <typename T, int Dim = Eigen::Dynamic>
+    inline const attribute::Accessor<T, Derived, Dim> create_const_accessor(
         const attribute::MeshAttributeHandle& handle) const
     {
         assert(&handle.mesh() == this);
         assert(handle.holds<T>());
-        return create_const_accessor(handle.as<T>());
+        return create_const_accessor<T, Dim>(handle.as<T>());
     }
 
 protected:
@@ -95,7 +102,7 @@ protected:
     {
         return id(tuple, type);
     }
-    
+
     /// variant of id that can cache internally held values
     int64_t id(const simplex::Simplex& s) const final override
     {

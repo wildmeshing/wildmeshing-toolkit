@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <vector>
+#include <Eigen/Core>
 
 namespace wmtk {
 class Mesh;
@@ -13,7 +14,7 @@ namespace simplex {
 class Simplex;
 }
 namespace attribute {
-template <typename T, typename MeshType>
+template <typename T, typename MeshType, int Dim>
 class Accessor;
 }
 
@@ -96,10 +97,10 @@ public:
 
 private:
     int64_t parent_global_cid(
-        const attribute::Accessor<int64_t,Mesh>& parent_to_child,
+        const attribute::Accessor<int64_t,Mesh, Eigen::Dynamic>& parent_to_child,
         int64_t parent_gid) const;
     int64_t child_global_cid(
-        const attribute::Accessor<int64_t,Mesh>& parent_to_child,
+        const attribute::Accessor<int64_t,Mesh, Eigen::Dynamic>& parent_to_child,
         int64_t parent_gid) const;
     void update_all_hashes(
         Mesh& m,
@@ -110,7 +111,7 @@ private:
 
     // for tet
     int64_t parent_local_fid(
-        const attribute::Accessor<int64_t,Mesh>& parent_to_child,
+        const attribute::Accessor<int64_t,Mesh, Eigen::Dynamic>& parent_to_child,
         int64_t parent_gid) const;
 
     void update_ear_replacement(TetMesh& m, const tet_mesh::EdgeOperationData& tmoe) const;

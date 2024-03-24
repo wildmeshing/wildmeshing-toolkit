@@ -6,7 +6,7 @@
 namespace wmtk {
 Swap44_2EnergyBeforeInvariant::Swap44_2EnergyBeforeInvariant(
     const Mesh& m,
-    const TypedAttributeHandle<double>& coordinate)
+    const attribute::TypedAttributeHandle<double>& coordinate)
     : Invariant(m, true, false, false)
     , m_coordinate_handle(coordinate)
 {}

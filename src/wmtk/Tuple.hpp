@@ -10,8 +10,13 @@ class PointMesh;
 class TriMesh;
 class EdgeMesh;
 class TetMesh;
+
+namespace components::internal {
+class MultiMeshFromTag;
+}
+
 namespace attribute {
-template <typename T, typename MeshType>
+template <typename T, typename MeshType, int Dim>
 class Accessor;
 }
 namespace utils {
@@ -46,11 +51,12 @@ public:
     friend class TriMesh;
     friend class TetMesh;
     friend class multimesh::MultiMeshManager;
-    template <typename T, typename MeshType>
+    template <typename T, typename MeshType, int Dim>
     friend class attribute::Accessor;
     friend class operations::Operation;
     friend class utils::TupleCellLessThan;
     friend class utils::TupleInspector;
+    friend class components::internal::MultiMeshFromTag;
     // friend int64_t Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
     // friend Mesh::is_ccw(const Tuple& tuple) const;
     // friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
@@ -78,6 +84,11 @@ public:
     /// Checks if a tuple is "null". This merely implies the global index is -1
     bool is_null() const;
     Tuple with_updated_hash(int64_t new_hash) const;
+
+private:
+    int8_t local_vid() const;
+    int8_t local_eid() const;
+    int8_t local_fid() const;
 };
 inline Tuple::Tuple(
     int8_t local_vid,

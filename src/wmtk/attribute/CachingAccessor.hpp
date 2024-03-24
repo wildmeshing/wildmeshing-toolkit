@@ -17,8 +17,8 @@ class AttributeCache;
  * An accessor for cached attribute values. This accessor or any of its derivatives should be used
  * for accessing attributes.
  */
-template <typename T>
-class CachingAccessor : public AccessorBase<T>
+template <typename T, int Dim = Eigen::Dynamic>
+class CachingAccessor : public AccessorBase<T, Dim>
 {
 public:
     friend class wmtk::Mesh;
@@ -27,18 +27,19 @@ public:
     using Scalar = T;
 
     friend class AttributeCache<T>;
-    using BaseType = AccessorBase<T>;
+    using BaseType = AccessorBase<T, Dim>;
 
-    template <int D = Eigen::Dynamic>
-    using ConstMapResult = typename BaseType::template ConstMapResult<D>; // Eigen::Map<const VectorX<T>>
-    template <int D = Eigen::Dynamic>
+    template <int D = Dim>
+    using ConstMapResult =
+        typename BaseType::template ConstMapResult<D>; // Eigen::Map<const VectorX<T>>
+    template <int D = Dim>
     using MapResult = typename BaseType::template MapResult<D>; // Eigen::Map<VectorX<T>>
 
 
     CachingAccessor(Mesh& m, const TypedAttributeHandle<T>& handle);
     CachingAccessor(const Mesh& m, const TypedAttributeHandle<T>& handle);
 
-        ~CachingAccessor();
+    ~CachingAccessor();
     CachingAccessor(const CachingAccessor&) = delete;
     CachingAccessor& operator=(const CachingAccessor&) = delete;
     CachingAccessor(CachingAccessor&&) = default;
@@ -57,14 +58,14 @@ public:
 
     bool has_stack() const;
 
-    template <int D = Eigen::Dynamic>
+    template <int D = Dim>
     ConstMapResult<D> const_vector_attribute(const int64_t index) const;
 
     T const_scalar_attribute(const int64_t index) const;
     T const_scalar_attribute(const int64_t index, const int8_t offset) const;
 
-    template <int D = Eigen::Dynamic>
-    MapResult<D> vector_attribute(const int64_t index) ;
+    template <int D = Dim>
+    MapResult<D> vector_attribute(const int64_t index);
 
     T& scalar_attribute(const int64_t index);
     T& scalar_attribute(const int64_t index, const int8_t offset);

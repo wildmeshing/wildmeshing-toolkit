@@ -5,7 +5,7 @@
 #include <Eigen/Dense>
 
 #include <memory>
-#include <wmtk/attribute/AttributeHandle.hpp>
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
 
 namespace fastEnvelope {
 class FastEnvelope;

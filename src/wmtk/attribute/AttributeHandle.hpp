@@ -1,8 +1,10 @@
 #pragma once
 #include <type_traits>
-#include "wmtk/Primitive.hpp"
+#include "wmtk/PrimitiveType.hpp"
 
-// TODO: is this abstraction still necessary? the original attempt was to have a generic index that avoided passing templates around, but in the end we still obtained a TypedAttributeHandle<T> and used variant to remove the templating + introduce multimesh
+// TODO: is this abstraction still necessary? the original attempt was to have a generic index that
+// avoided passing templates around, but in the end we still obtained a TypedAttributeHandle<T> and
+// used variant to remove the templating + introduce multimesh
 
 namespace wmtk {
 template <typename T>
@@ -11,10 +13,6 @@ class Mesh;
 namespace attribute {
 template <typename T>
 class MeshAttributes;
-template <typename T>
-class AccessorBase;
-template <typename T, typename MeshType>
-class Accessor;
 template <typename T>
 class TypedAttributeHandle;
 class AttributeManager;
@@ -51,10 +49,8 @@ public:
     bool operator<(const AttributeHandle& other) const { return index < other.index; }
 
     bool is_valid() const { return index != -1; }
-
 };
 
 } // namespace attribute
 using AttributeHandle = attribute::AttributeHandle;
 } // namespace wmtk
-#include "MeshAttributeHandle.hpp"

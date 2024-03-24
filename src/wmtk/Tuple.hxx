@@ -1,10 +1,10 @@
 
-#include "Tuple.hpp"
 #include <cstddef>
 #include <iostream>
 #include <optional>
 #include <string>
 #include <tuple>
+#include "Tuple.hpp"
 
 namespace wmtk {
 
@@ -44,6 +44,21 @@ inline bool Tuple::is_null() const
 inline Tuple Tuple::with_updated_hash(int64_t new_hash) const
 {
     return Tuple(m_local_vid, m_local_eid, m_local_fid, m_global_cid, new_hash);
+}
+
+inline int8_t Tuple::local_vid() const
+{
+    return m_local_vid;
+}
+
+inline int8_t Tuple::local_eid() const
+{
+    return m_local_eid;
+}
+
+inline int8_t Tuple::local_fid() const
+{
+    return m_local_fid;
 }
 
 } // namespace wmtk

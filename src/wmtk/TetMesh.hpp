@@ -17,7 +17,7 @@ public:
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
-    template <typename U, typename MeshType>
+    template <typename U, typename MeshType, int Dim>
     friend class attribute::Accessor;
     TetMesh();
     TetMesh(const TetMesh& o) = delete;
