@@ -88,9 +88,10 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
         auto tetrahedra = in_args["tests"]["tetrahedra"];
         if (meshes.size() != vertices.size() || meshes.size() != edges.size() ||
             meshes.size() != faces.size() || meshes.size() != tetrahedra.size()) {
-            spdlog::error("JSON size missmatch between meshes and vertices edges faces or "
-                          "tetrahedra or meshes key. Add a * "
-                          "to the beginning of filename to allow appends.");
+            spdlog::error(
+                "JSON size missmatch between meshes and vertices edges faces or "
+                "tetrahedra or meshes key. Set true for the parameter \"compute_validation\""
+                "to allow appends.");
             return 2;
         }
 
@@ -199,4 +200,5 @@ WMTK_INTEGRATION("disk_fan_mm", false);
 // WMTK_INTEGRATION("grid",false);
 WMTK_INTEGRATION("wildmeshing_2d", false);
 WMTK_INTEGRATION("wildmeshing_3d", false);
+WMTK_INTEGRATION("mesh_decimation", false);
 WMTK_INTEGRATION("marching", false);

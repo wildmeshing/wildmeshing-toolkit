@@ -1,0 +1,55 @@
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": [
+      "input",
+      "output",
+      "target_len",
+      "cell_constraint_tag_name",
+      "attributes"
+    ],
+    "optional": [
+      "pass_through"
+    ]
+  },
+  {
+    "pointer": "/input",
+    "type": "string",
+    "doc": "input mesh"
+  },
+  {
+    "pointer": "/output",
+    "type": "string",
+    "doc": "output mesh"
+  },
+  {
+    "pointer": "/cell_constraint_tag_name",
+    "type": "string",
+    "doc": "constraint_tag_handle's name"
+  },
+  {
+    "pointer": "/target_len",
+    "type": "float",
+    "doc": "the decimation will make sure all edge will end with a length larger than target_len"
+  },
+  {
+    "pointer": "/attributes",
+    "type": "list",
+    "doc": "the original attributes"
+  },
+  {
+    "pointer": "/attributes/*",
+    "type": "string"
+  },
+  {
+    "pointer": "/pass_through",
+    "type": "list",
+    "default": [],
+    "doc": "all attributes that are not deleted by the component but also not required"
+  },
+  {
+    "pointer": "/pass_through/*",
+    "type": "string"
+  }
+]

@@ -17,7 +17,6 @@ wmtk::components)
 target_include_directories(${WMTK_COMPONENT_TEST_TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_compile_definitions(${WMTK_COMPONENT_TEST_TARGET} PRIVATE WMTK_TEST_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\")
 
-
 FetchContent_GetProperties(catch2)
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
