@@ -20,6 +20,7 @@ namespace wmtk::components::operations::internal {
 using namespace wmtk::simplex;
 class ATData
 {
+public:
     std::shared_ptr<Mesh> m_position_mesh_ptr;
     std::shared_ptr<Mesh> m_uv_mesh_ptr;
 
@@ -60,17 +61,17 @@ public:
         std::shared_ptr<Mesh> position_mesh_ptr,
         std::shared_ptr<Mesh> uv_mesh_ptr,
         std::array<std::shared_ptr<image::Image>, 3>& images);
-    ATData(
-        std::shared_ptr<Mesh> position_mesh_ptr,
-        std::shared_ptr<Mesh> uv_mesh_ptr,
-        const std::filesystem::path& position_path,
-        const std::filesystem::path& normal_path,
-        const std::filesystem::path& height_path);
+    // ATData(
+    //     std::shared_ptr<Mesh> position_mesh_ptr,
+    //     std::shared_ptr<Mesh> uv_mesh_ptr,
+    //     const std::filesystem::path& position_path,
+    //     const std::filesystem::path& normal_path,
+    //     const std::filesystem::path& height_path);
     ATData(
         std::shared_ptr<Mesh> position_mesh_ptr,
         std::shared_ptr<Mesh> uv_mesh,
         std::array<std::shared_ptr<image::Sampling>, 3>& funcs);
-
+    ATData(std::shared_ptr<Mesh> position_mesh_ptr, std::shared_ptr<Mesh> uv_mesh);
 
     void initialize_handles();
     wmtk::attribute::MeshAttributeHandle uv_handle();

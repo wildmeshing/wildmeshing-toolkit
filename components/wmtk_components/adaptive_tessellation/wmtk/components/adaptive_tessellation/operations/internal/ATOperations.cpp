@@ -77,7 +77,7 @@ ATOperations::ATOperations(
     , m_area_weighted_amips(area_weighted_amips)
     , m_uv_accessor(m_atdata.uv_mesh().create_accessor(m_atdata.m_uv_handle.as<double>()))
     , m_uvmesh_xyz_accessor(
-          m_atdata.uv_mesh().create_accessor(m_atdata.m_uvmesh_xyz_handle.as<double>()))
+          m_atdata.position_mesh().create_accessor(m_atdata.m_uvmesh_xyz_handle.as<double>()))
     , m_distance_error_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_distance_error_handle.as<double>()))
     , m_amips_error_accessor(
@@ -95,41 +95,6 @@ ATOperations::ATOperations(
 
 {
     m_ops.clear();
-    if (m_atdata.funcs()[0]) {
-        std::cout << "----- using analytical quadrature" << std::endl;
-        m_evaluator_ptr =
-            std::make_shared<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
-                m_atdata.funcs(),
-                image::SAMPLING_METHOD::Analytical);
-        m_integral_ptr = std::make_shared<
-            wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature>(
-            *m_evaluator_ptr);
-    } else {
-        assert(m_atdata.images()[0]);
-        std::cout << "++++ using images sampling quadrature" << std::endl;
-        m_evaluator_ptr =
-            std::make_shared<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
-                m_atdata.images(),
-                image::SAMPLING_METHOD::Bilinear,
-                image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
-        m_integral_ptr =
-            std::make_shared<wmtk::components::function::utils::TextureIntegral>(*m_evaluator_ptr);
-    }
-
-
-    set_uvmesh_xyz_update_rule_initialize();
-
-    set_3d_edge_length_update_rule();
-    initialize_3d_edge_length();
-
-    set_distance_error_update_rule();
-    initialize_distance_error();
-
-    set_3d_amips_error_update_rule();
-    initialize_3d_amips_error();
-
-    set_curved_edge_length_update_rule();
-    initialize_curved_edge_length();
 
     // Lambdas for priority
     m_valence_improvement = [&](const Simplex& s) {

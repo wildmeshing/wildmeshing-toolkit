@@ -83,13 +83,13 @@ void write(
     uv_mesh->serialize(writer);
     wmtk::io::ParaviewWriter writer3d(
         data_dir / (xyz_output + "_" + std::to_string(index)),
-        "positions",
-        *uv_mesh,
+        "vertices",
+        *position_mesh,
         false,
         false,
         true,
         false);
-    uv_mesh->serialize(writer3d);
+    position_mesh->serialize(writer3d);
 }
 void write_face_attr(
     const std::shared_ptr<Mesh>& mesh,
@@ -158,28 +158,29 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         //  std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
 
     }};
-    auto [w_h, h_h, index_red_h, index_green_h, index_blue_h, buffer_r_h, buffer_g_h, buffer_b_h] =
-        wmtk::components::image::load_image_exr_split_3channels(options.height_path);
+    // auto [w_h, h_h, index_red_h, index_green_h, index_blue_h, buffer_r_h, buffer_g_h, buffer_b_h]
+    // =
+    //     wmtk::components::image::load_image_exr_split_3channels(options.height_path);
     // std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
     //     ->convert_to_exr(512, 512);
-    std::array<std::shared_ptr<image::Image>, 3> images = {
-        {std::make_shared<image::Image>(w_h, h_h),
-         std::make_shared<image::Image>(w_h, h_h),
-         std::make_shared<image::Image>(w_h, h_h)}};
+    // std::array<std::shared_ptr<image::Image>, 3> images = {
+    //     {std::make_shared<image::Image>(w_h, h_h),
+    //      std::make_shared<image::Image>(w_h, h_h),
+    //      std::make_shared<image::Image>(w_h, h_h)}};
 
-    auto u_func = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
-    auto v_func = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
-    auto height_function = [](const double& u, [[maybe_unused]] const double& v) -> double {
-        return exp(-(pow(u - 0.5, 2) + pow(v - 0.5, 2)) / (2 * 0.1 * 0.1));
-        // return sin(2 * M_PI * u) * cos(2 * M_PI * v);
-    };
-    images[0]->set(u_func);
-    images[1]->set(v_func);
-    // images[2]->set(height_function);
+    // auto u_func = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
+    // auto v_func = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
+    // auto height_function = [](const double& u, [[maybe_unused]] const double& v) -> double {
+    //     return exp(-(pow(u - 0.5, 2) + pow(v - 0.5, 2)) / (2 * 0.1 * 0.1));
+    //     // return sin(2 * M_PI * u) * cos(2 * M_PI * v);
+    // };
+    // images[0]->set(u_func);
+    // images[1]->set(v_func);
+    // // images[2]->set(height_function);
 
-    images[2] = std::make_shared<wmtk::components::image::Image>(
-        wmtk::components::image::buffer_to_image(buffer_r_h, w_h, h_h));
-    logger().warn("height image loaded size {}", w_h);
+    // images[2] = std::make_shared<wmtk::components::image::Image>(
+    //     wmtk::components::image::buffer_to_image(buffer_r_h, w_h, h_h));
+    // logger().warn("height image loaded size {}", w_h);
 
     // AT::operations::internal::ATData atdata(
     //     position_mesh_ptr,
@@ -187,9 +188,9 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     //     options.position_path,
     //     options.normal_path,
     //     options.height_path);
-    AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
+    // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
     // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, funcs);
-
+    AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr);
     AT::operations::internal::ATOperations at_ops(
         atdata,
         options.target_distance,
@@ -200,8 +201,70 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         options.quadrature_weight,
         options.amips_weight,
         options.area_weighted_amips);
+    // load_three_images
+    {
+        //     const auto vertices = m_position_mesh_ptr->get_all(PrimitiveType::Vertex);
+        //     Accessor<double> m_pmesh_xyz_accessor =
+        //         m_position_mesh_ptr->create_accessor(m_pmesh_xyz_handle.as<double>());
 
+        Eigen::VectorXd bmin(3);
+        bmin.setConstant(std::numeric_limits<double>::max());
+        Eigen::VectorXd bmax(3);
+        bmax.setConstant(std::numeric_limits<double>::min());
+        for (const auto& v : atdata.m_position_mesh_ptr->get_all(PrimitiveType::Vertex)) {
+            const auto p = at_ops.m_uvmesh_xyz_accessor.vector_attribute(v);
+            for (int64_t d = 0; d < bmax.size(); ++d) {
+                bmin[d] = std::min(bmin[d], p[d]);
+                bmax[d] = std::max(bmax[d], p[d]);
+            }
+        }
+        double max_comp = (bmax - bmin).maxCoeff();
+        Eigen::MatrixXd scene_offset = -bmin;
+        Eigen::MatrixXd scene_extent = bmax - bmin;
+        scene_offset.array() -= (scene_extent.array() - max_comp) * 0.5;
+        Eigen::Vector3d offset = scene_offset;
+        atdata.m_images = wmtk::components::image::combine_position_normal_texture(
+            max_comp,
+            offset,
+            options.position_path,
+            options.normal_path,
+            options.height_path);
+        logger().warn("!!!! loaded three images");
 
+        if (atdata.funcs()[0]) {
+            std::cout << "----- using analytical quadrature" << std::endl;
+            at_ops.m_evaluator_ptr = std::make_shared<
+                wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
+                atdata.funcs(),
+                image::SAMPLING_METHOD::Analytical);
+            at_ops.m_integral_ptr = std::make_shared<
+                wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature>(
+                *at_ops.m_evaluator_ptr);
+        } else {
+            assert(atdata.images()[0]);
+            std::cout << "++++ using images sampling quadrature" << std::endl;
+            at_ops.m_evaluator_ptr = std::make_shared<
+                wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
+                atdata.images(),
+                image::SAMPLING_METHOD::Bilinear,
+                image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
+            at_ops.m_integral_ptr =
+                std::make_shared<wmtk::components::function::utils::TextureIntegral>(
+                    *at_ops.m_evaluator_ptr);
+        }
+    }
+    at_ops.set_uvmesh_xyz_update_rule_initialize();
+    at_ops.set_3d_edge_length_update_rule();
+    at_ops.initialize_3d_edge_length();
+
+    at_ops.set_distance_error_update_rule();
+    at_ops.initialize_distance_error();
+
+    at_ops.set_3d_amips_error_update_rule();
+    at_ops.initialize_3d_amips_error();
+
+    at_ops.set_curved_edge_length_update_rule();
+    at_ops.initialize_curved_edge_length();
     at_ops.set_energies();
     /////////////////////////////////////////////////
     // mesh refinement to decrease distance error
@@ -287,30 +350,18 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
                 outter_i++;
             }
             i++;
-            // write(uv_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, i);
+            write(uv_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, i);
         }
         // write(uv_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, i + 1);
     }
 
     at_ops.m_ops.clear();
 
-    // 1) wmtk::operations::EdgeSplit
-    // at_ops.AT_3d_edge_split(at_ops.m_long_edges_first);
-    // at_ops.AT_boundary_edge_split(
-    //     at_ops.m_high_distance_edges_first,
-    //     at_ops.m_distance_nondiff_energy);
-    // 3) EdgeSwap
-    // at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first,
-    // at_ops.m_distance_nondiff_energy);
+    // std::vector<attribute::MeshAttributeHandle> keeps;
+    // keeps.emplace_back(atdata.m_uvmesh_xyz_handle);
+    // uv_mesh_ptr->clear_attributes(keeps);
 
-    // 4) Smoothing
-    // at_ops.AT_smooth_interior(at_ops.m_3d_amips_energy);
-
-    std::vector<attribute::MeshAttributeHandle> keeps;
-    keeps.emplace_back(atdata.m_uvmesh_xyz_handle);
-    uv_mesh_ptr->clear_attributes(keeps);
-
-    cache.write_mesh(*uv_mesh_ptr, options.uv_output);
+    cache.write_mesh(atdata.position_mesh(), options.xyz_output);
 }
 
 } // namespace wmtk::components

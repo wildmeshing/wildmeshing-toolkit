@@ -134,7 +134,15 @@ using namespace wmtk::attribute;
 //     std::cout << "+++++ using image sampling !!!!" << std::endl;
 // }
 
-
+ATData::ATData(std::shared_ptr<Mesh> position_mesh_ptr, std::shared_ptr<Mesh> uv_mesh_ptr)
+    : m_position_mesh_ptr(position_mesh_ptr)
+    , m_uv_mesh_ptr(uv_mesh_ptr)
+{
+    auto child_map =
+        wmtk::multimesh::same_simplex_dimension_bijection(*m_position_mesh_ptr, *m_uv_mesh_ptr);
+    m_position_mesh_ptr->register_child_mesh(m_uv_mesh_ptr, child_map);
+    initialize_handles();
+}
 ATData::ATData(
     std::shared_ptr<Mesh> position_mesh_ptr,
     std::shared_ptr<Mesh> uv_mesh_ptr,
@@ -144,7 +152,8 @@ ATData::ATData(
     , m_images(images)
 {
     // auto child_map =
-    //     wmtk::multimesh::same_simplex_dimension_bijection(*m_position_mesh_ptr, *m_uv_mesh_ptr);
+    //     wmtk::multimesh::same_simplex_dimension_bijection(*m_position_mesh_ptr,
+    //     *m_uv_mesh_ptr);
     // m_position_mesh_ptr->register_child_mesh(m_uv_mesh_ptr, child_map);
 
     std::cout << "!!!!! using image sampling !!!!" << std::endl;
@@ -160,7 +169,8 @@ ATData::ATData(
     , m_funcs(funcs)
 {
     // auto child_map =
-    //     wmtk::multimesh::same_simplex_dimension_bijection(*m_position_mesh_ptr, *m_uv_mesh_ptr);
+    //     wmtk::multimesh::same_simplex_dimension_bijection(*m_position_mesh_ptr,
+    //     *m_uv_mesh_ptr);
     // m_position_mesh_ptr->register_child_mesh(m_uv_mesh_ptr, child_map);
     std::cout << "----- using analytical functions !!!!" << std::endl;
     initialize_handles();
@@ -170,8 +180,8 @@ void ATData::initialize_handles()
 {
     m_uv_handle = m_uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     m_uvmesh_xyz_handle =
-        m_uv_mesh_ptr->register_attribute<double>("positions", PrimitiveType::Vertex, 3, true);
-
+        m_position_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    assert(m_uvmesh_xyz_handle.dimension() == 3);
     m_distance_error_handle = m_uv_mesh_ptr->register_attribute<double>(
         "distance_error",
         PrimitiveType::Triangle,
