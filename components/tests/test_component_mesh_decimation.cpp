@@ -38,7 +38,7 @@ TEST_CASE("component_mesh_decimation_options", "[components][mesh_decimation]")
     CHECK_NOTHROW(o.get<MeshDecimationOptions>());
 }
 
-TEST_CASE("decimation_test", "[components][2D][3D]")
+TEST_CASE("component_mesh_decimation", "[components][2D][3D]")
 {
     using namespace wmtk::components;
     wmtk::io::Cache cache("wmtk_cache", ".");
