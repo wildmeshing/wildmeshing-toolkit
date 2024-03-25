@@ -2,6 +2,7 @@
 
 #include <Eigen/Dense>
 #include <wmtk/attribute/AttributeHandle.hpp>
+#include <wmtk/attribute/TypedAttributeHandle.hpp>
 #include <wmtk/invariants/Invariant.hpp>
 namespace wmtk {
 class RGBSwapInvariant : public Invariant
