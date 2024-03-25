@@ -11,9 +11,6 @@
 
 namespace wmtk::components::base {
 
-namespace {
-
-
 attribute::MeshAttributeHandle get_attribute(const Mesh& m, const std::string& name)
 {
     int64_t count = 0;
@@ -36,7 +33,7 @@ attribute::MeshAttributeHandle get_attribute(const Mesh& m, const std::string& n
     }
 
     if (handles.empty()) {
-        log_and_throw_error("Attribute with name {} was not found.");
+        log_and_throw_error("Attribute with name {} was not found.", name);
     }
     if (handles.size() > 1) {
         log_and_throw_error(
@@ -66,8 +63,6 @@ get_attribute(const io::Cache& cache, const Mesh& m, const nlohmann::json& attri
 
     log_and_throw_error("Invalid type for {}.", attribute);
 }
-
-} // namespace
 
 
 std::vector<attribute::MeshAttributeHandle>

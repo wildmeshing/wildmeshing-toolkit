@@ -3,11 +3,15 @@
 #include <variant>
 //#include <wmtk/utils/Rational.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/Tuple.hpp>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 // #include "NewAttributeStrategy.hpp"
 
 namespace wmtk {
 class Mesh;
+namespace simplex {
+    class Simplex;
+}
 }
 
 namespace wmtk::operations {

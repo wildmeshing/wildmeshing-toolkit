@@ -35,7 +35,7 @@ public:
     std::string input;
     std::string output;
     WildmeshingOptionsAttributes attributes;
-    std::vector<std::string> pass_through;
+    std::vector<nlohmann::json> pass_through;
     std::vector<WildmeshingOptionsEnvelope> envelopes;
 
     int64_t passes;

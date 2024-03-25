@@ -1,6 +1,6 @@
 #pragma once
 #include <functional>
-#include <wmtk/attribute/AttributeHandle.hpp>
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include <wmtk/utils/vector_hash.hpp>
 
 

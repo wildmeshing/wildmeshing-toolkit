@@ -42,7 +42,7 @@ namespace wmtk {
 // thread management tool that we will PImpl
 namespace attribute {
 class AttributeManager;
-template <typename T>
+template <typename T, typename MeshType, int Dim>
 class Accessor;
 
 } // namespace attribute
@@ -92,9 +92,9 @@ class TupleTag;
 class Mesh : public std::enable_shared_from_this<Mesh>, public wmtk::utils::MerkleTreeInteriorNode
 {
 public:
-    template <typename T>
+    template <typename T, int Dim>
     friend class attribute::AccessorBase;
-    template <typename T>
+    template <typename T, typename MeshType, int Dim>
     friend class attribute::Accessor;
     friend class io::ParaviewWriter;
     friend class HDF5Reader;
@@ -174,8 +174,8 @@ public:
         const = 0;
 
 
-    std::vector<attribute::TypedAttributeHandleVariant> builtin_attributes() const;
-    std::vector<attribute::TypedAttributeHandleVariant> custom_attributes() const;
+    std::vector<attribute::MeshAttributeHandle::HandleVariant> builtin_attributes() const;
+    std::vector<attribute::MeshAttributeHandle::HandleVariant> custom_attributes() const;
 
 
     /* @brief registers an attribute without assuming the mesh exists */
@@ -214,21 +214,20 @@ public:
         const PrimitiveType ptype) const; // block standard topology tools
 
 
-    template <typename T>
-    attribute::Accessor<T> create_accessor(const attribute::MeshAttributeHandle& handle);
-    template <typename T>
-    const attribute::Accessor<T> create_const_accessor(
-        const attribute::MeshAttributeHandle& handle);
+    template <typename T, int D = Eigen::Dynamic>
+    attribute::Accessor<T, Mesh, D> create_accessor(const attribute::MeshAttributeHandle& handle);
 
-    template <typename T>
-    const attribute::Accessor<T> create_const_accessor(
+
+    template <typename T, int D = Eigen::Dynamic>
+    const attribute::Accessor<T, Mesh, D> create_const_accessor(
         const attribute::MeshAttributeHandle& handle) const;
 
-    template <typename T>
-    attribute::Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
+    template <typename T, int D = Eigen::Dynamic>
+    attribute::Accessor<T, Mesh, D> create_accessor(const TypedAttributeHandle<T>& handle);
 
-    template <typename T>
-    const attribute::Accessor<T> create_const_accessor(const TypedAttributeHandle<T>& handle) const;
+    template <typename T, int D = Eigen::Dynamic>
+    const attribute::Accessor<T, Mesh, D> create_const_accessor(
+        const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
     int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
@@ -236,7 +235,8 @@ public:
     template <typename T>
     std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;
 
-    std::string get_attribute_name(const attribute::TypedAttributeHandleVariant& handle) const;
+    std::string get_attribute_name(
+        const attribute::MeshAttributeHandle::HandleVariant& handle) const;
 
     /**
      * @brief Remove all custom attributes besides the one passed in.
@@ -244,7 +244,7 @@ public:
      * @param custom_attributes Vector of attributes that should be kept
      */
     void clear_attributes(
-        const std::vector<attribute::TypedAttributeHandleVariant>& keep_attributes);
+        const std::vector<attribute::MeshAttributeHandle::HandleVariant>& keep_attributes);
     void clear_attributes();
     void clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes);
 
@@ -540,8 +540,17 @@ public:
      * @param mesh_tuples a sequence of corresponding tuples between meshes
      */
     void register_child_mesh(
-        const std::shared_ptr<Mesh>& child_mesh,
+        const std::shared_ptr<Mesh>& child_mesh_ptr,
         const std::vector<std::array<Tuple, 2>>& map_tuples);
+
+    /**
+     * @brief Deregister a child mesh.
+     *
+     * The child mesh is not deleted. It is only detached from the multi-mesh structure. The child
+     * mesh becomes the new root for its own children. Attribute handles for the child and parent
+     * mesh will be invalidated by deregistration.
+     */
+    void deregister_child_mesh(const std::shared_ptr<Mesh>& child_mesh_ptr);
 
     /**
      * @brief maps a simplex from this mesh to any other mesh
@@ -792,6 +801,8 @@ protected:
     /**
      * @brief return the global id of the Tuple of the given dimension
      *
+     * This function uses the implementation defined in a derived class (like a Tri/TetMesh) using a virtual function, but to enable more opportunities teh actual virtual function is id_virtual
+     *
      * @param m
      * @param type  d-0 -> vertex
                     d-1 -> edge
@@ -799,19 +810,22 @@ protected:
                     d-3 -> tetrahedron
         * @return int64_t id of the entity
     */
-
-protected:
     int64_t id(const Tuple& tuple, PrimitiveType type) const;
-    int64_t id(const simplex::Simplex& s) const;
+    /// Forwarding version of id on simplices that does id caching
+    virtual int64_t id(const simplex::Simplex& s) const = 0;
+    /// Internal utility to allow id to be virtual with a non-virtual overload in derived -Mesh classes.
+    /// Mesh::id invokes Mesh::id_virtual which is final overriden by MeshCRTP<TriMesh>::id_virtual, which in turn invokes MeshCRTP<TriMesh>::id, and then TriMesh::id.
+    /// This circuitous mechanism makes MeshCRTP<TriMesh>::id and TriMesh::id fully inlineable, so code that wants to take in any derived class can get optimized results with MeshCRTP, or for cases where classes want to utilize just TriMesh they can get inline/accelerated usage as well.
+    virtual int64_t id_virtual(const Tuple& tuple, PrimitiveType type) const = 0;
 
 
-    template <typename T>
-    static auto& get_index_access(attribute::Accessor<T>& attr)
+    template <typename T, typename MeshType>
+    static auto& get_index_access(attribute::Accessor<T, MeshType>& attr)
     {
         return attr.index_access();
     }
-    template <typename T>
-    static auto& get_index_access(const attribute::Accessor<T>& attr)
+    template <typename T, typename MeshType>
+    static auto& get_index_access(const attribute::Accessor<T, MeshType>& attr)
     {
         return attr.index_access();
     }
@@ -861,46 +875,40 @@ private:
 };
 
 
-template <typename T>
-inline attribute::Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
+template <typename T, int D>
+inline auto Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
+    -> attribute::Accessor<T, Mesh, D>
 {
-    return attribute::Accessor<T>(*this, handle);
+    return attribute::Accessor<T, Mesh, D>(*this, handle);
 }
-template <typename T>
-inline const attribute::Accessor<T> Mesh::create_const_accessor(
-    const TypedAttributeHandle<T>& handle) const
+template <typename T, int D>
+inline auto Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
+    -> const attribute::Accessor<T, Mesh, D>
 {
-    return attribute::Accessor<T>(*this, handle);
+    return attribute::Accessor<T, Mesh, D>(*this, handle);
 }
 
-template <typename T>
-inline attribute::Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
+template <typename T, int D>
+inline auto Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
+    -> attribute::Accessor<T, Mesh, D>
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());
-    return create_accessor(handle.as<T>());
+    return create_accessor<T, D>(handle.as<T>());
 }
 
-template <typename T>
-inline const attribute::Accessor<T> Mesh::create_const_accessor(
-    const attribute::MeshAttributeHandle& handle)
+
+template <typename T, int D>
+inline auto Mesh::create_const_accessor(const attribute::MeshAttributeHandle& handle) const
+    -> const attribute::Accessor<T, Mesh, D>
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());
-    return create_const_accessor(handle.as<T>());
+    return create_const_accessor<T, D>(handle.as<T>());
 }
 
 template <typename T>
-inline const attribute::Accessor<T> Mesh::create_const_accessor(
-    const attribute::MeshAttributeHandle& handle) const
-{
-    assert(&handle.mesh() == this);
-    assert(handle.holds<T>());
-    return create_const_accessor(handle.as<T>());
-}
-
-template <typename T>
-attribute::MeshAttributeHandle Mesh::get_attribute_handle(
+inline attribute::MeshAttributeHandle Mesh::get_attribute_handle(
     const std::string& name,
     const PrimitiveType ptype) const
 {
@@ -910,7 +918,7 @@ attribute::MeshAttributeHandle Mesh::get_attribute_handle(
 }
 
 template <typename T>
-attribute::TypedAttributeHandle<T> Mesh::get_attribute_handle_typed(
+inline attribute::TypedAttributeHandle<T> Mesh::get_attribute_handle_typed(
     const std::string& name,
     const PrimitiveType ptype) const
 {
@@ -920,19 +928,19 @@ attribute::TypedAttributeHandle<T> Mesh::get_attribute_handle_typed(
     return h;
 }
 template <typename T>
-bool Mesh::has_attribute(const std::string& name, const PrimitiveType ptype) const
+inline bool Mesh::has_attribute(const std::string& name, const PrimitiveType ptype) const
 {
     return m_attribute_manager.get<T>(ptype).has_attribute(name);
 }
 
 template <typename T>
-int64_t Mesh::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
+inline int64_t Mesh::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
 {
     return m_attribute_manager.get_attribute_dimension(handle);
 }
 
 template <typename T>
-std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) const
+inline std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) const
 {
     return m_attribute_manager.get_name(handle);
 }
@@ -950,7 +958,7 @@ template <std::forward_iterator ContainerType>
 #else
 template <typename ContainerType>
 #endif
-Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequence) const
+inline Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequence) const
 {
     static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
     Tuple r = tuple;
@@ -975,13 +983,21 @@ inline int64_t Mesh::top_cell_dimension() const
 {
     return m_top_cell_dimension;
 }
+inline PrimitiveType Mesh::top_simplex_type() const
+{
+    int64_t dimension = top_cell_dimension();
+    assert(dimension >= 0);
+    assert(dimension < 4);
+    return static_cast<PrimitiveType>(dimension);
+}
+
 
 #if defined(__cpp_concepts)
 template <std::forward_iterator ContainerType>
 #else
 template <typename ContainerType>
 #endif
-Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType& sequence) const
+inline Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType& sequence) const
 {
     static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
     Tuple r = tuple;
@@ -991,11 +1007,8 @@ Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType& sequen
     return r;
 }
 
-inline int64_t Mesh::id(const simplex::Simplex& s) const
+inline int64_t Mesh::id(const Tuple& tuple, PrimitiveType type) const
 {
-    if (s.m_index == -1) {
-        s.m_index = id(s.tuple(), s.primitive_type());
-    }
-    return s.m_index;
+    return id_virtual(tuple, type);
 }
 } // namespace wmtk

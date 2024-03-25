@@ -113,6 +113,8 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
         options.length_abs,
         options.lock_boundary,
         options.use_for_periodic,
+        options.dont_disable_split,
+        options.fix_uv_seam,
         options.iterations,
         envelope_size(pos_handle, options.envelope_size_rel),
         other_positions,

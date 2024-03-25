@@ -128,7 +128,7 @@ OptimizationSmoothing::OptimizationSmoothing(std::shared_ptr<wmtk::function::Fun
 {
     assert(m_energy->attribute_handle().is_valid());
     m_linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
-    m_nonlinear_solver_params = R"({"solver": "DenseNewton"})"_json;
+    m_nonlinear_solver_params = R"({"solver": "DenseNewton", "max_iterations": 20})"_json;
 
     create_solver();
 }
@@ -147,8 +147,6 @@ std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simp
 {
     auto accessor = mesh().create_accessor(m_energy->attribute_handle().as<double>());
     WMTKProblem problem(std::move(accessor), simplex, m_invariants, *m_energy);
-
-    // std::cout << "smoothing: " << std::endl;
 
     auto x = problem.initial_value();
     try {

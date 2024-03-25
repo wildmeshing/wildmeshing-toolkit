@@ -104,14 +104,6 @@ void DEBUG_EdgeMesh::reserve_attributes(PrimitiveType type, int64_t size)
 }
 
 
-int64_t DEBUG_EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
-{
-    return EdgeMesh::id(tuple, type);
-}
-int64_t DEBUG_EdgeMesh::id(const simplex::Simplex& s) const
-{
-    return id(s.tuple(), s.primitive_type());
-}
 attribute::Accessor<int64_t> DEBUG_EdgeMesh::get_cell_hash_accessor()
 {
     return EdgeMesh::get_cell_hash_accessor();

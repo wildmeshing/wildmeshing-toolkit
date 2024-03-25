@@ -129,11 +129,11 @@ void Mesh::guarantee_more_attributes(const std::vector<int64_t>& sizes)
 }
 
 namespace {
-std::vector<attribute::TypedAttributeHandleVariant> variant_diff(
-    std::vector<attribute::TypedAttributeHandleVariant>& a,
-    std::vector<attribute::TypedAttributeHandleVariant>& b)
+std::vector<attribute::MeshAttributeHandle::HandleVariant> variant_diff(
+    std::vector<attribute::MeshAttributeHandle::HandleVariant>& a,
+    std::vector<attribute::MeshAttributeHandle::HandleVariant>& b)
 {
-    std::vector<attribute::TypedAttributeHandleVariant> ret;
+    std::vector<attribute::MeshAttributeHandle::HandleVariant> ret;
     std::sort(a.begin(), a.end());
 
     std::sort(b.begin(), b.end());
@@ -142,7 +142,7 @@ std::vector<attribute::TypedAttributeHandleVariant> variant_diff(
     return ret;
 }
 } // namespace
-std::vector<attribute::TypedAttributeHandleVariant> Mesh::custom_attributes() const
+std::vector<attribute::MeshAttributeHandle::HandleVariant> Mesh::custom_attributes() const
 {
     auto all = m_attribute_manager.get_all_attributes();
     auto builtins = builtin_attributes();
@@ -150,7 +150,7 @@ std::vector<attribute::TypedAttributeHandleVariant> Mesh::custom_attributes() co
     return variant_diff(all, builtins);
 }
 
-std::string Mesh::get_attribute_name(const attribute::TypedAttributeHandleVariant& handle) const
+std::string Mesh::get_attribute_name(const attribute::MeshAttributeHandle::HandleVariant& handle) const
 {
     return m_attribute_manager.get_name(handle);
 }
@@ -160,7 +160,7 @@ void Mesh::clear_attributes()
 }
 
 void Mesh::clear_attributes(
-    const std::vector<attribute::TypedAttributeHandleVariant>& keep_attributes)
+    const std::vector<attribute::MeshAttributeHandle::HandleVariant>& keep_attributes)
 {
     auto a = this->custom_attributes();
     auto b = keep_attributes;
@@ -168,7 +168,7 @@ void Mesh::clear_attributes(
 }
 void Mesh::clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes)
 {
-    std::map<Mesh*, std::vector<attribute::TypedAttributeHandleVariant>> keeps_t;
+    std::map<Mesh*, std::vector<attribute::MeshAttributeHandle::HandleVariant>> keeps_t;
     for (const auto& attr : keep_attributes) {
         keeps_t[const_cast<Mesh*>(&attr.mesh())].emplace_back(attr.handle());
     }
@@ -287,9 +287,9 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
     // Return both maps for custom attribute remapping
     return {new2old, old2new};
 }
-std::vector<attribute::TypedAttributeHandleVariant> Mesh::builtin_attributes() const
+std::vector<attribute::MeshAttributeHandle::HandleVariant> Mesh::builtin_attributes() const
 {
-    std::vector<attribute::TypedAttributeHandleVariant> data;
+    std::vector<attribute::MeshAttributeHandle::HandleVariant> data;
     for (const auto& vec : connectivity_attributes()) {
         std::copy(vec.begin(), vec.end(), std::back_inserter(data));
     }

@@ -17,19 +17,21 @@ namespace wmtk::simplex {
 
 namespace {
 
+// wrapper for calling the internal function boundary_with_preserved_face_tuples
 std::vector<Tuple> boundary_with_preserved_face_tuples(
     const Mesh& mesh,
     const std::vector<Tuple>& tuples,
-    PrimitiveType pt,
-    PrimitiveType coface_pt)
+    const PrimitiveType pt,
+    const PrimitiveType coface_pt)
 {
-    const PrimitiveType boundary_pt = get_primitive_type_from_id(get_primitive_type_id(pt) - 1);
     std::vector<Tuple> r;
     for (const Tuple& t : tuples) {
-        auto tups =
+        const auto tups =
             wmtk::simplex::internal::boundary_with_preserved_face_tuples(mesh, t, pt, coface_pt);
         r.insert(r.end(), tups.begin(), tups.end());
     }
+
+    const PrimitiveType boundary_pt = get_primitive_type_from_id(get_primitive_type_id(pt) - 1);
     std::sort(r.begin(), r.end(), [&](const Tuple& a, const Tuple& b) -> bool {
         return utils::SimplexComparisons::less(mesh, boundary_pt, a, b);
     });

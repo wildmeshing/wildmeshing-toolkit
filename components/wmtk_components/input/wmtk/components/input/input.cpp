@@ -21,7 +21,7 @@ void input(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         throw std::runtime_error(std::string("file") + file + " not found");
     }
 
-    std::shared_ptr<Mesh> mesh = read_mesh(file, options.ignore_z);
+    std::shared_ptr<Mesh> mesh = read_mesh(file, options.ignore_z, options.tetrahedron_attributes);
     assert(mesh->is_connectivity_valid());
 
     cache.write_mesh(*mesh, options.name);

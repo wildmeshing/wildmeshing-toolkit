@@ -243,6 +243,60 @@ void MultiMeshManager::register_child_mesh(
     }
 }
 
+void MultiMeshManager::deregister_child_mesh(
+    Mesh& my_mesh,
+    const std::shared_ptr<Mesh>& child_mesh_ptr)
+{
+    Mesh& child_mesh = *child_mesh_ptr;
+
+    MultiMeshManager& child_manager = child_mesh.m_multi_mesh_manager;
+    MultiMeshManager& parent_manager = my_mesh.m_multi_mesh_manager;
+
+
+    auto& child_to_parent_handle = child_manager.map_to_parent_handle;
+
+    const int64_t child_id = child_manager.child_id();
+    ChildData& child_data = parent_manager.m_children[child_id];
+    auto& parent_to_child_handle = child_data.map_handle;
+
+    assert(child_data.mesh == child_mesh_ptr);
+    assert(child_manager.children()
+               .empty()); // The current implementation does not update the attributes properly for
+                          // the case that the child also has children
+
+    // remove map attribute from parent
+    my_mesh.m_attribute_manager.get<int64_t>(child_mesh.top_simplex_type())
+        .remove_attributes({parent_to_child_handle.base_handle()});
+
+    // remove map attribute from child
+    child_mesh.m_attribute_manager.get<int64_t>(child_mesh.top_simplex_type())
+        .remove_attributes({child_to_parent_handle.base_handle()});
+
+    // set child_id to -1 --> make it a root
+    child_manager.m_child_id = -1;
+    // remove parent pointer
+    child_manager.m_parent = nullptr;
+
+    // remove child_data from parent
+    auto& children = parent_manager.m_children;
+    children.erase(children.begin() + child_id);
+    // update handles for all other children
+    for (size_t i = 0; i < children.size(); ++i) {
+        auto new_handle = my_mesh.get_attribute_handle_typed<int64_t>(
+            parent_to_child_map_attribute_name(children[i].mesh->m_multi_mesh_manager.m_child_id),
+            child_mesh.top_simplex_type());
+        children[i] = ChildData{children[i].mesh, new_handle};
+    }
+
+    //  update child ids for all other children
+    for (size_t i = 0; i < children.size(); ++i) {
+        children[i].mesh->m_multi_mesh_manager.m_child_id = i;
+        my_mesh.m_attribute_manager.set_name<int64_t>(
+            children[i].map_handle,
+            parent_to_child_map_attribute_name(i));
+    }
+}
+
 std::vector<wmtk::attribute::TypedAttributeHandle<int64_t>> MultiMeshManager::map_handles() const
 {
     std::vector<wmtk::attribute::TypedAttributeHandle<int64_t>> handles;
@@ -377,8 +431,8 @@ std::pair<const Mesh&, Tuple> MultiMeshManager::map_up_to_tuples(
         cur_mesh = cur_mesh->m_multi_mesh_manager.m_parent;
         assert(cur_mesh != nullptr);
     }
-    assert(cur_mesh->m_multi_mesh_manager
-               .is_root()); // cur_mesh == nullptr if we just walked past the root node so we stop
+    // assert(cur_mesh->m_multi_mesh_manager
+    //            .is_root()); // cur_mesh == nullptr if we just walked past the root node so we stop
 
     // bieng lazy about how i set cur_mesh to nullptr above - could simplify the loop to optimize
     return std::pair<const Mesh&, Tuple>(*cur_mesh, cur_tuple);
@@ -721,6 +775,7 @@ void MultiMeshManager::update_map_tuple_hashes(
             //  read off the original map's data
             auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
                                             .const_vector_attribute(original_parent_gid);
+            // wmtk::attribute::TupleAccessor<wmtk::Mesh> tuple_accessor(m, int64_t_handle);
 
             // read off the data in the Tuple format
             Tuple parent_tuple, child_tuple;
@@ -949,8 +1004,11 @@ int64_t MultiMeshManager::parent_local_fid(
     return Mesh::get_index_access(child_to_parent)
         .vector_attribute(child_gid)(wmtk::multimesh::utils::TUPLE_SIZE + 2);
 #else
-    const int64_t v = Mesh::get_index_access(child_to_parent)
-                          .vector_attribute(child_gid)(wmtk::multimesh::utils::TUPLE_SIZE);
+    // pick hte index that isn't teh global id index
+    const int64_t v =
+        Mesh::get_index_access(child_to_parent)
+            .vector_attribute(child_gid)(
+                wmtk::multimesh::utils::TUPLE_SIZE + (1 - wmtk::multimesh::utils::GLOBAL_ID_INDEX));
     auto vptr = reinterpret_cast<const int8_t*>(&v);
     return vptr[2];
 #endif

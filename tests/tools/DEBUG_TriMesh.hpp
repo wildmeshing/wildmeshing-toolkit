@@ -11,6 +11,7 @@ public:
     using TriMesh::TriMesh;
     DEBUG_TriMesh(TriMesh&& m);
 
+    using TriMesh::id;
     using TriMesh::id_vertex;
 
 
@@ -38,6 +39,7 @@ public:
     auto edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2, const int64_t fid) const
         -> Tuple;
 
+    using TriMesh::vertex_tuple_from_id;
     auto edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple;
     auto face_tuple_from_vids(const int64_t v1, const int64_t v2, const int64_t v3) const -> Tuple;
 
@@ -71,8 +73,6 @@ public:
     void reserve_more_attributes(const std::vector<int64_t>& sizes);
 
 
-    int64_t id(const Tuple& tuple, PrimitiveType type) const;
-    int64_t id(const simplex::Simplex& s) const;
     /**
      * @brief returns the TriMeshOperationExecutor
      */

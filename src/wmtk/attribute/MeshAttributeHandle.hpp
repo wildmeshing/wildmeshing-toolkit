@@ -1,11 +1,13 @@
 #pragma once
+#include <wmtk/utils/Rational.hpp>
+//
 #include "TypedAttributeHandle.hpp"
 
 #include <variant>
 
 namespace wmtk {
 class Mesh;
-}
+} // namespace wmtk
 
 namespace wmtk::attribute {
 
@@ -23,9 +25,9 @@ public:
         TypedAttributeHandle<char>,
         TypedAttributeHandle<int64_t>,
         TypedAttributeHandle<double>,
-        TypedAttributeHandle<Rational>>;
+        TypedAttributeHandle<wmtk::Rational>>;
 
-    using ValueVariant = std::variant<char, int64_t, double, Rational>;
+    using ValueVariant = std::variant<char, int64_t, double, wmtk::Rational>;
 
     enum class HeldType { Char = 0, Int64 = 1, Double = 2, Rational = 3 };
 
@@ -39,12 +41,12 @@ public:
 
     friend class wmtk::Mesh;
     friend class wmtk::hash<MeshAttributeHandle>;
-    MeshAttributeHandle();
+    MeshAttributeHandle() = default;
     MeshAttributeHandle(Mesh& m, const HandleVariant& h);
-    MeshAttributeHandle(const MeshAttributeHandle& o);
-    MeshAttributeHandle(MeshAttributeHandle&& o);
-    MeshAttributeHandle& operator=(const MeshAttributeHandle& o);
-    MeshAttributeHandle& operator=(MeshAttributeHandle&& o);
+    MeshAttributeHandle(const MeshAttributeHandle& o) = default;
+    MeshAttributeHandle(MeshAttributeHandle&& o) = default;
+    MeshAttributeHandle& operator=(const MeshAttributeHandle& o) = default;
+    MeshAttributeHandle& operator=(MeshAttributeHandle&& o) = default;
 
     bool operator==(const MeshAttributeHandle& o) const
     {
@@ -115,32 +117,32 @@ private:
 };
 
 template <typename T>
-const TypedAttributeHandle<T>& MeshAttributeHandle::as() const
+inline const TypedAttributeHandle<T>& MeshAttributeHandle::as() const
 {
     return std::get<TypedAttributeHandle<T>>(m_handle);
 }
 
 
 template <typename T>
-bool MeshAttributeHandle::holds() const
+inline bool MeshAttributeHandle::holds() const
 {
     return std::holds_alternative<TypedAttributeHandle<T>>(m_handle);
 }
 template <MeshAttributeHandle::HeldType Type>
-auto MeshAttributeHandle::as_from_held_type() const
+inline auto MeshAttributeHandle::as_from_held_type() const
     -> const TypedAttributeHandle<held_primitive_type<Type>>&
 {
     return as<held_primitive_type<Type>>();
 }
 
 template <MeshAttributeHandle::HeldType Type>
-bool MeshAttributeHandle::holds_from_held_type() const
+inline bool MeshAttributeHandle::holds_from_held_type() const
 {
     return MeshAttributeHandle::holds<held_primitive_type<Type>>();
 }
 
 template <typename T>
-constexpr auto MeshAttributeHandle::held_type_from_primitive() -> HeldType
+inline constexpr auto MeshAttributeHandle::held_type_from_primitive() -> HeldType
 {
     if constexpr (std::is_same_v<T, char>) {
         return HeldType::Char;
@@ -151,7 +153,7 @@ constexpr auto MeshAttributeHandle::held_type_from_primitive() -> HeldType
     if constexpr (std::is_same_v<T, int64_t>) {
         return HeldType::Int64;
     }
-    if constexpr (std::is_same_v<T, Rational>) {
+    if constexpr (std::is_same_v<T, wmtk::Rational>) {
         return HeldType::Rational;
     }
 }

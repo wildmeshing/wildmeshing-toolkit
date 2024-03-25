@@ -21,10 +21,9 @@ ProjectOperation::ProjectOperation(
     : AttributesUpdate(main_op->mesh())
     , m_main_op(main_op)
 {
-    int64_t count = 0;
-    int64_t index = 0;
-
     for (auto& pair : mesh_constaint_pairs) {
+        int64_t count = 0;
+        int64_t index = 0;
         const attribute::Accessor<double> accessor = pair.first.mesh().create_const_accessor(pair.first.as<double>());
 
         const std::vector<Tuple>& facest =

@@ -19,6 +19,9 @@
             "mesh",
             "position",
             "name"
+        ],
+        "optional": [
+            "tag_name"
         ]
     },
     {
@@ -49,12 +52,18 @@
         "type": "string"
     },
     {
+        "pointer": "/tag_name",
+        "type": "string",
+        "default": "is_boundary"
+    },
+    {
         "pointer": "/mesh",
         "type": "string"
     },
     {
         "pointer": "/position",
-        "type": "string"
+        "type": "include",
+        "spec_file": "attribute_spec.json"
     },
     {
         "pointer": "/tag",

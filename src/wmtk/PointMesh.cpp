@@ -7,7 +7,7 @@ Tuple PointMesh::vertex_tuple_from_id(int64_t id) const
 }
 
 PointMesh::PointMesh()
-    : Mesh(0)
+    : MeshCRTP<PointMesh>(0)
 {}
 
 
@@ -58,25 +58,14 @@ void PointMesh::initialize(int64_t count)
 }
 
 
-bool PointMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const
+bool PointMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+    const
 {
     if (tuple.is_null()) return false;
     return true;
     return Mesh::is_hash_valid(tuple, hash_accessor);
 }
 
-int64_t PointMesh::id(const Tuple& tuple, PrimitiveType type) const
-{
-    switch (type) {
-    case PrimitiveType::Vertex: return tuple.m_global_cid;
-    case PrimitiveType::Edge:
-    case PrimitiveType::Triangle:
-    case PrimitiveType::Tetrahedron:
-    default: assert(false); // "Tuple switch: Invalid primitive type"
-    }
-
-    return -1;
-}
 
 Tuple PointMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
 {

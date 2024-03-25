@@ -1,4 +1,5 @@
 #include "Cell.hpp"
+#include <wmtk/simplex/Simplex.hpp>
 #include <tuple>
 
 namespace wmtk {

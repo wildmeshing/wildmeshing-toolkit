@@ -41,6 +41,7 @@ public:
         const int64_t v2,
         const int64_t v3,
         const int64_t tid) const -> Tuple;
+    using TetMesh::vertex_tuple_from_id;
     auto edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple;
     auto face_tuple_from_vids(const int64_t v1, const int64_t v2, const int64_t v3) const -> Tuple;
     auto tet_tuple_from_vids(const int64_t v1, const int64_t v2, const int64_t v3, const int64_t v4)
@@ -77,8 +78,7 @@ public:
 
     void reserve_attributes(PrimitiveType type, int64_t size);
 
-    int64_t id(const Tuple& tuple, PrimitiveType type) const;
-    int64_t id(const simplex::Simplex& s) const;
+    using TetMesh::id;
 
     using TetMesh::tuple_from_id;
 

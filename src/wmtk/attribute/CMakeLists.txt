@@ -31,7 +31,6 @@ set(SRC_FILES
 
     AccessorBase.hxx
     AccessorBase.hpp
-    AccessorBase.cpp
 
     CachingAccessor.hxx
     CachingAccessor.hpp
@@ -39,7 +38,6 @@ set(SRC_FILES
     Accessor.hxx
     Accessor.hpp
 
-    
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(internal)

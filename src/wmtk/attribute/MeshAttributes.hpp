@@ -11,12 +11,14 @@
 #include <vector>
 
 
+// TODO: this is just a fancy vector for attributes, perhaps this can be recycled / simplified. The reserved quantiy should be held by a level above this abstraction (as multiple types should all have hte same reservation size)
+
 namespace wmtk {
 
 class MeshWriter;
 class Mesh;
 namespace attribute {
-template <typename T>
+template <typename T, int Dim>
 class AccessorBase;
 
 /**
@@ -26,7 +28,8 @@ class AccessorBase;
 template <typename T>
 class MeshAttributes : public wmtk::utils::MerkleTreeInteriorNode
 {
-    friend class AccessorBase<T>;
+    template <typename U, int D>
+    friend class AccessorBase;
     friend class wmtk::Mesh;
 
     typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;
@@ -78,6 +81,8 @@ public:
 
     int64_t dimension(const AttributeHandle& handle) const;
     std::string get_name(const AttributeHandle& handle) const;
+
+    void set_name(const AttributeHandle& handle, const std::string& name);
 
     bool has_attribute(const std::string& name) const;
 

@@ -39,6 +39,10 @@
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
+#include <wmtk/invariants/Swap23EnergyBeforeInvariant.hpp>
+#include <wmtk/invariants/Swap32EnergyBeforeInvariant.hpp>
+#include <wmtk/invariants/Swap44EnergyBeforeInvariant.hpp>
+#include <wmtk/invariants/Swap44_2EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
@@ -116,6 +120,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     WildmeshingOptions options = j.get<WildmeshingOptions>();
     const std::filesystem::path& file = options.input;
     auto mesh = cache.read_mesh(options.input);
+
+    if (!mesh->is_connectivity_valid()) {
+        throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
+    }
 
 
     //////////////////////////////////
@@ -201,11 +209,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     std::vector<std::shared_ptr<Mesh>> envelopes;
     std::vector<MeshConstrainPair> mesh_constaint_pairs;
 
+    std::vector<std::shared_ptr<Mesh>> multimesh_meshes;
+
     for (const auto& v : options.envelopes) {
         auto envelope = cache.read_mesh(v.geometry.mesh);
         envelopes.emplace_back(envelope);
 
         auto constrained = base::get_attributes(cache, *mesh, v.constrained_position);
+        multimesh_meshes.push_back(constrained.front().mesh().shared_from_this());
         assert(constrained.size() == 1);
         pass_through_attributes.emplace_back(constrained.front());
 
@@ -273,8 +284,21 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto interior_edge = std::make_shared<InteriorEdgeInvariant>(*mesh);
     auto interior_face = std::make_shared<InteriorSimplexInvariant>(*mesh, PrimitiveType::Triangle);
 
+    for (const auto& em : multimesh_meshes) {
+        interior_edge->add_boundary(*em);
+        interior_face->add_boundary(*em);
+    }
+
     auto valence_3 = std::make_shared<EdgeValenceInvariant>(*mesh, 3);
     auto valence_4 = std::make_shared<EdgeValenceInvariant>(*mesh, 4);
+    auto swap44_energy_before =
+        std::make_shared<Swap44EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
+    auto swap44_2_energy_before =
+        std::make_shared<Swap44_2EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
+    auto swap32_energy_before =
+        std::make_shared<Swap32EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
+    auto swap23_energy_before =
+        std::make_shared<Swap23EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
 
     auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(*mesh);
 
@@ -345,12 +369,12 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         op.add_invariant(simplex_invariant);
         op.add_invariant(inversion_invariant);
-        op.add_invariant(function_invariant);
+        // op.add_invariant(function_invariant);
 
         op.add_transfer_strategy(edge_length_update);
         for (auto& s : update_child_positon) op.add_transfer_strategy(s);
 
-        // collapse.add_invariant(link_condition);
+        collapse.add_invariant(link_condition);
 
         collapse.set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::CopyOther);
         split.set_new_attribute_strategy(pt_attribute);
@@ -379,6 +403,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         auto swap44 = std::make_shared<TetEdgeSwap>(*mesh, 0);
         setup_swap(*swap44, swap44->collapse(), swap44->split(), interior_edge);
         swap44->add_invariant(valence_4); // extra edge valance invariant
+        swap44->add_invariant(swap44_energy_before); // check energy before swap
         ops.push_back(swap44);
         ops_name.push_back("swap44");
 
@@ -386,6 +411,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         auto swap44_2 = std::make_shared<TetEdgeSwap>(*mesh, 1);
         setup_swap(*swap44_2, swap44_2->collapse(), swap44_2->split(), interior_edge);
         swap44_2->add_invariant(valence_4); // extra edge valance invariant
+        swap44_2->add_invariant(swap44_2_energy_before); // check energy before swap
         ops.push_back(swap44_2);
         ops_name.push_back("swap44_2");
 
@@ -393,14 +419,16 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         auto swap32 = std::make_shared<TetEdgeSwap>(*mesh, 0);
         setup_swap(*swap32, swap32->collapse(), swap32->split(), interior_edge);
         swap32->add_invariant(valence_3); // extra edge valance invariant
+        swap32->add_invariant(swap32_energy_before); // check energy before swap
         ops.push_back(swap32);
         ops_name.push_back("swap32");
 
         // 3 - 3) TetFaceSwap 2-3
-        // auto swap23 = std::make_shared<TetFaceSwap>(*mesh);
-        // setup_swap(*swap23, swap23->collapse(), swap23->split(), interior_face);
-        // ops.push_back(swap23);
-        // ops_name.push_back("swap23");
+        auto swap23 = std::make_shared<TetFaceSwap>(*mesh);
+        setup_swap(*swap23, swap23->collapse(), swap23->split(), interior_face);
+        swap23->add_invariant(swap23_energy_before); // check energy before swap
+        ops.push_back(swap23);
+        ops_name.push_back("swap23");
     }
 
     // 4) Smoothing
@@ -451,6 +479,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 stats.sorting_time,
                 stats.executing_time);
             ++jj;
+
+            // if (!mesh->is_connectivity_valid()) {
+            //     std::cout << "invalid connectivity after " + ops_name[jj] << std::endl;
+            //     throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
+            // }
         }
 
         logger().info(
@@ -462,7 +495,17 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
+        // if (!mesh->is_connectivity_valid()) {
+        //     std::cout << "invalid connectivity before consolidate" << std::endl;
+        //     throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
+        // }
+
         multimesh::consolidate(*mesh);
+
+        // if (!mesh->is_connectivity_valid()) {
+        //     std::cout << "invalid connectivity after consolidate" << std::endl;
+        //     throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
+        // }
 
         write(
             mesh,

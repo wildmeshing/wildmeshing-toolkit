@@ -178,7 +178,7 @@ AttributeScopeHandle AttributeManager::create_scope(Mesh& m)
     return AttributeScopeHandle(*this);
 }
 
-std::string AttributeManager::get_name(const attribute::TypedAttributeHandleVariant& attr) const
+std::string AttributeManager::get_name(const attribute::MeshAttributeHandle::HandleVariant& attr) const
 {
     std::string name = std::visit(
         [&](auto&& val) {
@@ -269,9 +269,9 @@ void AttributeManager::change_to_child_scope() const
     }
 }
 
-std::vector<TypedAttributeHandleVariant> AttributeManager::get_all_attributes() const
+std::vector<MeshAttributeHandle::HandleVariant> AttributeManager::get_all_attributes() const
 {
-    std::vector<TypedAttributeHandleVariant> handles;
+    std::vector<MeshAttributeHandle::HandleVariant> handles;
 
     auto run = [&](auto type) {
         using T = std::decay_t<decltype(type)>;
@@ -314,14 +314,14 @@ public:
 };
 } // namespace
 void AttributeManager::clear_attributes(
-    const std::vector<attribute::TypedAttributeHandleVariant>& custom_attributes)
+    const std::vector<attribute::MeshAttributeHandle::HandleVariant>& custom_attributes)
 {
     // std::array<std::array<std::vector<AttributeHandle>, 5>, 4>
     //    keeps; // [char/int64_t/...][ptype][attribute]
 
 
     ClearAttrData customs;
-    for (const attribute::TypedAttributeHandleVariant& attr : custom_attributes) {
+    for (const attribute::MeshAttributeHandle::HandleVariant& attr : custom_attributes) {
         std::visit(
             [&](auto&& val) {
                 using T = typename std::decay_t<decltype(val)>::Type;

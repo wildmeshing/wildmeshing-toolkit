@@ -1,11 +1,13 @@
 #pragma once
 
-#include <wmtk/simplex/Simplex.hpp>
-#include "Cell.hpp"
 #include "PrimitiveType.hpp"
 #include "Tuple.hpp"
 
 namespace wmtk {
+    class Cell;
+    namespace simplex {
+        class Simplex;
+    }
 
 class Primitive
 {

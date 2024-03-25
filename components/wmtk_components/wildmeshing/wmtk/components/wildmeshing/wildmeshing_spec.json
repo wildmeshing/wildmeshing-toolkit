@@ -91,7 +91,8 @@
     },
     {
         "pointer": "/pass_through/*",
-        "type": "string"
+        "type": "include",
+        "spec_file": "attribute_spec.json"
     },
     {
         "pointer": "/passes",

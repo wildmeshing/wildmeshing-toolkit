@@ -69,7 +69,7 @@ public:
         bool replace,
         T default_value);
 
-    std::vector<TypedAttributeHandleVariant> get_all_attributes() const;
+    std::vector<MeshAttributeHandle::HandleVariant> get_all_attributes() const;
 
 
     template <typename T>
@@ -84,7 +84,10 @@ public:
     template <typename T>
     std::string get_name(const TypedAttributeHandle<T>& attr) const;
 
-    std::string get_name(const attribute::TypedAttributeHandleVariant& attr) const;
+    std::string get_name(const attribute::MeshAttributeHandle::HandleVariant& attr) const;
+
+    template <typename T>
+    void set_name(const TypedAttributeHandle<T>& attr, const std::string& name);
 
     template <typename T>
     const std::vector<MeshAttributes<T>>& get() const;
@@ -114,11 +117,11 @@ public:
      * @param keep_attributes Vector of attributes that should not be removed.
      */
     void clear_attributes(
-        const std::vector<attribute::TypedAttributeHandleVariant>& custom_attributes);
+        const std::vector<attribute::MeshAttributeHandle::HandleVariant>& custom_attributes);
 };
 
 template <typename T>
-const std::vector<MeshAttributes<T>>& AttributeManager::get() const
+inline const std::vector<MeshAttributes<T>>& AttributeManager::get() const
 {
     if constexpr (std::is_same_v<T, char>) {
         return m_char_attributes;
@@ -134,7 +137,7 @@ const std::vector<MeshAttributes<T>>& AttributeManager::get() const
     }
 }
 template <typename T>
-std::vector<MeshAttributes<T>>& AttributeManager::get()
+inline std::vector<MeshAttributes<T>>& AttributeManager::get()
 {
     if constexpr (std::is_same_v<T, char>) {
         return m_char_attributes;
@@ -151,31 +154,31 @@ std::vector<MeshAttributes<T>>& AttributeManager::get()
 }
 
 template <typename T>
-const MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype) const
+inline const MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype) const
 {
     const int8_t index = get_primitive_type_id(ptype);
     return get<T>()[index];
 }
 
 template <typename T>
-MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype)
+inline MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype)
 {
     size_t index = get_primitive_type_id(ptype);
     return get<T>().at(index);
 }
 
 template <typename T>
-MeshAttributes<T>& AttributeManager::get(const TypedAttributeHandle<T>& handle)
+inline MeshAttributes<T>& AttributeManager::get(const TypedAttributeHandle<T>& handle)
 {
     return get<T>(handle.m_primitive_type);
 }
 template <typename T>
-const MeshAttributes<T>& AttributeManager::get(const TypedAttributeHandle<T>& handle) const
+inline const MeshAttributes<T>& AttributeManager::get(const TypedAttributeHandle<T>& handle) const
 {
     return get<T>(handle.m_primitive_type);
 }
 template <typename T>
-TypedAttributeHandle<T> AttributeManager::register_attribute(
+inline TypedAttributeHandle<T> AttributeManager::register_attribute(
     const std::string& name,
     PrimitiveType ptype,
     int64_t size,
@@ -190,7 +193,7 @@ TypedAttributeHandle<T> AttributeManager::register_attribute(
 }
 
 template <typename Functor, typename... Args>
-decltype(auto) AttributeManager::parent_scope(Functor&& f, Args&&... args) const
+inline decltype(auto) AttributeManager::parent_scope(Functor&& f, Args&&... args) const
 {
     // we const-cast here because the scope object resets its state  at the end
     // of this scope and we want to use parent-scope for read-only applications
@@ -199,16 +202,26 @@ decltype(auto) AttributeManager::parent_scope(Functor&& f, Args&&... args) const
     return std::invoke(std::forward<Functor>(f), std::forward<Args>(args)...);
 }
 template <typename T>
-int64_t AttributeManager::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
+inline int64_t AttributeManager::get_attribute_dimension(
+    const TypedAttributeHandle<T>& handle) const
 {
     assert(handle.is_valid());
     return get(handle).dimension(handle.m_base_handle);
 }
 
 template <typename T>
-std::string AttributeManager::get_name(const TypedAttributeHandle<T>& handle) const
+inline std::string AttributeManager::get_name(const TypedAttributeHandle<T>& handle) const
 {
     return get(handle).get_name(handle.m_base_handle);
 }
+
+template <typename T>
+inline void AttributeManager::set_name(
+    const TypedAttributeHandle<T>& handle,
+    const std::string& name)
+{
+    return get(handle).set_name(handle.m_base_handle, name);
+}
+
 } // namespace attribute
 } // namespace wmtk

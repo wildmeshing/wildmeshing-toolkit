@@ -2,6 +2,11 @@
 
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 
+namespace wmtk::simplex {
+    class Simplex;
+
+}
+
 
 namespace wmtk::operations {
 

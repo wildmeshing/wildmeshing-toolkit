@@ -15,14 +15,6 @@
 namespace wmtk {
 
 
-PrimitiveType Mesh::top_simplex_type() const
-{
-    int64_t dimension = top_cell_dimension();
-    assert(dimension >= 0);
-    assert(dimension < 4);
-    return static_cast<PrimitiveType>(dimension);
-}
-
 
 std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 {
@@ -70,7 +62,8 @@ bool Mesh::is_boundary(const simplex::Simplex& s) const
 }
 
 
-bool Mesh::is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const
+bool Mesh::is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+    const
 {
     const int64_t cid = tuple.m_global_cid;
 
@@ -127,13 +120,17 @@ void Mesh::update_cell_hash(const int64_t cid, attribute::Accessor<int64_t>& has
     h = (h + 1) % (1 << 6);
 }
 
-void Mesh::update_cell_hashes(const std::vector<Tuple>& cells, attribute::Accessor<int64_t>& hash_accessor)
+void Mesh::update_cell_hashes(
+    const std::vector<Tuple>& cells,
+    attribute::Accessor<int64_t>& hash_accessor)
 {
     for (const Tuple& t : cells) {
         update_cell_hash(t, hash_accessor);
     }
 }
-void Mesh::update_cell_hashes(const std::vector<int64_t>& cells, attribute::Accessor<int64_t>& hash_accessor)
+void Mesh::update_cell_hashes(
+    const std::vector<int64_t>& cells,
+    attribute::Accessor<int64_t>& hash_accessor)
 {
     for (const int64_t t : cells) {
         update_cell_hash(t, hash_accessor);
@@ -147,7 +144,8 @@ void Mesh::update_cell_hashes_slow(const std::vector<Tuple>& cells)
 }
 
 
-Tuple Mesh::resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const
+Tuple Mesh::resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+    const
 {
     Tuple t = tuple;
     t.m_hash = get_cell_hash(tuple.m_global_cid, hash_accessor);
@@ -160,7 +158,8 @@ Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple)
     return resurrect_tuple(tuple, hash_accessor);
 }
 
-int64_t Mesh::get_cell_hash(int64_t cell_index, const attribute::Accessor<int64_t>& hash_accessor) const
+int64_t Mesh::get_cell_hash(int64_t cell_index, const attribute::Accessor<int64_t>& hash_accessor)
+    const
 {
     return hash_accessor.index_access().const_scalar_attribute(cell_index);
 }
@@ -216,7 +215,9 @@ Tuple Mesh::switch_tuples_unsafe(
 }
 
 
-void Mesh::update_vertex_operation_hashes(const Tuple& vertex, attribute::Accessor<int64_t>& hash_accessor)
+void Mesh::update_vertex_operation_hashes(
+    const Tuple& vertex,
+    attribute::Accessor<int64_t>& hash_accessor)
 {
     MultiMeshManager::update_vertex_operation_hashes_internal(*this, vertex, hash_accessor);
 }
@@ -224,17 +225,6 @@ void Mesh::update_vertex_operation_hashes(const Tuple& vertex, attribute::Access
 void Mesh::assert_capacity_valid() const
 {
     m_attribute_manager.assert_capacity_valid();
-}
-
-int64_t Mesh::id(const Tuple& tuple, PrimitiveType type) const
-{
-    switch (top_simplex_type()) {
-    case PrimitiveType::Vertex: return static_cast<const PointMesh*>(this)->id(tuple, type);
-    case PrimitiveType::Edge: return static_cast<const EdgeMesh*>(this)->id(tuple, type);
-    case PrimitiveType::Triangle: return static_cast<const TriMesh*>(this)->id(tuple, type);
-    case PrimitiveType::Tetrahedron: return static_cast<const TetMesh*>(this)->id(tuple, type);
-    default: assert(false); return -1;
-    }
 }
 
 } // namespace wmtk

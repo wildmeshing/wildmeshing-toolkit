@@ -33,8 +33,8 @@ tetmesh_topology_initialization(Eigen::Ref<const RowVectors4l> T)
     // topology relations
     {
         TTT.resize(T.rows() * 4);
-        for (int t = 0; t < T.rows(); ++t) {
-            for (int i = 0; i < 4; ++i) {
+        for (int64_t t = 0; t < T.rows(); ++t) {
+            for (int64_t i = 0; i < 4; ++i) {
                 // v1 v2 v3 f ei
                 int64_t x = T(t, static_cast<int64_t>(autogen::tet_mesh::auto_3d_faces[i][0]));
                 int64_t y = T(t, static_cast<int64_t>(autogen::tet_mesh::auto_3d_faces[i][1]));
@@ -65,8 +65,8 @@ tetmesh_topology_initialization(Eigen::Ref<const RowVectors4l> T)
 
         // VT
         VT.resize(vertex_count, 1);
-        for (int i = 0; i < T.rows(); ++i) {
-            for (int j = 0; j < T.cols(); ++j) {
+        for (int64_t i = 0; i < T.rows(); ++i) {
+            for (int64_t j = 0; j < T.cols(); ++j) {
                 VT[T(i, j)] = i;
             }
         }
@@ -79,7 +79,7 @@ tetmesh_topology_initialization(Eigen::Ref<const RowVectors4l> T)
         // iterate over TTT to find faces
         // for every entry check if the next is the same, and update the connectivity accordingly
 
-        for (int i = 0; i < TTT.size(); ++i) {
+        for (int64_t i = 0; i < TTT.size(); ++i) {
             if ((i == TTT.size() - 1) || (TTT[i][0] != TTT[i + 1][0]) ||
                 (TTT[i][1] != TTT[i + 1][1]) || (TTT[i][2] != TTT[i + 1][2])) {
                 // If the next tuple is empty, then this is a boundary face
@@ -112,8 +112,8 @@ tetmesh_topology_initialization(Eigen::Ref<const RowVectors4l> T)
     // topology relations
     {
         TTT.resize(T.rows() * 6);
-        for (int t = 0; t < T.rows(); ++t) {
-            for (int i = 0; i < 6; ++i) {
+        for (int64_t t = 0; t < T.rows(); ++t) {
+            for (int64_t i = 0; i < 6; ++i) {
                 // v1 v2 f ei
                 int64_t x = T(t, static_cast<int64_t>(autogen::tet_mesh::auto_3d_edges[i][0]));
                 int64_t y = T(t, static_cast<int64_t>(autogen::tet_mesh::auto_3d_edges[i][1]));
@@ -147,7 +147,7 @@ tetmesh_topology_initialization(Eigen::Ref<const RowVectors4l> T)
 
         // iterate over TTT to find edges
         // for every entry check if the next is the same, and update the connectivity accordingly
-        for (int i = 0; i < TTT.size(); ++i) {
+        for (int64_t i = 0; i < TTT.size(); ++i) {
             if ((i == TTT.size() - 1) || (TTT[i][0] != TTT[i + 1][0]) ||
                 (TTT[i][1] != TTT[i + 1][1])) {
                 // new edge found

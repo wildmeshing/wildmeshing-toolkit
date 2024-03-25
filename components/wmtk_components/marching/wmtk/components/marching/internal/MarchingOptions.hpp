@@ -9,9 +9,16 @@ struct MarchingAttributes
 {
     std::string vertex_label; // on vertex
     std::vector<std::string> filter_labels; // on edge
+    std::vector<std::string> edge_label;
+    std::vector<std::string> face_label;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MarchingAttributes, vertex_label, filter_labels);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
+    MarchingAttributes,
+    vertex_label,
+    filter_labels,
+    edge_label,
+    face_label);
 
 struct MarchingOptions
 {
@@ -20,6 +27,7 @@ struct MarchingOptions
     MarchingAttributes attributes;
     std::vector<int64_t> input_values;
     int64_t output_value;
+    double weight;
     std::vector<int64_t> filter_values;
     std::vector<std::string> pass_through;
 };

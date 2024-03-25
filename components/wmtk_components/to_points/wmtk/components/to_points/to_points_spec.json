@@ -9,7 +9,10 @@
         ],
         "optional": [
             "add_box",
-            "box_scale"
+            "box_scale",
+            "add_grid",
+            "grid_spacing",
+            "min_dist"
         ]
     },
     {
@@ -33,5 +36,20 @@
         "pointer": "/box_scale",
         "type": "float",
         "default": 1
+    },
+    {
+        "pointer": "/add_grid",
+        "type": "bool",
+        "default": false
+    },
+    {
+        "pointer": "/grid_spacing",
+        "type": "float",
+        "default": 0.1
+    },
+    {
+        "pointer": "/min_dist",
+        "type": "float",
+        "default": -1
     }
 ]

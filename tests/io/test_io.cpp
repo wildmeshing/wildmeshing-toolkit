@@ -1,8 +1,10 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/io/Cache.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <wmtk/io/MshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
@@ -22,9 +24,12 @@ using namespace wmtk::tests;
 
 namespace fs = std::filesystem;
 
+const fs::path wmtk_data_dir = WMTK_DATA_DIR;
+
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
+constexpr PrimitiveType PF = PrimitiveType::Triangle;
 
 TEST_CASE("hdf5_2d", "[io]")
 {
@@ -147,19 +152,87 @@ TEST_CASE("paraview_3d", "[io]")
 
 TEST_CASE("msh_3d", "[io]")
 {
-    auto mesh = read_mesh(WMTK_DATA_DIR "/sphere_delaunay.msh");
+    CHECK_NOTHROW(read_mesh(wmtk_data_dir / "sphere_delaunay.msh"));
+}
+
+TEST_CASE("msh_3d_with_tet_attribute", "[io]")
+{
+    constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
+
+    MshReader reader;
+    std::vector<std::string> attrs = {"in/out", "min_dihedral_angle", "energy"};
+    std::shared_ptr<Mesh> mesh = reader.read(wmtk_data_dir / "tetwild_fig8_mid.msh", false, attrs);
+
+    CHECK(mesh != nullptr);
+    CHECK(mesh->top_simplex_type() == PT);
+
+    auto in_out_handle = mesh->get_attribute_handle<double>("in/out", PT);
+    auto min_dih_handle = mesh->get_attribute_handle<double>("min_dihedral_angle", PT);
+    auto energy_handle = mesh->get_attribute_handle<double>("energy", PT);
+    CHECK(in_out_handle.is_valid());
+    CHECK(min_dih_handle.is_valid());
+    CHECK(energy_handle.is_valid());
+
+    if (false) {
+        ParaviewWriter
+            writer("middle_mesh_with_in_out_attr", "vertices", *mesh, true, true, true, true);
+        mesh->serialize(writer);
+    }
+}
+
+TEST_CASE("msh_3d_convert_tetwild_to_wmtk", "[io][.]")
+{
+    // This is an example showing how to convert a tetwild msh file into our wmtk format and transfering the in/out attribute into a tag attribute.
+
+    constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
+
+    const std::string mesh_name = "tetwild_fig8_mid";
+
+    std::shared_ptr<Mesh> mesh = read_mesh(wmtk_data_dir / (mesh_name + ".msh"), false, {"in/out"});
+
+    CHECK(mesh != nullptr);
+    CHECK(mesh->top_simplex_type() == PT);
+
+    {
+        auto in_out_handle = mesh->get_attribute_handle<double>("in/out", PT);
+        auto in_out_acc = mesh->create_accessor<double>(in_out_handle);
+
+        auto tag_handle = mesh->register_attribute<int64_t>("tag", PT, 1);
+        auto tag_acc = mesh->create_accessor<int64_t>(tag_handle);
+
+        for (const Tuple& t : mesh->get_all(PT)) {
+            if (in_out_acc.const_scalar_attribute(t) < 0.5) {
+                tag_acc.scalar_attribute(t) = 1;
+            }
+        }
+
+        auto pos_handle = mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+
+        mesh->clear_attributes({tag_handle, pos_handle});
+    }
+
+    io::Cache cache("wmtk_cache", ".");
+    cache.write_mesh(*mesh, mesh_name);
+    cache.export_cache(mesh_name + "_converted_from_tetwild");
+
+    if (true) {
+        ParaviewWriter writer(mesh_name, "vertices", *mesh, true, true, true, true);
+        mesh->serialize(writer);
+    }
 }
 
 TEST_CASE("attribute_after_split", "[io][.]")
 {
     DEBUG_TriMesh m = single_equilateral_triangle();
-    auto attribute_handle = m.register_attribute<int64_t>(std::string("test_attribute"), PE, 1).as<int64_t>();
+    auto attribute_handle =
+        m.register_attribute<int64_t>(std::string("test_attribute"), PE, 1).as<int64_t>();
 
     wmtk::attribute::TypedAttributeHandle<double> pos_handle =
         m.get_attribute_handle<double>(std::string("vertices"), PV).as<double>();
 
     {
-        wmtk::attribute::Accessor<int64_t> acc_attribute = m.create_accessor<int64_t>(attribute_handle);
+        wmtk::attribute::Accessor<int64_t> acc_attribute =
+            m.create_accessor<int64_t>(attribute_handle);
         wmtk::attribute::Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 0);
@@ -192,7 +265,7 @@ TEST_CASE("attribute_after_split", "[io][.]")
             {
                 // set the strategies
                 op.set_new_attribute_strategy(
-                    wmtk::attribute::MeshAttributeHandle(m,attribute_handle),
+                    wmtk::attribute::MeshAttributeHandle(m, attribute_handle),
                     wmtk::operations::SplitBasicStrategy::Copy,
                     wmtk::operations::SplitRibBasicStrategy::CopyTuple);
             }
@@ -211,7 +284,8 @@ TEST_CASE("attribute_after_split", "[io][.]")
     } // end of scope for the accessors
 
     {
-        wmtk::attribute::Accessor<int64_t> acc_attribute = m.create_accessor<int64_t>(attribute_handle);
+        wmtk::attribute::Accessor<int64_t> acc_attribute =
+            m.create_accessor<int64_t>(attribute_handle);
         for (const Tuple& t : m.get_all(PE)) {
             CHECK(acc_attribute.scalar_attribute(t) == 0);
         }

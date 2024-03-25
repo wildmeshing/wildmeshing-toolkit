@@ -7,7 +7,12 @@
 
 namespace wmtk::components::base {
 
+attribute::MeshAttributeHandle get_attribute(const Mesh& m, const std::string& name);
+
+attribute::MeshAttributeHandle
+get_attribute(const io::Cache& cache, const Mesh& m, const nlohmann::json& attribute);
+
 std::vector<attribute::MeshAttributeHandle>
 get_attributes(const io::Cache& cache, const Mesh& m, const nlohmann::json& attribute_names);
 
-}
+} // namespace wmtk::components::base

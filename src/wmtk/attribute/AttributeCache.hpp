@@ -13,7 +13,7 @@
 namespace wmtk::attribute {
 template <typename T>
 class Attribute;
-template <typename T>
+template <typename T, int Dim>
 class AccessorBase;
 template <typename T>
 class AttributeCache

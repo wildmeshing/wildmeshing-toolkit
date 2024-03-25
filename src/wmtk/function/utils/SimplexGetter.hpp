@@ -4,6 +4,10 @@
 #include <wmtk/attribute/Accessor.hpp>
 #include <optional>
 
+
+namespace wmtk::simplex {
+    class Simplex;
+}
 namespace wmtk::function::utils {
 
 template <typename T>
