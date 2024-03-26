@@ -292,7 +292,7 @@ void MultiMeshManager::deregister_child_mesh(
     for (size_t i = 0; i < children.size(); ++i) {
         auto new_handle = my_mesh.get_attribute_handle_typed<int64_t>(
             parent_to_child_map_attribute_name(children[i].mesh->m_multi_mesh_manager.m_child_id),
-            child_mesh.top_simplex_type());
+            children[i].mesh->top_simplex_type());
         children[i] = ChildData{children[i].mesh, new_handle};
     }
 
