@@ -19,11 +19,11 @@ TriMesh::TriMesh()
 
 void TriMesh::make_cached_accessors()
 {
-    m_vf_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_vf_handle);
-    m_ef_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_ef_handle);
-    m_fv_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_fv_handle);
-    m_fe_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_fe_handle);
-    m_ff_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_ff_handle);
+    m_vf_accessor = std::make_unique<attribute::Accessor<int64_t, TriMesh>>(*this, m_vf_handle);
+    m_ef_accessor = std::make_unique<attribute::Accessor<int64_t, TriMesh>>(*this, m_ef_handle);
+    m_fv_accessor = std::make_unique<attribute::Accessor<int64_t, TriMesh>>(*this, m_fv_handle);
+    m_fe_accessor = std::make_unique<attribute::Accessor<int64_t, TriMesh>>(*this, m_fe_handle);
+    m_ff_accessor = std::make_unique<attribute::Accessor<int64_t, TriMesh>>(*this, m_ff_handle);
 }
 
 TriMesh::TriMesh(TriMesh&& o)
@@ -546,5 +546,33 @@ std::vector<std::vector<TypedAttributeHandle<int64_t>>> TriMesh::connectivity_at
     return handles;
 }
 
+// get F,V from mesh
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd> TriMesh::get_FV()
+{
+    consolidate();
+
+    const auto pos_handle = get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    const auto pos = create_const_accessor<double>(pos_handle);
+
+    const attribute::Accessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
+
+    const int64_t nF = capacity(PrimitiveType::Triangle);
+    const int64_t nV = capacity(PrimitiveType::Vertex);
+
+    Eigen::MatrixXi F_mat(nF, 3);
+    Eigen::MatrixXd V_mat(nV, 3);
+
+    for (int64_t i = 0; i < nF; ++i) {
+        auto fv = fv_accessor.index_access().const_vector_attribute<3>(i);
+        F_mat.row(i) << (int)fv(0), (int)fv(1), (int)fv(2);
+    }
+
+    for (int64_t i = 0; i < nV; ++i) {
+        auto v = pos.index_access().const_vector_attribute<3>(i);
+        V_mat.row(i) << v(0), v(1), v(2);
+    }
+
+    return std::make_tuple(F_mat, V_mat);
+}
 
 } // namespace wmtk
