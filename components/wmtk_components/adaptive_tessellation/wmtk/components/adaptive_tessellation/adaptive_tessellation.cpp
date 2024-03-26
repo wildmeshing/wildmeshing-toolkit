@@ -211,7 +211,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         bmin.setConstant(std::numeric_limits<double>::max());
         Eigen::VectorXd bmax(3);
         bmax.setConstant(std::numeric_limits<double>::min());
-        for (const auto& v : atdata.m_position_mesh_ptr->get_all(PrimitiveType::Vertex)) {
+        for (const auto& v : atdata.position_mesh_ptr()->get_all(PrimitiveType::Vertex)) {
             const auto p = at_ops.m_uvmesh_xyz_accessor.vector_attribute(v);
             for (int64_t d = 0; d < bmax.size(); ++d) {
                 bmin[d] = std::min(bmin[d], p[d]);
@@ -271,7 +271,12 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     {
         nlohmann::ordered_json FaceErrorJson_distance;
         nlohmann::ordered_json FaceErrorJson_amips;
-        write(position_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, 0);
+        write(
+            atdata.position_mesh_ptr(),
+            atdata.uv_mesh_ptr(),
+            options.uv_output,
+            options.xyz_output,
+            0);
 
         opt_logger().set_level(spdlog::level::level_enum::critical);
 
@@ -327,15 +332,15 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
                     if (stats.number_of_successful_operations() == 0) {
                         break;
                     }
-                    multimesh::consolidate(*uv_mesh_ptr);
+                    multimesh::consolidate(*atdata.uv_mesh_ptr());
                 }
                 logger().warn("Finished swap");
 
                 int64_t inner_todo_edge_cnt = 0;
-                for (auto& e : uv_mesh_ptr->get_all(wmtk::PrimitiveType::Edge)) {
+                for (auto& e : atdata.uv_mesh_ptr()->get_all(wmtk::PrimitiveType::Edge)) {
                     if (at_ops.m_edge_todo_accessor.scalar_attribute(e) == 1) {
                         wmtk::components::operations::utils::tag_secondary_split_edges(
-                            uv_mesh_ptr,
+                            atdata.uv_mesh_ptr(),
                             at_ops.m_face_rgb_state_accessor,
                             at_ops.m_edge_rgb_state_accessor,
                             at_ops.m_edge_todo_accessor,
@@ -350,7 +355,12 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
                 outter_i++;
             }
             i++;
-            write(uv_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, i);
+            write(
+                atdata.position_mesh_ptr(),
+                atdata.uv_mesh_ptr(),
+                options.uv_output,
+                options.xyz_output,
+                i);
         }
         // write(uv_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, i + 1);
     }

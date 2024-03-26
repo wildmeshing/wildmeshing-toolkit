@@ -53,11 +53,23 @@ void ATOperations::set_energies()
 
 void ATOperations::set_uvmesh_xyz_update_rule_initialize()
 { // 3d vert position update
-    auto compute_vertex_position = [&](const Eigen::Vector2d& P) -> Eigen::VectorXd {
-        assert(P.cols() == 1);
+    auto compute_vertex_position = [&](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
         assert(P.rows() == 2);
-        Eigen::Vector2d uv = P.col(0);
-        return m_evaluator_ptr->uv_to_position(uv);
+        Eigen::Vector2d uv;
+        Eigen::Vector3d position;
+
+        // when the vertex is on seam. P contains more than 1 col of uvs
+        if (P.cols() != 1) {
+            for (int i = 0; i < P.cols(); ++i) {
+                uv = P.col(i);
+                position += m_evaluator_ptr->uv_to_position(uv);
+            }
+            position = position / P.cols();
+        } else {
+            uv = P.col(0);
+            position = m_evaluator_ptr->uv_to_position(uv);
+        }
+        return position;
     };
     m_uvmesh_xyz_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
@@ -68,7 +80,9 @@ void ATOperations::set_uvmesh_xyz_update_rule_initialize()
     const auto vertices = m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Vertex);
     for (const auto& v : vertices) {
         const auto p = m_uv_accessor.vector_attribute(v);
-        m_uvmesh_xyz_accessor.vector_attribute(v) = compute_vertex_position(p);
+        Tuple position_v =
+            m_atdata.uv_mesh_ptr()->map_to_parent_tuple(simplex::Simplex(PrimitiveType::Vertex, v));
+        m_uvmesh_xyz_accessor.vector_attribute(position_v) = compute_vertex_position(p);
     }
 }
 
