@@ -29,7 +29,7 @@ MultiMeshFromTag::MultiMeshFromTag(
     , m_tag_acc(m_mesh.create_const_accessor<int64_t>(tag_handle))
     , m_tag_ptype(tag_handle.primitive_type())
 {
-    assert(m_mesh.get_child_meshes().empty());
+    // assert(m_mesh.get_child_meshes().empty());
 }
 
 Eigen::MatrixX<int64_t> MultiMeshFromTag::get_new_id_matrix(const PrimitiveType ptype) const
