@@ -144,7 +144,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                 } else {
                     std::cerr << "unable to open file " << filename << " for writing\n";
                 }
-                // std::cout << "total successful operations: " << ++succ_operations_count << "\n";
+                succ_operations_count++;
+                // std::cout << "total successful operations: " << succ_operations_count << "\n";
 
 
             } // end if (m_record)

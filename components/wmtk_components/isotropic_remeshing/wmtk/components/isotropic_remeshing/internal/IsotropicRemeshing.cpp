@@ -158,7 +158,7 @@ void isotropic_remeshing(
     for (const auto& attr : pass_through_attributes) {
         op_collapse->set_new_attribute_strategy(attr);
     }
-    ops.push_back(op_collapse);
+    // ops.push_back(op_collapse);
 
 
     //////////////////////////////////////////
@@ -193,7 +193,7 @@ void isotropic_remeshing(
         op_swap->split().set_new_attribute_strategy(attr);
         op_swap->collapse().set_new_attribute_strategy(attr);
     }
-    ops.push_back(op_swap);
+    // ops.push_back(op_swap);
 
 
     //////////////////////////////////////////
