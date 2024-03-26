@@ -81,11 +81,11 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
              t,
              tetmesh->switch_tuples(t, {PF})}};
 
-        for (int64_t j = 0; j < 4; ++j) {
-            if (tet_face_on_input_surface[i][j]) {
-                surface_accessor.scalar_attribute(fs[j]) = 1;
+        for (int64_t k = 0; k < 4; ++k) {
+            if (tet_face_on_input_surface[i][k]) {
+                surface_accessor.scalar_attribute(fs[k]) = 1;
             } else {
-                surface_accessor.scalar_attribute(fs[j]) = 0;
+                surface_accessor.scalar_attribute(fs[k]) = 0;
             }
         }
     }
@@ -95,6 +95,8 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
     SurfaceMeshFromTag.compute_substructure_mesh();
 
     std::shared_ptr<Mesh> surface_mesh = tetmesh->get_child_meshes().back();
+
+    // SurfaceMeshFromTag.remove_soup();
 
     /* -----------open boundary and nonmanifold edges in input surface--------- */
 
@@ -133,10 +135,14 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
 
     std::shared_ptr<Mesh> open_boundary_mesh = tetmesh->get_child_meshes().back();
 
+    // OpenBoundaryFromTag.remove_soup();
+
     internal::MultiMeshFromTag NonmanifoldEdgeFromTag(*tetmesh, nonmanifold_edge_handle, 1);
     NonmanifoldEdgeFromTag.compute_substructure_mesh();
 
     std::shared_ptr<Mesh> nonmanifold_edge_mesh = tetmesh->get_child_meshes().back();
+
+    // NonmanifoldEdgeFromTag.remove_soup();
 
     /* -----------nonmanifold vertices in input surface--------- */
 
@@ -163,9 +169,9 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
     // TODO: register as child mesh
 
     // remove all soups
-    // NonmanifoldEdgeFromTag.remove_soup();
-    // OpenBoundaryFromTag.remove_soup();
-    // SurfaceMeshFromTag.remove_soup();
+    NonmanifoldEdgeFromTag.remove_soup();
+    OpenBoundaryFromTag.remove_soup();
+    SurfaceMeshFromTag.remove_soup();
 
 
     /* ------------------ post processing -------------------*/
