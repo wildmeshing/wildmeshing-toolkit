@@ -13,17 +13,57 @@ using namespace wmtk;
 #include <igl/opengl/glfw/Viewer.h>
 using path = std::filesystem::path;
 
+struct query_point
+{
+    int64_t f_id; // face id
+    Eigen::Vector3d bc; // barycentric coordinates
+    Eigen::Vector3i fv_ids; // face vertex ids
+};
+
+// TODO: for testing purpose
+void back_track_map(
+    path dirPath
+    // const std::vector<query_point>& query_points
+)
+{
+    namespace fs = std::filesystem;
+    int maxIndex = -1;
+
+    for (const auto& entry : fs::directory_iterator(dirPath)) {
+        if (entry.path().filename().string().find("local_atlas_") != std::string::npos) {
+            ++maxIndex;
+        }
+    }
+
+    for (int i = maxIndex; i >= 0; --i) {
+        fs::path filePath = dirPath / ("local_atlas_" + std::to_string(i) + ".txt");
+        std::ifstream file(filePath);
+        if (!file.is_open()) {
+            std::cerr << "Failed to open file: " << filePath << std::endl;
+            continue;
+        }
+
+        std::cout << "Processing file: " << filePath << std::endl;
+        std::string line;
+        while (std::getline(file, line)) {
+            std::cout << line << std::endl;
+            break;
+        }
+        file.close();
+    }
+}
+
+
 int main(int argc, char** argv)
 {
     CLI::App app{"bijective_map_app"};
     path initial_mesh_file;
-    // TODO: implement tracking
-    // path operation_logs_dir;
+    path operation_logs_dir;
     path output_mesh_file;
 
     app.add_option("-i, --input", initial_mesh_file, "Initial mesh file")->required(true);
     app.add_option("-o, --output", output_mesh_file, "Output mesh file")->required(true);
-    // app.add_option("-l, --logs", operation_logs_dir, "Operation logs directory")->required(true);
+    app.add_option("-l, --logs", operation_logs_dir, "Operation logs directory")->required(true);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -71,5 +111,7 @@ int main(int argc, char** argv)
         };
         viewer.launch();
     }
+
+    back_track_map(operation_logs_dir);
     return 0;
 }
