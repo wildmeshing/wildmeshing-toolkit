@@ -51,11 +51,11 @@ public:
     TextureIntegral(const ThreeChannelPositionMapEvaluator& evaluator, bool debug);
 
 public:
-    double get_error_one_triangle_exact(
+    double triangle_quadrature(
         const Vector2<double>& uv0,
         const Vector2<double>& uv1,
         const Vector2<double>& uv2) const override;
-    DScalar get_error_one_triangle_exact(
+    DScalar triangle_quadrature(
         const Vector2<DScalar>& uv0,
         const Vector2<DScalar>& uv1,
         const Vector2<DScalar>& uv2) const override;
@@ -89,10 +89,8 @@ public:
     //     lagrange::span<float> output_errors) const;
 
     template <typename T>
-    T get_error_one_triangle_exact_T(
-        const Vector2<T>& uv0,
-        const Vector2<T>& uv1,
-        const Vector2<T>& uv2) const
+    T triangle_quadrature_T(const Vector2<T>& uv0, const Vector2<T>& uv1, const Vector2<T>& uv2)
+        const
     {
         constexpr int Degree = 4;
         // const int order = 2 * (Degree - 1);
@@ -162,7 +160,7 @@ public:
         }
         // // scaling by jacobian
         // value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);
-        value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
+        // value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
         return value;
     }
 

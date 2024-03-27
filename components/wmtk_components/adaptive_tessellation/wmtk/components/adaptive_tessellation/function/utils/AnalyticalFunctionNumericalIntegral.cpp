@@ -1,4 +1,4 @@
-#include "AnalyticalFunctionTriangleQuadrature.hpp"
+#include "AnalyticalFunctionNumericalIntegral.hpp"
 
 #include <wmtk/components/adaptive_tessellation/quadrature/ClippedQuadrature.hpp>
 #include <wmtk/utils/triangle_areas.hpp>
@@ -8,28 +8,28 @@ using namespace Eigen;
 namespace wmtk::components {
 namespace function::utils {
 
-AnalyticalFunctionTriangleQuadrature::AnalyticalFunctionTriangleQuadrature(
+AnalyticalFunctionNumericalIntegral::AnalyticalFunctionNumericalIntegral(
     const ThreeChannelPositionMapEvaluator& evaluator)
     : m_three_channel_evaluator(evaluator)
 {
-    std::cout << "==== AnalyticalFunctionTriangleQuadrature constructor" << std::endl;
+    std::cout << "==== AnalyticalFunctionNumericalIntegral constructor" << std::endl;
 }
 
-AnalyticalFunctionTriangleQuadrature::~AnalyticalFunctionTriangleQuadrature() = default;
+AnalyticalFunctionNumericalIntegral::~AnalyticalFunctionNumericalIntegral() = default;
 
-double AnalyticalFunctionTriangleQuadrature::get_error_one_triangle_exact(
+double AnalyticalFunctionNumericalIntegral::triangle_quadrature(
     const Vector2<double>& uv0,
     const Vector2<double>& uv1,
     const Vector2<double>& uv2) const
 {
-    return get_error_one_triangle_exact_T<double>(uv0, uv1, uv2);
+    return triangle_quadrature_T<double>(uv0, uv1, uv2);
 }
-DScalar AnalyticalFunctionTriangleQuadrature::get_error_one_triangle_exact(
+DScalar AnalyticalFunctionNumericalIntegral::triangle_quadrature(
     const Vector2<DScalar>& uv0,
     const Vector2<DScalar>& uv1,
     const Vector2<DScalar>& uv2) const
 {
-    return get_error_one_triangle_exact_T<DScalar>(uv0, uv1, uv2);
+    return triangle_quadrature_T<DScalar>(uv0, uv1, uv2);
 }
 } // namespace function::utils
 } // namespace wmtk::components

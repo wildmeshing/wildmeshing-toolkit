@@ -8,8 +8,8 @@ set(SRC_FILES
     PositionMapEvaluator.hpp
     PositionMapEvaluator.cpp
 
-    AnalyticalFunctionTriangleQuadrature.hpp
-    AnalyticalFunctionTriangleQuadrature.cpp
+    AnalyticalFunctionNumericalIntegral.hpp
+    AnalyticalFunctionNumericalIntegral.cpp
 
     TextureIntegral.hpp
     TextureIntegral.cpp

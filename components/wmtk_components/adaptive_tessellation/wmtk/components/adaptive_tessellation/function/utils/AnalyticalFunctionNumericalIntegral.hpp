@@ -20,41 +20,38 @@ namespace wmtk::components {
 namespace function::utils {
 
 
-class AnalyticalFunctionTriangleQuadrature : public IntegralBase
+class AnalyticalFunctionNumericalIntegral : public IntegralBase
 {
 public:
     // using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1,
     // -1>>; using DTriangle = Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor>;
 
 public:
-    AnalyticalFunctionTriangleQuadrature(); // default constructor
-    AnalyticalFunctionTriangleQuadrature(const AnalyticalFunctionTriangleQuadrature&) =
+    AnalyticalFunctionNumericalIntegral(); // default constructor
+    AnalyticalFunctionNumericalIntegral(const AnalyticalFunctionNumericalIntegral&) =
         delete; // copy constructor
-    AnalyticalFunctionTriangleQuadrature(
-        AnalyticalFunctionTriangleQuadrature&&); // move constructor
-    AnalyticalFunctionTriangleQuadrature& operator=(const AnalyticalFunctionTriangleQuadrature&) =
+    AnalyticalFunctionNumericalIntegral(AnalyticalFunctionNumericalIntegral&&); // move constructor
+    AnalyticalFunctionNumericalIntegral& operator=(const AnalyticalFunctionNumericalIntegral&) =
         delete; // copy assignment operator
-    AnalyticalFunctionTriangleQuadrature& operator=(
-        AnalyticalFunctionTriangleQuadrature&&); // move assignment operator
-    ~AnalyticalFunctionTriangleQuadrature(); // destructor
+    AnalyticalFunctionNumericalIntegral& operator=(
+        AnalyticalFunctionNumericalIntegral&&); // move assignment operator
+    ~AnalyticalFunctionNumericalIntegral(); // destructor
 
-    AnalyticalFunctionTriangleQuadrature(const ThreeChannelPositionMapEvaluator& evaluator);
+    AnalyticalFunctionNumericalIntegral(const ThreeChannelPositionMapEvaluator& evaluator);
 
 public:
-    double get_error_one_triangle_exact(
+    double triangle_quadrature(
         const Vector2<double>& uv0,
         const Vector2<double>& uv1,
         const Vector2<double>& uv2) const override;
-    DScalar get_error_one_triangle_exact(
+    DScalar triangle_quadrature(
         const Vector2<DScalar>& uv0,
         const Vector2<DScalar>& uv1,
         const Vector2<DScalar>& uv2) const override;
 
     template <typename T>
-    T get_error_one_triangle_exact_T(
-        const Vector2<T>& uv0,
-        const Vector2<T>& uv1,
-        const Vector2<T>& uv2) const
+    T triangle_quadrature_T(const Vector2<T>& uv0, const Vector2<T>& uv1, const Vector2<T>& uv2)
+        const
     {
         constexpr int Degree = 4;
         // const int order = 2 * (Degree - 1);
@@ -117,9 +114,9 @@ public:
         }
         // scaling by jacobian
         // value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);
-        value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
         return value;
     }
+
 
 public:
     bool m_debug = false;
