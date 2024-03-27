@@ -40,6 +40,7 @@ public:
 
     int64_t passes;
     double target_edge_length;
+    double target_max_amips;
     bool intermediate_output;
 };
 
@@ -51,6 +52,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     input,
     envelopes,
     target_edge_length,
+    target_max_amips,
     intermediate_output,
     output);
 
