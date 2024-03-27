@@ -1,5 +1,5 @@
 #include "PositionMapAMIPS.hpp"
-#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionNumericalIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/area_barrier.hpp>
 #include <wmtk/function/utils/amips.hpp>
 

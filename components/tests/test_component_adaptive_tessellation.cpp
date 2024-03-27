@@ -3,7 +3,7 @@
 #include <wmtk/components/adaptive_tessellation/adaptive_tessellation.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/DistanceEnergy.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PositionMapAMIPS.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionNumericalIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
@@ -23,6 +23,7 @@
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/triangle_areas.hpp>
 
+#include <predicates.h>
 #include <chrono>
 #include <polysolve/Utils.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -375,7 +376,7 @@ TEST_CASE("3damips_autodiff_correctness")
 //     atdata.uv_handle(),
 //     image_evaluator,
 //     func_evaluator);
-TEST_CASE("distance_energy_correctness")
+TEST_CASE("avg_distance_energy_correctness")
 {
     std::array<std::shared_ptr<image::Sampling>, 3> funcs = {
         {std::make_shared<image::SamplingAnalyticFunction>(
@@ -399,26 +400,41 @@ TEST_CASE("distance_energy_correctness")
         std::make_shared<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
             funcs,
             image::SAMPLING_METHOD::Analytical);
-    Eigen::Vector2d t0_uv0(0.109375, 0.578125), t0_uv1(0.109375, 0.453125), t0_uv2(0.125, 0.625);
-    Eigen::Vector2d t1_uv0(0.5, 0.75), t1_uv1(0.375, 0.625), t1_uv2(0.625, 0.625);
-    std::shared_ptr<wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature>
-        analytical_function_distance_error = std::make_shared<
-            wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature>(
-            *m_evaluator_ptr);
-    analytical_function_distance_error->m_debug = true;
-    auto error_t0 =
-        analytical_function_distance_error->get_error_one_triangle_exact(t0_uv0, t0_uv1, t0_uv2);
-    auto area_t0 = wmtk::utils::triangle_unsigned_2d_area(t0_uv0, t0_uv1, t0_uv2);
-    auto error_t1 =
-        analytical_function_distance_error->get_error_one_triangle_exact(t1_uv0, t1_uv1, t1_uv2);
-    auto area_t1 = wmtk::utils::triangle_unsigned_2d_area(t1_uv0, t1_uv1, t1_uv2);
-    // logger().set_level(spdlog::level::debug);
-    logger().debug("error_t0: {}", error_t0);
-    logger().debug("area_t0: {}", area_t0);
-    logger().debug("error_t1: {}", error_t1);
-    logger().debug("area_t1: {}", area_t1);
-    REQUIRE(pow(error_t0 - 1, 2) < 1e-5);
-    REQUIRE(pow(error_t1 - 1, 2) < 1e-5);
+
+    // Seed the random number generator
+    std::mt19937 rng(std::random_device{}());
+
+    // Define the range for the random double values
+    double min = 0.0;
+    double max = 100.0;
+
+    // Create a uniform_real_distribution object
+    std::uniform_real_distribution<double> dist(min, max);
+
+    for (int rand_trail = 0; rand_trail < 100; ++rand_trail) {
+        // Generate a random double value
+        double u0 = dist(rng);
+        double v0 = dist(rng);
+
+        double u1 = dist(rng);
+        double v1 = dist(rng);
+
+        double u2 = dist(rng);
+        double v2 = dist(rng);
+        Eigen::Vector2d uv0(u0, v0), uv1(u1, v1), uv2(u2, v2);
+
+        if (orient2d(uv0.data(), uv1.data(), uv2.data()) < 0) {
+            std::swap(uv1, uv2);
+        }
+        std::shared_ptr<wmtk::components::function::utils::AnalyticalFunctionNumericalIntegral>
+            analytical_function_distance_error = std::make_shared<
+                wmtk::components::function::utils::AnalyticalFunctionNumericalIntegral>(
+                *m_evaluator_ptr);
+        analytical_function_distance_error->m_debug = true;
+        double error = analytical_function_distance_error
+                           ->average_area_integral_over_triangle<double>(uv0, uv1, uv2);
+        REQUIRE(pow(error - 1, 2) < 1e-9);
+    }
 }
 
 TEST_CASE("curved_edge_length_line_quadrature")

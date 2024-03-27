@@ -27,7 +27,7 @@ DScalar DistanceEnergy::eval(
     assert(coords.size() == 3);
 
     DSVec2 a = coords[0], b = coords[1], c = coords[2];
-    return m_weight * m_integral_ptr->get_error_one_triangle_exact(a, b, c);
+    return m_weight * m_integral_ptr->average_area_integral_over_triangle<DScalar>(a, b, c);
 }
 
 } // namespace wmtk::function

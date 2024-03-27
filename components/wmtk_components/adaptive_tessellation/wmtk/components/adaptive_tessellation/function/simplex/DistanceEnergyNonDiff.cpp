@@ -59,7 +59,7 @@ double DistanceEnergyNonDiff::get_value(const simplex::Simplex& domain_simplex) 
     Eigen::Vector2d a(uvs[0], uvs[1]);
     Eigen::Vector2d b(uvs[2], uvs[3]);
     Eigen::Vector2d c(uvs[4], uvs[5]);
-    return m_weight * m_integral_ptr->get_error_one_triangle_exact(a, b, c);
+    return m_weight * m_integral_ptr->average_area_integral_over_triangle<double>(a, b, c);
 }
 
 } // namespace wmtk::function

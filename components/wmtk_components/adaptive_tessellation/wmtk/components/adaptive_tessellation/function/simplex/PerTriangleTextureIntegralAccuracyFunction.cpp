@@ -27,7 +27,7 @@ DScalar PerTriangleTextureIntegralAccuracyFunction::eval(
     assert(coords.size() == 3);
     wmtk::components::function::utils::TextureIntegral texture_integral(*m_pos_evaluator_ptr);
     DSVec2 a = coords[0], b = coords[1], c = coords[2];
-    return texture_integral.get_error_one_triangle_exact(a, b, c);
+    return texture_integral.average_area_integral_over_triangle<DScalar>(a, b, c);
 }
 
 } // namespace wmtk::function
