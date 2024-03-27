@@ -7,7 +7,7 @@
 #include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
-#include <wmtk/components/adaptive_tessellation/operations/internal/ATEnergies.cpp>
+#include <wmtk/components/adaptive_tessellation/operations/internal/ATSetAttrs.cpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/LineQuadrature.hpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/Quadrature.hpp>
 #include <wmtk/components/input/input.hpp>

@@ -6,7 +6,7 @@ set(SRC_FILES
     ATOptions.hpp
     AT_debug.cpp
     
-    ATEnergies.cpp
+    ATSetAttrs.cpp
 
     ATScheduler.hpp
     ATScheduler.cpp    
