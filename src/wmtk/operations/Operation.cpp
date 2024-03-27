@@ -1,7 +1,9 @@
 #include "Operation.hpp"
 
-#include <chrono>
-#include <filesystem>
+#ifdef WMTK_RECORD_OPERATIONS
+#include <wmtk/Record_Operations.hpp>
+#endif
+
 #include <fstream>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
@@ -15,32 +17,7 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 
-std::string generatePathNameWithCurrentTime()
-{
-    auto now = std::chrono::system_clock::now();
-    auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&in_time_t), "operation_log_%Y-%m-%d_%H-%M-%S");
-
-    if (!std::filesystem::exists(ss.str())) {
-        std::cout << "Path does not exist, creating: " << ss.str() << std::endl;
-
-        try {
-            if (std::filesystem::create_directories(ss.str())) {
-                std::cout << "Path created successfully." << std::endl;
-            } else {
-                std::cout << "Failed to create path." << std::endl;
-            }
-        } catch (const std::filesystem::filesystem_error& e) {
-            std::cerr << "Error: " << e.what() << std::endl;
-        }
-    } else {
-        std::cout << "Path already exists." << std::endl;
-    }
-
-    return ss.str();
-}
 namespace wmtk::operations {
 
 
@@ -88,9 +65,6 @@ void Operation::add_transfer_strategy(
 
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
-    static long succ_operations_count = 0;
-    static std::string pathName = generatePathNameWithCurrentTime();
-
     if (!before(simplex)) {
         return {};
     }
@@ -104,11 +78,12 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
         apply_attribute_transfer(mods);
         if (after(unmods, mods)) {
             // TODO: store local atlas for retrieval
+#ifdef WMTK_RECORD_OPERATIONS
             if (m_record) {
                 // create a local atlas file
                 // std::cout << "operation " << operation_name << " is successful\n";
-                std::string filename =
-                    pathName + "/local_atlas_" + std::to_string(succ_operations_count) + ".txt";
+                std::string filename = OperationLogPath + "/local_atlas_" +
+                                       std::to_string(succ_operations_count) + ".txt";
                 std::ofstream local_atlas_file(filename);
                 if (local_atlas_file.is_open()) {
                     // DELETE: for test purposes
@@ -147,8 +122,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                 succ_operations_count++;
                 // std::cout << "total successful operations: " << succ_operations_count << "\n";
 
-
             } // end if (m_record)
+#endif
             return mods; // scope destructor is called
         }
     }

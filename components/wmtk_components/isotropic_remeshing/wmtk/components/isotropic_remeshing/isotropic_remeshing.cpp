@@ -97,6 +97,14 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
         options.attributes.update_other_positions,
         position_for_inversion);
 
+    std::cout << "Output mesh V size: " << mesh_in->capacity(PrimitiveType::Vertex) << std::endl;
+    std::cout << "Output mesh F size: " << mesh_in->capacity(PrimitiveType::Triangle) << std::endl;
+
+    std::cout << "Output mesh V actual size: " << mesh_in->get_all(PrimitiveType::Vertex).size()
+              << std::endl;
+    std::cout << "Output mesh F actual size: " << mesh_in->get_all(PrimitiveType::Triangle).size()
+              << std::endl;
+
     // output
     cache.write_mesh(*mesh_in, options.output);
 }

@@ -21,9 +21,8 @@ struct query_point
 };
 
 // TODO: for testing purpose
-void back_track_map(
-    path dirPath
-    // const std::vector<query_point>& query_points
+void back_track_map(path dirPath
+                    // const std::vector<query_point>& query_points
 )
 {
     namespace fs = std::filesystem;
@@ -78,39 +77,42 @@ int main(int argc, char** argv)
 
     auto init_mesh_ptr = wmtk::read_mesh(initial_mesh_file);
     auto [F_in, V_in] = static_cast<TriMesh&>(*init_mesh_ptr).get_FV();
+    std::cout << "F_in size" << F_in.rows() << std::endl;
+    std::cout << "V_in size" << V_in.rows() << std::endl;
 
     Eigen::MatrixXd V_out;
     Eigen::MatrixXi F_out;
     igl::readOBJ(output_mesh_file.string(), V_out, F_out);
-
+    std::cout << "F_out size" << F_out.rows() << std::endl;
+    std::cout << "V_out size" << V_out.rows() << std::endl;
     // viewer
-    {
-        igl::opengl::glfw::Viewer viewer;
-        Eigen::Vector4f backColor;
-        backColor << 208 / 255., 237 / 255., 227 / 255., 1.;
-        const Eigen::RowVector3d blue(149.0 / 255, 217.0 / 255, 244.0 / 255);
-        viewer.core().background_color = backColor;
-        viewer.data().set_mesh(V_in, F_in);
-        viewer.data().set_colors(blue);
-        viewer.callback_key_down =
-            [&](igl::opengl::glfw::Viewer& viewer, unsigned char key, int mod) -> bool {
-            switch (key) {
-            case '0':
-                viewer.data().clear();
-                viewer.data().set_mesh(V_in, F_in);
-                viewer.data().set_colors(blue);
-                break;
-            case '1':
-                viewer.data().clear();
-                viewer.data().set_mesh(V_out, F_out);
-                viewer.data().set_colors(blue);
-                break;
-            default: return false;
-            }
-            return true;
-        };
-        viewer.launch();
-    }
+    // {
+    //     igl::opengl::glfw::Viewer viewer;
+    //     Eigen::Vector4f backColor;
+    //     backColor << 208 / 255., 237 / 255., 227 / 255., 1.;
+    //     const Eigen::RowVector3d blue(149.0 / 255, 217.0 / 255, 244.0 / 255);
+    //     viewer.core().background_color = backColor;
+    //     viewer.data().set_mesh(V_in, F_in);
+    //     viewer.data().set_colors(blue);
+    //     viewer.callback_key_down =
+    //         [&](igl::opengl::glfw::Viewer& viewer, unsigned char key, int mod) -> bool {
+    //         switch (key) {
+    //         case '0':
+    //             viewer.data().clear();
+    //             viewer.data().set_mesh(V_in, F_in);
+    //             viewer.data().set_colors(blue);
+    //             break;
+    //         case '1':
+    //             viewer.data().clear();
+    //             viewer.data().set_mesh(V_out, F_out);
+    //             viewer.data().set_colors(blue);
+    //             break;
+    //         default: return false;
+    //         }
+    //         return true;
+    //     };
+    //     viewer.launch();
+    // }
 
     back_track_map(operation_logs_dir);
     return 0;
