@@ -5,7 +5,7 @@
 #include <tools/TriMesh_examples.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Types.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionNumericalIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -52,7 +52,8 @@ TEST_CASE("sinxcosy over unit square")
         Vector2d uv1 = uv.const_vector_attribute(mesh.switch_tuples(triangle, {PV}));
         Vector2d uv2 = uv.const_vector_attribute(mesh.switch_tuples(triangle, {PE, PV}));
 
-        double tri_error = texture_integral.get_error_one_triangle_exact<double>(uv0, uv1, uv2);
+        double tri_error =
+            texture_integral.average_area_integral_over_triangle<double>(uv0, uv1, uv2);
         error += tri_error;
     }
 
@@ -84,7 +85,7 @@ TEST_CASE("analytical quadrature")
     };
 
     ATfunction::utils::ThreeChannelPositionMapEvaluator evaluator(funcs);
-    ATfunction::utils::AnalyticalFunctionTriangleQuadrature analy_quad(evaluator);
+    ATfunction::utils::AnalyticalFunctionNumericalIntegral analy_quad(evaluator);
 
     std::array<Tuple, 2> triangles = {mesh.tuple_from_face_id(0), mesh.tuple_from_face_id(1)};
 
@@ -103,7 +104,7 @@ TEST_CASE("analytical quadrature")
         Vector2d uv1 = uv.const_vector_attribute(mesh.switch_tuples(triangle, {PV}));
         Vector2d uv2 = uv.const_vector_attribute(mesh.switch_tuples(triangle, {PE, PV}));
 
-        double tri_error = analy_quad.get_error_one_triangle_exact<double>(uv0, uv1, uv2);
+        double tri_error = analy_quad.average_area_integral_over_triangle<double>(uv0, uv1, uv2);
         std::cout << "tri_error " << tri_error << std::endl;
         error += tri_error;
     }

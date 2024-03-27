@@ -39,7 +39,7 @@
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
 
-#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionNumericalIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 
@@ -203,8 +203,6 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         options.amips_weight,
         options.area_weighted_amips);
 
-
-    at_ops.set_energies();
     /////////////////////////////////////////////////
     // mesh refinement to decrease distance error
     {
@@ -304,18 +302,6 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     }
 
     at_ops.m_ops.clear();
-
-    // 1) wmtk::operations::EdgeSplit
-    // at_ops.AT_3d_edge_split(at_ops.m_long_edges_first);
-    // at_ops.AT_boundary_edge_split(
-    //     at_ops.m_high_distance_edges_first,
-    //     at_ops.m_distance_nondiff_energy);
-    // 3) EdgeSwap
-    // at_ops.AT_swap_interior(at_ops.m_high_amips_edges_first,
-    // at_ops.m_distance_nondiff_energy);
-
-    // 4) Smoothing
-    // at_ops.AT_smooth_interior(at_ops.m_3d_amips_energy);
 
     std::vector<attribute::MeshAttributeHandle> keeps;
     keeps.emplace_back(atdata.m_uvmesh_xyz_handle);
