@@ -4,7 +4,6 @@
 #include <wmtk/Record_Operations.hpp>
 #endif
 
-#include <fstream>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/simplex/closed_star.hpp>
@@ -82,25 +81,25 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
             if (m_record) {
                 // create a local atlas file
                 // std::cout << "operation " << operation_name << " is successful\n";
-                std::string filename = OperationLogPath + "/local_atlas_" +
+                std::string filename = OperationLogPath + OperationLogPrefix +
                                        std::to_string(succ_operations_count) + ".txt";
-                std::ofstream local_atlas_file(filename);
-                if (local_atlas_file.is_open()) {
+                std::ofstream operation_log_file(filename);
+                if (operation_log_file.is_open()) {
                     // DELETE: for test purposes
-                    local_atlas_file << "local atlas for operation " << operation_name << std::endl;
+                    operation_log_file << "Operation: " << operation_name << std::endl;
                     for (const auto& s : mods) {
-                        local_atlas_file
+                        operation_log_file
                             << "mod simplex type: " << primitive_type_name(s.primitive_type())
                             << std::endl;
-                        local_atlas_file << wmtk::utils::TupleInspector::as_string(s.tuple())
-                                         << std::endl;
+                        operation_log_file << wmtk::utils::TupleInspector::as_string(s.tuple())
+                                           << std::endl;
                     }
 
                     if (mesh().top_simplex_type() == PrimitiveType::Triangle) {
                         auto [F, V, id_map] =
                             utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), mods[0]);
-                        local_atlas_file << "F_after:\n " << F << std::endl;
-                        local_atlas_file << "V_after:\n " << V << std::endl;
+                        operation_log_file << "F_after:\n " << F << std::endl;
+                        operation_log_file << "V_after:\n " << V << std::endl;
 
                         auto get_mesh = [&](const simplex::Simplex& s) {
                             if (operation_name == "EdgeCollapse")
@@ -111,11 +110,11 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         };
                         auto [F_before, V_before, id_map_before] =
                             mesh().parent_scope(get_mesh, simplex);
-                        local_atlas_file << "F_before:\n " << F_before << std::endl;
-                        local_atlas_file << "V_before:\n " << V_before << std::endl;
+                        operation_log_file << "F_before:\n " << F_before << std::endl;
+                        operation_log_file << "V_before:\n " << V_before << std::endl;
                     }
 
-                    local_atlas_file.close();
+                    operation_log_file.close();
                 } else {
                     std::cerr << "unable to open file " << filename << " for writing\n";
                 }

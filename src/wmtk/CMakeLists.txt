@@ -35,6 +35,7 @@ set(SRC_FILES
 
     # record operations
     Record_Operations.hpp
+    Record_Operations.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

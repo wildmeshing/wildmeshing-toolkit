@@ -7,6 +7,7 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
+
 using namespace wmtk;
 
 // igl
@@ -29,13 +30,13 @@ void back_track_map(path dirPath
     int maxIndex = -1;
 
     for (const auto& entry : fs::directory_iterator(dirPath)) {
-        if (entry.path().filename().string().find("local_atlas_") != std::string::npos) {
+        if (entry.path().filename().string().find("operation_log_") != std::string::npos) {
             ++maxIndex;
         }
     }
 
     for (int i = maxIndex; i >= 0; --i) {
-        fs::path filePath = dirPath / ("local_atlas_" + std::to_string(i) + ".txt");
+        fs::path filePath = dirPath / ("operation_log_" + std::to_string(i) + ".txt");
         std::ifstream file(filePath);
         if (!file.is_open()) {
             std::cerr << "Failed to open file: " << filePath << std::endl;

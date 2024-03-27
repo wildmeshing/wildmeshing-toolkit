@@ -1,6 +1,10 @@
 #include <numeric>
 #include "Mesh.hpp"
 
+#ifdef WMTK_RECORD_OPERATIONS
+#include <wmtk/Record_Operations.hpp>
+#endif
+
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -150,7 +154,8 @@ std::vector<attribute::MeshAttributeHandle::HandleVariant> Mesh::custom_attribut
     return variant_diff(all, builtins);
 }
 
-std::string Mesh::get_attribute_name(const attribute::MeshAttributeHandle::HandleVariant& handle) const
+std::string Mesh::get_attribute_name(
+    const attribute::MeshAttributeHandle::HandleVariant& handle) const
 {
     return m_attribute_manager.get_name(handle);
 }
@@ -199,7 +204,8 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
 
     // Initialize both maps
     for (int64_t d = 0; d < tcp; d++) {
-        attribute::Accessor<char> flag_accessor = get_flag_accessor(wmtk::get_primitive_type_from_id(d));
+        attribute::Accessor<char> flag_accessor =
+            get_flag_accessor(wmtk::get_primitive_type_from_id(d));
         for (int64_t i = 0; i < capacity(wmtk::get_primitive_type_from_id(d)); ++i) {
             if (flag_accessor.index_access().scalar_attribute(i) & 1) {
                 old2new[d].push_back(new2old[d].size());
@@ -283,7 +289,26 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
             }
         }
     }
+#ifdef WMTK_RECORD_OPERATIONS
+    // TODO: Write the new_2_old id map to file
+    std::string filename =
+        OperationLogPath + OperationLogPrefix + std::to_string(succ_operations_count) + ".txt";
+    std::ofstream operation_log_file(filename);
+    if (operation_log_file.is_open()) {
+        operation_log_file << "Operations: Consolidate" << std::endl;
 
+        for (int64_t d = 0; d < tcp; d++) {
+            operation_log_file << "dimension " << d << ":\n";
+            operation_log_file << "size: " << new2old[d].size() << std::endl;
+            for (int64_t i = 0; i < new2old[d].size(); ++i) {
+                operation_log_file << new2old[d][i] << std::endl;
+            }
+        }
+        operation_log_file.close();
+    } else {
+        std::cerr << "unable to open file " << filename << " for writing\n";
+    }
+#endif
     // Return both maps for custom attribute remapping
     return {new2old, old2new};
 }
