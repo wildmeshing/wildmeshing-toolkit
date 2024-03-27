@@ -247,7 +247,7 @@ void isotropic_remeshing(
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
-        multimesh::consolidate(mesh);
+        // multimesh::consolidate(mesh);
     }
 }
 
