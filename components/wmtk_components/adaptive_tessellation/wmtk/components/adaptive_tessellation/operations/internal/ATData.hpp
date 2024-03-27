@@ -55,6 +55,9 @@ public:
     //     std::shared_ptr<Mesh> position_mesh,
     //     std::array<std::shared_ptr<image::Image>, 3>& images);
 
+    // default constructor
+    ATData() = default;
+
     ATData(
         std::shared_ptr<Mesh> position_mesh_ptr,
         std::shared_ptr<Mesh> uv_mesh_ptr,

@@ -52,16 +52,7 @@ public:
 
 public:
     // constructor
-    ATOperations(
-        ATData& atdata,
-        double target_distance,
-        double target_edge_length,
-        double envelope_size,
-        double barrier_weight,
-        double barrier_triangle_area,
-        double distance_weight,
-        double amips_weight,
-        bool area_weighted_amips);
+    ATOperations(ATData& atdata);
 
     int64_t AT_rgb_split();
     int64_t AT_rgb_swap();

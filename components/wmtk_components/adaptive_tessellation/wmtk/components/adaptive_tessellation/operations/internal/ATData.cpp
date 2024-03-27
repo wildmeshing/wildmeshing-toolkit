@@ -17,6 +17,7 @@ namespace ATmultimesh = wmtk::components::multimesh;
 namespace wmtk::components::operations::internal {
 using namespace wmtk;
 using namespace wmtk::attribute;
+
 // ATData::ATData(
 //     std::shared_ptr<Mesh> uv_mesh_ptr,
 //     std::shared_ptr<Mesh> position_mesh_ptr,
@@ -132,7 +133,7 @@ ATData::ATData(
         position_path,
         normal_path,
         height_path);
-    std::cout << "+++++ using image sampling !!!!" << std::endl;
+    std::cout << "+++++ using displacment map sampling !!!!" << std::endl;
 }
 
 
@@ -148,7 +149,7 @@ ATData::ATData(
     //     wmtk::multimesh::same_simplex_dimension_bijection(*m_position_mesh_ptr, *m_uv_mesh_ptr);
     // m_position_mesh_ptr->register_child_mesh(m_uv_mesh_ptr, child_map);
 
-    std::cout << "!!!!! using image sampling !!!!" << std::endl;
+    std::cout << "!!!!! using terrain texture sampling !!!!" << std::endl;
     initialize_handles();
 }
 

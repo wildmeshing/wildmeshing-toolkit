@@ -42,8 +42,6 @@
 
 #include <wmtk/Scheduler.hpp>
 
-#include "ATOptions.hpp"
-
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 
 #include "predicates.h"
@@ -56,25 +54,8 @@ using namespace wmtk::operations::composite;
 using namespace wmtk::function;
 using namespace wmtk::invariants;
 
-ATOperations::ATOperations(
-    ATData& atdata,
-    double target_distance,
-    double target_edge_length,
-    double envelope_size,
-    double barrier_weight,
-    double barrier_triangle_area,
-    double distance_weight,
-    double amips_weight,
-    bool area_weighted_amips)
+ATOperations::ATOperations(ATData& atdata)
     : m_atdata(atdata)
-    , m_target_distance(target_distance)
-    , m_target_edge_length(target_edge_length)
-    , m_envelope_size(envelope_size)
-    , m_barrier_weight(barrier_weight)
-    , m_barrier_triangle_area(barrier_triangle_area)
-    , m_distance_weight(distance_weight)
-    , m_amips_weight(amips_weight)
-    , m_area_weighted_amips(area_weighted_amips)
     , m_uv_accessor(m_atdata.uv_mesh().create_accessor(m_atdata.m_uv_handle.as<double>()))
     , m_uvmesh_xyz_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_uvmesh_xyz_handle.as<double>()))

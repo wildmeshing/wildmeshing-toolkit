@@ -20,7 +20,7 @@
 
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 
-#include <wmtk/components/adaptive_tessellation/operations/internal/ATOptions.hpp>
+#include "ATOptions.hpp"
 
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleAnalyticalIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleTextureIntegralAccuracyFunction.hpp>
@@ -129,79 +129,65 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     std::shared_ptr<Mesh> uv_mesh_ptr = cache.read_mesh(options.child);
 
     //////////////////////////////////
-    // Storing edge lengths
-    // wmtk::logger().critical("///// using gaussian displacement /////");
-    std::array<std::shared_ptr<image::Sampling>, 3> funcs = {{
-        std::make_shared<image::SamplingAnalyticFunction>(
-            image::SamplingAnalyticFunction_FunctionType::Linear,
-            1,
-            0,
-            0.),
-        std::make_shared<image::SamplingAnalyticFunction>(
-            image::SamplingAnalyticFunction_FunctionType::Linear,
-            0,
-            1,
-            0.),
-        // std::make_shared<image::SamplingAnalyticFunction>(
-        //     image::SamplingAnalyticFunction_FunctionType::Linear,
-        //     0,
-        //     0,
-        //     1.)
-        // std::make_shared<image::SamplingAnalyticFunction>(
-        //     image::SamplingAnalyticFunction_FunctionType::Periodic,
-        //     2,
-        //     2,
-        //     1.)
-        std::make_shared<image::SamplingAnalyticFunction>(
-            image::SamplingAnalyticFunction_FunctionType::Gaussian,
-            0.5,
-            0.5,
-            1.)
-        //  std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
+    AT::operations::internal::ATData atdata;
+    if (options.analytical_function) {
+        // wmtk::logger().critical("///// using gaussian displacement /////");
+        std::array<std::shared_ptr<image::Sampling>, 3> funcs = {
+            {std::make_shared<image::SamplingAnalyticFunction>(
+                 image::SamplingAnalyticFunction_FunctionType::Linear,
+                 1,
+                 0,
+                 0.),
+             std::make_shared<image::SamplingAnalyticFunction>(
+                 image::SamplingAnalyticFunction_FunctionType::Linear,
+                 0,
+                 1,
+                 0.),
+             std::make_shared<image::SamplingAnalyticFunction>(
+                 image::SamplingAnalyticFunction_FunctionType::Gaussian,
+                 0.5,
+                 0.5,
+                 1.)}};
+        atdata = AT::operations::internal::ATData(position_mesh_ptr, uv_mesh_ptr, funcs);
+    } else if (options.terrain_texture) {
+        auto
+            [w_h,
+             h_h,
+             index_red_h,
+             index_green_h,
+             index_blue_h,
+             buffer_r_h,
+             buffer_g_h,
+             buffer_b_h] =
+                wmtk::components::image::load_image_exr_split_3channels(options.height_path);
+        std::array<std::shared_ptr<image::Image>, 3> images = {
+            {std::make_shared<image::Image>(w_h, h_h),
+             std::make_shared<image::Image>(w_h, h_h),
+             std::make_shared<image::Image>(w_h, h_h)}};
 
-    }};
-    auto [w_h, h_h, index_red_h, index_green_h, index_blue_h, buffer_r_h, buffer_g_h, buffer_b_h] =
-        wmtk::components::image::load_image_exr_split_3channels(options.height_path);
-    // std::make_shared<image::ProceduralFunction>(image::ProceduralFunctionType::Terrain)
-    //     ->convert_to_exr(512, 512);
-    std::array<std::shared_ptr<image::Image>, 3> images = {
-        {std::make_shared<image::Image>(w_h, h_h),
-         std::make_shared<image::Image>(w_h, h_h),
-         std::make_shared<image::Image>(w_h, h_h)}};
+        auto u_func = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
+        auto v_func = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
+        auto height_function = [](const double& u, [[maybe_unused]] const double& v) -> double {
+            return exp(-(pow(u - 0.5, 2) + pow(v - 0.5, 2)) / (2 * 0.1 * 0.1));
+        };
+        images[0]->set(u_func);
+        images[1]->set(v_func);
+        // images[2]->set(height_function);
 
-    auto u_func = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
-    auto v_func = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
-    auto height_function = [](const double& u, [[maybe_unused]] const double& v) -> double {
-        return exp(-(pow(u - 0.5, 2) + pow(v - 0.5, 2)) / (2 * 0.1 * 0.1));
-        // return sin(2 * M_PI * u) * cos(2 * M_PI * v);
-    };
-    images[0]->set(u_func);
-    images[1]->set(v_func);
-    // images[2]->set(height_function);
+        images[2] = std::make_shared<wmtk::components::image::Image>(
+            wmtk::components::image::buffer_to_image(buffer_r_h, w_h, h_h));
+        logger().warn("height image loaded size {}", w_h);
+        atdata = AT::operations::internal::ATData(position_mesh_ptr, uv_mesh_ptr, images);
+    } else {
+        atdata = AT::operations::internal::ATData(
+            position_mesh_ptr,
+            uv_mesh_ptr,
+            options.position_path,
+            options.normal_path,
+            options.height_path);
+    }
 
-    images[2] = std::make_shared<wmtk::components::image::Image>(
-        wmtk::components::image::buffer_to_image(buffer_r_h, w_h, h_h));
-    logger().warn("height image loaded size {}", w_h);
-
-    AT::operations::internal::ATData atdata(
-        position_mesh_ptr,
-        uv_mesh_ptr,
-        options.position_path,
-        options.normal_path,
-        options.height_path);
-    // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
-    // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, funcs);
-
-    AT::operations::internal::ATOperations at_ops(
-        atdata,
-        options.target_distance,
-        options.target_edge_length,
-        options.envelope_size,
-        options.barrier_weight,
-        options.barrier_triangle_area,
-        options.quadrature_weight,
-        options.amips_weight,
-        options.area_weighted_amips);
+    AT::operations::internal::ATOperations at_ops(atdata);
 
     /////////////////////////////////////////////////
     // mesh refinement to decrease distance error

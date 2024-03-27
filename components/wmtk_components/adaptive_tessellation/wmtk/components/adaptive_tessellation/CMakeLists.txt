@@ -4,8 +4,10 @@ include(tinyexr)
 
 
 set(SRC_FILES
-adaptive_tessellation.hpp
-adaptive_tessellation.cpp
+    adaptive_tessellation.hpp
+    adaptive_tessellation.cpp
+
+    ATOptions.hpp
 )
 
 target_sources(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${SRC_FILES})
