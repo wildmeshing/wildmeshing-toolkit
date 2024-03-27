@@ -2,6 +2,7 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <wmtk/Primitive.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/multimesh/utils/edge_meshes_parameterization.hpp>
@@ -92,47 +93,47 @@ using namespace wmtk::attribute;
 //     }
 // }
 
-// ATData::ATData(
-//     std::shared_ptr<Mesh> position_mesh_ptr,
-//     std::shared_ptr<Mesh> uv_mesh_ptr,
-//     const std::filesystem::path& position_path,
-//     const std::filesystem::path& normal_path,
-//     const std::filesystem::path& height_path)
-//     : m_position_mesh_ptr(position_mesh_ptr)
-//     , m_uv_mesh_ptr(uv_mesh_ptr)
-// {
-//     // auto child_map =
-//     //     wmtk::multimesh::same_simplex_dimension_bijection(*m_position_mesh_ptr, *m_uv_mesh_ptr);
-//     // m_position_mesh_ptr->register_child_mesh(m_uv_mesh_ptr, child_map);
-//     initialize_handles();
-//     const auto vertices = m_position_mesh_ptr->get_all(PrimitiveType::Vertex);
-//     Accessor<double> m_pmesh_xyz_accessor =
-//         m_position_mesh_ptr->create_accessor(m_pmesh_xyz_handle.as<double>());
+ATData::ATData(
+    std::shared_ptr<Mesh> position_mesh_ptr,
+    std::shared_ptr<Mesh> uv_mesh_ptr,
+    const std::filesystem::path& position_path,
+    const std::filesystem::path& normal_path,
+    const std::filesystem::path& height_path)
+    : m_position_mesh_ptr(position_mesh_ptr)
+    , m_uv_mesh_ptr(uv_mesh_ptr)
+{
+    // auto child_map =
+    //     wmtk::multimesh::same_simplex_dimension_bijection(*m_position_mesh_ptr, *m_uv_mesh_ptr);
+    // m_position_mesh_ptr->register_child_mesh(m_uv_mesh_ptr, child_map);
+    initialize_handles();
+    const auto vertices = m_position_mesh_ptr->get_all(PrimitiveType::Vertex);
+    Accessor<double> m_pmesh_xyz_accessor =
+        m_position_mesh_ptr->create_accessor(m_pmesh_xyz_handle.as<double>());
 
-//     Eigen::VectorXd bmin(3);
-//     bmin.setConstant(std::numeric_limits<double>::max());
-//     Eigen::VectorXd bmax(3);
-//     bmax.setConstant(std::numeric_limits<double>::min());
-//     for (const auto& v : vertices) {
-//         const auto p = m_pmesh_xyz_accessor.vector_attribute(v);
-//         for (int64_t d = 0; d < bmax.size(); ++d) {
-//             bmin[d] = std::min(bmin[d], p[d]);
-//             bmax[d] = std::max(bmax[d], p[d]);
-//         }
-//     }
-//     double max_comp = (bmax - bmin).maxCoeff();
-//     Eigen::MatrixXd scene_offset = -bmin;
-//     Eigen::MatrixXd scene_extent = bmax - bmin;
-//     scene_offset.array() -= (scene_extent.array() - max_comp) * 0.5;
-//     Eigen::Vector3d offset = scene_offset;
-//     m_images = image::combine_position_normal_texture(
-//         max_comp,
-//         offset,
-//         position_path,
-//         normal_path,
-//         height_path);
-//     std::cout << "+++++ using image sampling !!!!" << std::endl;
-// }
+    Eigen::VectorXd bmin(3);
+    bmin.setConstant(std::numeric_limits<double>::max());
+    Eigen::VectorXd bmax(3);
+    bmax.setConstant(std::numeric_limits<double>::min());
+    for (const auto& v : vertices) {
+        const auto p = m_pmesh_xyz_accessor.vector_attribute(v);
+        for (int64_t d = 0; d < bmax.size(); ++d) {
+            bmin[d] = std::min(bmin[d], p[d]);
+            bmax[d] = std::max(bmax[d], p[d]);
+        }
+    }
+    double max_comp = (bmax - bmin).maxCoeff();
+    Eigen::MatrixXd scene_offset = -bmin;
+    Eigen::MatrixXd scene_extent = bmax - bmin;
+    scene_offset.array() -= (scene_extent.array() - max_comp) * 0.5;
+    Eigen::Vector3d offset = scene_offset;
+    m_images = image::combine_position_normal_texture(
+        max_comp,
+        offset,
+        position_path,
+        normal_path,
+        height_path);
+    std::cout << "+++++ using image sampling !!!!" << std::endl;
+}
 
 
 ATData::ATData(
@@ -171,6 +172,9 @@ void ATData::initialize_handles()
     m_uv_handle = m_uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     m_uvmesh_xyz_handle =
         m_uv_mesh_ptr->register_attribute<double>("positions", PrimitiveType::Vertex, 3, true);
+
+    m_pmesh_xyz_handle =
+        m_position_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     m_distance_error_handle = m_uv_mesh_ptr->register_attribute<double>(
         "distance_error",

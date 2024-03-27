@@ -80,6 +80,7 @@ void write(
         false,
         true,
         false);
+    logger().info("saving uv mesh on {}", data_dir / (uv_output + "_" + std::to_string(index)));
     uv_mesh->serialize(writer);
     wmtk::io::ParaviewWriter writer3d(
         data_dir / (xyz_output + "_" + std::to_string(index)),
@@ -89,6 +90,7 @@ void write(
         false,
         true,
         false);
+    logger().info("saving xyz mesh on {}", data_dir / (xyz_output + "_" + std::to_string(index)));
     uv_mesh->serialize(writer3d);
 }
 void write_face_attr(
@@ -181,13 +183,13 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         wmtk::components::image::buffer_to_image(buffer_r_h, w_h, h_h));
     logger().warn("height image loaded size {}", w_h);
 
-    // AT::operations::internal::ATData atdata(
-    //     position_mesh_ptr,
-    //     uv_mesh_ptr,
-    //     options.position_path,
-    //     options.normal_path,
-    //     options.height_path);
-    AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
+    AT::operations::internal::ATData atdata(
+        position_mesh_ptr,
+        uv_mesh_ptr,
+        options.position_path,
+        options.normal_path,
+        options.height_path);
+    // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, images);
     // AT::operations::internal::ATData atdata(position_mesh_ptr, uv_mesh_ptr, funcs);
 
     AT::operations::internal::ATOperations at_ops(
@@ -208,7 +210,12 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     {
         nlohmann::ordered_json FaceErrorJson_distance;
         nlohmann::ordered_json FaceErrorJson_amips;
-        write(position_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, 0);
+        write(
+            atdata.position_mesh_ptr(),
+            atdata.uv_mesh_ptr(),
+            options.uv_output,
+            options.xyz_output,
+            0);
 
         opt_logger().set_level(spdlog::level::level_enum::critical);
 
@@ -229,7 +236,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         while (true) {
             int64_t todo_edge_cnt =
                 wmtk::components::operations::utils::tag_longest_edge_of_all_faces(
-                    uv_mesh_ptr,
+                    atdata.uv_mesh_ptr(),
                     at_ops.m_edge_todo_accessor,
                     at_ops.m_distance_error_accessor,
                     at_ops.m_curved_edge_length_accessor,
@@ -248,8 +255,8 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
                         break;
                     }
                     // write(
-                    //     uv_mesh_ptr,
-                    //     uv_mesh_ptr,
+                    //     atdata.uv_mesh_ptr(),
+                    //     atdata.uv_mesh_ptr(),
                     //     options.uv_output + "_split",
                     //     options.xyz_output + "_split",
                     //     outter_i * 10 + inner_i);
@@ -264,15 +271,15 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
                     if (stats.number_of_successful_operations() == 0) {
                         break;
                     }
-                    multimesh::consolidate(*uv_mesh_ptr);
+                    multimesh::consolidate(*atdata.uv_mesh_ptr());
                 }
                 logger().warn("Finished swap");
 
                 int64_t inner_todo_edge_cnt = 0;
-                for (auto& e : uv_mesh_ptr->get_all(wmtk::PrimitiveType::Edge)) {
+                for (auto& e : atdata.uv_mesh_ptr()->get_all(wmtk::PrimitiveType::Edge)) {
                     if (at_ops.m_edge_todo_accessor.scalar_attribute(e) == 1) {
                         wmtk::components::operations::utils::tag_secondary_split_edges(
-                            uv_mesh_ptr,
+                            atdata.uv_mesh_ptr(),
                             at_ops.m_face_rgb_state_accessor,
                             at_ops.m_edge_rgb_state_accessor,
                             at_ops.m_edge_todo_accessor,
@@ -287,9 +294,13 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
                 outter_i++;
             }
             i++;
-            // write(uv_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, i);
         }
-        // write(uv_mesh_ptr, uv_mesh_ptr, options.uv_output, options.xyz_output, i + 1);
+        write(
+            atdata.uv_mesh_ptr(),
+            atdata.uv_mesh_ptr(),
+            options.uv_output,
+            options.xyz_output,
+            i + 1);
     }
 
     at_ops.m_ops.clear();
@@ -308,9 +319,9 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
     std::vector<attribute::MeshAttributeHandle> keeps;
     keeps.emplace_back(atdata.m_uvmesh_xyz_handle);
-    uv_mesh_ptr->clear_attributes(keeps);
+    atdata.uv_mesh_ptr()->clear_attributes(keeps);
 
-    cache.write_mesh(*uv_mesh_ptr, options.uv_output);
+    cache.write_mesh(*atdata.uv_mesh_ptr(), options.xyz_output);
 }
 
 } // namespace wmtk::components
