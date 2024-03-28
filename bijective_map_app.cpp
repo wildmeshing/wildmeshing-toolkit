@@ -15,71 +15,7 @@ using namespace wmtk;
 #include <igl/parallel_for.h>
 using path = std::filesystem::path;
 
-struct query_point
-{
-    int64_t f_id; // face id
-    Eigen::Vector3d bc; // barycentric coordinates
-    Eigen::Vector3i fv_ids; // face vertex ids
-};
-
-void handle_consolidate(
-    const std::vector<int64_t>& face_ids_maps,
-    const std::vector<int64_t>& vertex_ids_maps,
-    std::vector<query_point>& query_points)
-{
-    std::cout << "Handling Consolidate" << std::endl;
-    igl::parallel_for(query_points.size(), [&](int id) {
-        query_point& qp = query_points[id];
-        if (face_ids_maps[qp.f_id] != -1) {
-            const auto old_f_id = qp.f_id;
-            qp.f_id = face_ids_maps[qp.f_id];
-        }
-        for (int i = 0; i < 3; i++) {
-            if (vertex_ids_maps[qp.fv_ids[i]] != -1) {
-                qp.fv_ids[i] = vertex_ids_maps[qp.fv_ids[i]];
-                << std::endl;
-            }
-        }
-    });
-}
-
-void parse_consolidate_file(
-    std::ifstream& file,
-    std::vector<int64_t>& face_ids_maps,
-    std::vector<int64_t>& vertex_ids_maps)
-{
-    int map_dimension = -1;
-    std::string line;
-    while (std::getline(file, line)) {
-        std::stringstream ss(line);
-        std::string word;
-        ss >> word;
-
-        if (word == "dimension") {
-            ss >> map_dimension;
-        } else if (word == "size:") {
-            int size;
-            ss >> size;
-            if (map_dimension == 0) {
-                vertex_ids_maps = std::vector<int64_t>(size, -1);
-            } else if (map_dimension == 2) {
-                face_ids_maps = std::vector<int64_t>(size, -1);
-            }
-        } else if (!word.empty()) {
-            int64_t key = std::stoi(word);
-            int64_t value;
-            ss >> value;
-
-            if (map_dimension == 0) {
-                vertex_ids_maps[key] = value;
-                // std::cout << "vertex_ids_maps[" << key << "] = " << value << std::endl;
-            } else if (map_dimension == 2) {
-                face_ids_maps[key] = value;
-                // std::cout << "face_ids_maps[" << key << "] = " << value << std::endl;
-            }
-        }
-    }
-}
+#include "track_operations.hpp"
 
 // TODO: for testing purpose
 void back_track_map(path dirPath, std::vector<query_point>& query_points)
@@ -101,7 +37,7 @@ void back_track_map(path dirPath, std::vector<query_point>& query_points)
             continue;
         }
 
-        // std::cout << "Trace Back Operations number: " << i << std::endl;
+        std::cout << "Trace Back Operations number: " << i << std::endl;
         std::string first_line;
         std::getline(file, first_line);
         if (first_line == "Consolidate") {
@@ -113,7 +49,19 @@ void back_track_map(path dirPath, std::vector<query_point>& query_points)
         } else if (first_line == "AttributesUpdate") {
             // std::cout << "This Operations is AttributeUpdate" << std::endl;
         } else if (first_line == "EdgeSplit") {
-            // std::cout << "This Operations is EdgeSplit" << std::endl;
+            std::cout << "This Operations is EdgeSplit" << std::endl;
+            Eigen::MatrixXi F_after, F_before;
+            Eigen::MatrixXd V_after, V_before;
+            std::vector<int64_t> id_map_after, id_map_before;
+            parse_edge_split_file(
+                file,
+                V_before,
+                F_before,
+                id_map_before,
+                V_after,
+                F_after,
+                id_map_after);
+
         } else if (first_line == "EdgeCollapse") {
             // std::cout << "This Operations is EdgeCollapse" << std::endl;
         } else {

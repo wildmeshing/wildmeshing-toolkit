@@ -87,19 +87,28 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                 if (operation_log_file.is_open()) {
                     // DELETE: for test purposes
                     operation_log_file << operation_name << std::endl;
-                    for (const auto& s : mods) {
-                        operation_log_file
-                            << "mod simplex type: " << primitive_type_name(s.primitive_type())
-                            << std::endl;
-                        operation_log_file << wmtk::utils::TupleInspector::as_string(s.tuple())
-                                           << std::endl;
-                    }
+                    // for (const auto& s : mods) {
+                    //     operation_log_file
+                    //         << "mod simplex type: " << primitive_type_name(s.primitive_type())
+                    //         << std::endl;
+                    //     operation_log_file << wmtk::utils::TupleInspector::as_string(s.tuple())
+                    //                        << std::endl;
+                    // }
 
                     if (mesh().top_simplex_type() == PrimitiveType::Triangle) {
                         auto [F, V, id_map] =
                             utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), mods[0]);
-                        operation_log_file << "F_after:\n " << F << std::endl;
-                        operation_log_file << "V_after:\n " << V << std::endl;
+                        operation_log_file << "F_after: " << F.rows() << std::endl
+                                           << F << std::endl;
+
+                        operation_log_file << "V_after: " << V.rows() << std::endl
+                                           << V << std::endl;
+
+                        operation_log_file << "F_id_map_after: \n";
+                        for (const auto& id : id_map) {
+                            operation_log_file << id << " ";
+                        }
+                        operation_log_file << std::endl;
 
                         auto get_mesh = [&](const simplex::Simplex& s) {
                             if (operation_name == "EdgeCollapse")
@@ -110,8 +119,17 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         };
                         auto [F_before, V_before, id_map_before] =
                             mesh().parent_scope(get_mesh, simplex);
-                        operation_log_file << "F_before:\n " << F_before << std::endl;
-                        operation_log_file << "V_before:\n " << V_before << std::endl;
+
+                        operation_log_file << "F_before: " << F_before.rows() << std::endl
+                                           << F_before << std::endl;
+
+                        operation_log_file << "V_before: " << V_before.rows() << std::endl
+                                           << V_before << std::endl;
+
+                        operation_log_file << "F_id_map_before: \n";
+                        for (const auto& id : id_map_before) {
+                            operation_log_file << id << " ";
+                        }
                     }
 
                     operation_log_file.close();

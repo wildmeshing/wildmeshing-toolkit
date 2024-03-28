@@ -222,7 +222,7 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
         target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELEASE>:/INCREMENTAL:NO>)
     endif()
 
-    add_executable(bijective_map_app bijective_map_app.cpp)
+    add_executable(bijective_map_app bijective_map_app.cpp track_operations.hpp)
 
     igl_include(glfw)
     igl_include(opengl)
