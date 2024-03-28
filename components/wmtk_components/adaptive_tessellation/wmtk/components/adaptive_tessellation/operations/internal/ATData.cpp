@@ -3,8 +3,9 @@
 #include <nlohmann/json.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/attribute/Accessor.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionNumericalIntegral.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionAvgDistanceToLimit.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/MaxDistanceToLimit.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/TextureMapAvgDistanceToLimit.hpp>
 #include <wmtk/components/adaptive_tessellation/multimesh/utils/edge_meshes_parameterization.hpp>
 #include <wmtk/components/adaptive_tessellation/multimesh/utils/find_critical_points.hpp>
 #include <wmtk/components/adaptive_tessellation/multimesh/utils/map_sibling_edge_meshes.hpp>
@@ -99,7 +100,8 @@ ATData::ATData(
     std::shared_ptr<Mesh> uv_mesh_ptr,
     const std::filesystem::path& position_path,
     const std::filesystem::path& normal_path,
-    const std::filesystem::path& height_path)
+    const std::filesystem::path& height_path,
+    bool max_distance)
     : m_position_mesh_ptr(position_mesh_ptr)
     , m_uv_mesh_ptr(uv_mesh_ptr)
 {
@@ -134,13 +136,29 @@ ATData::ATData(
         normal_path,
         height_path);
     std::cout << "+++++ using displacment map sampling !!!!" << std::endl;
+    m_evaluator_ptr =
+        std::make_shared<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
+            m_images,
+            image::SAMPLING_METHOD::Bilinear,
+            image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
+
+    if (max_distance) {
+        m_evaluator_ptr->set_sampling_method(image::SAMPLING_METHOD::Bilinear);
+        m_mapping_ptr = std::make_shared<wmtk::components::function::utils::MaxDistanceToLimit>(
+            *m_evaluator_ptr);
+    } else {
+        m_mapping_ptr =
+            std::make_shared<wmtk::components::function::utils::TextureMapAvgDistanceToLimit>(
+                *m_evaluator_ptr);
+    }
 }
 
 
 ATData::ATData(
     std::shared_ptr<Mesh> position_mesh_ptr,
     std::shared_ptr<Mesh> uv_mesh_ptr,
-    std::array<std::shared_ptr<image::Image>, 3>& images)
+    std::array<std::shared_ptr<image::Image>, 3>& images,
+    bool max_distance)
     : m_position_mesh_ptr(position_mesh_ptr)
     , m_uv_mesh_ptr(uv_mesh_ptr)
     , m_images(images)
@@ -151,6 +169,21 @@ ATData::ATData(
 
     std::cout << "!!!!! using terrain texture sampling !!!!" << std::endl;
     initialize_handles();
+    m_evaluator_ptr =
+        std::make_shared<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
+            m_images,
+            image::SAMPLING_METHOD::Bilinear,
+            image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
+
+    if (max_distance) {
+        m_evaluator_ptr->set_sampling_method(image::SAMPLING_METHOD::Bilinear);
+        m_mapping_ptr = std::make_shared<wmtk::components::function::utils::MaxDistanceToLimit>(
+            *m_evaluator_ptr);
+    } else {
+        m_mapping_ptr =
+            std::make_shared<wmtk::components::function::utils::TextureMapAvgDistanceToLimit>(
+                *m_evaluator_ptr);
+    }
 }
 
 ATData::ATData(
@@ -166,6 +199,10 @@ ATData::ATData(
     // m_position_mesh_ptr->register_child_mesh(m_uv_mesh_ptr, child_map);
     std::cout << "----- using analytical functions !!!!" << std::endl;
     initialize_handles();
+    m_evaluator_ptr =
+        std::make_shared<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
+            m_funcs,
+            image::SAMPLING_METHOD::Analytical);
 }
 
 void ATData::initialize_handles()
@@ -248,5 +285,17 @@ Simplex ATData::sibling_edge(Mesh* my_edge_mesh_ptr, const Simplex& s)
     std::vector<Simplex> sibling_edge = my_edge_mesh_ptr->map((*sibling_mesh_ptr), s);
     assert(sibling_edge.size() == 1);
     return sibling_edge[0];
+}
+
+const std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>&
+ATData::evaluator_ptr() const
+{
+    return m_evaluator_ptr;
+}
+
+const std::shared_ptr<wmtk::components::function::utils::Triangle2DTo3DMapping>&
+ATData::mapping_ptr() const
+{
+    return m_mapping_ptr;
 }
 } // namespace wmtk::components::operations::internal

@@ -1,5 +1,5 @@
 #include "PerTriangleAnalyticalIntegral.hpp"
-#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionNumericalIntegral.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionAvgDistanceToLimit.hpp>
 
 namespace image = wmtk::components::image;
 
@@ -20,9 +20,9 @@ DScalar PerTriangleAnalyticalIntegral::eval(
 {
     assert(embedded_dimension() == 2);
     assert(coords.size() == 3);
-    wmtk::components::function::utils::AnalyticalFunctionNumericalIntegral analytical_quadrature(
+    wmtk::components::function::utils::AnalyticalFunctionAvgDistanceToLimit analytical_quadrature(
         *m_pos_evaluator_ptr);
     DSVec2 a = coords[0], b = coords[1], c = coords[2];
-    return analytical_quadrature.average_area_integral_over_triangle<DScalar>(a, b, c);
+    return analytical_quadrature.distance(a, b, c);
 }
 } // namespace wmtk::function

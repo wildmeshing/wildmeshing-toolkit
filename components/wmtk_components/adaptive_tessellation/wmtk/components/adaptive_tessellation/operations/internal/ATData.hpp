@@ -6,8 +6,9 @@
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleAnalyticalIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleTextureIntegralAccuracyFunction.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PositionMapAMIPS.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/IntegralBase.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/IntegralBasedAvgDistance.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/Triangle2DTo3DMapping.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
 #include <wmtk/function/PerSimplexFunction.hpp>
@@ -44,6 +45,11 @@ public:
     wmtk::attribute::MeshAttributeHandle m_edge_rgb_state_handle;
     wmtk::attribute::MeshAttributeHandle m_edge_todo_handle;
 
+    std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
+        m_evaluator_ptr;
+
+    std::shared_ptr<wmtk::components::function::utils::Triangle2DTo3DMapping> m_mapping_ptr;
+
     // ATData(
     //     std::shared_ptr<Mesh> uv_mesh,
     //     std::shared_ptr<Mesh> position_mesh,
@@ -58,16 +64,49 @@ public:
     // default constructor
     ATData() = default;
 
+    /**
+     * @brief Construct a ATData with images for position mapping. The distance to limit surface is
+     * set to max distance of every triangle if max_distance is true. This requires the image
+     * sampler to be bilinear. Otherwise it uses the average distance of every triangle
+     *
+     * @param position_mesh_ptr
+     * @param uv_mesh_ptr
+     * @param images
+     * @param max_distance
+     */
     ATData(
         std::shared_ptr<Mesh> position_mesh_ptr,
         std::shared_ptr<Mesh> uv_mesh_ptr,
-        std::array<std::shared_ptr<image::Image>, 3>& images);
+        std::array<std::shared_ptr<image::Image>, 3>& images,
+        bool max_distance);
+
+    /**
+     * @brief Construct a new ATData object by loading images from the given paths.
+     *
+     * @param position_mesh_ptr
+     * @param uv_mesh_ptr
+     * @param position_path
+     * @param normal_path
+     * @param height_path
+     * @param max_distance
+     */
     ATData(
         std::shared_ptr<Mesh> position_mesh_ptr,
         std::shared_ptr<Mesh> uv_mesh_ptr,
         const std::filesystem::path& position_path,
         const std::filesystem::path& normal_path,
-        const std::filesystem::path& height_path);
+        const std::filesystem::path& height_path,
+        bool max_distance);
+
+
+    /**
+     * @brief Construct a ATData with analytical functions for position mapping. The distance to
+     * limit surface is set to average distance of every triangle
+     *
+     * @param position_mesh_ptr
+     * @param uv_mesh
+     * @param funcs
+     */
     ATData(
         std::shared_ptr<Mesh> position_mesh_ptr,
         std::shared_ptr<Mesh> uv_mesh,
@@ -86,7 +125,10 @@ public:
     Simplex sibling_edge(Mesh* my_edge_mesh_ptr, const Simplex& s);
     const std::array<std::shared_ptr<image::Image>, 3>& images() const;
     const std::array<std::shared_ptr<image::Sampling>, 3>& funcs() const;
-
+    const std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>&
+    evaluator_ptr() const;
+    const std::shared_ptr<wmtk::components::function::utils::Triangle2DTo3DMapping>& mapping_ptr()
+        const;
     void _debug_sampling(
         wmtk::components::function::utils::ThreeChannelPositionMapEvaluator& image_sampling,
         wmtk::components::function::utils::ThreeChannelPositionMapEvaluator& func_eval) const;

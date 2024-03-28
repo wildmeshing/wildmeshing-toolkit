@@ -18,8 +18,8 @@ class ThreeChannelPositionMapEvaluator
 protected:
     const std::array<std::shared_ptr<image::Image>, 3> m_images;
     const std::array<std::shared_ptr<image::Sampling>, 3> m_analytical_funcs;
-    const image::SAMPLING_METHOD m_sampling_method = image::SAMPLING_METHOD::Bicubic;
-    const image::IMAGE_WRAPPING_MODE m_wrapping_mode = image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT;
+    image::SAMPLING_METHOD m_sampling_method = image::SAMPLING_METHOD::Bicubic;
+    image::IMAGE_WRAPPING_MODE m_wrapping_mode = image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT;
 
 public:
     ThreeChannelPositionMapEvaluator();
@@ -44,6 +44,8 @@ public:
     int height() const;
     image::IMAGE_WRAPPING_MODE get_wrapping_mode() const;
     image::SAMPLING_METHOD get_sampling_method() const;
+    void set_sampling_method(const image::SAMPLING_METHOD method);
+    void set_wrapping_mode(const image::IMAGE_WRAPPING_MODE mode);
 
     template <typename T>
     Vector3<T> uv_to_position(const Vector2<T>& uv) const

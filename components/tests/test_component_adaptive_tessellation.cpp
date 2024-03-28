@@ -3,8 +3,8 @@
 #include <wmtk/components/adaptive_tessellation/adaptive_tessellation.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/DistanceEnergy.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PositionMapAMIPS.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionNumericalIntegral.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionAvgDistanceToLimit.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/TextureMapAvgDistanceToLimit.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATSetAttrs.cpp>
@@ -426,13 +426,12 @@ TEST_CASE("avg_distance_energy_correctness")
         if (orient2d(uv0.data(), uv1.data(), uv2.data()) < 0) {
             std::swap(uv1, uv2);
         }
-        std::shared_ptr<wmtk::components::function::utils::AnalyticalFunctionNumericalIntegral>
+        std::shared_ptr<wmtk::components::function::utils::AnalyticalFunctionAvgDistanceToLimit>
             analytical_function_distance_error = std::make_shared<
-                wmtk::components::function::utils::AnalyticalFunctionNumericalIntegral>(
+                wmtk::components::function::utils::AnalyticalFunctionAvgDistanceToLimit>(
                 *m_evaluator_ptr);
         analytical_function_distance_error->m_debug = true;
-        double error = analytical_function_distance_error
-                           ->average_area_integral_over_triangle<double>(uv0, uv1, uv2);
+        double error = analytical_function_distance_error->distance(uv0, uv1, uv2);
         REQUIRE(pow(error - 1, 2) < 1e-9);
     }
 }

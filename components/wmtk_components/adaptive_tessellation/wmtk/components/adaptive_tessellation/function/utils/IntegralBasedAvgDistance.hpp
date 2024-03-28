@@ -1,22 +1,37 @@
 #pragma once
 #include <wmtk/function/utils/autodiff.h>
 #include <wmtk/components/adaptive_tessellation/image/utils/SamplingParameters.hpp>
+#include <wmtk/components/adaptive_tessellation/quadrature/Quadrature.hpp>
 #include <wmtk/function/PerSimplexAutodiffFunction.hpp>
 #include <wmtk/utils/triangle_areas.hpp>
+#include "Triangle2DTo3DMapping.hpp"
 namespace image = wmtk::components::image;
 namespace wmtk::components::function::utils {
 using DScalar = typename wmtk::function::PerSimplexAutodiffFunction::DScalar;
-class IntegralBase
+struct QuadratureCache
+{
+    wmtk::Quadrature quad;
+    wmtk::Quadrature tmp;
+};
+
+struct Cache
+{
+    // Data for exact error computation
+    // mutable tbb::enumerable_thread_specific<QuadratureCache> quadrature_cache;
+    QuadratureCache quadrature_cache;
+};
+
+class IntegralBasedAvgDistance : public Triangle2DTo3DMapping
 {
 public:
     // enum class IntegrationMethod { Exact, Adaptive };
-
+    IntegralBasedAvgDistance(const ThreeChannelPositionMapEvaluator& evaluator)
+        : Triangle2DTo3DMapping(evaluator)
+    {}
     enum class QuadratureOrder { Full, Reduced };
-    virtual ~IntegralBase() = default;
+    virtual ~IntegralBasedAvgDistance() = default;
 
 public:
-    void set_sampling_method(image::SAMPLING_METHOD method) { m_sampling_method = method; }
-    // void set_integration_method(IntegrationMethod method) { m_integration_method = method; }
     void set_quadrature_order(QuadratureOrder order) { m_quadrature_order = order; }
 
     virtual double triangle_quadrature(
@@ -33,20 +48,29 @@ public:
     {
         throw std::runtime_error("Not implemented");
     }
-    template <typename T>
-    T average_area_integral_over_triangle(
-        const Vector2<T>& uv0,
-        const Vector2<T>& uv1,
-        const Vector2<T>& uv2) const
+
+    double distance(
+        const Vector2<double>& uv0,
+        const Vector2<double>& uv1,
+        const Vector2<double>& uv2) const override
     {
-        T value = triangle_quadrature(uv0, uv1, uv2);
+        double value = triangle_quadrature(uv0, uv1, uv2);
         value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
         return value;
     }
 
+    DScalar distance(
+        const Vector2<DScalar>& uv0,
+        const Vector2<DScalar>& uv1,
+        const Vector2<DScalar>& uv2) const override
+    {
+        DScalar value = triangle_quadrature(uv0, uv1, uv2);
+        value = value / wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
+        return value;
+    }
+
+
 protected:
-    image::SAMPLING_METHOD m_sampling_method = image::SAMPLING_METHOD::Bicubic;
-    // IntegrationMethod m_integration_method = IntegrationMethod::Exact;
     QuadratureOrder m_quadrature_order = QuadratureOrder::Reduced;
 };
 

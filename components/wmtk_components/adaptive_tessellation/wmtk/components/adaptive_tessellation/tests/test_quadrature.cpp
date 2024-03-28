@@ -5,8 +5,8 @@
 #include <tools/TriMesh_examples.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Types.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionNumericalIntegral.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionAvgDistanceToLimit.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/TextureMapAvgDistanceToLimit.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -33,7 +33,7 @@ TEST_CASE("sinxcosy over unit square")
     images[1]->set(v);
     images[2]->set(height_function);
     ATfunction::utils::ThreeChannelPositionMapEvaluator evaluator(images);
-    ATfunction::utils::TextureIntegral texture_integral(evaluator);
+    ATfunction::utils::TextureMapAvgDistanceToLimit texture_integral(evaluator);
 
     std::array<Tuple, 2> triangles = {mesh.tuple_from_face_id(0), mesh.tuple_from_face_id(1)};
 
@@ -52,8 +52,7 @@ TEST_CASE("sinxcosy over unit square")
         Vector2d uv1 = uv.const_vector_attribute(mesh.switch_tuples(triangle, {PV}));
         Vector2d uv2 = uv.const_vector_attribute(mesh.switch_tuples(triangle, {PE, PV}));
 
-        double tri_error =
-            texture_integral.average_area_integral_over_triangle<double>(uv0, uv1, uv2);
+        double tri_error = texture_integral.distance(uv0, uv1, uv2);
         error += tri_error;
     }
 
@@ -85,7 +84,7 @@ TEST_CASE("analytical quadrature")
     };
 
     ATfunction::utils::ThreeChannelPositionMapEvaluator evaluator(funcs);
-    ATfunction::utils::AnalyticalFunctionNumericalIntegral analy_quad(evaluator);
+    ATfunction::utils::AnalyticalFunctionAvgDistanceToLimit analy_quad(evaluator);
 
     std::array<Tuple, 2> triangles = {mesh.tuple_from_face_id(0), mesh.tuple_from_face_id(1)};
 
@@ -104,7 +103,7 @@ TEST_CASE("analytical quadrature")
         Vector2d uv1 = uv.const_vector_attribute(mesh.switch_tuples(triangle, {PV}));
         Vector2d uv2 = uv.const_vector_attribute(mesh.switch_tuples(triangle, {PE, PV}));
 
-        double tri_error = analy_quad.average_area_integral_over_triangle<double>(uv0, uv1, uv2);
+        double tri_error = analy_quad.distance(uv0, uv1, uv2);
         std::cout << "tri_error " << tri_error << std::endl;
         error += tri_error;
     }

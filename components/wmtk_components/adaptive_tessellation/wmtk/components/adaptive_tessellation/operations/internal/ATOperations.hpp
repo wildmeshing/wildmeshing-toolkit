@@ -17,13 +17,6 @@ class ATOperations
 public:
     ATData& m_atdata;
     double m_target_distance;
-    double m_target_edge_length;
-    double m_envelope_size;
-    double m_barrier_weight;
-    double m_barrier_triangle_area;
-    double m_distance_weight;
-    double m_amips_weight;
-    bool m_area_weighted_amips;
 
     wmtk::attribute::Accessor<double> m_uv_accessor;
     wmtk::attribute::Accessor<double> m_uvmesh_xyz_accessor;
@@ -35,9 +28,6 @@ public:
     wmtk::attribute::Accessor<int64_t> m_edge_todo_accessor;
 
     std::vector<std::shared_ptr<wmtk::operations::Operation>> m_ops;
-    std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
-        m_evaluator_ptr;
-    std::shared_ptr<wmtk::components::function::utils::IntegralBase> m_integral_ptr;
 
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_uvmesh_xyz_update;

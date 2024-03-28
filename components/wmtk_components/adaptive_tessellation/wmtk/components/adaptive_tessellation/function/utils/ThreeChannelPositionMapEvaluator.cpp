@@ -63,6 +63,19 @@ image::IMAGE_WRAPPING_MODE ThreeChannelPositionMapEvaluator::get_wrapping_mode()
     return m_wrapping_mode;
 }
 
+image::SAMPLING_METHOD ThreeChannelPositionMapEvaluator::get_sampling_method() const
+{
+    return m_sampling_method;
+}
 
+void ThreeChannelPositionMapEvaluator::set_sampling_method(const image::SAMPLING_METHOD method)
+{
+    m_sampling_method = method;
+}
+
+void ThreeChannelPositionMapEvaluator::set_wrapping_mode(const image::IMAGE_WRAPPING_MODE mode)
+{
+    m_wrapping_mode = mode;
+}
 } // namespace function::utils
 } // namespace wmtk::components

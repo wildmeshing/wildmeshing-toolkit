@@ -39,8 +39,8 @@
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
 
-#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionNumericalIntegral.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionAvgDistanceToLimit.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/TextureMapAvgDistanceToLimit.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATData.hpp>
@@ -131,7 +131,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     //////////////////////////////////
     AT::operations::internal::ATData atdata;
     if (options.analytical_function) {
-        // wmtk::logger().critical("///// using gaussian displacement /////");
+        wmtk::logger().critical("///// using gaussian displacement /////");
         std::array<std::shared_ptr<image::Sampling>, 3> funcs = {
             {std::make_shared<image::SamplingAnalyticFunction>(
                  image::SamplingAnalyticFunction_FunctionType::Linear,
@@ -177,14 +177,19 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         images[2] = std::make_shared<wmtk::components::image::Image>(
             wmtk::components::image::buffer_to_image(buffer_r_h, w_h, h_h));
         logger().warn("height image loaded size {}", w_h);
-        atdata = AT::operations::internal::ATData(position_mesh_ptr, uv_mesh_ptr, images);
+        atdata = AT::operations::internal::ATData(
+            position_mesh_ptr,
+            uv_mesh_ptr,
+            images,
+            options.max_distance);
     } else {
         atdata = AT::operations::internal::ATData(
             position_mesh_ptr,
             uv_mesh_ptr,
             options.position_path,
             options.normal_path,
-            options.height_path);
+            options.height_path,
+            options.max_distance);
     }
 
     AT::operations::internal::ATOperations at_ops(atdata);

@@ -1,5 +1,6 @@
 set(SRC_FILES
-    IntegralBase.hpp
+    IntegralBasedAvgDistance.hpp
+    Triangle2DTo3DMapping.hpp
     BarycentricTriangle.hpp
 
     ThreeChannelPositionMapEvaluator.hpp
@@ -8,11 +9,14 @@ set(SRC_FILES
     PositionMapEvaluator.hpp
     PositionMapEvaluator.cpp
 
-    AnalyticalFunctionNumericalIntegral.hpp
-    AnalyticalFunctionNumericalIntegral.cpp
+    AnalyticalFunctionAvgDistanceToLimit.hpp
+    AnalyticalFunctionAvgDistanceToLimit.cpp
 
-    TextureIntegral.hpp
-    TextureIntegral.cpp
+    TextureMapAvgDistanceToLimit.hpp
+    TextureMapAvgDistanceToLimit.cpp
+
+    MaxDistanceToLimit.hpp
+    MaxDistanceToLimit.cpp
 
     UVMapEvaluator.hpp
     UVMapEvaluator.cpp

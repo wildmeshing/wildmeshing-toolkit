@@ -1,8 +1,8 @@
 #include "ATOperations.hpp"
 #include <wmtk/components/adaptive_tessellation/function/simplex/DistanceEnergy.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleAnalyticalIntegral.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionNumericalIntegral.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionAvgDistanceToLimit.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/TextureMapAvgDistanceToLimit.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/area_barrier.hpp>
 
 
@@ -72,27 +72,6 @@ ATOperations::ATOperations(ATData& atdata)
 
 {
     m_ops.clear();
-    if (m_atdata.funcs()[0]) {
-        std::cout << "----- using analytical quadrature" << std::endl;
-        m_evaluator_ptr =
-            std::make_shared<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
-                m_atdata.funcs(),
-                image::SAMPLING_METHOD::Analytical);
-        m_integral_ptr = std::make_shared<
-            wmtk::components::function::utils::AnalyticalFunctionNumericalIntegral>(
-            *m_evaluator_ptr);
-    } else {
-        assert(m_atdata.images()[0]);
-        std::cout << "++++ using images sampling quadrature" << std::endl;
-        m_evaluator_ptr =
-            std::make_shared<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
-                m_atdata.images(),
-                image::SAMPLING_METHOD::Bilinear,
-                image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
-        m_integral_ptr =
-            std::make_shared<wmtk::components::function::utils::TextureIntegral>(*m_evaluator_ptr);
-    }
-
 
     set_uvmesh_xyz_update_rule();
     initialize_xyz();

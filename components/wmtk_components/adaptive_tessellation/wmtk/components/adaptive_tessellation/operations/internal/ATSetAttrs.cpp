@@ -3,8 +3,8 @@
 
 #include <wmtk/components/adaptive_tessellation/function/simplex/DistanceEnergy.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleAnalyticalIntegral.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionNumericalIntegral.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionAvgDistanceToLimit.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/TextureMapAvgDistanceToLimit.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/area_barrier.hpp>
 
 #include <wmtk/components/adaptive_tessellation/function/utils/area_barrier.hpp>
@@ -31,7 +31,7 @@ void ATOperations::set_uvmesh_xyz_update_rule()
         assert(P.cols() == 1);
         assert(P.rows() == 2);
         Eigen::Vector2d uv = P.col(0);
-        return m_evaluator_ptr->uv_to_position(uv);
+        return m_atdata.evaluator_ptr()->uv_to_position(uv);
     };
     m_uvmesh_xyz_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
@@ -46,7 +46,8 @@ void ATOperations::initialize_xyz()
     const auto vertices = m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Vertex);
     for (const auto& v : vertices) {
         const auto uv = m_uv_accessor.vector_attribute(v);
-        m_uvmesh_xyz_accessor.vector_attribute(v) = m_evaluator_ptr->uv_to_position<double>(uv);
+        m_uvmesh_xyz_accessor.vector_attribute(v) =
+            m_atdata.evaluator_ptr()->uv_to_position<double>(uv);
     }
 }
 
@@ -65,7 +66,7 @@ void ATOperations::set_distance_error_update_rule()
         Eigen::VectorXd error(1);
 
 
-        error(0) = m_integral_ptr->average_area_integral_over_triangle<double>(uv0, uv1, uv2);
+        error(0) = m_atdata.mapping_ptr()->distance(uv0, uv1, uv2);
 
         return error;
     };
@@ -90,7 +91,7 @@ void ATOperations::initialize_distance_error()
                 m_atdata.uv_mesh_ptr()->switch_tuple(f, PrimitiveType::Edge),
                 PrimitiveType::Vertex));
 
-        double res = m_integral_ptr->average_area_integral_over_triangle<double>(v0, v1, v2);
+        double res = m_atdata.mapping_ptr()->distance(v0, v1, v2);
 
         m_distance_error_accessor.scalar_attribute(f) = res;
     }
@@ -105,7 +106,7 @@ void ATOperations::set_curved_edge_length_update_rule()
         Eigen::Vector2<double> uv1 = P.col(1);
 
         Eigen::VectorXd error(1);
-        error(0) = curved_edge_length_on_displaced_surface(uv0, uv1, m_evaluator_ptr);
+        error(0) = curved_edge_length_on_displaced_surface(uv0, uv1, m_atdata.evaluator_ptr());
         return error;
     };
     m_curved_edge_length_update =
@@ -122,7 +123,7 @@ void ATOperations::initialize_curved_edge_length()
         const auto uv1 = m_uv_accessor.vector_attribute(
             m_atdata.uv_mesh_ptr()->switch_tuple(e, PrimitiveType::Vertex));
         m_curved_edge_length_accessor.scalar_attribute(e) =
-            curved_edge_length_on_displaced_surface(uv0, uv1, m_evaluator_ptr);
+            curved_edge_length_on_displaced_surface(uv0, uv1, m_atdata.evaluator_ptr());
     }
 }
 

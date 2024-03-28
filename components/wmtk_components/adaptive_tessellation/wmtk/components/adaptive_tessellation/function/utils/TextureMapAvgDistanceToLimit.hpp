@@ -12,8 +12,8 @@
 #include <wmtk/components/adaptive_tessellation/quadrature/Quadrature.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/triangle_areas.hpp>
-#include "BarycentricTriangle.hpp"
-#include "IntegralBase.hpp"
+
+#include "IntegralBasedAvgDistance.hpp"
 #include "ThreeChannelPositionMapEvaluator.hpp"
 
 #include <nlohmann/json.hpp>
@@ -21,34 +21,24 @@ namespace image = wmtk::components::image;
 namespace wmtk::components {
 namespace function::utils {
 
-struct QuadratureCache
-{
-    wmtk::Quadrature quad;
-    wmtk::Quadrature tmp;
-};
 
-struct Cache
-{
-    // Data for exact error computation
-    // mutable tbb::enumerable_thread_specific<QuadratureCache> quadrature_cache;
-    QuadratureCache quadrature_cache;
-};
-
-class TextureIntegral : public IntegralBase
+class TextureMapAvgDistanceToLimit : public IntegralBasedAvgDistance
 {
 public:
     // using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1,
     // -1>>; using DTriangle = Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor>;
 
 public:
-    TextureIntegral(); // default constructor
-    TextureIntegral(const TextureIntegral&) = delete; // copy constructor
-    TextureIntegral(TextureIntegral&&); // move constructor
-    TextureIntegral& operator=(const TextureIntegral&) = delete; // copy assignment operator
-    TextureIntegral& operator=(TextureIntegral&&); // move assignment operator
-    ~TextureIntegral(); // destructor
-    TextureIntegral(const ThreeChannelPositionMapEvaluator& evaluator);
-    TextureIntegral(const ThreeChannelPositionMapEvaluator& evaluator, bool debug);
+    TextureMapAvgDistanceToLimit(); // default constructor
+    TextureMapAvgDistanceToLimit(const TextureMapAvgDistanceToLimit&) = delete; // copy constructor
+    TextureMapAvgDistanceToLimit(TextureMapAvgDistanceToLimit&&); // move constructor
+    TextureMapAvgDistanceToLimit& operator=(const TextureMapAvgDistanceToLimit&) =
+        delete; // copy assignment operator
+    TextureMapAvgDistanceToLimit& operator=(
+        TextureMapAvgDistanceToLimit&&); // move assignment operator
+    ~TextureMapAvgDistanceToLimit(); // destructor
+    TextureMapAvgDistanceToLimit(const ThreeChannelPositionMapEvaluator& evaluator);
+    TextureMapAvgDistanceToLimit(const ThreeChannelPositionMapEvaluator& evaluator, bool debug);
 
 public:
     double triangle_quadrature(
@@ -192,7 +182,6 @@ protected:
         const;
 
 protected:
-    const ThreeChannelPositionMapEvaluator& m_three_channel_evaluator;
     std::shared_ptr<Cache> m_cache;
     bool m_debug;
 

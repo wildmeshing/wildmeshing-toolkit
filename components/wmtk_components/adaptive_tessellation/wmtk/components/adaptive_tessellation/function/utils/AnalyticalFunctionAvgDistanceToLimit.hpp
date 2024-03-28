@@ -13,31 +13,31 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/triangle_areas.hpp>
 #include "BarycentricTriangle.hpp"
-#include "IntegralBase.hpp"
-#include "ThreeChannelPositionMapEvaluator.hpp"
+#include "IntegralBasedAvgDistance.hpp"
 namespace image = wmtk::components::image;
 namespace wmtk::components {
 namespace function::utils {
 
 
-class AnalyticalFunctionNumericalIntegral : public IntegralBase
+class AnalyticalFunctionAvgDistanceToLimit : public IntegralBasedAvgDistance
 {
 public:
     // using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1,
     // -1>>; using DTriangle = Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor>;
 
 public:
-    AnalyticalFunctionNumericalIntegral(); // default constructor
-    AnalyticalFunctionNumericalIntegral(const AnalyticalFunctionNumericalIntegral&) =
+    AnalyticalFunctionAvgDistanceToLimit(); // default constructor
+    AnalyticalFunctionAvgDistanceToLimit(const AnalyticalFunctionAvgDistanceToLimit&) =
         delete; // copy constructor
-    AnalyticalFunctionNumericalIntegral(AnalyticalFunctionNumericalIntegral&&); // move constructor
-    AnalyticalFunctionNumericalIntegral& operator=(const AnalyticalFunctionNumericalIntegral&) =
+    AnalyticalFunctionAvgDistanceToLimit(
+        AnalyticalFunctionAvgDistanceToLimit&&); // move constructor
+    AnalyticalFunctionAvgDistanceToLimit& operator=(const AnalyticalFunctionAvgDistanceToLimit&) =
         delete; // copy assignment operator
-    AnalyticalFunctionNumericalIntegral& operator=(
-        AnalyticalFunctionNumericalIntegral&&); // move assignment operator
-    ~AnalyticalFunctionNumericalIntegral(); // destructor
+    AnalyticalFunctionAvgDistanceToLimit& operator=(
+        AnalyticalFunctionAvgDistanceToLimit&&); // move assignment operator
+    ~AnalyticalFunctionAvgDistanceToLimit(); // destructor
 
-    AnalyticalFunctionNumericalIntegral(const ThreeChannelPositionMapEvaluator& evaluator);
+    AnalyticalFunctionAvgDistanceToLimit(const ThreeChannelPositionMapEvaluator& evaluator);
 
 public:
     double triangle_quadrature(
@@ -120,9 +120,6 @@ public:
 
 public:
     bool m_debug = false;
-
-protected:
-    const ThreeChannelPositionMapEvaluator& m_three_channel_evaluator;
 };
 } // namespace function::utils
 } // namespace wmtk::components

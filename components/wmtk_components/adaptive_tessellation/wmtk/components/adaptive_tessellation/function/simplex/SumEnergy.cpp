@@ -1,6 +1,6 @@
 #include "SumEnergy.hpp"
-#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionNumericalIntegral.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionAvgDistanceToLimit.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/TextureMapAvgDistanceToLimit.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/area_barrier.hpp>
 #include <wmtk/function/utils/amips.hpp>
 #include <wmtk/utils/triangle_areas.hpp>
@@ -13,7 +13,7 @@ SumEnergy::SumEnergy(
     const attribute::MeshAttributeHandle& vertex_uv_handle,
     std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
         pos_evaluator,
-    std::shared_ptr<wmtk::components::function::utils::IntegralBase> integral_ptr,
+    std::shared_ptr<wmtk::components::function::utils::IntegralBasedAvgDistance> integral_ptr,
     const double distance_energy_weight,
     std::shared_ptr<wmtk::function::PositionMapAMIPS> amips_energy,
     const image::SAMPLING_METHOD sampling_method)
@@ -39,8 +39,7 @@ DScalar SumEnergy::eval(const simplex::Simplex& domain_simplex, const std::vecto
     assert(coords.size() == 3);
     DSVec2 a = coords[0], b = coords[1], c = coords[2];
 
-    DScalar energy = m_distance_energy_weight *
-                     m_integral_ptr->average_area_integral_over_triangle<DScalar>(a, b, c);
+    DScalar energy = m_distance_energy_weight * m_integral_ptr->distance(a, b, c);
     if (m_3d_amips_energy) {
         energy += m_3d_amips_energy->eval(domain_simplex, coords);
     }

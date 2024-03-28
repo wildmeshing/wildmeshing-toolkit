@@ -1,6 +1,6 @@
 #include <fstream>
-#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionNumericalIntegral.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionAvgDistanceToLimit.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/TextureMapAvgDistanceToLimit.hpp>
 #include "ATData.hpp"
 #include "ATOperations.hpp"
 
@@ -66,15 +66,14 @@ void _debug_texture_integral(
         const Eigen::Vector2d uv2 = m_uv_accessor.vector_attribute(
             mesh->switch_tuple(mesh->switch_tuple(f, PrimitiveType::Edge), PrimitiveType::Vertex));
 
-        wmtk::components::function::utils::AnalyticalFunctionNumericalIntegral
+        wmtk::components::function::utils::AnalyticalFunctionAvgDistanceToLimit
             analytical_quadrature(func_evaluator);
-        double func_res =
-            analytical_quadrature.average_area_integral_over_triangle<double>(uv0, uv1, uv2);
+        double func_res = analytical_quadrature.distance(uv0, uv1, uv2);
         func_res_accessor.scalar_attribute(f) = func_res;
 
-        wmtk::components::function::utils::TextureIntegral texture_integral(image_evaluator);
-        double image_res =
-            texture_integral.average_area_integral_over_triangle<double>(uv0, uv1, uv2);
+        wmtk::components::function::utils::TextureMapAvgDistanceToLimit texture_integral(
+            image_evaluator);
+        double image_res = texture_integral.distance(uv0, uv1, uv2);
         image_res_accessor.scalar_attribute(f) = image_res;
         std::cout << "func_res: " << func_res << std::endl;
         std::cout << "image_res: " << image_res << std::endl;

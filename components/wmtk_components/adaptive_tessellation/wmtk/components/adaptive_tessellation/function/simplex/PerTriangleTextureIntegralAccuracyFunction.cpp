@@ -1,7 +1,7 @@
 #include "PerTriangleTextureIntegralAccuracyFunction.hpp"
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Primitive.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/TextureMapAvgDistanceToLimit.hpp>
 #include <wmtk/function/utils/AutoDiffRAII.hpp>
 #include <wmtk/function/utils/amips.hpp>
 
@@ -25,9 +25,10 @@ DScalar PerTriangleTextureIntegralAccuracyFunction::eval(
 {
     assert(embedded_dimension() == 2);
     assert(coords.size() == 3);
-    wmtk::components::function::utils::TextureIntegral texture_integral(*m_pos_evaluator_ptr);
+    wmtk::components::function::utils::TextureMapAvgDistanceToLimit texture_integral(
+        *m_pos_evaluator_ptr);
     DSVec2 a = coords[0], b = coords[1], c = coords[2];
-    return texture_integral.average_area_integral_over_triangle<DScalar>(a, b, c);
+    return texture_integral.distance(a, b, c);
 }
 
 } // namespace wmtk::function

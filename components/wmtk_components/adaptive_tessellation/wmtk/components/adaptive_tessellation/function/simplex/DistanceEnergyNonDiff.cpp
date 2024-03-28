@@ -1,7 +1,7 @@
 #include "DistanceEnergyNonDiff.hpp"
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Primitive.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/TextureMapAvgDistanceToLimit.hpp>
 #include <wmtk/function/utils/AutoDiffRAII.hpp>
 #include <wmtk/function/utils/SimplexGetter.hpp>
 #include <wmtk/function/utils/amips.hpp>
@@ -36,7 +36,7 @@ namespace wmtk::function {
 DistanceEnergyNonDiff::DistanceEnergyNonDiff(
     const Mesh& mesh,
     const wmtk::attribute::MeshAttributeHandle& vertex_uv_handle,
-    std::shared_ptr<wmtk::components::function::utils::IntegralBase> integral_ptr,
+    std::shared_ptr<wmtk::components::function::utils::IntegralBasedAvgDistance> integral_ptr,
     double weight)
     : wmtk::function::PerSimplexFunction(mesh, PrimitiveType::Vertex, vertex_uv_handle)
     , m_integral_ptr(integral_ptr)
@@ -59,7 +59,7 @@ double DistanceEnergyNonDiff::get_value(const simplex::Simplex& domain_simplex) 
     Eigen::Vector2d a(uvs[0], uvs[1]);
     Eigen::Vector2d b(uvs[2], uvs[3]);
     Eigen::Vector2d c(uvs[4], uvs[5]);
-    return m_weight * m_integral_ptr->average_area_integral_over_triangle<double>(a, b, c);
+    return m_weight * m_integral_ptr->distance(a, b, c);
 }
 
 } // namespace wmtk::function

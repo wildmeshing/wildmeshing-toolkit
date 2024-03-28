@@ -1,5 +1,5 @@
 #pragma once
-#include <wmtk/components/adaptive_tessellation/function/utils/IntegralBase.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/IntegralBasedAvgDistance.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
 #include <wmtk/function/PerSimplexFunction.hpp>
@@ -20,14 +20,14 @@ public:
     DistanceEnergyNonDiff(
         const Mesh& mesh,
         const attribute::MeshAttributeHandle& vertex_uv_handle,
-        std::shared_ptr<wmtk::components::function::utils::IntegralBase> integral_ptr,
+        std::shared_ptr<wmtk::components::function::utils::IntegralBasedAvgDistance> integral_ptr,
         double weight = 1);
 
     ~DistanceEnergyNonDiff();
 
 
 protected:
-    std::shared_ptr<wmtk::components::function::utils::IntegralBase> m_integral_ptr;
+    std::shared_ptr<wmtk::components::function::utils::IntegralBasedAvgDistance> m_integral_ptr;
     double m_weight;
     double get_value(const Simplex& domain_simplex) const override;
 };
