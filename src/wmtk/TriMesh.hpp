@@ -12,10 +12,9 @@ namespace operations::utils {
 class MultiMeshEdgeSplitFunctor;
 class MultiMeshEdgeCollapseFunctor;
 class UpdateEdgeOperationMultiMeshMapFunctor;
-std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>> get_local_trimesh(
-    const TriMesh& mesh,
-    const simplex::Simplex& simplex);
-std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>>
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
+get_local_trimesh(const TriMesh& mesh, const simplex::Simplex& simplex);
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
 get_local_trimesh_before_collapse(const TriMesh& mesh, const simplex::Simplex& simplex);
 } // namespace operations::utils
 
@@ -31,9 +30,9 @@ public:
     friend class attribute::Accessor;
 
 
-    friend std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>>
+    friend std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
     operations::utils::get_local_trimesh(const TriMesh& mesh, const simplex::Simplex& simplex);
-    friend std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>>
+    friend std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
     operations::utils::get_local_trimesh_before_collapse(
         const TriMesh& mesh,
         const simplex::Simplex& simplex);

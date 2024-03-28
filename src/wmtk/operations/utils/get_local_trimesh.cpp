@@ -5,9 +5,8 @@
 
 // TODO: we also need fid_maps
 namespace wmtk::operations::utils {
-std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>> get_local_trimesh(
-    const wmtk::TriMesh& mesh,
-    const wmtk::simplex::Simplex& simplex)
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
+get_local_trimesh(const wmtk::TriMesh& mesh, const wmtk::simplex::Simplex& simplex)
 {
     auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto pos = mesh.create_const_accessor<double>(pos_handle);
@@ -45,17 +44,18 @@ std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>> get_local_tri
     }
 
     Eigen::MatrixXd V(vertex_count, 3);
-
+    std::vector<int64_t> v_local_to_global(vertex_count);
     // build V, local_to_global
     for (const auto& pair : global_to_local_map) {
+        v_local_to_global[pair.second] = pair.first;
         V.row(pair.second) =
             pos.const_vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, pair.first));
     }
 
-    return std::make_tuple(F, V, f_local_to_global);
+    return std::make_tuple(F, V, f_local_to_global, v_local_to_global);
 }
 
-std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>>
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
 get_local_trimesh_before_collapse(const wmtk::TriMesh& mesh, const wmtk::simplex::Simplex& simplex)
 {
     assert(simplex.type() == PrimitiveType::Edge);
@@ -95,13 +95,14 @@ get_local_trimesh_before_collapse(const wmtk::TriMesh& mesh, const wmtk::simplex
     }
 
     Eigen::MatrixXd V(vertex_count, 3);
-
+    std::vector<int64_t> v_local_to_global(vertex_count);
     // build V
     for (const auto& pair : global_to_local_map) {
+        v_local_to_global[pair.second] = pair.first;
         V.row(pair.second) =
             pos.const_vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, pair.first));
     }
 
-    return std::make_tuple(F, V, f_local_to_global);
+    return std::make_tuple(F, V, f_local_to_global, v_local_to_global);
 }
 } // namespace wmtk::operations::utils

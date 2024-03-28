@@ -96,7 +96,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                     // }
 
                     if (mesh().top_simplex_type() == PrimitiveType::Triangle) {
-                        auto [F, V, id_map] =
+                        auto [F, V, id_map, v_id_map] =
                             utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), mods[0]);
                         operation_log_file << "F_after: " << F.rows() << std::endl
                                            << F << std::endl;
@@ -108,6 +108,11 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         for (const auto& id : id_map) {
                             operation_log_file << id << " ";
                         }
+
+                        operation_log_file << "\nV_id_map_after: \n";
+                        for (const auto& id : v_id_map) {
+                            operation_log_file << id << " ";
+                        }
                         operation_log_file << std::endl;
 
                         auto get_mesh = [&](const simplex::Simplex& s) {
@@ -117,7 +122,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                     s);
                             return utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), s);
                         };
-                        auto [F_before, V_before, id_map_before] =
+                        auto [F_before, V_before, id_map_before, v_id_map_before] =
                             mesh().parent_scope(get_mesh, simplex);
 
                         operation_log_file << "F_before: " << F_before.rows() << std::endl
@@ -128,6 +133,11 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
                         operation_log_file << "F_id_map_before: \n";
                         for (const auto& id : id_map_before) {
+                            operation_log_file << id << " ";
+                        }
+                        operation_log_file << std::endl;
+                        operation_log_file << "V_id_map_before: \n";
+                        for (const auto& id : v_id_map_before) {
                             operation_log_file << id << " ";
                         }
                     }

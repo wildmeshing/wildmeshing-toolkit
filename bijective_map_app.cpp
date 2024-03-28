@@ -53,14 +53,27 @@ void back_track_map(path dirPath, std::vector<query_point>& query_points)
             Eigen::MatrixXi F_after, F_before;
             Eigen::MatrixXd V_after, V_before;
             std::vector<int64_t> id_map_after, id_map_before;
+            std::vector<int64_t> v_id_map_after, v_id_map_before;
             parse_edge_split_file(
                 file,
                 V_before,
                 F_before,
                 id_map_before,
+                v_id_map_before,
                 V_after,
                 F_after,
-                id_map_after);
+                id_map_after,
+                v_id_map_after);
+            handle_split_edge(
+                V_before,
+                F_before,
+                id_map_before,
+                v_id_map_before,
+                V_after,
+                F_after,
+                id_map_after,
+                v_id_map_after,
+                query_points);
 
         } else if (first_line == "EdgeCollapse") {
             // std::cout << "This Operations is EdgeCollapse" << std::endl;
