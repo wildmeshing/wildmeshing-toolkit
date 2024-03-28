@@ -36,5 +36,26 @@ public:
     {
         throw std::runtime_error("DScalar type in MaxDistanceToLimit Not implemented");
     }
+
+protected:
+    template <typename T>
+    Eigen::AlignedBox2d
+    uv_triangle_bbox(const Vector2<T>& uv0, const Vector2<T>& uv1, const Vector2<T>& uv2) const
+    {
+        Eigen::AlignedBox2d bbox;
+        bbox.extend(Vector2d(image::utils::get_double(uv0)));
+        bbox.extend(Vector2d(image::utils::get_double(uv1)));
+        bbox.extend(Vector2d(image::utils::get_double(uv2)));
+        return bbox;
+    }
+
+
+    Eigen::AlignedBox2d uv_triangle_bbox(
+        const Eigen::Matrix<double, 3, 2, RowMajor>& uv_triangle_RowMajor) const;
+
+    std::pair<int, double> pixel_num_size_of_uv_triangle(Eigen::AlignedBox2d& bbox) const;
+
+    std::pair<int, double> pixel_size_of_uv_triangle(int pixel_num, Eigen::AlignedBox2d& bbox)
+        const;
 };
 } // namespace wmtk::components::function::utils
