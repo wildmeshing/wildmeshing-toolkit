@@ -129,35 +129,65 @@ int main(int argc, char** argv)
         query_points.push_back(qp);
     }
 
-    // viewer
-    // {
-    //     igl::opengl::glfw::Viewer viewer;
-    //     Eigen::Vector4f backColor;
-    //     backColor << 208 / 255., 237 / 255., 227 / 255., 1.;
-    //     const Eigen::RowVector3d blue(149.0 / 255, 217.0 / 255, 244.0 / 255);
-    //     viewer.core().background_color = backColor;
-    //     viewer.data().set_mesh(V_in, F_in);
-    //     viewer.data().set_colors(blue);
-    //     viewer.callback_key_down =
-    //         [&](igl::opengl::glfw::Viewer& viewer, unsigned char key, int mod) -> bool {
-    //         switch (key) {
-    //         case '0':
-    //             viewer.data().clear();
-    //             viewer.data().set_mesh(V_in, F_in);
-    //             viewer.data().set_colors(blue);
-    //             break;
-    //         case '1':
-    //             viewer.data().clear();
-    //             viewer.data().set_mesh(V_out, F_out);
-    //             viewer.data().set_colors(blue);
-    //             break;
-    //         default: return false;
-    //         }
-    //         return true;
-    //     };
-    //     viewer.launch();
-    // }
+    std::vector<query_point> query_points_origin = query_points;
+    Eigen::MatrixXd pts_on_surface_after(query_points.size(), 3);
+    for (int ii = 0; ii < query_points_origin.size(); ii++) {
+        const query_point& qp = query_points_origin[ii];
+        Eigen::Vector3d p(0, 0, 0);
+        for (int i = 0; i < 3; i++) {
+            p += V_out.row(qp.fv_ids[i]) * qp.bc(i);
+        }
+        pts_on_surface_after.row(ii) = p;
+    }
 
+    // do back track
     back_track_map(operation_logs_dir, query_points);
+
+    Eigen::MatrixXd pts_on_surface_before(query_points.size(), 3);
+    for (int ii = 0; ii < query_points.size(); ii++) {
+        const query_point& qp = query_points[ii];
+        Eigen::Vector3d p(0, 0, 0);
+        for (int i = 0; i < 3; i++) {
+            p += V_in.row(qp.fv_ids[i]) * qp.bc(i);
+        }
+        pts_on_surface_before.row(ii) = p;
+    }
+
+    // viewer
+    {
+        igl::opengl::glfw::Viewer viewer;
+        Eigen::Vector4f backColor;
+        backColor << 208 / 255., 237 / 255., 227 / 255., 1.;
+        const Eigen::RowVector3d blue(149.0 / 255, 217.0 / 255, 244.0 / 255);
+        viewer.core().background_color = backColor;
+        viewer.data().set_mesh(V_in, F_in);
+        viewer.data().set_colors(blue);
+        viewer.data().add_points(pts_on_surface_before, Eigen::RowVector3d(0, 0, 0));
+        viewer.data().point_size = 10;
+
+        viewer.callback_key_down =
+            [&](igl::opengl::glfw::Viewer& viewer, unsigned char key, int mod) -> bool {
+            switch (key) {
+            case '0':
+                viewer.data().clear();
+                viewer.data().set_mesh(V_in, F_in);
+                viewer.data().set_colors(blue);
+                viewer.data().add_points(pts_on_surface_before, Eigen::RowVector3d(0, 0, 0));
+                viewer.data().point_size = 10;
+                break;
+            case '1':
+                viewer.data().clear();
+                viewer.data().set_mesh(V_out, F_out);
+                viewer.data().set_colors(blue);
+                viewer.data().add_points(pts_on_surface_after, Eigen::RowVector3d(0, 0, 0));
+                viewer.data().point_size = 10;
+                break;
+            default: return false;
+            }
+            return true;
+        };
+        viewer.launch();
+    }
+
     return 0;
 }

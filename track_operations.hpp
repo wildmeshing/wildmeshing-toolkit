@@ -40,9 +40,17 @@ Eigen::Vector3d ComputeBarycentricCoordinates(
     const Eigen::Vector3d& p,
     const Eigen::Vector3d& a,
     const Eigen::Vector3d& b,
-    const Eigen::Vector3d& c)
+    const Eigen::Vector3d& c,
+    double eps = 1e-3)
 {
     Eigen::Vector3d v0 = b - a, v1 = c - a, v2 = p - a;
+    Eigen::Vector3d n = v0.cross(v1);
+    n.normalized();
+    if (std::abs(n.dot(p - a)) > eps) {
+        // std::cout << "not on the plane, " << std::abs(n.dot(p - a)) << std::endl;
+        // not on this face
+        return Eigen::Vector3d(-1, -1, -1);
+    }
     double d00 = v0.dot(v0);
     double d01 = v0.dot(v1);
     double d11 = v1.dot(v1);
@@ -74,7 +82,10 @@ void handle_split_edge(
         // find if qp is in the id_map_after
         auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
         if (it != id_map_after.end()) {
-            std::cout << "Found qp.f_id " << qp.f_id << " in id_map_after" << std::endl;
+            // std::cout << "find qp: " << qp.f_id << std::endl;
+            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
+            //           << std::endl;
+
             // find the index of qp in id_map_after
             int local_index_in_f_after = std::distance(id_map_after.begin(), it);
             // offset of the qp.fv_ids
@@ -88,8 +99,7 @@ void handle_split_edge(
             if (offset_in_f_after == -1) {
                 std::cout << "something is wrong!" << std::endl;
                 continue;
-            } else {
-                std::cout << "offset is " << offset_in_f_after << std::endl;
+                // return;
             }
 
             // compute the location of the qp
@@ -98,10 +108,49 @@ void handle_split_edge(
                 p += V_after.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3)) *
                      qp.bc(i);
             }
-            std::cout << "p: (" << p(0) << ", " << p(1) << ", " << p(2) << ")" << std::endl;
+            // std::cout << "p: (" << p(0) << ", " << p(1) << ", " << p(2) << ")" << std::endl;
 
-            // compute bc of the p in (V,F)_before
-            // qp.f_id = id_map_before[index];
+            // compute bc of the p in (V, F)_before
+            int local_index_in_f_before = -1;
+            double bc_min_coef = 1;
+            bool bc_updated = false;
+            for (int i = 0; i < F_before.rows(); i++) {
+                Eigen::Vector3d bc = ComputeBarycentricCoordinates(
+                    p,
+                    V_before.row(F_before(i, 0)),
+                    V_before.row(F_before(i, 1)),
+                    V_before.row(F_before(i, 2)));
+                // std::cout << "computed bc: " << bc(0) << ", " << bc(1) << ", " << bc(2)
+                // << std::endl;
+                if (bc.cwiseAbs().minCoeff() < bc_min_coef) {
+                    bc_min_coef = bc.cwiseAbs().minCoeff();
+                    local_index_in_f_before = i;
+                    qp.bc = bc;
+                    bc_updated = true;
+                }
+            }
+
+            if (!bc_updated) {
+                std::cout << "bc not updated\n" << std::endl;
+                continue;
+                // return;
+            }
+
+            // update qp
+            qp.f_id = id_map_before[local_index_in_f_before];
+            for (int i = 0; i < 3; i++) {
+                qp.fv_ids[i] = v_id_map_before[F_before(local_index_in_f_before, i)];
+            }
+            // avoid numerical issue
+            qp.bc[0] = std::max(0.0, std::min(1.0, qp.bc[0]));
+            qp.bc[1] = std::max(0.0, std::min(1.0, qp.bc[1]));
+            qp.bc[2] = std::max(0.0, std::min(1.0, qp.bc[2]));
+            qp.bc /= qp.bc.sum();
+
+            // std::cout << "qp-> " << qp.f_id << std::endl;
+            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
+            //           << std::endl
+            //           << std::endl;
         }
     }
     // });
@@ -226,7 +275,7 @@ void parse_edge_split_file(
     readVector(file, v_id_map_before);
 
 
-    // // Outputs (for verification)
+    // Outputs (for verification)
     // std::cout << "F_after:\n" << F_after << "\n\n";
     // std::cout << "V_after:\n" << V_after << "\n\n";
     // std::cout << "id_map_after: ";
