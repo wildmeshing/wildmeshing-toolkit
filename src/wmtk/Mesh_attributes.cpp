@@ -295,13 +295,15 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
         OperationLogPath + OperationLogPrefix + std::to_string(succ_operations_count) + ".txt";
     std::ofstream operation_log_file(filename);
     if (operation_log_file.is_open()) {
-        operation_log_file << "Operations: Consolidate" << std::endl;
+        operation_log_file << "Consolidate" << std::endl;
 
         for (int64_t d = 0; d < tcp; d++) {
             operation_log_file << "dimension " << d << ":\n";
             operation_log_file << "size: " << new2old[d].size() << std::endl;
             for (int64_t i = 0; i < new2old[d].size(); ++i) {
-                operation_log_file << new2old[d][i] << std::endl;
+                if (new2old[d][i] != i) {
+                    operation_log_file << i << "\t" << new2old[d][i] << std::endl;
+                }
             }
         }
         operation_log_file.close();

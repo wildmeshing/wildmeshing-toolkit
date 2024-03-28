@@ -549,7 +549,7 @@ std::vector<std::vector<TypedAttributeHandle<int64_t>>> TriMesh::connectivity_at
 // get F,V from mesh
 std::tuple<Eigen::MatrixXi, Eigen::MatrixXd> TriMesh::get_FV()
 {
-    consolidate();
+    // consolidate();
 
     const auto pos_handle = get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     const auto pos = create_const_accessor<double>(pos_handle);

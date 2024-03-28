@@ -86,7 +86,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                 std::ofstream operation_log_file(filename);
                 if (operation_log_file.is_open()) {
                     // DELETE: for test purposes
-                    operation_log_file << "Operation: " << operation_name << std::endl;
+                    operation_log_file << operation_name << std::endl;
                     for (const auto& s : mods) {
                         operation_log_file
                             << "mod simplex type: " << primitive_type_name(s.primitive_type())
