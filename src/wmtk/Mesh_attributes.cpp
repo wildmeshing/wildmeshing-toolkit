@@ -291,6 +291,8 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
     }
 #ifdef WMTK_RECORD_OPERATIONS
     // TODO: Write the new_2_old id map to file
+    std::cout << "Record Consolidate\n";
+    std::cout << "succ operations count: " << succ_operations_count << "\n";
     std::string filename =
         OperationLogPath + OperationLogPrefix + std::to_string(succ_operations_count) + ".txt";
     std::ofstream operation_log_file(filename);
@@ -307,6 +309,7 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
             }
         }
         operation_log_file.close();
+        succ_operations_count++;
     } else {
         std::cerr << "unable to open file " << filename << " for writing\n";
     }
