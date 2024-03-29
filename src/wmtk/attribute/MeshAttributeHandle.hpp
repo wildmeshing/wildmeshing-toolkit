@@ -22,6 +22,10 @@ namespace wmtk::attribute {
 class MeshAttributeHandle
 {
 public:
+    // The variant type for storing all of the tuple types.
+    // each type within the Handle variant must have a ::Type value that indicates a type-based
+    // descriptor of the data held by the type
+
     using HandleVariant = std::variant<
         TypedAttributeHandle<char>,
         TypedAttributeHandle<int64_t>,
@@ -29,20 +33,33 @@ public:
         TypedAttributeHandle<wmtk::Rational>,
         utils::HybridRationalAttribute<Eigen::Dynamic>>;
 
-    using ValueVariant = std::variant<char, int64_t, double, wmtk::Rational>;
+    // Convenience class for identifying attribute types
+    using ValueVariant = std::
+        variant<char, int64_t, double, wmtk::Rational, std::tuple<char, wmtk::Rational, double>>;
 
     enum class HeldType { Char = 0, Int64 = 1, Double = 2, Rational = 3, HybridRational = 4 };
 
     template <HeldType Type>
-    using held_handle_type = std::variant_alternative<size_t(Type), HandleVariant>;
+    using held_handle_type = std::variant_alternative_t<size_t(Type), HandleVariant>;
 
     template <HeldType Type>
     using held_primitive_type = typename held_handle_type<Type>::Type;
+
+
+    // for primitive type attributes returns the held type for primitive types
+    // takes as input basic type (char/int64/double/rational)
+    // Note this doesn't work with the hybrid type, so this only makes esnse to use in basic
+    // attribute storage
     template <typename T>
     constexpr static HeldType held_type_from_primitive();
 
     template <typename T>
-    constexpr static bool attribute_type_is_basic();
+    constexpr static HeldType held_type_from_handle();
+
+
+    template <typename T>
+    constexpr static bool handle_type_is_basic();
+
 
     friend class wmtk::Mesh;
     friend class wmtk::hash<MeshAttributeHandle>;
@@ -73,10 +90,10 @@ public:
 
 
     template <typename T>
-    const TypedAttributeHandle<T>& as() const;
+    auto as() const -> const held_handle_type<held_type_from_primitive<T>()>& ;
 
     template <HeldType Type>
-    auto as_from_held_type() const -> const TypedAttributeHandle<held_primitive_type<Type>>&;
+    auto as_from_held_type() const -> const held_handle_type<Type>&;
     // returns if the held attribute uses the primitive T
 
 
@@ -125,56 +142,65 @@ private:
 };
 
 template <typename T>
-inline const TypedAttributeHandle<T>& MeshAttributeHandle::as() const
+inline auto MeshAttributeHandle::as() const -> const held_handle_type<held_type_from_primitive<T>()>& 
 {
-    return std::get<TypedAttributeHandle<T>>(m_handle);
+    return as_from_held_type<held_type_from_primitive<T>()>();
 }
 
 
 template <typename T>
 inline bool MeshAttributeHandle::holds() const
 {
-    return std::holds_alternative<TypedAttributeHandle<T>>(m_handle);
+    return holds_from_held_type<held_type_from_primitive<T>()>();
 }
 
 inline bool MeshAttributeHandle::holds_basic_type() const
 {
     return std::visit(
-        [](const auto& h) -> bool { return attribute_type_is_basic<std::decay_t<decltype(h)>>(); },
+        [](const auto& h) noexcept -> bool {
+            return handle_type_is_basic<std::decay_t<decltype(h)>>();
+        },
         m_handle);
 }
 template <MeshAttributeHandle::HeldType Type>
 inline auto MeshAttributeHandle::as_from_held_type() const
-    -> const TypedAttributeHandle<held_primitive_type<Type>>&
+    -> const held_handle_type<Type>& 
 {
-    return as<held_primitive_type<Type>>();
+    return std::get<held_handle_type<Type>>(m_handle);
 }
 
 template <MeshAttributeHandle::HeldType Type>
 inline bool MeshAttributeHandle::holds_from_held_type() const
 {
-    return MeshAttributeHandle::holds<held_primitive_type<Type>>();
+    return std::holds_alternative<held_handle_type<Type>>(m_handle);
 }
 
 template <typename T>
 inline constexpr auto MeshAttributeHandle::held_type_from_primitive() -> HeldType
 {
-    if constexpr (std::is_same_v<T, char>) {
+    return held_type_from_handle<TypedAttributeHandle<T>>();
+}
+template <typename T>
+inline constexpr auto MeshAttributeHandle::held_type_from_handle() -> HeldType
+{
+    if constexpr (std::is_same_v<T, TypedAttributeHandle<char>>) {
         return HeldType::Char;
-    }
-    if constexpr (std::is_same_v<T, double>) {
+    } else if constexpr (std::is_same_v<T, TypedAttributeHandle<double>>) {
         return HeldType::Double;
-    }
-    if constexpr (std::is_same_v<T, int64_t>) {
+    } else if constexpr (std::is_same_v<T, TypedAttributeHandle<int64_t>>) {
         return HeldType::Int64;
-    }
-    if constexpr (std::is_same_v<T, wmtk::Rational>) {
+    } else if constexpr (std::is_same_v<T, TypedAttributeHandle<wmtk::Rational>>) {
         return HeldType::Rational;
-    }
-    if constexpr (std::is_same_v<T, utils::HybridRationalAttribute<Eigen::Dynamic>>) {
+    } else if constexpr (std::is_same_v<T, utils::HybridRationalAttribute<>>) {
         return HeldType::HybridRational;
     }
-    return HeldType::Char;
+    // If a compiler complains about the potentiality of no return value then a type accepted by the
+    // HAndleVariant is not being represented properly. If the comppiler is simply unhappy to not
+    // see a return then we should hack a default return value in an else statement with an asswert
+    // :(.
+    else {
+        return HeldType::Char;
+    }
 }
 
 inline PrimitiveType MeshAttributeHandle::primitive_type() const
@@ -186,12 +212,22 @@ inline PrimitiveType MeshAttributeHandle::primitive_typeT() const
 {
     return std::get<T>(m_handle).primitive_type();
 }
+namespace internal {
+template <typename T>
+struct is_typed_attribute_handle
+{
+    constexpr static bool value = false;
+};
+template <typename T>
+struct is_typed_attribute_handle<TypedAttributeHandle<T>>
+{
+    constexpr static bool value = true;
+};
+} // namespace internal
 
 template <typename T>
-constexpr inline bool MeshAttributeHandle::attribute_type_is_basic()
+constexpr inline bool MeshAttributeHandle::handle_type_is_basic()
 {
-    return //
-        std::is_same_v<T, double> || std::is_same_v<T, int64_t> || std::is_same_v<T, char> ||
-        std::is_same_v<T, wmtk::Rational>;
+    return internal::is_typed_attribute_handle<T>::value;
 }
 } // namespace wmtk::attribute

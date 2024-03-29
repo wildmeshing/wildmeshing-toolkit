@@ -30,7 +30,7 @@ auto MeshAttributeHandle::held_type() const -> HeldType
     return std::visit(
         [](const auto& h) -> HeldType {
             using T = std::decay_t<decltype(h)>;
-            return held_type_from_primitive<typename T::value_type>();
+            return held_type_from_handle<T>();
         },
         m_handle);
 }
@@ -41,7 +41,7 @@ bool MeshAttributeHandle::is_valid() const
            std::visit(
                [](const auto& h) -> bool {
                    using T = std::decay_t<decltype(h)>;
-                   if constexpr (held_type_from_primitive<T>() == HeldType::HybridRational) {
+                   if constexpr (held_type_from_handle<T>() == HeldType::HybridRational) {
                        return h.get_char().is_valid();
                    } else {
                        return h.is_valid();
@@ -55,7 +55,7 @@ int64_t MeshAttributeHandle::dimension() const
     return std::visit(
         [&](auto&& h) -> int64_t {
             using T = std::decay_t<decltype(h)>;
-            if constexpr (held_type_from_primitive<T>() == HeldType::HybridRational) {
+            if constexpr (held_type_from_handle<T>() == HeldType::HybridRational) {
                 return mesh().get_attribute_dimension(h.get_char());
             } else {
                 return mesh().get_attribute_dimension(h);

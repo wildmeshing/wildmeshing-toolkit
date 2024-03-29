@@ -2,6 +2,7 @@
 
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/vector_hash.hpp>
 #include "AttributeManager.hpp"
 #include "PerThreadAttributeScopeStacks.hpp"
@@ -308,11 +309,13 @@ class ClearAttrData : public ClearAttrDataT<char>,
 {
 public:
     template <typename T>
-    ClearAttrDataT<T>& get()
-    {
-        return static_cast<ClearAttrDataT<T>&>(*this);
-    }
+    ClearAttrDataT<T>& get();
 };
+template <typename T>
+ClearAttrDataT<T>& ClearAttrData::get()
+{
+    return static_cast<ClearAttrDataT<T>&>(*this);
+}
 } // namespace
 void AttributeManager::clear_attributes(
     const std::vector<attribute::MeshAttributeHandle::HandleVariant>& custom_attributes)
@@ -324,9 +327,11 @@ void AttributeManager::clear_attributes(
     ClearAttrData customs;
     for (const attribute::MeshAttributeHandle::HandleVariant& attr : custom_attributes) {
         std::visit(
-            [&](auto&& val) {
-                using T = typename std::decay_t<decltype(val)>::Type;
-                if constexpr (MeshAttributeHandle::template attribute_type_is_basic<T>()) {
+            [&](auto&& val) noexcept {
+                using HandleType = typename std::decay_t<decltype(val)>;
+                if constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic<
+                                  HandleType>()) {
+                    using T = typename HandleType::Type;
                     customs.get<T>()[get_primitive_type_id(val.primitive_type())].emplace_back(
                         val.base_handle());
                 }

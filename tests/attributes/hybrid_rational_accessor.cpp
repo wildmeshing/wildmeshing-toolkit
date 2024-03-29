@@ -79,7 +79,7 @@ TEST_CASE("test_single_hybrid_rational_accessor", "[accessor]")
             CHECK(cr == 0);
         }
         r.setConstant(double(v));
-        acc.round(vtup);
+        acc.round(vtup, true);
         for (auto& cv : c) {
             CHECK(cv == 1);
         }

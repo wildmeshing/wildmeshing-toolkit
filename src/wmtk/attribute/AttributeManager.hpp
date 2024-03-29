@@ -108,6 +108,10 @@ public:
     template <typename T>
     int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
 
+    template <typename T>
+    const T& get_attribute_default_value(const TypedAttributeHandle<T>& handle) const;
+
+
     /**
      * @brief Remove all custom attributes besides the one passed in.
      *
@@ -204,6 +208,14 @@ inline int64_t AttributeManager::get_attribute_dimension(
 {
     assert(handle.is_valid());
     return get(handle).dimension(handle.m_base_handle);
+}
+
+template <typename T>
+inline const T& AttributeManager::get_attribute_default_value(
+    const TypedAttributeHandle<T>& handle) const
+{
+    assert(handle.is_valid());
+    return get(handle).default_value(handle.m_base_handle);
 }
 
 template <typename T>

@@ -1,5 +1,6 @@
 #include "RoundRationalToDouble.hpp"
 #include <wmtk/Mesh.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk::operations::utils {
 
@@ -10,7 +11,7 @@ PrimitiveType RoundRationalToDouble::primitive_type() const
 std::vector<simplex::Simplex> RoundRationalToDouble::execute(const simplex::Simplex& simplex)
 {
     assert(simplex.primitive_type() == primitive_type());
-    m_hybrid_accessor.round(simplex.tuple());
+    m_hybrid_accessor.round(simplex.tuple(), true);
     return AttributesUpdate::execute(simplex);
 }
 } // namespace wmtk::operations::utils

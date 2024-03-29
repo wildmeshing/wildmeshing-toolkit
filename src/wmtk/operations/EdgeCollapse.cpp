@@ -20,9 +20,10 @@ EdgeCollapse::EdgeCollapse(Mesh& m)
             for (const auto& attr : mesh.custom_attributes()) {
                 std::visit(
                     [&](auto&& tah) noexcept {
-                        using T = typename std::decay_t<decltype(tah)>::Type;
-                        if constexpr (attribute::MeshAttributeHandle::
-                                          template attribute_type_is_basic<T>()) {
+                        using HandleType = typename std::decay_t<decltype(tah)>;
+                        if constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic<
+                                          HandleType>()) {
+                            using T = typename HandleType::Type;
                             m_new_attr_strategies.emplace_back(
                                 std::make_shared<operations::CollapseNewAttributeStrategy<T>>(
                                     attribute::MeshAttributeHandle(mesh, attr)));
@@ -88,8 +89,10 @@ void EdgeCollapse::set_new_attribute_strategy(
 {
     std::visit(
         [&](auto&& val) noexcept -> void {
-            using T = typename std::decay_t<decltype(val)>::Type;
-            if constexpr (attribute::MeshAttributeHandle::template attribute_type_is_basic<T>()) {
+            using HandleType = typename std::decay_t<decltype(val)>;
+            if constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic<
+                              HandleType>()) {
+                using T = typename HandleType::Type;
                 using OpType = operations::CollapseNewAttributeStrategy<T>;
 
                 std::shared_ptr<OpType> tmp = std::make_shared<OpType>(attribute);
