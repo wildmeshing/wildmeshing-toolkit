@@ -154,6 +154,25 @@ inline bool MeshAttributeHandle::holds() const
     return holds_from_held_type<held_type_from_primitive<T>()>();
 }
 
+namespace internal {
+template <typename T>
+struct is_typed_attribute_handle
+{
+    constexpr static bool value = false;
+};
+template <typename T>
+struct is_typed_attribute_handle<TypedAttributeHandle<T>>
+{
+    constexpr static bool value = true;
+};
+} // namespace internal
+
+template <typename T>
+constexpr inline bool MeshAttributeHandle::handle_type_is_basic()
+{
+    return internal::is_typed_attribute_handle<T>::value;
+}
+
 inline bool MeshAttributeHandle::holds_basic_type() const
 {
     return std::visit(
@@ -211,23 +230,5 @@ template <typename T>
 inline PrimitiveType MeshAttributeHandle::primitive_typeT() const
 {
     return std::get<T>(m_handle).primitive_type();
-}
-namespace internal {
-template <typename T>
-struct is_typed_attribute_handle
-{
-    constexpr static bool value = false;
-};
-template <typename T>
-struct is_typed_attribute_handle<TypedAttributeHandle<T>>
-{
-    constexpr static bool value = true;
-};
-} // namespace internal
-
-template <typename T>
-constexpr inline bool MeshAttributeHandle::handle_type_is_basic()
-{
-    return internal::is_typed_attribute_handle<T>::value;
 }
 } // namespace wmtk::attribute
