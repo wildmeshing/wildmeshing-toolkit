@@ -189,9 +189,9 @@ HybridRationalAttribute<D> HybridRationalAttribute<D>::register_attribute_from_r
 }
 } // namespace wmtk::attribute::utils
 
-template <size_t Index, int D, typename MeshType>
-size_t std::get(const wmtk::attribute::utils::HybridRationalAttribute<D>& attr)
-{
-    return 0;
-    // static_cast <
-}
+//template <size_t Index, int D, typename MeshType>
+//size_t std::get(const wmtk::attribute::utils::HybridRationalAttribute<D>& attr)
+//{
+//    return 0;
+//    // static_cast <
+//}
