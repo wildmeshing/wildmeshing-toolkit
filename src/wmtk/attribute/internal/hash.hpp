@@ -91,7 +91,6 @@ class std::hash<wmtk::attribute::MeshAttributeHandle>
     : public wmtk::hash<wmtk::attribute::MeshAttributeHandle>
 {
 };
-template <>
 template <int D>
 class std::hash<wmtk::attribute::utils::HybridRationalAttribute<D>>
     : public wmtk::hash<wmtk::attribute::utils::HybridRationalAttribute<D>>
