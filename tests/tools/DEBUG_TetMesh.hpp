@@ -41,6 +41,7 @@ public:
         const int64_t v2,
         const int64_t v3,
         const int64_t tid) const -> Tuple;
+    using TetMesh::vertex_tuple_from_id;
     auto edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple;
     auto face_tuple_from_vids(const int64_t v1, const int64_t v2, const int64_t v3) const -> Tuple;
     auto tet_tuple_from_vids(const int64_t v1, const int64_t v2, const int64_t v3, const int64_t v4)

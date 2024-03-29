@@ -1,10 +1,12 @@
 #include "MshReader.hpp"
 
+#include <set>
+
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
-
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
@@ -12,8 +14,12 @@
 
 namespace wmtk {
 
-
-std::shared_ptr<Mesh> MshReader::read(const std::filesystem::path& filename, bool ignore_z)
+// reading from an msh file while preserve the specified attributes, only supports valid scalar
+// attributes on tets in a tetmesh
+std::shared_ptr<Mesh> MshReader::read(
+    const std::filesystem::path& filename,
+    bool ignore_z,
+    const std::vector<std::string>& tetrahedron_attributes)
 {
     m_spec = mshio::load_msh(filename.string());
     m_ignore_z = ignore_z;
@@ -55,17 +61,37 @@ std::shared_ptr<Mesh> MshReader::read(const std::filesystem::path& filename, boo
                 auto orient = orient3d(p0.data(), p1.data(), p2.data(), p3.data());
 
                 if (orient < 0) {
-                    throw std::runtime_error("Input tet orientation is inconsistent.");
+                    log_and_throw_error("Input tet orientation is inconsistent.");
                 } else if (orient == 0) {
-                    throw std::runtime_error("Input tet is degenerated.");
+                    log_and_throw_error("Input tet is degenerated.");
                 }
             }
         }
 
         auto tmp = std::make_shared<TetMesh>();
         tmp->initialize(S);
+        {
+            // save all valid scalar attributes on tets
+            std::set<std::string> valid_attr_names;
+            for (const auto& data : m_spec.element_data) {
+                // validness: int_tags[2] stores the dimension of an element_data, which should
+                // match the size of tets
+                if (data.header.int_tags[2] != get_num_tets()) {
+                    continue;
+                }
+                valid_attr_names.insert(data.header.string_tags.front());
+            }
+            for (const std::string& attr : tetrahedron_attributes) {
+                if (valid_attr_names.count(attr) == 0) {
+                    log_and_throw_error("Attribute " + attr + " does not exist in the msh file.");
+                }
+                extract_element_attribute(tmp, attr, 3);
+            }
+        }
         res = tmp;
     } else if (get_num_faces() > 0) {
+        assert(tetrahedron_attributes.empty());
+
         V.resize(get_num_face_vertices(), m_ignore_z ? 2 : 3);
         S.resize(get_num_faces(), 3);
 
@@ -74,31 +100,13 @@ std::shared_ptr<Mesh> MshReader::read(const std::filesystem::path& filename, boo
 
         exactinit();
 
-        // {
-        //     int64_t inverted_cnt = 0;
-        //     // fix invertion
-        //     for (int64_t i = 0; i < S.rows(); i++) {
-        //         Eigen::VectorXd p0 = V.row(S(i, 0));
-        //         Eigen::VectorXd p1 = V.row(S(i, 1));
-        //         Eigen::VectorXd p2 = V.row(S(i, 2));
-
-        //         if (orient2d(p0.data(), p1.data(), p2.data()) < 0) {
-        //             int64_t tmp = S(i, 0);
-        //             S(i, 0) = S(i, 1);
-        //             S(i, 1) = tmp;
-        //             inverted_cnt++;
-        //         }
-        //     }
-
-        //     wmtk::logger().info(
-        //         "get {} inverted faces, swap col 0 and col 1 of those faces",
-        //         inverted_cnt);
-        // }
-
         auto tmp = std::make_shared<TriMesh>();
         tmp->initialize(S);
         res = tmp;
+
     } else if (get_num_edges() > 0) {
+        assert(tetrahedron_attributes.empty());
+
         V.resize(get_num_face_vertices(), m_ignore_z ? 2 : 3);
         S.resize(get_num_edges(), 2);
 
@@ -109,6 +117,8 @@ std::shared_ptr<Mesh> MshReader::read(const std::filesystem::path& filename, boo
         tmp->initialize(S);
         res = tmp;
     } else {
+        assert(tetrahedron_attributes.empty());
+
         res = std::make_shared<PointMesh>();
     }
 
@@ -178,40 +188,39 @@ void MshReader::extract_tets()
 // {
 //     return get_element_attribute_names<3>();
 // }
-
+// template <int DIM, typename Fn>
 // void MshReader::extract_edge_vertex_attribute(const std::string& attr_name)
 // {
 //     extract_vertex_attribute<1>(attr_name, std::forward<Fn>(set_attr));
 // }
-
+// template <int DIM, typename Fn>
 // void MshReader::extract_face_vertex_attribute(const std::string& attr_name)
 // {
 //     extract_vertex_attribute<2>(attr_name, std::forward<Fn>(set_attr));
 // }
-
+// template <int DIM, typename Fn>
 // void MshReader::extract_tet_vertex_attribute(const std::string& attr_name)
 // {
 //     extract_vertex_attribute<3>(attr_name, std::forward<Fn>(set_attr));
 // }
-
+// template <int DIM, typename Fn>
 // void MshReader::extract_edge_attribute(const std::string& attr_name)
 // {
 //     extract_element_attribute<1>(attr_name, std::forward<Fn>(set_attr));
 // }
-
+// template <int DIM, typename Fn>
 // void MshReader::extract_face_attribute(const std::string& attr_name)
 // {
 //     extract_element_attribute<2>(attr_name, std::forward<Fn>(set_attr));
 // }
-
+// template <int DIM, typename Fn>
 // void MshReader::extract_tet_attribute(const std::string& attr_name)
 // {
 //     extract_element_attribute<3>(attr_name, std::forward<Fn>(set_attr));
 // }
 
 
-template <int DIM>
-const mshio::NodeBlock* MshReader::get_vertex_block() const
+const mshio::NodeBlock* MshReader::get_vertex_block(int DIM) const
 {
     for (const auto& block : m_spec.nodes.entity_blocks) {
         if (block.entity_dim == DIM) {
@@ -221,8 +230,7 @@ const mshio::NodeBlock* MshReader::get_vertex_block() const
     return nullptr;
 }
 
-template <int DIM>
-const mshio::ElementBlock* MshReader::get_simplex_element_block() const
+const mshio::ElementBlock* MshReader::get_simplex_element_block(int DIM) const
 {
     for (const auto& block : m_spec.elements.entity_blocks) {
         if (block.entity_dim == DIM) {
@@ -235,7 +243,7 @@ const mshio::ElementBlock* MshReader::get_simplex_element_block() const
 template <int DIM>
 size_t MshReader::get_num_vertices() const
 {
-    const auto* block = get_vertex_block<DIM>();
+    const auto* block = get_vertex_block(DIM);
     if (block != nullptr) {
         return block->num_nodes_in_block;
     } else {
@@ -246,7 +254,7 @@ size_t MshReader::get_num_vertices() const
 template <int DIM>
 size_t MshReader::get_num_simplex_elements() const
 {
-    const auto* block = get_simplex_element_block<DIM>();
+    const auto* block = get_simplex_element_block(DIM);
     if (block != nullptr) {
         return block->num_elements_in_block;
     } else {
@@ -257,7 +265,7 @@ size_t MshReader::get_num_simplex_elements() const
 template <int DIM>
 void MshReader::extract_vertices()
 {
-    const auto* block = get_vertex_block<DIM>();
+    const auto* block = get_vertex_block(DIM);
     if (block == nullptr) return;
 
     const size_t num_vertices = block->num_nodes_in_block;
@@ -273,8 +281,8 @@ void MshReader::extract_vertices()
 template <int DIM>
 void MshReader::extract_simplex_elements()
 {
-    const auto* vertex_block = get_vertex_block<DIM>();
-    const auto* element_block = get_simplex_element_block<DIM>();
+    const auto* vertex_block = get_vertex_block(DIM);
+    const auto* element_block = get_simplex_element_block(DIM);
     if (element_block == nullptr) return;
     assert(vertex_block != nullptr);
 
@@ -309,23 +317,21 @@ void MshReader::extract_simplex_elements()
 }
 
 // Old code to read attribute, we might need it in the future
-// template <int DIM>
-// std::vector<std::string> get_vertex_attribute_names() const
-// {
-//     std::vector<std::string> attr_names;
-//     attr_names.reserve(m_spec.node_data.size());
-//     for (const auto& data : m_spec.node_data) {
-//         const auto& int_tags = data.header.int_tags;
-//         if (int_tags.size() >= 5 && int_tags[4] == DIM) {
-//             attr_names.push_back(data.header.string_tags.front());
-//         }
-//     }
-//     return attr_names;
-// }
+// std::vector<std::string> MshReader::get_vertex_attribute_names(int DIM) const
+//{
+//    std::vector<std::string> attr_names;
+//    attr_names.reserve(m_spec.node_data.size());
+//    for (const auto& data : m_spec.node_data) {
+//        const auto& int_tags = data.header.int_tags;
+//        if (int_tags.size() >= 5 && int_tags[4] == DIM) {
+//            attr_names.push_back(data.header.string_tags.front());
+//        }
+//    }
+//    return attr_names;
+//}
 
-// template <int DIM>
-// std::vector<std::string> get_element_attribute_names() const
-// {
+// std::vector<std::string> MshReader::get_element_attribute_names(int DIM) const
+//{
 //     std::vector<std::string> attr_names;
 //     attr_names.reserve(m_spec.element_data.size());
 //     for (const auto& data : m_spec.element_data) {
@@ -337,43 +343,91 @@ void MshReader::extract_simplex_elements()
 //     return attr_names;
 // }
 
-// template <int DIM, typename Fn>
-// void extract_vertex_attribute(const std::string& attr_name, Fn&& set_attr)
-// {
-//     const auto* vertex_block = get_vertex_block<DIM>();
+// void MshReader::extract_vertex_attribute(
+//     std::shared_ptr<wmtk::TetMesh> m,
+//     const std::string& attr_name,
+//     int DIM)
+//{
+//     const auto* vertex_block = get_vertex_block(DIM);
 //     const size_t tag_offset = vertex_block->tags.front();
 //     for (const auto& data : m_spec.node_data) {
 //         if (data.header.string_tags.front() != attr_name) continue;
 //         if (data.header.int_tags.size() >= 5 && data.header.int_tags[4] != DIM) {
 //             throw std::runtime_error("Attribute " + attr_name + " is of the wrong DIM.");
 //         }
+//
+//        // for (const auto& entry : data.entries) {
+//        //     const size_t tag = entry.tag - tag_offset;
+//        //     assert(tag < vertex_block->num_nodes_in_block);
+//        //     set_attr(tag, entry.data);
+//        // }
+//
+//        // figure out what data type the attribute stores
+//        // ...
+//
+//        for (const auto& entry : data.entries) {
+//            // auto attr_handle = m->register_attribute<double>(
+//            //     std::string(attr_name) + std::to_string(index),
+//            //     PrimitiveType::Tetrahedron,
+//            //     m->get_all(m->top_simplex_type()).size());
+//            // auto acc = m->create_accessor<double>(attr_handle);
+//            const size_t tag = entry.tag - tag_offset;
+//            assert(tag < vertex_block->num_nodes_in_block);
+//            // set_attr(tag, entry.data);
+//
+//            Eigen::VectorX<long> eigendata;
+//            eigendata.resize(entry.data.size());
+//            for (int i = 0; i < entry.data.size(); ++i) {
+//                eigendata.row(i) << entry.data[i];
+//            }
+//            // wmtk::attribute::MeshAttributeHandle tag_handle =
+//            //     wmtk::mesh_utils::set_matrix_attribute(
+//            //         eigendata,
+//            //         std::string(attr_name) + std::to_string(index),
+//            //         PrimitiveType::Tetrahedron,
+//            //         *(m.get()));
+//            // for (const wmtk::Tuple& tup : m->get_all(m->top_simplex_type())) {
+//            //     acc.scalar_attribute(tup) = entry.data;
+//            // }
+//        }
+//    }
+//}
 
-//         for (const auto& entry : data.entries) {
-//             const size_t tag = entry.tag - tag_offset;
-//             assert(tag < vertex_block->num_nodes_in_block);
-//             set_attr(tag, entry.data);
-//         }
-//     }
-// }
+// for now, this function only supports reading a single attribute on the tet mesh
+void MshReader::extract_element_attribute(
+    std::shared_ptr<wmtk::TetMesh> m,
+    const std::string& attr_name,
+    int DIM)
+{
+    const auto* element_block = get_simplex_element_block(DIM);
+    const auto tuples = m->get_all(m->top_simplex_type());
+    const size_t tag_offset = element_block->data.front();
 
-// template <int DIM, typename Fn>
-// void extract_element_attribute(const std::string& attr_name, Fn&& set_attr)
-// {
-//     const auto* element_block = get_simplex_element_block<DIM>();
-//     const size_t tag_offset = element_block->data.front();
-//     for (const auto& data : m_spec.element_data) {
-//         if (data.header.string_tags.front() != attr_name) continue;
-//         if (data.header.int_tags.size() >= 5 && data.header.int_tags[4] != DIM) {
-//             throw std::runtime_error("Attribute " + attr_name + " is of the wrong DIM.");
-//         }
+    for (const auto& data : m_spec.element_data) {
+        if (data.header.string_tags.front() != attr_name) {
+            continue;
+        }
+        assert(data.entries.size() == tuples.size());
 
-//         for (const auto& entry : data.entries) {
-//             const size_t tag = entry.tag - tag_offset;
-//             assert(tag < element_block->num_elements_in_block);
-//             set_attr(tag, entry.data);
-//         }
-//     }
-// }
+        const int64_t attr_dim = data.header.int_tags[1];
 
+        auto tag_handle =
+            m->register_attribute<double>(attr_name, PrimitiveType::Tetrahedron, attr_dim);
+        auto acc = m->create_accessor<double>(tag_handle);
 
+        for (size_t i = 0; i < tuples.size(); ++i) {
+            const auto& entry = data.entries[i];
+            const size_t tag = entry.tag - tag_offset;
+            assert(tag < element_block->num_elements_in_block);
+            assert(tag == i);
+            if (attr_dim == 1) {
+                acc.scalar_attribute(tuples[i]) = entry.data[0];
+            } else {
+                acc.vector_attribute(tuples[i]) =
+                    Eigen::Map<const Eigen::VectorXd>(entry.data.data(), entry.data.size());
+            }
+        }
+        return;
+    }
+}
 } // namespace wmtk

@@ -87,6 +87,9 @@ public:
     std::string get_name(const attribute::MeshAttributeHandle::HandleVariant& attr) const;
 
     template <typename T>
+    void set_name(const TypedAttributeHandle<T>& attr, const std::string& name);
+
+    template <typename T>
     const std::vector<MeshAttributes<T>>& get() const;
 
     template <typename T>
@@ -223,5 +226,14 @@ inline std::string AttributeManager::get_name(const TypedAttributeHandle<T>& han
 {
     return get(handle).get_name(handle.m_base_handle);
 }
+
+template <typename T>
+inline void AttributeManager::set_name(
+    const TypedAttributeHandle<T>& handle,
+    const std::string& name)
+{
+    return get(handle).set_name(handle.m_base_handle, name);
+}
+
 } // namespace attribute
 } // namespace wmtk
