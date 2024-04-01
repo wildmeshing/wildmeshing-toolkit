@@ -49,10 +49,13 @@ protected:
         return bbox;
     }
 
-
     Eigen::AlignedBox2d uv_triangle_bbox(
         const Eigen::Matrix<double, 3, 2, RowMajor>& uv_triangle_RowMajor) const;
 
+    std::vector<Eigen::RowVector2d> grid_line_intersections(
+        const Vector2d& a,
+        const Vector2d& b,
+        const Eigen::AlignedBox2d& bbox) const;
     std::pair<int, double> pixel_num_size_of_uv_triangle(Eigen::AlignedBox2d& bbox) const;
 
     std::pair<int, double> pixel_size_of_uv_triangle(int pixel_num, Eigen::AlignedBox2d& bbox)

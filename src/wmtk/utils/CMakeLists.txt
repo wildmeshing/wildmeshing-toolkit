@@ -19,6 +19,8 @@ set(SRC_FILES
     triangle_areas.hpp
     triangle_areas.cpp
 
+    point_inside_triangle_check.hpp
+
     vector_hash.hpp
     vector_hash.cpp
     #Optimization.hpp

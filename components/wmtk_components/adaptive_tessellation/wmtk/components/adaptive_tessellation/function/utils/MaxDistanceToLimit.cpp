@@ -1,4 +1,7 @@
 #include "MaxDistanceToLimit.hpp"
+#include <algorithm>
+#include <set>
+#include <wmtk/components/adaptive_tessellation/quadrature/PolygonClipping.cpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/PolygonClipping.hpp>
 namespace wmtk::components::function::utils {
 MaxDistanceToLimit::MaxDistanceToLimit(const ThreeChannelPositionMapEvaluator& evaluator)
@@ -38,31 +41,101 @@ double MaxDistanceToLimit::distance(
 
     double value = 0.;
     Eigen::AlignedBox2d bbox = uv_triangle_bbox(uv_triangle_RowMajor);
-    auto [num_pixels, pixel_size] = pixel_num_size_of_uv_triangle(bbox);
+    // axis aligned half plane intersection each edge of the triangle
+    // stores the intersection points of the half planes with every triangle edges (including
+    // triangle vertices)
+    std::vector<Eigen::RowVector2d> grid_line_intersections_01 =
+        grid_line_intersections(uv0, uv1, bbox);
+    std::vector<Eigen::RowVector2d> grid_line_intersections_12 =
+        grid_line_intersections(uv1, uv2, bbox);
+    std::vector<Eigen::RowVector2d> grid_line_intersections_20 =
+        grid_line_intersections(uv2, uv0, bbox);
 
-    for (auto y = 0; y < num_pixels; ++y) {
-        for (auto x = 0; x < num_pixels; ++x) {
-            Eigen::AlignedBox2d box;
-            box.extend(bbox.min() + Eigen::Vector2d(x * pixel_size, y * pixel_size));
-            box.extend(bbox.min() + Eigen::Vector2d((x + 1) * pixel_size, (y + 1) * pixel_size));
-            auto clipped = clip_triangle_by_box(uv_triangle_RowMajor, box);
-            double max_distance = 0.;
-            for (int i = 0; i < clipped.rows(); ++i) {
-                Vector2d intersection_uv = clipped.row(i);
-                Vector3d texture_position =
-                    m_three_channel_evaluator.uv_to_position(intersection_uv);
-                Vector3d position = position_triangle_ColMajor * bary.get(intersection_uv);
-                Vector3d diffp = texture_position - position;
-                if (max_distance < diffp.norm()) {
-                    max_distance = diffp.norm();
-                }
+
+    // for all the grid points of the bbox, check if it's inside the triangle. If it is check their
+    // value
+    return value;
+}
+
+std::vector<Eigen::RowVector2d> MaxDistanceToLimit::grid_line_intersections(
+    const Vector2d& a,
+    const Vector2d& b,
+    const Eigen::AlignedBox2d& bbox) const
+{
+    // for each horizontal and vertical halfplane of the bbox do line halfplane intersection
+    auto compare = [](const Eigen::Vector2d& x, const Eigen::Vector2d& y) {
+        // Replace this with some method of comparing Coordinates
+        return x.x() != y.x() || x.y() != y.y();
+    };
+
+    std::set<Eigen::RowVector2d, decltype(compare)> intersections(compare);
+
+
+    auto [xx1, yy1] = m_three_channel_evaluator.pixel_index(bbox.min());
+    auto [xx2, yy2] = m_three_channel_evaluator.pixel_index(bbox.max());
+    Eigen::Vector2d left, right, top, bottom;
+    if (a.x() < b.x()) {
+        left = a;
+        right = b;
+    } else {
+        left = b;
+        right = a;
+    }
+    if (a.y() < b.y()) {
+        bottom = a;
+        top = b;
+    } else {
+        bottom = b;
+        top = a;
+    }
+
+    for (int i = 1; i <= xx2 - xx1; ++i) {
+        // construct the halfplane with x = xxi
+        AlignedHalfPlane<0, false> vertical{bbox.min().x() + (double)i};
+        int status_left = point_is_in_aligned_half_plane(left, vertical);
+        int status_right = point_is_in_aligned_half_plane(right, vertical);
+        if (status_left > 0 && status_right < 0) {
+            // the vertical line is between left and right
+            // get the intersection
+            Eigen::RowVector2d intersect;
+            auto intersection = intersect_line_half_plane(left, right, vertical, intersect);
+            if (intersection) {
+                intersections.insert(intersect);
             }
-            // now check the four corners of the pixels that are in the triangle
-            //
+        } else {
+            break;
         }
     }
-    // now check the three vertices of the triangle
-    return value;
+    for (int j = 1; j <= yy2 - yy1; ++j) {
+        // construct the halfplane with x = xxi
+        AlignedHalfPlane<1, false> horizontal{bbox.min().y() + (double)j};
+
+        int status_bottom = point_is_in_aligned_half_plane(bottom, horizontal);
+        int status_top = point_is_in_aligned_half_plane(top, horizontal);
+        if (status_bottom > 0 && status_top < 0) {
+            // the horizontal line is between left and right
+            // get the intersection
+            Eigen::RowVector2d intersect;
+            auto intersection = intersect_line_half_plane(bottom, top, horizontal, intersect);
+            if (intersection) {
+                intersections.insert(intersect);
+            }
+        } else {
+            break;
+        }
+    }
+    intersections.insert(a);
+    intersections.insert(b);
+    // sort the intersections
+    std::vector<Eigen::RowVector2d> sorted_intersections;
+    for (const auto& inter : intersections) {
+        sorted_intersections.push_back(inter);
+    }
+    std::sort(
+        sorted_intersections.begin(),
+        sorted_intersections.end(),
+        [](const Eigen::RowVector2d& x, const Eigen::RowVector2d& y) { return x.x() < y.x(); });
+    return sorted_intersections;
 }
 
 Eigen::AlignedBox2d MaxDistanceToLimit::uv_triangle_bbox(
