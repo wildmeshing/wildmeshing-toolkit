@@ -1,8 +1,10 @@
 #include "MaxDistanceToLimit.hpp"
+#include <Eigen/Dense>
 #include <algorithm>
 #include <set>
 #include <wmtk/components/adaptive_tessellation/quadrature/PolygonClipping.cpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/PolygonClipping.hpp>
+#include <wmtk/utils/point_inside_triangle_check.hpp>
 namespace wmtk::components::function::utils {
 MaxDistanceToLimit::MaxDistanceToLimit(const ThreeChannelPositionMapEvaluator& evaluator)
     : Triangle2DTo3DMapping(evaluator)
@@ -137,6 +139,52 @@ std::vector<Eigen::RowVector2d> MaxDistanceToLimit::grid_line_intersections(
         [](const Eigen::RowVector2d& x, const Eigen::RowVector2d& y) { return x.x() < y.x(); });
     return sorted_intersections;
 }
+double MaxDistanceToLimit::l2_distance_to_limit(
+    Eigen::Vector2d& uv,
+    const Eigen::Matrix<double, 3, 3, Eigen::ColMajor>& position_triangle_ColMajor,
+    BarycentricTriangle<double>& bary) const
+{
+    Eigen::Vector3d texture_position = m_three_channel_evaluator.uv_to_position(uv);
+    Eigen::Vector3d position = position_triangle_ColMajor * bary.get(uv);
+    return (texture_position - position).norm();
+}
+double MaxDistanceToLimit::max_disatance_pixel_corners_inside_triangle(
+    const Vector2d& uv0,
+    const Vector2d& uv1,
+    const Vector2d& uv2,
+    const Eigen::Matrix<double, 3, 3, Eigen::ColMajor>& position_triangle_ColMajor,
+    const Eigen::AlignedBox2d& bbox) const
+{
+    double max_dis = 0.;
+    BarycentricTriangle<double> bary(uv0, uv1, uv2);
+    auto [num_pixels, pixel_size] = pixel_num_size_of_uv_triangle(bbox);
+
+    auto check_four_corners = [&](Eigen::AlignedBox2d& box) -> double {
+        double corner_max_dis = 0;
+        for (int i = 0; i < 2; ++i) {
+            for (int j = 0; j < 2; ++j) {
+                Vector2d corner = box.min() + Vector2d(i, j) * pixel_size;
+                if (wmtk::utils::point_inside_triangle_2d_check(uv0, uv1, uv2, corner)) {
+                    double dis = l2_distance_to_limit(corner, position_triangle_ColMajor, bary);
+                    corner_max_dis = std::max(corner_max_dis, dis);
+                }
+            }
+        }
+        return corner_max_dis;
+    };
+    for (auto y = 0; y < num_pixels; ++y) {
+        for (auto x = 0; x < num_pixels; ++x) {
+            Eigen::AlignedBox2d box;
+            box.extend(bbox.min() + Eigen::Vector2d(x * pixel_size, y * pixel_size));
+            box.extend(bbox.min() + Eigen::Vector2d((x + 1) * pixel_size, (y + 1) * pixel_size));
+            // check the four corners of the pixel, if any of them is inside the triangle.
+            // if it is, calculate the distance
+            max_dis = std::max(max_dis, check_four_corners(box));
+        }
+    }
+    return max_dis;
+}
+
 
 Eigen::AlignedBox2d MaxDistanceToLimit::uv_triangle_bbox(
     const Eigen::Matrix<double, 3, 2, RowMajor>& uv_triangle_RowMajor) const
@@ -148,7 +196,7 @@ Eigen::AlignedBox2d MaxDistanceToLimit::uv_triangle_bbox(
     return bbox;
 }
 std::pair<int, double> MaxDistanceToLimit::pixel_num_size_of_uv_triangle(
-    Eigen::AlignedBox2d& bbox) const
+    const Eigen::AlignedBox2d& bbox) const
 {
     Vector2d bbox_min = bbox.min();
     Vector2d bbox_max = bbox.max();
@@ -163,7 +211,7 @@ std::pair<int, double> MaxDistanceToLimit::pixel_num_size_of_uv_triangle(
 
 std::pair<int, double> MaxDistanceToLimit::pixel_size_of_uv_triangle(
     int pixel_num,
-    Eigen::AlignedBox2d& bbox) const
+    const Eigen::AlignedBox2d& bbox) const
 {
     assert(pixel_num > 0);
     double pixel_size = bbox.diagonal().maxCoeff() / pixel_num;

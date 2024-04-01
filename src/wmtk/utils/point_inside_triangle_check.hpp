@@ -3,18 +3,24 @@
 #include <predicates.h>
 #include <wmtk/function/utils/autodiff.h>
 #include <Eigen/Core>
+#include <Eigen/Dense>
+namespace wmtk::utils {
 
-// template get 3d tri area
-template <typename ADerived, typename BDerived, typename CDerived, typename DDerived>
 bool point_inside_triangle_2d_check(
-    const Eigen::MatrixBase<ADerived>& a,
-    const Eigen::MatrixBase<BDerived>& b,
-    const Eigen::MatrixBase<CDerived>& c,
-    const Eigen::MatrixBase<DDerived>& p)
+    const Eigen::Vector2d& a,
+    const Eigen::Vector2d& b,
+    const Eigen::Vector2d& c,
+    const Eigen::Vector2d& p)
 {
-    auto tri1_orientation = orient2d(a.data(), p.data(), c.data());
-    auto tri2_orientation = orient2d(a.data(), b.data(), p.data());
-    auto tri3_orientation = orient2d(p.data(), b.data(), c.data());
+    auto& nca = const_cast<Eigen::Vector2d&>(a);
+    auto& ncb = const_cast<Eigen::Vector2d&>(b);
+    auto& ncc = const_cast<Eigen::Vector2d&>(c);
+    auto& ncp = const_cast<Eigen::Vector2d&>(p);
+
+    auto tri1_orientation = orient2d(nca.data(), ncp.data(), ncc.data());
+    auto tri2_orientation = orient2d(nca.data(), ncb.data(), ncp.data());
+    auto tri3_orientation = orient2d(ncp.data(), ncb.data(), ncc.data());
     return (tri1_orientation == tri2_orientation) && (tri2_orientation == tri3_orientation) &&
            (tri1_orientation == tri3_orientation);
 }
+} // namespace wmtk::utils
