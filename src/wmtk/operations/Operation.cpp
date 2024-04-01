@@ -11,11 +11,12 @@
 #include <wmtk/utils/TupleInspector.hpp>
 
 // it's ugly but for teh visitor we need these included
+#include <nlohmann/json.hpp>
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
-
+using json = nlohmann::json;
 
 namespace wmtk::operations {
 
@@ -82,38 +83,28 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                 // create a local atlas file
                 // std::cout << "operation " << operation_name << " is successful\n";
                 std::string filename = OperationLogPath + OperationLogPrefix +
-                                       std::to_string(succ_operations_count) + ".txt";
+                                       std::to_string(succ_operations_count) + ".json";
                 std::ofstream operation_log_file(filename);
+                json operation_log;
                 if (operation_log_file.is_open()) {
-                    // DELETE: for test purposes
-                    operation_log_file << operation_name << std::endl;
-                    // for (const auto& s : mods) {
-                    //     operation_log_file
-                    //         << "mod simplex type: " << primitive_type_name(s.primitive_type())
-                    //         << std::endl;
-                    //     operation_log_file << wmtk::utils::TupleInspector::as_string(s.tuple())
-                    //                        << std::endl;
-                    // }
+                    // save operation_name
+                    operation_log["operation_name"] = operation_name;
+
+                    auto matrix_to_json = [](const auto& matrix) {
+                        json result = json::array();
+                        for (int i = 0; i < matrix.rows(); ++i) {
+                            json row = json::array();
+                            for (int j = 0; j < matrix.cols(); ++j) {
+                                row.push_back(matrix(i, j));
+                            }
+                            result.push_back(row);
+                        }
+                        return result;
+                    };
 
                     if (mesh().top_simplex_type() == PrimitiveType::Triangle) {
-                        auto [F, V, id_map, v_id_map] =
+                        auto [F_after, V_after, id_map_after, v_id_map_after] =
                             utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), mods[0]);
-                        operation_log_file << "F_after: " << F.rows() << std::endl
-                                           << F << std::endl;
-
-                        operation_log_file << "V_after: " << V.rows() << std::endl
-                                           << V << std::endl;
-
-                        operation_log_file << "F_id_map_after: \n";
-                        for (const auto& id : id_map) {
-                            operation_log_file << id << " ";
-                        }
-
-                        operation_log_file << "\nV_id_map_after: \n";
-                        for (const auto& id : v_id_map) {
-                            operation_log_file << id << " ";
-                        }
-                        operation_log_file << std::endl;
 
                         auto get_mesh = [&](const simplex::Simplex& s) {
                             if (operation_name == "EdgeCollapse")
@@ -125,23 +116,24 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         auto [F_before, V_before, id_map_before, v_id_map_before] =
                             mesh().parent_scope(get_mesh, simplex);
 
-                        operation_log_file << "F_before: " << F_before.rows() << std::endl
-                                           << F_before << std::endl;
+                        // log the mesh before and after the operation
+                        operation_log["F_after"]["rows"] = F_after.rows();
+                        operation_log["F_after"]["values"] = matrix_to_json(F_after);
+                        operation_log["V_after"]["rows"] = V_after.rows();
+                        operation_log["V_after"]["values"] = matrix_to_json(V_after);
+                        operation_log["F_id_map_after"] = id_map_after;
+                        operation_log["V_id_map_after"] = v_id_map_after;
 
-                        operation_log_file << "V_before: " << V_before.rows() << std::endl
-                                           << V_before << std::endl;
-
-                        operation_log_file << "F_id_map_before: \n";
-                        for (const auto& id : id_map_before) {
-                            operation_log_file << id << " ";
-                        }
-                        operation_log_file << std::endl;
-                        operation_log_file << "V_id_map_before: \n";
-                        for (const auto& id : v_id_map_before) {
-                            operation_log_file << id << " ";
-                        }
+                        operation_log["F_before"]["rows"] = F_before.rows();
+                        operation_log["F_before"]["values"] = matrix_to_json(F_before);
+                        operation_log["V_before"]["rows"] = V_before.rows();
+                        operation_log["V_before"]["values"] = matrix_to_json(V_before);
+                        operation_log["F_id_map_before"] = id_map_before;
+                        operation_log["V_id_map_before"] = v_id_map_before;
                     }
-
+                    // TODO: get a larger json file to do this:
+                    // op_logs_js["op_log"].push_back(operation_log);
+                    operation_log_file << operation_log.dump(4);
                     operation_log_file.close();
                 } else {
                     std::cerr << "unable to open file " << filename << " for writing\n";
