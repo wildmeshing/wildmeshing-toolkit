@@ -122,8 +122,8 @@ void handle_split_edge(
                     V_before.row(F_before(i, 2)));
                 // std::cout << "computed bc: " << bc(0) << ", " << bc(1) << ", " << bc(2)
                 // << std::endl;
-                if (bc.cwiseAbs().minCoeff() < bc_min_coef) {
-                    bc_min_coef = bc.cwiseAbs().minCoeff();
+                if (-bc.minCoeff() < bc_min_coef) {
+                    bc_min_coef = -bc.minCoeff();
                     local_index_in_f_before = i;
                     qp.bc = bc;
                     bc_updated = true;
