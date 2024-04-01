@@ -13,6 +13,7 @@
 #include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
+#include <wmtk/operations/MeshConsolidate.hpp>
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
@@ -236,7 +237,9 @@ void isotropic_remeshing(
             pass_stats += scheduler.run_operation_on_all(*op);
         }
 
-        multimesh::consolidate(mesh);
+        auto op_consolidate = MeshConsolidate(mesh);
+        op_consolidate(simplex::Simplex(PrimitiveType::Vertex, Tuple()));
+        // multimesh::consolidate(mesh);
 
         logger().info(
             "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",

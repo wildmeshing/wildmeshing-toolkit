@@ -78,7 +78,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
         if (after(unmods, mods)) {
             // TODO: store local atlas for retrieval
 #ifdef WMTK_RECORD_OPERATIONS
-            if (m_record) {
+            if (m_record && operation_name != "MeshConsolidate") {
                 // create a local atlas file
                 // std::cout << "operation " << operation_name << " is successful\n";
                 std::string filename = OperationLogPath + OperationLogPrefix +
