@@ -222,7 +222,7 @@ void isotropic_remeshing(
     }
 
     if (update_position) op_smooth->add_transfer_strategy(update_position);
-    ops.push_back(op_smooth);
+    // ops.push_back(op_smooth);
 
 
     //////////////////////////////////////////
