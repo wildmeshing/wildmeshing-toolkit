@@ -1,11 +1,14 @@
 #pragma once
 
 #include <optional>
-#include <wmtk/function/PerSimplexFunction.hpp>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
+#include <wmtk/function/PerSimplexFunction.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk::function {
+
+double Tet_AMIPS_energy(const std::array<double, 12>& T);
+double Tri_AMIPS_energy(const std::array<double, 6>& T);
 
 class AMIPS : public PerSimplexFunction
 {
