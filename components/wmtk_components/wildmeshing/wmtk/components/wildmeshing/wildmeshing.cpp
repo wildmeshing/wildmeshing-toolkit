@@ -159,8 +159,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto amips_accessor = mesh->create_accessor(amips_attribute.as<double>());
     // amips update
     auto compute_amips = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-        assert(P.cols() == 3 || P.cols() == 4); // cols --> number of neighbors
         assert(P.rows() == 2 || P.rows() == 3); // rows --> attribute dimension
+        assert(P.cols() == P.rows() + 1);
         if (P.cols() == 3) {
             // triangle
             assert(P.rows() == 2);
