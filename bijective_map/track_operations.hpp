@@ -36,7 +36,7 @@ void handle_consolidate(
 }
 
 // TODO: get a more acurate version of this
-Eigen::Vector3d ComputeBarycentricCoordinates(
+Eigen::Vector3d ComputeBarycentricCoordinates3D(
     const Eigen::Vector3d& p,
     const Eigen::Vector3d& a,
     const Eigen::Vector3d& b,
@@ -62,6 +62,26 @@ Eigen::Vector3d ComputeBarycentricCoordinates(
     double u = 1.0 - v - w;
     return Eigen::Vector3d(u, v, w);
 }
+
+Eigen::Vector3d ComputeBarycentricCoordinates2D(
+    const Eigen::Vector2d& p,
+    const Eigen::Vector2d& a,
+    const Eigen::Vector2d& b,
+    const Eigen::Vector2d& c)
+{
+    Eigen::Vector2d v0 = b - a, v1 = c - a, v2 = p - a;
+    double d00 = v0.dot(v0);
+    double d01 = v0.dot(v1);
+    double d11 = v1.dot(v1);
+    double d20 = v2.dot(v0);
+    double d21 = v2.dot(v1);
+    double denom = d00 * d11 - d01 * d01;
+    double v = (d11 * d20 - d01 * d21) / denom;
+    double w = (d00 * d21 - d01 * d20) / denom;
+    double u = 1.0 - v - w;
+    return Eigen::Vector3d(u, v, w);
+}
+
 
 void handle_split_edge(
     const Eigen::MatrixXd& V_before,
@@ -103,25 +123,35 @@ void handle_split_edge(
             }
 
             // compute the location of the qp
-            Eigen::Vector3d p(0, 0, 0);
+            int V_cols = V_after.cols();
+            Eigen::VectorXd p = Eigen::VectorXd::Zero(V_cols);
             for (int i = 0; i < 3; i++) {
                 p += V_after.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3)) *
                      qp.bc(i);
             }
-            // std::cout << "p: (" << p(0) << ", " << p(1) << ", " << p(2) << ")" << std::endl;
+
 
             // compute bc of the p in (V, F)_before
             int local_index_in_f_before = -1;
             double bc_min_coef = 1;
             bool bc_updated = false;
             for (int i = 0; i < F_before.rows(); i++) {
-                Eigen::Vector3d bc = ComputeBarycentricCoordinates(
-                    p,
-                    V_before.row(F_before(i, 0)),
-                    V_before.row(F_before(i, 1)),
-                    V_before.row(F_before(i, 2)));
-                // std::cout << "computed bc: " << bc(0) << ", " << bc(1) << ", " << bc(2)
-                // << std::endl;
+                Eigen::Vector3d bc;
+                if (V_cols == 2) {
+                    bc = ComputeBarycentricCoordinates2D(
+                        p,
+                        V_before.row(F_before(i, 0)),
+                        V_before.row(F_before(i, 1)),
+                        V_before.row(F_before(i, 2)));
+                } else // V_cols == 3
+                {
+                    bc = ComputeBarycentricCoordinates3D(
+                        p,
+                        V_before.row(F_before(i, 0)),
+                        V_before.row(F_before(i, 1)),
+                        V_before.row(F_before(i, 2)));
+                }
+
                 if (-bc.minCoeff() < bc_min_coef) {
                     bc_min_coef = -bc.minCoeff();
                     local_index_in_f_before = i;

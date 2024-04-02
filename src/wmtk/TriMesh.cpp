@@ -560,7 +560,8 @@ std::tuple<Eigen::MatrixXi, Eigen::MatrixXd> TriMesh::get_FV()
     const int64_t nV = capacity(PrimitiveType::Vertex);
 
     Eigen::MatrixXi F_mat(nF, 3);
-    Eigen::MatrixXd V_mat(nV, 3);
+
+    Eigen::MatrixXd V_mat(nV, pos.dimension());
 
     for (int64_t i = 0; i < nF; ++i) {
         auto fv = fv_accessor.index_access().const_vector_attribute<3>(i);
@@ -568,8 +569,13 @@ std::tuple<Eigen::MatrixXi, Eigen::MatrixXd> TriMesh::get_FV()
     }
 
     for (int64_t i = 0; i < nV; ++i) {
-        auto v = pos.index_access().const_vector_attribute<3>(i);
-        V_mat.row(i) << v(0), v(1), v(2);
+        if (pos.dimension() == 2) {
+            auto v = pos.index_access().const_vector_attribute<2>(i);
+            V_mat.row(i) << v(0), v(1);
+        } else {
+            auto v = pos.index_access().const_vector_attribute<3>(i);
+            V_mat.row(i) << v(0), v(1), v(2);
+        }
     }
 
     return std::make_tuple(F_mat, V_mat);

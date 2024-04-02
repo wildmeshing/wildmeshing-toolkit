@@ -43,7 +43,7 @@ get_local_trimesh(const wmtk::TriMesh& mesh, const wmtk::simplex::Simplex& simpl
         face_count++;
     }
 
-    Eigen::MatrixXd V(vertex_count, 3);
+    Eigen::MatrixXd V(vertex_count, pos.dimension());
     std::vector<int64_t> v_local_to_global(vertex_count);
     // build V, local_to_global
     for (const auto& pair : global_to_local_map) {
@@ -94,7 +94,7 @@ get_local_trimesh_before_collapse(const wmtk::TriMesh& mesh, const wmtk::simplex
         face_count++;
     }
 
-    Eigen::MatrixXd V(vertex_count, 3);
+    Eigen::MatrixXd V(vertex_count, pos.dimension());
     std::vector<int64_t> v_local_to_global(vertex_count);
     // build V
     for (const auto& pair : global_to_local_map) {

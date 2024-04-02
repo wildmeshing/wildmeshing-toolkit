@@ -116,14 +116,14 @@ int main(int argc, char** argv)
 
     auto init_mesh_ptr = wmtk::read_mesh(initial_mesh_file);
     auto [F_in, V_in] = static_cast<TriMesh&>(*init_mesh_ptr).get_FV();
-    std::cout << "F_in size" << F_in.rows() << std::endl;
-    std::cout << "V_in size" << V_in.rows() << std::endl;
+    std::cout << "F_in size " << F_in.rows() << ", " << F_in.cols() << std::endl;
+    std::cout << "V_in size " << V_in.rows() << ", " << V_in.cols() << std::endl;
 
     Eigen::MatrixXd V_out;
     Eigen::MatrixXi F_out;
     igl::readOBJ(output_mesh_file.string(), V_out, F_out);
-    std::cout << "F_out size" << F_out.rows() << std::endl;
-    std::cout << "V_out size" << V_out.rows() << std::endl;
+    std::cout << "F_out size" << F_out.rows() << ", " << F_out.cols() << std::endl;
+    std::cout << "V_out size" << V_out.rows() << ", " << V_in.cols() << std::endl;
 
     std::vector<std::vector<int>> bd_loops;
     igl::boundary_loop(F_out, bd_loops);
