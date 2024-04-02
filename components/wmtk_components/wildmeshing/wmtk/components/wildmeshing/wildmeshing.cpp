@@ -230,18 +230,17 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             v.thickness * bbdiag,
             constrained.front()));
 
-        update_child_positon.emplace_back(
-            std::make_shared<SingleAttributeTransferStrategy<double, double>>(
-                constrained.front(),
-                pt_attribute,
-                propagate_to_child_position));
-
-
         update_parent_positon.emplace_back(
             std::make_shared<SingleAttributeTransferStrategy<double, double>>(
                 pt_attribute,
                 constrained.front(),
                 propagate_to_parent_position));
+
+        update_child_positon.emplace_back(
+            std::make_shared<SingleAttributeTransferStrategy<double, double>>(
+                constrained.front(),
+                pt_attribute,
+                propagate_to_child_position));
     }
 
     //////////////////////////////////
@@ -340,7 +339,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     for (const auto& attr : pass_through_attributes) {
         collapse->set_new_attribute_strategy(attr);
     }
-    for (auto& s : update_child_positon) collapse->add_transfer_strategy(s);
+    for (auto& s : update_child_positon) {
+        collapse->add_transfer_strategy(s);
+    }
 
     auto proj_collapse = std::make_shared<ProjectOperation>(collapse, mesh_constaint_pairs);
     proj_collapse->set_priority(short_edges_first);
@@ -351,11 +352,15 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     proj_collapse->add_invariant(function_invariant);
 
     proj_collapse->add_transfer_strategy(edge_length_update);
-    for (auto& s : update_parent_positon) proj_collapse->add_transfer_strategy(s);
+    for (auto& s : update_parent_positon) {
+        proj_collapse->add_transfer_strategy(s);
+    }
+    for (auto& s : update_child_positon) {
+        proj_collapse->add_transfer_strategy(s);
+    }
 
     ops.emplace_back(proj_collapse);
     ops_name.emplace_back("collapse");
-
 
     //////////////////////////////////
     // 3) Swap
@@ -446,6 +451,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     proj_smoothing->add_transfer_strategy(edge_length_update);
     for (auto& s : update_parent_positon) proj_smoothing->add_transfer_strategy(s);
+    for (auto& s : update_child_positon) proj_smoothing->add_transfer_strategy(s);
     ops.push_back(proj_smoothing);
     ops_name.push_back("smoothing");
 
@@ -460,6 +466,23 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
     // Running all ops in order n times
     Scheduler scheduler;
+
+    //////////////////////////////////
+    // preprocessing
+
+    // logger().info("preprocessing");
+    // auto pre_stats = scheduler.run_operation_on_all(*surface_proj_collapse);
+    // logger().info(
+    //     "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
+    //     "executing: {}",
+    //     "collapse_on_surface",
+    //     pre_stats.number_of_performed_operations(),
+    //     pre_stats.number_of_successful_operations(),
+    //     pre_stats.number_of_failed_operations(),
+    //     pre_stats.collecting_time,
+    //     pre_stats.sorting_time,
+    //     pre_stats.executing_time);
+
     int iii = 0;
     for (int64_t i = 0; i < options.passes; ++i) {
         logger().info("Pass {}", i);
@@ -479,11 +502,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 stats.sorting_time,
                 stats.executing_time);
             ++jj;
-
-            // if (!mesh->is_connectivity_valid()) {
-            //     std::cout << "invalid connectivity after " + ops_name[jj] << std::endl;
-            //     throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
-            // }
         }
 
         logger().info(
@@ -495,17 +513,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
-        // if (!mesh->is_connectivity_valid()) {
-        //     std::cout << "invalid connectivity before consolidate" << std::endl;
-        //     throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
-        // }
-
         multimesh::consolidate(*mesh);
-
-        // if (!mesh->is_connectivity_valid()) {
-        //     std::cout << "invalid connectivity after consolidate" << std::endl;
-        //     throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
-        // }
 
         write(
             mesh,
@@ -516,6 +524,20 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             options.intermediate_output);
 
         assert(mesh->is_connectivity_valid());
+
+        // compute max energy
+        double max_energy = std::numeric_limits<double>::lowest();
+        double min_energy = std::numeric_limits<double>::max();
+        for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
+            double e = amips->get_value(simplex::Simplex(mesh->top_simplex_type(), t));
+            max_energy = std::max(max_energy, e);
+            min_energy = std::min(min_energy, e);
+        }
+
+        logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
+
+        // stop at good quality
+        if (max_energy <= 10) break;
     }
 
 

@@ -66,7 +66,12 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
         bbox.min() = center - options.box_scale * r;
         bbox.max() = center + options.box_scale * r;
         Eigen::VectorXd diag = bbox.max() - bbox.min();
-        Eigen::VectorXi res = (diag / grid_spacing).cast<int>();
+        // Eigen::VectorXi res = (diag / grid_spacing).cast<int>();
+
+        // // TODO: remove the hack
+        // // hack grid spacing as relative
+        Eigen::VectorXi res = (diag / (diag.norm() * grid_spacing)).cast<int>();
+
         Eigen::MatrixXd background_V;
 
 
@@ -125,7 +130,8 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
             for (int64_t i = 0; i < background_V.rows(); ++i) {
                 double sq_dist;
                 bvh.nearest_facet(background_V.row(i), nearest_point, sq_dist);
-                if (sq_dist >= options.min_dist) good.emplace_back(background_V.row(i));
+                if (sq_dist >= options.min_dist * options.min_dist * diag.norm() * diag.norm())
+                    good.emplace_back(background_V.row(i));
             }
             int64_t current_size = pts.rows();
             pts.conservativeResize(current_size + good.size(), pts.cols());
