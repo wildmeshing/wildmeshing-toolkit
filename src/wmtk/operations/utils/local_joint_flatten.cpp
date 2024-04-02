@@ -194,6 +194,7 @@ void flatten(
 
     // solve UV jointly
     {
+        // using derek's solver
         const VectorXd RHS = VectorXd::Zero(nVjoint * 2);
         mqwf_dense_data data;
         mqwf_dense_precompute(Q, b_UV, data);
@@ -211,11 +212,79 @@ void local_joint_flatten(
     const Eigen::MatrixXi& F_before,
     const Eigen::MatrixXd& V_before,
     const std::vector<int64_t>& v_id_map_before,
-    const Eigen::MatrixXi& F_after,
+    Eigen::MatrixXi& F_after,
     const Eigen::MatrixXd& V_after,
     const std::vector<int64_t>& v_id_map_after,
+    Eigen::MatrixXd& UV_joint,
+    std::vector<int64_t>& v_id_map_joint)
+{
+    // get V_joint, F_joint_before, F_joint_after
 
-    Eigen::MatrixXd& uv_before,
-    Eigen::MatrixXd& uv_after)
-{}
+    // TODO: this could be easier if we get local mesh from a "good" order
+    int vi_after = 0;
+    std::vector<int> local_vid_after_to_before_map(v_id_map_after.size(), -1);
+
+    for (int i = 1; i < v_id_map_after.size(); i++) {
+        auto it = std::find(v_id_map_before.begin(), v_id_map_before.end(), v_id_map_after[i]);
+        if (it == v_id_map_before.end()) {
+            std::runtime_error("There is vertex that is unituq in before!");
+        }
+        local_vid_after_to_before_map[i] = std::distance(v_id_map_before.begin(), it);
+    }
+
+
+    int vi_before = 0, vj_before = -1;
+    for (int i = 0; i < v_id_map_before.size(); i++) {
+        if (std::find(v_id_map_after.begin(), v_id_map_after.end(), v_id_map_before[i]) ==
+            v_id_map_after.end()) {
+            vj_before = i;
+            break;
+        }
+    }
+
+    std::cout << "vi_after: " << vi_after << std::endl;
+    std::cout << "vi_before: " << vi_before << std::endl;
+    std::cout << "vj_before: " << vj_before << std::endl;
+
+    if (vj_before == -1 || vj_before == vi_before) {
+        throw std::runtime_error("Cannot find the joint vertex!");
+    }
+
+    Eigen::MatrixXd V_joint = V_before;
+    V_joint.conservativeResize(V_joint.rows() + 1, V_joint.cols());
+    // put vi_after to the end
+    V_joint.row(V_joint.rows() - 1) = V_after.row(vi_after);
+
+    Eigen::MatrixXi F_joint_before = F_before;
+    Eigen::MatrixXi F_joint_after = F_after;
+    // update F_joint after
+    for (int i = 0; i < F_joint_after.rows(); i++) {
+        for (int j = 0; j < 3; j++) {
+            if (F_joint_after(i, j) == vi_after) {
+                F_joint_after(i, j) = V_joint.rows() - 1;
+            } else {
+                F_joint_after(i, j) = local_vid_after_to_before_map[F_joint_after(i, j)];
+            }
+        }
+    }
+
+    // modify F_after and v_id_map_joint
+    F_after = F_joint_after;
+    v_id_map_joint = v_id_map_before;
+    v_id_map_joint.push_back(v_id_map_after[vi_after]);
+
+    // bc
+    Eigen::VectorXi b_UV;
+    Eigen::VectorXd bc_UV;
+
+    b_UV.resize(2 * 2, 1);
+    bc_UV.resize(2 * 2, 1);
+    int nVjoint = V_joint.rows();
+
+    b_UV << vi_before, vj_before, vi_before + nVjoint, vj_before + nVjoint;
+    bc_UV << 0, 1, 0, 0;
+
+    // flatten
+    flatten(V_joint, F_joint_before, F_joint_after, b_UV, bc_UV, UV_joint);
+}
 } // namespace wmtk::operations::utils

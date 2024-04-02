@@ -159,7 +159,7 @@ void isotropic_remeshing(
     for (const auto& attr : pass_through_attributes) {
         op_collapse->set_new_attribute_strategy(attr);
     }
-    // ops.push_back(op_collapse);
+    ops.push_back(op_collapse);
 
 
     //////////////////////////////////////////

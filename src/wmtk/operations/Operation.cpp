@@ -4,13 +4,13 @@
 #include <wmtk/Record_Operations.hpp>
 #endif
 
+#include <nlohmann/json.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
+#include <wmtk/operations/utils/local_joint_flatten.hpp>
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
-
-#include <nlohmann/json.hpp>
 
 // it's ugly but for teh visitor we need these included
 #include <wmtk/EdgeMesh.hpp>
@@ -117,20 +117,43 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         auto [F_before, V_before, id_map_before, v_id_map_before] =
                             mesh().parent_scope(get_mesh, simplex);
 
-                        // log the mesh before and after the operation
-                        operation_log["F_after"]["rows"] = F_after.rows();
-                        operation_log["F_after"]["values"] = matrix_to_json(F_after);
-                        operation_log["V_after"]["rows"] = V_after.rows();
-                        operation_log["V_after"]["values"] = matrix_to_json(V_after);
-                        operation_log["F_id_map_after"] = id_map_after;
-                        operation_log["V_id_map_after"] = v_id_map_after;
+                        if (operation_name == "EdgeCollapse") {
+                            Eigen::MatrixXd UV_joint;
+                            std::vector<int64_t> v_id_map_joint;
+                            utils::local_joint_flatten(
+                                F_before,
+                                V_before,
+                                v_id_map_before,
+                                F_after,
+                                V_after,
+                                v_id_map_after,
+                                UV_joint,
+                                v_id_map_joint);
+                            operation_log["UV_joint"]["rows"] = UV_joint.rows();
+                            operation_log["UV_joint"]["values"] = matrix_to_json(UV_joint);
+                            operation_log["v_id_map_joint"] = v_id_map_joint;
+                            operation_log["F_after"]["rows"] = F_after.rows();
+                            operation_log["F_after"]["values"] = matrix_to_json(F_after);
+                            operation_log["F_before"]["rows"] = F_before.rows();
+                            operation_log["F_before"]["values"] = matrix_to_json(F_before);
+                            operation_log["F_id_map_after"] = id_map_after;
+                            operation_log["F_id_map_before"] = id_map_before;
+                        } else {
+                            // log the mesh before and after the operation
+                            operation_log["F_after"]["rows"] = F_after.rows();
+                            operation_log["F_after"]["values"] = matrix_to_json(F_after);
+                            operation_log["V_after"]["rows"] = V_after.rows();
+                            operation_log["V_after"]["values"] = matrix_to_json(V_after);
+                            operation_log["F_id_map_after"] = id_map_after;
+                            operation_log["V_id_map_after"] = v_id_map_after;
 
-                        operation_log["F_before"]["rows"] = F_before.rows();
-                        operation_log["F_before"]["values"] = matrix_to_json(F_before);
-                        operation_log["V_before"]["rows"] = V_before.rows();
-                        operation_log["V_before"]["values"] = matrix_to_json(V_before);
-                        operation_log["F_id_map_before"] = id_map_before;
-                        operation_log["V_id_map_before"] = v_id_map_before;
+                            operation_log["F_before"]["rows"] = F_before.rows();
+                            operation_log["F_before"]["values"] = matrix_to_json(F_before);
+                            operation_log["V_before"]["rows"] = V_before.rows();
+                            operation_log["V_before"]["values"] = matrix_to_json(V_before);
+                            operation_log["F_id_map_before"] = id_map_before;
+                            operation_log["V_id_map_before"] = v_id_map_before;
+                        }
                     }
                     // TODO: get a larger json file to do this:
                     // op_logs_js["op_log"].push_back(operation_log);
