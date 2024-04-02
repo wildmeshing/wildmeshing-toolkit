@@ -1,6 +1,7 @@
 #include "local_joint_flatten.hpp"
 #include <igl/boundary_facets.h>
 #include <igl/cotmatrix_entries.h>
+#include <igl/doublearea.h>
 #include <igl/slice.h>
 #include <igl/slice_into.h>
 // Derek's sovler
@@ -186,11 +187,7 @@ void flatten(
     }
     // Flatten the joint mesh UVs
     VectorXd UVjoint_flat;
-    UVjoint_flat.resize(Vjoint.rows() * 2);
-    for (int i = 0; i < Vjoint.rows(); i++) {
-        UVjoint_flat(2 * i) = Vjoint(i, 0);
-        UVjoint_flat(2 * i + 1) = Vjoint(i, 1);
-    }
+
 
     // solve UV jointly
     {
@@ -283,6 +280,12 @@ void local_joint_flatten(
 
     b_UV << vi_before, vj_before, vi_before + nVjoint, vj_before + nVjoint;
     bc_UV << 0, 1, 0, 0;
+
+    // b_UV.resize(3 * 1, 1);
+    // bc_UV.resize(3 * 1, 1);
+    // int nVjoint = V_joint.rows();
+    // b_UV << vi_before, vi_before + nVjoint, vj_before;
+    // bc_UV << 0, 0, 1;
 
     // flatten
     flatten(V_joint, F_joint_before, F_joint_after, b_UV, bc_UV, UV_joint);

@@ -19,6 +19,8 @@
 #include <wmtk/TriMesh.hpp>
 using json = nlohmann::json;
 
+// for Debugging output
+#include <igl/writeOBJ.h>
 namespace wmtk::operations {
 
 
@@ -118,8 +120,31 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             mesh().parent_scope(get_mesh, simplex);
 
                         if (operation_name == "EdgeCollapse") {
+                            // TODO: debug use
+                            auto to_three_cols = [](const Eigen::MatrixXd& V) {
+                                if (V.cols() == 2) {
+                                    Eigen::MatrixXd V_temp(V.rows(), 3);
+                                    V_temp << V, Eigen::VectorXd::Zero(V.rows());
+                                    return V_temp;
+                                } else {
+                                    return V;
+                                }
+                            };
+
+                            igl::writeOBJ(
+                                OperationLogPath + "/VF_before_" +
+                                    std::to_string(succ_operations_count) + ".obj",
+                                to_three_cols(V_before),
+                                F_before);
+                            igl::writeOBJ(
+                                OperationLogPath + "/VF_after_" +
+                                    std::to_string(succ_operations_count) + ".obj",
+                                to_three_cols(V_after),
+                                F_after);
+
                             Eigen::MatrixXd UV_joint;
                             std::vector<int64_t> v_id_map_joint;
+
                             utils::local_joint_flatten(
                                 F_before,
                                 V_before,
@@ -138,6 +163,17 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             operation_log["F_before"]["values"] = matrix_to_json(F_before);
                             operation_log["F_id_map_after"] = id_map_after;
                             operation_log["F_id_map_before"] = id_map_before;
+
+                            igl::writeOBJ(
+                                OperationLogPath + "/UV_after_" +
+                                    std::to_string(succ_operations_count) + ".obj",
+                                to_three_cols(UV_joint),
+                                F_after);
+                            igl::writeOBJ(
+                                OperationLogPath + "/UV_before_" +
+                                    std::to_string(succ_operations_count) + ".obj",
+                                to_three_cols(UV_joint),
+                                F_before);
                         } else {
                             // log the mesh before and after the operation
                             operation_log["F_after"]["rows"] = F_after.rows();

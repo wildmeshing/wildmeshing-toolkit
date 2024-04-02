@@ -25,7 +25,7 @@ get_local_trimesh(const wmtk::TriMesh& mesh, const wmtk::simplex::Simplex& simpl
     for (const auto& f_tuple : cofaces) {
         // get 3 vertices
         Tuple cur_v = f_tuple.tuple();
-        if (!mesh.is_ccw(cur_v)) {
+        if (mesh.is_ccw(cur_v)) {
             cur_v = mesh.switch_edge(cur_v);
         }
 
@@ -81,6 +81,9 @@ get_local_trimesh_before_collapse(const wmtk::TriMesh& mesh, const wmtk::simplex
     for (const auto& f_tuple : cofaces) {
         // get 3 vertices
         Tuple cur_v = f_tuple.tuple();
+        if (mesh.is_ccw(cur_v)) {
+            cur_v = mesh.switch_edge(cur_v);
+        }
         for (int i = 0; i < 3; i++) {
             int64_t global_vid = mesh.id(wmtk::simplex::Simplex::vertex(cur_v));
             if (global_to_local_map.count(global_vid) == 0) {
