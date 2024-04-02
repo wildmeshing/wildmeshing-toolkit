@@ -1,5 +1,9 @@
 var NAVTREEINDEX3 =
 {
+"_tuple_8hxx_source.html":[6,0,2,0,40],
+"_tuple_accessor_8hpp.html":[6,0,2,0,0,31],
+"_tuple_accessor_8hpp.html#a8a30951a7eb28a699c6f07292abf3362":[6,0,2,0,0,31,1],
+"_tuple_accessor_8hpp.html#a99c42c12cfed88d04753c7bf257b6abb":[6,0,2,0,0,31,2],
 "_tuple_accessor_8hpp_source.html":[6,0,2,0,0,31],
 "_tuple_accessor_8hxx.html":[6,0,2,0,0,32],
 "_tuple_accessor_8hxx_source.html":[6,0,2,0,0,32],
@@ -64,10 +68,10 @@ var NAVTREEINDEX3 =
 "_use_parent_scope_r_a_i_i_8cpp_source.html":[6,0,2,0,5,0,7],
 "_use_parent_scope_r_a_i_i_8hpp.html":[6,0,2,0,5,0,8],
 "_use_parent_scope_r_a_i_i_8hpp_source.html":[6,0,2,0,5,0,8],
-"_valence_improvement_invariant_8cpp.html":[6,0,2,0,3,54],
-"_valence_improvement_invariant_8cpp_source.html":[6,0,2,0,3,54],
-"_valence_improvement_invariant_8hpp.html":[6,0,2,0,3,55],
-"_valence_improvement_invariant_8hpp_source.html":[6,0,2,0,3,55],
+"_valence_improvement_invariant_8cpp.html":[6,0,2,0,3,56],
+"_valence_improvement_invariant_8cpp_source.html":[6,0,2,0,3,56],
+"_valence_improvement_invariant_8hpp.html":[6,0,2,0,3,57],
+"_valence_improvement_invariant_8hpp_source.html":[6,0,2,0,3,57],
 "_vertex_laplacian_smooth_8cpp.html":[6,0,2,0,6,6,12],
 "_vertex_laplacian_smooth_8cpp_source.html":[6,0,2,0,6,6,12],
 "_vertex_laplacian_smooth_8hpp.html":[6,0,2,0,6,6,13],
@@ -89,8 +93,8 @@ var NAVTREEINDEX3 =
 "_volume_remesher_triangle_insertion_8hpp.html#a8d59b38c3560ad4f49865c212b854456":[6,0,2,0,8,36,0],
 "_volume_remesher_triangle_insertion_8hpp_source.html":[6,0,2,0,8,36],
 "_wildmeshing_options_8hpp.html":[6,0,0,1,20,0,0,0,2],
+"_wildmeshing_options_8hpp.html#a2ba7cb360eeafd8bf82cc7072c6d667c":[6,0,0,1,20,0,0,0,2,4],
 "_wildmeshing_options_8hpp.html#a3ba4ceae8267640d56736f0153c842ca":[6,0,0,1,20,0,0,0,2,6],
-"_wildmeshing_options_8hpp.html#a415d5f2274fcfe59a24448d851ebddbd":[6,0,0,1,20,0,0,0,2,4],
 "_wildmeshing_options_8hpp.html#a8d7ec3154745148645546bb201c8968a":[6,0,0,1,20,0,0,0,2,5],
 "_wildmeshing_options_8hpp.html#af9a4dead429f27b7965c9f2a4366a8f2":[6,0,0,1,20,0,0,0,2,7],
 "_wildmeshing_options_8hpp_source.html":[6,0,0,1,20,0,0,0,2],
@@ -245,9 +249,5 @@ var NAVTREEINDEX3 =
 "classwmtk_1_1_edge_mesh.html#a83db0c93833dacdfb169807d8ba4b6ca":[5,0,2,14,15],
 "classwmtk_1_1_edge_mesh.html#a858527dd650e9b888f757f3e70f0940e":[5,0,2,14,26],
 "classwmtk_1_1_edge_mesh.html#a90181e4a8ae3981f82ac6620fe978fc5":[5,0,2,14,8],
-"classwmtk_1_1_edge_mesh.html#a9a95eb5094a314293961b68f6656efcc":[5,0,2,14,33],
-"classwmtk_1_1_edge_mesh.html#a9b9690da47f51a99e287c1448d00171c":[5,0,2,14,29],
-"classwmtk_1_1_edge_mesh.html#abb11a77971448cf4bc93efe610e80bb5":[5,0,2,14,10],
-"classwmtk_1_1_edge_mesh.html#ac355ae75cec3230b301784fc95a2e1f7":[5,0,2,14,2],
-"classwmtk_1_1_edge_mesh.html#ac9bfcfafdf681af977bb9e65dbd9df72":[5,0,2,14,18]
+"classwmtk_1_1_edge_mesh.html#a9a95eb5094a314293961b68f6656efcc":[5,0,2,14,33]
 };

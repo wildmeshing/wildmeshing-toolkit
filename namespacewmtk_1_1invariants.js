@@ -13,6 +13,7 @@ var namespacewmtk_1_1invariants =
     [ "MaxFunctionInvariant", "classwmtk_1_1invariants_1_1_max_function_invariant.html", "classwmtk_1_1invariants_1_1_max_function_invariant" ],
     [ "MinIncidentValenceInvariant", "classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html", "classwmtk_1_1invariants_1_1_min_incident_valence_invariant" ],
     [ "NoBoundaryCollapseToInteriorInvariant", "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant.html", "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant" ],
+    [ "SeparateSubstructuresInvariant", "classwmtk_1_1invariants_1_1_separate_substructures_invariant.html", "classwmtk_1_1invariants_1_1_separate_substructures_invariant" ],
     [ "TetMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html", "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant" ],
     [ "TriMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html", "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant" ],
     [ "uvEdgeInvariant", "classwmtk_1_1invariants_1_1uv_edge_invariant.html", "classwmtk_1_1invariants_1_1uv_edge_invariant" ],

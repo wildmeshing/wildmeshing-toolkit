@@ -64,6 +64,10 @@ var dir_5421ed8c8fde3f7a08a046a47d931eae =
     [ "NoBoundaryCollapseToInteriorInvariant.hpp", "_no_boundary_collapse_to_interior_invariant_8hpp.html", [
       [ "NoBoundaryCollapseToInteriorInvariant", "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant.html", "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant" ]
     ] ],
+    [ "SeparateSubstructuresInvariant.cpp", "_separate_substructures_invariant_8cpp.html", null ],
+    [ "SeparateSubstructuresInvariant.hpp", "_separate_substructures_invariant_8hpp.html", [
+      [ "SeparateSubstructuresInvariant", "classwmtk_1_1invariants_1_1_separate_substructures_invariant.html", "classwmtk_1_1invariants_1_1_separate_substructures_invariant" ]
+    ] ],
     [ "SimplexInversionInvariant.cpp", "_simplex_inversion_invariant_8cpp.html", null ],
     [ "SimplexInversionInvariant.hpp", "_simplex_inversion_invariant_8hpp.html", [
       [ "SimplexInversionInvariant", "classwmtk_1_1_simplex_inversion_invariant.html", "classwmtk_1_1_simplex_inversion_invariant" ]
