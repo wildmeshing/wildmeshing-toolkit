@@ -2,12 +2,11 @@
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/function/utils/SimplexGetter.hpp>
-#include <wmtk/utils/Rational.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/utils/Rational.hpp>
 
 
 namespace wmtk::function {
-namespace {
 
 double Tet_AMIPS_energy_aux(const std::array<double, 12>& T)
 {
@@ -579,7 +578,6 @@ std::array<double, NV * DIM> unbox(
     return res;
 }
 
-} // namespace
 
 template <int64_t NV, int64_t DIM>
 std::array<double, NV * DIM> AMIPS::get_raw_coordinates(
