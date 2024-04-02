@@ -11,6 +11,7 @@
 using namespace wmtk;
 
 // igl
+#include <igl/boundary_loop.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/parallel_for.h>
 using path = std::filesystem::path;
@@ -123,6 +124,10 @@ int main(int argc, char** argv)
     igl::readOBJ(output_mesh_file.string(), V_out, F_out);
     std::cout << "F_out size" << F_out.rows() << std::endl;
     std::cout << "V_out size" << V_out.rows() << std::endl;
+
+    std::vector<std::vector<int>> bd_loops;
+    igl::boundary_loop(F_out, bd_loops);
+    std::cout << "bd_loops size" << bd_loops.size() << std::endl;
 
     // TODO: get test example for query_points
     std::vector<query_point> query_points;

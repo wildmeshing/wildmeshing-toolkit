@@ -10,8 +10,9 @@
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 
-// it's ugly but for teh visitor we need these included
 #include <nlohmann/json.hpp>
+
+// it's ugly but for teh visitor we need these included
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
@@ -133,6 +134,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                     }
                     // TODO: get a larger json file to do this:
                     // op_logs_js["op_log"].push_back(operation_log);
+
                     operation_log_file << operation_log.dump(4);
                     operation_log_file.close();
                 } else {

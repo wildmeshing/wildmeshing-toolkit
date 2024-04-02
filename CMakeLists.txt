@@ -222,19 +222,17 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
         target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELEASE>:/INCREMENTAL:NO>)
     endif()
 
-    add_executable(bijective_map_app bijective_map_app.cpp track_operations.hpp)
+    add_subdirectory(bijective_map)
 
-    igl_include(glfw)
-    igl_include(opengl)
-    igl_include(stb)
+    # add_executable(bijective_map_app bijective_map_app.cpp track_operations.hpp)
 
-    # target_compile_options(bijective_map_app PRIVATE "-rdynamic")
-    target_link_libraries(bijective_map_app PUBLIC
-        wmtk::toolkit
-        wmtk::data
-        wmtk::components
-        CLI11::CLI11
-        jse::jse
-        igl::core igl::opengl igl::glfw
-    )
+    # # target_compile_options(bijective_map_app PRIVATE "-rdynamic")
+    # target_link_libraries(bijective_map_app PUBLIC
+    # wmtk::toolkit
+    # wmtk::data
+    # wmtk::components
+    # CLI11::CLI11
+    # jse::jse
+    # igl::core igl::opengl igl::glfw
+    # )
 endif()
