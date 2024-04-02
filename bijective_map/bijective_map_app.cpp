@@ -95,6 +95,15 @@ void back_track_map(path dirPath, std::vector<query_point>& query_points)
                 v_id_map_joint,
                 id_map_before,
                 id_map_after);
+            handle_collapse_edge(
+                UV_joint,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after,
+                query_points);
+
         } else {
             // std::cout << "This Operations is not implemented" << std::endl;
         }
