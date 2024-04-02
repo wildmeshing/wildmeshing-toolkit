@@ -147,6 +147,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     FastEnvelope::FastEnvelope
     simple_bvh::simple_bvh
     VolumeRemesher::VolumeRemesher
+    igl::core
 )
 
 if(MSVC)

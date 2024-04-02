@@ -14,11 +14,13 @@ set(SRC_FILES
 
     get_local_trimesh.cpp
 
+    local_joint_flatten.hpp
+    local_joint_flatten.cpp
+
     VertexLaplacianSmooth.hpp
     VertexLaplacianSmooth.cpp
 
     VertexTangentialLaplacianSmooth.hpp
     VertexTangentialLaplacianSmooth.cpp
-    )
+)
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
-
