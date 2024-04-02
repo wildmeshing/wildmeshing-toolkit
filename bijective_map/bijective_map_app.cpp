@@ -82,7 +82,19 @@ void back_track_map(path dirPath, std::vector<query_point>& query_points)
                 query_points);
 
         } else if (operation_name == "EdgeCollapse") {
-            // std::cout << "This Operations is EdgeCollapse" << std::endl;
+            std::cout << "This Operations is EdgeCollapse" << std::endl;
+            Eigen::MatrixXi F_after, F_before;
+            Eigen::MatrixXd UV_joint;
+            std::vector<int64_t> v_id_map_joint;
+            std::vector<int64_t> id_map_after, id_map_before;
+            parse_edge_collapse_file(
+                operation_log,
+                UV_joint,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after);
         } else {
             // std::cout << "This Operations is not implemented" << std::endl;
         }

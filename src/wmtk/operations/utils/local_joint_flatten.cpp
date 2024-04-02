@@ -242,9 +242,9 @@ void local_joint_flatten(
         }
     }
 
-    std::cout << "vi_after: " << vi_after << std::endl;
-    std::cout << "vi_before: " << vi_before << std::endl;
-    std::cout << "vj_before: " << vj_before << std::endl;
+    // std::cout << "vi_after: " << vi_after << std::endl;
+    // std::cout << "vi_before: " << vi_before << std::endl;
+    // std::cout << "vj_before: " << vj_before << std::endl;
 
     if (vj_before == -1 || vj_before == vi_before) {
         throw std::runtime_error("Cannot find the joint vertex!");

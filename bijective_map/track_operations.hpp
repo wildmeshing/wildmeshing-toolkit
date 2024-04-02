@@ -82,7 +82,87 @@ Eigen::Vector3d ComputeBarycentricCoordinates2D(
     return Eigen::Vector3d(u, v, w);
 }
 
+void handle_collapse_edge(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    std::vector<query_point>& query_points)
+{
+    std::cout << "Handling EdgeCollapse" << std::endl;
+    for (int id = 0; id < query_points.size(); id++) {
+        query_point& qp = query_points[id];
 
+        // find if qp is in the id_map_after
+        auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
+        if (it != id_map_after.end()) {
+            // find the index of qp in id_map_after
+            int local_index_in_f_after = std::distance(id_map_after.begin(), it);
+            // offset of the qp.fv_ids
+            int offset_in_f_after = -1;
+            for (int i = 0; i < 3; i++) {
+                if (v_id_map_joint[F_after(local_index_in_f_after, i)] == qp.fv_ids[0]) {
+                    offset_in_f_after = i;
+                    break;
+                }
+            }
+            if (offset_in_f_after == -1) {
+                std::cout << "something is wrong!" << std::endl;
+                continue;
+                // return;
+            }
+
+            // compute the location of the qp
+            Eigen::Vector2d p(0, 0);
+            for (int i = 0; i < 3; i++) {
+                p += UV_joint.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3)) *
+                     qp.bc(i);
+            }
+
+
+            // compute bc of the p in (V, F)_before
+            int local_index_in_f_before = -1;
+            double bc_min_coef = 1;
+            bool bc_updated = false;
+            for (int i = 0; i < F_before.rows(); i++) {
+                Eigen::Vector3d bc;
+
+                bc = ComputeBarycentricCoordinates2D(
+                    p,
+                    UV_joint.row(F_before(i, 0)),
+                    UV_joint.row(F_before(i, 1)),
+                    UV_joint.row(F_before(i, 2)));
+
+
+                if (-bc.minCoeff() < bc_min_coef) {
+                    bc_min_coef = -bc.minCoeff();
+                    local_index_in_f_before = i;
+                    qp.bc = bc;
+                    bc_updated = true;
+                }
+            }
+
+            if (!bc_updated) {
+                std::cout << "bc not updated\n" << std::endl;
+                continue;
+                // return;
+            }
+
+            // update qp
+            qp.f_id = id_map_before[local_index_in_f_before];
+            for (int i = 0; i < 3; i++) {
+                qp.fv_ids[i] = v_id_map_joint[F_before(local_index_in_f_before, i)];
+            }
+            // avoid numerical issue
+            qp.bc[0] = std::max(0.0, std::min(1.0, qp.bc[0]));
+            qp.bc[1] = std::max(0.0, std::min(1.0, qp.bc[1]));
+            qp.bc[2] = std::max(0.0, std::min(1.0, qp.bc[2]));
+            qp.bc /= qp.bc.sum();
+        }
+    }
+}
 void handle_split_edge(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& F_before,
@@ -231,4 +311,22 @@ void parse_edge_split_file(
     V_after = json_to_matrix<Eigen::MatrixXd>(operation_log["V_after"]);
     id_map_after = operation_log["F_id_map_after"].get<std::vector<int64_t>>();
     v_id_map_after = operation_log["V_id_map_after"].get<std::vector<int64_t>>();
+}
+
+void parse_edge_collapse_file(
+    const json& operation_log,
+    Eigen::MatrixXd& UV_joint,
+    Eigen::MatrixXi& F_before,
+    Eigen::MatrixXi& F_after,
+    std::vector<int64_t>& v_id_map_joint,
+    std::vector<int64_t>& id_map_before,
+    std::vector<int64_t>& id_map_after)
+{
+    UV_joint = json_to_matrix<Eigen::MatrixXd>(operation_log["UV_joint"]);
+    F_before = json_to_matrix<Eigen::MatrixXi>(operation_log["F_before"]);
+    F_after = json_to_matrix<Eigen::MatrixXi>(operation_log["F_after"]);
+
+    v_id_map_joint = operation_log["v_id_map_joint"].get<std::vector<int64_t>>();
+    id_map_before = operation_log["F_id_map_before"].get<std::vector<int64_t>>();
+    id_map_after = operation_log["F_id_map_after"].get<std::vector<int64_t>>();
 }
