@@ -149,6 +149,8 @@ public:
     Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
+    void set_name(const std::string& name);
+    const std::string& get_name() const;
     void serialize(MeshWriter& writer, const Mesh* local_root = nullptr) const;
 
     /**
@@ -832,6 +834,9 @@ protected: // THese are protected so unit tests can access - do not use manually
     multimesh::MultiMeshManager m_multi_mesh_manager;
 
     int64_t m_top_cell_dimension = -1;
+
+    // A human-parseable name
+    std::string m_name;
 
 private:
     // PImpl'd manager of per-thread update stacks
