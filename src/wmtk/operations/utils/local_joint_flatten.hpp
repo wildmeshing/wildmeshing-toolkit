@@ -19,5 +19,7 @@ void local_joint_flatten(
     const Eigen::MatrixXd& V_after,
     const std::vector<int64_t>& v_id_map_after,
     Eigen::MatrixXd& UV_joint,
-    std::vector<int64_t>& v_id_map_joint);
+    std::vector<int64_t>& v_id_map_joint,
+    bool is_bd_v0,
+    bool is_bd_v1);
 } // namespace wmtk::operations::utils

@@ -150,6 +150,18 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                     F_after);
                             }
 
+                            // TODO: add different cases for different boundary conditions
+                            auto [is_bd_v0, is_bd_v1] = mesh().parent_scope(
+                                [&](const simplex::Simplex& s) {
+                                    return std::make_tuple(
+                                        mesh().is_boundary(simplex::Simplex::vertex(s.tuple())),
+                                        mesh().is_boundary(
+                                            simplex::Simplex::vertex(mesh().switch_tuple(
+                                                s.tuple(),
+                                                PrimitiveType::Vertex))));
+                                },
+                                simplex);
+
                             Eigen::MatrixXd UV_joint;
                             std::vector<int64_t> v_id_map_joint;
 
@@ -161,7 +173,9 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 V_after,
                                 v_id_map_after,
                                 UV_joint,
-                                v_id_map_joint);
+                                v_id_map_joint,
+                                is_bd_v0,
+                                is_bd_v1);
 
                             operation_log["UV_joint"]["rows"] = UV_joint.rows();
                             operation_log["UV_joint"]["values"] = matrix_to_json(UV_joint);

@@ -205,7 +205,9 @@ void flatten(
             UVjoint_flat.block(UVjoint.rows() * i, 0, UVjoint.rows(), 1);
 }
 
-void local_joint_flatten(
+
+// interior edge
+void local_joint_flatten_case0(
     const Eigen::MatrixXi& F_before,
     const Eigen::MatrixXd& V_before,
     const std::vector<int64_t>& v_id_map_before,
@@ -289,5 +291,53 @@ void local_joint_flatten(
 
     // flatten
     flatten(V_joint, F_joint_before, F_joint_after, b_UV, bc_UV, UV_joint);
+}
+void local_joint_flatten(
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXd& V_before,
+    const std::vector<int64_t>& v_id_map_before,
+    Eigen::MatrixXi& F_after,
+    const Eigen::MatrixXd& V_after,
+    const std::vector<int64_t>& v_id_map_after,
+    Eigen::MatrixXd& UV_joint,
+    std::vector<int64_t>& v_id_map_joint,
+    bool is_bd_v0,
+    bool is_bd_v1)
+{
+    if (!is_bd_v0 && !is_bd_v1) {
+        std::cout << "case 0: interior edge" << std::endl;
+        local_joint_flatten_case0(
+            F_before,
+            V_before,
+            v_id_map_before,
+            F_after,
+            V_after,
+            v_id_map_after,
+            UV_joint,
+            v_id_map_joint);
+    } else if (is_bd_v0 && is_bd_v1) {
+        std::cout << "case 2: boundary edge" << std::endl;
+        throw std::runtime_error("Not implemented yet!");
+        local_joint_flatten_case0(
+            F_before,
+            V_before,
+            v_id_map_before,
+            F_after,
+            V_after,
+            v_id_map_after,
+            UV_joint,
+            v_id_map_joint);
+    } else {
+        std::cout << "case 1: edge connect a interior vertex and a boundary vertex" << std::endl;
+        local_joint_flatten_case0(
+            F_before,
+            V_before,
+            v_id_map_before,
+            F_after,
+            V_after,
+            v_id_map_after,
+            UV_joint,
+            v_id_map_joint);
+    }
 }
 } // namespace wmtk::operations::utils
