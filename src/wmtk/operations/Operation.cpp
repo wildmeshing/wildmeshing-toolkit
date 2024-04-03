@@ -89,10 +89,12 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                        std::to_string(succ_operations_count) + ".json";
                 std::ofstream operation_log_file(filename);
                 json operation_log;
+
                 if (operation_log_file.is_open()) {
                     // save operation_name
                     operation_log["operation_name"] = operation_name;
 
+                    // helper function to convert matrix to json
                     auto matrix_to_json = [](const auto& matrix) {
                         json result = json::array();
                         for (int i = 0; i < matrix.rows(); ++i) {
@@ -105,10 +107,13 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         return result;
                     };
 
+                    ////////////////////////////
+                    // handle triangle mesh
+                    ////////////////////////////
                     if (mesh().top_simplex_type() == PrimitiveType::Triangle) {
+                        // get local mesh before and after the operation
                         auto [F_after, V_after, id_map_after, v_id_map_after] =
                             utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), mods[0]);
-
                         auto get_mesh = [&](const simplex::Simplex& s) {
                             if (operation_name == "EdgeCollapse")
                                 return utils::get_local_trimesh_before_collapse(
@@ -119,8 +124,9 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         auto [F_before, V_before, id_map_before, v_id_map_before] =
                             mesh().parent_scope(get_mesh, simplex);
 
+
                         if (operation_name == "EdgeCollapse") {
-                            // TODO: debug use
+                            // TODO: debug use to save obj files
                             auto to_three_cols = [](const Eigen::MatrixXd& V) {
                                 if (V.cols() == 2) {
                                     Eigen::MatrixXd V_temp(V.rows(), 3);
@@ -131,16 +137,18 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 }
                             };
 
-                            igl::writeOBJ(
-                                OperationLogPath + "/VF_before_" +
-                                    std::to_string(succ_operations_count) + ".obj",
-                                to_three_cols(V_before),
-                                F_before);
-                            igl::writeOBJ(
-                                OperationLogPath + "/VF_after_" +
-                                    std::to_string(succ_operations_count) + ".obj",
-                                to_three_cols(V_after),
-                                F_after);
+                            if (mesh().is_boundary(mods[0])) {
+                                igl::writeOBJ(
+                                    OperationLogPath + "/VF_before_" +
+                                        std::to_string(succ_operations_count) + ".obj",
+                                    to_three_cols(V_before),
+                                    F_before);
+                                igl::writeOBJ(
+                                    OperationLogPath + "/VF_after_" +
+                                        std::to_string(succ_operations_count) + ".obj",
+                                    to_three_cols(V_after),
+                                    F_after);
+                            }
 
                             Eigen::MatrixXd UV_joint;
                             std::vector<int64_t> v_id_map_joint;
@@ -154,6 +162,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 v_id_map_after,
                                 UV_joint,
                                 v_id_map_joint);
+
                             operation_log["UV_joint"]["rows"] = UV_joint.rows();
                             operation_log["UV_joint"]["values"] = matrix_to_json(UV_joint);
                             operation_log["v_id_map_joint"] = v_id_map_joint;
@@ -164,17 +173,19 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             operation_log["F_id_map_after"] = id_map_after;
                             operation_log["F_id_map_before"] = id_map_before;
 
-                            igl::writeOBJ(
-                                OperationLogPath + "/UV_after_" +
-                                    std::to_string(succ_operations_count) + ".obj",
-                                to_three_cols(UV_joint),
-                                F_after);
-                            igl::writeOBJ(
-                                OperationLogPath + "/UV_before_" +
-                                    std::to_string(succ_operations_count) + ".obj",
-                                to_three_cols(UV_joint),
-                                F_before);
-                        } else {
+                            if (mesh().is_boundary(mods[0])) {
+                                igl::writeOBJ(
+                                    OperationLogPath + "/UV_after_" +
+                                        std::to_string(succ_operations_count) + ".obj",
+                                    to_three_cols(UV_joint),
+                                    F_after);
+                                igl::writeOBJ(
+                                    OperationLogPath + "/UV_before_" +
+                                        std::to_string(succ_operations_count) + ".obj",
+                                    to_three_cols(UV_joint),
+                                    F_before);
+                            }
+                        } else { // for split operation
                             // log the mesh before and after the operation
                             operation_log["F_after"]["rows"] = F_after.rows();
                             operation_log["F_after"]["values"] = matrix_to_json(F_after);
@@ -191,6 +202,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             operation_log["V_id_map_before"] = v_id_map_before;
                         }
                     }
+
                     // TODO: get a larger json file to do this:
                     // op_logs_js["op_log"].push_back(operation_log);
 
