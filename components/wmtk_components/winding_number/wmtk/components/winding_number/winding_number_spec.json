@@ -1,0 +1,35 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "input",
+            "filtering_base",
+            "output"
+        ],
+        "optional": [
+            "threshold"
+        ]
+    },
+    {
+        "pointer": "/input",
+        "type": "string",
+        "doc": "mesh to compute winding numbers"
+    },
+    {
+        "pointer": "/filtering_base",
+        "type": "string",
+        "doc": "surface mesh as the zero level"
+    },
+    {
+        "pointer": "/output",
+        "type": "string",
+        "doc": "output name"
+    },
+    {
+        "pointer": "/threshold",
+        "type": "float",
+        "default": 0.5,
+        "doc": "threshold of the winding number"
+    }
+]
