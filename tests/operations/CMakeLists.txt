@@ -8,6 +8,6 @@ set(TEST_SOURCES
     swap_2d.cpp
     test_attribute_transfer.cpp
     vertex_optimization.cpp
-    laplacian_smoothing.cpp
+    rounding.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})

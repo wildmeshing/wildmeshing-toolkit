@@ -23,6 +23,12 @@ public:
 
     std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
 
+protected:
+    wmtk::attribute::utils::HybridRationalAccessor<>& hybrid_accessor()
+    {
+        return m_hybrid_accessor;
+    }
+
 private:
     wmtk::attribute::utils::HybridRationalAccessor<> m_hybrid_accessor;
 };
