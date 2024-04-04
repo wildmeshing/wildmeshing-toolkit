@@ -80,7 +80,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
     if (!mods.empty()) { // success should be marked here
         apply_attribute_transfer(mods);
         if (after(unmods, mods)) {
-            // TODO: store local atlas for retrieval
+            // store local atlas for retrieval
 #ifdef WMTK_RECORD_OPERATIONS
             if (m_record && operation_name != "MeshConsolidate") {
                 // create a local atlas file
@@ -150,7 +150,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                     F_after);
                             }
 
-                            // TODO: add different cases for different boundary conditions
+                            // add different cases for different boundary conditions
                             auto [is_bd_v0, is_bd_v1] = mesh().parent_scope(
                                 [&](const simplex::Simplex& s) {
                                     return std::make_tuple(
