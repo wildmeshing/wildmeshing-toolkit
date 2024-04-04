@@ -367,7 +367,7 @@ void local_joint_flatten_case1(
     // flatten
     flatten(V_joint_before, V_joint_after, F_joint_before, F_joint_after, b_UV, bc_UV, UV_joint);
 
-    // modify F_after and v_id_map_joint
+    // modify UV_joint, F_after and v_id_map_joint
     UV_joint.conservativeResize(UV_joint.rows() + 1, UV_joint.cols());
     UV_joint.row(UV_joint.rows() - 1) = UV_joint.row(v_bd);
 
