@@ -201,6 +201,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a25946c47c82a6f8d7dd8ff8b2c079635"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5503d3b2e11858c3139ad0b01e7f9007"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#a5503d3b2e11858c3139ad0b01e7f9007">handle</a> () const</td></tr>
 <tr class="separator:a5503d3b2e11858c3139ad0b01e7f9007"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa29524d9ac03d223c29cc2e70ac5d69b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#aa29524d9ac03d223c29cc2e70ac5d69b">primitive_type</a> () const</td></tr>
+<tr class="separator:aa29524d9ac03d223c29cc2e70ac5d69b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a446ecbc83ba8e898d369df757406c8b4"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#ab1883d5e8a530b899930b30ae20ed74b">T</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#a446ecbc83ba8e898d369df757406c8b4">typed_handle</a> () const</td></tr>
 <tr class="separator:a446ecbc83ba8e898d369df757406c8b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae6897ea7037851ddd5794d580cd80d9b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#ae6897ea7037851ddd5794d580cd80d9b">has_stack</a> () const</td></tr>
@@ -282,6 +284,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:ada0ffe6f114ed47ad205989d8a6f67da inherit pro_methods_classwmtk_1_1attribute_1_1_accessor_base"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd60539d5779de287d2a0ec31b16c77a inherit pro_methods_classwmtk_1_1attribute_1_1_accessor_base"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#abd60539d5779de287d2a0ec31b16c77a">dimension</a> () const</td></tr>
 <tr class="separator:abd60539d5779de287d2a0ec31b16c77a inherit pro_methods_classwmtk_1_1attribute_1_1_accessor_base"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0fa8d55f8d64ae00fa21fb6beed66b4e inherit pro_methods_classwmtk_1_1attribute_1_1_accessor_base"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#ab1883d5e8a530b899930b30ae20ed74b">T</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#a0fa8d55f8d64ae00fa21fb6beed66b4e">default_value</a> () const</td></tr>
+<tr class="separator:a0fa8d55f8d64ae00fa21fb6beed66b4e inherit pro_methods_classwmtk_1_1attribute_1_1_accessor_base"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abbcc41b332d110ccca439462fd3fa5d8 inherit pro_methods_classwmtk_1_1attribute_1_1_accessor_base"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#abbcc41b332d110ccca439462fd3fa5d8">set_attribute</a> (std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#ab1883d5e8a530b899930b30ae20ed74b">T</a> &gt; value)</td></tr>
 <tr class="separator:abbcc41b332d110ccca439462fd3fa5d8 inherit pro_methods_classwmtk_1_1attribute_1_1_accessor_base"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6e14e31b37b4a2fa679719d5fcd5c73a inherit pro_methods_classwmtk_1_1attribute_1_1_accessor_base"><td class="memTemplParams" colspan="2">template&lt;int D = Dim&gt; </td></tr>
@@ -591,9 +595,9 @@ template&lt;typename T , typename MeshType  = Mesh, int Dim = Eigen::Dynamic&gt;
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_accessor_base_8hxx_source.html#l00068">68</a> of file <a class="el" href="_accessor_base_8hxx_source.html">AccessorBase.hxx</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_accessor_base_8hxx_source.html#l00069">69</a> of file <a class="el" href="_accessor_base_8hxx_source.html">AccessorBase.hxx</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_mesh__attributes_8cpp_source.html#l00190">wmtk::Mesh::consolidate()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_mesh__attributes_8cpp_source.html#l00197">wmtk::Mesh::consolidate()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -625,7 +629,7 @@ template&lt;typename T , typename MeshType  = Mesh, int Dim = Eigen::Dynamic&gt;
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_accessor_base_8hxx_source.html#l00069">69</a> of file <a class="el" href="_accessor_base_8hxx_source.html">AccessorBase.hxx</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_accessor_base_8hxx_source.html#l00070">70</a> of file <a class="el" href="_accessor_base_8hxx_source.html">AccessorBase.hxx</a>.</p>
 
 </div>
 </div>
@@ -706,9 +710,9 @@ template&lt;typename T , typename MeshType  = Mesh, int Dim = Eigen::Dynamic&gt;
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_accessor_8hpp_source.html#l00079">79</a> of file <a class="el" href="_accessor_8hpp_source.html">Accessor.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_accessor_8hpp_source.html#l00080">80</a> of file <a class="el" href="_accessor_8hpp_source.html">Accessor.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_accessor_8hpp_source.html#l00083">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_accessor_8hpp_source.html#l00084">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -743,7 +747,7 @@ template&lt;typename T , typename MeshType  = Mesh, int Dim = Eigen::Dynamic&gt;
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_accessor_8hpp_source.html#l00080">80</a> of file <a class="el" href="_accessor_8hpp_source.html">Accessor.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_accessor_8hpp_source.html#l00081">81</a> of file <a class="el" href="_accessor_8hpp_source.html">Accessor.hpp</a>.</p>
 
 </div>
 </div>
@@ -807,7 +811,7 @@ template&lt;typename T , typename MeshType , int Dim&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_accessor_8hxx_source.html#l00067">67</a> of file <a class="el" href="_accessor_8hxx_source.html">Accessor.hxx</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_tuple_8hpp_source.html#l00041">wmtk::Tuple::m_global_cid</a>, <a class="el" href="_tuple_8hpp_source.html#l00043">wmtk::Tuple::m_local_eid</a>, <a class="el" href="_tuple_8hpp_source.html#l00042">wmtk::Tuple::m_local_vid</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_tuple_8hpp_source.html#l00041">wmtk::Tuple::m_global_cid</a>, <a class="el" href="_tuple_8hpp_source.html#l00043">wmtk::Tuple::m_local_eid</a>, <a class="el" href="_tuple_8hpp_source.html#l00044">wmtk::Tuple::m_local_fid</a>, <a class="el" href="_tuple_8hpp_source.html#l00042">wmtk::Tuple::m_local_vid</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 </div>
 </div>
@@ -922,7 +926,7 @@ template&lt;typename T , typename MeshType  = Mesh, int Dim = Eigen::Dynamic&gt;
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_accessor_base_8hxx_source.html#l00076">76</a> of file <a class="el" href="_accessor_base_8hxx_source.html">AccessorBase.hxx</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_accessor_base_8hxx_source.html#l00077">77</a> of file <a class="el" href="_accessor_base_8hxx_source.html">AccessorBase.hxx</a>.</p>
 
 </div>
 </div>
@@ -1007,11 +1011,11 @@ template&lt;typename T , typename MeshType  = Mesh, int Dim = Eigen::Dynamic&gt;
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_accessor_8hpp_source.html#l00083">83</a> of file <a class="el" href="_accessor_8hpp_source.html">Accessor.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_accessor_8hpp_source.html#l00084">84</a> of file <a class="el" href="_accessor_8hpp_source.html">Accessor.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_accessor_8hpp_source.html#l00079">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::caching_base_type()</a>.</p>
+<p class="reference">References <a class="el" href="_accessor_8hpp_source.html#l00080">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::caching_base_type()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_mesh__attributes_8cpp_source.html#l00190">wmtk::Mesh::consolidate()</a>, <a class="el" href="_mesh_8cpp_source.html#l00025">wmtk::Mesh::get_all()</a>, <a class="el" href="_mesh_8cpp_source.html#l00161">wmtk::Mesh::get_cell_hash()</a>, <a class="el" href="_mesh_8hpp_source.html#l00823">wmtk::Mesh::get_index_access()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00103">wmtk::EdgeMesh::initialize()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00179">wmtk::TriMesh::initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">wmtk::TetMesh::initialize()</a>, <a class="el" href="_point_mesh_8cpp_source.html#l00050">wmtk::PointMesh::initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00391">wmtk::TetMesh::is_connectivity_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00379">wmtk::TriMesh::is_connectivity_valid()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00223">wmtk::EdgeMesh::is_connectivity_valid()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00037">wmtk::Mesh::request_simplex_indices()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00036">wmtk::EdgeMesh::switch_tuple()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00191">wmtk::EdgeMesh::tuple_from_global_ids()</a>, <a class="el" href="_mesh_8cpp_source.html#l00117">wmtk::Mesh::update_cell_hash()</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00166">wmtk::EdgeMesh::vertex_tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_mesh__attributes_8cpp_source.html#l00197">wmtk::Mesh::consolidate()</a>, <a class="el" href="_mesh_8cpp_source.html#l00025">wmtk::Mesh::get_all()</a>, <a class="el" href="_mesh_8cpp_source.html#l00161">wmtk::Mesh::get_cell_hash()</a>, <a class="el" href="_mesh_8hpp_source.html#l00825">wmtk::Mesh::get_index_access()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00103">wmtk::EdgeMesh::initialize()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00179">wmtk::TriMesh::initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">wmtk::TetMesh::initialize()</a>, <a class="el" href="_point_mesh_8cpp_source.html#l00050">wmtk::PointMesh::initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00391">wmtk::TetMesh::is_connectivity_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00379">wmtk::TriMesh::is_connectivity_valid()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00223">wmtk::EdgeMesh::is_connectivity_valid()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00043">wmtk::Mesh::request_simplex_indices()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00036">wmtk::EdgeMesh::switch_tuple()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00191">wmtk::EdgeMesh::tuple_from_global_ids()</a>, <a class="el" href="_mesh_8cpp_source.html#l00117">wmtk::Mesh::update_cell_hash()</a>, and <a class="el" href="_edge_mesh_8cpp_source.html#l00166">wmtk::EdgeMesh::vertex_tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1052,9 +1056,9 @@ template&lt;typename T , typename MeshType  = Mesh, int Dim = Eigen::Dynamic&gt;
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_accessor_8hpp_source.html#l00084">84</a> of file <a class="el" href="_accessor_8hpp_source.html">Accessor.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_accessor_8hpp_source.html#l00085">85</a> of file <a class="el" href="_accessor_8hpp_source.html">Accessor.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_accessor_8hpp_source.html#l00079">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::caching_base_type()</a>.</p>
+<p class="reference">References <a class="el" href="_accessor_8hpp_source.html#l00080">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::caching_base_type()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1089,9 +1093,9 @@ template&lt;typename T , typename MeshType  = Mesh, int Dim = Eigen::Dynamic&gt;
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_accessor_8hpp_source.html#l00073">73</a> of file <a class="el" href="_accessor_8hpp_source.html">Accessor.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_accessor_8hpp_source.html#l00074">74</a> of file <a class="el" href="_accessor_8hpp_source.html">Accessor.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_accessor_base_8hxx_source.html#l00021">wmtk::attribute::AccessorBase&lt; _T, Dim &gt;::mesh()</a>.</p>
+<p class="reference">References <a class="el" href="_accessor_base_8hxx_source.html#l00023">wmtk::attribute::AccessorBase&lt; _T, Dim &gt;::mesh()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_project_operation_8cpp_source.html#l00061">wmtk::operations::composite::ProjectOperation::execute()</a>, and <a class="el" href="_project_operation_8cpp_source.html#l00018">wmtk::operations::composite::ProjectOperation::ProjectOperation()</a>.</p>
 <div class="dynheader">
@@ -1134,15 +1138,41 @@ template&lt;typename T , typename MeshType  = Mesh, int Dim = Eigen::Dynamic&gt;
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_accessor_8hpp_source.html#l00074">74</a> of file <a class="el" href="_accessor_8hpp_source.html">Accessor.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_accessor_8hpp_source.html#l00075">75</a> of file <a class="el" href="_accessor_8hpp_source.html">Accessor.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_accessor_base_8hxx_source.html#l00021">wmtk::attribute::AccessorBase&lt; _T, Dim &gt;::mesh()</a>.</p>
+<p class="reference">References <a class="el" href="_accessor_base_8hxx_source.html#l00023">wmtk::attribute::AccessorBase&lt; _T, Dim &gt;::mesh()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_accessor_a8b3fce2bf23c90541e89c122cf44d1af_cgraph.svg" width="438" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
+
+</div>
+</div>
+<a id="aa29524d9ac03d223c29cc2e70ac5d69b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa29524d9ac03d223c29cc2e70ac5d69b">&#9670;&nbsp;</a></span>primitive_type()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename MeshType  = Mesh, int Dim = Eigen::Dynamic&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html">wmtk::attribute::AccessorBase</a>&lt; <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#ab1883d5e8a530b899930b30ae20ed74b">T</a>, Dim &gt;::primitive_type</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_accessor_base_8hxx_source.html#l00079">79</a> of file <a class="el" href="_accessor_base_8hxx_source.html">AccessorBase.hxx</a>.</p>
 
 </div>
 </div>
@@ -1170,7 +1200,7 @@ template&lt;typename T , typename MeshType  = Mesh, int Dim = Eigen::Dynamic&gt;
 
 <p class="definition">Definition at line <a class="el" href="_accessor_base_8hxx_source.html#l00048">48</a> of file <a class="el" href="_accessor_base_8hxx_source.html">AccessorBase.hxx</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_mesh__attributes_8cpp_source.html#l00037">wmtk::Mesh::request_simplex_indices()</a>, and <a class="el" href="_mesh_8cpp_source.html#l00173">wmtk::Mesh::set_capacities_from_flags()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_mesh__attributes_8cpp_source.html#l00043">wmtk::Mesh::request_simplex_indices()</a>, and <a class="el" href="_mesh_8cpp_source.html#l00173">wmtk::Mesh::set_capacities_from_flags()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -1280,7 +1310,7 @@ template&lt;typename T , typename MeshType  = Mesh, int Dim = Eigen::Dynamic&gt;
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_accessor_base_8hxx_source.html#l00077">77</a> of file <a class="el" href="_accessor_base_8hxx_source.html">AccessorBase.hxx</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_accessor_base_8hxx_source.html#l00078">78</a> of file <a class="el" href="_accessor_base_8hxx_source.html">AccessorBase.hxx</a>.</p>
 
 </div>
 </div>

@@ -133,28 +133,32 @@ Collaboration diagram for wmtk::attribute::MeshAttributeHandle:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:ab16f5783132a7a0861b1526fc881dfa6"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6">HeldType</a> { <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6a8e95e84813830072b7516cfaa7dbc1a9">Char</a> = 0
+<tr class="memitem:ab16f5783132a7a0861b1526fc881dfa6"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6">HeldType</a> { <br />
+&#160;&#160;<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6a8e95e84813830072b7516cfaa7dbc1a9">Char</a> = 0
 , <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6afbde23b11d7e59af7828e81144c8b487">Int64</a> = 1
 , <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6ad909d38d705ce75386dd86e611a82f5b">Double</a> = 2
 , <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6a1987a88c6ff10363e43d25ead3066ad8">Rational</a> = 3
+, <br />
+&#160;&#160;<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6a99db49fead2494bf6b2b0218dd1b9ee3">HybridRational</a> = 4
+<br />
  }</td></tr>
 <tr class="separator:ab16f5783132a7a0861b1526fc881dfa6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3f01d299c0c53fed0cb1d3d3068c1f60"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a3f01d299c0c53fed0cb1d3d3068c1f60">HandleVariant</a> = std::variant&lt; <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; char &gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; int64_t &gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; double &gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1_rational.html">wmtk::Rational</a> &gt; &gt;</td></tr>
-<tr class="separator:a3f01d299c0c53fed0cb1d3d3068c1f60"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad94661ff02ac9b1927259f0aa4553298"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad94661ff02ac9b1927259f0aa4553298">ValueVariant</a> = std::variant&lt; char, int64_t, double, <a class="el" href="classwmtk_1_1_rational.html">wmtk::Rational</a> &gt;</td></tr>
-<tr class="separator:ad94661ff02ac9b1927259f0aa4553298"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a03fd055dc9069e9f657b507938e92f85"><td class="memTemplParams" colspan="2">template&lt;HeldType Type&gt; </td></tr>
-<tr class="memitem:a03fd055dc9069e9f657b507938e92f85"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a03fd055dc9069e9f657b507938e92f85">held_handle_type</a> = std::variant_alternative&lt; size_t(Type), <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a3f01d299c0c53fed0cb1d3d3068c1f60">HandleVariant</a> &gt;</td></tr>
-<tr class="separator:a03fd055dc9069e9f657b507938e92f85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae48d78982e9495c0b7e9edc18051a5ac"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">HandleVariant</a> = std::variant&lt; <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; char &gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; int64_t &gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; double &gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1_rational.html">wmtk::Rational</a> &gt;, <a class="el" href="classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html">utils::HybridRationalAttribute</a>&lt; Eigen::Dynamic &gt; &gt;</td></tr>
+<tr class="separator:ae48d78982e9495c0b7e9edc18051a5ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3399195a55099a6304e29cf7f78b517"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad3399195a55099a6304e29cf7f78b517">ValueVariant</a> = std::variant&lt; char, int64_t, double, <a class="el" href="classwmtk_1_1_rational.html">wmtk::Rational</a>, std::tuple&lt; char, <a class="el" href="classwmtk_1_1_rational.html">wmtk::Rational</a>, double &gt; &gt;</td></tr>
+<tr class="separator:ad3399195a55099a6304e29cf7f78b517"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a668ff6ca474494a3dda2883f6856d03c"><td class="memTemplParams" colspan="2">template&lt;HeldType Type&gt; </td></tr>
+<tr class="memitem:a668ff6ca474494a3dda2883f6856d03c"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a668ff6ca474494a3dda2883f6856d03c">held_handle_type</a> = std::variant_alternative_t&lt; size_t(Type), <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">HandleVariant</a> &gt;</td></tr>
+<tr class="separator:a668ff6ca474494a3dda2883f6856d03c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0522660700bc90fc462141027c811ab8"><td class="memTemplParams" colspan="2">template&lt;HeldType Type&gt; </td></tr>
-<tr class="memitem:a0522660700bc90fc462141027c811ab8"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a0522660700bc90fc462141027c811ab8">held_primitive_type</a> = typename <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a03fd055dc9069e9f657b507938e92f85">held_handle_type</a>&lt; Type &gt;::Type</td></tr>
+<tr class="memitem:a0522660700bc90fc462141027c811ab8"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a0522660700bc90fc462141027c811ab8">held_primitive_type</a> = typename <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a668ff6ca474494a3dda2883f6856d03c">held_handle_type</a>&lt; Type &gt;::Type</td></tr>
 <tr class="separator:a0522660700bc90fc462141027c811ab8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ad2e1dc27f24f87abad3d32c75a979110"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad2e1dc27f24f87abad3d32c75a979110">MeshAttributeHandle</a> ()=default</td></tr>
 <tr class="separator:ad2e1dc27f24f87abad3d32c75a979110"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af524b682360b4fcad51376a69922698d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#af524b682360b4fcad51376a69922698d">MeshAttributeHandle</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a3f01d299c0c53fed0cb1d3d3068c1f60">HandleVariant</a> &amp;h)</td></tr>
+<tr class="memitem:af524b682360b4fcad51376a69922698d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#af524b682360b4fcad51376a69922698d">MeshAttributeHandle</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">HandleVariant</a> &amp;h)</td></tr>
 <tr class="separator:af524b682360b4fcad51376a69922698d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af406505d419182a1087c58e9b1599c26"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#af406505d419182a1087c58e9b1599c26">MeshAttributeHandle</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a> &amp;o)=default</td></tr>
 <tr class="separator:af406505d419182a1087c58e9b1599c26"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -175,15 +179,17 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5b258004f11155a8ab99bb804975cb6c"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a5b258004f11155a8ab99bb804975cb6c"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a5b258004f11155a8ab99bb804975cb6c">primitive_typeT</a> () const</td></tr>
 <tr class="separator:a5b258004f11155a8ab99bb804975cb6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac326961f01b9ba4fec395827f15a7ef2"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
-<tr class="memitem:ac326961f01b9ba4fec395827f15a7ef2"><td class="memTemplItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; T &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ac326961f01b9ba4fec395827f15a7ef2">as</a> () const</td></tr>
-<tr class="separator:ac326961f01b9ba4fec395827f15a7ef2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a615b4d3c2a9a448ac7904fb44a1035dd"><td class="memTemplParams" colspan="2">template&lt;HeldType Type&gt; </td></tr>
-<tr class="memitem:a615b4d3c2a9a448ac7904fb44a1035dd"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a615b4d3c2a9a448ac7904fb44a1035dd">as_from_held_type</a> () const -&gt; const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a0522660700bc90fc462141027c811ab8">held_primitive_type</a>&lt; Type &gt;&gt; &amp;</td></tr>
-<tr class="separator:a615b4d3c2a9a448ac7904fb44a1035dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c02e0fc8ac13ad9f16ce928e7a2c84c"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a9c02e0fc8ac13ad9f16ce928e7a2c84c"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a9c02e0fc8ac13ad9f16ce928e7a2c84c">as</a> () const -&gt; const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a668ff6ca474494a3dda2883f6856d03c">held_handle_type</a>&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab13df4df78dcf16eb7c5f06fb2ef0758">held_type_from_primitive</a>&lt; T &gt;()&gt; &amp;</td></tr>
+<tr class="separator:a9c02e0fc8ac13ad9f16ce928e7a2c84c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9819e403fe9a7a2880fe5423226d1d2"><td class="memTemplParams" colspan="2">template&lt;HeldType Type&gt; </td></tr>
+<tr class="memitem:ad9819e403fe9a7a2880fe5423226d1d2"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad9819e403fe9a7a2880fe5423226d1d2">as_from_held_type</a> () const -&gt; const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a668ff6ca474494a3dda2883f6856d03c">held_handle_type</a>&lt; Type &gt; &amp;</td></tr>
+<tr class="separator:ad9819e403fe9a7a2880fe5423226d1d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2b86caeb22b007b85b138ebc6b0ed837"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a2b86caeb22b007b85b138ebc6b0ed837"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a2b86caeb22b007b85b138ebc6b0ed837">holds</a> () const</td></tr>
 <tr class="separator:a2b86caeb22b007b85b138ebc6b0ed837"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31fbb7865bd8739e1ec6904f1fd3f984"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a31fbb7865bd8739e1ec6904f1fd3f984">holds_basic_type</a> () const</td></tr>
+<tr class="separator:a31fbb7865bd8739e1ec6904f1fd3f984"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afe99ebebdf6149da36a589976d53bc45"><td class="memTemplParams" colspan="2">template&lt;HeldType Type&gt; </td></tr>
 <tr class="memitem:afe99ebebdf6149da36a589976d53bc45"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#afe99ebebdf6149da36a589976d53bc45">holds_from_held_type</a> () const</td></tr>
 <tr class="separator:afe99ebebdf6149da36a589976d53bc45"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -193,27 +199,39 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a620620d54776b2c5f4f9cebad465cfa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad0f98f50746c05c5da306b69aa396585"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad0f98f50746c05c5da306b69aa396585">mesh</a> () const</td></tr>
 <tr class="separator:ad0f98f50746c05c5da306b69aa396585"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a791e43cd14d17e32409b62fd37b9fe95"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a3f01d299c0c53fed0cb1d3d3068c1f60">HandleVariant</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a791e43cd14d17e32409b62fd37b9fe95">handle</a> ()</td></tr>
+<tr class="memitem:a791e43cd14d17e32409b62fd37b9fe95"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">HandleVariant</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a791e43cd14d17e32409b62fd37b9fe95">handle</a> ()</td></tr>
 <tr class="separator:a791e43cd14d17e32409b62fd37b9fe95"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d59beae7aa8cf35d0e1982c23edbaa7"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a3f01d299c0c53fed0cb1d3d3068c1f60">HandleVariant</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a0d59beae7aa8cf35d0e1982c23edbaa7">handle</a> () const</td></tr>
+<tr class="memitem:a0d59beae7aa8cf35d0e1982c23edbaa7"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">HandleVariant</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a0d59beae7aa8cf35d0e1982c23edbaa7">handle</a> () const</td></tr>
 <tr class="separator:a0d59beae7aa8cf35d0e1982c23edbaa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3c2f0b99a4f3581ac8da264d10c493a1"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a3c2f0b99a4f3581ac8da264d10c493a1">dimension</a> () const</td></tr>
 <tr class="separator:a3c2f0b99a4f3581ac8da264d10c493a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9cd86b19e0fb48b1ea53529956ea974b"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a9cd86b19e0fb48b1ea53529956ea974b"><td class="memTemplItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a9cd86b19e0fb48b1ea53529956ea974b">handle_type_is_basic</a> ()</td></tr>
+<tr class="separator:a9cd86b19e0fb48b1ea53529956ea974b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a36d8fc1a6f7ce0b65a439cc47c7a066e"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a36d8fc1a6f7ce0b65a439cc47c7a066e"><td class="memTemplItemLeft" align="right" valign="top">constexpr auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a36d8fc1a6f7ce0b65a439cc47c7a066e">held_type_from_primitive</a> () -&gt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6">HeldType</a></td></tr>
 <tr class="separator:a36d8fc1a6f7ce0b65a439cc47c7a066e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acfab760b075ca2845578575a911de598"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:acfab760b075ca2845578575a911de598"><td class="memTemplItemLeft" align="right" valign="top">constexpr auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#acfab760b075ca2845578575a911de598">held_type_from_handle</a> () -&gt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6">HeldType</a></td></tr>
+<tr class="separator:acfab760b075ca2845578575a911de598"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:ab13df4df78dcf16eb7c5f06fb2ef0758"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:ab13df4df78dcf16eb7c5f06fb2ef0758"><td class="memTemplItemLeft" align="right" valign="top">constexpr static <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6">HeldType</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab13df4df78dcf16eb7c5f06fb2ef0758">held_type_from_primitive</a> ()</td></tr>
 <tr class="separator:ab13df4df78dcf16eb7c5f06fb2ef0758"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5960335b58945ba7d802310976e588ae"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a5960335b58945ba7d802310976e588ae"><td class="memTemplItemLeft" align="right" valign="top">constexpr static <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6">HeldType</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a5960335b58945ba7d802310976e588ae">held_type_from_handle</a> ()</td></tr>
+<tr class="separator:a5960335b58945ba7d802310976e588ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ff6dcc821ed39356ca3d451bd26d232"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a8ff6dcc821ed39356ca3d451bd26d232"><td class="memTemplItemLeft" align="right" valign="top">constexpr static bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a8ff6dcc821ed39356ca3d451bd26d232">handle_type_is_basic</a> ()</td></tr>
+<tr class="separator:a8ff6dcc821ed39356ca3d451bd26d232"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a581a7733744c671289d7062785a4f044"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a581a7733744c671289d7062785a4f044">m_mesh</a> = nullptr</td></tr>
 <tr class="separator:a581a7733744c671289d7062785a4f044"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1d9b995056615e22b42c6a101d4314e8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a3f01d299c0c53fed0cb1d3d3068c1f60">HandleVariant</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a1d9b995056615e22b42c6a101d4314e8">m_handle</a></td></tr>
+<tr class="memitem:a1d9b995056615e22b42c6a101d4314e8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">HandleVariant</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a1d9b995056615e22b42c6a101d4314e8">m_handle</a></td></tr>
 <tr class="separator:a1d9b995056615e22b42c6a101d4314e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
@@ -225,26 +243,26 @@ Friends</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00021">21</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00022">22</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a3f01d299c0c53fed0cb1d3d3068c1f60"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3f01d299c0c53fed0cb1d3d3068c1f60">&#9670;&nbsp;</a></span>HandleVariant</h2>
+<a id="ae48d78982e9495c0b7e9edc18051a5ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae48d78982e9495c0b7e9edc18051a5ac">&#9670;&nbsp;</a></span>HandleVariant</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a3f01d299c0c53fed0cb1d3d3068c1f60">wmtk::attribute::MeshAttributeHandle::HandleVariant</a> =  std::variant&lt; <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt;char&gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt;int64_t&gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt;double&gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt;<a class="el" href="classwmtk_1_1_rational.html">wmtk::Rational</a>&gt; &gt;</td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">wmtk::attribute::MeshAttributeHandle::HandleVariant</a> =  std::variant&lt; <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt;char&gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt;int64_t&gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt;double&gt;, <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt;<a class="el" href="classwmtk_1_1_rational.html">wmtk::Rational</a>&gt;, <a class="el" href="classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html">utils::HybridRationalAttribute</a>&lt;Eigen::Dynamic&gt; &gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00024">24</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00029">29</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a03fd055dc9069e9f657b507938e92f85"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a03fd055dc9069e9f657b507938e92f85">&#9670;&nbsp;</a></span>held_handle_type</h2>
+<a id="a668ff6ca474494a3dda2883f6856d03c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a668ff6ca474494a3dda2883f6856d03c">&#9670;&nbsp;</a></span>held_handle_type</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -252,12 +270,12 @@ Friends</h2></td></tr>
 template&lt;HeldType Type&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a03fd055dc9069e9f657b507938e92f85">wmtk::attribute::MeshAttributeHandle::held_handle_type</a> =  std::variant_alternative&lt;size_t(Type), <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a3f01d299c0c53fed0cb1d3d3068c1f60">HandleVariant</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a668ff6ca474494a3dda2883f6856d03c">wmtk::attribute::MeshAttributeHandle::held_handle_type</a> =  std::variant_alternative_t&lt;size_t(Type), <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">HandleVariant</a>&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00035">35</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00043">43</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
 </div>
 </div>
@@ -270,28 +288,28 @@ template&lt;HeldType Type&gt; </div>
 template&lt;HeldType Type&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a0522660700bc90fc462141027c811ab8">wmtk::attribute::MeshAttributeHandle::held_primitive_type</a> =  typename <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a03fd055dc9069e9f657b507938e92f85">held_handle_type</a>&lt;Type&gt;::Type</td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a0522660700bc90fc462141027c811ab8">wmtk::attribute::MeshAttributeHandle::held_primitive_type</a> =  typename <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a668ff6ca474494a3dda2883f6856d03c">held_handle_type</a>&lt;Type&gt;::Type</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00038">38</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00046">46</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
 </div>
 </div>
-<a id="ad94661ff02ac9b1927259f0aa4553298"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad94661ff02ac9b1927259f0aa4553298">&#9670;&nbsp;</a></span>ValueVariant</h2>
+<a id="ad3399195a55099a6304e29cf7f78b517"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad3399195a55099a6304e29cf7f78b517">&#9670;&nbsp;</a></span>ValueVariant</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad94661ff02ac9b1927259f0aa4553298">wmtk::attribute::MeshAttributeHandle::ValueVariant</a> =  std::variant&lt;char, int64_t, double, <a class="el" href="classwmtk_1_1_rational.html">wmtk::Rational</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad3399195a55099a6304e29cf7f78b517">wmtk::attribute::MeshAttributeHandle::ValueVariant</a> =  std:: variant&lt;char, int64_t, double, <a class="el" href="classwmtk_1_1_rational.html">wmtk::Rational</a>, std::tuple&lt;char, <a class="el" href="classwmtk_1_1_rational.html">wmtk::Rational</a>, double&gt; &gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00030">30</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00037">37</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
 </div>
 </div>
@@ -320,9 +338,10 @@ template&lt;HeldType Type&gt; </div>
 <tr><td class="fieldname"><a id="ab16f5783132a7a0861b1526fc881dfa6afbde23b11d7e59af7828e81144c8b487"></a>Int64&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ab16f5783132a7a0861b1526fc881dfa6ad909d38d705ce75386dd86e611a82f5b"></a>Double&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ab16f5783132a7a0861b1526fc881dfa6a1987a88c6ff10363e43d25ead3066ad8"></a>Rational&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ab16f5783132a7a0861b1526fc881dfa6a99db49fead2494bf6b2b0218dd1b9ee3"></a>HybridRational&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00032">32</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00040">40</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
 </div>
 </div>
@@ -367,7 +386,7 @@ template&lt;HeldType Type&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a3f01d299c0c53fed0cb1d3d3068c1f60">HandleVariant</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">HandleVariant</a> &amp;&#160;</td>
           <td class="paramname"><em>h</em>&#160;</td>
         </tr>
         <tr>
@@ -435,8 +454,8 @@ template&lt;HeldType Type&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ac326961f01b9ba4fec395827f15a7ef2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac326961f01b9ba4fec395827f15a7ef2">&#9670;&nbsp;</a></span>as()</h2>
+<a id="a9c02e0fc8ac13ad9f16ce928e7a2c84c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c02e0fc8ac13ad9f16ce928e7a2c84c">&#9670;&nbsp;</a></span>as()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -447,7 +466,7 @@ template&lt;typename T &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; T &gt; &amp; wmtk::attribute::MeshAttributeHandle::as</td>
+          <td class="memname">auto wmtk::attribute::MeshAttributeHandle::as</td>
         </tr>
       </table>
   </td>
@@ -457,22 +476,20 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00120">120</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
-
-<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00116">m_handle</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00145">145</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00077">wmtk::MeshCRTP&lt; Derived &gt;::create_accessor()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00088">wmtk::MeshCRTP&lt; Derived &gt;::create_const_accessor()</a>, <a class="el" href="_function_8cpp_source.html#l00015">wmtk::function::Function::embedded_dimension()</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00021">wmtk::invariants::EnvelopeInvariant::EnvelopeInvariant()</a>, <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, <a class="el" href="_h_d_f5_reader_8cpp_source.html#l00193">wmtk::HDF5Reader::set_attribute()</a>, <a class="el" href="mesh__utils_8hpp_source.html#l00009">wmtk::mesh_utils::set_matrix_attribute()</a>, and <a class="el" href="test__component__isotropic__remeshing_8cpp_source.html#l00263">TEST_CASE()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_mesh_attribute_handle_ac326961f01b9ba4fec395827f15a7ef2_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_mesh_attribute_handle_a9c02e0fc8ac13ad9f16ce928e7a2c84c_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
 </div>
 </div>
-<a id="a615b4d3c2a9a448ac7904fb44a1035dd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a615b4d3c2a9a448ac7904fb44a1035dd">&#9670;&nbsp;</a></span>as_from_held_type()</h2>
+<a id="ad9819e403fe9a7a2880fe5423226d1d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9819e403fe9a7a2880fe5423226d1d2">&#9670;&nbsp;</a></span>as_from_held_type()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -493,7 +510,9 @@ template&lt;MeshAttributeHandle::HeldType Type&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00132">132</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00185">185</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00141">m_handle</a>.</p>
 
 </div>
 </div>
@@ -512,9 +531,9 @@ template&lt;MeshAttributeHandle::HeldType Type&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00044">44</a> of file <a class="el" href="_mesh_attribute_handle_8cpp_source.html">MeshAttributeHandle.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00053">53</a> of file <a class="el" href="_mesh_attribute_handle_8cpp_source.html">MeshAttributeHandle.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00937">wmtk::Mesh::get_attribute_dimension()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00116">m_handle</a>, and <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00018">mesh()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00939">wmtk::Mesh::get_attribute_dimension()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6a99db49fead2494bf6b2b0218dd1b9ee3">HybridRational</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00141">m_handle</a>, and <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00018">mesh()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00212">wmtk::components::internal::MultiMeshFromTag::build_adjacency_matrix()</a>, <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, and <a class="el" href="multimesh_8cpp_source.html#l00012">wmtk::components::multimesh()</a>.</p>
 <div class="dynheader">
@@ -542,7 +561,7 @@ Here is the caller graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a3f01d299c0c53fed0cb1d3d3068c1f60">HandleVariant</a>&amp; wmtk::attribute::MeshAttributeHandle::handle </td>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">HandleVariant</a>&amp; wmtk::attribute::MeshAttributeHandle::handle </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -555,15 +574,15 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00091">91</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00116">116</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00116">m_handle</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00141">m_handle</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00179">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag()</a>, <a class="el" href="_regular_space_8cpp_source.html#l00050">wmtk::components::internal::RegularSpace::regularize_tags()</a>, <a class="el" href="_edge_collapse_8cpp_source.html#l00081">wmtk::operations::EdgeCollapse::set_new_attribute_strategy()</a>, and <a class="el" href="_edge_split_8cpp_source.html#l00079">wmtk::operations::EdgeSplit::set_new_attribute_strategy()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00196">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag()</a>, <a class="el" href="_vertex_laplacian_smooth_8cpp_source.html#l00021">wmtk::operations::VertexLaplacianSmooth::operator()()</a>, <a class="el" href="_regular_space_8cpp_source.html#l00050">wmtk::components::internal::RegularSpace::regularize_tags()</a>, <a class="el" href="_edge_collapse_8cpp_source.html#l00086">wmtk::operations::EdgeCollapse::set_new_attribute_strategy()</a>, and <a class="el" href="_edge_split_8cpp_source.html#l00083">wmtk::operations::EdgeSplit::set_new_attribute_strategy()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_mesh_attribute_handle_a791e43cd14d17e32409b62fd37b9fe95_icgraph.svg" width="100%" height="498"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_mesh_attribute_handle_a791e43cd14d17e32409b62fd37b9fe95_icgraph.svg" width="100%" height="547"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -579,7 +598,7 @@ Here is the caller graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a3f01d299c0c53fed0cb1d3d3068c1f60">HandleVariant</a>&amp; wmtk::attribute::MeshAttributeHandle::handle </td>
+          <td class="memname">const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">HandleVariant</a>&amp; wmtk::attribute::MeshAttributeHandle::handle </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -592,9 +611,73 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00092">92</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00117">117</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00116">m_handle</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00141">m_handle</a>.</p>
+
+</div>
+</div>
+<a id="a8ff6dcc821ed39356ca3d451bd26d232"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ff6dcc821ed39356ca3d451bd26d232">&#9670;&nbsp;</a></span>handle_type_is_basic() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr static bool wmtk::attribute::MeshAttributeHandle::handle_type_is_basic </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="reference">Referenced by <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00176">holds_basic_type()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_mesh_attribute_handle_a8ff6dcc821ed39356ca3d451bd26d232_icgraph.svg" width="504" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a9cd86b19e0fb48b1ea53529956ea974b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9cd86b19e0fb48b1ea53529956ea974b">&#9670;&nbsp;</a></span>handle_type_is_basic() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr bool wmtk::attribute::MeshAttributeHandle::handle_type_is_basic </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00171">171</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
 </div>
 </div>
@@ -615,7 +698,72 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00028">28</a> of file <a class="el" href="_mesh_attribute_handle_8cpp_source.html">MeshAttributeHandle.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00116">m_handle</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00141">m_handle</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_vertex_laplacian_smooth_8cpp_source.html#l00010">wmtk::operations::VertexLaplacianSmooth::VertexLaplacianSmooth()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_mesh_attribute_handle_a23d1bf1e4745768418913b9c64c15ea0_icgraph.svg" width="528" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a5960335b58945ba7d802310976e588ae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5960335b58945ba7d802310976e588ae">&#9670;&nbsp;</a></span>held_type_from_handle() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr static <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6">HeldType</a> wmtk::attribute::MeshAttributeHandle::held_type_from_handle </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="acfab760b075ca2845578575a911de598"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acfab760b075ca2845578575a911de598">&#9670;&nbsp;</a></span>held_type_from_handle() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr auto wmtk::attribute::MeshAttributeHandle::held_type_from_handle </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> -&gt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6">HeldType</a>
+</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00203">203</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
 </div>
 </div>
@@ -672,7 +820,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00145">145</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00198">198</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
 </div>
 </div>
@@ -698,15 +846,48 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00127">127</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00152">152</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00116">m_handle</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00060">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;::CollapseNewAttributeStrategy()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00077">wmtk::MeshCRTP&lt; Derived &gt;::create_accessor()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00088">wmtk::MeshCRTP&lt; Derived &gt;::create_const_accessor()</a>, <a class="el" href="_function_8cpp_source.html#l00007">wmtk::function::Function::Function()</a>, <a class="el" href="_per_simplex_function_8cpp_source.html#l00006">wmtk::function::PerSimplexFunction::PerSimplexFunction()</a>, <a class="el" href="_split_new_attribute_strategy_8cpp_source.html#l00092">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;::SplitNewAttributeStrategy()</a>, <a class="el" href="_typed_attribute_handle_8cpp_source.html#l00016">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::TypedAttributeHandle()</a>, and <a class="el" href="_vertex_laplacian_smooth_8cpp_source.html#l00009">wmtk::operations::VertexLaplacianSmooth::VertexLaplacianSmooth()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00060">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;::CollapseNewAttributeStrategy()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00077">wmtk::MeshCRTP&lt; Derived &gt;::create_accessor()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00088">wmtk::MeshCRTP&lt; Derived &gt;::create_const_accessor()</a>, <a class="el" href="_function_8cpp_source.html#l00007">wmtk::function::Function::Function()</a>, <a class="el" href="_per_simplex_function_8cpp_source.html#l00006">wmtk::function::PerSimplexFunction::PerSimplexFunction()</a>, <a class="el" href="_split_new_attribute_strategy_8cpp_source.html#l00092">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;::SplitNewAttributeStrategy()</a>, and <a class="el" href="_typed_attribute_handle_8cpp_source.html#l00016">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::TypedAttributeHandle()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_mesh_attribute_handle_a2b86caeb22b007b85b138ebc6b0ed837_icgraph.svg" width="538" height="556"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_mesh_attribute_handle_a2b86caeb22b007b85b138ebc6b0ed837_icgraph.svg" width="538" height="476"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a31fbb7865bd8739e1ec6904f1fd3f984"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31fbb7865bd8739e1ec6904f1fd3f984">&#9670;&nbsp;</a></span>holds_basic_type()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::attribute::MeshAttributeHandle::holds_basic_type </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00176">176</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a8ff6dcc821ed39356ca3d451bd26d232">handle_type_is_basic()</a>, and <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00141">m_handle</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_mesh_attribute_handle_a31fbb7865bd8739e1ec6904f1fd3f984_cgraph.svg" width="504" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -734,7 +915,17 @@ template&lt;MeshAttributeHandle::HeldType Type&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00139">139</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00192">192</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00141">m_handle</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_hybrid_rational_accessor_8hpp_source.html#l00030">wmtk::attribute::utils::HybridRationalAccessor&lt; D, MeshType &gt;::HybridRationalAccessor()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_mesh_attribute_handle_afe99ebebdf6149da36a589976d53bc45_icgraph.svg" width="467" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
 
 </div>
 </div>
@@ -756,7 +947,7 @@ template&lt;MeshAttributeHandle::HeldType Type&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00012">12</a> of file <a class="el" href="_mesh_attribute_handle_8cpp_source.html">MeshAttributeHandle.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00115">m_mesh</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00140">m_mesh</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_function_8cpp_source.html#l00007">wmtk::function::Function::Function()</a>, <a class="el" href="_operation_8cpp_source.html#l00026">wmtk::operations::Operation::get_transfer_strategy()</a>, <a class="el" href="_per_simplex_function_8cpp_source.html#l00006">wmtk::function::PerSimplexFunction::PerSimplexFunction()</a>, and <a class="el" href="_operation_8cpp_source.html#l00038">wmtk::operations::Operation::set_transfer_strategy()</a>.</p>
 <div class="dynheader">
@@ -785,7 +976,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00038">38</a> of file <a class="el" href="_mesh_attribute_handle_8cpp_source.html">MeshAttributeHandle.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00116">m_handle</a>, and <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00115">m_mesh</a>.</p>
+<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ab16f5783132a7a0861b1526fc881dfa6a99db49fead2494bf6b2b0218dd1b9ee3">HybridRational</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00141">m_handle</a>, and <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00140">m_mesh</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_per_simplex_function_8hpp_source.html#l00042">wmtk::function::PerSimplexFunction::attribute_handle()</a>, and <a class="el" href="_function_8cpp_source.html#l00015">wmtk::function::Function::embedded_dimension()</a>.</p>
 <div class="dynheader">
@@ -814,9 +1005,9 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00018">18</a> of file <a class="el" href="_mesh_attribute_handle_8cpp_source.html">MeshAttributeHandle.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00115">m_mesh</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00140">m_mesh</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00060">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;::CollapseNewAttributeStrategy()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00077">wmtk::MeshCRTP&lt; Derived &gt;::create_accessor()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00088">wmtk::MeshCRTP&lt; Derived &gt;::create_const_accessor()</a>, <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00044">dimension()</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00021">wmtk::invariants::EnvelopeInvariant::EnvelopeInvariant()</a>, <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00179">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag()</a>, <a class="el" href="_attribute_transfer_strategy_base_8cpp_source.html#l00025">wmtk::operations::AttributeTransferStrategyBase::get_parent_simplices()</a>, <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, <a class="el" href="multimesh_8cpp_source.html#l00012">wmtk::components::multimesh()</a>, <a class="el" href="isotropic__remeshing_8cpp_source.html#l00013">wmtk::components::relative_to_absolute_length()</a>, <a class="el" href="_attribute_transfer_strategy_base_8cpp_source.html#l00015">wmtk::operations::AttributeTransferStrategyBase::run_on_all()</a>, and <a class="el" href="_split_new_attribute_strategy_8cpp_source.html#l00092">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;::SplitNewAttributeStrategy()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00060">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;::CollapseNewAttributeStrategy()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00077">wmtk::MeshCRTP&lt; Derived &gt;::create_accessor()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00088">wmtk::MeshCRTP&lt; Derived &gt;::create_const_accessor()</a>, <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00053">dimension()</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00021">wmtk::invariants::EnvelopeInvariant::EnvelopeInvariant()</a>, <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00196">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag()</a>, <a class="el" href="_attribute_transfer_strategy_base_8cpp_source.html#l00025">wmtk::operations::AttributeTransferStrategyBase::get_parent_simplices()</a>, <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, <a class="el" href="multimesh_8cpp_source.html#l00012">wmtk::components::multimesh()</a>, <a class="el" href="isotropic__remeshing_8cpp_source.html#l00013">wmtk::components::relative_to_absolute_length()</a>, <a class="el" href="_attribute_transfer_strategy_base_8cpp_source.html#l00015">wmtk::operations::AttributeTransferStrategyBase::run_on_all()</a>, and <a class="el" href="_split_new_attribute_strategy_8cpp_source.html#l00092">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;::SplitNewAttributeStrategy()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -843,7 +1034,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00023">23</a> of file <a class="el" href="_mesh_attribute_handle_8cpp_source.html">MeshAttributeHandle.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00115">m_mesh</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00140">m_mesh</a>.</p>
 
 </div>
 </div>
@@ -923,9 +1114,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00051">51</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00073">73</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00116">m_handle</a>, and <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00115">m_mesh</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00141">m_handle</a>, and <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00140">m_mesh</a>.</p>
 
 </div>
 </div>
@@ -952,9 +1143,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00161">161</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00225">225</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00116">m_handle</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00141">m_handle</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_function_8hpp_source.html#l00049">wmtk::function::Function::attribute_type()</a>, <a class="el" href="_attribute_transfer_strategy_base_8cpp_source.html#l00025">wmtk::operations::AttributeTransferStrategyBase::get_parent_simplices()</a>, and <a class="el" href="_attribute_transfer_strategy_base_8cpp_source.html#l00015">wmtk::operations::AttributeTransferStrategyBase::run_on_all()</a>.</p>
 <div class="dynheader">
@@ -988,9 +1179,9 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00166">166</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00230">230</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00116">m_handle</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00141">m_handle</a>.</p>
 
 </div>
 </div>
@@ -1015,7 +1206,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00042">42</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00064">64</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
 </div>
 </div>
@@ -1039,7 +1230,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00042">42</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00064">64</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
 </div>
 </div>
@@ -1054,7 +1245,7 @@ template&lt;typename T &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a3f01d299c0c53fed0cb1d3d3068c1f60">HandleVariant</a> wmtk::attribute::MeshAttributeHandle::m_handle</td>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">HandleVariant</a> wmtk::attribute::MeshAttributeHandle::m_handle</td>
         </tr>
       </table>
   </td>
@@ -1064,9 +1255,9 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00116">116</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00141">141</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00120">as()</a>, <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00044">dimension()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00091">handle()</a>, <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00028">held_type()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00127">holds()</a>, <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00038">is_valid()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00051">operator==()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00161">primitive_type()</a>, and <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00166">primitive_typeT()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00185">as_from_held_type()</a>, <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00053">dimension()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00116">handle()</a>, <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00028">held_type()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00176">holds_basic_type()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00192">holds_from_held_type()</a>, <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00038">is_valid()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00073">operator==()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00225">primitive_type()</a>, and <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00230">primitive_typeT()</a>.</p>
 
 </div>
 </div>
@@ -1090,9 +1281,9 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00115">115</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00140">140</a> of file <a class="el" href="_mesh_attribute_handle_8hpp_source.html">MeshAttributeHandle.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00012">is_same_mesh()</a>, <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00038">is_valid()</a>, <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00018">mesh()</a>, and <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00051">operator==()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00012">is_same_mesh()</a>, <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00038">is_valid()</a>, <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00018">mesh()</a>, and <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00073">operator==()</a>.</p>
 
 </div>
 </div>

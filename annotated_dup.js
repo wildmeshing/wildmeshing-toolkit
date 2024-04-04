@@ -10,6 +10,7 @@ var annotated_dup =
       [ "hash< wmtk::attribute::TypedAttributeHandle< char > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01char_01_4_01_4.html", null ],
       [ "hash< wmtk::attribute::TypedAttributeHandle< wmtk::Rational > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01wmtk_1_1_rational_01_4_01_4.html", null ],
       [ "hash< wmtk::attribute::MeshAttributeHandle >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4.html", null ],
+      [ "hash< wmtk::attribute::utils::HybridRationalAttribute< D > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute_3_01_d_01_4_01_4.html", null ],
       [ "numeric_limits< DScalar1< _Scalar, _Gradient > >", "classstd_1_1numeric__limits_3_01_d_scalar1_3_01___scalar_00_01___gradient_01_4_01_4.html", null ],
       [ "numeric_limits< DScalar2< _Scalar, _Gradient, _Hessian > >", "classstd_1_1numeric__limits_3_01_d_scalar2_3_01___scalar_00_01___gradient_00_01___hessian_01_4_01_4.html", null ]
     ] ],
@@ -17,7 +18,9 @@ var annotated_dup =
       [ "attribute", "namespacewmtk_1_1attribute.html", [
         [ "internal", "namespacewmtk_1_1attribute_1_1internal.html", [
           [ "CheckpointScope", "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope.html", "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope" ],
-          [ "CompoundAccessor", "classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html", "classwmtk_1_1attribute_1_1internal_1_1_compound_accessor" ]
+          [ "CompoundAccessor", "classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html", "classwmtk_1_1attribute_1_1internal_1_1_compound_accessor" ],
+          [ "is_typed_attribute_handle", "structwmtk_1_1attribute_1_1internal_1_1is__typed__attribute__handle.html", null ],
+          [ "is_typed_attribute_handle< TypedAttributeHandle< T > >", "structwmtk_1_1attribute_1_1internal_1_1is__typed__attribute__handle_3_01_typed_attribute_handle_3_01_t_01_4_01_4.html", null ]
         ] ],
         [ "utils", "namespacewmtk_1_1attribute_1_1utils.html", [
           [ "HybridRationalAttribute", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute" ],
@@ -190,6 +193,7 @@ var annotated_dup =
         [ "utils", "namespacewmtk_1_1operations_1_1utils.html", [
           [ "MultiMeshEdgeCollapseFunctor", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor" ],
           [ "MultiMeshEdgeSplitFunctor", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor" ],
+          [ "RoundRationalToDouble", "classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double.html", "classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double" ],
           [ "UpdateEdgeOperationMultiMeshMapFunctor", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor" ]
         ] ],
         [ "BaseCollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy" ],
@@ -294,6 +298,7 @@ var annotated_dup =
       [ "hash< wmtk::attribute::AttributeHandle >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4" ],
       [ "hash< wmtk::attribute::TypedAttributeHandle< T > >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01_t_01_4_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01_t_01_4_01_4" ],
       [ "hash< wmtk::attribute::MeshAttributeHandle >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4" ],
+      [ "hash< attribute::utils::HybridRationalAttribute< D > >", "classwmtk_1_1hash_3_01attribute_1_1utils_1_1_hybrid_rational_attribute_3_01_d_01_4_01_4.html", "classwmtk_1_1hash_3_01attribute_1_1utils_1_1_hybrid_rational_attribute_3_01_d_01_4_01_4" ],
       [ "Cell", "classwmtk_1_1_cell.html", "classwmtk_1_1_cell" ],
       [ "EdgeMesh", "classwmtk_1_1_edge_mesh.html", "classwmtk_1_1_edge_mesh" ],
       [ "MaxEdgeLengthInvariant", "classwmtk_1_1_max_edge_length_invariant.html", "classwmtk_1_1_max_edge_length_invariant" ],

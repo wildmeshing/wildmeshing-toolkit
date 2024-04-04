@@ -26,6 +26,7 @@ var classwmtk_1_1attribute_1_1_accessor =
     [ "index_access", "classwmtk_1_1attribute_1_1_accessor.html#a3e63d6822bece84c3ef046c8e2e0bbd5", null ],
     [ "mesh", "classwmtk_1_1attribute_1_1_accessor.html#a431fd8bdff3e47b44a989ba82bea0499", null ],
     [ "mesh", "classwmtk_1_1attribute_1_1_accessor.html#a8b3fce2bf23c90541e89c122cf44d1af", null ],
+    [ "primitive_type", "classwmtk_1_1attribute_1_1_accessor.html#aa29524d9ac03d223c29cc2e70ac5d69b", null ],
     [ "reserved_size", "classwmtk_1_1attribute_1_1_accessor.html#ada0ffe6f114ed47ad205989d8a6f67da", null ],
     [ "scalar_attribute", "classwmtk_1_1attribute_1_1_accessor.html#ac3e8738c7d3eade46ebaa72388dcea36", null ],
     [ "stack_depth", "classwmtk_1_1attribute_1_1_accessor.html#a5c079927e83df2dda85ce429416cc19c", null ],

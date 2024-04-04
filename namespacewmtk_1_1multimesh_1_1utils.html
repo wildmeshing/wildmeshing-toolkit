@@ -143,7 +143,7 @@ Functions</h2></td></tr>
 <tr class="memitem:a3ba02c50321ce0e6095c107cbb5edc13"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a3ba02c50321ce0e6095c107cbb5edc13">extract_and_register_child_mesh_from_tag_handle</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">wmtk::attribute::TypedAttributeHandle</a>&lt; int64_t &gt; &amp;tag_handle, const int64_t tag_value)</td></tr>
 <tr class="memdesc:a3ba02c50321ce0e6095c107cbb5edc13"><td class="mdescLeft">&#160;</td><td class="mdescRight">extract a child mesh based on the tag handle and the tag value, and register it to the input (parent) mesh  <a href="namespacewmtk_1_1multimesh_1_1utils.html#a3ba02c50321ce0e6095c107cbb5edc13">More...</a><br /></td></tr>
 <tr class="separator:a3ba02c50321ce0e6095c107cbb5edc13"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a197be9245149c7042613aeacf231ec1d"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a197be9245149c7042613aeacf231ec1d">extract_and_register_child_mesh_from_tag</a> (<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a> &amp;tag_handle, const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad94661ff02ac9b1927259f0aa4553298">wmtk::attribute::MeshAttributeHandle::ValueVariant</a> &amp;tag_value)</td></tr>
+<tr class="memitem:a197be9245149c7042613aeacf231ec1d"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a197be9245149c7042613aeacf231ec1d">extract_and_register_child_mesh_from_tag</a> (<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a> &amp;tag_handle, const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad3399195a55099a6304e29cf7f78b517">wmtk::attribute::MeshAttributeHandle::ValueVariant</a> &amp;tag_value)</td></tr>
 <tr class="memdesc:a197be9245149c7042613aeacf231ec1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">extract a child mesh based on the tag handle and the tag value, and register it to the input (parent) mesh  <a href="namespacewmtk_1_1multimesh_1_1utils.html#a197be9245149c7042613aeacf231ec1d">More...</a><br /></td></tr>
 <tr class="separator:a197be9245149c7042613aeacf231ec1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a99cdf56ec6abe68409d30e0b67f4ce82"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a99cdf56ec6abe68409d30e0b67f4ce82">find_local_switch_sequence</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;target, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> primitive_type)</td></tr>
@@ -335,9 +335,9 @@ Here is the call graph for this function:</div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>std::shared_ptr&lt;Mesh&gt; the shared pointer to the child mesh </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00157">157</a> of file <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html">extract_child_mesh_from_tag.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00174">174</a> of file <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html">extract_child_mesh_from_tag.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00168">extract_and_register_child_mesh_from_tag_handle()</a>, <a class="el" href="_mesh_8hpp_source.html#l00911">wmtk::Mesh::get_attribute_handle()</a>, and <a class="el" href="_mesh_8hpp_source.html#l00986">wmtk::Mesh::top_simplex_type()</a>.</p>
+<p class="reference">References <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00185">extract_and_register_child_mesh_from_tag_handle()</a>, <a class="el" href="_mesh_8hpp_source.html#l00913">wmtk::Mesh::get_attribute_handle()</a>, and <a class="el" href="_mesh_8hpp_source.html#l00988">wmtk::Mesh::top_simplex_type()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00565">wmtk::utils::generate_raw_tetmesh_with_surface_from_input()</a>, <a class="el" href="multimesh_8cpp_source.html#l00012">wmtk::components::multimesh()</a>, and <a class="el" href="test__component__isotropic__remeshing_8cpp_source.html#l00804">TEST_CASE()</a>.</p>
 <div class="dynheader">
@@ -370,7 +370,7 @@ Here is the caller graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad94661ff02ac9b1927259f0aa4553298">wmtk::attribute::MeshAttributeHandle::ValueVariant</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad3399195a55099a6304e29cf7f78b517">wmtk::attribute::MeshAttributeHandle::ValueVariant</a> &amp;&#160;</td>
           <td class="paramname"><em>tag_value</em>&#160;</td>
         </tr>
         <tr>
@@ -392,9 +392,9 @@ Here is the caller graph for this function:</div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>std::shared_ptr&lt;Mesh&gt; </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00179">179</a> of file <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html">extract_child_mesh_from_tag.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00196">196</a> of file <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html">extract_child_mesh_from_tag.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00020">wmtk::multimesh::utils::internal::TupleTag::extract_and_register_child_mesh_from_tag_handle()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00091">wmtk::attribute::MeshAttributeHandle::handle()</a>, and <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00018">wmtk::attribute::MeshAttributeHandle::mesh()</a>.</p>
+<p class="reference">References <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00021">wmtk::multimesh::utils::internal::TupleTag::extract_and_register_child_mesh_from_tag_handle()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00116">wmtk::attribute::MeshAttributeHandle::handle()</a>, <a class="el" href="_logger_8cpp_source.html#l00093">wmtk::log_and_throw_error()</a>, and <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00018">wmtk::attribute::MeshAttributeHandle::mesh()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -447,11 +447,11 @@ Here is the call graph for this function:</div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>std::shared_ptr&lt;Mesh&gt; </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00168">168</a> of file <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html">extract_child_mesh_from_tag.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00185">185</a> of file <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html">extract_child_mesh_from_tag.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00020">wmtk::multimesh::utils::internal::TupleTag::extract_and_register_child_mesh_from_tag_handle()</a>.</p>
+<p class="reference">References <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00021">wmtk::multimesh::utils::internal::TupleTag::extract_and_register_child_mesh_from_tag_handle()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00157">extract_and_register_child_mesh_from_tag()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00174">extract_and_register_child_mesh_from_tag()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -685,7 +685,7 @@ template&lt;typename MeshType &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00079">79</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a02e28a9bbd718342f581c95bbe9710a7">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="_accessor_base_8hxx_source.html#l00055">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::dimension()</a>, and <a class="el" href="_tuple_accessor_8hpp_source.html#l00034">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;::dimension()</a>.</p>
+<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a02e28a9bbd718342f581c95bbe9710a7">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="_accessor_base_8hxx_source.html#l00057">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::dimension()</a>, and <a class="el" href="_tuple_accessor_8hpp_source.html#l00034">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;::dimension()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00024">wmtk::multimesh::MultiMeshManager::map_tuple_between_meshes()</a>, <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00159">read_tuple_map_attribute_slow()</a>, <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00064">wmtk::operations::utils::update_vertex_operation_multimesh_map_hash()</a>, and <a class="el" href="_multi_mesh_manager_8cpp_source.html#l01073">wmtk::multimesh::MultiMeshManager::update_vertex_operation_multimesh_map_hash_internal()</a>.</p>
 <div class="dynheader">
@@ -1293,7 +1293,7 @@ template&lt;typename MeshType &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00113">113</a> of file <a class="el" href="tuple__map__attribute__io_8cpp_source.html">tuple_map_attribute_io.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="_accessor_base_8hxx_source.html#l00055">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::dimension()</a>, <a class="el" href="_tuple_accessor_8hpp_source.html#l00034">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;::dimension()</a>, and <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a52f1474c822d1a3d910b74793830014e">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;::vector_attribute()</a>.</p>
+<p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="_accessor_base_8hxx_source.html#l00057">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::dimension()</a>, <a class="el" href="_tuple_accessor_8hpp_source.html#l00034">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;::dimension()</a>, and <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a52f1474c822d1a3d910b74793830014e">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;::vector_attribute()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="tuple__map__attribute__io_8hpp_source.html#l00039">symmetric_write_tuple_map_attributes()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00150">write_tuple_map_attribute_slow()</a>.</p>
 <div class="dynheader">

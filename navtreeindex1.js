@@ -1,5 +1,6 @@
 var NAVTREEINDEX1 =
 {
+"_interior_edge_invariant_8cpp.html":[6,0,2,0,3,10],
 "_interior_edge_invariant_8cpp_source.html":[6,0,2,0,3,10],
 "_interior_edge_invariant_8hpp.html":[6,0,2,0,3,11],
 "_interior_edge_invariant_8hpp.html#a1edbf1970c8b923ad3c4605c56dc5e5c":[6,0,2,0,3,11,1],
@@ -248,6 +249,5 @@ var NAVTREEINDEX1 =
 "_per_simplex_function_8hpp_source.html":[6,0,2,0,2,9],
 "_per_thread_attribute_scope_stacks_8cpp.html":[6,0,2,0,0,29],
 "_per_thread_attribute_scope_stacks_8cpp_source.html":[6,0,2,0,0,29],
-"_per_thread_attribute_scope_stacks_8hpp.html":[6,0,2,0,0,30],
-"_per_thread_attribute_scope_stacks_8hpp_source.html":[6,0,2,0,0,30]
+"_per_thread_attribute_scope_stacks_8hpp.html":[6,0,2,0,0,30]
 };

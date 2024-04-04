@@ -156,7 +156,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af4e2ee79105f21583036f4dd92446d60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa0543bdf757e0eb3154965c8ad15edc3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#aa0543bdf757e0eb3154965c8ad15edc3">serialize</a> (const std::string &amp;name, const int dim, <a class="el" href="classwmtk_1_1_mesh_writer.html">MeshWriter</a> &amp;writer) const</td></tr>
 <tr class="separator:aa0543bdf757e0eb3154965c8ad15edc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a156720686b0e59cfc3c5e4dd0ff04e41"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a156720686b0e59cfc3c5e4dd0ff04e41">Attribute</a> (const std::string &amp;name, int64_t <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a505bc996591f0476e092f572515ab9fd">dimension</a>, T default_value=T(0), int64_t size=0)</td></tr>
+<tr class="memitem:a156720686b0e59cfc3c5e4dd0ff04e41"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a156720686b0e59cfc3c5e4dd0ff04e41">Attribute</a> (const std::string &amp;name, int64_t <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a505bc996591f0476e092f572515ab9fd">dimension</a>, T <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a2fe2480bd5a8a1b17b626b702e38971d">default_value</a>=T(0), int64_t size=0)</td></tr>
 <tr class="memdesc:a156720686b0e59cfc3c5e4dd0ff04e41"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the attribute.  <a href="classwmtk_1_1attribute_1_1_attribute.html#a156720686b0e59cfc3c5e4dd0ff04e41">More...</a><br /></td></tr>
 <tr class="separator:a156720686b0e59cfc3c5e4dd0ff04e41"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a905a25dbb885af859180f8a8d5f7a788"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a905a25dbb885af859180f8a8d5f7a788">Attribute</a> (<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> &amp;&amp;o)</td></tr>
@@ -190,6 +190,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a505bc996591f0476e092f572515ab9fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa930803304f88a3c306932312daf3ac2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#aa930803304f88a3c306932312daf3ac2">reserve</a> (const int64_t size)</td></tr>
 <tr class="separator:aa930803304f88a3c306932312daf3ac2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2fe2480bd5a8a1b17b626b702e38971d"><td class="memItemLeft" align="right" valign="top">const T &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a2fe2480bd5a8a1b17b626b702e38971d">default_value</a> () const</td></tr>
+<tr class="memdesc:a2fe2480bd5a8a1b17b626b702e38971d"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns the default value of this attribute  <a href="classwmtk_1_1attribute_1_1_attribute.html#a2fe2480bd5a8a1b17b626b702e38971d">More...</a><br /></td></tr>
+<tr class="separator:a2fe2480bd5a8a1b17b626b702e38971d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84e8ed1ce66c110ee594e7ad22fa37b9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a84e8ed1ce66c110ee594e7ad22fa37b9">operator==</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;o) const</td></tr>
 <tr class="separator:a84e8ed1ce66c110ee594e7ad22fa37b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7084f3b602796c81cb37c5e576ee0a4b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a7084f3b602796c81cb37c5e576ee0a4b">push_scope</a> ()</td></tr>
@@ -533,7 +536,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00216">216</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00221">221</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -573,7 +576,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00242">242</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00247">247</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -621,7 +624,7 @@ template&lt;typename T &gt; </div>
 
 <p>Accesses the attribute using the specified scalar as the underlying data This is internally used by the single-arg const_scalar_attribute and to help with serialization. </p>
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00247">247</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00252">252</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -663,7 +666,7 @@ template&lt;typename T &gt; </div>
 
 <p>Accesses the attribute using the specified scalar as the underlying data This is internally used by the single-arg const_scalar_attribute and to help with serialization. </p>
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00221">221</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00226">226</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -718,7 +721,7 @@ template&lt;int D&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00168">168</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00173">173</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -803,7 +806,35 @@ template&lt;int D&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00174">174</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00179">179</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a2fe2480bd5a8a1b17b626b702e38971d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2fe2480bd5a8a1b17b626b702e38971d">&#9670;&nbsp;</a></span>default_value()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const T &amp; <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::default_value</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>returns the default value of this attribute </p>
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00284">284</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -831,7 +862,7 @@ template&lt;typename T &gt; </div>
 
 <p>The number of values for each index. </p>
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00273">273</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00278">278</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -857,7 +888,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00284">284</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00295">295</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -883,7 +914,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00279">279</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00290">290</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -908,22 +939,6 @@ template&lt;typename T &gt; </div>
 <p>Applies the scalar old2new map to the indices in the attribute This is commonly used after a consolidate to account for the change in global indices. </p>
 
 <p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00107">107</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
-
-<p class="reference">References <a class="el" href="_attribute_8cpp_source.html#l00107">wmtk::attribute::Attribute&lt; T &gt;::index_remap()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="_attribute_8cpp_source.html#l00107">wmtk::attribute::Attribute&lt; T &gt;::index_remap()</a>.</p>
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_attribute_a1e347aa313eb681f44a5102d52c0f177_cgraph.svg" width="199" height="76"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
-</div>
-</div>
-<div class="dynheader">
-Here is the caller graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_attribute_a1e347aa313eb681f44a5102d52c0f177_icgraph.svg" width="199" height="76"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
-</div>
-</div>
 
 </div>
 </div>
@@ -1007,7 +1022,7 @@ template&lt;typename T &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00060">60</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_attribute_8hpp_source.html#l00157">wmtk::attribute::Attribute&lt; T &gt;::m_data</a>, <a class="el" href="_attribute_8hpp_source.html#l00160">wmtk::attribute::Attribute&lt; T &gt;::m_default_value</a>, <a class="el" href="_attribute_8hpp_source.html#l00159">wmtk::attribute::Attribute&lt; T &gt;::m_dimension</a>, and <a class="el" href="_attribute_8hpp_source.html#l00163">wmtk::attribute::Attribute&lt; T &gt;::m_name</a>.</p>
+<p class="reference">References <a class="el" href="_attribute_8hpp_source.html#l00162">wmtk::attribute::Attribute&lt; T &gt;::m_data</a>, <a class="el" href="_attribute_8hpp_source.html#l00165">wmtk::attribute::Attribute&lt; T &gt;::m_default_value</a>, <a class="el" href="_attribute_8hpp_source.html#l00164">wmtk::attribute::Attribute&lt; T &gt;::m_dimension</a>, and <a class="el" href="_attribute_8hpp_source.html#l00168">wmtk::attribute::Attribute&lt; T &gt;::m_name</a>.</p>
 
 </div>
 </div>
@@ -1037,7 +1052,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00295">295</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00306">306</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -1063,7 +1078,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00290">290</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00301">301</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -1162,7 +1177,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00301">301</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00312">312</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -1192,7 +1207,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00229">229</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00234">234</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -1232,7 +1247,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00258">258</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00263">263</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -1280,7 +1295,7 @@ template&lt;typename T &gt; </div>
 
 <p>Accesses the attribute using the specified scalar as the underlying data This is internally used by the single-arg scalar_attribute and to help with serialization. </p>
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00264">264</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00269">269</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -1322,7 +1337,7 @@ template&lt;typename T &gt; </div>
 
 <p>Accesses the attribute using the specified scalar as the underlying data This is internally used by the single-arg scalar_attribute and to help with serialization. </p>
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00234">234</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00239">239</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -1455,7 +1470,7 @@ template&lt;int D&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00194">194</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00199">199</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -1540,7 +1555,7 @@ template&lt;int D&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00200">200</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00205">205</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>
@@ -1622,7 +1637,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00157">157</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00162">162</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_attribute_8cpp_source.html#l00060">wmtk::attribute::Attribute&lt; T &gt;::operator==()</a>.</p>
 
@@ -1650,7 +1665,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00160">160</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00165">165</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_attribute_8cpp_source.html#l00060">wmtk::attribute::Attribute&lt; T &gt;::operator==()</a>.</p>
 
@@ -1678,7 +1693,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00159">159</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00164">164</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_attribute_8cpp_source.html#l00060">wmtk::attribute::Attribute&lt; T &gt;::operator==()</a>.</p>
 
@@ -1698,7 +1713,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00163">163</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00168">168</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_attribute_8cpp_source.html#l00060">wmtk::attribute::Attribute&lt; T &gt;::operator==()</a>.</p>
 
@@ -1726,7 +1741,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00158">158</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00163">163</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
 
 </div>
 </div>

@@ -15,6 +15,7 @@ var classwmtk_1_1attribute_1_1_attribute =
     [ "const_vector_attribute", "classwmtk_1_1attribute_1_1_attribute.html#adf90e0669565a8f7b5f9c0c76158686f", null ],
     [ "const_vector_attribute", "classwmtk_1_1attribute_1_1_attribute.html#a6bdfc70d0f4a345fd218fbfdbb2a46ff", null ],
     [ "const_vector_attribute", "classwmtk_1_1attribute_1_1_attribute.html#ad1e915d405592555abf06233ea09ae32", null ],
+    [ "default_value", "classwmtk_1_1attribute_1_1_attribute.html#a2fe2480bd5a8a1b17b626b702e38971d", null ],
     [ "dimension", "classwmtk_1_1attribute_1_1_attribute.html#a505bc996591f0476e092f572515ab9fd", null ],
     [ "get_local_scope_stack", "classwmtk_1_1attribute_1_1_attribute.html#a2863fc77ae6b7c429c2607158c88a7cf", null ],
     [ "get_local_scope_stack", "classwmtk_1_1attribute_1_1_attribute.html#a403d6f523f054dda6a4ccf5120a1ac46", null ],

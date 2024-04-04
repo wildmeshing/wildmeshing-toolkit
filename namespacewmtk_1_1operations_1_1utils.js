@@ -2,6 +2,7 @@ var namespacewmtk_1_1operations_1_1utils =
 [
     [ "MultiMeshEdgeCollapseFunctor", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor" ],
     [ "MultiMeshEdgeSplitFunctor", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor" ],
+    [ "RoundRationalToDouble", "classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double.html", "classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double" ],
     [ "UpdateEdgeOperationMultiMeshMapFunctor", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor" ],
     [ "CollapseReturnData", "namespacewmtk_1_1operations_1_1utils.html#a911a96579e17679e65e0c80d009abb60", null ],
     [ "SplitReturnData", "namespacewmtk_1_1operations_1_1utils.html#ae25feab9db93b6e8eb1458f4bf5a688d", null ],

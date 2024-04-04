@@ -47,7 +47,9 @@ var dir_f2a03d151d5632e9cfdfcc5fe4223b5a =
     [ "MapTypes.hpp", "_map_types_8hpp.html", "_map_types_8hpp" ],
     [ "MeshAttributeHandle.cpp", "_mesh_attribute_handle_8cpp.html", null ],
     [ "MeshAttributeHandle.hpp", "_mesh_attribute_handle_8hpp.html", [
-      [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", "classwmtk_1_1attribute_1_1_mesh_attribute_handle" ]
+      [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", "classwmtk_1_1attribute_1_1_mesh_attribute_handle" ],
+      [ "is_typed_attribute_handle", "structwmtk_1_1attribute_1_1internal_1_1is__typed__attribute__handle.html", null ],
+      [ "is_typed_attribute_handle< TypedAttributeHandle< T > >", "structwmtk_1_1attribute_1_1internal_1_1is__typed__attribute__handle_3_01_typed_attribute_handle_3_01_t_01_4_01_4.html", null ]
     ] ],
     [ "MeshAttributes.cpp", "_mesh_attributes_8cpp.html", null ],
     [ "MeshAttributes.hpp", "_mesh_attributes_8hpp.html", [

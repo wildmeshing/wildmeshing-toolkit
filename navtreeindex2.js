@@ -1,5 +1,6 @@
 var NAVTREEINDEX2 =
 {
+"_per_thread_attribute_scope_stacks_8hpp_source.html":[6,0,2,0,0,30],
 "_point_mesh_8cpp.html":[6,0,2,0,23],
 "_point_mesh_8cpp_source.html":[6,0,2,0,23],
 "_point_mesh_8hpp.html":[6,0,2,0,24],
@@ -75,6 +76,10 @@ var NAVTREEINDEX2 =
 "_regular_space_options_8hpp.html#a369e36ea89a3191d9840467d2483e140":[6,0,0,1,16,0,0,0,0,3,1],
 "_regular_space_options_8hpp.html#a967f1070f24c7de9b9bb12030deb5f60":[6,0,0,1,16,0,0,0,0,3,2],
 "_regular_space_options_8hpp_source.html":[6,0,0,1,16,0,0,0,0,3],
+"_round_rational_to_double_8cpp.html":[6,0,2,0,6,6,8],
+"_round_rational_to_double_8cpp_source.html":[6,0,2,0,6,6,8],
+"_round_rational_to_double_8hpp.html":[6,0,2,0,6,6,9],
+"_round_rational_to_double_8hpp_source.html":[6,0,2,0,6,6,9],
 "_sampling_8hpp.html":[6,0,0,1,0,0,0,0,0,6],
 "_sampling_8hpp.html#a42d2d9e68dcc8309b1d6c049d1fa8a43":[6,0,0,1,0,0,0,0,0,6,5],
 "_sampling_8hpp.html#a42d2d9e68dcc8309b1d6c049d1fa8a43a52c8dd0bca4da5e73b9ba90ef228b7f0":[6,0,0,1,0,0,0,0,0,6,5,1],
@@ -244,10 +249,5 @@ var NAVTREEINDEX2 =
 "_triangle_a_m_i_p_s_8hpp_source.html":[6,0,2,0,2,0,7],
 "_triangle_fan_options_8cpp.html":[6,0,0,1,15,0,0,0,0,12],
 "_triangle_fan_options_8cpp.html#aa350a4628718ab75cb758b079854bc9f":[6,0,0,1,15,0,0,0,0,12,0],
-"_triangle_fan_options_8cpp_source.html":[6,0,0,1,15,0,0,0,0,12],
-"_triangle_fan_options_8hpp.html":[6,0,0,1,15,0,0,0,0,13],
-"_triangle_fan_options_8hpp_source.html":[6,0,0,1,15,0,0,0,0,13],
-"_tuple_8hpp.html":[6,0,2,0,39],
-"_tuple_8hpp_source.html":[6,0,2,0,39],
-"_tuple_8hxx.html":[6,0,2,0,40]
+"_triangle_fan_options_8cpp_source.html":[6,0,0,1,15,0,0,0,0,12]
 };

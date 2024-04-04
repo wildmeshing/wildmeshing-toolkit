@@ -144,58 +144,67 @@ $(document).ready(function(){initNavTree('_compound_accessor_8hxx_source.html','
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="comment">//: m_base_accessors(accs...)</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    : <a class="code" href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html">CompoundAccessor</a>(acc.mesh(), acc.typed_handle(), accs.typed_handle()...)</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;{}</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="comment">// template &lt;typename MeshType, typename... AttributeType, std::bitset&lt;sizeof...(AttributeType)&gt;</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="comment">// ScalarAttributeMask&gt; CompoundAccessor&lt;MeshType&gt;::CompoundAccessor(</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="comment">//{}</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="comment">// template &lt;typename MeshType, typename... AttributeType, std::bitset&lt;sizeof...(AttributeType)&gt;</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="comment">// ScalarAttributeMask&gt; template &lt;int D&gt; auto</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="comment">// CompoundAccessor&lt;MeshType&gt;::const_vector_attribute(const Compound&amp; t) const -&gt; ConstMapResult&lt;D&gt;</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="comment">//{</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="comment">//     auto base_map = m_base_accessor.template const_vector_attribute&lt;D&gt;(t);</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="comment">//     const int64_t* int_data = base_map.data();</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="comment">//     const Compound* data = reinterpret_cast&lt;const Compound*&gt;(int_data);</span></div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="comment">//     return ConstMapResult&lt;D&gt;(data, dimension());</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="comment">// }</span></div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="comment">// template &lt;typename MeshType, typename... AttributeType, std::bitset&lt;sizeof...(AttributeType)&gt;</span></div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="comment">// ScalarAttributeMask&gt; template &lt;int D&gt; auto CompoundAccessor&lt;MeshType&gt;::vector_attribute(const</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="comment">// Compound&amp; t) -&gt; MapResult&lt;D&gt;</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="comment">//{</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="comment">//     auto base_map = m_base_accessor.template vector_attribute&lt;D&gt;(t);</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="comment">//     int64_t* int_data = base_map.data();</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="comment">//     Compound* data = reinterpret_cast&lt;Compound*&gt;(int_data);</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="comment">//     return MapResult&lt;D&gt;(data, dimension());</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="comment">// }</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="comment">// template &lt;typename MeshType, typename... AttributeType, std::bitset&lt;sizeof...(AttributeType)&gt;</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="comment">// ScalarAttributeMask&gt; auto CompoundAccessor&lt;MeshType&gt;::scalar_attribute(const Compound&amp; t) -&gt;</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="comment">// Tuple&amp;</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="comment">//{</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="comment">//     assert(m_dimension == 1);</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="comment">//     return *reinterpret_cast&lt;Compound*&gt;(base_map.data());</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="comment">// }</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="comment">// template &lt;typename MeshType, typename... AttributeType, std::bitset&lt;sizeof...(AttributeType)&gt;</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="comment">// ScalarAttributeMask&gt; template &lt;typename MeshType&gt; auto</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="comment">// CompoundAccessor&lt;MeshType&gt;::const_scalar_attribute(const Compound&amp; t) const -&gt; const Tuple&amp;</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="comment">//{</span></div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="comment">//     assert(m_dimension == 1);</span></div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="comment">//     auto base_map = m_base_accessor.template const_vector_attribute(t);</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="comment">//     return *reinterpret_cast&lt;const Compound*&gt;(base_map.data());</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="comment">// }</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;} <span class="comment">// namespace wmtk::attribute::internal</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">size_t</span> N, <span class="keyword">typename</span> MeshType, <span class="keyword">typename</span>... AttributeType&gt;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">size_t</span> Index&gt;</div>
+<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html#a023ee66906fda112d8163d5fe2faa6a7">   33</a></span>&#160;<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> <a class="code" href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html#a023ee66906fda112d8163d5fe2faa6a7">CompoundAccessor&lt;N, MeshType, AttributeType...&gt;::primitive_type</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keywordflow">return</span> get&lt;Index&gt;().primitive_type();</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;}</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="comment">// template &lt;typename MeshType, typename... AttributeType, std::bitset&lt;sizeof...(AttributeType)&gt;</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="comment">// ScalarAttributeMask&gt; CompoundAccessor&lt;MeshType&gt;::CompoundAccessor(</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="comment">//{}</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="comment">// template &lt;typename MeshType, typename... AttributeType, std::bitset&lt;sizeof...(AttributeType)&gt;</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="comment">// ScalarAttributeMask&gt; template &lt;int D&gt; auto</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="comment">// CompoundAccessor&lt;MeshType&gt;::const_vector_attribute(const Compound&amp; t) const -&gt; ConstMapResult&lt;D&gt;</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="comment">//{</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="comment">//     auto base_map = m_base_accessor.template const_vector_attribute&lt;D&gt;(t);</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="comment">//     const int64_t* int_data = base_map.data();</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="comment">//     const Compound* data = reinterpret_cast&lt;const Compound*&gt;(int_data);</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="comment">//     return ConstMapResult&lt;D&gt;(data, dimension());</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="comment">// }</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="comment">// template &lt;typename MeshType, typename... AttributeType, std::bitset&lt;sizeof...(AttributeType)&gt;</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="comment">// ScalarAttributeMask&gt; template &lt;int D&gt; auto CompoundAccessor&lt;MeshType&gt;::vector_attribute(const</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="comment">// Compound&amp; t) -&gt; MapResult&lt;D&gt;</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="comment">//{</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="comment">//     auto base_map = m_base_accessor.template vector_attribute&lt;D&gt;(t);</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html#a023ee66906fda112d8163d5fe2faa6a7">   57</a></span>&#160;<span class="comment">//     int64_t* int_data = base_map.data();</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="comment">//     Compound* data = reinterpret_cast&lt;Compound*&gt;(int_data);</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="comment">//     return MapResult&lt;D&gt;(data, dimension());</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="comment">// }</span></div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="comment">// template &lt;typename MeshType, typename... AttributeType, std::bitset&lt;sizeof...(AttributeType)&gt;</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="comment">// ScalarAttributeMask&gt; auto CompoundAccessor&lt;MeshType&gt;::scalar_attribute(const Compound&amp; t) -&gt;</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="comment">// Tuple&amp;</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="comment">//{</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="comment">//     assert(m_dimension == 1);</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="comment">//     return *reinterpret_cast&lt;Compound*&gt;(base_map.data());</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="comment">// }</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="comment">// template &lt;typename MeshType, typename... AttributeType, std::bitset&lt;sizeof...(AttributeType)&gt;</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="comment">// ScalarAttributeMask&gt; template &lt;typename MeshType&gt; auto</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="comment">// CompoundAccessor&lt;MeshType&gt;::const_scalar_attribute(const Compound&amp; t) const -&gt; const Tuple&amp;</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="comment">//{</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="comment">//     assert(m_dimension == 1);</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="comment">//     auto base_map = m_base_accessor.template const_vector_attribute(t);</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="comment">//     return *reinterpret_cast&lt;const Compound*&gt;(base_map.data());</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="comment">// }</span></div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;} <span class="comment">// namespace wmtk::attribute::internal</span></div>
 <div class="ttc" id="a_compound_accessor_8hpp_html"><div class="ttname"><a href="_compound_accessor_8hpp.html">CompoundAccessor.hpp</a></div></div>
 <div class="ttc" id="a_rational_8hpp_html"><div class="ttname"><a href="_rational_8hpp.html">Rational.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_accessor_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor</a></div><div class="ttdoc">A CachingAccessor that uses tuples for accessing attributes instead of indices.</div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8hpp_source.html#l00022">Accessor.hpp:23</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_typed_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">wmtk::attribute::TypedAttributeHandle</a></div><div class="ttdoc">Handle that represents attributes for some mesh.</div><div class="ttdef"><b>Definition:</b> <a href="_typed_attribute_handle_8hpp_source.html#l00032">TypedAttributeHandle.hpp:33</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1internal_1_1_compound_accessor_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html">wmtk::attribute::internal::CompoundAccessor</a></div><div class="ttdef"><b>Definition:</b> <a href="_compound_accessor_8hpp_source.html#l00011">CompoundAccessor.hpp:12</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1internal_1_1_compound_accessor_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html">wmtk::attribute::internal::CompoundAccessor</a></div><div class="ttdef"><b>Definition:</b> <a href="_compound_accessor_8hpp_source.html#l00010">CompoundAccessor.hpp:11</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1internal_1_1_compound_accessor_html_a023ee66906fda112d8163d5fe2faa6a7"><div class="ttname"><a href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html#a023ee66906fda112d8163d5fe2faa6a7">wmtk::attribute::internal::CompoundAccessor::primitive_type</a></div><div class="ttdeci">PrimitiveType primitive_type() const</div><div class="ttdoc">returns the primitive type of the Index'th type</div><div class="ttdef"><b>Definition:</b> <a href="_compound_accessor_8hxx_source.html#l00033">CompoundAccessor.hxx:33</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1internal_1_1_compound_accessor_html_a422ee84fde33ad39abb993c16a418b82"><div class="ttname"><a href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html#a422ee84fde33ad39abb993c16a418b82">wmtk::attribute::internal::CompoundAccessor::CompoundAccessor</a></div><div class="ttdeci">CompoundAccessor(MeshType &amp;m, const TypedAttributeHandle&lt; AttributeType &gt; &amp;... handle)</div><div class="ttdef"><b>Definition:</b> <a href="_compound_accessor_8hxx_source.html#l00017">CompoundAccessor.hxx:17</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1attribute_1_1internal_html"><div class="ttname"><a href="namespacewmtk_1_1attribute_1_1internal.html">wmtk::attribute::internal</a></div><div class="ttdef"><b>Definition:</b> <a href="_checkpoint_scope_8cpp_source.html#l00004">CheckpointScope.cpp:4</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">wmtk::PrimitiveType</a></div><div class="ttdeci">PrimitiveType</div><div class="ttdef"><b>Definition:</b> <a href="_primitive_type_8hpp_source.html#l00009">PrimitiveType.hpp:9</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

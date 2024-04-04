@@ -19,6 +19,7 @@ var classwmtk_1_1attribute_1_1_attribute_manager =
     [ "get", "classwmtk_1_1attribute_1_1_attribute_manager.html#abfc9300968be9c101a09922863566c34", null ],
     [ "get", "classwmtk_1_1attribute_1_1_attribute_manager.html#aa1dff643c4ac4d7967bc0ae4e631c708", null ],
     [ "get_all_attributes", "classwmtk_1_1attribute_1_1_attribute_manager.html#aa87669e6919f7825ca475a3c9e85d76c", null ],
+    [ "get_attribute_default_value", "classwmtk_1_1attribute_1_1_attribute_manager.html#a714715c109a25b042857461f33b5a5ab", null ],
     [ "get_attribute_dimension", "classwmtk_1_1attribute_1_1_attribute_manager.html#a4ae249faad236f8d98287c3ec61e987e", null ],
     [ "get_name", "classwmtk_1_1attribute_1_1_attribute_manager.html#a1fc61102990c813bbfd3769a87094baf", null ],
     [ "get_name", "classwmtk_1_1attribute_1_1_attribute_manager.html#ab37901c560fe81350c6e2ec34ff3769c", null ],

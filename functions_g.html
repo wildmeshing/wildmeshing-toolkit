@@ -120,6 +120,7 @@ $(document).ready(function(){initNavTree('functions_g.html',''); initResizable()
 <li>get()
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_manager.html#a8f09c6131e0dbf55f249c5eb97c3216b">wmtk::attribute::AttributeManager</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html#a2e5668d18736b481269aaa60ce1dfd60">wmtk::attribute::internal::CompoundAccessor&lt; N, MeshType, AttributeType &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_accessor.html#a2e5668d18736b481269aaa60ce1dfd60">wmtk::attribute::utils::HybridRationalAccessor&lt; D, MeshType &gt;</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html#a57096fbc23c20b029f9f3fd49577ee44">wmtk::attribute::utils::HybridRationalAttribute&lt; D &gt;</a>
 , <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html#a805fb862148a9d6bacac7674169747c6">wmtk::components::adaptive_tessellation::image::Image</a>
 , <a class="el" href="classwmtk_1_1invariants_1_1_invariant_collection.html#acdb78cb2cfaa27a33224dcadd43da36e">wmtk::invariants::InvariantCollection</a>
@@ -136,6 +137,10 @@ $(document).ready(function(){initNavTree('functions_g.html',''); initResizable()
 <li>get_all_child_meshes()
 : <a class="el" href="classwmtk_1_1_mesh.html#a64befe40e4c1e1c00ead66ed8adef232">wmtk::Mesh</a>
 </li>
+<li>get_attribute_default_value()
+: <a class="el" href="classwmtk_1_1attribute_1_1_attribute_manager.html#a714715c109a25b042857461f33b5a5ab">wmtk::attribute::AttributeManager</a>
+, <a class="el" href="classwmtk_1_1_mesh.html#afa9ff8bceed6986bb8d55104170d6e3a">wmtk::Mesh</a>
+</li>
 <li>get_attribute_dimension()
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_manager.html#a4ae249faad236f8d98287c3ec61e987e">wmtk::attribute::AttributeManager</a>
 , <a class="el" href="classwmtk_1_1_mesh.html#a4f546f0125de42db771686220d77ec78">wmtk::Mesh</a>
@@ -147,7 +152,7 @@ $(document).ready(function(){initNavTree('functions_g.html',''); initResizable()
 : <a class="el" href="classwmtk_1_1_mesh.html#a5049277866dd8a895a4d9521b29e6ed6">wmtk::Mesh</a>
 </li>
 <li>get_attribute_name()
-: <a class="el" href="classwmtk_1_1_mesh.html#a9c80d92eb6c801b64d52444a9f98d4d3">wmtk::Mesh</a>
+: <a class="el" href="classwmtk_1_1_mesh.html#ad4b3cd5af2e441de6c59c5e9794a84d3">wmtk::Mesh</a>
 </li>
 <li>get_cache()
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html#abe78e80f66b2e0edec6ed2e5d592d16d">wmtk::attribute::AttributeScope&lt; T &gt;</a>
@@ -180,7 +185,7 @@ $(document).ready(function(){initNavTree('functions_g.html',''); initResizable()
 : <a class="el" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a99476ae3d1278478a6fdd68431fc49a7">wmtk::utils::EigenMatrixWriter</a>
 </li>
 <li>get_child_mesh()
-: <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a94ea6159929980af3a93579709057712">wmtk::multimesh::MultiMeshManager</a>
+: <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ae3031554f19d5613a1e16c68f694c2ed">wmtk::multimesh::MultiMeshManager</a>
 </li>
 <li>get_child_meshes()
 : <a class="el" href="classwmtk_1_1_mesh.html#ae897154d1c035113188f81c201fa44c6">wmtk::Mesh</a>
@@ -204,7 +209,7 @@ $(document).ready(function(){initNavTree('functions_g.html',''); initResizable()
 : <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html#a0091cf8777e64732b9fd39292f2258ce">wmtk::components::adaptive_tessellation::image::Image</a>
 </li>
 <li>get_coordinates()
-: <a class="el" href="classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a2925164a2ef8ed1f86a9c07075972967">wmtk::function::PerSimplexAutodiffFunction</a>
+: <a class="el" href="classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a478ad8a8370ae38cdf1899cfd3707fde">wmtk::function::PerSimplexAutodiffFunction</a>
 </li>
 <li>get_current_cache()
 : <a class="el" href="classwmtk_1_1io_1_1_cache_stack.html#a9a9ac1fb8148a97ed2d9dd878b3fde0c">wmtk::io::CacheStack</a>
@@ -346,7 +351,7 @@ $(document).ready(function(){initNavTree('functions_g.html',''); initResizable()
 : <a class="el" href="classwmtk_1_1_msh_reader.html#a5d1ae063b700c70e6bcb405300569203">wmtk::MshReader</a>
 </li>
 <li>get_parent_simplices()
-: <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#a6883c6416f61c4ee06588a86c3b8d731">wmtk::operations::AttributeTransferStrategyBase</a>
+: <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#aa5e03221c4b6b49e1892ed464d84c0cd">wmtk::operations::AttributeTransferStrategyBase</a>
 </li>
 <li>get_pixel()
 : <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html#af2afb5c0ad583f9a70673bdc63c5604f">wmtk::components::adaptive_tessellation::image::Image</a>
@@ -420,7 +425,7 @@ $(document).ready(function(){initNavTree('functions_g.html',''); initResizable()
 : <a class="el" href="classwmtk_1_1function_1_1_position_map_a_m_i_p_s2_d.html#a3aded6e841b5c5730bcdaf8cedc5da94">wmtk::function::PositionMapAMIPS2D</a>
 </li>
 <li>get_variant()
-: <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a7d9c737b1ad7e78d08b2ec8aee9e8f4c">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;</a>
+: <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a2d4e8819e94c7d717f9cb27fb953c9e1">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;</a>
 </li>
 <li>get_vertex_block()
 : <a class="el" href="classwmtk_1_1_msh_reader.html#afbb0a5cde0f43f6ea0e4d52c50eccaee">wmtk::MshReader</a>
