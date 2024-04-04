@@ -65,17 +65,17 @@ public:
 
     virtual void reserve_enough_simplices();
 
+    /**
+     * Returns all simplices that will be potentially affected by the operation
+     */
+    virtual std::vector<simplex::Simplex> unmodified_primitives(
+        const simplex::Simplex& simplex) const = 0;
 protected:
     /**
      * @brief returns an empty vector in case of failure
      */
     virtual std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) = 0;
 
-    /**
-     * Returns all simplices that will be potentially affected by the operation
-     */
-    virtual std::vector<simplex::Simplex> unmodified_primitives(
-        const simplex::Simplex& simplex) const = 0;
 
     // does invariant pre-checks
     virtual bool before(const simplex::Simplex& simplex) const;
