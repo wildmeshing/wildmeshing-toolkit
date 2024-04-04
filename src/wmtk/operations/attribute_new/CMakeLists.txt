@@ -1,4 +1,7 @@
 set(SRC_FILES
+    BaseCollapseNewAttributeStrategy.hpp
+    BaseSplitNewAttributeStrategy.hpp
+
     CollapseNewAttributeStrategy.hpp
     CollapseNewAttributeStrategy.cpp
 
