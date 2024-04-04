@@ -27,6 +27,7 @@ public:
 
     ImageMatrixf& ref_raw_image() { return m_image; }
     const ImageMatrixf& get_raw_image() const { return m_image; }
+    float pixel_size() const { return 1.f / static_cast<float>(std::max(width(), height())); };
 
 public:
     // point coordinates between [0, 1]

@@ -68,6 +68,11 @@ public:
         }
     }
 
+    template <typename T>
+    Vector3<T> pixel_index_to_position(int x, int y) const
+    {
+        return image::utils::fetch_texel_eigen(m_images, x, y);
+    }
 
     std::pair<int, int> pixel_index(const Vector2<double>& uv) const
     {
@@ -89,6 +94,25 @@ public:
         //         height(),
         //         get_wrapping_mode())};
     }
+
+    std::pair<int, int> pixel_index_floor(const Vector2<double>& uv) const
+    {
+        int w = m_images[0]->width();
+        int h = m_images[0]->height();
+        const int sx = std::clamp(static_cast<int>(std::floor(uv.x() * w)), 0, w - 1);
+        const int sy = std::clamp(static_cast<int>(std::floor(uv.y() * h)), 0, h - 1);
+        return {sx, sy};
+    }
+    std::pair<int, int> pixel_index_ceil(const Vector2<double>& uv) const
+    {
+        int w = m_images[0]->width();
+        int h = m_images[0]->height();
+        const int sx = std::clamp(static_cast<int>(std::ceil(uv.x() * w)), 0, w - 1);
+        const int sy = std::clamp(static_cast<int>(std::ceil(uv.y() * h)), 0, h - 1);
+        return {sx, sy};
+    }
+
+    float pixel_size() const { return m_images[0]->pixel_size(); }
 };
 
 } // namespace function::utils

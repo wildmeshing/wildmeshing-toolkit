@@ -7,6 +7,7 @@
 
 #include <array>
 #include <iostream>
+#include <set>
 #include <wmtk/components/adaptive_tessellation/image/utils/sampling_utils.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "BarycentricTriangle.hpp"
@@ -56,16 +57,18 @@ protected:
         const Vector2d& a,
         const Vector2d& b,
         const Eigen::AlignedBox2d& bbox) const;
-    std::pair<int, double> pixel_num_size_of_uv_triangle(const Eigen::AlignedBox2d& bbox) const;
-
-    std::pair<int, double> pixel_size_of_uv_triangle(int pixel_num, const Eigen::AlignedBox2d& bbox)
-        const;
 
     double l2_distance_to_limit(
         Eigen::Vector2d& uv,
         const Eigen::Matrix<double, 3, 3, Eigen::ColMajor>& position_triangle_ColMajor,
         BarycentricTriangle<double>& bary) const;
-    double max_distance_on_line_segment(const Vector2d& a, const Vector2d& b) const;
+
+    double max_distance_on_line_segment(
+        const Vector2d& a,
+        const Vector2d& b,
+        const Eigen::Matrix<double, 3, 3, Eigen::ColMajor>& position_triangle_ColMajor,
+        const BarycentricTriangle<double>& bary) const;
+
     double max_disatance_pixel_corners_inside_triangle(
         const Vector2d& uv0,
         const Vector2d& uv1,

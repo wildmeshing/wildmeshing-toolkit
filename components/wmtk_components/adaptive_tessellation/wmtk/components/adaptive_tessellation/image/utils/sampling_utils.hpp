@@ -137,6 +137,17 @@ Eigen::Vector<float, N> fetch_texel_eigen(const std::array<Image, N>& images, in
     return res;
 }
 
+template <size_t N>
+Eigen::Vector<float, N>
+fetch_texel_eigen(const std::array<std::shared_ptr<Image>, N>& images, int x, int y)
+{
+    Eigen::Vector<float, N> res;
+    for (size_t k = 0; k < N; ++k) {
+        res[k] = fetch_texel_eigen(*images[k], x, y);
+    }
+    return res;
+}
+
 float fetch_texel(const Image& image, int x, int y);
 template <size_t N>
 Eigen::Vector<float, N> fetch_texels(const std::array<Image, N>& images, int x, int y)
