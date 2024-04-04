@@ -89,6 +89,11 @@ public:
     int64_t dimension() const;
     void reserve(const int64_t size);
 
+    /**
+     * @brief returns the default value of this attribute
+     */
+    const T& default_value() const;
+
     bool operator==(const Attribute<T>& o) const;
 
     void push_scope();
@@ -273,6 +278,12 @@ template <typename T>
 inline int64_t Attribute<T>::dimension() const
 {
     return m_dimension;
+}
+
+template <typename T>
+inline const T& Attribute<T>::default_value() const
+{
+    return m_default_value;
 }
 
 template <typename T>

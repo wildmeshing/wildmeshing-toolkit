@@ -193,7 +193,7 @@ TriMesh three_individuals();
 // creates N triangles surrounding a single interior vertex 0
 std::shared_ptr<TriMesh> disk(int number);
 
-// N triangles of
+// N triangles
 std::shared_ptr<TriMesh> individual_triangles(int number);
 
 
