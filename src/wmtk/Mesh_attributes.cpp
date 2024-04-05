@@ -41,6 +41,12 @@ attribute::TypedAttributeHandle<T> Mesh::register_attribute_typed(
     return attr;
 }
 
+template <typename T>
+const T& Mesh::get_attribute_default_value(const TypedAttributeHandle<T>& handle) const
+{
+    return m_attribute_manager.get_attribute_default_value(handle);
+}
+
 std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t count)
 {
     // passses back a set of new consecutive ids. in hte future this could do
@@ -351,4 +357,13 @@ template TypedAttributeHandle<double>
 Mesh::register_attribute_typed(const std::string&, PrimitiveType, int64_t, bool, double);
 template TypedAttributeHandle<Rational>
 Mesh::register_attribute_typed(const std::string&, PrimitiveType, int64_t, bool, Rational);
+
+template const int64_t& Mesh::get_attribute_default_value(
+    const TypedAttributeHandle<int64_t>& handle) const;
+template const char& Mesh::get_attribute_default_value(
+    const TypedAttributeHandle<char>& handle) const;
+template const double& Mesh::get_attribute_default_value(
+    const TypedAttributeHandle<double>& handle) const;
+template const wmtk::Rational& Mesh::get_attribute_default_value(
+    const TypedAttributeHandle<wmtk::Rational>& handle) const;
 } // namespace wmtk

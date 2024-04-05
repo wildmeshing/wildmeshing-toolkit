@@ -27,6 +27,13 @@ CompoundAccessor<N, MeshType, AttributeType...>::CompoundAccessor(
     //: m_base_accessors(accs...)
     : CompoundAccessor(acc.mesh(), acc.typed_handle(), accs.typed_handle()...)
 {}
+
+template <size_t N, typename MeshType, typename... AttributeType>
+template <size_t Index>
+PrimitiveType CompoundAccessor<N, MeshType, AttributeType...>::primitive_type() const
+{
+    return get<Index>().primitive_type();
+}
 // template <typename MeshType, typename... AttributeType, std::bitset<sizeof...(AttributeType)>
 // ScalarAttributeMask> CompoundAccessor<MeshType>::CompoundAccessor(
 //{}

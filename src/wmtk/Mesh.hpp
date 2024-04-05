@@ -20,7 +20,6 @@
 #include <wmtk/simplex/Simplex.hpp>
 #include "Tuple.hpp"
 #include "Types.hpp"
-#include "attribute/Attribute.hpp" // Why do we need to include this now?
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
@@ -230,6 +229,9 @@ public:
 
     template <typename T>
     int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
+
+    template <typename T>
+    const T& get_attribute_default_value(const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
     std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;

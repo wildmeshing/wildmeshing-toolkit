@@ -10,6 +10,7 @@
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include <wmtk/attribute/MeshAttributes.hpp>
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include "internal/TupleTag.hpp"
 
 namespace wmtk::multimesh::utils {
@@ -42,7 +43,9 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
         for (size_t i = 0; i < tagged_tuples.size(); ++i) {
             const std::array<int64_t, 2> vs = {
                 {m.id(tagged_tuples[i], PrimitiveType::Vertex),
-                 m.id(m.switch_tuple(tagged_tuples[i], PrimitiveType::Vertex), PrimitiveType::Vertex)}};
+                 m.id(
+                     m.switch_tuple(tagged_tuples[i], PrimitiveType::Vertex),
+                     PrimitiveType::Vertex)}};
 
 
             // check and add v0, v1 to the vertex map
@@ -69,8 +72,14 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
             // TODO: check if this break the orientation of the map
             const std::array<int64_t, 3> vs = {
                 {m.id(tagged_tuples[i], PrimitiveType::Vertex),
-                 m.id(m.switch_tuple(tagged_tuples[i], PrimitiveType::Vertex), PrimitiveType::Vertex),
-                 m.id(m.switch_tuples(tagged_tuples[i], {PrimitiveType::Edge, PrimitiveType::Vertex}), PrimitiveType::Vertex)}};
+                 m.id(
+                     m.switch_tuple(tagged_tuples[i], PrimitiveType::Vertex),
+                     PrimitiveType::Vertex),
+                 m.id(
+                     m.switch_tuples(
+                         tagged_tuples[i],
+                         {PrimitiveType::Edge, PrimitiveType::Vertex}),
+                     PrimitiveType::Vertex)}};
 
             // check and add v0, v1, v2 to the vertex map
             for (int k = 0; k < 3; k++) {
@@ -96,11 +105,19 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
         for (int64_t i = 0; i < tagged_tuples.size(); ++i) {
             const std::array<int64_t, 4> vs = {
                 {m.id(tagged_tuples[i], PrimitiveType::Vertex),
-                 m.id(m.switch_tuple(tagged_tuples[i], PrimitiveType::Vertex), PrimitiveType::Vertex),
                  m.id(
-                     m.switch_tuples(tagged_tuples[i], {PrimitiveType::Triangle, PrimitiveType::Edge, PrimitiveType::Vertex}),
+                     m.switch_tuple(tagged_tuples[i], PrimitiveType::Vertex),
                      PrimitiveType::Vertex),
-                 m.id(m.switch_tuples(tagged_tuples[i], {PrimitiveType::Edge, PrimitiveType::Vertex}), PrimitiveType::Vertex)}};
+                 m.id(
+                     m.switch_tuples(
+                         tagged_tuples[i],
+                         {PrimitiveType::Triangle, PrimitiveType::Edge, PrimitiveType::Vertex}),
+                     PrimitiveType::Vertex),
+                 m.id(
+                     m.switch_tuples(
+                         tagged_tuples[i],
+                         {PrimitiveType::Edge, PrimitiveType::Vertex}),
+                     PrimitiveType::Vertex)}};
 
             for (int k = 0; k < 4; ++k) {
                 size_t size = parent_to_child_vertex_map.size();
@@ -181,23 +198,32 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag(
     const wmtk::attribute::MeshAttributeHandle::ValueVariant& tag_value)
 {
     return std::visit(
-        [&](auto&& handle) {
-            using T = typename std::decay_t<decltype(handle)>::Type;
-            return std::visit(
-                [&](auto&& value) -> std::shared_ptr<Mesh> {
-                    if constexpr (std::is_convertible_v<std::decay_t<decltype(value)>, T>) {
-                        return internal::TupleTag::extract_and_register_child_mesh_from_tag_handle(
-                            tag_handle.mesh(),
-                            handle,
-                            T(value));
-                    } else {
-                        throw std::runtime_error(
-                            "Tried to use a tag value that was not convertible to "
-                            "the tag attribute type");
-                        return {};
-                    }
-                },
-                tag_value);
+        [&](auto&& handle) noexcept -> std::shared_ptr<Mesh> {
+            using HandleType = typename std::decay_t<decltype(handle)>;
+            using T = typename HandleType::Type;
+            if constexpr (wmtk::attribute::MeshAttributeHandle::template handle_type_is_basic<
+                              HandleType>()) {
+                return std::visit(
+                    [&](auto&& value) noexcept -> std::shared_ptr<Mesh> {
+                        if constexpr (std::is_convertible_v<std::decay_t<decltype(value)>, T>) {
+                            return internal::TupleTag::
+                                extract_and_register_child_mesh_from_tag_handle(
+                                    tag_handle.mesh(),
+                                    handle,
+                                    T(value));
+                        } else {
+                            log_and_throw_error(
+                                "Tried to use a tag value that was not convertible to "
+                                "the tag attribute type");
+                            return {};
+                        }
+                    },
+                    tag_value);
+            } else {
+                log_and_throw_error("Tried to use a non-primitive meshattributehandle when "
+                                    "extracting a child mesh fro ma tag");
+            }
+            return nullptr;
         },
         tag_handle.handle());
 }

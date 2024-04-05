@@ -27,7 +27,10 @@ public:
         const TriMesh& mesh,
         const attribute::TypedAttributeHandle<double>& attribute_handle,
         const attribute::TypedAttributeHandle<double>& target_attribute_handle)
-        : PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, attribute::MeshAttributeHandle(const_cast<TriMesh&>(mesh),attribute_handle))
+        : PerSimplexAutodiffFunction(
+              mesh,
+              PrimitiveType::Vertex,
+              attribute::MeshAttributeHandle(const_cast<TriMesh&>(mesh), attribute_handle))
         , m_target_attribute_accessor(mesh.create_const_accessor<double>(target_attribute_handle))
     {}
     ~SquareDistance() override = default;
@@ -51,7 +54,7 @@ protected:
     const attribute::Accessor<double> m_target_attribute_accessor;
 };
 } // namespace wmtk::function
-TEST_CASE("smoothing_Newton_Method")
+TEST_CASE("vertex_optimization_Newton_Method")
 {
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
     auto handler = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
@@ -81,7 +84,7 @@ TEST_CASE("smoothing_Newton_Method")
         auto stats = scheduler.run_operation_on_all(op);
         REQUIRE(stats.number_of_successful_operations() > 0);
     }
-    const attribute::Accessor<double> pos = mesh.create_const_accessor<double,2>(handler);
+    const attribute::Accessor<double> pos = mesh.create_const_accessor<double, 2>(handler);
     Tuple tuple = mesh.tuple_from_face_id(0);
     auto uv0 = pos.const_vector_attribute(tuple);
     auto uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));
@@ -92,17 +95,12 @@ TEST_CASE("smoothing_Newton_Method")
     CHECK((uv1 - uv2).norm() - (uv0 - uv2).norm() < 1e-6);
 }
 
-TEST_CASE("smoothing_tet_amips")
+TEST_CASE("vertex_optimization_tet_amips")
 {
     TetMesh mesh = three_incident_tets_with_positions();
     auto handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    function::AMIPS amips(
-        mesh,
-        handle);
-    auto energy = std::make_shared<function::LocalNeighborsSumFunction>(
-        mesh,
-        handle,
-        amips);
+    function::AMIPS amips(mesh, handle);
+    auto energy = std::make_shared<function::LocalNeighborsSumFunction>(mesh, handle, amips);
     OptimizationSmoothing op(energy);
 
     Scheduler scheduler;
@@ -127,7 +125,7 @@ TEST_CASE("smoothing_tet_amips")
 }
 
 
-TEST_CASE("smoothing_Gradient_Descent")
+TEST_CASE("vertex_optimization_Gradient_Descent")
 {
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
     auto handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
@@ -135,13 +133,16 @@ TEST_CASE("smoothing_Gradient_Descent")
     auto target_coordinate_handle =
         mesh.register_attribute<double>("target_coordinate", PrimitiveType::Vertex, 2);
 
-    auto target_acc = mesh.create_accessor<double,2>(target_coordinate_handle);
+    auto target_acc = mesh.create_accessor<double, 2>(target_coordinate_handle);
 
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 0)) << 0, 0;
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 1)) << 1, 0;
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 2)) << 0, 1;
 
-    function::SquareDistance squared_dist(mesh, handle.as<double>(), target_coordinate_handle.as<double>());
+    function::SquareDistance squared_dist(
+        mesh,
+        handle.as<double>(),
+        target_coordinate_handle.as<double>());
     auto energy = std::make_shared<function::LocalNeighborsSumFunction>(mesh, handle, squared_dist);
     OptimizationSmoothing op(energy);
 
@@ -165,7 +166,7 @@ TEST_CASE("smoothing_Gradient_Descent")
     do {
         stats = scheduler.run_operation_on_all(op);
     } while (get_min_grad_norm() > 1e-3 && stats.number_of_successful_operations() > 0);
-    const attribute::Accessor<double> pos = mesh.create_const_accessor<double,2>(handle);
+    const attribute::Accessor<double> pos = mesh.create_const_accessor<double, 2>(handle);
     Tuple tuple = mesh.tuple_from_face_id(0);
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
     Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));
