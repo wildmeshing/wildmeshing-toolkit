@@ -78,7 +78,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
     auto unmods = unmodified_primitives(simplex);
     auto mods = execute(simplex);
     if (!mods.empty()) { // success should be marked here
-        apply_attribute_transfer(mods);
+        if (operation_name != "MeshConsolidate")
+	    apply_attribute_transfer(mods);
         if (after(unmods, mods)) {
             // store local atlas for retrieval
 #ifdef WMTK_RECORD_OPERATIONS

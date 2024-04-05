@@ -48,7 +48,7 @@ set(MY_FLAGS
     # -Wno-sign-conversion
     #-Wsign-conversion
 
-    -Wshadow
+    #-Wshadow
 
     -Wstrict-null-sentinel
     -Woverloaded-virtual
@@ -56,7 +56,7 @@ set(MY_FLAGS
     -Wstack-protector
     -Wstrict-aliasing
     -Wstrict-aliasing=2
-    -Wswitch-default
+    #-Wswitch-default
     -Wswitch-enum
     -Wswitch-unreachable
 
