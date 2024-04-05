@@ -192,6 +192,18 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             compute_amips);
     amips_update->run_on_all();
 
+    double max_amips = std::numeric_limits<double>::lowest();
+    double min_amips = std::numeric_limits<double>::max();
+
+    for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
+        // double e = amips->get_value(simplex::Simplex(mesh->top_simplex_type(), t));
+        double e = amips_accessor.scalar_attribute(t);
+        max_amips = std::max(max_amips, e);
+        min_amips = std::min(min_amips, e);
+    }
+
+    logger().info("Initial Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_amips, min_amips);
+
     //////////////////////////////////
     // Storing target edge length
     auto target_edge_length_attribute = mesh->register_attribute<double>(
@@ -318,8 +330,16 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     std::vector<std::shared_ptr<Mesh>> multimesh_meshes;
 
+    assert(options.envelopes.size() == 4); // four kind of envelopes in tetwild [surface_mesh,
+                                           // open_boudnary, nonmanifold_edges, is_boundary(bbox)]
+    // TODO: add nonmanifold vertex point mesh
+
     for (const auto& v : options.envelopes) {
         auto envelope = cache.read_mesh(v.geometry.mesh);
+        if (envelope == nullptr) {
+            wmtk::logger().info("TetWild: no {} mesh for this mesh", v.geometry.mesh);
+            continue;
+        }
         envelopes.emplace_back(envelope);
 
         auto constrained = base::get_attributes(cache, *mesh, v.constrained_position);
@@ -463,7 +483,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     proj_collapse->add_invariant(todo_smaller);
     proj_collapse->add_invariant(envelope_invariant);
     proj_collapse->add_invariant(inversion_invariant);
-    // proj_collapse->add_invariant(function_invariant);
+    proj_collapse->add_invariant(function_invariant);
 
     proj_collapse->add_transfer_strategy(amips_update);
     proj_collapse->add_transfer_strategy(edge_length_update);
@@ -657,7 +677,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         double max_energy = std::numeric_limits<double>::lowest();
         double min_energy = std::numeric_limits<double>::max();
         for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
-            double e = amips->get_value(simplex::Simplex(mesh->top_simplex_type(), t));
+            // double e = amips->get_value(simplex::Simplex(mesh->top_simplex_type(), t));
+            double e = amips_accessor.scalar_attribute(t);
             max_energy = std::max(max_energy, e);
             min_energy = std::min(min_energy, e);
         }
