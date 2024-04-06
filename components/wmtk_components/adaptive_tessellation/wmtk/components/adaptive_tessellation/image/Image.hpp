@@ -33,6 +33,7 @@ public:
     // point coordinates between [0, 1]
     int width() const { return static_cast<int>(m_image.cols()); };
     int height() const { return static_cast<int>(m_image.rows()); };
+    int size() const { return std::max(width(), height()); }
     template <typename T>
     float operator()(const T& u, const T& v) const
     {

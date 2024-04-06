@@ -69,6 +69,12 @@ public:
     }
 
     template <typename T>
+    Vector3<T> pixel_coord_to_position_bilinear(const Vector2<T>& uv) const
+    {
+        return image::utils::sample_bilinear_with_pixel_coord(m_images, uv.x(), uv.y());
+    }
+
+    template <typename T>
     Vector3<T> pixel_index_to_position(int x, int y) const
     {
         return image::utils::fetch_texel_eigen(m_images, x, y);
@@ -95,24 +101,63 @@ public:
         //         get_wrapping_mode())};
     }
 
+    int pixel_index_floor(const double xcoord) const
+    {
+        int w = m_images[0]->width();
+        int h = m_images[0]->height();
+        int size = std::min(w, h);
+        auto coord = xcoord * size;
+        int floor = 0;
+        if (coord <= 0.5) {
+            floor = 0;
+
+        } else if (coord + 0.5 >= static_cast<double>(size)) {
+            floor = size - 1;
+
+        } else {
+            assert(1 < size);
+            int a = size - 2;
+            int b = static_cast<size_t>(coord - 0.5);
+            floor = std::min(a, b);
+        }
+
+        return floor;
+    }
+
     std::pair<int, int> pixel_index_floor(const Vector2<double>& uv) const
     {
-        int w = m_images[0]->width();
-        int h = m_images[0]->height();
-        const int sx = std::clamp(static_cast<int>(std::floor(uv.x() * w)), 0, w - 1);
-        const int sy = std::clamp(static_cast<int>(std::floor(uv.y() * h)), 0, h - 1);
-        return {sx, sy};
+        return {pixel_index_floor(uv.x()), pixel_index_floor(uv.y())};
     }
-    std::pair<int, int> pixel_index_ceil(const Vector2<double>& uv) const
+
+    int pixel_index_ceil(const double xcoord) const
     {
         int w = m_images[0]->width();
         int h = m_images[0]->height();
-        const int sx = std::clamp(static_cast<int>(std::ceil(uv.x() * w)), 0, w - 1);
-        const int sy = std::clamp(static_cast<int>(std::ceil(uv.y() * h)), 0, h - 1);
-        return {sx, sy};
+        int size = std::min(w, h);
+        int ceil = 0;
+        auto coord = xcoord * size;
+        if (coord <= 0.5f) {
+            ceil = 0;
+        } else if (coord + 0.5f >= static_cast<double>(size)) {
+            ceil = size - 1;
+
+        } else {
+            assert(1 < size);
+            int a = size - 2;
+            int b = static_cast<size_t>(coord - 0.5);
+            ceil = std::min(a, b) + 1;
+        }
+
+        return ceil;
+    }
+
+    std::pair<int, int> pixel_index_ceil(const Vector2<double>& uv) const
+    {
+        return {pixel_index_ceil(uv.x()), pixel_index_ceil(uv.y())};
     }
 
     float pixel_size() const { return m_images[0]->pixel_size(); }
+    int image_size() const { return m_images[0]->size(); }
 };
 
 } // namespace function::utils

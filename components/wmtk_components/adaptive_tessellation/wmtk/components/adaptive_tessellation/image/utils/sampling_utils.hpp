@@ -3,6 +3,8 @@
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 // #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
 #include <wmtk/operations/Operation.hpp>
+#include <wmtk/utils/Logger.hpp>
+
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -198,17 +200,10 @@ Eigen::Vector<T, N> sample_nearest(const std::array<std::shared_ptr<Image>, N>& 
 }
 
 template <typename T>
-T sample_bilinear(const Image& image, T u, T v)
+T sample_bilinear_with_pixel_coord(const Image& image, T x, T y)
 {
-    // wmtk::operations::Operation::increase_sampling_cnt();
-    auto w = image.width();
-    auto h = image.height();
-    // x, y are between 0 and 1
-    auto x = u * static_cast<float>(w);
-    auto y = v * static_cast<float>(h);
-
-    const auto [x0, x1, tx] = sample_coord(x, w);
-    const auto [y0, y1, ty] = sample_coord(y, h);
+    const auto [x0, x1, tx] = sample_coord(x, image.size());
+    const auto [y0, y1, ty] = sample_coord(y, image.size());
 
     const T _1(1.0);
     const Eigen::Vector4<T> weight((_1 - tx) * (_1 - ty), (_1 - tx) * ty, tx * (_1 - ty), tx * ty);
@@ -218,6 +213,30 @@ T sample_bilinear(const Image& image, T u, T v)
         fetch_texel(image, x1, y0),
         fetch_texel(image, x1, y1));
     return pix.template cast<T>().dot(weight);
+}
+
+template <typename T, size_t N>
+Eigen::Vector<T, N>
+sample_bilinear_with_pixel_coord(const std::array<std::shared_ptr<Image>, N>& images, T x, T y)
+{
+    Eigen::Vector<T, N> res;
+    for (size_t k = 0; k < N; ++k) {
+        res[k] = sample_bilinear_with_pixel_coord(*images[k], x, y);
+    }
+    return res;
+}
+
+
+template <typename T>
+T sample_bilinear(const Image& image, T u, T v)
+{
+    // wmtk::operations::Operation::increase_sampling_cnt();
+    auto w = image.width();
+    auto h = image.height();
+    // x, y are between 0 and image size
+    auto x = u * static_cast<float>(w);
+    auto y = v * static_cast<float>(h);
+    return sample_bilinear_with_pixel_coord(image, x, y);
 }
 
 template <typename T, size_t N>
