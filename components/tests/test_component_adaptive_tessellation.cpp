@@ -1,15 +1,22 @@
-#include <catch2/catch_test_macros.hpp>
-#include <nlohmann/json.hpp>
 #include <wmtk/components/adaptive_tessellation/adaptive_tessellation.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/DistanceEnergy.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PositionMapAMIPS.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionAvgDistanceToLimit.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/MaxDistanceToLimit.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/TextureMapAvgDistanceToLimit.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
+#include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
+#include <wmtk/components/adaptive_tessellation/invariants/RGBSplitInvariant.hpp>
+#include <wmtk/components/adaptive_tessellation/invariants/RGBSwapInvariant.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/RGBSplit.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/RGBSwap.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/internal/ATScheduler.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATSetAttrs.cpp>
+#include <wmtk/components/adaptive_tessellation/operations/utils/tag_todo_edges.hpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/LineQuadrature.hpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/Quadrature.hpp>
+
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/function/PerSimplexAutodiffFunction.cpp>
 #include <wmtk/function/simplex/AMIPS.cpp>
@@ -18,30 +25,26 @@
 #include <wmtk/function/utils/AutoDiffRAII.hpp>
 #include <wmtk/function/utils/SimplexGetter.hpp>
 #include <wmtk/function/utils/amips.hpp>
+#include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/triangle_areas.hpp>
 
 #include <predicates.h>
-#include <chrono>
+#include <Eigen/Geometry>
+#include <catch2/catch_test_macros.hpp>
+#include <finitediff.hpp>
+#include <nlohmann/json.hpp>
 #include <polysolve/Utils.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-#include <finitediff.hpp>
-
+#include <chrono>
 #include <random>
 
 #include <tools/DEBUG_TriMesh.hpp>
 #include <tools/TriMesh_examples.hpp>
-#include <wmtk/components/adaptive_tessellation/image/Image.hpp>
-#include <wmtk/components/adaptive_tessellation/invariants/RGBSplitInvariant.hpp>
-#include <wmtk/components/adaptive_tessellation/invariants/RGBSwapInvariant.hpp>
-#include <wmtk/components/adaptive_tessellation/operations/RGBSplit.hpp>
-#include <wmtk/components/adaptive_tessellation/operations/RGBSwap.hpp>
-#include <wmtk/components/adaptive_tessellation/operations/internal/ATScheduler.hpp>
-#include <wmtk/components/adaptive_tessellation/operations/utils/tag_todo_edges.hpp>
-#include <wmtk/invariants/TodoInvariant.hpp>
+
 using namespace wmtk;
 using namespace wmtk::tests;
 using DSVec = wmtk::function::PerSimplexAutodiffFunction::DSVec;
@@ -393,7 +396,7 @@ TEST_CASE("avg_distance_energy_correctness")
              image::SamplingAnalyticFunction_FunctionType::Linear,
              0,
              0,
-             0.)
+             5.)
 
         }};
     std::shared_ptr<function::utils::ThreeChannelPositionMapEvaluator> m_evaluator_ptr =
@@ -1285,6 +1288,81 @@ TEST_CASE("recursive_rgb_split")
         }
     }
 }
+
+TEST_CASE("max_dist")
+{
+    std::array<std::shared_ptr<image::Image>, 3> images = {
+        {std::make_shared<image::Image>(5, 5),
+         std::make_shared<image::Image>(5, 5),
+         std::make_shared<image::Image>(5, 5)}};
+
+    auto u_func = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
+    auto v_func = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
+    auto height_function = [](const double& u, [[maybe_unused]] const double& v) -> double {
+        return exp(-(pow(u - 0.5, 2) + pow(v - 0.5, 2)) / (2 * 0.1 * 0.1));
+    };
+    images[0]->set(u_func);
+    images[1]->set(v_func);
+    images[2]->set(height_function);
+
+    std::shared_ptr<function::utils::ThreeChannelPositionMapEvaluator> m_evaluator_ptr =
+        std::make_shared<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
+            images,
+            image::SAMPLING_METHOD::Bilinear);
+    Eigen::AlignedBox2d bbox;
+    Eigen::Vector2d a(0.2, 0.2);
+    Eigen::Vector2d b(0.9, 0.2);
+    Eigen::Vector2d c(0.5, 0.9);
+
+    bbox.extend(a);
+    bbox.extend(b);
+    bbox.extend(c);
+    auto MD = wmtk::components::function::utils::MaxDistanceToLimit(*m_evaluator_ptr);
+    SECTION("intersections")
+    {
+        std::vector<Eigen::RowVector2d> intersects0 = MD._debug_grid_line_intersections(a, b, bbox);
+        REQUIRE(intersects0.size() == 5);
+        std::vector<Eigen::RowVector2d> intersects1 = MD._debug_grid_line_intersections(c, a, bbox);
+        REQUIRE(intersects1.size() == 6);
+        std::vector<Eigen::RowVector2d> intersects2 = MD._debug_grid_line_intersections(c, b, bbox);
+        REQUIRE(intersects2.size() == 6);
+
+        for (auto& inter : intersects0) {
+            auto pos_pixel_uv =
+                m_evaluator_ptr->pixel_coord_to_position_bilinear<double>(inter.transpose());
+            auto pos_uv = m_evaluator_ptr->uv_to_position<double>(inter.transpose() / 5.);
+            REQUIRE((pos_pixel_uv.transpose() - pos_uv.transpose()).norm() < 1e-5);
+        }
+        for (auto& inter : intersects1) {
+            auto pos_pixel_uv =
+                m_evaluator_ptr->pixel_coord_to_position_bilinear<double>(inter.transpose());
+            auto pos_uv = m_evaluator_ptr->uv_to_position<double>(inter.transpose() / 5.);
+            REQUIRE((pos_pixel_uv.transpose() - pos_uv.transpose()).norm() < 1e-5);
+        }
+        for (auto& inter : intersects2) {
+            auto pos_pixel_uv =
+                m_evaluator_ptr->pixel_coord_to_position_bilinear<double>(inter.transpose());
+            auto pos_uv = m_evaluator_ptr->uv_to_position<double>(inter.transpose() / 5.);
+            REQUIRE((pos_pixel_uv.transpose() - pos_uv.transpose()).norm() < 1e-5);
+        }
+    }
+
+    SECTION("pixel_inside")
+    {
+        Eigen::Matrix3d position_Col_Major = Eigen::Matrix3d::Zero();
+        position_Col_Major.col(0) = Vector3d(0., 0., 0.);
+        position_Col_Major.col(1) = Vector3d(1., 0., 0.);
+        position_Col_Major.col(2) = Vector3d(.5, 1., 0.);
+        double max = MD._debug_max_disatance_pixel_corners_inside_triangle(
+            a,
+            b,
+            c,
+            position_Col_Major,
+            bbox);
+        REQUIRE(max > 1);
+    }
+}
+
 TEST_CASE("downsample_image")
 {
     wmtk::components::image::Image img;

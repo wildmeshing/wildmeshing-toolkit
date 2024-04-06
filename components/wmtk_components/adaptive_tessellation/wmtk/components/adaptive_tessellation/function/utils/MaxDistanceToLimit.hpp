@@ -38,6 +38,29 @@ public:
         throw std::runtime_error("DScalar type in MaxDistanceToLimit Not implemented");
     }
 
+    std::vector<Eigen::RowVector2d> _debug_grid_line_intersections(
+        const Vector2d& a,
+        const Vector2d& b,
+        const Eigen::AlignedBox2d& bbox) const
+    {
+        return grid_line_intersections(a, b, bbox);
+    }
+
+    double _debug_max_disatance_pixel_corners_inside_triangle(
+        const Vector2d& uv0,
+        const Vector2d& uv1,
+        const Vector2d& uv2,
+        const Eigen::Matrix<double, 3, 3, Eigen::ColMajor>& position_triangle_ColMajor,
+        const Eigen::AlignedBox2d& bbox) const
+    {
+        return max_disatance_pixel_corners_inside_triangle(
+            uv0,
+            uv1,
+            uv2,
+            position_triangle_ColMajor,
+            bbox);
+    }
+
 protected:
     template <typename T>
     Eigen::AlignedBox2d
@@ -50,9 +73,6 @@ protected:
         return bbox;
     }
 
-    Eigen::AlignedBox2d uv_triangle_bbox(
-        const Eigen::Matrix<double, 3, 2, RowMajor>& uv_triangle_RowMajor) const;
-
     std::vector<Eigen::RowVector2d> grid_line_intersections(
         const Vector2d& a,
         const Vector2d& b,
@@ -60,6 +80,11 @@ protected:
 
     double l2_distance_to_limit(
         Eigen::Vector2d& uv,
+        const Eigen::Matrix<double, 3, 3, Eigen::ColMajor>& position_triangle_ColMajor,
+        BarycentricTriangle<double>& bary) const;
+
+    double pixel_coord_l2_distance_to_limit(
+        Eigen::Vector2d& pixel_uv,
         const Eigen::Matrix<double, 3, 3, Eigen::ColMajor>& position_triangle_ColMajor,
         BarycentricTriangle<double>& bary) const;
 

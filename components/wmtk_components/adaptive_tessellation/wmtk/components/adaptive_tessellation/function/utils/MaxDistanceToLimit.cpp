@@ -1,5 +1,6 @@
 #include "MaxDistanceToLimit.hpp"
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include <algorithm>
 #include <set>
 #include <wmtk/components/adaptive_tessellation/quadrature/PolygonClipping.cpp>
@@ -25,23 +26,19 @@ double MaxDistanceToLimit::distance(
     position_triangle_ColMajor.col(1) = p1;
     position_triangle_ColMajor.col(2) = p2;
 
-    Eigen::Matrix<double, 3, 2, RowMajor> uv_triangle_RowMajor;
-    uv_triangle_RowMajor.row(0) = image::utils::get_double(uv0);
-    uv_triangle_RowMajor.row(1) = image::utils::get_double(uv1);
-    uv_triangle_RowMajor.row(2) = image::utils::get_double(uv2);
 
-    // std::cout << "uv0 " << uv_triangle_RowMajor.row(0) << std::endl;
-    // std::cout << "uv1 " << uv_triangle_RowMajor.row(1) << std::endl;
-    // std::cout << "uv2 " << uv_triangle_RowMajor.row(2) << std::endl;
-
-    // calculate the barycentric coordinate of the a point using u, v cooridnates
-    // returns the 3d coordinate on the current mesh
-    BarycentricTriangle<double> bary(uv0, uv1, uv2);
+    // calculate the barycentric coordinate of the a point using u, v cooridnates in the pixel grid
+    // So the coordinate ranges from [0, image.size()] instead of [0, 1]
+    auto size = m_three_channel_evaluator.image_size();
+    BarycentricTriangle<double> bary(uv0 * size, uv1 * size, uv2 * size);
     if (bary.is_degenerate()) {
         return 0.;
     }
 
-    Eigen::AlignedBox2d bbox = uv_triangle_bbox(uv_triangle_RowMajor);
+    Eigen::AlignedBox2d bbox;
+    bbox.extend(uv0);
+    bbox.extend(uv1);
+    bbox.extend(uv2);
 
 
     // for all the grid points of the bbox, check if it's inside the triangle. If it is check their
@@ -63,32 +60,23 @@ double MaxDistanceToLimit::distance(
     std::vector<Eigen::RowVector2d> grid_line_intersections_20 =
         grid_line_intersections(uv2, uv0, bbox);
     // check all the intersections collected
-    for (int64_t i = 0; i < grid_line_intersections_01.size() - 1; ++i) {
+    for (int64_t i = 0; i < grid_line_intersections_01.size(); ++i) {
         Eigen::Vector2d inter = grid_line_intersections_01[i];
-        Eigen::Vector2d next_inter = grid_line_intersections_01[i + 1];
-        max_dist =
-            std::max(max_dist, l2_distance_to_limit(inter, position_triangle_ColMajor, bary));
         max_dist = std::max(
             max_dist,
-            max_distance_on_line_segment(inter, next_inter, position_triangle_ColMajor, bary));
+            pixel_coord_l2_distance_to_limit(inter, position_triangle_ColMajor, bary));
     }
-    for (int64_t i = 0; i < grid_line_intersections_12.size() - 1; ++i) {
+    for (int64_t i = 0; i < grid_line_intersections_12.size(); ++i) {
         Eigen::Vector2d inter = grid_line_intersections_12[i];
-        Eigen::Vector2d next_inter = grid_line_intersections_12[i + 1];
-        max_dist =
-            std::max(max_dist, l2_distance_to_limit(inter, position_triangle_ColMajor, bary));
         max_dist = std::max(
             max_dist,
-            max_distance_on_line_segment(inter, next_inter, position_triangle_ColMajor, bary));
+            pixel_coord_l2_distance_to_limit(inter, position_triangle_ColMajor, bary));
     }
-    for (int64_t i = 0; i < grid_line_intersections_20.size() - 1; ++i) {
+    for (int64_t i = 0; i < grid_line_intersections_20.size(); ++i) {
         Eigen::Vector2d inter = grid_line_intersections_20[i];
-        Eigen::Vector2d next_inter = grid_line_intersections_20[i + 1];
-        max_dist =
-            std::max(max_dist, l2_distance_to_limit(inter, position_triangle_ColMajor, bary));
         max_dist = std::max(
             max_dist,
-            max_distance_on_line_segment(inter, next_inter, position_triangle_ColMajor, bary));
+            pixel_coord_l2_distance_to_limit(inter, position_triangle_ColMajor, bary));
     }
 
     return max_dist;
@@ -112,27 +100,33 @@ std::vector<Eigen::RowVector2d> MaxDistanceToLimit::grid_line_intersections(
 
     auto [xx1, yy1] = m_three_channel_evaluator.pixel_index_floor(bbox.min());
     auto [xx2, yy2] = m_three_channel_evaluator.pixel_index_ceil(bbox.max());
+    int size = std::max(m_three_channel_evaluator.width(), m_three_channel_evaluator.height());
     Eigen::Vector2d left, right, top, bottom;
+
     if (a.x() < b.x()) {
-        left = a;
-        right = b;
+        left = a * size;
+        right = b * size;
     } else {
-        left = b;
-        right = a;
+        left = b * size;
+        right = a * size;
     }
     if (a.y() < b.y()) {
-        bottom = a;
-        top = b;
+        bottom = a * size;
+        top = b * size;
     } else {
-        bottom = b;
-        top = a;
+        bottom = b * size;
+        top = a * size;
     }
 
-    for (int i = 1; i <= xx2 - xx1; ++i) {
+    double pixel_size = m_three_channel_evaluator.pixel_size();
+
+    for (int i = 0; i <= xx2 - xx1; ++i) {
         // construct the halfplane with x = xxi
-        AlignedHalfPlane<0, false> vertical{bbox.min().x() + (double)i};
+        AlignedHalfPlane<0, true> vertical{0.5 + i};
+
         int status_floor = point_is_in_aligned_half_plane(left, vertical);
         int status_ceil = point_is_in_aligned_half_plane(right, vertical);
+
         if (status_floor > 0 && status_ceil < 0) {
             // the plane line is between floor and ceil
             // get the intersection
@@ -145,11 +139,12 @@ std::vector<Eigen::RowVector2d> MaxDistanceToLimit::grid_line_intersections(
             continue;
         }
     }
-    for (int j = 1; j <= yy2 - yy1; ++j) {
+    for (int j = 0; j <= yy2 - yy1; ++j) {
         // construct the halfplane with y = yyi
-        AlignedHalfPlane<1, false> horizontal{bbox.min().y() + (double)j};
+        AlignedHalfPlane<1, true> horizontal{0.5 + j};
         int status_floor = point_is_in_aligned_half_plane(bottom, horizontal);
         int status_ceil = point_is_in_aligned_half_plane(top, horizontal);
+
         if (status_floor > 0 && status_ceil < 0) {
             // the plane line is between floor and ceil
             // get the intersection
@@ -187,6 +182,27 @@ double MaxDistanceToLimit::l2_distance_to_limit(
     return (texture_position - position).norm();
 }
 
+/**
+ * @brief the uv input for this function is from grid_line_intersections, where the uv are in the
+ * pixel grid coordinate. uv is in [0, image.size()] instead of [0, 1]. But position coordinate and
+ * bary are unchanged
+ *
+ * @param uv
+ * @param position_triangle_ColMajor
+ * @param bary
+ * @return double
+ */
+double MaxDistanceToLimit::pixel_coord_l2_distance_to_limit(
+    Eigen::Vector2d& pixel_uv,
+    const Eigen::Matrix<double, 3, 3, Eigen::ColMajor>& position_triangle_ColMajor,
+    BarycentricTriangle<double>& bary) const
+{
+    Eigen::Vector3d texture_position =
+        m_three_channel_evaluator.pixel_coord_to_position_bilinear(pixel_uv);
+    Eigen::Vector3d position = position_triangle_ColMajor * bary.get(pixel_uv);
+    return (texture_position - position).norm();
+}
+
 
 double MaxDistanceToLimit::max_disatance_pixel_corners_inside_triangle(
     const Vector2d& uv0,
@@ -196,45 +212,38 @@ double MaxDistanceToLimit::max_disatance_pixel_corners_inside_triangle(
     const Eigen::AlignedBox2d& bbox) const
 {
     double max_dis = 0.;
-    BarycentricTriangle<double> bary(uv0, uv1, uv2);
+    auto size = m_three_channel_evaluator.image_size();
+    auto pixel_uv0 = uv0 * size;
+    auto pixel_uv1 = uv1 * size;
+    auto pixel_uv2 = uv2 * size;
+
+    BarycentricTriangle<double> bary(pixel_uv0, pixel_uv1, pixel_uv2);
     auto [xx1, yy1] = m_three_channel_evaluator.pixel_index_floor(bbox.min());
     auto [xx2, yy2] = m_three_channel_evaluator.pixel_index_ceil(bbox.max());
-
-    auto check_four_corners = [&](int xmin, int ymin) -> double {
-        double corner_max_dis = 0;
-        for (int i = 0; i < 2; ++i) {
-            for (int j = 0; j < 2; ++j) {
-                auto u = (xmin + i) * m_three_channel_evaluator.pixel_size();
-                auto v = (ymin + j) * m_three_channel_evaluator.pixel_size();
-                Eigen::Vector2d uv = {u, v};
-                if (wmtk::utils::point_inside_triangle_2d_check(uv0, uv1, uv2, uv)) {
-                    corner_max_dis = std::max(
-                        corner_max_dis,
-                        l2_distance_to_limit(uv, position_triangle_ColMajor, bary));
-                }
-            }
+    auto check_center = [&](int xmin, int ymin) -> double {
+        double _max_dis = 0;
+        auto pixel_u = xmin + 0.5;
+        auto pixel_v = ymin + 0.5;
+        Eigen::Vector2d pixel_uv = {pixel_u, pixel_v};
+        if (wmtk::utils::point_inside_triangle_2d_check(
+                pixel_uv0,
+                pixel_uv1,
+                pixel_uv2,
+                pixel_uv)) {
+            _max_dis = std::max(
+                _max_dis,
+                pixel_coord_l2_distance_to_limit(pixel_uv, position_triangle_ColMajor, bary));
         }
-        return corner_max_dis;
+        return _max_dis;
     };
-    for (auto y = yy1; y < yy2; ++y) {
-        for (auto x = xx1; x < xx2; ++x) {
-            // check the four corners of the pixel, if any of them is inside the triangle.
+    for (auto y = yy1; y <= yy2; ++y) {
+        for (auto x = xx1; x <= xx2; ++x) {
+            // check the center of the pixel, if any of them is inside the triangle.
             // if it is, calculate the distance
-            max_dis = std::max(max_dis, check_four_corners(xx1, yy1));
+            max_dis = std::max(max_dis, check_center(x, y));
         }
     }
     return max_dis;
-}
-
-
-Eigen::AlignedBox2d MaxDistanceToLimit::uv_triangle_bbox(
-    const Eigen::Matrix<double, 3, 2, RowMajor>& uv_triangle_RowMajor) const
-{
-    Eigen::AlignedBox2d bbox;
-    bbox.extend(uv_triangle_RowMajor.row(0).transpose());
-    bbox.extend(uv_triangle_RowMajor.row(1).transpose());
-    bbox.extend(uv_triangle_RowMajor.row(2).transpose());
-    return bbox;
 }
 
 double MaxDistanceToLimit::max_distance_on_line_segment(
