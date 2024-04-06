@@ -52,8 +52,6 @@ set(TEST_SOURCES
     test_tuple_2d.cpp
 	test_tuple_3d.cpp
     test_execution.cpp
-    test_2d_invariants.cpp
-    test_3d_invariants.cpp
     test_simplex_collection.cpp
     test_simplicial_complex.cpp
     test_1d_operations.cpp
@@ -90,6 +88,7 @@ add_subdirectory_with_source_group(utils)
 add_subdirectory_with_source_group(multimesh)
 add_subdirectory_with_source_group(operations)
 add_subdirectory_with_source_group(attributes)
+add_subdirectory_with_source_group(invariants)
 
 
 

@@ -2,8 +2,8 @@
 
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include "predicates.h"
-#include "tools/DEBUG_TetMesh.hpp"
-#include "tools/TetMesh_examples.hpp"
+#include "../tools/DEBUG_TetMesh.hpp"
+#include "../tools/TetMesh_examples.hpp"
 
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 

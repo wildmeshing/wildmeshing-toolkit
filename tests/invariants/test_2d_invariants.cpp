@@ -2,10 +2,10 @@
 
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
-#include "tools/DEBUG_TetMesh.hpp"
-#include "tools/DEBUG_TriMesh.hpp"
-#include "tools/TetMesh_examples.hpp"
-#include "tools/TriMesh_examples.hpp"
+#include "../tools/DEBUG_TetMesh.hpp"
+#include "../tools/DEBUG_TriMesh.hpp"
+#include "../tools/TetMesh_examples.hpp"
+#include "../tools/TriMesh_examples.hpp"
 
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
