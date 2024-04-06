@@ -94,12 +94,12 @@ TEST_CASE("test_single_hybrid_rational_accessor", "[accessor]")
     value = 0;
     for (const auto& vtup : vertices) {
         double v = value;
-        auto cc = acc.char_const_value(vtup);
-        auto cr = acc.rational_const_value(vtup);
-        auto cd = acc.double_const_value(vtup);
-        auto c = acc.char_value(vtup);
-        auto r = acc.rational_value(vtup);
-        auto d = acc.double_value(vtup);
+        auto cc = acc.raw_char_const_value(vtup);
+        auto cr = acc.raw_rational_const_value(vtup);
+        auto cd = acc.raw_double_const_value(vtup);
+        auto c = acc.raw_char_value(vtup);
+        auto r = acc.raw_rational_value(vtup);
+        auto d = acc.raw_double_value(vtup);
         CHECK(c(0) == 1);
         CHECK(d(0) == v);
         CHECK(r(0) == v);

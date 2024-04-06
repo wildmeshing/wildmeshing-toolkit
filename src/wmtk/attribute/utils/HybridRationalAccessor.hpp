@@ -67,25 +67,25 @@ public:
     auto& get_double_accessor() { return Base::template get<2>(); }
     const auto& get_double_const_accessor() const { return Base::template get<2>(); }
 
-    auto char_value(const Tuple& t) { return get_char_accessor().vector_attribute(t); }
-    auto char_const_value(const Tuple& t) const
+    auto raw_char_value(const Tuple& t) { return get_char_accessor().vector_attribute(t); }
+    auto raw_char_const_value(const Tuple& t) const
     {
         return get_char_const_accessor().const_vector_attribute(t);
     }
 
-    auto rational_value(const Tuple& t) { return get_rational_accessor().vector_attribute(t); }
-    auto rational_const_value(const Tuple& t) const
+    auto raw_rational_value(const Tuple& t) { return get_rational_accessor().vector_attribute(t); }
+    auto raw_rational_const_value(const Tuple& t) const
     {
         return get_rational_const_accessor().const_vector_attribute(t);
     }
 
-    auto double_value(const Tuple& t) { return get_double_accessor().vector_attribute(t); }
-    auto double_const_value(const Tuple& t) const
+    auto raw_double_value(const Tuple& t) { return get_double_accessor().vector_attribute(t); }
+    auto raw_double_const_value(const Tuple& t) const
     {
         return get_double_const_accessor().const_vector_attribute(t);
     }
 
-    bool is_rounded(const Tuple& t) const { return (char_const_value(t).array() == 1).all(); }
+    bool is_rounded(const Tuple& t) const { return (raw_char_const_value(t).array() == 1).all(); }
 
     // checks if every simplex or tuple is rounded
     template <typename Iterable>
