@@ -1,6 +1,7 @@
 # Sources
 set(TEST_SOURCES
-    test_2d_invariants.cpp
-    test_3d_invariants.cpp
+    substructure.cpp
+    multimesh_topology.cpp
+    tet_inversion.cpp
     )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})
