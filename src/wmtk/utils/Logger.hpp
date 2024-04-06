@@ -1,7 +1,11 @@
 #pragma once
 
 // clang-format off
+#if defined(SPDLOG_FMT_EXTERNAL)
+#include <fmt/ranges.h>
+#else
 #include <spdlog/fmt/bundled/ranges.h>
+#endif
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 // clang-format on

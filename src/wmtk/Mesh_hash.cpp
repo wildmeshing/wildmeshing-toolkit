@@ -1,4 +1,8 @@
+#if defined(SPDLOG_FMT_EXTERNAL)
+#include <fmt/format.h>
+#else
 #include <spdlog/fmt/bundled/format.h>
+#endif
 #include <wmtk/attribute/internal/hash.hpp>
 #include "Mesh.hpp"
 namespace wmtk {
