@@ -74,8 +74,40 @@ HybridRationalSplitNewAttributeStrategy::standard_split_rib_strategy(SplitRibBas
                   const ConstMapValueType& b,
                   const std::bitset<2>& bs) -> ResultValueType {
             if (bs[0] == bs[1]) {
-                //return (a + b) / T(2);
-                return a;
+                auto [ca, ra, da] = a;
+                auto [cb, rb, db] = b;
+                const bool a_rational = (ca.array() == 1).any();
+                const bool b_rational = (cb.array() == 1).any();
+                ResultValueType retvalue;
+                auto [c, r, d] = retvalue;
+                // make sure every entry is sized properly
+                c.resize(ca.rows());
+                r.resize(ca.rows());
+                d.resize(ca.rows());
+
+                if (a_rational || b_rational) {
+                    c.setZero();
+                    if (a_rational && b_rational) {
+                        // both rational
+                        r = (ra + rb) / 2.0;
+                    } else if (a_rational) {
+                        // a rational, b not
+
+                        auto rat_b =
+                            db.unaryExpr([](const double& v) { return wmtk::Rational(v); });
+                        r = (ra + rat_b) / 2.0;
+                    } else if (b_rational) {
+                        // b rational, a not
+                        auto rat_a =
+                            da.unaryExpr([](const double& v) { return wmtk::Rational(v); });
+                        r = (rb + rat_a) / 2.0;
+                    } else {
+                    }
+                } else {
+                    c.setOnes();
+                }
+
+                return retvalue;
             } else if (bs[0]) {
                 return a;
 
