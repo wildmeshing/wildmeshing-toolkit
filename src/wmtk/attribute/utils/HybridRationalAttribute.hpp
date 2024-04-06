@@ -4,6 +4,7 @@
 #include <tuple>
 #include <wmtk/Tuple.hpp>
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
+#include <wmtk/attribute/internal/MapTypes.hpp>
 #include <wmtk/utils/Rational.hpp>
 
 namespace wmtk::attribute::utils {
@@ -24,6 +25,19 @@ public:
     using Type = std::tuple<char, wmtk::Rational, double>;
     using value_type = Type;
     constexpr static int Dim = D;
+    using MapValueType = std::tuple<
+        wmtk::attribute::internal::MapResult<char, D>,
+        wmtk::attribute::internal::MapResult<wmtk::Rational, D>,
+        wmtk::attribute::internal::MapResult<double, D>>;
+    using ConstMapValueType = std::tuple<
+        wmtk::attribute::internal::ConstMapResult<char, D>,
+        wmtk::attribute::internal::ConstMapResult<wmtk::Rational, D>,
+        wmtk::attribute::internal::ConstMapResult<double, D>>;
+
+    using ResultValueType = std::tuple<
+        wmtk::attribute::internal::VectorResult<char, D>,
+        wmtk::attribute::internal::VectorResult<wmtk::Rational, D>,
+        wmtk::attribute::internal::VectorResult<double, D>>;
 
     template <size_t Index>
     auto get() const
@@ -189,9 +203,9 @@ HybridRationalAttribute<D> HybridRationalAttribute<D>::register_attribute_from_r
 }
 } // namespace wmtk::attribute::utils
 
-//template <size_t Index, int D, typename MeshType>
-//size_t std::get(const wmtk::attribute::utils::HybridRationalAttribute<D>& attr)
+// template <size_t Index, int D, typename MeshType>
+// size_t std::get(const wmtk::attribute::utils::HybridRationalAttribute<D>& attr)
 //{
-//    return 0;
+//     return 0;
 //    // static_cast <
 //}

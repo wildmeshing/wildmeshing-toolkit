@@ -13,6 +13,12 @@ set(SRC_FILES
 
     CollapseNewAttributeTopoInfo.hpp
     SplitNewAttributeTopoInfo.hpp
+
+    HybridRationalCollapseNewAttributeStrategy.hpp
+    HybridRationalCollapseNewAttributeStrategy.cpp
+
+    HybridRationalSplitNewAttributeStrategy.hpp
+    HybridRationalSplitNewAttributeStrategy.cpp
 )
 
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

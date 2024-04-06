@@ -30,8 +30,7 @@ public:
     HybridRationalAccessor(const MeshAttributeHandle& handle)
         : HybridRationalAccessor(
               static_cast<MeshType&>(const_cast<wmtk::Mesh&>(handle.mesh())),
-              handle.template as_from_held_type<
-                  MeshAttributeHandle::HeldType::HybridRational>())
+              handle.template as_from_held_type<MeshAttributeHandle::HeldType::HybridRational>())
     {
         assert(handle.holds_from_held_type<MeshAttributeHandle::HeldType::HybridRational>());
     }
@@ -45,6 +44,7 @@ public:
         d = r.unaryExpr([](const wmtk::Rational& v) { return v.to_double(); });
         if (enable_double) {
             c.setConstant(1);
+            // TODO: invalidate the rational value
         }
     }
 
