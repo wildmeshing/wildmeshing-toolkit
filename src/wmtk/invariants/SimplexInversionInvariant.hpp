@@ -8,6 +8,7 @@ class SimplexInversionInvariant : public Invariant
 {
 public:
     SimplexInversionInvariant(const Mesh& m, const TypedAttributeHandle<double>& coordinate);
+    SimplexInversionInvariant(const MeshAttributeHandle& m);
     using Invariant::Invariant;
 
     /**
@@ -18,6 +19,7 @@ public:
         const override;
 
 private:
-    const TypedAttributeHandle<double> m_coordinate_handle;
+    const MeshAttributeHandle m_coordinate_handle;
+    // const TypedAttributeHandle<double> m_coordinate_handle;
 };
 } // namespace wmtk
