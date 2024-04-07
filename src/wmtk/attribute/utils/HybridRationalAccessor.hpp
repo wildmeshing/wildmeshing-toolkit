@@ -23,6 +23,20 @@ public:
     //{
     // };
 
+
+    template <typename Derived>
+    static auto round_rational(const Eigen::MatrixBase<Derived>& r)
+    {
+        static_assert(std::is_same_v<typename Derived::Scalar, wmtk::Rational>);
+        return r.unaryExpr([](const wmtk::Rational& v) { return v.to_double(); });
+    }
+    template <typename Derived>
+    static auto lift_double(const Eigen::MatrixBase<Derived>& d)
+    {
+        static_assert(std::is_same_v<typename Derived::Scalar, double>);
+        return d.unaryExpr([](const double& v) { return wmtk::Rational(v); });
+    }
+
     HybridRationalAccessor(MeshType& m, const HybridRationalAttribute<D>& attr)
         : Base(m, std::get<0>(attr), std::get<1>(attr), std::get<2>(attr))
     {}
@@ -41,7 +55,7 @@ public:
     void round(const Tuple& t, bool enable_double = false)
     {
         auto [c, r, d] = value(t);
-        d = r.unaryExpr([](const wmtk::Rational& v) { return v.to_double(); });
+        d = round_rational(r);
         if (enable_double) {
             c.setConstant(1);
             // TODO: invalidate the rational value
@@ -52,7 +66,7 @@ public:
     {
         auto [c, r, d] = value(t);
 
-        r = d.unaryExpr([](const double& v) { return wmtk::Rational(v); });
+        r = lift_double(d);
         if (enable_double) {
             c.setConstant(1);
         }
@@ -83,6 +97,24 @@ public:
     auto raw_double_const_value(const Tuple& t) const
     {
         return get_double_const_accessor().const_vector_attribute(t);
+    }
+
+    auto rational_value(const Tuple& t) const
+        -> wmtk::attribute::internal::VectorResult<wmtk::Rational, D>
+    {
+        if (is_rounded(t)) {
+            return lift_double(raw_double_const_value(t));
+        } else {
+            return raw_rational_const_value(t);
+        }
+    }
+    auto double_value(const Tuple& t) const -> wmtk::attribute::internal::VectorResult<double, D>
+    {
+        if (is_rounded(t)) {
+            return raw_double_const_value(t);
+        } else {
+            return round_rational(raw_rational_const_value(t));
+        }
     }
 
     bool is_rounded(const Tuple& t) const { return (raw_char_const_value(t).array() == 1).all(); }
