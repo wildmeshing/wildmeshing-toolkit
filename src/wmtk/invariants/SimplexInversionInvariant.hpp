@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wmtk/attribute/TypedAttributeHandle.hpp>
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include "Invariant.hpp"
 
 namespace wmtk {
@@ -8,6 +8,7 @@ class SimplexInversionInvariant : public Invariant
 {
 public:
     SimplexInversionInvariant(const Mesh& m, const TypedAttributeHandle<double>& coordinate);
+    SimplexInversionInvariant(const attribute::MeshAttributeHandle& m);
     using Invariant::Invariant;
 
     /**
@@ -18,6 +19,7 @@ public:
         const override;
 
 private:
-    const TypedAttributeHandle<double> m_coordinate_handle;
+    const attribute::MeshAttributeHandle m_coordinate_handle;
+    // const TypedAttributeHandle<double> m_coordinate_handle;
 };
 } // namespace wmtk
