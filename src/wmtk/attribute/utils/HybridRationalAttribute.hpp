@@ -39,6 +39,11 @@ public:
         wmtk::attribute::internal::VectorResult<wmtk::Rational, D>,
         wmtk::attribute::internal::VectorResult<double, D>>;
 
+    template <int E>
+    HybridRationalAttribute(const HybridRationalAttribute<E>& h)
+        : TupleType(h)
+    {}
+
     template <size_t Index>
     auto get() const
     {

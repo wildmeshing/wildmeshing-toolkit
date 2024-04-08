@@ -64,9 +64,8 @@ public:
     friend class wmtk::Mesh;
     friend class wmtk::hash<MeshAttributeHandle>;
     MeshAttributeHandle() = default;
-    template <typename T>
-    MeshAttributeHandle(Mesh& m, const T& h)
-        : MeshAttributeHandle(m, HandleVariant(h))
+    MeshAttributeHandle(const Mesh& m, const HandleVariant& h)
+        : MeshAttributeHandle(const_cast<Mesh&>(m), h)
     {}
     MeshAttributeHandle(Mesh& m, const HandleVariant& h);
     MeshAttributeHandle(const MeshAttributeHandle& o) = default;

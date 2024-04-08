@@ -79,24 +79,45 @@ TEST_CASE("tri_hybrid_inversion_invariant", "[invariants][2D]")
 {
     exactinit();
     DEBUG_TriMesh m = single_triangle();
-    auto position_handle = m.register_attribute<double>("vertices", PrimitiveType::Vertex, 2);
-    auto position_accessor = m.create_accessor<double>(position_handle);
+    auto position_handle = m.register_attribute<wmtk::Rational>("vertices", PrimitiveType::Vertex, 2);
+    auto position_accessor = m.create_accessor<wmtk::Rational>(position_handle);
 
     Tuple v0 = m.tuple_from_id(PrimitiveType::Vertex, 0);
     Tuple v1 = m.tuple_from_id(PrimitiveType::Vertex, 1);
     Tuple v2 = m.tuple_from_id(PrimitiveType::Vertex, 2);
 
-    position_accessor.vector_attribute(v0) = Eigen::Vector2d(-1, 0);
-    position_accessor.vector_attribute(v1) = Eigen::Vector2d(1, 0);
-    position_accessor.vector_attribute(v2) = Eigen::Vector2d(0, 1);
+    position_accessor.vector_attribute(v0) = Eigen::Vector2d(-1, 0).unaryExpr([](double v) { return wmtk::Rational(v); });
+    position_accessor.vector_attribute(v1) = Eigen::Vector2d(1, 0) .unaryExpr([](double v) { return wmtk::Rational(v); });
+    position_accessor.vector_attribute(v2) = Eigen::Vector2d(0, 1) .unaryExpr([](double v) { return wmtk::Rational(v); });
 
-    Eigen::Vector2d p0 = position_accessor.vector_attribute(v0);
-    Eigen::Vector2d p1 = position_accessor.vector_attribute(v1);
-    Eigen::Vector2d p2 = position_accessor.vector_attribute(v2);
 
 
     auto hybrid_attr =
-        wmtk::attribute::utils::HybridRationalAttribute<>::register_attribute_from_double(
+        wmtk::attribute::utils::HybridRationalAttribute<>::register_attribute_from_rational(
             static_cast<wmtk::TriMesh&>(m),
-            position_handle.as<double>());
+            position_handle.as<wmtk::Rational>());
+
+    const SimplexInversionInvariant inv(wmtk::attribute::MeshAttributeHandle(m,hybrid_attr));
+
+    // check based on pure rational values
+    CHECK(inv.after({}, {v0}));
+
+    // change the rational value and see if it still works
+    position_accessor.vector_attribute(v2) = Eigen::Vector2d(0, -1) .unaryExpr([](double v) { return wmtk::Rational(v); });
+    CHECK_FALSE(inv.after({}, {v0}));
+
+    wmtk::attribute::utils::HybridRationalAccessor acc(static_cast<wmtk::TriMesh&>(m), hybrid_attr);
+
+    // try rounding v2 to see if the invariant reads the rounded v2 value now even though the others are not rounded
+
+    acc.round(v2);
+
+    auto double_handle = hybrid_attr.get_double();
+
+    auto double_acc = m.create_accessor(double_handle);
+
+    double_acc.vector_attribute(v2) = Eigen::Vector2d(0, 1);
+    CHECK(inv.after({}, {v0}));
+    double_acc.vector_attribute(v2) = Eigen::Vector2d(0, -1);
+    CHECK_FALSE(inv.after({}, {v0}));
 }

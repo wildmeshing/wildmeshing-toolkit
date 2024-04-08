@@ -2,6 +2,7 @@
 #include <wmtk/attribute/internal/CompoundAccessor.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include "HybridRationalAttribute.hpp"
+#include "wmtk/attribute/MeshAttributeHandle.hpp"
 
 namespace wmtk::simplex {
 class Simplex;
@@ -41,6 +42,7 @@ public:
         : Base(m, std::get<0>(attr), std::get<1>(attr), std::get<2>(attr))
     {}
 
+
     HybridRationalAccessor(const MeshAttributeHandle& handle)
         : HybridRationalAccessor(
               static_cast<MeshType&>(const_cast<wmtk::Mesh&>(handle.mesh())),
@@ -52,7 +54,7 @@ public:
     PrimitiveType primitive_type() const { return Base::template primitive_type<0>(); }
 
 
-    void round(const Tuple& t, bool enable_double = false)
+    void round(const Tuple& t, bool enable_double = true)
     {
         auto [c, r, d] = value(t);
         d = round_rational(r);
@@ -86,6 +88,7 @@ public:
     {
         return get_char_const_accessor().const_vector_attribute(t);
     }
+    // int64_t dimension() const { return get_char_const_accessor().dimension(); }
 
     auto raw_rational_value(const Tuple& t) { return get_rational_accessor().vector_attribute(t); }
     auto raw_rational_const_value(const Tuple& t) const
