@@ -95,14 +95,12 @@ void HDF5Writer::write(
     const Rational& default_val)
 {
     std::vector<std::string> tmp;
-    tmp.reserve(val.size() * 2);
+    tmp.reserve(val.size() * Rational::string_size());
     for (const auto& v : val) {
-        tmp.emplace_back(v.numerator());
-        tmp.emplace_back(v.denominator());
+        auto v_tmp = v.as_strings();
+        tmp.insert(tmp.end(), v_tmp.begin(), v_tmp.end());
     }
-    std::stringstream ss;
-    ss << default_val;
-    write_internal(name, type, stride, tmp, ss.str());
+    write_internal(name, type, stride, tmp, default_val.to_binary());
 }
 
 void HDF5Writer::write_capacities(const std::vector<int64_t>& capacities)
