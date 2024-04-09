@@ -11,6 +11,7 @@
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
 #include <wmtk/invariants/MinIncidentValenceInvariant.hpp>
 #include <wmtk/invariants/MultiMeshTopologyInvariant.hpp>
+#include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/TetMeshSubstructureTopologyPreservingInvariant.hpp>
 #include <wmtk/invariants/TriMeshSubstructureTopologyPreservingInvariant.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
@@ -772,5 +773,47 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_in_2_by_2_by_2_tet", "[invari
         // face_tag_acc.scalar_attribute(m.face_tuple_from_vids(13, 16, 15)) = tag_val;
 
         // CHECK_FALSE(inv.before(Simplex::edge(m.edge_tuple_between_v1_v2(12, 13, 30))));
+    }
+}
+
+TEST_CASE("tri_rational_inversion_invariant", "[invariants][2D]")
+{
+    DEBUG_TriMesh m = single_triangle();
+    auto position_handle = m.register_attribute<Rational>("vertices", PrimitiveType::Vertex, 2);
+    auto position_accessor = m.create_accessor<Rational>(position_handle);
+
+    auto dposition_handle =
+        m.register_attribute<double>("double_vertices", PrimitiveType::Vertex, 2);
+    auto dposition_accessor = m.create_accessor<double>(dposition_handle);
+
+    Tuple v0 = m.tuple_from_id(PrimitiveType::Vertex, 0);
+    Tuple v1 = m.tuple_from_id(PrimitiveType::Vertex, 1);
+    Tuple v2 = m.tuple_from_id(PrimitiveType::Vertex, 2);
+
+    position_accessor.vector_attribute(v0) = Eigen::Vector2<Rational>(-1, -1);
+    position_accessor.vector_attribute(v1) = Eigen::Vector2<Rational>(1, 1);
+    position_accessor.vector_attribute(v2) = Eigen::Vector2<Rational>(1, -1);
+
+    dposition_accessor.vector_attribute(v0) = Eigen::Vector2<double>(-1, -1);
+    dposition_accessor.vector_attribute(v1) = Eigen::Vector2<double>(1, 1);
+    dposition_accessor.vector_attribute(v2) = Eigen::Vector2<double>(1, -1);
+
+    const SimplexInversionInvariant inv(m, position_handle.as<Rational>());
+    const SimplexInversionInvariant dinv(m, dposition_handle.as<double>());
+    Tuple t = v0;
+
+    for (const auto& t : m.get_all(PrimitiveType::Edge)) {
+        CHECK(inv.after({}, {t}) == dinv.after({}, {t}));
+        CHECK(inv.after({}, {m.switch_vertex(t)}) == dinv.after({}, {m.switch_vertex(t)}));
+        CHECK(inv.after({}, {m.switch_edge(t)}) == dinv.after({}, {m.switch_edge(t)}));
+        CHECK(
+            inv.after({}, {m.switch_vertex(m.switch_edge(t))}) ==
+            dinv.after({}, {m.switch_vertex(m.switch_edge(t))}));
+        CHECK(
+            inv.after({}, {m.switch_edge(m.switch_vertex(t))}) ==
+            dinv.after({}, {m.switch_edge(m.switch_vertex(t))}));
+        CHECK(
+            inv.after({}, {m.switch_vertex(m.switch_edge(m.switch_vertex(t)))}) ==
+            dinv.after({}, {m.switch_vertex(m.switch_edge(m.switch_vertex(t)))}));
     }
 }

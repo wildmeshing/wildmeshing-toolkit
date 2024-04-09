@@ -108,10 +108,12 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(std::vector<Vector3
             Vector3r b = next.first - cur.first;
             Vector3r c = nextnext.first - next.first;
 
-            if (((a[0] * b[1] - a[1] * b[0]) == 0 && (a[1] * b[2] - a[2] * b[1]) == 0 &&
-                 (a[0] * b[2] - a[2] * b[0]) == 0) &&
-                (((b[0] * c[1] - b[1] * c[0]) != 0 || (b[1] * c[2] - b[2] * c[1]) != 0 ||
-                  (b[0] * c[2] - b[2] * c[0]) != 0))) {
+            if (((a[0] * b[1] - a[1] * b[0]).get_sign() == 0 &&
+                 (a[1] * b[2] - a[2] * b[1]).get_sign() == 0 &&
+                 (a[0] * b[2] - a[2] * b[0]).get_sign() == 0) &&
+                (((b[0] * c[1] - b[1] * c[0]).get_sign() != 0 ||
+                  (b[1] * c[2] - b[2] * c[1]).get_sign() != 0 ||
+                  (b[0] * c[2] - b[2] * c[0]).get_sign() != 0))) {
                 no_colinear = false;
                 std::array<int64_t, 3> t = {{cur.second, next.second, nextnext.second}};
                 triangulated_faces.push_back(t);
@@ -387,7 +389,7 @@ generate_raw_tetmesh_from_input_surface(
             Vector3r v0v1 = v_coords[v1] - v_coords[v0];
             Vector3r v0v2 = v_coords[v2] - v_coords[v0];
             Vector3r v0v3 = v_coords[v3] - v_coords[v0];
-            if ((v0v1.cross(v0v2)).dot(v0v3) > 0) {
+            if ((v0v1.cross(v0v2)).dot(v0v3).get_sign() > 0) {
                 tetra = {{v1, v0, v2, v3}};
             }
 
@@ -433,11 +435,11 @@ generate_raw_tetmesh_from_input_surface(
 
         // not a tet initially
         // compute centroid
-        Vector3r centroid(0, 0, 0);
+        Vector3r centroid(0., 0., 0.);
         for (auto v : polygon_vertices) {
             centroid = centroid + v_coords[v];
         }
-        centroid = centroid / polygon_vertices.size();
+        centroid = centroid / double(polygon_vertices.size());
 
         // trahedralize
         int64_t centroid_idx = v_coords.size();
@@ -454,7 +456,7 @@ generate_raw_tetmesh_from_input_surface(
                 Vector3r v0v1 = v_coords[tetra[1]] - v_coords[tetra[0]];
                 Vector3r v0v2 = v_coords[tetra[2]] - v_coords[tetra[0]];
                 Vector3r v0v3 = v_coords[tetra[3]] - v_coords[tetra[0]];
-                if ((v0v1.cross(v0v2)).dot(v0v3) > 0) {
+                if ((v0v1.cross(v0v2)).dot(v0v3).get_sign() > 0) {
                     tetra = {
                         {triangulated_faces[t][1],
                          triangulated_faces[t][0],

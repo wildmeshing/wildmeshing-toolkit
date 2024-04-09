@@ -65,6 +65,7 @@ public:
 
     using BaseType::attribute; // access to Attribute object being used here
     using BaseType::handle;
+    using BaseType::primitive_type;
     using BaseType::typed_handle;
     using CachingBaseType::has_stack;
     using CachingBaseType::mesh;

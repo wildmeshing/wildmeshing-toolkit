@@ -119,7 +119,7 @@ auto SingleAttributeTransferStrategy<MyType, ParentType>::read_parent_values(
     auto simps =
         AttributeTransferStrategyBase::get_parent_simplices(handle(), m_parent_handle, my_simplex);
 
-    MatrixX<MyType> A(
+    MatrixX<ParentType> A(
         m_parent_handle.mesh().get_attribute_dimension(m_parent_handle.template as<ParentType>()),
         simps.size());
 
