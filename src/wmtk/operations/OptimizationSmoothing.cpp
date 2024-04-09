@@ -123,7 +123,7 @@ OptimizationSmoothing::OptimizationSmoothing(std::shared_ptr<wmtk::function::Fun
     , m_energy(energy)
 {
     m_linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
-    m_nonlinear_solver_params = R"({"solver": "DenseNewton", "max_iterations": 20})"_json;
+    m_nonlinear_solver_params = R"({"solver": "DenseNewton", "max_iterations": 10})"_json;
 
     create_solver();
 }

@@ -15,6 +15,7 @@ struct ToPtsOptions
     bool add_grid;
     double grid_spacing;
     double min_dist;
+    bool remove_duplicates;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
@@ -26,6 +27,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     box_scale,
     add_grid,
     grid_spacing,
-    min_dist);
+    min_dist,
+    remove_duplicates);
 
 } // namespace wmtk::components

@@ -485,6 +485,7 @@ generate_raw_tetmesh_from_input_surface(
 
     std::map<int64_t, int64_t> v_map;
     std::vector<Vector3d> v_coords_final;
+    std::vector<Vector3r> v_coords_final_rational;
     // for (int64_t i = 0; i < v_coords.size(); ++i) {
     //     if (v_is_used_in_tet[i]) {
     //         v_map[i] = v_coords_final.size();
@@ -499,6 +500,7 @@ generate_raw_tetmesh_from_input_surface(
                 v_coords[i][0].to_double(),
                 v_coords[i][1].to_double(),
                 v_coords[i][2].to_double());
+            v_coords_final_rational.emplace_back(v_coords[i]);
         }
     }
 

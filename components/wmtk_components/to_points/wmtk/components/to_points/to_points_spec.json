@@ -12,7 +12,8 @@
             "box_scale",
             "add_grid",
             "grid_spacing",
-            "min_dist"
+            "min_dist",
+            "remove_duplicates"
         ]
     },
     {
@@ -51,5 +52,10 @@
         "pointer": "/min_dist",
         "type": "float",
         "default": -1
+    },
+    {
+        "pointer": "/remove_duplicates",
+        "type": "bool",
+        "default": false
     }
 ]

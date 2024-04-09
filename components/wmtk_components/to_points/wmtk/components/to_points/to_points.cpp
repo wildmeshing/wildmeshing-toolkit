@@ -9,6 +9,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
 namespace wmtk::components {
@@ -66,7 +67,12 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
         bbox.min() = center - options.box_scale * r;
         bbox.max() = center + options.box_scale * r;
         Eigen::VectorXd diag = bbox.max() - bbox.min();
-        Eigen::VectorXi res = (diag / grid_spacing).cast<int>();
+        // Eigen::VectorXi res = (diag / grid_spacing).cast<int>();
+
+        // // TODO: remove the hack
+        // // hack grid spacing as relative
+        Eigen::VectorXi res = (diag / (diag.norm() * grid_spacing)).cast<int>();
+
         Eigen::MatrixXd background_V;
 
 
@@ -125,7 +131,8 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
             for (int64_t i = 0; i < background_V.rows(); ++i) {
                 double sq_dist;
                 bvh.nearest_facet(background_V.row(i), nearest_point, sq_dist);
-                if (sq_dist >= options.min_dist) good.emplace_back(background_V.row(i));
+                if (sq_dist >= options.min_dist * options.min_dist * diag.norm() * diag.norm())
+                    good.emplace_back(background_V.row(i));
             }
             int64_t current_size = pts.rows();
             pts.conservativeResize(current_size + good.size(), pts.cols());
@@ -137,6 +144,35 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
             // TODO
         }
     }
+
+    // remove duplicates
+    int64_t old_size = pts.rows();
+    auto remove_duplicated_vertices = [](Eigen::MatrixXd& P) -> Eigen::MatrixXd {
+        std::vector<Eigen::VectorXd> vec;
+        for (int64_t i = 0; i < P.rows(); ++i) vec.push_back(P.row(i));
+
+        std::sort(vec.begin(), vec.end(), [](Eigen::VectorXd const& p1, Eigen::VectorXd const& p2) {
+            return (p1(0) < p2(0)) || (p1(0) == p2(0) && p1(1) < p2(1)) ||
+                   (p1(0) == p2(0) && p1(1) == p2(1) && p1(2) < p2(2));
+        });
+
+        auto it = std::unique(vec.begin(), vec.end());
+        vec.resize(std::distance(vec.begin(), it));
+
+        Eigen::MatrixXd new_P(vec.size(), P.cols());
+        for (int64_t i = 0; i < vec.size(); ++i) {
+            new_P.row(i) = vec[i];
+        }
+
+        return new_P;
+    };
+
+    if (options.remove_duplicates) {
+        pts = remove_duplicated_vertices(pts);
+        wmtk::logger().info("removed {} duplicated vertices", pts.rows() - old_size);
+    }
+
+
     std::shared_ptr<PointMesh> pts_mesh = std::make_shared<PointMesh>(pts.rows());
 
     mesh_utils::set_matrix_attribute(pts, options.position, PrimitiveType::Vertex, *pts_mesh);
