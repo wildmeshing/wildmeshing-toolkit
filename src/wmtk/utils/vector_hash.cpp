@@ -47,10 +47,7 @@ std::size_t vector_hash(const std::vector<Rational>& data)
     std::transform(data.begin(), data.end(), std::back_inserter(hashes), [](const Rational& r) {
         std::vector<size_t> v;
         std::hash<std::string> h;
-        const auto tmp = r.as_strings();
-        for (auto& s : tmp) {
-            v.emplace_back(h(s));
-        }
+        v.emplace_back(h(r.serialize()));
 
         return vector_hash(v);
     });

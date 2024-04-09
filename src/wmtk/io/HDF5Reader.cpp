@@ -170,15 +170,14 @@ std::shared_ptr<Mesh> HDF5Reader::read_mesh(h5pp::File& hdf5_file, const std::st
         } else if (type == "rational") {
             const std::vector<std::string> tmp =
                 hdf5_file.readDataset<std::vector<std::string>>(dataset);
-            assert(tmp.size() % Rational::string_size() == 0);
             const std::string data = hdf5_file.readAttribute<std::string>(dataset, "default_value");
             Rational default_val;
             default_val.init_from_binary(data);
 
             std::vector<Rational> v;
-            v.reserve(tmp.size() / Rational::string_size());
-            for (size_t i = 0; i < tmp.size(); i += Rational::string_size()) {
-                v.emplace_back(std::array<std::string, 3>{{tmp[i], tmp[i + 1], tmp[i + 2]}});
+            v.reserve(tmp.size());
+            for (size_t i = 0; i < tmp.size(); ++i) {
+                v.emplace_back(tmp[i]);
             }
 
             set_attribute<Rational>(default_val, name, pt, stride, v, *mesh);

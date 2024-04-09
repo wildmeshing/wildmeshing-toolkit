@@ -95,10 +95,9 @@ void HDF5Writer::write(
     const Rational& default_val)
 {
     std::vector<std::string> tmp;
-    tmp.reserve(val.size() * Rational::string_size());
+    tmp.reserve(val.size());
     for (const auto& v : val) {
-        auto v_tmp = v.as_strings();
-        tmp.insert(tmp.end(), v_tmp.begin(), v_tmp.end());
+        tmp.emplace_back(v.serialize());
     }
     write_internal(name, type, stride, tmp, default_val.to_binary());
 }

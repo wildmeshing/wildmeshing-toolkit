@@ -2,9 +2,11 @@
 
 #include <gmp.h>
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <regex>
 #include <string>
 
 namespace wmtk {
@@ -346,17 +348,21 @@ public:
         return v;
     }
 
-    inline static int64_t string_size() { return 3; }
-    inline std::array<std::string, 3> as_strings() const
+    inline std::string serialize() const
     {
-        return {{numerator(), denominator(), is_rounded ? "1" : "0"}};
+        return numerator() + "/" + denominator() + "/" + (is_rounded ? "1" : "0");
     }
 
-    Rational(const std::array<std::string, 3>& data)
+    Rational(const std::string& data)
     {
-        const auto num = data[0];
-        const auto denom = data[1];
-        is_rounded = data[2] == "1";
+        std::regex regex{R"([/]+)"}; // split on /
+        std::sregex_token_iterator it{data.begin(), data.end(), regex, -1};
+        std::vector<std::string> tokens{it, {}};
+        assert(tokens.size() == 3);
+
+        const auto num = tokens[0];
+        const auto denom = tokens[1];
+        is_rounded = tokens[2] == "1";
 
         if (is_rounded) {
             mpq_t tmp_r;
