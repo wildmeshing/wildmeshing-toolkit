@@ -18,6 +18,10 @@ set(SRC_FILES
 
     VertexTangentialLaplacianSmooth.hpp
     VertexTangentialLaplacianSmooth.cpp
+
+
+    RoundRationalToDouble.hpp
+    RoundRationalToDouble.cpp
     )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

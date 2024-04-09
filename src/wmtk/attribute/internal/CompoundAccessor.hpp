@@ -6,11 +6,11 @@
 
 namespace wmtk::attribute::internal {
 
-
 template <size_t N, typename MeshType, typename... AttributeType>
 class CompoundAccessor
 {
 public:
+    using Type = std::tuple<AttributeType...>;
     CompoundAccessor(MeshType& m, const TypedAttributeHandle<AttributeType>&... handle);
     CompoundAccessor(const MeshType& m, const TypedAttributeHandle<AttributeType>&... handle);
     template <typename FirstAcc, int FirstDim, typename... AccTypes, int... Dims>
@@ -19,21 +19,23 @@ public:
         const Accessor<AccTypes, MeshType, Dims>&...);
 
     using AccessorTuple = std::tuple<Accessor<AttributeType, MeshType>...>;
+    using ValueType = std::tuple<MapResult<AttributeType>...>;
+    using ConstValueType = std::tuple<ConstMapResult<AttributeType>...>;
 
 
     template <size_t... Ns>
-    auto _value(const Tuple& t, std::integer_sequence<size_t, Ns...>)
+    ValueType _value(const Tuple& t, std::integer_sequence<size_t, Ns...>)
     {
         return std::make_tuple(std::get<Ns>(m_base_accessors).vector_attribute(t)...);
     }
-    auto value(const Tuple& t) { return _value(t, std::make_integer_sequence<size_t, N>{}); }
+    ValueType value(const Tuple& t) { return _value(t, std::make_integer_sequence<size_t, N>{}); }
 
     template <size_t... Ns>
-    auto _const_value(const Tuple& t, std::integer_sequence<size_t, Ns...>) const
+    ConstValueType _const_value(const Tuple& t, std::integer_sequence<size_t, Ns...>) const
     {
         return std::make_tuple(std::get<Ns>(m_base_accessors).const_vector_attribute(t)...);
     }
-    auto const_value(const Tuple& t) const
+    ConstValueType const_value(const Tuple& t) const
     {
         return _const_value(t, std::make_integer_sequence<size_t, N>{});
     }
@@ -49,6 +51,10 @@ public:
         return std::get<Index>(m_base_accessors);
     }
 
+
+    /// returns the primitive type of the Index'th type
+    template <size_t Index>
+    PrimitiveType primitive_type() const;
     // Eigen::Map<VectorX<T>>
     // template <int D = Eigen::Dynamic>
     // using MapResult = internal::MapResult<Compound, D>;
@@ -86,3 +92,4 @@ CompoundAccessor(
 
 } // namespace wmtk::attribute::internal
 #include "CompoundAccessor.hxx"
+

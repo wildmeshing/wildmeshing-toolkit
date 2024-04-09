@@ -3,8 +3,8 @@
 #include "attribute_new/NewAttributeStrategy.hpp"
 #include "attribute_update/AttributeTransferStrategyBase.hpp"
 
-#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 
 
