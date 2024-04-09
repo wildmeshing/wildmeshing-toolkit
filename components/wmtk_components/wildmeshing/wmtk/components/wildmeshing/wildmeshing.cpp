@@ -182,7 +182,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         mesh->register_attribute<double>("wildmeshing_amips", mesh->top_simplex_type(), 1);
     auto amips_accessor = mesh->create_accessor(amips_attribute.as<double>());
     // amips update
-    auto compute_amips = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+    auto compute_amips = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorXd {
         assert(P.rows() == 2 || P.rows() == 3); // rows --> attribute dimension
         assert(P.cols() == P.rows() + 1);
         if (P.cols() == 3) {
@@ -191,7 +191,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             std::array<double, 6> pts;
             for (size_t i = 0; i < 3; ++i) {
                 for (size_t j = 0; j < 2; ++j) {
-                    pts[2 * i + j] = P(j, i);
+                    pts[2 * i + j] = P(j, i).to_double();
                 }
             }
             const double a = Tri_AMIPS_energy(pts);
@@ -202,7 +202,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             std::array<double, 12> pts;
             for (size_t i = 0; i < 4; ++i) {
                 for (size_t j = 0; j < 3; ++j) {
-                    pts[3 * i + j] = P(j, i);
+                    pts[3 * i + j] = P(j, i).to_double();
                 }
             }
             const double a = Tet_AMIPS_energy(pts);
@@ -210,9 +210,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         }
     };
     auto amips_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>(
             amips_attribute,
-            pt_attribute,
+            rpt_attribute,
             compute_amips);
     amips_update->run_on_all();
 
@@ -288,15 +288,15 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         mesh->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
     auto edge_length_accessor = mesh->create_accessor(edge_length_attribute.as<double>());
     // Edge length update
-    auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+    auto compute_edge_length = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorXd {
         assert(P.cols() == 2);
         assert(P.rows() == 2 || P.rows() == 3);
-        return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
+        return Eigen::VectorXd::Constant(1, sqrt((P.col(0) - P.col(1)).squaredNorm().to_double()));
     };
     auto edge_length_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>(
             edge_length_attribute,
-            pt_attribute,
+            rpt_attribute,
             compute_edge_length);
     edge_length_update->run_on_all();
 
@@ -306,7 +306,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     pass_through_attributes.push_back(edge_length_attribute);
     pass_through_attributes.push_back(amips_attribute);
     pass_through_attributes.push_back(target_edge_length_attribute);
-    pass_through_attributes.push_back(rpt_attribute);
+    pass_through_attributes.push_back(pt_attribute);
 
     //////////////////////////////////
     // Lambdas for priority
@@ -452,7 +452,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     split->add_invariant(todo_larger);
 
-    split->set_new_attribute_strategy(pt_attribute);
+    split->set_new_attribute_strategy(rpt_attribute);
     for (const auto& attr : pass_through_attributes) {
         split->set_new_attribute_strategy(attr);
     }
@@ -498,8 +498,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         proj_collapse->add_transfer_strategy(s);
     }
 
-    ops.emplace_back(proj_collapse);
-    ops_name.emplace_back("collapse");
+    // ops.emplace_back(proj_collapse);
+    // ops_name.emplace_back("collapse");
 
 
     //////////////////////////////////
@@ -547,8 +547,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     if (mesh->top_simplex_type() == PrimitiveType::Triangle) {
         auto swap = std::make_shared<TriEdgeSwap>(*mesh);
         setup_swap(*swap, swap->collapse(), swap->split(), interior_edge);
-        ops.push_back(swap);
-        ops_name.push_back("swap");
+        // ops.push_back(swap);
+        // ops_name.push_back("swap");
     } else if (mesh->top_simplex_type() == PrimitiveType::Tetrahedron) {
         // 3 - 1 - 1) TetEdgeSwap 4-4 1
         auto swap44 = std::make_shared<TetEdgeSwap>(*mesh, 0);
@@ -601,8 +601,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     for (auto& s : update_parent_positon) {
         proj_smoothing->add_transfer_strategy(s);
     }
-    ops.push_back(proj_smoothing);
-    ops_name.push_back("smoothing");
+    // ops.push_back(proj_smoothing);
+    // ops_name.push_back("smoothing");
 
     write(
         mesh,
