@@ -23,7 +23,7 @@ public:
     void init(const T& v)
     {
         mpq_set(value, v);
-        is_rounded = false;
+        m_is_rounded = false;
     }
 
     ~Rational();
@@ -59,9 +59,9 @@ public:
 
     inline void round()
     {
-        if (is_rounded) return;
+        if (m_is_rounded) return;
 
-        is_rounded = true;
+        m_is_rounded = true;
         d_value = this->to_double();
         mpq_clear(value);
     }
@@ -71,11 +71,13 @@ public:
 
     std::string serialize() const;
 
+    inline bool is_rounded() const { return m_is_rounded; }
+
 
 private:
     mpq_t value;
     double d_value;
-    bool is_rounded;
+    bool m_is_rounded;
 
     friend int cmp(const Rational& r, const Rational& r1);
 

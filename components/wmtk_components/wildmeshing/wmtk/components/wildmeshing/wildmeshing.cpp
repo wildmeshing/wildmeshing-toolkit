@@ -267,17 +267,17 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             compute_target_edge_length);
 
     //// Example for some other target edge length
-    // auto compute_target_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+    // auto compute_target_edge_length = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorXd {
     //    assert(P.cols() == 2); // cols --> number of neighbors
     //    assert(P.rows() == 2 || P.rows() == 3); // rows --> attribute dimension
-    //    const double x_avg = 0.5 * (P(0, 0) + P(0, 1));
+    //    const double x_avg = 0.5 * (P(0, 0) + P(0, 1)).to_double();
     //    const double target_length = x_avg * x_avg;
     //    return Eigen::VectorXd::Constant(1, target_length);
     //};
     // auto target_edge_length_update =
-    //    std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+    //    std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>(
     //        target_edge_length_attribute,
-    //        pt_attribute,
+    //        rpt_attribute,
     //        compute_target_edge_length);
     target_edge_length_update->run_on_all();
 
@@ -325,11 +325,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // envelopes
     //////////////////////////////////
 
-    auto propagate_to_child_position = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-        return P;
-    };
+    auto propagate_to_child_position =
+        [](const Eigen::MatrixX<double>& P) -> Eigen::VectorX<double> { return P; };
 
-    auto propagate_to_parent_position = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+    auto propagate_to_parent_position =
+        [](const Eigen::MatrixX<double>& P) -> Eigen::VectorX<double> {
         assert(P.cols() == 1);
         return P.col(0);
     };
@@ -392,10 +392,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
 
     auto inversion_invariant =
-        std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>());
+        std::make_shared<SimplexInversionInvariant<Rational>>(*mesh, rpt_attribute.as<Rational>());
 
     std::shared_ptr<function::PerSimplexFunction> amips =
-        std::make_shared<AMIPS>(*mesh, pt_attribute);
+        std::make_shared<AMIPS>(*mesh, rpt_attribute);
     // auto function_invariant = std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
     // amips);
     auto function_invariant =
@@ -464,8 +464,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         split->add_transfer_strategy(s);
     }
 
-    ops.emplace_back(split);
-    ops_name.emplace_back("split");
+    // ops.emplace_back(split);
+    // ops_name.emplace_back("split");
 
     //////////////////////////////////
     // 2) EdgeCollapse

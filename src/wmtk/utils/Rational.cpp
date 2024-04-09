@@ -8,13 +8,13 @@
 namespace wmtk {
 void Rational::canonicalize()
 {
-    if (is_rounded) return;
+    if (m_is_rounded) return;
     mpq_canonicalize(value);
 }
 
 int Rational::get_sign()
 {
-    if (is_rounded) return d_value == 0 ? 0 : (d_value < 0 ? -1 : 1);
+    if (m_is_rounded) return d_value == 0 ? 0 : (d_value < 0 ? -1 : 1);
 
     return mpq_sgn(value);
 }
@@ -28,9 +28,9 @@ Rational::Rational(int v, bool rounded)
 {}
 
 Rational::Rational(double d, bool rounded)
-    : is_rounded(rounded)
+    : m_is_rounded(rounded)
 {
-    if (is_rounded) {
+    if (m_is_rounded) {
         d_value = d;
     } else {
         mpq_init(value);
@@ -46,16 +46,16 @@ Rational::Rational(const mpq_t& v_)
     mpq_init(value);
     mpq_set(value, v_);
     // canonicalize();
-    is_rounded = false;
+    m_is_rounded = false;
 
     d_value = std::numeric_limits<double>::lowest();
 }
 
 Rational::Rational(const Rational& other)
     : d_value(other.d_value)
-    , is_rounded(other.is_rounded)
+    , m_is_rounded(other.m_is_rounded)
 {
-    if (!is_rounded) {
+    if (!m_is_rounded) {
         mpq_init(value);
         mpq_set(value, other.value);
     }
@@ -63,24 +63,24 @@ Rational::Rational(const Rational& other)
 
 Rational::~Rational()
 {
-    if (!is_rounded) mpq_clear(value);
+    if (!m_is_rounded) mpq_clear(value);
 }
 
 Rational operator+(const Rational& x, const Rational& y)
 {
-    if (x.is_rounded && y.is_rounded) {
+    if (x.m_is_rounded && y.m_is_rounded) {
         return Rational(x.d_value + y.d_value, true);
     }
 
     Rational r_out;
 
-    if (x.is_rounded && !y.is_rounded) {
+    if (x.m_is_rounded && !y.m_is_rounded) {
         mpq_t tmp;
         mpq_init(tmp);
         mpq_set_d(tmp, x.d_value);
         mpq_add(r_out.value, tmp, y.value);
         mpq_clear(tmp);
-    } else if (!x.is_rounded && y.is_rounded) {
+    } else if (!x.m_is_rounded && y.m_is_rounded) {
         mpq_t tmp;
         mpq_init(tmp);
         mpq_set_d(tmp, y.d_value);
@@ -94,19 +94,19 @@ Rational operator+(const Rational& x, const Rational& y)
 
 Rational operator-(const Rational& x, const Rational& y)
 {
-    if (x.is_rounded && y.is_rounded) {
+    if (x.m_is_rounded && y.m_is_rounded) {
         return Rational(x.d_value - y.d_value, true);
     }
 
     Rational r_out;
 
-    if (x.is_rounded && !y.is_rounded) {
+    if (x.m_is_rounded && !y.m_is_rounded) {
         mpq_t tmp;
         mpq_init(tmp);
         mpq_set_d(tmp, x.d_value);
         mpq_sub(r_out.value, tmp, y.value);
         mpq_clear(tmp);
-    } else if (!x.is_rounded && y.is_rounded) {
+    } else if (!x.m_is_rounded && y.m_is_rounded) {
         mpq_t tmp;
         mpq_init(tmp);
         mpq_set_d(tmp, y.d_value);
@@ -121,7 +121,7 @@ Rational operator-(const Rational& x, const Rational& y)
 
 Rational operator-(const Rational& x)
 {
-    if (x.is_rounded) return Rational(-x.d_value, true);
+    if (x.m_is_rounded) return Rational(-x.d_value, true);
 
     Rational r_out;
     mpq_neg(r_out.value, x.value);
@@ -130,7 +130,7 @@ Rational operator-(const Rational& x)
 
 Rational pow(const Rational& x, int p)
 {
-    if (x.is_rounded) return Rational(std::pow(x.d_value, p), true);
+    if (x.m_is_rounded) return Rational(std::pow(x.d_value, p), true);
 
     Rational r_out = x;
     for (int i = 1; i < std::abs(p); i++) {
@@ -142,19 +142,19 @@ Rational pow(const Rational& x, int p)
 
 Rational operator*(const Rational& x, const Rational& y)
 {
-    if (x.is_rounded && y.is_rounded) {
+    if (x.m_is_rounded && y.m_is_rounded) {
         return Rational(x.d_value * y.d_value, true);
     }
 
     Rational r_out;
 
-    if (x.is_rounded && !y.is_rounded) {
+    if (x.m_is_rounded && !y.m_is_rounded) {
         mpq_t tmp;
         mpq_init(tmp);
         mpq_set_d(tmp, x.d_value);
         mpq_mul(r_out.value, tmp, y.value);
         mpq_clear(tmp);
-    } else if (!x.is_rounded && y.is_rounded) {
+    } else if (!x.m_is_rounded && y.m_is_rounded) {
         mpq_t tmp;
         mpq_init(tmp);
         mpq_set_d(tmp, y.d_value);
@@ -168,19 +168,19 @@ Rational operator*(const Rational& x, const Rational& y)
 
 Rational operator/(const Rational& x, const Rational& y)
 {
-    if (x.is_rounded && y.is_rounded) {
+    if (x.m_is_rounded && y.m_is_rounded) {
         return Rational(x.d_value / y.d_value, true);
     }
 
     Rational r_out;
 
-    if (x.is_rounded && !y.is_rounded) {
+    if (x.m_is_rounded && !y.m_is_rounded) {
         mpq_t tmp;
         mpq_init(tmp);
         mpq_set_d(tmp, x.d_value);
         mpq_div(r_out.value, tmp, y.value);
         mpq_clear(tmp);
-    } else if (!x.is_rounded && y.is_rounded) {
+    } else if (!x.m_is_rounded && y.m_is_rounded) {
         mpq_t tmp;
         mpq_init(tmp);
         mpq_set_d(tmp, y.d_value);
@@ -196,12 +196,12 @@ Rational& Rational::operator=(const Rational& x)
 {
     if (this == &x) return *this;
 
-    if (is_rounded && x.is_rounded)
+    if (m_is_rounded && x.m_is_rounded)
         d_value = x.d_value;
-    else if (!is_rounded && x.is_rounded)
+    else if (!m_is_rounded && x.m_is_rounded)
         mpq_set_d(value, x.d_value);
-    else if (is_rounded && !x.is_rounded) {
-        is_rounded = false;
+    else if (m_is_rounded && !x.m_is_rounded) {
+        m_is_rounded = false;
         mpq_init(value);
         mpq_set(value, x.value);
     } else
@@ -211,7 +211,7 @@ Rational& Rational::operator=(const Rational& x)
 
 Rational& Rational::operator=(const double x)
 {
-    if (is_rounded)
+    if (m_is_rounded)
         d_value = x;
     else {
         mpq_set_d(value, x);
@@ -223,10 +223,10 @@ Rational& Rational::operator=(const double x)
 
 int cmp(const Rational& r, const Rational& r1)
 {
-    if (r.is_rounded && r1.is_rounded)
+    if (r.m_is_rounded && r1.m_is_rounded)
         return r.d_value == r1.d_value ? 0 : (r.d_value > r1.d_value ? 1 : -1);
 
-    if (r.is_rounded && !r1.is_rounded) {
+    if (r.m_is_rounded && !r1.m_is_rounded) {
         mpq_t tmp;
         mpq_init(tmp);
         mpq_set_d(tmp, r.d_value);
@@ -235,7 +235,7 @@ int cmp(const Rational& r, const Rational& r1)
         return res;
     }
 
-    if (!r.is_rounded && r1.is_rounded) {
+    if (!r.m_is_rounded && r1.m_is_rounded) {
         mpq_t tmp;
         mpq_init(tmp);
         mpq_set_d(tmp, r1.d_value);
@@ -250,9 +250,9 @@ int cmp(const Rational& r, const Rational& r1)
 
 bool operator==(const Rational& r, const Rational& r1)
 {
-    if (r.is_rounded && r1.is_rounded) return r.d_value == r1.d_value;
+    if (r.m_is_rounded && r1.m_is_rounded) return r.d_value == r1.d_value;
 
-    if (r.is_rounded && !r1.is_rounded) {
+    if (r.m_is_rounded && !r1.m_is_rounded) {
         mpq_t tmp;
         mpq_init(tmp);
         mpq_set_d(tmp, r.d_value);
@@ -261,7 +261,7 @@ bool operator==(const Rational& r, const Rational& r1)
         return res;
     }
 
-    if (!r.is_rounded && r1.is_rounded) {
+    if (!r.m_is_rounded && r1.m_is_rounded) {
         mpq_t tmp;
         mpq_init(tmp);
         mpq_set_d(tmp, r1.d_value);
@@ -281,7 +281,7 @@ bool operator!=(const Rational& r, const Rational& r1)
 // to double
 double Rational::to_double() const
 {
-    if (is_rounded) return d_value;
+    if (m_is_rounded) return d_value;
     return mpq_get_d(value);
 }
 
@@ -292,7 +292,7 @@ Rational::operator double() const
 
 Rational abs(const Rational& r0)
 {
-    if (r0.is_rounded) {
+    if (r0.m_is_rounded) {
         return Rational(std::abs(r0.d_value), true);
     } else {
         Rational r;
@@ -314,7 +314,7 @@ void Rational::init_from_binary(const std::string& v)
 }
 std::string Rational::to_binary() const
 {
-    if (is_rounded) {
+    if (m_is_rounded) {
         mpq_t tmp;
         mpq_init(tmp);
         mpq_set_d(tmp, d_value);
@@ -330,7 +330,7 @@ std::string Rational::to_binary() const
 
 std::string Rational::serialize() const
 {
-    return numerator() + "/" + denominator() + "/" + (is_rounded ? "1" : "0");
+    return numerator() + "/" + denominator() + "/" + (m_is_rounded ? "1" : "0");
 }
 
 Rational::Rational(const std::string& data)
@@ -342,9 +342,9 @@ Rational::Rational(const std::string& data)
 
     const auto num = tokens[0];
     const auto denom = tokens[1];
-    is_rounded = tokens[2][0] == '1';
+    m_is_rounded = tokens[2][0] == '1';
 
-    if (is_rounded) {
+    if (m_is_rounded) {
         mpq_t tmp_r;
         mpq_init(tmp_r);
         std::string tmp = num + "/" + denom;
@@ -366,7 +366,7 @@ std::string Rational::numerator() const
 {
     mpq_t tmp;
     mpq_init(tmp);
-    if (is_rounded)
+    if (m_is_rounded)
         mpq_set_d(tmp, d_value);
     else
         mpq_set(tmp, value);
@@ -388,7 +388,7 @@ std::string Rational::denominator() const
 {
     mpq_t tmp;
     mpq_init(tmp);
-    if (is_rounded)
+    if (m_is_rounded)
         mpq_set_d(tmp, d_value);
     else
         mpq_set(tmp, value);

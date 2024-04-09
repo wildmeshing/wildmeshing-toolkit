@@ -64,7 +64,8 @@ TEST_CASE("vertex_optimization_Newton_Method")
         std::make_shared<function::LocalNeighborsSumFunction>(mesh, handler, per_tri_amips);
 
     OptimizationSmoothing op(energy);
-    op.add_invariant(std::make_shared<SimplexInversionInvariant>(mesh, handler.as<double>()));
+    op.add_invariant(
+        std::make_shared<SimplexInversionInvariant<double>>(mesh, handler.as<double>()));
     Scheduler scheduler;
 
     // iterate all the vertices and find max gradnorm
