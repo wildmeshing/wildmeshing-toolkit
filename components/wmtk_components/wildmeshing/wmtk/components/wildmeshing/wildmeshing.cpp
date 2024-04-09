@@ -133,6 +133,30 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto pt_accessor = mesh->create_accessor(pt_attribute.as<double>());
 
 
+    //////////////////////////
+    // Rational vertices
+    auto rpt_attribute = mesh->register_attribute<Rational>(
+        "rational_position",
+        PrimitiveType::Vertex,
+        pt_attribute.dimension());
+    auto rpt_attribute_accessor = mesh->create_accessor(rpt_attribute.as<Rational>());
+    // Rational conversion
+    auto convert_to_rational = [](const Eigen::MatrixXd& P) -> Eigen::VectorX<Rational> {
+        assert(P.cols() == 1);
+        assert(P.rows() == 2 || P.rows() == 3);
+        Eigen::VectorX<Rational> res(P.rows());
+        for (int64_t d = 0; d < P.rows(); ++d) {
+            res[d] = P(d);
+        }
+        return res;
+    };
+    auto convert_rat =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<Rational, double>>(
+            rpt_attribute,
+            pt_attribute,
+            convert_to_rational);
+    convert_rat->run_on_all();
+
     //////////////////////////////////
     // computing bbox diagonal
     Eigen::VectorXd bmin(mesh->top_cell_dimension());
