@@ -11,6 +11,7 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/Rational.hpp>
 
 
 // this should change! make a util?
@@ -197,19 +198,18 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
 
     // propagate position to all child meshes
     auto pt_attribute =
-        tetmesh->get_attribute_handle<double>(options.input_position, PrimitiveType::Vertex);
+        tetmesh->get_attribute_handle<Rational>(options.input_position, PrimitiveType::Vertex);
 
     for (auto child : tetmesh->get_child_meshes()) {
-        auto child_position_handle = child->register_attribute<double>(
+        auto child_position_handle = child->register_attribute<Rational>(
             options.input_position,
             PrimitiveType::Vertex,
-            tetmesh->get_attribute_dimension(pt_attribute.as<double>()));
+            tetmesh->get_attribute_dimension(pt_attribute.as<Rational>()));
 
-        auto propagate_to_child_position = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-            return P;
-        };
+        auto propagate_to_child_position =
+            [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<Rational> { return P; };
         auto update_child_positon =
-            std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<Rational, Rational>>(
                 child_position_handle,
                 pt_attribute,
                 propagate_to_child_position);

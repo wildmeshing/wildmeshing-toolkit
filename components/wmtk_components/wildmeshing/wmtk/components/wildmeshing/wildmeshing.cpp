@@ -50,6 +50,8 @@
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 
+#include <wmtk/utils/Rational.hpp>
+
 
 namespace wmtk::components {
 
@@ -129,8 +131,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
     // Retriving vertices
     auto pt_attribute =
-        mesh->get_attribute_handle<double>(options.attributes.position, PrimitiveType::Vertex);
-    auto pt_accessor = mesh->create_accessor(pt_attribute.as<double>());
+        mesh->get_attribute_handle<Rational>(options.attributes.position, PrimitiveType::Vertex);
+    auto pt_accessor = mesh->create_accessor(pt_attribute.as<Rational>());
 
 
     //////////////////////////////////
@@ -142,7 +144,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     const auto vertices = mesh->get_all(PrimitiveType::Vertex);
     for (const auto& v : vertices) {
-        const auto p = pt_accessor.vector_attribute(v);
+        const auto p = pt_accessor.vector_attribute(v).cast<double>();
         for (int64_t d = 0; d < bmax.size(); ++d) {
             bmin[d] = std::min(bmin[d], p[d]);
             bmax[d] = std::max(bmax[d], p[d]);
@@ -323,7 +325,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     using MeshConstrainPair = ProjectOperation::MeshConstrainPair;
 
     auto envelope_invariant = std::make_shared<InvariantCollection>(*mesh);
-    std::vector<std::shared_ptr<SingleAttributeTransferStrategy<double, double>>>
+    std::vector<std::shared_ptr<SingleAttributeTransferStrategy<Rational, Rational>>>
         update_child_positon, update_parent_positon;
     std::vector<std::shared_ptr<Mesh>> envelopes;
     std::vector<MeshConstrainPair> mesh_constraint_pairs;
@@ -348,7 +350,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         pass_through_attributes.emplace_back(constrained.front());
 
         auto envelope_position_handle =
-            envelope->get_attribute_handle<double>(v.geometry.position, PrimitiveType::Vertex);
+            envelope->get_attribute_handle<Rational>(v.geometry.position, PrimitiveType::Vertex);
 
         mesh_constraint_pairs.emplace_back(envelope_position_handle, constrained.front());
 
@@ -358,13 +360,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             constrained.front()));
 
         update_parent_positon.emplace_back(
-            std::make_shared<SingleAttributeTransferStrategy<double, double>>(
+            std::make_shared<SingleAttributeTransferStrategy<Rational, Rational>>(
                 pt_attribute,
                 constrained.front(),
                 propagate_to_parent_position));
 
         update_child_positon.emplace_back(
-            std::make_shared<SingleAttributeTransferStrategy<double, double>>(
+            std::make_shared<SingleAttributeTransferStrategy<Rational, Rational>>(
                 constrained.front(),
                 pt_attribute,
                 propagate_to_child_position));
@@ -373,7 +375,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
     // collapse transfer
     //////////////////////////////////
-    auto clps_strat = std::make_shared<CollapseNewAttributeStrategy<double>>(pt_attribute);
+    auto clps_strat = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
     clps_strat->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
     clps_strat->set_strategy(CollapseBasicStrategy::Default);
 
@@ -386,7 +388,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
 
     auto inversion_invariant =
-        std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>());
+        std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<Rational>());
 
     std::shared_ptr<function::PerSimplexFunction> amips =
         std::make_shared<AMIPS>(*mesh, pt_attribute);
@@ -420,13 +422,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto valence_3 = std::make_shared<EdgeValenceInvariant>(*mesh, 3);
     auto valence_4 = std::make_shared<EdgeValenceInvariant>(*mesh, 4);
     auto swap44_energy_before =
-        std::make_shared<Swap44EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
+        std::make_shared<Swap44EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>());
     auto swap44_2_energy_before =
-        std::make_shared<Swap44_2EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
+        std::make_shared<Swap44_2EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>());
     auto swap32_energy_before =
-        std::make_shared<Swap32EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
+        std::make_shared<Swap32EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>());
     auto swap23_energy_before =
-        std::make_shared<Swap23EnergyBeforeInvariant>(*mesh, pt_attribute.as<double>());
+        std::make_shared<Swap23EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>());
 
     auto invariant_separate_substructures =
         std::make_shared<invariants::SeparateSubstructuresInvariant>(*mesh);

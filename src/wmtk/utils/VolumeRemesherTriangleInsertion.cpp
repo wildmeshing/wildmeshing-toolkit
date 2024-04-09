@@ -484,12 +484,6 @@ generate_raw_tetmesh_from_input_surface(
     std::map<int64_t, int64_t> v_map;
     std::vector<Vector3d> v_coords_final;
     std::vector<Vector3r> v_coords_final_rational;
-    // for (int64_t i = 0; i < v_coords.size(); ++i) {
-    //     if (v_is_used_in_tet[i]) {
-    //         v_map[i] = v_coords_final.size();
-    //         v_coords_final.push_back(v_coords[i]);
-    //     }
-    // }
 
     for (int64_t i = 0; i < v_coords.size(); ++i) {
         if (v_is_used_in_tet[i]) {
@@ -508,38 +502,43 @@ generate_raw_tetmesh_from_input_surface(
             t[i] = v_map[t[i]];
         }
 
-        if (orient3d(
-                v_coords_final[t[0]].data(),
-                v_coords_final[t[1]].data(),
-                v_coords_final[t[2]].data(),
-                v_coords_final[t[3]].data()) <= 0) {
-            Eigen::Matrix3d tmp;
-            tmp.col(0) = v_coords_final[t[1]] - v_coords_final[t[0]];
-            tmp.col(1) = v_coords_final[t[2]] - v_coords_final[t[0]];
-            tmp.col(2) = v_coords_final[t[3]] - v_coords_final[t[0]];
-            log_and_throw_error(
-                "flipped tet=({},{},{},{}) crash vol={} orient={}",
-                t[0],
-                t[1],
-                t[2],
-                t[3],
-                tmp.determinant(),
-                orient3d(
-                    v_coords_final[t[0]].data(),
-                    v_coords_final[t[1]].data(),
-                    v_coords_final[t[2]].data(),
-                    v_coords_final[t[3]].data()));
-        }
+        // TODO: add this back as rational
+        // if (orient3d(
+        //         v_coords_final[t[0]].data(),
+        //         v_coords_final[t[1]].data(),
+        //         v_coords_final[t[2]].data(),
+        //         v_coords_final[t[3]].data()) <= 0) {
+        //     Eigen::Matrix3d tmp;
+        //     tmp.col(0) = v_coords_final[t[1]] - v_coords_final[t[0]];
+        //     tmp.col(1) = v_coords_final[t[2]] - v_coords_final[t[0]];
+        //     tmp.col(2) = v_coords_final[t[3]] - v_coords_final[t[0]];
+        //     log_and_throw_error(
+        //         "flipped tet=({},{},{},{}) crash vol={} orient={}",
+        //         t[0],
+        //         t[1],
+        //         t[2],
+        //         t[3],
+        //         tmp.determinant(),
+        //         orient3d(
+        //             v_coords_final[t[0]].data(),
+        //             v_coords_final[t[1]].data(),
+        //             v_coords_final[t[2]].data(),
+        //             v_coords_final[t[3]].data()));
+        // }
     }
 
     // transfer v_coords_final to V matrix and tets_final to TV matrix
     RowVectors3d V_final(v_coords_final.size(), 3);
-
+    RowVectors3r V_final_rational(v_coords_final_rational.size(), 3);
     RowVectors4l TV_final(tets_final.size(), 4);
 
 
     for (int64_t i = 0; i < v_coords_final.size(); ++i) {
         V_final.row(i) = v_coords_final[i];
+    }
+
+    for (int64_t i = 0; i < v_coords_final_rational.size(); ++i) {
+        V_final_rational.row(i) = v_coords_final_rational[i];
     }
 
     for (int64_t i = 0; i < tets_final.size(); ++i) {
@@ -551,7 +550,8 @@ generate_raw_tetmesh_from_input_surface(
     // initialize tetmesh
     std::shared_ptr<wmtk::TetMesh> m = std::make_shared<wmtk::TetMesh>();
     m->initialize(TV_final);
-    mesh_utils::set_matrix_attribute(V_final, "vertices", PrimitiveType::Vertex, *m);
+    // mesh_utils::set_matrix_attribute(V_final, "vertices", PrimitiveType::Vertex, *m);
+    mesh_utils::set_matrix_attribute(V_final_rational, "vertices", PrimitiveType::Vertex, *m);
 
     wmtk::logger().info("init tetmesh finished.");
 
