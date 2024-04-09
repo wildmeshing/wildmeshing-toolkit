@@ -219,8 +219,10 @@ public:
     {
         if (is_rounded)
             d_value = x;
-        else
+        else {
             mpq_set_d(value, x);
+            d_value = std::numeric_limits<double>::lowest();
+        }
         //            canonicalize();
         return *this;
     }
