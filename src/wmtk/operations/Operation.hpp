@@ -99,11 +99,12 @@ protected:
 
     void apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods);
 
+    virtual void record_operation() {}
 
 private:
     Mesh& m_mesh;
     bool m_use_random_priority = false;
-    
+
     bool m_record = true;
 
     std::function<std::vector<double>(const simplex::Simplex&)> m_priority = nullptr;

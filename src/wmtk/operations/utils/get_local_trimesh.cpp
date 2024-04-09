@@ -59,7 +59,7 @@ get_local_trimesh(const wmtk::TriMesh& mesh, const wmtk::simplex::Simplex& simpl
 std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
 get_local_trimesh_before_collapse(const wmtk::TriMesh& mesh, const wmtk::simplex::Simplex& simplex)
 {
-    assert(simplex.type() == PrimitiveType::Edge);
+    assert(simplex.primitive_type() == PrimitiveType::Edge);
     auto v0 = simplex::Simplex::vertex(simplex.tuple());
     auto v1 = simplex::Simplex::vertex(mesh.switch_vertex(simplex.tuple()));
 

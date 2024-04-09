@@ -1,5 +1,6 @@
 #include "local_joint_flatten.hpp"
 #include <igl/boundary_facets.h>
+#include <igl/boundary_loop.h>
 #include <igl/cotmatrix_entries.h>
 #include <igl/doublearea.h>
 #include <igl/slice.h>
@@ -140,6 +141,45 @@ void cotmatrix_dense(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, Eigen::
             A(source, source) -= C(ii, e);
             A(dest, dest) -= C(ii, e);
         }
+    }
+}
+
+// energy evaluation
+// reference: "Texture Mapping Progressive Meshes"
+void quasi_conformal_energy(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& uv, // UV
+    Eigen::VectorXd& E)
+{
+    using namespace Eigen;
+
+    E.resize(F.rows());
+    for (int ff = 0; ff < F.rows(); ff++) {
+        double s1 = uv(F(ff, 0), 0);
+        double s2 = uv(F(ff, 1), 0);
+        double s3 = uv(F(ff, 2), 0);
+
+        double t1 = uv(F(ff, 0), 1);
+        double t2 = uv(F(ff, 1), 1);
+        double t3 = uv(F(ff, 2), 1);
+
+        VectorXd q1 = V.row(F(ff, 0));
+        VectorXd q2 = V.row(F(ff, 1));
+        VectorXd q3 = V.row(F(ff, 2));
+
+        double A = ((s2 - s1) * (t3 - t1) - (s3 - s1) * (t2 - t1)) / 2;
+        VectorXd Ss = (q1 * (t2 - t3) + q2 * (t3 - t1) + q3 * (t1 - t2)) / (2 * A);
+        VectorXd St = (q1 * (s3 - s2) + q2 * (s1 - s3) + q3 * (s2 - s1)) / (2 * A);
+
+        double a = Ss.transpose() * Ss;
+        double b = Ss.transpose() * St;
+        double c = St.transpose() * St;
+
+        double sigma = sqrt((a + c + sqrt((a - c) * (a - c) + 4 * b * b)) / 2);
+        double gamma = sqrt((a + c - sqrt((a - c) * (a - c) + 4 * b * b)) / 2);
+
+        E(ff) = sigma / gamma;
     }
 }
 
@@ -383,6 +423,93 @@ void local_joint_flatten_case1(
     v_id_map_joint.push_back(v_id_map_after[vi_after]);
 }
 
+void local_joint_flatten_case2_all_colinear(
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXd& V_before,
+    const std::vector<int64_t>& v_id_map_before,
+    Eigen::MatrixXi& F_after,
+    const Eigen::MatrixXd& V_after,
+    const std::vector<int64_t>& v_id_map_after,
+    Eigen::MatrixXd& UV_joint,
+    std::vector<int64_t>& v_id_map_joint)
+{
+    // get V_joint_before, F_joint_before, V_joint_after, F_joint_after
+    // TODO: this could be easier if we get local mesh from a "good" order
+    // this part is the same as case0
+    int vi_after = 0;
+    std::vector<int> local_vid_after_to_before_map(v_id_map_after.size(), -1);
+
+    for (int i = 1; i < v_id_map_after.size(); i++) {
+        auto it = std::find(v_id_map_before.begin(), v_id_map_before.end(), v_id_map_after[i]);
+        if (it == v_id_map_before.end()) {
+            std::runtime_error("There is vertex that is unituq in before!");
+        }
+        local_vid_after_to_before_map[i] = std::distance(v_id_map_before.begin(), it);
+    }
+    int vi_before = 0, vj_before = -1;
+    for (int i = 0; i < v_id_map_before.size(); i++) {
+        if (std::find(v_id_map_after.begin(), v_id_map_after.end(), v_id_map_before[i]) ==
+            v_id_map_after.end()) {
+            vj_before = i;
+            break;
+        }
+    }
+    if (vj_before == -1 || vj_before == vi_before) {
+        throw std::runtime_error("Cannot find the joint vertex!");
+    }
+
+    // same as case 0
+    Eigen::MatrixXd V_joint = V_before;
+    V_joint.conservativeResize(V_joint.rows() + 1, V_joint.cols());
+    // put vi_after to the end
+    V_joint.row(V_joint.rows() - 1) = V_after.row(vi_after);
+    Eigen::MatrixXi F_joint_before = F_before;
+    Eigen::MatrixXi F_joint_after = F_after;
+    // update F_joint after
+    for (int i = 0; i < F_joint_after.rows(); i++) {
+        for (int j = 0; j < 3; j++) {
+            if (F_joint_after(i, j) == vi_after) {
+                F_joint_after(i, j) = V_joint.rows() - 1;
+            } else {
+                F_joint_after(i, j) = local_vid_after_to_before_map[F_joint_after(i, j)];
+            }
+        }
+    }
+    // modify F_after and v_id_map_joint
+    F_after = F_joint_after;
+    v_id_map_joint = v_id_map_before;
+    v_id_map_joint.push_back(v_id_map_after[vi_after]);
+
+    // get another vertices
+    std::vector<std::vector<int>> bd_loops;
+    igl::boundary_loop(F_joint_after, bd_loops);
+    if (bd_loops.size() != 1) {
+        throw std::runtime_error("bd loops size is not 1!");
+    }
+    auto bd_loop = bd_loops[0];
+    auto it = std::find(bd_loop.begin(), bd_loop.end(), V_joint.rows() - 1);
+    if (it == bd_loop.end()) {
+        throw std::runtime_error("vi_after is not in bd loop!");
+    }
+    int idx = std::distance(bd_loop.begin(), it);
+
+    Eigen::VectorXi b_UV;
+    Eigen::VectorXd bc_UV;
+
+    b_UV.resize(2 + 1 + 2 + 1, 1);
+    bc_UV.resize(2 + 1 + 2 + 1, 1);
+    bc_UV.setZero();
+    b_UV(0) = vi_before;
+    b_UV(1) = vj_before;
+    bc_UV(1) = 1;
+    b_UV(2) = vj_before + V_joint.rows();
+    b_UV(3) = 2 * V_joint.rows() - 1; // vi_after in the end
+    b_UV(4) = bd_loop[(idx + 1) % bd_loop.size()] + V_joint.rows();
+    b_UV(5) = bd_loop[(idx + bd_loop.size() - 1) % bd_loop.size()] + V_joint.rows();
+
+    // flatten
+    flatten(V_joint, V_joint, F_joint_before, F_joint_after, b_UV, bc_UV, UV_joint);
+}
 
 void local_joint_flatten(
     const Eigen::MatrixXi& F_before,
@@ -409,8 +536,7 @@ void local_joint_flatten(
             v_id_map_joint);
     } else if (is_bd_v0 && is_bd_v1) {
         std::cout << "case 2: boundary edge" << std::endl;
-        throw std::runtime_error("Not implemented yet!");
-        local_joint_flatten_case0(
+        local_joint_flatten_case2_all_colinear(
             F_before,
             V_before,
             v_id_map_before,

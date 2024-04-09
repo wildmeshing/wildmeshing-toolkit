@@ -78,8 +78,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
     auto unmods = unmodified_primitives(simplex);
     auto mods = execute(simplex);
     if (!mods.empty()) { // success should be marked here
-        if (operation_name != "MeshConsolidate")
-	    apply_attribute_transfer(mods);
+        if (operation_name != "MeshConsolidate") apply_attribute_transfer(mods);
         if (after(unmods, mods)) {
             // store local atlas for retrieval
 #ifdef WMTK_RECORD_OPERATIONS
@@ -138,7 +137,19 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 }
                             };
 
-                            if (mesh().is_boundary(mods[0])) {
+                            // add different cases for different boundary conditions
+                            auto [is_bd_v0, is_bd_v1] = mesh().parent_scope(
+                                [&](const simplex::Simplex& s) {
+                                    return std::make_tuple(
+                                        mesh().is_boundary(simplex::Simplex::vertex(s.tuple())),
+                                        mesh().is_boundary(
+                                            simplex::Simplex::vertex(mesh().switch_tuple(
+                                                s.tuple(),
+                                                PrimitiveType::Vertex))));
+                                },
+                                simplex);
+
+                            if (is_bd_v0 && is_bd_v1) {
                                 igl::writeOBJ(
                                     OperationLogPath + "/VF_before_" +
                                         std::to_string(succ_operations_count) + ".obj",
@@ -151,17 +162,6 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                     F_after);
                             }
 
-                            // add different cases for different boundary conditions
-                            auto [is_bd_v0, is_bd_v1] = mesh().parent_scope(
-                                [&](const simplex::Simplex& s) {
-                                    return std::make_tuple(
-                                        mesh().is_boundary(simplex::Simplex::vertex(s.tuple())),
-                                        mesh().is_boundary(
-                                            simplex::Simplex::vertex(mesh().switch_tuple(
-                                                s.tuple(),
-                                                PrimitiveType::Vertex))));
-                                },
-                                simplex);
 
                             Eigen::MatrixXd UV_joint;
                             std::vector<int64_t> v_id_map_joint;
@@ -188,7 +188,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             operation_log["F_id_map_after"] = id_map_after;
                             operation_log["F_id_map_before"] = id_map_before;
 
-                            if (mesh().is_boundary(mods[0])) {
+                            if (is_bd_v0 && is_bd_v1) {
                                 igl::writeOBJ(
                                     OperationLogPath + "/UV_after_" +
                                         std::to_string(succ_operations_count) + ".obj",
