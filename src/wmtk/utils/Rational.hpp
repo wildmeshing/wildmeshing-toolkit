@@ -362,7 +362,7 @@ public:
 
         const auto num = tokens[0];
         const auto denom = tokens[1];
-        is_rounded = tokens[2] == "1";
+        is_rounded = tokens[2][0] == '1';
 
         if (is_rounded) {
             mpq_t tmp_r;

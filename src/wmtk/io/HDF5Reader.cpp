@@ -168,16 +168,21 @@ std::shared_ptr<Mesh> HDF5Reader::read_mesh(h5pp::File& hdf5_file, const std::st
 
             set_attribute<double>(default_val, name, pt, stride, v, *mesh);
         } else if (type == "rational") {
-            const std::vector<std::string> tmp =
-                hdf5_file.readDataset<std::vector<std::string>>(dataset);
+            const Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> tmp =
+                hdf5_file.readDataset<
+                    Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(dataset);
+            const Eigen::Matrix<char, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> tmp_char =
+                tmp.cast<char>();
+
             const std::string data = hdf5_file.readAttribute<std::string>(dataset, "default_value");
             Rational default_val;
             default_val.init_from_binary(data);
 
             std::vector<Rational> v;
-            v.reserve(tmp.size());
-            for (size_t i = 0; i < tmp.size(); ++i) {
-                v.emplace_back(tmp[i]);
+            v.reserve(tmp.rows());
+            for (size_t i = 0; i < tmp.rows(); ++i) {
+                std::string curr_data(tmp_char.row(i).data());
+                v.emplace_back(curr_data);
             }
 
             set_attribute<Rational>(default_val, name, pt, stride, v, *mesh);

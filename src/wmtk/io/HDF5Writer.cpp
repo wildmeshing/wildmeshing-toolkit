@@ -96,10 +96,21 @@ void HDF5Writer::write(
 {
     std::vector<std::string> tmp;
     tmp.reserve(val.size());
+    int64_t max_size = -1;
     for (const auto& v : val) {
         tmp.emplace_back(v.serialize());
+        max_size = std::max(max_size, int64_t(tmp.back().size()));
     }
-    write_internal(name, type, stride, tmp, default_val.to_binary());
+    ++max_size;
+    Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> data(tmp.size(), max_size);
+    data.setConstant(int(' '));
+    for (int64_t i = 0; i < data.rows(); ++i) {
+        for (int64_t j = 0; j < data.cols(); ++j) {
+            data(i, j) = int(tmp[i][j]);
+        }
+    }
+
+    write_internal(name, type, stride, data, default_val.to_binary());
 }
 
 void HDF5Writer::write_capacities(const std::vector<int64_t>& capacities)
@@ -107,12 +118,12 @@ void HDF5Writer::write_capacities(const std::vector<int64_t>& capacities)
     m_hdf5_file->writeAttribute(capacities, dataset_path(), "capacities");
 }
 
-template <typename T>
+template <typename Data, typename T>
 void HDF5Writer::write_internal(
     const std::string& name,
     const int64_t type,
     const int64_t stride,
-    const std::vector<T>& val,
+    const Data& val,
     const T& default_val)
 {
     std::stringstream ss;
