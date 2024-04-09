@@ -7,7 +7,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
-#include "predicates.h"
+#include <wmtk/utils/orient.hpp>
 
 
 // clang-format off
@@ -148,9 +148,6 @@ generate_raw_tetmesh_from_input_surface(
     const RowVectors3d& bgV,
     const RowVectors4l& bgT)
 {
-    // for predicates
-    exactinit();
-
     // compute bounding box
     Vector3d bbox_min = V.colwise().minCoeff();
     Vector3d bbox_max = V.colwise().maxCoeff();
@@ -504,29 +501,28 @@ generate_raw_tetmesh_from_input_surface(
             t[i] = v_map[t[i]];
         }
 
-        // TODO: add this back as rational
-        // if (orient3d(
-        //         v_coords_final[t[0]].data(),
-        //         v_coords_final[t[1]].data(),
-        //         v_coords_final[t[2]].data(),
-        //         v_coords_final[t[3]].data()) <= 0) {
-        //     Eigen::Matrix3d tmp;
-        //     tmp.col(0) = v_coords_final[t[1]] - v_coords_final[t[0]];
-        //     tmp.col(1) = v_coords_final[t[2]] - v_coords_final[t[0]];
-        //     tmp.col(2) = v_coords_final[t[3]] - v_coords_final[t[0]];
-        //     log_and_throw_error(
-        //         "flipped tet=({},{},{},{}) crash vol={} orient={}",
-        //         t[0],
-        //         t[1],
-        //         t[2],
-        //         t[3],
-        //         tmp.determinant(),
-        //         orient3d(
-        //             v_coords_final[t[0]].data(),
-        //             v_coords_final[t[1]].data(),
-        //             v_coords_final[t[2]].data(),
-        //             v_coords_final[t[3]].data()));
-        // }
+        if (wmtk_orient3d(
+                v_coords_final_rational[t[0]],
+                v_coords_final_rational[t[1]],
+                v_coords_final_rational[t[2]],
+                v_coords_final_rational[t[3]]) <= 0) {
+            Eigen::Matrix<Rational, 3, 3> tmp;
+            tmp.col(0) = v_coords_final_rational[t[1]] - v_coords_final_rational[t[0]];
+            tmp.col(1) = v_coords_final_rational[t[2]] - v_coords_final_rational[t[0]];
+            tmp.col(2) = v_coords_final_rational[t[3]] - v_coords_final_rational[t[0]];
+            log_and_throw_error(
+                "flipped tet=({},{},{},{}) crash vol={} orient={}",
+                t[0],
+                t[1],
+                t[2],
+                t[3],
+                tmp.determinant(),
+                wmtk_orient3d(
+                    v_coords_final_rational[t[0]],
+                    v_coords_final_rational[t[1]],
+                    v_coords_final_rational[t[2]],
+                    v_coords_final_rational[t[3]]));
+        }
     }
 
     // transfer v_coords_final to V matrix and tets_final to TV matrix
