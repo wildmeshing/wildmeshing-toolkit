@@ -306,6 +306,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     pass_through_attributes.push_back(edge_length_attribute);
     pass_through_attributes.push_back(amips_attribute);
     pass_through_attributes.push_back(target_edge_length_attribute);
+    pass_through_attributes.push_back(rpt_attribute);
 
     //////////////////////////////////
     // Lambdas for priority
@@ -508,8 +509,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto setup_swap = [&](Operation& op,
                           EdgeCollapse& collapse,
                           EdgeSplit& split,
-                          std::shared_ptr<Invariant> simplex_invariant) {
-        op.set_priority(long_edges_first);
+                          std::shared_ptr<Invariant> simplex_invariant,
+                          bool is_edge = true) {
+        if (is_edge) op.set_priority(long_edges_first);
 
         op.add_invariant(simplex_invariant);
         op.add_invariant(inversion_invariant);
@@ -574,7 +576,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         // 3 - 3) TetFaceSwap 2-3
         auto swap23 = std::make_shared<TetFaceSwap>(*mesh);
-        setup_swap(*swap23, swap23->collapse(), swap23->split(), interior_face);
+        setup_swap(*swap23, swap23->collapse(), swap23->split(), interior_face, false);
         swap23->add_invariant(swap23_energy_before); // check energy before swap
         ops.push_back(swap23);
         ops_name.push_back("swap23");
