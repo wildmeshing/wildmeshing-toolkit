@@ -16,6 +16,9 @@ set(SRC_FILES
     mesh_utils.cpp
     TupleInspector.hpp
 
+    orient.hpp
+    orient.cpp
+
     TupleInspector.cpp
     triangle_areas.hpp
     triangle_areas.cpp

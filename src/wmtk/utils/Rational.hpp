@@ -37,7 +37,7 @@ public:
 
     friend Rational pow(const Rational& x, int p);
     friend Rational abs(const Rational& r0);
-    int get_sign();
+    int get_sign() const;
 
     friend Rational operator*(const Rational& x, const Rational& y);
     friend Rational operator/(const Rational& x, const Rational& y);

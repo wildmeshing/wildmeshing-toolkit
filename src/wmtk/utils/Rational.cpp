@@ -12,7 +12,7 @@ void Rational::canonicalize()
     mpq_canonicalize(value);
 }
 
-int Rational::get_sign()
+int Rational::get_sign() const
 {
     if (m_is_rounded) return d_value == 0 ? 0 : (d_value < 0 ? -1 : 1);
 
