@@ -48,7 +48,9 @@ std::size_t vector_hash(const std::vector<Rational>& data)
         std::vector<size_t> v;
         std::hash<std::string> h;
         const auto tmp = r.as_strings();
-        for (auto& s : tmp) v.emplace_back(h(s));
+        for (auto& s : tmp) {
+            v.emplace_back(h(s));
+        }
 
         return vector_hash(v);
     });

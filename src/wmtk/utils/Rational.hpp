@@ -2,7 +2,9 @@
 
 #include <gmp.h>
 #include <array>
+#include <cmath>
 #include <iostream>
+#include <limits>
 #include <string>
 
 namespace wmtk {
@@ -24,37 +26,23 @@ public:
     }
 
     Rational(bool rounded = false)
-    {
-        is_rounded = rounded;
-        if (is_rounded) {
-            d_value = 0;
-        } else {
-            mpq_init(value);
-            mpq_set_d(value, 0);
-        }
-    }
+        : Rational(0.0, rounded)
+    {}
 
     Rational(int v, bool rounded = false)
-    {
-        is_rounded = rounded;
-        if (is_rounded) {
-            d_value = v;
-        } else {
-            const double d = v;
-            mpq_init(value);
-            mpq_set_d(value, d);
-            // canonicalize();
-        }
-    }
+        : Rational((double)v, rounded)
+    {}
 
     Rational(double d, bool rounded = false)
+        : is_rounded(rounded)
     {
-        is_rounded = rounded;
         if (is_rounded) {
             d_value = d;
         } else {
             mpq_init(value);
             mpq_set_d(value, d);
+
+            d_value = std::numeric_limits<double>::lowest();
             // canonicalize();
         }
     }
@@ -64,22 +52,20 @@ public:
         mpq_init(value);
         mpq_set(value, v_);
         // canonicalize();
-
         is_rounded = false;
+
+        d_value = std::numeric_limits<double>::lowest();
     }
 
     Rational(const Rational& other)
+        : d_value(other.d_value)
+        , is_rounded(other.is_rounded)
     {
-        is_rounded = other.is_rounded;
-
-        if (other.is_rounded) {
-            d_value = other.d_value;
-        } else {
+        if (!is_rounded) {
             mpq_init(value);
             mpq_set(value, other.value);
         }
     }
-
 
     ~Rational()
     {
@@ -383,6 +369,7 @@ public:
             mpq_init(value);
             std::string tmp = num + "/" + denom;
             mpq_set_str(value, tmp.c_str(), 10);
+            d_value = std::numeric_limits<double>::lowest();
         }
     }
 
