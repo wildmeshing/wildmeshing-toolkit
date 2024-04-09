@@ -1,6 +1,5 @@
 #include "edge_insertion.hpp"
 
-#include "EdgeInsOptions.hpp"
 
 namespace wmtk::components {
 
