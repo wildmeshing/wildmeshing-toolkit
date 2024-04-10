@@ -35,9 +35,9 @@ class MultiMeshVisitorExecutor;
 } // namespace multimesh
 class Mesh;
 namespace simplex {
-    class Simplex;
+class Simplex;
 class SimplexCollection;
-}
+} // namespace simplex
 } // namespace wmtk
 namespace wmtk::multimesh {
 /**
@@ -140,6 +140,14 @@ public:
      * mesh will be invalidated by deregistration.
      */
     void deregister_child_mesh(Mesh& my_mesh, const std::shared_ptr<Mesh>& child_mesh_ptr);
+
+    /**
+     * @brief Clean up child data after deleting attributes.
+     *
+     * When attributes are deleted, all attribute handles are invalidated. This method goes through
+     * all child data and updates the handles.
+     */
+    void update_child_handles(Mesh& my_mesh);
 
 
     // bool are_maps_valid(const Mesh& my_mesh) const;

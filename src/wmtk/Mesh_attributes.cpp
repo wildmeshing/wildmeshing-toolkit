@@ -172,6 +172,7 @@ void Mesh::clear_attributes(
     auto a = this->custom_attributes();
     auto b = keep_attributes;
     m_attribute_manager.clear_attributes(variant_diff(a, b));
+    update_child_handles();
 }
 void Mesh::clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes)
 {
