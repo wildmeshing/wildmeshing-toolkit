@@ -340,10 +340,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
 
     auto propagate_to_child_position =
-        [](const Eigen::MatrixX<double>& P) -> Eigen::VectorX<double> { return P; };
+        [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<Rational> { return P; };
 
     auto propagate_to_parent_position =
-        [](const Eigen::MatrixX<double>& P) -> Eigen::VectorX<double> {
+        [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<Rational> {
         assert(P.cols() == 1);
         return P.col(0);
     };
