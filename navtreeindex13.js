@@ -1,5 +1,7 @@
 var NAVTREEINDEX13 =
 {
+"classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator_1_1_less.html":[5,0,2,7,1,0,1],
+"classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator_1_1_less.html#ac1ce77dca8c2056619a4763d000f7345":[5,0,2,7,1,0,1,0],
 "classwmtk_1_1simplex_1_1utils_1_1_simplex_comparisons.html":[5,0,2,7,1,1],
 "classwmtk_1_1utils_1_1_eigen_matrix_writer.html":[5,0,2,8,1],
 "classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a04aec2da315358c88c6e8e5b11a6b20e":[5,0,2,8,1,13],
@@ -247,7 +249,5 @@ var NAVTREEINDEX13 =
 "dir_d2de66cbfa6ce662baa7ee2ea6bf92c7.html":[6,0,0,1,6,0,0,0],
 "dir_d5eb2638408b999b7627687dc13aeda1.html":[6,0,0,1,10,0],
 "dir_d99b861e28996c57327cd7dc3c2b8e63.html":[6,0,0,1,2,0,0,0],
-"dir_dd168ac3bdb88ef6c35c8b2b6978062a.html":[6,0,0,1,15,0,0,0,0],
-"dir_e0cf493bf1bfe6224d1526deac845e4d.html":[6,0,0,1,7],
-"dir_e5c09f8c66eae50f63e4c37ade6e2d16.html":[6,0,0,1,6,0,0]
+"dir_dd168ac3bdb88ef6c35c8b2b6978062a.html":[6,0,0,1,15,0,0,0,0]
 };

@@ -1,5 +1,7 @@
 var NAVTREEINDEX19 =
 {
+"structwmtk_1_1attribute_1_1internal_1_1is__typed__attribute__handle.html":[5,0,2,0,0,2],
+"structwmtk_1_1attribute_1_1internal_1_1is__typed__attribute__handle_3_01_typed_attribute_handle_3_01_t_01_4_01_4.html":[5,0,2,0,0,3],
 "structwmtk_1_1components_1_1_fusion_options.html":[5,0,2,1,3],
 "structwmtk_1_1components_1_1_fusion_options.html#a001cabd32595922b862a6734049c9dcc":[5,0,2,1,3,3],
 "structwmtk_1_1components_1_1_fusion_options.html#a3d8f8e4b67c540c4db131258100ce6e0":[5,0,2,1,3,4],
@@ -247,7 +249,5 @@ var NAVTREEINDEX19 =
 "structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html#a53dddc8b5f60d64c3188a3fdaf852bdc":[5,0,2,7,0,3,1],
 "structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html#af54b04dc751645fe63c822138a496525":[5,0,2,7,0,3,0],
 "structwmtk_1_1utils_1_1mesh__type__from__primitive__type.html":[5,0,2,8,4],
-"structwmtk_1_1utils_1_1mesh__type__from__primitive__type.html#a4692ccf5a21878064ab224b7c2af1c6a":[5,0,2,8,4,0],
-"structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_edge_01_4.html":[5,0,2,8,6],
-"structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_edge_01_4.html#a9a77815b86c687547ad52679e7bacdbb":[5,0,2,8,6,0]
+"structwmtk_1_1utils_1_1mesh__type__from__primitive__type.html#a4692ccf5a21878064ab224b7c2af1c6a":[5,0,2,8,4,0]
 };

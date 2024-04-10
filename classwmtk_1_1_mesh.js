@@ -117,6 +117,7 @@ var classwmtk_1_1_mesh =
     [ "update_cell_hashes", "classwmtk_1_1_mesh.html#ab62c8d9cbc1ca4a654b81380692a6e96", null ],
     [ "update_cell_hashes", "classwmtk_1_1_mesh.html#a848e5ad847a749a4c7a150e5c74945a5", null ],
     [ "update_cell_hashes_slow", "classwmtk_1_1_mesh.html#a10dc60988327a1f0ace86051df4f3e65", null ],
+    [ "update_child_handles", "classwmtk_1_1_mesh.html#a4b8fe891dcc922a937e08025c922b532", null ],
     [ "update_vertex_operation_hashes", "classwmtk_1_1_mesh.html#a0b6f79f2dffa07d93a342306abd28b7e", null ],
     [ "attribute::Accessor", "classwmtk_1_1_mesh.html#a858527dd650e9b888f757f3e70f0940e", null ],
     [ "attribute::AccessorBase", "classwmtk_1_1_mesh.html#a1955871760d49c479af8a574bcc7e361", null ],

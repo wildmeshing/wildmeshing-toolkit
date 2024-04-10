@@ -1,5 +1,7 @@
 var NAVTREEINDEX20 =
 {
+"structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_edge_01_4.html":[5,0,2,8,6],
+"structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_edge_01_4.html#a9a77815b86c687547ad52679e7bacdbb":[5,0,2,8,6,0],
 "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4.html":[5,0,2,8,8],
 "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4.html#a3029e28e555f6f84e913a6c68638da8b":[5,0,2,8,8,0],
 "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_triangle_01_4.html":[5,0,2,8,7],
@@ -247,7 +249,5 @@ var NAVTREEINDEX20 =
 "tet__mesh_2local__id__table__offset_8hxx.html#a25a52c95d0e04d803d206f61bc2986b2":[6,0,2,0,1,1,5,1],
 "tet__mesh_2local__id__table__offset_8hxx.html#ace6b80b1be9aec0d6a5ac5d144b40965":[6,0,2,0,1,1,5,0],
 "tet__mesh_2local__id__table__offset_8hxx_source.html":[6,0,2,0,1,1,5],
-"tet__mesh_2local__switch__tuple_8hxx.html":[6,0,2,0,1,1,7],
-"tet__mesh_2local__switch__tuple_8hxx.html#a4060d948aa959f21810c425f3f197dd5":[6,0,2,0,1,1,7,0],
-"tet__mesh_2local__switch__tuple_8hxx_source.html":[6,0,2,0,1,1,7]
+"tet__mesh_2local__switch__tuple_8hxx.html":[6,0,2,0,1,1,7]
 };
