@@ -62,21 +62,25 @@ double MaxDistanceToLimit::distance(
     // check all the intersections collected
     for (int64_t i = 0; i < grid_line_intersections_01.size(); ++i) {
         Eigen::Vector2d inter = grid_line_intersections_01[i];
-        max_dist = std::max(
-            max_dist,
-            pixel_coord_l2_distance_to_limit(inter, position_triangle_ColMajor, bary));
+
+        auto tmp = pixel_coord_l2_distance_to_limit(inter, position_triangle_ColMajor, bary);
+        if (tmp > max_dist) {
+            max_dist = std::max(max_dist, tmp);
+        }
     }
     for (int64_t i = 0; i < grid_line_intersections_12.size(); ++i) {
         Eigen::Vector2d inter = grid_line_intersections_12[i];
-        max_dist = std::max(
-            max_dist,
-            pixel_coord_l2_distance_to_limit(inter, position_triangle_ColMajor, bary));
+        auto tmp = pixel_coord_l2_distance_to_limit(inter, position_triangle_ColMajor, bary);
+        if (tmp > max_dist) {
+            max_dist = std::max(max_dist, tmp);
+        }
     }
     for (int64_t i = 0; i < grid_line_intersections_20.size(); ++i) {
         Eigen::Vector2d inter = grid_line_intersections_20[i];
-        max_dist = std::max(
-            max_dist,
-            pixel_coord_l2_distance_to_limit(inter, position_triangle_ColMajor, bary));
+        auto tmp = pixel_coord_l2_distance_to_limit(inter, position_triangle_ColMajor, bary);
+        if (tmp > max_dist) {
+            max_dist = std::max(max_dist, tmp);
+        }
     }
 
     return max_dist;
@@ -117,7 +121,6 @@ std::vector<Eigen::RowVector2d> MaxDistanceToLimit::grid_line_intersections(
         bottom = b * size;
         top = a * size;
     }
-
     double pixel_size = m_three_channel_evaluator.pixel_size();
 
     for (int i = 0; i <= xx2 - xx1; ++i) {
@@ -157,8 +160,8 @@ std::vector<Eigen::RowVector2d> MaxDistanceToLimit::grid_line_intersections(
             continue;
         }
     }
-    intersections.insert(a);
-    intersections.insert(b);
+    intersections.insert(a * size);
+    intersections.insert(b * size);
     // sort the intersections
     std::vector<Eigen::RowVector2d> sorted_intersections;
     for (const auto& inter : intersections) {
@@ -221,7 +224,7 @@ double MaxDistanceToLimit::max_disatance_pixel_corners_inside_triangle(
     auto [xx1, yy1] = m_three_channel_evaluator.pixel_index_floor(bbox.min());
     auto [xx2, yy2] = m_three_channel_evaluator.pixel_index_ceil(bbox.max());
     auto check_center = [&](int xmin, int ymin) -> double {
-        double _max_dis = 0;
+        double _max_dist = 0;
         auto pixel_u = xmin + 0.5;
         auto pixel_v = ymin + 0.5;
         Eigen::Vector2d pixel_uv = {pixel_u, pixel_v};
@@ -230,11 +233,14 @@ double MaxDistanceToLimit::max_disatance_pixel_corners_inside_triangle(
                 pixel_uv1,
                 pixel_uv2,
                 pixel_uv)) {
-            _max_dis = std::max(
-                _max_dis,
-                pixel_coord_l2_distance_to_limit(pixel_uv, position_triangle_ColMajor, bary));
+            auto temp =
+                pixel_coord_l2_distance_to_limit(pixel_uv, position_triangle_ColMajor, bary);
+
+            if (temp > _max_dist) {
+                _max_dist = temp;
+            }
         }
-        return _max_dis;
+        return _max_dist;
     };
     for (auto y = yy1; y <= yy2; ++y) {
         for (auto x = xx1; x <= xx2; ++x) {

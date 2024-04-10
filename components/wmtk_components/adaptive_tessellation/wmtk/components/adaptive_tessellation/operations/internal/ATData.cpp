@@ -143,6 +143,7 @@ ATData::ATData(
             image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
 
     if (max_distance) {
+        logger().critical("Using Max Distance");
         m_evaluator_ptr->set_sampling_method(image::SAMPLING_METHOD::Bilinear);
         m_mapping_ptr = std::make_shared<wmtk::components::function::utils::MaxDistanceToLimit>(
             *m_evaluator_ptr);
@@ -176,6 +177,7 @@ ATData::ATData(
             image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
 
     if (max_distance) {
+        logger().critical("Using Max Distance");
         m_evaluator_ptr->set_sampling_method(image::SAMPLING_METHOD::Bilinear);
         m_mapping_ptr = std::make_shared<wmtk::components::function::utils::MaxDistanceToLimit>(
             *m_evaluator_ptr);

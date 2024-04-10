@@ -78,6 +78,27 @@ std::vector<DSVec> get_vertex_coordinates(
 
     return ret;
 }
+
+std::tuple<double, double, double> random_barycentric_coefficients()
+{
+    std::mt19937 rng(std::random_device{}());
+
+    // Define the range for the random double values
+    double min = 0.0;
+    double max = 1.0;
+    // Create a uniform_real_distribution object
+    std::uniform_real_distribution<double> dist(min, max);
+    // Generate a random double value
+    double a = dist(rng);
+    double b = dist(rng);
+    if (a + b > 1.0) {
+        a = 1.0 - a;
+        b = 1.0 - b;
+    }
+    double c = 1.0 - a - b;
+    assert(c > 0.);
+    return {a, b, c};
+}
 } // namespace wmtk::tests
 
 namespace wmtk::components {
@@ -1360,6 +1381,48 @@ TEST_CASE("max_dist")
             position_Col_Major,
             bbox);
         REQUIRE(max > 1);
+    }
+
+    SECTION("load_square_mesh")
+    {
+        const std::filesystem::path mesh_path =
+            "/mnt/ssd2/yunfan/AT_2024/data/shifted_square_upsample_2.msh";
+
+        std::shared_ptr<Mesh> mesh_ptr = read_mesh(mesh_path, true);
+        wmtk::attribute::MeshAttributeHandle m_uv_handle =
+            mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        auto accessor = mesh_ptr->create_accessor(m_uv_handle.as<double>());
+        // iterate over every face
+        for (auto& f : mesh_ptr->get_all(PrimitiveType::Triangle)) {
+            Eigen::Vector2d uv0 = accessor.vector_attribute(f);
+            Eigen::Vector2d uv1 =
+                accessor.vector_attribute(mesh_ptr->switch_tuple(f, PrimitiveType::Vertex));
+            Eigen::Vector2d uv2 = accessor.vector_attribute(
+                mesh_ptr->switch_tuples(f, {PrimitiveType::Edge, PrimitiveType::Vertex}));
+
+            Eigen::Vector3d p0 = m_evaluator_ptr->uv_to_position<double>(uv0);
+            Eigen::Vector3d p1 = m_evaluator_ptr->uv_to_position<double>(uv1);
+            Eigen::Vector3d p2 = m_evaluator_ptr->uv_to_position<double>(uv2);
+
+            double max_dist = MD.distance(uv0, uv1, uv2);
+
+            double max_sampled_dist = 0.;
+            for (int i = 0; i < 10000; i++) {
+                auto coefficients = wmtk::tests::random_barycentric_coefficients();
+
+                // Access the elements of the tuple using std::get
+                double a = std::get<0>(coefficients);
+                double b = std::get<1>(coefficients);
+                double c = std::get<2>(coefficients);
+
+                Eigen::Vector2d uv = a * uv0 + b * uv1 + c * uv2;
+                Eigen::Vector3d p = m_evaluator_ptr->uv_to_position<double>(uv);
+                Eigen::Vector3d bary_p = a * p0 + b * p1 + c * p2;
+                double dist = (p - bary_p).norm();
+                max_sampled_dist = std::max(dist, max_sampled_dist);
+            }
+            wmtk::logger().info("max_dist: {}, max_sampled_dist: {}", max_dist, max_sampled_dist);
+        }
     }
 }
 
