@@ -37,6 +37,7 @@
 #include <wmtk/invariants/MaxFunctionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
+#include <wmtk/invariants/RoundedInvariant.hpp>
 #include <wmtk/invariants/SeparateSubstructuresInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/Swap23EnergyBeforeInvariant.hpp>
@@ -583,6 +584,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto energy =
         std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
     auto smoothing = std::make_shared<OptimizationSmoothing>(energy);
+    smoothing->add_invariant(
+        std::make_shared<RoundedInvariant>(*mesh, pt_attribute.as<Rational>()));
     smoothing->add_invariant(inversion_invariant);
     for (auto& s : update_child_positon) smoothing->add_transfer_strategy(s);
 
