@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
+#include <wmtk/utils/Rational.hpp>
 
 namespace fastEnvelope {
 class FastEnvelope;
@@ -15,6 +16,7 @@ class BVH;
 }
 
 namespace wmtk::invariants {
+
 class EnvelopeInvariant : public Invariant
 {
 public:
@@ -30,7 +32,8 @@ public:
 private:
     std::shared_ptr<fastEnvelope::FastEnvelope> m_envelope = nullptr;
     std::shared_ptr<SimpleBVH::BVH> m_bvh = nullptr;
-    const TypedAttributeHandle<double> m_coordinate_handle;
+    const TypedAttributeHandle<Rational> m_coordinate_handle;
+
     const double m_envelope_size;
 };
 } // namespace wmtk::invariants
