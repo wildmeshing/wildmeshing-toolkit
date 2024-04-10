@@ -69,5 +69,8 @@ set(SRC_FILES
 
     SeparateSubstructuresInvariant.hpp
     SeparateSubstructuresInvariant.cpp
+
+    RoundedInvariant.hpp
+    RoundedInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
