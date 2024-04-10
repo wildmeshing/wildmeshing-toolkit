@@ -134,31 +134,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         mesh->get_attribute_handle<Rational>(options.attributes.position, PrimitiveType::Vertex);
     auto pt_accessor = mesh->create_accessor(pt_attribute.as<Rational>());
 
-
-    //////////////////////////
-    // Rational vertices
-    auto rpt_attribute = mesh->register_attribute<Rational>(
-        "rational_position",
-        PrimitiveType::Vertex,
-        pt_attribute.dimension());
-    auto rpt_attribute_accessor = mesh->create_accessor(rpt_attribute.as<Rational>());
-    // Rational conversion
-    auto convert_to_rational = [](const Eigen::MatrixXd& P) -> Eigen::VectorX<Rational> {
-        assert(P.cols() == 1);
-        assert(P.rows() == 2 || P.rows() == 3);
-        Eigen::VectorX<Rational> res(P.rows());
-        for (int64_t d = 0; d < P.rows(); ++d) {
-            res[d] = P(d);
-        }
-        return res;
-    };
-    auto convert_rat =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<Rational, double>>(
-            rpt_attribute,
-            pt_attribute,
-            convert_to_rational);
-    convert_rat->run_on_all();
-
     //////////////////////////////////
     // computing bbox diagonal
     Eigen::VectorXd bmin(mesh->top_cell_dimension());
@@ -214,7 +189,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto amips_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>(
             amips_attribute,
-            rpt_attribute,
+            pt_attribute,
             compute_amips);
     amips_update->run_on_all();
 
@@ -310,7 +285,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto edge_length_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>(
             edge_length_attribute,
-            rpt_attribute,
+            pt_attribute,
             compute_edge_length);
     edge_length_update->run_on_all();
 
@@ -320,7 +295,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     pass_through_attributes.push_back(edge_length_attribute);
     pass_through_attributes.push_back(amips_attribute);
     pass_through_attributes.push_back(target_edge_length_attribute);
-    pass_through_attributes.push_back(pt_attribute);
 
     //////////////////////////////////
     // Lambdas for priority
@@ -417,7 +391,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // std::make_shared<SimplexInversionInvariant<Rational>>(*mesh, rpt_attribute.as<Rational>());
 
     std::shared_ptr<function::PerSimplexFunction> amips =
-        std::make_shared<AMIPS>(*mesh, rpt_attribute);
+        std::make_shared<AMIPS>(*mesh, pt_attribute);
     // auto function_invariant = std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
     // amips);
     auto function_invariant =
@@ -474,7 +448,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     split->add_invariant(todo_larger);
 
-    split->set_new_attribute_strategy(rpt_attribute);
+    split->set_new_attribute_strategy(pt_attribute);
     for (const auto& attr : pass_through_attributes) {
         split->set_new_attribute_strategy(attr);
     }
