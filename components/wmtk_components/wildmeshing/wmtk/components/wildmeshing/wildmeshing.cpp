@@ -388,7 +388,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     auto inversion_invariant =
         std::make_shared<SimplexInversionInvariant<Rational>>(*mesh, pt_attribute.as<Rational>());
-    // std::make_shared<SimplexInversionInvariant<Rational>>(*mesh, rpt_attribute.as<Rational>());
 
     std::shared_ptr<function::PerSimplexFunction> amips =
         std::make_shared<AMIPS>(*mesh, pt_attribute);
