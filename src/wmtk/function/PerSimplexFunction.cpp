@@ -18,12 +18,7 @@ PerSimplexFunction::PerSimplexFunction(
 
 int64_t PerSimplexFunction::embedded_dimension() const
 {
-    if (m_handle.holds<double>()) {
-        auto res = mesh().get_attribute_dimension(attribute_handle().as<double>());
-        assert(res > 0);
-        return res;
-    }
-    auto res = mesh().get_attribute_dimension(attribute_handle().as<Rational>());
+    auto res = attribute_handle().dimension();
     assert(res > 0);
     return res;
 }
