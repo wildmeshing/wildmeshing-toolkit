@@ -18,6 +18,7 @@
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
+#include <wmtk/operations/Rounding.hpp>
 #include <wmtk/operations/composite/ProjectOperation.hpp>
 #include <wmtk/operations/composite/TetEdgeSwap.hpp>
 #include <wmtk/operations/composite/TetFaceSwap.hpp>
@@ -441,6 +442,18 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     std::vector<std::string> ops_name;
 
     //////////////////////////////////
+    // 0) Rounding
+    //////////////////////////////////
+    auto rounding_pt_attribute = mesh->get_attribute_handle_typed<Rational>(
+        options.attributes.position,
+        PrimitiveType::Vertex);
+    auto rounding = std::make_shared<Rounding>(*mesh, rounding_pt_attribute);
+    rounding->add_invariant(
+        std::make_shared<RoundedInvariant>(*mesh, pt_attribute.as<Rational>(), true));
+    rounding->add_invariant(inversion_invariant);
+
+
+    //////////////////////////////////
     // 1) EdgeSplit
     //////////////////////////////////
     auto split = std::make_shared<EdgeSplit>(*mesh);
@@ -460,8 +473,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         split->add_transfer_strategy(s);
     }
 
-    // ops.emplace_back(split);
-    // ops_name.emplace_back("split");
+    ops.emplace_back(split);
+    ops_name.emplace_back("split");
+
+    ops.emplace_back(rounding);
+    ops_name.emplace_back("rounding");
 
     //////////////////////////////////
     // 2) EdgeCollapse
@@ -497,8 +513,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     }
     proj_collapse->add_transfer_strategy(target_edge_length_update);
 
-    // ops.emplace_back(proj_collapse);
-    // ops_name.emplace_back("collapse");
+    ops.emplace_back(proj_collapse);
+    ops_name.emplace_back("collapse");
+
+    ops.emplace_back(rounding);
+    ops_name.emplace_back("rounding");
 
     //////////////////////////////////
     // 3) Swap
@@ -545,16 +564,24 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     if (mesh->top_simplex_type() == PrimitiveType::Triangle) {
         auto swap = std::make_shared<TriEdgeSwap>(*mesh);
         setup_swap(*swap, swap->collapse(), swap->split(), interior_edge);
-        // ops.push_back(swap);
-        // ops_name.push_back("swap");
+
+        ops.push_back(swap);
+        ops_name.push_back("swap");
+
+        ops.emplace_back(rounding);
+        ops_name.emplace_back("rounding");
+
     } else if (mesh->top_simplex_type() == PrimitiveType::Tetrahedron) {
         // 3 - 1 - 1) TetEdgeSwap 4-4 1
         auto swap44 = std::make_shared<TetEdgeSwap>(*mesh, 0);
         setup_swap(*swap44, swap44->collapse(), swap44->split(), interior_edge);
         swap44->add_invariant(valence_4); // extra edge valance invariant
         swap44->add_invariant(swap44_energy_before); // check energy before swap
+
         ops.push_back(swap44);
         ops_name.push_back("swap44");
+        ops.emplace_back(rounding);
+        ops_name.emplace_back("rounding");
 
         // 3 - 1 - 2) TetEdgeSwap 4-4 2
         auto swap44_2 = std::make_shared<TetEdgeSwap>(*mesh, 1);
@@ -563,6 +590,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap44_2->add_invariant(swap44_2_energy_before); // check energy before swap
         ops.push_back(swap44_2);
         ops_name.push_back("swap44_2");
+        ops.emplace_back(rounding);
+        ops_name.emplace_back("rounding");
 
         // 3 - 2) TetEdgeSwap 3-2
         auto swap32 = std::make_shared<TetEdgeSwap>(*mesh, 0);
@@ -571,6 +600,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap32->add_invariant(swap32_energy_before); // check energy before swap
         ops.push_back(swap32);
         ops_name.push_back("swap32");
+        ops.emplace_back(rounding);
+        ops_name.emplace_back("rounding");
 
         // 3 - 3) TetFaceSwap 2-3
         auto swap23 = std::make_shared<TetFaceSwap>(*mesh);
@@ -578,6 +609,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap23->add_invariant(swap23_energy_before); // check energy before swap
         ops.push_back(swap23);
         ops_name.push_back("swap23");
+        ops.emplace_back(rounding);
+        ops_name.emplace_back("rounding");
     }
 
     // 4) Smoothing
@@ -608,6 +641,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     ops.push_back(proj_smoothing);
     ops_name.push_back("smoothing");
+    ops.emplace_back(rounding);
+    ops_name.emplace_back("rounding");
 
     write(
         mesh,
