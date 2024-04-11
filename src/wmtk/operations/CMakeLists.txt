@@ -19,6 +19,9 @@ set(SRC_FILES
 
     OptimizationSmoothing.cpp
     OptimizationSmoothing.hpp
+
+    Rounding.hpp
+    Rounding.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
