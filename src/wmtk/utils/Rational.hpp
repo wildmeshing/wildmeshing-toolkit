@@ -64,8 +64,8 @@ public:
     {
         if (m_is_rounded) return;
 
-        m_is_rounded = true;
         d_value = this->to_double();
+        m_is_rounded = true;
         mpq_clear(value);
     }
 
