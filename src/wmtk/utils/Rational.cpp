@@ -3,7 +3,6 @@
 #include <cassert>
 #include <cmath>
 #include <limits>
-#include <regex>
 #include <sstream>
 
 namespace wmtk {
@@ -334,21 +333,43 @@ std::string Rational::serialize() const
     return numerator() + "/" + denominator() + "/" + (m_is_rounded ? "1" : "0");
 }
 
-Rational::Rational(const std::string& data)
+Rational::Rational(const Eigen::VectorX<char>& data)
 {
-    std::stringstream ss(data);
-    std::string item;
-    std::vector<std::string> tokens;
-    while (std::getline(ss, item, '/')) {
-        tokens.emplace_back(item);
-        if (tokens.size() == 3) break;
-    }
-    assert(tokens.size() == 3);
+    std::stringstream numss;
+    std::stringstream denomss;
+    int counter = 0;
+    for (int64_t i = 0; i < data.size(); ++i) {
+        if (data[i] == '/') {
+            ++counter;
+            continue;
+        }
 
-    const auto num = tokens[0];
-    const auto denom = tokens[1];
-    assert(tokens[2][0] == '0' || tokens[2][0] == '1');
-    m_is_rounded = tokens[2][0] == '1';
+        if (counter == 0)
+            numss << data[i];
+        else if (counter == 1)
+            denomss << data[i];
+        else {
+            assert(data[i] == '0' || data[i] == '1');
+            m_is_rounded = data[i] == '1';
+            break;
+        }
+    }
+
+    const auto num = numss.str();
+    const auto denom = denomss.str();
+
+    // const auto num = tokens[0];
+    // const auto denom = tokens[1];
+
+    // std::regex regex{R"([/]+)"}; // split on /
+    // std::sregex_token_iterator it{data.begin(), data.end(), regex, -1};
+    // std::vector<std::string> tokens{it, {}};
+    // assert(tokens.size() >= 3);
+
+    // const auto num = tokens[0];
+    // const auto denom = tokens[1];
+    // assert(tokens[2][0] == '0' || tokens[2][0] == '1');
+    // m_is_rounded = tokens[2][0] == '1';
 
     if (m_is_rounded) {
         mpq_t tmp_r;

@@ -1,8 +1,11 @@
 #pragma once
 
+#include <Eigen/Core>
+
 #include <gmp.h>
 #include <iostream>
 #include <string>
+
 
 namespace wmtk {
 
@@ -14,7 +17,7 @@ public:
     Rational(double d, bool rounded = false);
     Rational(const mpq_t& v_);
     Rational(const Rational& other);
-    Rational(const std::string& data);
+    Rational(const Eigen::VectorX<char>& data);
 
     Rational& operator=(const Rational& x);
     Rational& operator=(const double x);

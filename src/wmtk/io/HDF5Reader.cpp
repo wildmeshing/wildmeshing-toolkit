@@ -181,8 +181,7 @@ std::shared_ptr<Mesh> HDF5Reader::read_mesh(h5pp::File& hdf5_file, const std::st
             std::vector<Rational> v;
             v.reserve(tmp.rows());
             for (size_t i = 0; i < tmp.rows(); ++i) {
-                std::string curr_data(tmp_char.row(i).data());
-                v.emplace_back(curr_data);
+                v.emplace_back(tmp_char.row(i));
             }
 
             set_attribute<Rational>(default_val, name, pt, stride, v, *mesh);
