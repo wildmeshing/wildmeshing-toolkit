@@ -35,6 +35,28 @@ void handle_consolidate(
     });
 }
 
+void handle_consolidate_forward(
+    const std::vector<int64_t>& face_ids_maps,
+    const std::vector<int64_t>& vertex_ids_maps,
+    std::vector<query_point>& query_points)
+{
+    std::cout << "Handling Consolidate forward" << std::endl;
+
+    igl::parallel_for(query_points.size(), [&](int id) {
+        query_point& qp = query_points[id];
+        auto it = std::find(face_ids_maps.begin(), face_ids_maps.end(), qp.f_id);
+        if (it != face_ids_maps.end()) {
+            qp.f_id = std::distance(face_ids_maps.begin(), it);
+        }
+        for (int i = 0; i < 3; i++) {
+            auto it_v = std::find(vertex_ids_maps.begin(), vertex_ids_maps.end(), qp.fv_ids[i]);
+            if (it_v != vertex_ids_maps.end()) {
+                qp.fv_ids[i] = std::distance(vertex_ids_maps.begin(), it_v);
+            }
+        }
+    });
+}
+
 // TODO: get a more acurate version of this
 Eigen::Vector3d ComputeBarycentricCoordinates3D(
     const Eigen::Vector3d& p,

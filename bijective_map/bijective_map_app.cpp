@@ -21,7 +21,7 @@ using json = nlohmann::json;
 #include "track_operations.hpp"
 
 // TODO: for testing purpose
-void back_track_map(path dirPath, std::vector<query_point>& query_points)
+void back_track_map(path dirPath, std::vector<query_point>& query_points, bool do_forward = false)
 {
     namespace fs = std::filesystem;
     int maxIndex = -1;
@@ -33,7 +33,11 @@ void back_track_map(path dirPath, std::vector<query_point>& query_points)
     }
 
     for (int i = maxIndex; i >= 0; --i) {
-        fs::path filePath = dirPath / ("operation_log_" + std::to_string(i) + ".json");
+        int file_id = i;
+        if (do_forward) {
+            file_id = maxIndex - i;
+        }
+        fs::path filePath = dirPath / ("operation_log_" + std::to_string(file_id) + ".json");
         std::ifstream file(filePath);
         if (!file.is_open()) {
             std::cerr << "Failed to open file: " << filePath << std::endl;
@@ -51,7 +55,11 @@ void back_track_map(path dirPath, std::vector<query_point>& query_points)
             std::vector<int64_t> face_ids_maps;
             std::vector<int64_t> vertex_ids_maps;
             parse_consolidate_file(operation_log, face_ids_maps, vertex_ids_maps);
-            handle_consolidate(face_ids_maps, vertex_ids_maps, query_points);
+            if (do_forward) {
+                handle_consolidate_forward(face_ids_maps, vertex_ids_maps, query_points);
+            } else {
+                handle_consolidate(face_ids_maps, vertex_ids_maps, query_points);
+            }
         } else if (operation_name == "AttributesUpdate") {
             // std::cout << "This Operations is AttributeUpdate" << std::endl;
         } else if (operation_name == "EdgeSplit") {
@@ -70,16 +78,30 @@ void back_track_map(path dirPath, std::vector<query_point>& query_points)
                 F_after,
                 id_map_after,
                 v_id_map_after);
-            handle_split_edge(
-                V_before,
-                F_before,
-                id_map_before,
-                v_id_map_before,
-                V_after,
-                F_after,
-                id_map_after,
-                v_id_map_after,
-                query_points);
+
+            if (do_forward) {
+                handle_split_edge(
+                    V_after,
+                    F_after,
+                    id_map_after,
+                    v_id_map_after,
+                    V_before,
+                    F_before,
+                    id_map_before,
+                    v_id_map_before,
+                    query_points);
+            } else {
+                handle_split_edge(
+                    V_before,
+                    F_before,
+                    id_map_before,
+                    v_id_map_before,
+                    V_after,
+                    F_after,
+                    id_map_after,
+                    v_id_map_after,
+                    query_points);
+            }
 
         } else if (operation_name == "EdgeCollapse") {
             std::cout << "This Operations is EdgeCollapse" << std::endl;
@@ -95,14 +117,26 @@ void back_track_map(path dirPath, std::vector<query_point>& query_points)
                 v_id_map_joint,
                 id_map_before,
                 id_map_after);
-            handle_collapse_edge(
-                UV_joint,
-                F_before,
-                F_after,
-                v_id_map_joint,
-                id_map_before,
-                id_map_after,
-                query_points);
+            if (do_forward) {
+                handle_collapse_edge(
+                    UV_joint,
+                    F_after,
+                    F_before,
+                    v_id_map_joint,
+                    id_map_after,
+                    id_map_before,
+                    query_points);
+            } else {
+                handle_collapse_edge(
+                    UV_joint,
+                    F_before,
+                    F_after,
+                    v_id_map_joint,
+                    id_map_before,
+                    id_map_after,
+                    query_points);
+            }
+
 
         } else {
             // std::cout << "This Operations is not implemented" << std::endl;
@@ -150,42 +184,45 @@ int main(int argc, char** argv)
     igl::boundary_loop(F_out, bd_loops);
     std::cout << "bd_loops size" << bd_loops.size() << std::endl;
 
-    // TODO: get test example for query_points
-    std::vector<query_point> query_points;
-    for (int i = 0; i < F_out.rows(); i++) {
-        query_point qp;
-        qp.f_id = i;
-        qp.bc = Eigen::Vector3d(1.0 / 3, 1.0 / 3, 1.0 / 3);
-        qp.fv_ids = F_out.row(i);
-        query_points.push_back(qp);
-    }
-
-    std::vector<query_point> query_points_origin = query_points;
-    Eigen::MatrixXd pts_on_surface_after(query_points.size(), 3);
-    for (int ii = 0; ii < query_points_origin.size(); ii++) {
-        const query_point& qp = query_points_origin[ii];
-        Eigen::Vector3d p(0, 0, 0);
-        for (int i = 0; i < 3; i++) {
-            p += V_out.row(qp.fv_ids[i]) * qp.bc(i);
-        }
-        pts_on_surface_after.row(ii) = p;
-    }
-
-    // do back track
-    back_track_map(operation_logs_dir, query_points);
-
-    Eigen::MatrixXd pts_on_surface_before(query_points.size(), 3);
-    for (int ii = 0; ii < query_points.size(); ii++) {
-        const query_point& qp = query_points[ii];
-        Eigen::Vector3d p(0, 0, 0);
-        for (int i = 0; i < 3; i++) {
-            p += V_in.row(qp.fv_ids[i]) * qp.bc(i);
-        }
-        pts_on_surface_before.row(ii) = p;
-    }
-
-    // viewer
+    // test forward track
     {
+        // TODO: get test example for query_points
+        std::vector<query_point> query_points;
+        for (int i = 0; i < F_in.rows(); i++) {
+            query_point qp;
+            qp.f_id = i;
+            qp.bc = Eigen::Vector3d(1.0 / 3, 1.0 / 3, 1.0 / 3);
+            qp.fv_ids = F_in.row(i);
+            query_points.push_back(qp);
+        }
+
+        std::vector<query_point> query_points_origin = query_points;
+
+        Eigen::MatrixXd pts_on_surface_before(query_points.size(), 3);
+        for (int ii = 0; ii < query_points.size(); ii++) {
+            const query_point& qp = query_points[ii];
+            Eigen::Vector3d p(0, 0, 0);
+            for (int i = 0; i < 3; i++) {
+                p += V_in.row(qp.fv_ids[i]) * qp.bc(i);
+            }
+            pts_on_surface_before.row(ii) = p;
+        }
+
+
+        // do back track
+        back_track_map(operation_logs_dir, query_points, true);
+
+        Eigen::MatrixXd pts_on_surface_after(query_points.size(), 3);
+        for (int ii = 0; ii < query_points.size(); ii++) {
+            const query_point& qp = query_points[ii];
+            Eigen::Vector3d p(0, 0, 0);
+            for (int i = 0; i < 3; i++) {
+                p += V_out.row(qp.fv_ids[i]) * qp.bc(i);
+            }
+            pts_on_surface_after.row(ii) = p;
+        }
+        // viewer
+
         igl::opengl::glfw::Viewer viewer;
         Eigen::Vector4f backColor;
         backColor << 208 / 255., 237 / 255., 227 / 255., 1.;
@@ -220,5 +257,76 @@ int main(int argc, char** argv)
         viewer.launch();
     }
 
+
+    {
+        // TODO: get test example for query_points
+        std::vector<query_point> query_points;
+        for (int i = 0; i < F_out.rows(); i++) {
+            query_point qp;
+            qp.f_id = i;
+            qp.bc = Eigen::Vector3d(1.0 / 3, 1.0 / 3, 1.0 / 3);
+            qp.fv_ids = F_out.row(i);
+            query_points.push_back(qp);
+        }
+
+        std::vector<query_point> query_points_origin = query_points;
+        Eigen::MatrixXd pts_on_surface_after(query_points.size(), 3);
+        for (int ii = 0; ii < query_points_origin.size(); ii++) {
+            const query_point& qp = query_points_origin[ii];
+            Eigen::Vector3d p(0, 0, 0);
+            for (int i = 0; i < 3; i++) {
+                p += V_out.row(qp.fv_ids[i]) * qp.bc(i);
+            }
+            pts_on_surface_after.row(ii) = p;
+        }
+
+        // do back track
+        back_track_map(operation_logs_dir, query_points);
+
+        Eigen::MatrixXd pts_on_surface_before(query_points.size(), 3);
+        for (int ii = 0; ii < query_points.size(); ii++) {
+            const query_point& qp = query_points[ii];
+            Eigen::Vector3d p(0, 0, 0);
+            for (int i = 0; i < 3; i++) {
+                p += V_in.row(qp.fv_ids[i]) * qp.bc(i);
+            }
+            pts_on_surface_before.row(ii) = p;
+        }
+
+        // viewer
+
+        igl::opengl::glfw::Viewer viewer;
+        Eigen::Vector4f backColor;
+        backColor << 208 / 255., 237 / 255., 227 / 255., 1.;
+        const Eigen::RowVector3d blue(149.0 / 255, 217.0 / 255, 244.0 / 255);
+        viewer.core().background_color = backColor;
+        viewer.data().set_mesh(V_in, F_in);
+        viewer.data().set_colors(blue);
+        viewer.data().add_points(pts_on_surface_before, Eigen::RowVector3d(0, 0, 0));
+        viewer.data().point_size = 10;
+
+        viewer.callback_key_down =
+            [&](igl::opengl::glfw::Viewer& viewer, unsigned char key, int mod) -> bool {
+            switch (key) {
+            case '0':
+                viewer.data().clear();
+                viewer.data().set_mesh(V_in, F_in);
+                viewer.data().set_colors(blue);
+                viewer.data().add_points(pts_on_surface_before, Eigen::RowVector3d(0, 0, 0));
+                viewer.data().point_size = 10;
+                break;
+            case '1':
+                viewer.data().clear();
+                viewer.data().set_mesh(V_out, F_out);
+                viewer.data().set_colors(blue);
+                viewer.data().add_points(pts_on_surface_after, Eigen::RowVector3d(0, 0, 0));
+                viewer.data().point_size = 10;
+                break;
+            default: return false;
+            }
+            return true;
+        };
+        viewer.launch();
+    }
     return 0;
 }
