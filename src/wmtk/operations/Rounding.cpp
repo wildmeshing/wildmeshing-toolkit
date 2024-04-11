@@ -15,6 +15,8 @@ Rounding::Rounding(Mesh& m, TypedAttributeHandle<Rational>& coordinate)
 
 std::vector<simplex::Simplex> Rounding::execute(const simplex::Simplex& simplex)
 {
+    assert(simplex.primitive_type() == PrimitiveType::Vertex);
+
     auto accessor = mesh().create_accessor(m_coordinate_handle);
 
     auto pos = accessor.vector_attribute(simplex.tuple());
