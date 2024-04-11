@@ -24,31 +24,57 @@ ProjectOperation::ProjectOperation(
     for (auto& pair : mesh_constaint_pairs) {
         int64_t count = 0;
         int64_t index = 0;
-        const attribute::Accessor<double> accessor = pair.first.mesh().create_const_accessor(pair.first.as<double>());
 
         const std::vector<Tuple>& facest =
             pair.first.mesh().get_all(pair.first.mesh().top_simplex_type());
 
         const int64_t dim = int64_t(pair.first.mesh().top_simplex_type()) + 1;
 
-        Eigen::MatrixXd vertices(dim * facest.size(), accessor.dimension());
+        Eigen::MatrixXd vertices(dim * facest.size(), pair.first.dimension());
         Eigen::MatrixXi faces(facest.size(), dim);
 
-        for (const auto& f : facest) {
-            auto tmp = faces_single_dimension_tuples(
-                pair.first.mesh(),
-                simplex::Simplex(pair.first.mesh().top_simplex_type(), f),
-                PrimitiveType::Vertex);
+        // hugly copy paste
+        if (pair.first.holds<double>()) {
+            const attribute::Accessor<double> accessor =
+                pair.first.mesh().create_const_accessor(pair.first.as<double>());
 
-            assert(tmp.size() == dim);
-            for (int64_t j = 0; j < tmp.size(); ++j) {
-                auto p = accessor.const_vector_attribute(tmp[j]);
-                faces(index, j) = count;
-                vertices.row(dim * index + j) = p;
+            for (const auto& f : facest) {
+                auto tmp = faces_single_dimension_tuples(
+                    pair.first.mesh(),
+                    simplex::Simplex(pair.first.mesh().top_simplex_type(), f),
+                    PrimitiveType::Vertex);
 
-                ++count;
+                assert(tmp.size() == dim);
+                for (int64_t j = 0; j < tmp.size(); ++j) {
+                    auto p = accessor.const_vector_attribute(tmp[j]);
+                    faces(index, j) = count;
+                    vertices.row(dim * index + j) = p;
+
+                    ++count;
+                }
+                ++index;
             }
-            ++index;
+        } else {
+            const attribute::Accessor<Rational> accessor =
+                pair.first.mesh().create_const_accessor(pair.first.as<Rational>());
+
+
+            for (const auto& f : facest) {
+                auto tmp = faces_single_dimension_tuples(
+                    pair.first.mesh(),
+                    simplex::Simplex(pair.first.mesh().top_simplex_type(), f),
+                    PrimitiveType::Vertex);
+
+                assert(tmp.size() == dim);
+                for (int64_t j = 0; j < tmp.size(); ++j) {
+                    auto p = accessor.const_vector_attribute(tmp[j]).cast<double>();
+                    faces(index, j) = count;
+                    vertices.row(dim * index + j) = p;
+
+                    ++count;
+                }
+                ++index;
+            }
         }
 
         auto bvh = std::make_shared<SimpleBVH::BVH>();
@@ -74,7 +100,8 @@ std::vector<simplex::Simplex> ProjectOperation::execute(const simplex::Simplex& 
 
         if (mapped_tuples_after.empty()) continue;
 
-        wmtk::attribute::Accessor<double> accessor = pair.first.mesh().create_accessor(pair.first.as<double>());
+        wmtk::attribute::Accessor<double> accessor =
+            pair.first.mesh().create_accessor(pair.first.as<double>());
 
         for (const auto& t : mapped_tuples_after) {
             auto p = accessor.const_vector_attribute(t);
