@@ -6,6 +6,7 @@
 #include <wmtk/utils/EigenMatrixWriter.hpp>
 #include <wmtk/utils/VolumeRemesherTriangleInsertion.hpp>
 
+#include <wmtk/invariants/SimplexInversionInvariant.hpp>
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Scheduler.hpp>
@@ -77,6 +78,8 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
     std::shared_ptr<Mesh> m_ptr = tetmesh;
 
     auto rounding = std::make_shared<wmtk::operations::Rounding>(*m_ptr, rounding_pt_attribute);
+    rounding->add_invariant(
+        std::make_shared<SimplexInversionInvariant<Rational>>(*m_ptr, rounding_pt_attribute));
 
     Scheduler scheduler;
     auto stats = scheduler.run_operation_on_all(*rounding);
