@@ -172,6 +172,7 @@ void Mesh::clear_attributes(
     auto a = this->custom_attributes();
     auto b = keep_attributes;
     m_attribute_manager.clear_attributes(variant_diff(a, b));
+    update_child_handles();
 }
 void Mesh::clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes)
 {
@@ -221,7 +222,7 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
     // Use new2oldmap to compact all attributes
     auto run = [&](auto&& mesh_attrs) {
         for (int64_t d = 0; d < mesh_attrs.size(); ++d) {
-            mesh_attrs[d].reserve(new2old.size());
+            mesh_attrs[d].reserve(new2old[d].size());
             for (auto& h : mesh_attrs[d].m_attributes) {
                 h->consolidate(new2old[d]);
             }
