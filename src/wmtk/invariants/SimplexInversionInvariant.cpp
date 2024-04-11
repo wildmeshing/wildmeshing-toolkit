@@ -37,7 +37,7 @@ bool SimplexInversionInvariant<T>::after(
                 t,
                 {PrimitiveType::Triangle, PrimitiveType::Edge, PrimitiveType::Vertex}));
 
-            if (!mymesh.is_ccw(t)) {
+            if (mymesh.is_ccw(t)) {
                 if (utils::wmtk_orient3d<T>(p3, p0, p1, p2) <= 0) return false;
             } else {
                 if (utils::wmtk_orient3d<T>(p3, p0, p2, p1) <= 0) return false;
