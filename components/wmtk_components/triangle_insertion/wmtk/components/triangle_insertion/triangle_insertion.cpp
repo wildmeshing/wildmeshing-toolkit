@@ -8,7 +8,9 @@
 
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/Scheduler.hpp>
 #include <wmtk/TetMesh.hpp>
+#include <wmtk/operations/Rounding.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
@@ -16,6 +18,7 @@
 
 // this should change! make a util?
 #include <wmtk/components/multimesh_from_tag/internal/MultiMeshFromTag.hpp>
+
 
 namespace wmtk::components {
 
@@ -62,6 +65,32 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
 
     auto [tetmesh, tet_face_on_input_surface] =
         utils::generate_raw_tetmesh_from_input_surface(V, F, 0.1, Vbg, Fbg);
+
+
+    /* -------------rounding------------ */
+
+
+    auto rounding_pt_attribute = tetmesh->get_attribute_handle_typed<Rational>(
+        options.input_position,
+        PrimitiveType::Vertex);
+
+    std::shared_ptr<Mesh> m_ptr = tetmesh;
+
+    auto rounding = std::make_shared<wmtk::operations::Rounding>(*m_ptr, rounding_pt_attribute);
+
+    Scheduler scheduler;
+    auto stats = scheduler.run_operation_on_all(*rounding);
+
+    logger().info(
+        "Executed rounding, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
+        "executing: {}",
+        stats.number_of_performed_operations(),
+        stats.number_of_successful_operations(),
+        stats.number_of_failed_operations(),
+        stats.collecting_time,
+        stats.sorting_time,
+        stats.executing_time);
+
 
     /* -----------input surface--------- */
 
@@ -156,6 +185,24 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
         NonmanifoldEdgeFromTag.remove_soup();
     }
 
+    /* ---------------------bounding box-------------------------*/
+    auto bbox_handle = tetmesh->register_attribute<int64_t>("bbox", PrimitiveType::Triangle, 1);
+    auto bbox_accessor = tetmesh->create_accessor<int64_t>(bbox_handle);
+
+    for (const auto& f : tetmesh->get_all(PrimitiveType::Triangle)) {
+        bbox_accessor.scalar_attribute(f) =
+            tetmesh->is_boundary(PrimitiveType::Triangle, f) ? 1 : 0;
+    }
+
+    std::shared_ptr<Mesh> bbox_mesh;
+
+    internal::MultiMeshFromTag NonmanifoldEdgeFromTag(*tetmesh, bbox_handle, 1);
+    NonmanifoldEdgeFromTag.compute_substructure_mesh();
+
+    bbox_mesh = tetmesh->get_child_meshes().back();
+    NonmanifoldEdgeFromTag.remove_soup();
+
+
     /* -----------nonmanifold vertices in input surface--------- */
 
     auto nonmanifold_vertex_handle =
@@ -243,6 +290,8 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
         logger().info("Nonmanifold edge child EdgeMehs registered");
     }
 
+    names["bbox"] = bbox_mesh->absolute_multi_mesh_id();
+    logger().info("Bbox child TriMesh registered");
 
     cache.write_mesh(*tetmesh, options.name, names);
 
