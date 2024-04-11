@@ -2,6 +2,25 @@
 #include "predicates.h"
 
 namespace wmtk::utils {
+
+void exactinit()
+{
+    // Thread-safe initialization using Meyers' singleton
+    class MySingleton
+    {
+    public:
+        static MySingleton& instance()
+        {
+            static MySingleton instance;
+            return instance;
+        }
+
+    private:
+        MySingleton() { ::exactinit(); }
+    };
+    MySingleton::instance();
+}
+
 namespace {
 bool is_rounded(const Eigen::Vector3<Rational>& p)
 {
@@ -44,11 +63,33 @@ int wmtk_orient3d(
             p2.cast<double>(),
             p3.cast<double>());
     } else {
+        Eigen::Vector3<Rational> p0r;
+        Eigen::Vector3<Rational> p1r;
+        Eigen::Vector3<Rational> p2r;
+        Eigen::Vector3<Rational> p3r;
+
+        for (int64_t i = 0; i < 3; ++i) {
+            p0r[i] = Rational(p0[i], false);
+            p1r[i] = Rational(p1[i], false);
+            p2r[i] = Rational(p2[i], false);
+            p3r[i] = Rational(p3[i], false);
+        }
+
         Eigen::Matrix3<Rational> M;
-        M.row(0) = p1 - p0;
-        M.row(1) = p2 - p0;
-        M.row(2) = p3 - p0;
+        M.row(0) = p1r - p0r;
+        M.row(1) = p2r - p0r;
+        M.row(2) = p3r - p0r;
+
+#ifndef NDEBUG
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                assert(!M(i, j).is_rounded());
+            }
+        }
+#endif
+
         const auto det = determinant(M);
+        assert(!det.is_rounded());
         return det.get_sign();
     }
 }
@@ -65,7 +106,15 @@ int wmtk_orient3d(
     Eigen::Vector3d p2nc = p2;
     Eigen::Vector3d p3nc = p3;
 
-    return orient3d(p3nc.data(), p0nc.data(), p1nc.data(), p2nc.data());
+    exactinit();
+    const auto res = orient3d(p3nc.data(), p0nc.data(), p1nc.data(), p2nc.data());
+
+    if (res > 0)
+        return 1;
+    else if (res < 0)
+        return -1;
+    else
+        return 0;
 }
 
 template <>
@@ -77,9 +126,19 @@ int wmtk_orient2d(
     if (is_rounded(p0) && is_rounded(p1) && is_rounded(p2)) {
         return wmtk_orient2d<double>(p0.cast<double>(), p1.cast<double>(), p2.cast<double>());
     } else {
+        Eigen::Vector2<Rational> p0r;
+        Eigen::Vector2<Rational> p1r;
+        Eigen::Vector2<Rational> p2r;
+
+        for (int64_t i = 0; i < 2; ++i) {
+            p0r[i] = Rational(p0[i], false);
+            p1r[i] = Rational(p1[i], false);
+            p2r[i] = Rational(p2[i], false);
+        }
+
         Eigen::Matrix2<Rational> M;
-        M.row(0) = p1 - p0;
-        M.row(1) = p2 - p0;
+        M.row(0) = p1r - p0r;
+        M.row(1) = p2r - p0r;
         const auto det = determinant(M);
         return det.get_sign();
     }
@@ -95,7 +154,15 @@ int wmtk_orient2d(
     Eigen::Vector2d p1nc = p1;
     Eigen::Vector2d p2nc = p2;
 
-    return orient2d(p0nc.data(), p1nc.data(), p2nc.data());
+    exactinit();
+    const auto res = orient2d(p0nc.data(), p1nc.data(), p2nc.data());
+
+    if (res > 0)
+        return 1;
+    else if (res < 0)
+        return -1;
+    else
+        return 0;
 }
 
 int wmtk_orient1d(const Rational& p0, const Rational& p1)

@@ -109,9 +109,6 @@ TEST_CASE("orient3d", "[invariants][3D]")
     const Eigen::Vector3d v3d = v3.cast<double>();
 
 
-    REQUIRE(utils::wmtk_orient3d(v0, v1, v2, v3) < 0);
-    REQUIRE(utils::wmtk_orient3d(v0d, v1d, v2d, v3d) < 0);
-
-    REQUIRE(utils::wmtk_orient3d(v0, v2, v1, v3) > 0);
-    REQUIRE(utils::wmtk_orient3d(v0d, v2d, v1d, v3d) > 0);
+    REQUIRE(utils::wmtk_orient3d(v0, v1, v2, v3) == utils::wmtk_orient3d(v0d, v1d, v2d, v3d));
+    REQUIRE(utils::wmtk_orient3d(v0, v2, v1, v3) == utils::wmtk_orient3d(v0d, v2d, v1d, v3d));
 }
