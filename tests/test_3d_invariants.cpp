@@ -6,6 +6,7 @@
 #include "tools/TetMesh_examples.hpp"
 
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
+#include <wmtk/utils/orient.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -93,4 +94,24 @@ TEST_CASE("tet_rational_inversion_invariant", "[invariants][3D]")
         CHECK_FALSE(inv.after({}, {m.switch_edge(m.switch_vertex(t))}));
         CHECK_FALSE(inv.after({}, {m.switch_vertex(m.switch_edge(m.switch_vertex(t)))}));
     }
+}
+
+TEST_CASE("orient3d", "[invariants][3D]")
+{
+    const Eigen::Vector3<Rational> v0 = Eigen::Vector3<Rational>(-1, -1, 0);
+    const Eigen::Vector3<Rational> v1 = Eigen::Vector3<Rational>(1, 1, 0);
+    const Eigen::Vector3<Rational> v2 = Eigen::Vector3<Rational>(1, -1, 0);
+    const Eigen::Vector3<Rational> v3 = Eigen::Vector3<Rational>(0, 0, 1);
+
+    const Eigen::Vector3d v0d = v0.cast<double>();
+    const Eigen::Vector3d v1d = v1.cast<double>();
+    const Eigen::Vector3d v2d = v2.cast<double>();
+    const Eigen::Vector3d v3d = v3.cast<double>();
+
+
+    REQUIRE(utils::wmtk_orient3d(v0, v1, v2, v3) < 0);
+    REQUIRE(utils::wmtk_orient3d(v0d, v1d, v2d, v3d) < 0);
+
+    REQUIRE(utils::wmtk_orient3d(v0, v2, v1, v3) > 0);
+    REQUIRE(utils::wmtk_orient3d(v0d, v2d, v1d, v3d) > 0);
 }

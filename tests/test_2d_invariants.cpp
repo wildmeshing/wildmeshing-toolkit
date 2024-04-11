@@ -15,6 +15,7 @@
 #include <wmtk/invariants/TetMeshSubstructureTopologyPreservingInvariant.hpp>
 #include <wmtk/invariants/TriMeshSubstructureTopologyPreservingInvariant.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
+#include <wmtk/utils/orient.hpp>
 
 using namespace wmtk;
 using namespace wmtk::simplex;
@@ -816,4 +817,22 @@ TEST_CASE("tri_rational_inversion_invariant", "[invariants][2D]")
             inv.after({}, {m.switch_vertex(m.switch_edge(m.switch_vertex(t)))}) ==
             dinv.after({}, {m.switch_vertex(m.switch_edge(m.switch_vertex(t)))}));
     }
+}
+
+TEST_CASE("orient2d", "[invariants][2D]")
+{
+    const Eigen::Vector2<Rational> v0 = Eigen::Vector2<Rational>(-1, -1);
+    const Eigen::Vector2<Rational> v1 = Eigen::Vector2<Rational>(1, 1);
+    const Eigen::Vector2<Rational> v2 = Eigen::Vector2<Rational>(1, -1);
+
+    const Eigen::Vector2d v0d = v0.cast<double>();
+    const Eigen::Vector2d v1d = v1.cast<double>();
+    const Eigen::Vector2d v2d = v2.cast<double>();
+
+
+    REQUIRE(wmtk::utils::wmtk_orient2d(v0, v1, v2) < 0);
+    REQUIRE(wmtk::utils::wmtk_orient2d(v0d, v1d, v2d) < 0);
+
+    REQUIRE(wmtk::utils::wmtk_orient2d(v0, v2, v1) > 0);
+    REQUIRE(wmtk::utils::wmtk_orient2d(v0d, v2d, v1d) > 0);
 }
