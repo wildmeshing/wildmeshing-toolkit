@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <regex>
+#include <sstream>
 
 namespace wmtk {
 void Rational::canonicalize()
@@ -335,13 +336,18 @@ std::string Rational::serialize() const
 
 Rational::Rational(const std::string& data)
 {
-    std::regex regex{R"([/]+)"}; // split on /
-    std::sregex_token_iterator it{data.begin(), data.end(), regex, -1};
-    std::vector<std::string> tokens{it, {}};
+    std::stringstream ss(data);
+    std::string item;
+    std::vector<std::string> tokens;
+    while (std::getline(ss, item, '/')) {
+        tokens.emplace_back(item);
+        if (tokens.size() == 3) break;
+    }
     assert(tokens.size() == 3);
 
     const auto num = tokens[0];
     const auto denom = tokens[1];
+    assert(tokens[2][0] == '0' || tokens[2][0] == '1');
     m_is_rounded = tokens[2][0] == '1';
 
     if (m_is_rounded) {

@@ -101,11 +101,11 @@ void HDF5Writer::write(
         tmp.emplace_back(v.serialize());
         max_size = std::max(max_size, int64_t(tmp.back().size()));
     }
-    ++max_size;
+
     Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> data(tmp.size(), max_size);
     data.setConstant(int(' '));
     for (int64_t i = 0; i < data.rows(); ++i) {
-        for (int64_t j = 0; j < data.cols(); ++j) {
+        for (int64_t j = 0; j < tmp[i].size(); ++j) {
             data(i, j) = int(tmp[i][j]);
         }
     }
