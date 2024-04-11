@@ -382,11 +382,7 @@ generate_raw_tetmesh_from_input_surface(
 
             std::array<int64_t, 4> tetra = {{v0, v1, v2, v3}};
 
-
-            Vector3r v0v1 = v_coords[v1] - v_coords[v0];
-            Vector3r v0v2 = v_coords[v2] - v_coords[v0];
-            Vector3r v0v3 = v_coords[v3] - v_coords[v0];
-            if ((v0v1.cross(v0v2)).dot(v0v3).get_sign() > 0) {
+            if (wmtk_orient3d(v_coords[v0], v_coords[v1], v_coords[v2], v_coords[v3]) < 0) {
                 tetra = {{v1, v0, v2, v3}};
             }
 
@@ -450,10 +446,11 @@ generate_raw_tetmesh_from_input_surface(
                      triangulated_faces[t][2],
                      centroid_idx}};
 
-                Vector3r v0v1 = v_coords[tetra[1]] - v_coords[tetra[0]];
-                Vector3r v0v2 = v_coords[tetra[2]] - v_coords[tetra[0]];
-                Vector3r v0v3 = v_coords[tetra[3]] - v_coords[tetra[0]];
-                if ((v0v1.cross(v0v2)).dot(v0v3).get_sign() > 0) {
+                if (wmtk_orient3d(
+                        v_coords[tetra[0]],
+                        v_coords[tetra[1]],
+                        v_coords[tetra[2]],
+                        v_coords[tetra[3]]) < 0) {
                     tetra = {
                         {triangulated_faces[t][1],
                          triangulated_faces[t][0],
