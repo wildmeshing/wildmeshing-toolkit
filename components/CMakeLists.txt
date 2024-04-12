@@ -58,6 +58,7 @@ add_component(${WMTK_COMPONENT_PREFIX} "procedural")
 add_component(${WMTK_COMPONENT_PREFIX} "fusion")
 add_component(${WMTK_COMPONENT_PREFIX} "triangle_insertion")
 add_component(${WMTK_COMPONENT_PREFIX} "to_points")
+add_component(${WMTK_COMPONENT_PREFIX} "extract")
 
 string(LENGTH ${json_components} json_components_length)
 math(EXPR json_components_length "${json_components_length}-2")
