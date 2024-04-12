@@ -60,6 +60,23 @@ Rational::Rational(const Rational& other)
         mpq_set(value, other.value);
     }
 }
+Rational::Rational(const Rational& other, bool rounded)
+    : d_value(other.d_value)
+    , m_is_rounded(rounded)
+{
+    if (!m_is_rounded) {
+        mpq_init(value);
+
+        if (other.m_is_rounded)
+            mpq_set_d(value, other.d_value);
+        else
+            mpq_set(value, other.value);
+
+        d_value = std::numeric_limits<double>::lowest();
+    } else {
+        d_value = other.to_double();
+    }
+}
 
 Rational::~Rational()
 {
@@ -196,16 +213,16 @@ Rational& Rational::operator=(const Rational& x)
 {
     if (this == &x) return *this;
 
-    if (m_is_rounded && x.m_is_rounded)
-        d_value = x.d_value;
-    else if (!m_is_rounded && x.m_is_rounded)
-        mpq_set_d(value, x.d_value);
-    else if (m_is_rounded && !x.m_is_rounded) {
-        m_is_rounded = false;
+    if (!m_is_rounded) mpq_clear(value);
+
+    m_is_rounded = x.m_is_rounded;
+    d_value = x.d_value;
+
+    if (!x.m_is_rounded) { //&& !m_is_rounded
         mpq_init(value);
         mpq_set(value, x.value);
-    } else
-        mpq_set(value, x.value);
+    }
+
     return *this;
 }
 

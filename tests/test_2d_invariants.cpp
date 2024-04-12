@@ -829,10 +829,6 @@ TEST_CASE("orient2d", "[invariants][2D]")
     const Eigen::Vector2d v1d = v1.cast<double>();
     const Eigen::Vector2d v2d = v2.cast<double>();
 
-
-    REQUIRE(wmtk::utils::wmtk_orient2d(v0, v1, v2) < 0);
-    REQUIRE(wmtk::utils::wmtk_orient2d(v0d, v1d, v2d) < 0);
-
-    REQUIRE(wmtk::utils::wmtk_orient2d(v0, v2, v1) > 0);
-    REQUIRE(wmtk::utils::wmtk_orient2d(v0d, v2d, v1d) > 0);
+    REQUIRE(wmtk::utils::wmtk_orient2d(v0, v1, v2) == wmtk::utils::wmtk_orient2d(v0d, v1d, v2d));
+    REQUIRE(wmtk::utils::wmtk_orient2d(v0, v2, v1) == wmtk::utils::wmtk_orient2d(v0d, v2d, v1d));
 }

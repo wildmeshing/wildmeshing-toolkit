@@ -2,13 +2,36 @@
 
 #include <polysolve/nonlinear/Problem.hpp>
 #include <wmtk/Mesh.hpp>
+#include <wmtk/Types.hpp>
 #include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <polysolve/nonlinear/Solver.hpp>
 
+#include <Eigen/Core>
+
 namespace wmtk::operations {
 
+namespace {
+template <typename T>
+const Eigen::Matrix<T, -1, 1> convert(const polysolve::nonlinear::Problem::TVector& v)
+{
+    return v;
+}
+
+template <>
+const Eigen::Matrix<Rational, -1, 1> convert(const polysolve::nonlinear::Problem::TVector& v)
+{
+    Eigen::Matrix<Rational, -1, 1> res(v.size());
+    for (int64_t d = 0; d < v.size(); ++d) {
+        res[d] = Rational(v[d], true);
+    }
+    return res;
+}
+} // namespace
+
+
+template <typename T>
 class OptimizationSmoothing::WMTKProblem : public polysolve::nonlinear::Problem
 {
 public:
@@ -17,7 +40,7 @@ public:
     using typename polysolve::nonlinear::Problem::TVector;
 
     WMTKProblem(
-        attribute::Accessor<double>&& handle,
+        attribute::Accessor<T>&& handle,
         const simplex::Simplex& simplex,
         invariants::InvariantCollection& invariants,
         const wmtk::function::Function& energy);
@@ -37,15 +60,16 @@ public:
     bool is_step_valid(const TVector& x0, const TVector& x1) override;
 
 private:
-    attribute::Accessor<double> m_accessor;
+    attribute::Accessor<T> m_accessor;
     const simplex::Simplex& m_simplex;
     const wmtk::function::Function& m_energy;
 
     invariants::InvariantCollection& m_invariants;
 };
 
-OptimizationSmoothing::WMTKProblem::WMTKProblem(
-    attribute::Accessor<double>&& accessor,
+template <typename T>
+OptimizationSmoothing::WMTKProblem<T>::WMTKProblem(
+    attribute::Accessor<T>&& accessor,
     const simplex::Simplex& simplex,
     invariants::InvariantCollection& invariants,
     const wmtk::function::Function& energy)
@@ -55,16 +79,26 @@ OptimizationSmoothing::WMTKProblem::WMTKProblem(
     , m_invariants(invariants)
 {}
 
-OptimizationSmoothing::WMTKProblem::TVector OptimizationSmoothing::WMTKProblem::initial_value()
-    const
+template <typename T>
+Eigen::Matrix<double, -1, 1> OptimizationSmoothing::WMTKProblem<T>::initial_value() const
 {
-    return m_accessor.const_vector_attribute(m_simplex.tuple());
+    if constexpr (std::is_same_v<T, Rational>) {
+        const Eigen::Matrix<T, -1, 1> tmp = m_accessor.const_vector_attribute(m_simplex.tuple());
+        Eigen::Matrix<double, -1, 1> tmp1(tmp.size());
+        for (int64_t d = 0; d < tmp1.size(); ++d) {
+            tmp1[d] = tmp[d].to_double();
+        }
+        return tmp1;
+    } else {
+        return m_accessor.const_vector_attribute(m_simplex.tuple());
+    }
 }
 
-double OptimizationSmoothing::WMTKProblem::value(const TVector& x)
+template <typename T>
+double OptimizationSmoothing::WMTKProblem<T>::value(const TVector& x)
 {
-    TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
-    m_accessor.vector_attribute(m_simplex.tuple()) = x;
+    auto tmp = m_accessor.vector_attribute(m_simplex.tuple());
+    m_accessor.vector_attribute(m_simplex.tuple()) = convert<T>(x);
     double res = m_energy.get_value(m_simplex);
 
     m_accessor.vector_attribute(m_simplex.tuple()) = tmp;
@@ -72,34 +106,37 @@ double OptimizationSmoothing::WMTKProblem::value(const TVector& x)
     return res;
 }
 
-void OptimizationSmoothing::WMTKProblem::gradient(const TVector& x, TVector& gradv)
+template <typename T>
+void OptimizationSmoothing::WMTKProblem<T>::gradient(const TVector& x, TVector& gradv)
 {
-    TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
-    m_accessor.vector_attribute(m_simplex.tuple()) = x;
+    auto tmp = m_accessor.vector_attribute(m_simplex.tuple());
+    m_accessor.vector_attribute(m_simplex.tuple()) = convert<T>(x);
     gradv = m_energy.get_gradient(m_simplex);
 
     m_accessor.vector_attribute(m_simplex.tuple()) = tmp;
 }
 
-void OptimizationSmoothing::WMTKProblem::hessian(const TVector& x, Eigen::MatrixXd& hessian)
+template <typename T>
+void OptimizationSmoothing::WMTKProblem<T>::hessian(const TVector& x, Eigen::MatrixXd& hessian)
 {
-    TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
-    m_accessor.vector_attribute(m_simplex.tuple()) = x;
+    auto tmp = m_accessor.vector_attribute(m_simplex.tuple());
+    m_accessor.vector_attribute(m_simplex.tuple()) = convert<T>(x);
     hessian = m_energy.get_hessian(m_simplex);
 
     m_accessor.vector_attribute(m_simplex.tuple()) = tmp;
 }
 
-void OptimizationSmoothing::WMTKProblem::solution_changed(const TVector& new_x)
+template <typename T>
+void OptimizationSmoothing::WMTKProblem<T>::solution_changed(const TVector& new_x)
 {
     // m_accessor.vector_attribute(m_simplex.tuple()) = new_x;
 }
 
-
-bool OptimizationSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const TVector& x1)
+template <typename T>
+bool OptimizationSmoothing::WMTKProblem<T>::is_step_valid(const TVector& x0, const TVector& x1)
 {
-    TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
-    m_accessor.vector_attribute(m_simplex.tuple()) = x1;
+    auto tmp = m_accessor.vector_attribute(m_simplex.tuple());
+    m_accessor.vector_attribute(m_simplex.tuple()) = convert<T>(x1);
 
     auto domain = m_energy.domain(m_simplex);
     std::vector<Tuple> dom_tmp;
@@ -140,21 +177,41 @@ void OptimizationSmoothing::create_solver()
 
 std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simplex& simplex)
 {
-    auto accessor = mesh().create_accessor(m_energy->attribute_handle().as<double>());
-    WMTKProblem problem(std::move(accessor), simplex, m_invariants, *m_energy);
+    if (m_energy->attribute_handle().holds<double>()) {
+        auto accessor = mesh().create_accessor(m_energy->attribute_handle().as<double>());
+        WMTKProblem problem(std::move(accessor), simplex, m_invariants, *m_energy);
 
-    auto x = problem.initial_value();
-    try {
-        m_solver->minimize(problem, x);
+        auto x = problem.initial_value();
+        try {
+            m_solver->minimize(problem, x);
 
-        accessor.vector_attribute(simplex.tuple()) = x;
+            accessor.vector_attribute(simplex.tuple()) = x;
 
-    } catch (const std::exception&) {
-        return {};
+        } catch (const std::exception&) {
+            return {};
+        }
+
+
+        return AttributesUpdate::execute(simplex);
+    } else {
+        assert(m_energy->attribute_handle().holds<Rational>());
+        auto accessor = mesh().create_accessor(m_energy->attribute_handle().as<Rational>());
+        WMTKProblem problem(std::move(accessor), simplex, m_invariants, *m_energy);
+
+        auto x = problem.initial_value();
+        try {
+            m_solver->minimize(problem, x);
+
+            for (int64_t d = 0; d < m_energy->attribute_handle().dimension(); ++d) {
+                accessor.vector_attribute(simplex.tuple())[d] = Rational(x[d], true);
+            }
+        } catch (const std::exception&) {
+            return {};
+        }
+
+
+        return AttributesUpdate::execute(simplex);
     }
-
-
-    return AttributesUpdate::execute(simplex);
 }
 
 } // namespace wmtk::operations
