@@ -100,15 +100,31 @@ std::vector<simplex::Simplex> ProjectOperation::execute(const simplex::Simplex& 
 
         if (mapped_tuples_after.empty()) continue;
 
-        wmtk::attribute::Accessor<double> accessor =
-            pair.first.mesh().create_accessor(pair.first.as<double>());
+        if (pair.first.holds<double>()) {
+            wmtk::attribute::Accessor<double> accessor =
+                pair.first.mesh().create_accessor(pair.first.as<double>());
 
-        for (const auto& t : mapped_tuples_after) {
-            auto p = accessor.const_vector_attribute(t);
-            SimpleBVH::VectorMax3d nearest_point;
-            double sq_dist;
-            pair.second->nearest_facet(p, nearest_point, sq_dist);
-            accessor.vector_attribute(t) = nearest_point;
+            for (const auto& t : mapped_tuples_after) {
+                const auto p = accessor.const_vector_attribute(t);
+                SimpleBVH::VectorMax3d nearest_point;
+                double sq_dist;
+                pair.second->nearest_facet(p, nearest_point, sq_dist);
+                accessor.vector_attribute(t) = nearest_point;
+            }
+        } else {
+            assert((pair.first.holds<Rational>()));
+            wmtk::attribute::Accessor<Rational> accessor =
+                pair.first.mesh().create_accessor(pair.first.as<Rational>());
+
+            for (const auto& t : mapped_tuples_after) {
+                const Eigen::Vector3d p = accessor.const_vector_attribute(t).cast<double>();
+                SimpleBVH::VectorMax3d nearest_point;
+                double sq_dist;
+                pair.second->nearest_facet(p, nearest_point, sq_dist);
+                for (int64_t d = 0; d < pair.first.dimension(); ++d) {
+                    accessor.vector_attribute(t)[d] = Rational(nearest_point[d], true);
+                }
+            }
         }
     }
 
