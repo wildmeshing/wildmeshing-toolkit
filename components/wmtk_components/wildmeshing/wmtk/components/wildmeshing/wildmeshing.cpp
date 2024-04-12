@@ -15,6 +15,7 @@
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 
+#include <wmtk/operations/AMIPSOptimizationSmoothing.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
@@ -614,9 +615,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     }
 
     // 4) Smoothing
-    auto energy =
-        std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
-    auto smoothing = std::make_shared<OptimizationSmoothing>(energy);
+    // auto energy =
+    //     std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
+    // auto smoothing = std::make_shared<OptimizationSmoothing>(energy);
+    auto smoothing = std::make_shared<AMIPSOptimizationSmoothing>(*mesh, pt_attribute);
     smoothing->add_invariant(
         std::make_shared<RoundedInvariant>(*mesh, pt_attribute.as<Rational>()));
     smoothing->add_invariant(inversion_invariant);

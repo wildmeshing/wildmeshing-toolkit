@@ -1,4 +1,7 @@
 set(SRC_FILES
+    AMIPSOptimizationSmoothing.hpp
+    AMIPSOptimizationSmoothing.cpp
+
     AttributesUpdate.hpp
     AttributesUpdate.cpp
 
