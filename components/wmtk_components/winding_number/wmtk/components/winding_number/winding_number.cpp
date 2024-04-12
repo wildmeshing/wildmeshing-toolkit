@@ -7,6 +7,8 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
+#include <wmtk/utils/Rational.hpp>
+
 #include "internal/WindingNumberOptions.hpp"
 #include "internal/winding_number.hpp"
 
@@ -31,10 +33,18 @@ void winding_number(const base::Paths& paths, const nlohmann::json& j, io::Cache
     // get the matrix
     wmtk::utils::EigenMatrixWriter writer;
     mesh->serialize(writer);
+    Eigen::MatrixX<Rational> mesh_pos_rational;
     Eigen::MatrixXd mesh_pos;
     MatrixX<int64_t> mesh_FV;
 
-    writer.get_position_matrix(mesh_pos);
+    writer.get_position_matrix(mesh_pos_rational);
+    mesh_pos.resize(mesh_pos_rational.rows(), mesh_pos_rational.cols());
+    // for (int64_t i = 0; i < mesh_pos_rational.rows(); ++i) {
+    //     for (int64_t j = 0; j < mesh_pos_rational.cols(); ++j) {
+    //         mesh_pos(i, j) = mesh_pos_rational(i, j).to_double();
+    //     }
+    // }
+    mesh_pos = mesh_pos_rational.cast<double>();
 
     switch (mesh->top_simplex_type()) {
     case (PrimitiveType::Tetrahedron): {

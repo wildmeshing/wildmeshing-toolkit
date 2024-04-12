@@ -7,6 +7,7 @@
 #include <igl/bfs_orient.h>
 #include <igl/fast_winding_number.h>
 #include <igl/winding_number.h>
+#include <wmtk/utils/Rational.hpp>
 
 namespace wmtk::components::internal {
 
@@ -16,12 +17,22 @@ Eigen::VectorXd winding_number(const Mesh& m, const TriMesh& surface)
     m.serialize(m_writer);
     surface.serialize(surface_writer);
 
+    Eigen::MatrixX<Rational> m_pos_rational, surface_pos_rational;
     Eigen::MatrixXd m_pos, surface_pos;
     MatrixX<int64_t> m_FV, surface_FV;
 
-    m_writer.get_position_matrix(m_pos);
-    assert(m_pos.cols() == 3);
-    surface_writer.get_position_matrix(surface_pos);
+    m_writer.get_position_matrix(m_pos_rational);
+    assert(m_pos_rational.cols() == 3);
+    m_pos.resize(m_pos_rational.rows(), m_pos_rational.cols());
+    // for (int64_t i = 0; i < m_pos_rational.rows(); ++i) {
+    //     for (int64_t j = 0; j < m_pos_rational.cols(); ++j) {
+    //         m_pos(i, j) = m_pos_rational(i, j).to_double();
+    //     }
+    // }
+    m_pos = m_pos_rational.cast<double>();
+    surface_writer.get_position_matrix(surface_pos_rational);
+    surface_pos.resize(surface_pos_rational.rows(), surface_pos_rational.cols());
+    surface_pos = surface_pos_rational.cast<double>();
 
     switch (m.top_simplex_type()) {
     case (PrimitiveType::Tetrahedron): {
