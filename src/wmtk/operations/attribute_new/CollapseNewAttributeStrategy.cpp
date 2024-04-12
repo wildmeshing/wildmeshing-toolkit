@@ -55,6 +55,50 @@ CollapseNewAttributeStrategy<T>::standard_collapse_strategy(CollapseBasicStrateg
     return {};
 }
 
+template <>
+typename CollapseNewAttributeStrategy<Rational>::CollapseFuncType
+CollapseNewAttributeStrategy<Rational>::standard_collapse_strategy(CollapseBasicStrategy optype)
+{
+    switch (optype) {
+    default: [[fallthrough]];
+    case CollapseBasicStrategy::Default:
+        return standard_collapse_strategy(CollapseBasicStrategy::Mean);
+    case CollapseBasicStrategy::CopyTuple:
+        return [](const VecType& a, const VecType& b, const std::bitset<2>& bs) -> VecType {
+            if (!bs[1] && bs[0]) {
+                return b;
+            } else {
+                return a;
+            }
+        };
+    case CollapseBasicStrategy::CopyOther:
+        return [](const VecType& a, const VecType& b, const std::bitset<2>& bs) -> VecType {
+            if (!bs[0] && bs[1]) {
+                return a;
+            } else {
+                return b;
+            }
+        };
+    case CollapseBasicStrategy::Mean:
+        return [](const VecType& a, const VecType& b, const std::bitset<2>& bs) -> VecType {
+            if (bs[0] == bs[1]) {
+                return (a + b) / Rational(2, true);
+            } else if (bs[0]) {
+                return a;
+
+            } else {
+                return b;
+            }
+        };
+    case CollapseBasicStrategy::Throw:
+        return [](const VecType&, const VecType&, const std::bitset<2>&) -> VecType {
+            throw std::runtime_error("Collapse should have a new attribute");
+        };
+    case CollapseBasicStrategy::None: return {};
+    }
+    return {};
+}
+
 
 template <typename T>
 CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
