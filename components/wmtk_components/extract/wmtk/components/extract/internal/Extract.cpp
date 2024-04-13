@@ -7,7 +7,11 @@
 #include <wmtk/utils/mesh_utils.hpp>
 
 namespace wmtk::components::internal {
-void extract_triangle_soup_from_image(std::string output_path, std::string filename, double delta_x)
+void extract_triangle_soup_from_image(
+    std::string output_path,
+    std::string filename,
+    double delta_x,
+    unsigned int max_level)
 {
     std::vector<std::vector<std::vector<unsigned int>>> data;
     read_array_data(data, filename);
@@ -53,13 +57,13 @@ void extract_triangle_soup_from_image(std::string output_path, std::string filen
                 unsigned int right_data = data[i][j][k + 1];
                 unsigned int ahead_data = data[i][j + 1][k];
                 unsigned int top_data = data[i + 1][j][k];
-                Eigen::RowVector3d v0(i * delta_x, (j + 1) * delta_x, k * delta_x);
-                Eigen::RowVector3d v1(i * delta_x, (j + 1) * delta_x, (k + 1) * delta_x);
-                Eigen::RowVector3d v2(i * delta_x, j * delta_x, (k + 1) * delta_x);
-                Eigen::RowVector3d v3((i + 1) * delta_x, (j + 1) * delta_x, k * delta_x);
-                Eigen::RowVector3d v4((i + 1) * delta_x, (j + 1) * delta_x, (k + 1) * delta_x);
-                Eigen::RowVector3d v5((i + 1) * delta_x, j * delta_x, (k + 1) * delta_x);
-                Eigen::RowVector3d v6((i + 1) * delta_x, j * delta_x, k * delta_x);
+                Eigen::RowVector3d v0(i, (j + 1), k);
+                Eigen::RowVector3d v1(i, (j + 1), (k + 1));
+                Eigen::RowVector3d v2(i, j, (k + 1));
+                Eigen::RowVector3d v3((i + 1), (j + 1), k);
+                Eigen::RowVector3d v4((i + 1), (j + 1), (k + 1));
+                Eigen::RowVector3d v5((i + 1), j, (k + 1));
+                Eigen::RowVector3d v6((i + 1), j, k);
 
                 if (cur_data > right_data) {
                     unsigned int vid0, vid1, vid2, vid3, vid4, vid5, fid0, fid1;
@@ -191,6 +195,9 @@ void extract_triangle_soup_from_image(std::string output_path, std::string filen
         }
     }
 
+    octree_add_points(V, max_level);
+
+    V = V * delta_x;
     igl::writeOFF(output_path, V, F);
     // igl::writeOBJ(output_path, V, F);
 }
@@ -226,22 +233,39 @@ void read_array_data(
     }
 }
 
-void octree_add_points(const Eigen::MatrixXd& V, unsigned int max_level)
+void octree_add_points(Eigen::MatrixXd& V, unsigned int max_level)
 {
     Eigen::VectorXd min_vals = V.colwise().minCoeff();
     Eigen::VectorXd max_vals = V.colwise().maxCoeff();
     std::map<Eigen::Vector3d, bool, VectorComparer> record;
     std::vector<Eigen::Vector3d> sub_points;
+
+    for (unsigned int i = 0; i < V.rows(); i++) {
+        sub_points.push_back(V.row(i));
+    }
+
     octree_add_points(
         record,
         sub_points,
-        20,
-        min_vals.x() - 0.5,
-        min_vals.y() - 0.5,
-        min_vals.z() - 0.5,
+        max_level,
+        min_vals.x() - 0.4,
+        min_vals.y() - 0.4,
+        min_vals.z() - 0.4,
         max_vals.x() + 0.5,
         max_vals.y() + 0.5,
         max_vals.z() + 0.5);
+
+    Eigen::MatrixXd append_V(record.size(), 3);
+    record.size();
+    unsigned int itr = 0;
+    for (auto it = record.begin(); it != record.end(); ++it) {
+        const Eigen::Vector3d& key = it->first;
+        append_V.row(itr) = key;
+        itr++;
+    }
+    Eigen::MatrixXd tempV = V;
+    V.resize(tempV.rows() + append_V.rows(), 3);
+    V << tempV, append_V;
 }
 
 void octree_add_points(
@@ -268,33 +292,33 @@ void octree_add_points(
 
     // add 7 points
     Eigen::Vector3d p0(mid_x, mid_y, mid_z);
-    Eigen::Vector3d p1(mid_x, mid_y, min_z);
-    Eigen::Vector3d p2(min_x, mid_y, mid_z);
-    Eigen::Vector3d p3(max_x, mid_y, mid_z);
-    Eigen::Vector3d p4(mid_x, mid_y, max_z);
-    Eigen::Vector3d p5(mid_x, max_y, mid_z);
-    Eigen::Vector3d p6(mid_x, min_y, mid_z);
+    // Eigen::Vector3d p1(mid_x, mid_y, min_z);
+    // Eigen::Vector3d p2(min_x, mid_y, mid_z);
+    // Eigen::Vector3d p3(max_x, mid_y, mid_z);
+    // Eigen::Vector3d p4(mid_x, mid_y, max_z);
+    // Eigen::Vector3d p5(mid_x, max_y, mid_z);
+    // Eigen::Vector3d p6(mid_x, min_y, mid_z);
     if (!is_int(mid_x) && !is_int(mid_y) && !is_int(mid_z)) {
         record[p0] = true;
     }
-    if (!is_int(mid_x) && !is_int(mid_y) && !is_int(min_z)) {
-        record[p1] = true;
-    }
-    if (!is_int(min_x) && !is_int(mid_y) && !is_int(mid_z)) {
-        record[p2] = true;
-    }
-    if (!is_int(max_x) && !is_int(mid_y) && !is_int(mid_z)) {
-        record[p3] = true;
-    }
-    if (!is_int(mid_x) && !is_int(mid_y) && !is_int(max_z)) {
-        record[p4] = true;
-    }
-    if (!is_int(mid_x) && !is_int(max_y) && !is_int(mid_z)) {
-        record[p5] = true;
-    }
-    if (!is_int(mid_x) && !is_int(min_y) && !is_int(mid_z)) {
-        record[p6] = true;
-    }
+    // if (!is_int(mid_x) && !is_int(mid_y) && !is_int(min_z)) {
+    //     record[p1] = true;
+    // }
+    // if (!is_int(min_x) && !is_int(mid_y) && !is_int(mid_z)) {
+    //     record[p2] = true;
+    // }
+    // if (!is_int(max_x) && !is_int(mid_y) && !is_int(mid_z)) {
+    //     record[p3] = true;
+    // }
+    // if (!is_int(mid_x) && !is_int(mid_y) && !is_int(max_z)) {
+    //     record[p4] = true;
+    // }
+    // if (!is_int(mid_x) && !is_int(max_y) && !is_int(mid_z)) {
+    //     record[p5] = true;
+    // }
+    // if (!is_int(mid_x) && !is_int(min_y) && !is_int(mid_z)) {
+    //     record[p6] = true;
+    // }
 
 
     // divide more sub-domains
@@ -306,7 +330,7 @@ void octree_add_points(
     std::vector<Eigen::Vector3d> sub_points5;
     std::vector<Eigen::Vector3d> sub_points6;
     std::vector<Eigen::Vector3d> sub_points7;
-    for (const Eigen::Vector3d p : sub_points) {
+    for (const Eigen::Vector3d& p : sub_points) {
         if (p.x() < mid_x && p.y() < mid_y && p.z() < mid_z) {
             sub_points0.push_back(p);
         } else if (p.x() > mid_x && p.y() < mid_y && p.z() < mid_z) {

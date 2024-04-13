@@ -9,7 +9,8 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 TEST_CASE("surface", "[.]")
 {
     wmtk::components::internal::extract_triangle_soup_from_image(
-        data_dir / "../mydata/kinder.off",
-        data_dir / "../mydata/kinder.raw",
-        0.001);
+        data_dir / "../mydata/head5.off",
+        data_dir / "../mydata/head_data.raw",
+        1,
+        5);
 }

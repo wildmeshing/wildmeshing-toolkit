@@ -20,11 +20,12 @@ struct VectorComparer
 void extract_triangle_soup_from_image(
     std::string output_path,
     std::string filename,
-    double delta_x);
+    double delta_x,
+    unsigned int max_level);
 void read_array_data(
     std::vector<std::vector<std::vector<unsigned int>>>& data,
     const std::string& filename);
-void octree_add_points(const Eigen::MatrixXd& V, unsigned int max_level);
+void octree_add_points(Eigen::MatrixXd& V, unsigned int max_level);
 void octree_add_points(
     std::map<Eigen::Vector3d, bool, VectorComparer>& record,
     const std::vector<Eigen::Vector3d>& sub_points,
