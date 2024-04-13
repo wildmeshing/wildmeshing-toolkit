@@ -7,7 +7,7 @@
 #include <wmtk/utils/mesh_utils.hpp>
 
 namespace wmtk::components::internal {
-void extract_triangle_soup_from_image(std::string output_path, std::string filename)
+void extract_triangle_soup_from_image(std::string output_path, std::string filename, double delta_x)
 {
     std::vector<std::vector<std::vector<unsigned int>>> data;
     read_array_data(data, filename);
@@ -53,13 +53,13 @@ void extract_triangle_soup_from_image(std::string output_path, std::string filen
                 unsigned int right_data = data[i][j][k + 1];
                 unsigned int ahead_data = data[i][j + 1][k];
                 unsigned int top_data = data[i + 1][j][k];
-                Eigen::RowVector3d v0(i, j + 1, k);
-                Eigen::RowVector3d v1(i, j + 1, k + 1);
-                Eigen::RowVector3d v2(i, j, k + 1);
-                Eigen::RowVector3d v3(i + 1, j + 1, k);
-                Eigen::RowVector3d v4(i + 1, j + 1, k + 1);
-                Eigen::RowVector3d v5(i + 1, j, k + 1);
-                Eigen::RowVector3d v6(i + 1, j, k);
+                Eigen::RowVector3d v0(i * delta_x, (j + 1) * delta_x, k * delta_x);
+                Eigen::RowVector3d v1(i * delta_x, (j + 1) * delta_x, (k + 1) * delta_x);
+                Eigen::RowVector3d v2(i * delta_x, j * delta_x, (k + 1) * delta_x);
+                Eigen::RowVector3d v3((i + 1) * delta_x, (j + 1) * delta_x, k * delta_x);
+                Eigen::RowVector3d v4((i + 1) * delta_x, (j + 1) * delta_x, (k + 1) * delta_x);
+                Eigen::RowVector3d v5((i + 1) * delta_x, j * delta_x, (k + 1) * delta_x);
+                Eigen::RowVector3d v6((i + 1) * delta_x, j * delta_x, k * delta_x);
 
                 if (cur_data > right_data) {
                     unsigned int vid0, vid1, vid2, vid3, vid4, vid5, fid0, fid1;
@@ -206,18 +206,15 @@ void read_array_data(
         return;
     }
 
-    // 读取三个维度的大小
     int dim1, dim2, dim3;
     file.read(reinterpret_cast<char*>(&dim1), sizeof(int));
     file.read(reinterpret_cast<char*>(&dim2), sizeof(int));
     file.read(reinterpret_cast<char*>(&dim3), sizeof(int));
 
-    // 调整data的大小
     data.resize(
         dim1,
         std::vector<std::vector<unsigned int>>(dim2, std::vector<unsigned int>(dim3)));
 
-    // 读取数组数据
     for (int i = 0; i < dim1; ++i) {
         for (int j = 0; j < dim2; ++j) {
             for (int k = 0; k < dim3; ++k) {
@@ -227,6 +224,137 @@ void read_array_data(
             }
         }
     }
+}
+
+void octree_add_points(const Eigen::MatrixXd& V, unsigned int max_level)
+{
+    Eigen::VectorXd min_vals = V.colwise().minCoeff();
+    Eigen::VectorXd max_vals = V.colwise().maxCoeff();
+    std::map<Eigen::Vector3d, bool, VectorComparer> record;
+    std::vector<Eigen::Vector3d> sub_points;
+    octree_add_points(
+        record,
+        sub_points,
+        20,
+        min_vals.x() - 0.5,
+        min_vals.y() - 0.5,
+        min_vals.z() - 0.5,
+        max_vals.x() + 0.5,
+        max_vals.y() + 0.5,
+        max_vals.z() + 0.5);
+}
+
+void octree_add_points(
+    std::map<Eigen::Vector3d, bool, VectorComparer>& record,
+    const std::vector<Eigen::Vector3d>& sub_points,
+    unsigned int itr,
+    double min_x,
+    double min_y,
+    double min_z,
+    double max_x,
+    double max_y,
+    double max_z)
+{
+    if (itr == 0) {
+        return;
+    }
+    if (sub_points.empty()) {
+        return;
+    }
+
+    double mid_x = 0.5 * (min_x + max_x);
+    double mid_y = 0.5 * (min_y + max_y);
+    double mid_z = 0.5 * (min_z + max_z);
+
+    // add 7 points
+    Eigen::Vector3d p0(mid_x, mid_y, mid_z);
+    Eigen::Vector3d p1(mid_x, mid_y, min_z);
+    Eigen::Vector3d p2(min_x, mid_y, mid_z);
+    Eigen::Vector3d p3(max_x, mid_y, mid_z);
+    Eigen::Vector3d p4(mid_x, mid_y, max_z);
+    Eigen::Vector3d p5(mid_x, max_y, mid_z);
+    Eigen::Vector3d p6(mid_x, min_y, mid_z);
+    if (!is_int(mid_x) && !is_int(mid_y) && !is_int(mid_z)) {
+        record[p0] = true;
+    }
+    if (!is_int(mid_x) && !is_int(mid_y) && !is_int(min_z)) {
+        record[p1] = true;
+    }
+    if (!is_int(min_x) && !is_int(mid_y) && !is_int(mid_z)) {
+        record[p2] = true;
+    }
+    if (!is_int(max_x) && !is_int(mid_y) && !is_int(mid_z)) {
+        record[p3] = true;
+    }
+    if (!is_int(mid_x) && !is_int(mid_y) && !is_int(max_z)) {
+        record[p4] = true;
+    }
+    if (!is_int(mid_x) && !is_int(max_y) && !is_int(mid_z)) {
+        record[p5] = true;
+    }
+    if (!is_int(mid_x) && !is_int(min_y) && !is_int(mid_z)) {
+        record[p6] = true;
+    }
+
+
+    // divide more sub-domains
+    std::vector<Eigen::Vector3d> sub_points0;
+    std::vector<Eigen::Vector3d> sub_points1;
+    std::vector<Eigen::Vector3d> sub_points2;
+    std::vector<Eigen::Vector3d> sub_points3;
+    std::vector<Eigen::Vector3d> sub_points4;
+    std::vector<Eigen::Vector3d> sub_points5;
+    std::vector<Eigen::Vector3d> sub_points6;
+    std::vector<Eigen::Vector3d> sub_points7;
+    for (const Eigen::Vector3d p : sub_points) {
+        if (p.x() < mid_x && p.y() < mid_y && p.z() < mid_z) {
+            sub_points0.push_back(p);
+        } else if (p.x() > mid_x && p.y() < mid_y && p.z() < mid_z) {
+            sub_points1.push_back(p);
+        } else if (p.x() < mid_x && p.y() < mid_y && p.z() > mid_z) {
+            sub_points2.push_back(p);
+        } else if (p.x() > mid_x && p.y() < mid_y && p.z() > mid_z) {
+            sub_points3.push_back(p);
+        } else if (p.x() < mid_x && p.y() > mid_y && p.z() < mid_z) {
+            sub_points4.push_back(p);
+        } else if (p.x() > mid_x && p.y() > mid_y && p.z() < mid_z) {
+            sub_points5.push_back(p);
+        } else if (p.x() < mid_x && p.y() > mid_y && p.z() > mid_z) {
+            sub_points6.push_back(p);
+        } else if (p.x() > mid_x && p.y() > mid_y && p.z() > mid_z) {
+            sub_points7.push_back(p);
+        }
+    }
+
+    // recursively adding points
+    octree_add_points(record, sub_points0, itr - 1, min_x, min_y, min_z, mid_x, mid_y, mid_z);
+
+
+    octree_add_points(record, sub_points1, itr - 1, mid_x, min_y, min_z, max_x, mid_y, mid_z);
+
+
+    octree_add_points(record, sub_points2, itr - 1, min_x, mid_y, min_z, mid_x, max_y, mid_z);
+
+
+    octree_add_points(record, sub_points3, itr - 1, mid_x, mid_y, min_z, max_x, max_y, mid_z);
+
+
+    octree_add_points(record, sub_points4, itr - 1, min_x, min_y, mid_z, mid_x, mid_y, max_z);
+
+
+    octree_add_points(record, sub_points5, itr - 1, mid_x, min_y, mid_z, max_x, mid_y, max_z);
+
+
+    octree_add_points(record, sub_points6, itr - 1, min_x, mid_y, mid_z, mid_x, max_y, max_z);
+
+
+    octree_add_points(record, sub_points7, itr - 1, mid_x, mid_y, mid_z, max_x, max_y, max_z);
+}
+
+
+bool is_int(double v)
+{
+    return floor(v) == ceil(v);
 }
 
 } // namespace wmtk::components::internal
