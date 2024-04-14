@@ -22,10 +22,13 @@ void extract_triangle_soup_from_image(
     std::string filename,
     double delta_x,
     unsigned int max_level);
+
 void read_array_data(
     std::vector<std::vector<std::vector<unsigned int>>>& data,
     const std::string& filename);
+
 void octree_add_points(Eigen::MatrixXd& V, unsigned int max_level);
+
 void octree_add_points(
     std::map<Eigen::Vector3d, bool, VectorComparer>& record,
     const std::vector<Eigen::Vector3d>& sub_points,
@@ -38,4 +41,11 @@ void octree_add_points(
     double max_z);
 
 bool is_int(double v);
+
+void readGmsh(
+    const std::string& filename,
+    std::vector<Eigen::Vector3d>& vertices,
+    std::vector<Eigen::Vector4<unsigned int>>& tetrahedra);
+
+void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::string output_file);
 } // namespace wmtk::components::internal

@@ -3,7 +3,8 @@
 #include <igl/writeOBJ.h>
 #include <igl/writeOFF.h>
 #include <filesystem>
-#include <wmtk/TriMesh.hpp>
+#include <wmtk/TetMesh.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
 namespace wmtk::components::internal {
@@ -39,10 +40,10 @@ void extract_triangle_soup_from_image(
     int target_value;
     Eigen::MatrixXi F(tri_num, 3);
     Eigen::MatrixXd V(3 * tri_num, 3);
-    // unsigned int itr = 0;
-    // for (unsigned int i = 0; i < data.size(); i++) {
-    //     for (unsigned int j = 0; j < data[0].size(); j++) {
-    //         for (unsigned int k = 0; k < data[0][0].size(); k++) {
+    // int64_t itr = 0;
+    // for (int64_t i = 0; i < data.size(); i++) {
+    //     for (int64_t j = 0; j < data[0].size(); j++) {
+    //         for (int64_t k = 0; k < data[0][0].size(); k++) {
     //             V.row(itr++) << i * delta_x, j * delta_x, k * delta_x;
     //         }
     //     }
@@ -202,7 +203,6 @@ void extract_triangle_soup_from_image(
     // igl::writeOBJ(output_path, V, F);
 }
 
-
 void read_array_data(
     std::vector<std::vector<std::vector<unsigned int>>>& data,
     const std::string& filename)
@@ -240,7 +240,7 @@ void octree_add_points(Eigen::MatrixXd& V, unsigned int max_level)
     std::map<Eigen::Vector3d, bool, VectorComparer> record;
     std::vector<Eigen::Vector3d> sub_points;
 
-    for (unsigned int i = 0; i < V.rows(); i++) {
+    for (int64_t i = 0; i < V.rows(); i++) {
         sub_points.push_back(V.row(i));
     }
 
@@ -381,4 +381,113 @@ bool is_int(double v)
     return floor(v) == ceil(v);
 }
 
+void readGmsh(
+    const std::string& filename,
+    std::vector<Eigen::Vector3d>& vertices,
+    std::vector<Eigen::Vector4<unsigned int>>& tetrahedra)
+{
+    std::ifstream file(filename);
+    std::string line;
+
+    if (file.is_open()) {
+        while (std::getline(file, line)) {
+            if (line.find("Vertices") != std::string::npos) {
+                break;
+            }
+        }
+
+        unsigned int num_vertices;
+        file >> num_vertices;
+
+        vertices.reserve(num_vertices);
+
+        for (unsigned int i = 0; i < num_vertices; ++i) {
+            double p1, p2, p3, dummy;
+            file >> p1 >> p2 >> p3 >> dummy;
+            vertices.push_back(Eigen::Vector3d(p1, p2, p3));
+        }
+
+        while (std::getline(file, line)) {
+            if (line.find("Tetrahedra") != std::string::npos) {
+                break;
+            }
+        }
+        int num_tetrahedons;
+        file >> num_tetrahedons;
+
+        tetrahedra.reserve(num_tetrahedons);
+
+        for (unsigned int i = 0; i < num_tetrahedons; ++i) {
+            unsigned int v0, v1, v2, v3, dummy;
+            file >> v0;
+            file >> v1;
+            file >> v2;
+            file >> v3;
+            file >> dummy;
+            tetrahedra.push_back(Eigen::Vector4<unsigned int>(v0 - 1, v1 - 1, v2 - 1, v3 - 1));
+        }
+
+        file.close();
+    } else {
+        std::runtime_error("can't open the file!");
+    }
+}
+
+void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::string output_file)
+{
+    std::vector<std::vector<std::vector<unsigned int>>> volumetric_data;
+    std::vector<Eigen::Vector3d> vertices;
+    std::vector<Eigen::Vector4<unsigned int>> tetrahedras;
+
+    read_array_data(volumetric_data, volumetric_file);
+    readGmsh(gmsh_file, vertices, tetrahedras);
+
+    RowVectors4l T;
+    T.resize(tetrahedras.size(), 4);
+    for (unsigned int i = 0; i < tetrahedras.size(); i++) {
+        // T.row(i) = tetrahedras[i];
+        T(i, 0) = tetrahedras[i].x();
+        T(i, 1) = tetrahedras[i].y();
+        T(i, 2) = tetrahedras[i].z();
+        T(i, 3) = tetrahedras[i].w();
+    }
+    Eigen::MatrixXd V(vertices.size(), 3);
+    for (unsigned int i = 0; i < vertices.size(); i++) {
+        // V.row(i) = vertices[i];
+        V(i, 0) = vertices[i].x();
+        V(i, 1) = vertices[i].y();
+        V(i, 2) = vertices[i].z();
+    }
+
+    TetMesh mesh;
+    mesh.initialize(T);
+
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
+
+    auto tag_handle = mesh.register_attribute<int64_t>("tag", PrimitiveType::Tetrahedron, 1);
+    auto acc_tag = mesh.create_accessor<int64_t>(tag_handle);
+    auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto acc_pos = mesh.create_accessor<double>(pos_handle);
+
+    for (const Tuple& t : mesh.get_all(PrimitiveType::Tetrahedron)) {
+        auto v0 = acc_pos.vector_attribute(t);
+        auto v1 = acc_pos.vector_attribute(mesh.switch_vertex(t));
+        auto v2 = acc_pos.vector_attribute(mesh.switch_vertex(mesh.switch_edge(t)));
+        auto v3 =
+            acc_pos.vector_attribute(mesh.switch_vertex(mesh.switch_edge(mesh.switch_face(t))));
+        auto center = (v0 + v1 + v2 + v3) * 0.25;
+        int idx_0 = std::floor(center.x());
+        int idx_1 = std::floor(center.y());
+        int idx_2 = std::floor(center.z());
+        if (idx_0 >= 0 && idx_0 < volumetric_data.size() && idx_1 > 0 &&
+            idx_1 < volumetric_data[0].size() && idx_2 > 0 &&
+            idx_2 < volumetric_data[0][0].size()) {
+            int64_t v = volumetric_data[idx_0][idx_1][idx_2];
+            acc_tag.scalar_attribute(t) = v;
+        }
+    }
+
+    ParaviewWriter writer(output_file, "vertices", mesh, false, false, false, true);
+    mesh.serialize(writer);
+}
 } // namespace wmtk::components::internal
