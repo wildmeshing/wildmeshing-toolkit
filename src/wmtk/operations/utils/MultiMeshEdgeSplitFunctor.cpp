@@ -50,4 +50,4 @@ tet_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
     exec.split_edge();
     return exec;
 }
-}; // namespace wmtk::operations::utils
+} // namespace wmtk::operations::utils
