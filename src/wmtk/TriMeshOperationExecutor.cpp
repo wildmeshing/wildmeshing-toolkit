@@ -166,7 +166,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     // load(PrimitiveType::Vertex, 0);
     // load(PrimitiveType::Edge, 1);
     // load(PrimitiveType::Face, 2);
-};
+}
 
 void TriMesh::TriMeshOperationExecutor::delete_simplices()
 {
@@ -302,7 +302,7 @@ void TriMesh::TriMeshOperationExecutor::connect_ears()
         update_ids_in_ear(new_f0_ear, ear1.fid, f_old);
         update_ids_in_ear(ear1, ear0.fid, f_old);
     }
-};
+}
 
 void TriMesh::TriMeshOperationExecutor::connect_faces_across_spine()
 {
