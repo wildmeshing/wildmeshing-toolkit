@@ -520,6 +520,18 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     ops.emplace_back(rounding);
     ops_name.emplace_back("rounding");
 
+    ops.emplace_back(proj_collapse);
+    ops_name.emplace_back("collapse");
+
+    ops.emplace_back(rounding);
+    ops_name.emplace_back("rounding");
+
+    ops.emplace_back(proj_collapse);
+    ops_name.emplace_back("collapse");
+
+    ops.emplace_back(rounding);
+    ops_name.emplace_back("rounding");
+
     //////////////////////////////////
     // 3) Swap
     //////////////////////////////////
@@ -661,18 +673,21 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
     // preprocessing
 
-    // logger().info("preprocessing");
-    // auto pre_stats = scheduler.run_operation_on_all(*surface_proj_collapse);
-    // logger().info(
-    //     "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
-    //     "executing: {}",
-    //     "collapse_on_surface",
-    //     pre_stats.number_of_performed_operations(),
-    //     pre_stats.number_of_successful_operations(),
-    //     pre_stats.number_of_failed_operations(),
-    //     pre_stats.collecting_time,
-    //     pre_stats.sorting_time,
-    //     pre_stats.executing_time);
+    SchedulerStats pre_stats;
+
+    for (int64_t i = 0; i < 3; ++i) {
+        pre_stats = scheduler.run_operation_on_all(*proj_collapse);
+        logger().info(
+            "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
+            "executing: {}",
+            "collapse_on_surface",
+            pre_stats.number_of_performed_operations(),
+            pre_stats.number_of_successful_operations(),
+            pre_stats.number_of_failed_operations(),
+            pre_stats.collecting_time,
+            pre_stats.sorting_time,
+            pre_stats.executing_time);
+    }
 
     int iii = 0;
     for (int64_t i = 0; i < options.passes; ++i) {
