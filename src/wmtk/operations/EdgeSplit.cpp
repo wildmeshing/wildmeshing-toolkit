@@ -48,7 +48,7 @@ std::vector<simplex::Simplex> EdgeSplit::execute(const simplex::Simplex& simplex
         mesh(),
         simplex,
         m_new_attr_strategies);
-};
+}
 std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives(
     const simplex::Simplex& simplex) const
 {
