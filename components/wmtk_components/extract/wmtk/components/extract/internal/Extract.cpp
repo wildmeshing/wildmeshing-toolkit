@@ -258,12 +258,12 @@ void octree_add_points(Eigen::MatrixXd& V, unsigned int max_level)
         record,
         sub_points,
         max_level,
-        min_vals.x() - 0.4,
-        min_vals.y() - 0.4,
-        min_vals.z() - 0.4,
-        max_vals.x() + 0.5,
-        max_vals.y() + 0.5,
-        max_vals.z() + 0.5);
+        min_vals.x(),
+        min_vals.y(),
+        min_vals.z(),
+        max_vals.x(),
+        max_vals.y(),
+        max_vals.z());
 
     Eigen::MatrixXd append_V(record.size(), 3);
     record.size();
@@ -276,6 +276,8 @@ void octree_add_points(Eigen::MatrixXd& V, unsigned int max_level)
     Eigen::MatrixXd tempV = V;
     V.resize(tempV.rows() + append_V.rows(), 3);
     V << tempV, append_V;
+
+    spdlog::info("add points:{}\n", append_V.rows());
 }
 
 void octree_add_points(
@@ -302,6 +304,7 @@ void octree_add_points(
 
     // add 7 points
     Eigen::Vector3d p0(std::floor(mid_x) + 0.5, std::floor(mid_y) + 0.5, std::floor(mid_y) + 0.5);
+    record[p0] = true;
     // Eigen::Vector3d p1(mid_x, mid_y, min_z);
     // Eigen::Vector3d p2(min_x, mid_y, mid_z);
     // Eigen::Vector3d p3(max_x, mid_y, mid_z);
@@ -537,10 +540,10 @@ void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::strin
             compute_amips);
     amips_update->run_on_all();
 
-    {
-        ParaviewWriter writer(output_file, "vertices", mesh, false, false, false, true);
-        mesh.serialize(writer);
-    }
+    // {
+    //     ParaviewWriter writer(output_file, "vertices", mesh, false, false, false, true);
+    //     mesh.serialize(writer);
+    // }
 
     double max_amips = 0;
     for (const Tuple t : mesh.get_all(wmtk::PrimitiveType::Tetrahedron)) {
