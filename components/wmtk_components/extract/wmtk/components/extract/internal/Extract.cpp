@@ -2,10 +2,15 @@
 
 #include <igl/writeOBJ.h>
 #include <igl/writeOFF.h>
+#include <wmtk/utils/getRSS.h>
 #include <filesystem>
 #include <wmtk/TetMesh.hpp>
+#include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
+#include "wmtk/function/simplex/AMIPS.hpp"
+#include "wmtk/utils/Logger.hpp"
 
 namespace wmtk::components::internal {
 void extract_triangle_soup_from_image(
@@ -200,6 +205,11 @@ void extract_triangle_soup_from_image(
 
     V = V * delta_x;
     igl::writeOFF(output_path, V, F);
+
+    spdlog::info("max:{} B\n", wmtk::getPeakRSS());
+
+    spdlog::info("V:{}\n", V.rows());
+    spdlog::info("F:{}\n", F.rows());
     // igl::writeOBJ(output_path, V, F);
 }
 
@@ -291,16 +301,16 @@ void octree_add_points(
     double mid_z = 0.5 * (min_z + max_z);
 
     // add 7 points
-    Eigen::Vector3d p0(mid_x, mid_y, mid_z);
+    Eigen::Vector3d p0(std::floor(mid_x) + 0.5, std::floor(mid_y) + 0.5, std::floor(mid_y) + 0.5);
     // Eigen::Vector3d p1(mid_x, mid_y, min_z);
     // Eigen::Vector3d p2(min_x, mid_y, mid_z);
     // Eigen::Vector3d p3(max_x, mid_y, mid_z);
     // Eigen::Vector3d p4(mid_x, mid_y, max_z);
     // Eigen::Vector3d p5(mid_x, max_y, mid_z);
     // Eigen::Vector3d p6(mid_x, min_y, mid_z);
-    if (!is_int(mid_x) && !is_int(mid_y) && !is_int(mid_z)) {
-        record[p0] = true;
-    }
+    // if (!is_int(mid_x) && !is_int(mid_y) && !is_int(mid_z)) {
+    //     record[p0] = true;
+    // }
     // if (!is_int(mid_x) && !is_int(mid_y) && !is_int(min_z)) {
     //     record[p1] = true;
     // }
@@ -459,6 +469,9 @@ void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::strin
         V(i, 2) = vertices[i].z();
     }
 
+    spdlog::info("V:{}\n", V.rows());
+    spdlog::info("T:{}\n", T.rows());
+
     TetMesh mesh;
     mesh.initialize(T);
 
@@ -487,7 +500,59 @@ void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::strin
         }
     }
 
-    ParaviewWriter writer(output_file, "vertices", mesh, false, false, false, true);
-    mesh.serialize(writer);
+    auto amips_attribute =
+        mesh.register_attribute<double>("wildmeshing_amips", mesh.top_simplex_type(), 1);
+    auto amips_accessor = mesh.create_accessor(amips_attribute.as<double>());
+    auto compute_amips = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        assert(P.rows() == 2 || P.rows() == 3); // rows --> attribute dimension
+        assert(P.cols() == P.rows() + 1);
+        if (P.cols() == 3) {
+            // triangle
+            assert(P.rows() == 2);
+            std::array<double, 6> pts;
+            for (size_t i = 0; i < 3; ++i) {
+                for (size_t j = 0; j < 2; ++j) {
+                    pts[2 * i + j] = P(j, i);
+                }
+            }
+            const double a = wmtk::function::Tri_AMIPS_energy(pts);
+            return Eigen::VectorXd::Constant(1, a);
+        } else {
+            // tet
+            assert(P.rows() == 3);
+            std::array<double, 12> pts;
+            for (size_t i = 0; i < 4; ++i) {
+                for (size_t j = 0; j < 3; ++j) {
+                    pts[3 * i + j] = P(j, i);
+                }
+            }
+            const double a = wmtk::function::Tet_AMIPS_energy(pts);
+            return Eigen::VectorXd::Constant(1, a);
+        }
+    };
+    auto amips_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            amips_attribute,
+            pos_handle,
+            compute_amips);
+    amips_update->run_on_all();
+
+    {
+        ParaviewWriter writer(output_file, "vertices", mesh, false, false, false, true);
+        mesh.serialize(writer);
+    }
+
+    double max_amips = 0;
+    for (const Tuple t : mesh.get_all(wmtk::PrimitiveType::Tetrahedron)) {
+        max_amips = std::max(max_amips, amips_accessor.scalar_attribute(t));
+    }
+
+    spdlog::info("max_amips: {}\n", max_amips);
+
+    {
+        HDF5Writer writer(output_file + ".hdf5");
+        mesh.serialize(writer);
+    }
+    spdlog::info("max:{} B\n", wmtk::getPeakRSS());
 }
 } // namespace wmtk::components::internal
