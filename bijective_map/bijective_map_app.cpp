@@ -11,13 +11,17 @@
 using namespace wmtk;
 
 // igl
+#include <igl/Timer.h>
 #include <igl/boundary_loop.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/parallel_for.h>
+#include <igl/stb/write_image.h>
 using path = std::filesystem::path;
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
+#include <igl/stb/write_image.h>
+#include "render_utils.hpp"
 #include "track_operations.hpp"
 
 // TODO: for testing purpose
@@ -46,7 +50,7 @@ void back_track_map(path dirPath, std::vector<query_point>& query_points, bool d
         json operation_log;
         file >> operation_log;
 
-        std::cout << "Trace Back Operations number: " << i << std::endl;
+        std::cout << "Trace Operations number: " << file_id << std::endl;
         std::string operation_name;
         operation_name = operation_log["operation_name"];
 
@@ -153,11 +157,11 @@ int main(int argc, char** argv)
     path initial_mesh_file;
     path operation_logs_dir;
     path output_mesh_file;
-
+    std::string application_name = "back";
     app.add_option("-i, --input", initial_mesh_file, "Initial mesh file")->required(true);
     app.add_option("-o, --output", output_mesh_file, "Output mesh file")->required(true);
     app.add_option("-l, --logs", operation_logs_dir, "Operation logs directory")->required(true);
-
+    app.add_option("a, --app", application_name, "Application name");
     CLI11_PARSE(app, argc, argv);
 
     if (!std::filesystem::exists(initial_mesh_file)) {
@@ -171,6 +175,7 @@ int main(int argc, char** argv)
 
     auto init_mesh_ptr = wmtk::read_mesh(initial_mesh_file);
     auto [F_in, V_in] = static_cast<TriMesh&>(*init_mesh_ptr).get_FV();
+
     std::cout << "F_in size " << F_in.rows() << ", " << F_in.cols() << std::endl;
     std::cout << "V_in size " << V_in.rows() << ", " << V_in.cols() << std::endl;
 
@@ -185,7 +190,7 @@ int main(int argc, char** argv)
     std::cout << "bd_loops size" << bd_loops.size() << std::endl;
 
     // test forward track
-    {
+    if (application_name == "forward") {
         // TODO: get test example for query_points
         std::vector<query_point> query_points;
         for (int i = 0; i < F_in.rows(); i++) {
@@ -255,10 +260,7 @@ int main(int argc, char** argv)
             return true;
         };
         viewer.launch();
-    }
-
-
-    {
+    } else if (application_name == "back") {
         // TODO: get test example for query_points
         std::vector<query_point> query_points;
         for (int i = 0; i < F_out.rows(); i++) {
@@ -279,7 +281,6 @@ int main(int argc, char** argv)
             }
             pts_on_surface_after.row(ii) = p;
         }
-
         // do back track
         back_track_map(operation_logs_dir, query_points);
 
@@ -327,6 +328,62 @@ int main(int argc, char** argv)
             return true;
         };
         viewer.launch();
+    } else if (application_name == "render") {
+        // funciton to generate the picture
+        auto writePNG = [&](const std::string& name, int W, int H, camera_info cam) {
+            std::cout << "try get png" << std::endl;
+            Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R, G, B, A;
+            R.resize(W, H);
+            G.resize(W, H);
+            B.resize(W, H);
+            A.resize(W, H);
+            R.setConstant(255);
+            G.setConstant(255);
+            B.setConstant(255);
+            A.setConstant(255);
+
+            auto [fids, bcs] = get_pt_mat(cam, V_out, F_out, W, H);
+
+            std::vector<query_point> query_points;
+            for (int ii = 0; ii < fids.size(); ii++) {
+                query_point qp;
+                qp.f_id = fids[ii];
+
+                if (fids[ii] == -1) {
+                    qp.fv_ids = F_out.row(0);
+                } else {
+                    qp.fv_ids = F_out.row(fids[ii]);
+                }
+                qp.bc = bcs[ii];
+
+                query_points.push_back(qp);
+            }
+            igl::Timer timer;
+            timer.start();
+            back_track_map(operation_logs_dir, query_points);
+            timer.stop();
+            std::cout << "query time: " << timer.getElapsedTime() << " s" << std::endl;
+
+            igl::parallel_for(W * H, [&](int id) {
+                if (fids[id] != -1) {
+                    R(id % W, H - 1 - id / W) = color_map[query_points[id].f_id % 20][0];
+                    G(id % W, H - 1 - id / W) = color_map[query_points[id].f_id % 20][1];
+                    B(id % W, H - 1 - id / W) = color_map[query_points[id].f_id % 20][2];
+                } else {
+                    A(id % W, H - 1 - id / W) = 0;
+                }
+            });
+            igl::stb::write_image(name + ".png", R, G, B, A);
+            addShading(R, G, B, V_out, F_out, fids, bcs, std::get<0>(cam), false);
+            igl::stb::write_image(name + "_shading.png", R, G, B, A);
+        };
+
+        igl::opengl::glfw::Viewer viewer;
+        viewer.data().set_mesh(V_out, F_out);
+        viewer.launch();
+        camera_info camera =
+            std::make_tuple(viewer.core().view, viewer.core().proj, viewer.core().viewport);
+        writePNG("iso_out", 1280, 800, camera);
     }
     return 0;
 }

@@ -24,12 +24,14 @@ void handle_consolidate(
     std::cout << "Handling Consolidate" << std::endl;
     igl::parallel_for(query_points.size(), [&](int id) {
         query_point& qp = query_points[id];
-        if (face_ids_maps[qp.f_id] != qp.f_id) {
-            qp.f_id = face_ids_maps[qp.f_id];
-        }
-        for (int i = 0; i < 3; i++) {
-            if (vertex_ids_maps[qp.fv_ids[i]] != qp.fv_ids[i]) {
-                qp.fv_ids[i] = vertex_ids_maps[qp.fv_ids[i]];
+        if (qp.f_id >= 0) {
+            if (face_ids_maps[qp.f_id] != qp.f_id) {
+                qp.f_id = face_ids_maps[qp.f_id];
+            }
+            for (int i = 0; i < 3; i++) {
+                if (vertex_ids_maps[qp.fv_ids[i]] != qp.fv_ids[i]) {
+                    qp.fv_ids[i] = vertex_ids_maps[qp.fv_ids[i]];
+                }
             }
         }
     });
@@ -44,14 +46,16 @@ void handle_consolidate_forward(
 
     igl::parallel_for(query_points.size(), [&](int id) {
         query_point& qp = query_points[id];
-        auto it = std::find(face_ids_maps.begin(), face_ids_maps.end(), qp.f_id);
-        if (it != face_ids_maps.end()) {
-            qp.f_id = std::distance(face_ids_maps.begin(), it);
-        }
-        for (int i = 0; i < 3; i++) {
-            auto it_v = std::find(vertex_ids_maps.begin(), vertex_ids_maps.end(), qp.fv_ids[i]);
-            if (it_v != vertex_ids_maps.end()) {
-                qp.fv_ids[i] = std::distance(vertex_ids_maps.begin(), it_v);
+        if (qp.f_id >= 0) {
+            auto it = std::find(face_ids_maps.begin(), face_ids_maps.end(), qp.f_id);
+            if (it != face_ids_maps.end()) {
+                qp.f_id = std::distance(face_ids_maps.begin(), it);
+            }
+            for (int i = 0; i < 3; i++) {
+                auto it_v = std::find(vertex_ids_maps.begin(), vertex_ids_maps.end(), qp.fv_ids[i]);
+                if (it_v != vertex_ids_maps.end()) {
+                    qp.fv_ids[i] = std::distance(vertex_ids_maps.begin(), it_v);
+                }
             }
         }
     });
@@ -116,6 +120,7 @@ void handle_collapse_edge(
     std::cout << "Handling EdgeCollapse" << std::endl;
     for (int id = 0; id < query_points.size(); id++) {
         query_point& qp = query_points[id];
+        if (qp.f_id < 0) continue;
 
         // find if qp is in the id_map_after
         auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
@@ -131,6 +136,12 @@ void handle_collapse_edge(
                 }
             }
             if (offset_in_f_after == -1) {
+                std::cout << "find qp: " << qp.f_id << std::endl;
+                std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
+                          << std::endl;
+                std::cout << "qp.fv_id: " << qp.fv_ids[0] << ", " << qp.fv_ids[1] << ", "
+                          << qp.fv_ids[2] << std::endl;
+                std::cout << "local_index_in_f_after: " << local_index_in_f_after << std::endl;
                 std::cout << "something is wrong!" << std::endl;
                 continue;
                 // return;
@@ -200,7 +211,7 @@ void handle_split_edge(
     // igl::parallel_for(query_points.size(), [&](int id) {
     for (int id = 0; id < query_points.size(); id++) {
         query_point& qp = query_points[id];
-
+        if (qp.f_id < 0) continue;
         // find if qp is in the id_map_after
         auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
         if (it != id_map_after.end()) {
