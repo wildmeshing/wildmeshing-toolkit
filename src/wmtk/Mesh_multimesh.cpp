@@ -24,6 +24,11 @@ void Mesh::deregister_child_mesh(const std::shared_ptr<Mesh>& child_mesh_ptr)
     m_multi_mesh_manager.deregister_child_mesh(*this, child_mesh_ptr);
 }
 
+void Mesh::update_child_handles()
+{
+    m_multi_mesh_manager.update_child_handles(*this);
+}
+
 
 bool Mesh::is_from_same_multi_mesh_structure(const Mesh& other) const
 {

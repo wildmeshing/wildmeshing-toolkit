@@ -553,6 +553,13 @@ public:
      */
     void deregister_child_mesh(const std::shared_ptr<Mesh>& child_mesh_ptr);
 
+private:
+    /**
+     * @brief Update the child handles after clearing attributes.
+     */
+    void update_child_handles();
+
+public:
     /**
      * @brief maps a simplex from this mesh to any other mesh
      *
