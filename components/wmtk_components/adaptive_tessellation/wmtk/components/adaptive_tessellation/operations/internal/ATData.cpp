@@ -101,7 +101,9 @@ ATData::ATData(
     const std::filesystem::path& position_path,
     const std::filesystem::path& normal_path,
     const std::filesystem::path& height_path,
-    bool max_distance)
+    bool max_distance,
+    float min_height,
+    float max_height)
     : m_position_mesh_ptr(position_mesh_ptr)
     , m_uv_mesh_ptr(uv_mesh_ptr)
 {
@@ -128,14 +130,19 @@ ATData::ATData(
     Eigen::MatrixXd scene_offset = -bmin;
     Eigen::MatrixXd scene_extent = bmax - bmin;
     scene_offset.array() -= (scene_extent.array() - max_comp) * 0.5;
-    Eigen::Vector3d offset = scene_offset;
+    Eigen::Vector3d offset = scene_offset; // Eigen::Vector3d::Zero();
     m_images = image::combine_position_normal_texture(
         max_comp,
         offset,
         position_path,
         normal_path,
-        height_path);
+        height_path,
+        min_height,
+        max_height);
     std::cout << "+++++ using displacment map sampling !!!!" << std::endl;
+    logger().critical("Max height of the texture map is {}", max_height);
+    logger().critical("Min height of the texture map is {}", min_height);
+    logger().warn("max_comp {}, offset {}", max_comp, offset.transpose());
     m_evaluator_ptr =
         std::make_shared<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>(
             m_images,

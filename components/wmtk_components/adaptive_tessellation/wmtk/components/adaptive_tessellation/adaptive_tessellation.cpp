@@ -189,7 +189,9 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
             options.position_path,
             options.normal_path,
             options.height_path,
-            options.max_distance);
+            options.max_distance,
+            options.min_height,
+            options.max_height);
     }
 
     AT::operations::internal::ATOperations at_ops(atdata);

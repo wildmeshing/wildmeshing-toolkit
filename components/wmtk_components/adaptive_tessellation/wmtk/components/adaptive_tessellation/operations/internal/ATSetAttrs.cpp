@@ -46,8 +46,8 @@ void ATOperations::initialize_xyz()
     const auto vertices = m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Vertex);
     for (const auto& v : vertices) {
         const auto uv = m_uv_accessor.vector_attribute(v);
-        m_uvmesh_xyz_accessor.vector_attribute(v) =
-            m_atdata.evaluator_ptr()->uv_to_position<double>(uv);
+        auto p = m_atdata.evaluator_ptr()->uv_to_position<double>(uv);
+        m_uvmesh_xyz_accessor.vector_attribute(v) = p;
     }
 }
 

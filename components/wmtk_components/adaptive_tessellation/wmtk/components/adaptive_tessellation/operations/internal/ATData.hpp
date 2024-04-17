@@ -96,7 +96,9 @@ public:
         const std::filesystem::path& position_path,
         const std::filesystem::path& normal_path,
         const std::filesystem::path& height_path,
-        bool max_distance);
+        bool max_distance,
+        float min_height,
+        float max_height);
 
 
     /**
