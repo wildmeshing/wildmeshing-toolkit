@@ -762,7 +762,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
 
         // stop at good quality
-        if (max_energy <= 10 && is_double) break;
+        if (max_energy <= target_max_amips && is_double) break;
     }
 
     // output
