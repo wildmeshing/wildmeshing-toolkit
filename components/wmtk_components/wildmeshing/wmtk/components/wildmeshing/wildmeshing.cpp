@@ -155,8 +155,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     }
 
     const double bbdiag = (bmax - bmin).norm();
-    const double target_edge_length =
-        std::min(options.target_edge_length * bbdiag, (bmax - bmin).minCoeff());
+    const double target_edge_length = options.target_edge_length * bbdiag;
 
     //////////////////////////////////
     // store amips
