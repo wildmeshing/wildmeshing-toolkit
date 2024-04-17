@@ -155,7 +155,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     }
 
     const double bbdiag = (bmax - bmin).norm();
-    const double target_edge_length = options.target_edge_length * bbdiag;
+    const double target_edge_length =
+        std::min(options.target_edge_length * bbdiag, (bmax - bmin).minCoeff());
 
     //////////////////////////////////
     // store amips
@@ -272,7 +273,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //        target_edge_length_attribute,
     //        rpt_attribute,
     //        compute_target_edge_length);
-    target_edge_length_update->run_on_all();
+    // target_edge_length_update->run_on_all();
 
 
     //////////////////////////////////
@@ -470,7 +471,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     split->add_transfer_strategy(amips_update);
     split->add_transfer_strategy(edge_length_update);
-    split->add_transfer_strategy(target_edge_length_update);
+    // split->add_transfer_strategy(target_edge_length_update);
     for (auto& s : update_child_positon) {
         split->add_transfer_strategy(s);
     }
@@ -520,7 +521,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     for (auto& s : update_child_positon) {
         proj_collapse->add_transfer_strategy(s);
     }
-    proj_collapse->add_transfer_strategy(target_edge_length_update);
+    // proj_collapse->add_transfer_strategy(target_edge_length_update);
 
     auto proj_collapse_then_round = std::make_shared<OperationSequence>(*mesh);
     proj_collapse_then_round->add_operation(proj_collapse);
@@ -574,7 +575,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         op.add_transfer_strategy(amips_update);
         op.add_transfer_strategy(edge_length_update);
-        op.add_transfer_strategy(target_edge_length_update);
+        // op.add_transfer_strategy(target_edge_length_update);
         for (auto& s : update_child_positon) {
             op.add_transfer_strategy(s);
         }
@@ -676,7 +677,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     for (auto& s : update_child_positon) {
         proj_smoothing->add_transfer_strategy(s);
     }
-    proj_smoothing->add_transfer_strategy(target_edge_length_update);
+    // proj_smoothing->add_transfer_strategy(target_edge_length_update);
 
     ops.push_back(proj_smoothing);
     ops_name.push_back("smoothing");
@@ -706,7 +707,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         logger().info(
             "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
             "executing: {}",
-            "collapse_on_surface",
+            "collapse",
             pre_stats.number_of_performed_operations(),
             pre_stats.number_of_successful_operations(),
             pre_stats.number_of_failed_operations(),
@@ -785,6 +786,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         }
 
         logger().info("Mesh has {} unrounded vertices", unrounded);
+        logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
 
 
         // stop at good quality
