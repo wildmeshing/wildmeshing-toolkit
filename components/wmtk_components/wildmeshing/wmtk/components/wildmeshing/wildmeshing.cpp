@@ -690,6 +690,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     }
 
     int iii = 0;
+    bool is_double = false;
     for (int64_t i = 0; i < options.passes; ++i) {
         logger().info("Pass {}", i);
         SchedulerStats pass_stats;
@@ -741,10 +742,27 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             min_energy = std::min(min_energy, e);
         }
 
-        logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
+        int64_t unrounded = 0;
+        if (!is_double) {
+            bool rational = false;
+            for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
+                const auto p = pt_accessor.vector_attribute(v);
+                for (int64_t d = 0; d < bmax.size(); ++d) {
+                    if (!p[d].is_rounded()) {
+                        rational = true;
+                        ++unrounded;
+                    }
+                }
+            }
+
+            is_double = !rational;
+        }
+
+        logger().info("Mesh has {} unrounded vertices", unrounded);
+
 
         // stop at good quality
-        if (max_energy <= 10) break;
+        if (max_energy <= 10 && is_double) break;
     }
 
     // output
