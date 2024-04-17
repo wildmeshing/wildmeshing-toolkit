@@ -42,7 +42,6 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
         ++index;
     }
 
-
     if (options.add_box && !options.add_grid) {
         auto center = bbox.center();
         auto r = bbox.diagonal() / 2.;
@@ -60,18 +59,19 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
     }
 
     if (options.add_grid) {
-        auto center = bbox.center();
-        auto r = bbox.diagonal() / 2.;
+        const double bbox_diag = bbox.diagonal().norm();
+        const auto r = Eigen::VectorXd::Ones(pts_acc.dimension()) * bbox_diag;
         const double grid_spacing = options.grid_spacing;
 
-        bbox.min() = center - options.box_scale * r;
-        bbox.max() = center + options.box_scale * r;
-        Eigen::VectorXd diag = bbox.max() - bbox.min();
+
+        bbox.min() -= options.box_scale * r;
+        bbox.max() += options.box_scale * r;
         // Eigen::VectorXi res = (diag / grid_spacing).cast<int>();
 
         // // TODO: remove the hack
         // // hack grid spacing as relative
-        Eigen::VectorXi res = (diag / (diag.norm() * grid_spacing)).cast<int>();
+        const Eigen::VectorXi res = (bbox.diagonal() / (bbox_diag * grid_spacing)).cast<int>() +
+                                    Eigen::VectorXi::Ones(pts_acc.dimension());
 
         Eigen::MatrixXd background_V;
 
@@ -87,7 +87,7 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
                 for (int j = 0; j <= res[1]; ++j) {
                     for (int i = 0; i <= res[0]; ++i) {
                         const Eigen::Vector3d iii(i, j, k);
-                        const Eigen::Vector3d ttmp = diag.array() * iii.array();
+                        const Eigen::Vector3d ttmp = bbox.diagonal().array() * iii.array();
                         background_V.row(v_index(i, j, k)) =
                             bbox.min().array() + ttmp.array() / res.cast<double>().array();
                     }
@@ -96,7 +96,7 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
         }
         // else 2d and 1d
 
-        if (options.min_dist > 0) {
+        if (options.min_dist >= 0) {
             int64_t count = 0;
             int64_t index = 0;
 
@@ -126,13 +126,15 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
             SimpleBVH::BVH bvh;
             bvh.init(vertices, faces, 1e-10);
 
+            const double min_dist =
+                options.min_dist > 0 ? (options.min_dist * options.min_dist * bbox_diag * bbox_diag)
+                                     : (bbox_diag * bbox_diag * grid_spacing * grid_spacing / 4);
             std::vector<Eigen::VectorXd> good;
             SimpleBVH::VectorMax3d nearest_point;
             for (int64_t i = 0; i < background_V.rows(); ++i) {
                 double sq_dist;
                 bvh.nearest_facet(background_V.row(i), nearest_point, sq_dist);
-                if (sq_dist >= options.min_dist * options.min_dist * diag.norm() * diag.norm())
-                    good.emplace_back(background_V.row(i));
+                if (sq_dist >= min_dist) good.emplace_back(background_V.row(i));
             }
             int64_t current_size = pts.rows();
             pts.conservativeResize(current_size + good.size(), pts.cols());
@@ -172,7 +174,7 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
         wmtk::logger().info("removed {} duplicated vertices", pts.rows() - old_size);
     }
 
-
+    wmtk::logger().info("generated {} vertices", pts.rows());
     std::shared_ptr<PointMesh> pts_mesh = std::make_shared<PointMesh>(pts.rows());
 
     mesh_utils::set_matrix_attribute(pts, options.position, PrimitiveType::Vertex, *pts_mesh);
