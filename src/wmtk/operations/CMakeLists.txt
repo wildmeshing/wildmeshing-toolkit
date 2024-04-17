@@ -8,6 +8,9 @@ set(SRC_FILES
     Operation.hpp
     Operation.cpp
 
+    OperationSequence.hpp
+    OperationSequence.cpp
+
     #MeshOperation.hpp
     #MeshOperation.cpp
 

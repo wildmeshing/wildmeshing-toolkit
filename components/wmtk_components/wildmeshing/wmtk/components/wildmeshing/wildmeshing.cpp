@@ -18,6 +18,7 @@
 #include <wmtk/operations/AMIPSOptimizationSmoothing.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
+#include <wmtk/operations/OperationSequence.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
 #include <wmtk/operations/Rounding.hpp>
 #include <wmtk/operations/composite/ProjectOperation.hpp>
@@ -474,8 +475,15 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         split->add_transfer_strategy(s);
     }
 
-    ops.emplace_back(split);
+    auto split_then_round = std::make_shared<OperationSequence>(*mesh);
+    split_then_round->add_operation(split);
+    split_then_round->add_operation(rounding);
+
+    ops.emplace_back(split_then_round);
     ops_name.emplace_back("split");
+
+    // ops.emplace_back(split);
+    // ops_name.emplace_back("split");
 
     ops.emplace_back(rounding);
     ops_name.emplace_back("rounding");
@@ -514,23 +522,40 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     }
     proj_collapse->add_transfer_strategy(target_edge_length_update);
 
-    ops.emplace_back(proj_collapse);
-    ops_name.emplace_back("collapse");
+    auto proj_collapse_then_round = std::make_shared<OperationSequence>(*mesh);
+    proj_collapse_then_round->add_operation(proj_collapse);
+    proj_collapse_then_round->add_operation(rounding);
 
+    ops.emplace_back(proj_collapse_then_round);
+    ops_name.emplace_back("collapse");
     ops.emplace_back(rounding);
     ops_name.emplace_back("rounding");
 
-    ops.emplace_back(proj_collapse);
+    ops.emplace_back(proj_collapse_then_round);
     ops_name.emplace_back("collapse");
-
     ops.emplace_back(rounding);
     ops_name.emplace_back("rounding");
 
-    ops.emplace_back(proj_collapse);
+    ops.emplace_back(proj_collapse_then_round);
     ops_name.emplace_back("collapse");
-
     ops.emplace_back(rounding);
     ops_name.emplace_back("rounding");
+
+
+    // ops.emplace_back(proj_collapse);
+    // ops_name.emplace_back("collapse");
+    // ops.emplace_back(rounding);
+    // ops_name.emplace_back("rounding");
+
+    // ops.emplace_back(proj_collapse);
+    // ops_name.emplace_back("collapse");
+    // ops.emplace_back(rounding);
+    // ops_name.emplace_back("rounding");
+
+    // ops.emplace_back(proj_collapse);
+    // ops_name.emplace_back("collapse");
+    // ops.emplace_back(rounding);
+    // ops_name.emplace_back("rounding");
 
     //////////////////////////////////
     // 3) Swap
@@ -676,7 +701,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     SchedulerStats pre_stats;
 
     for (int64_t i = 0; i < 3; ++i) {
-        pre_stats = scheduler.run_operation_on_all(*proj_collapse);
+        // pre_stats = scheduler.run_operation_on_all(*proj_collapse);
+        pre_stats = scheduler.run_operation_on_all(*proj_collapse_then_round);
         logger().info(
             "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
             "executing: {}",
