@@ -72,6 +72,9 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
         // // TODO: remove the hack
         // // hack grid spacing as relative
         Eigen::VectorXi res = (diag / (diag.norm() * grid_spacing)).cast<int>();
+        for (int64_t i = 0; i < pts.cols(); ++i) {
+            res[i] = std::max(res[i], 1);
+        }
 
         Eigen::MatrixXd background_V;
 
