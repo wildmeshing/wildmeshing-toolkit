@@ -32,7 +32,7 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
     }
 
 
-    logger().info("Executing on {} simplices", simplices.size());
+    // logger().debug("Executing on {} simplices", simplices.size());
 
     {
         POLYSOLVE_SCOPED_STOPWATCH("Sorting", res.sorting_time, logger());
@@ -66,12 +66,6 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
     //     res.number_of_performed_operations(),
     //     res.number_of_successful_operations(),
     //     res.number_of_failed_operations());
-
-    logger().info(
-        "Ran {} ops, {} succeeded, {} failed",
-        res.number_of_performed_operations(),
-        res.number_of_successful_operations(),
-        res.number_of_failed_operations());
 
     m_stats += res;
 
