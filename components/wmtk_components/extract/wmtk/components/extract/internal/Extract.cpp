@@ -205,12 +205,12 @@ void extract_triangle_soup_from_image(
 
     V = V * delta_x;
     igl::writeOFF(output_path, V, F);
+    // igl::writeOBJ(output_path, V, F);
 
     spdlog::info("max:{} B\n", wmtk::getPeakRSS());
 
     spdlog::info("V:{}\n", V.rows());
     spdlog::info("F:{}\n", F.rows());
-    // igl::writeOBJ(output_path, V, F);
 }
 
 void read_array_data(
@@ -274,8 +274,11 @@ void octree_add_points(Eigen::MatrixXd& V, unsigned int max_level)
         itr++;
     }
     Eigen::MatrixXd tempV = V;
+
     V.resize(tempV.rows() + append_V.rows(), 3);
     V << tempV, append_V;
+
+    // V = append_V;
 
     spdlog::info("add points:{}\n", append_V.rows());
 }
@@ -303,7 +306,7 @@ void octree_add_points(
     double mid_z = 0.5 * (min_z + max_z);
 
     // add 7 points
-    Eigen::Vector3d p0(std::floor(mid_x) + 0.5, std::floor(mid_y) + 0.5, std::floor(mid_y) + 0.5);
+    Eigen::Vector3d p0(std::floor(mid_x) + 0.5, std::floor(mid_y) + 0.5, std::floor(mid_z) + 0.5);
     record[p0] = true;
     // Eigen::Vector3d p1(mid_x, mid_y, min_z);
     // Eigen::Vector3d p2(min_x, mid_y, mid_z);
@@ -370,16 +373,16 @@ void octree_add_points(
     octree_add_points(record, sub_points1, itr - 1, mid_x, min_y, min_z, max_x, mid_y, mid_z);
 
 
-    octree_add_points(record, sub_points2, itr - 1, min_x, mid_y, min_z, mid_x, max_y, mid_z);
+    octree_add_points(record, sub_points2, itr - 1, min_x, min_y, mid_z, mid_x, mid_y, max_z);
 
 
-    octree_add_points(record, sub_points3, itr - 1, mid_x, mid_y, min_z, max_x, max_y, mid_z);
+    octree_add_points(record, sub_points3, itr - 1, mid_x, min_y, mid_z, max_x, mid_y, max_z);
 
 
-    octree_add_points(record, sub_points4, itr - 1, min_x, min_y, mid_z, mid_x, mid_y, max_z);
+    octree_add_points(record, sub_points4, itr - 1, min_x, mid_y, min_z, mid_x, max_y, mid_z);
 
 
-    octree_add_points(record, sub_points5, itr - 1, mid_x, min_y, mid_z, max_x, mid_y, max_z);
+    octree_add_points(record, sub_points5, itr - 1, mid_x, mid_y, min_z, max_x, max_y, mid_z);
 
 
     octree_add_points(record, sub_points6, itr - 1, min_x, mid_y, mid_z, mid_x, max_y, max_z);
