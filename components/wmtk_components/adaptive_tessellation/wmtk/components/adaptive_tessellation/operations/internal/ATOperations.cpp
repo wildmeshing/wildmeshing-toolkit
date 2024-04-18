@@ -11,6 +11,7 @@
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/function/utils/amips.hpp>
 
+#include <wmtk/components/adaptive_tessellation/invariants/MaxTriangleNumberInvariant.hpp>
 #include <wmtk/components/adaptive_tessellation/invariants/RGBSplitInvariant.hpp>
 #include <wmtk/components/adaptive_tessellation/invariants/RGBSwapInvariant.hpp>
 #include <wmtk/invariants/BoundarySimplexInvariant.hpp>
@@ -54,8 +55,10 @@ using namespace wmtk::operations::composite;
 using namespace wmtk::function;
 using namespace wmtk::invariants;
 
-ATOperations::ATOperations(ATData& atdata)
+ATOperations::ATOperations(ATData& atdata, double target_distance, int64_t target_triangle_number)
     : m_atdata(atdata)
+    , m_target_distance(target_distance)
+    , m_target_triangle_number(target_triangle_number)
     , m_uv_accessor(m_atdata.uv_mesh().create_accessor(m_atdata.m_uv_handle.as<double>()))
     , m_uvmesh_xyz_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_uvmesh_xyz_handle.as<double>()))
@@ -141,6 +144,11 @@ int64_t ATOperations::AT_rgb_split()
         *uv_mesh_ptr,
         m_atdata.m_edge_todo_handle.as<int64_t>(),
         1));
+    if (m_target_triangle_number > 0) {
+        rgb_split->add_invariant(std::make_shared<wmtk::MaxTriangleNumberInvariant>(
+            *uv_mesh_ptr,
+            m_target_triangle_number));
+    }
     m_ops.emplace_back(rgb_split);
     return m_ops.size() - 1;
 }

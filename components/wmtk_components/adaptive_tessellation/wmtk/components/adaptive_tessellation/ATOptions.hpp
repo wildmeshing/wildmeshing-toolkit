@@ -11,6 +11,7 @@ public:
     std::string uv_output;
     std::string xyz_output;
     double target_distance;
+    int target_triangle_number = 0;
     bool max_distance;
     bool analytical_function = false;
     bool terrain_texture = false;
@@ -29,6 +30,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     uv_output,
     xyz_output,
     target_distance,
+    target_triangle_number,
     max_distance,
     analytical_function,
     terrain_texture,

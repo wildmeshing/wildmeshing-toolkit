@@ -3,6 +3,8 @@ set(SRC_FILES
     RGBSplitInvariant.cpp
     RGBSwapInvariant.hpp
     RGBSwapInvariant.cpp
+    MaxTriangleNumberInvariant.hpp
+    MaxTriangleNumberInvariant.cpp
 )
 
 

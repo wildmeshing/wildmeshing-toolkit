@@ -6,6 +6,7 @@
 #include <wmtk/components/adaptive_tessellation/quadrature/PolygonClipping.cpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/PolygonClipping.hpp>
 #include <wmtk/utils/point_inside_triangle_check.hpp>
+#include <wmtk/utils/triangle_areas.hpp>
 namespace wmtk::components::function::utils {
 MaxDistanceToLimit::MaxDistanceToLimit(const ThreeChannelPositionMapEvaluator& evaluator)
     : Triangle2DTo3DMapping(evaluator)
@@ -82,8 +83,7 @@ double MaxDistanceToLimit::distance(
             max_dist = std::max(max_dist, tmp);
         }
     }
-
-    return max_dist;
+    return max_dist * wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
 }
 
 // include two end points of the edge in the ordered intersection list

@@ -63,10 +63,7 @@ void ObjWriter::ObjInternalWriter::write(
     const int64_t stride,
     const std::vector<double>& val)
 {
-    logger().warn("the name is {}", name);
-
     if (name == m_vertices_name) {
-        logger().critical("the name is {}", name);
         assert(stride == 2 || stride == 3);
 
         Eigen::MatrixXd V =
@@ -109,7 +106,6 @@ void ObjWriter::write(
     const std::vector<double>& val,
     double default_value)
 {
-    logger().critical("is it called?");
     m_writer.write(name, stride, val);
 }
 void ObjWriter::write(

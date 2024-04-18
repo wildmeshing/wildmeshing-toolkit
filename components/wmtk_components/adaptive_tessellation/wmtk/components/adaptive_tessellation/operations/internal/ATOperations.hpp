@@ -17,6 +17,7 @@ class ATOperations
 public:
     ATData& m_atdata;
     double m_target_distance;
+    int64_t m_target_triangle_number;
 
     wmtk::attribute::Accessor<double> m_uv_accessor;
     wmtk::attribute::Accessor<double> m_uvmesh_xyz_accessor;
@@ -42,7 +43,7 @@ public:
 
 public:
     // constructor
-    ATOperations(ATData& atdata);
+    ATOperations(ATData& atdata, double target_distance, int64_t target_triangle_number);
 
     int64_t AT_rgb_split();
     int64_t AT_rgb_swap();
