@@ -168,7 +168,21 @@ void quasi_conformal_energy(
         VectorXd q2 = V.row(F(ff, 1));
         VectorXd q3 = V.row(F(ff, 2));
 
+        std::cout << "q1: " << q1 << std::endl;
+        std::cout << "q2: " << q2 << std::endl;
+        std::cout << "q3: " << q3 << std::endl;
+
+        std::cout << "t1: " << t1 << std::endl;
+        std::cout << "t2: " << t2 << std::endl;
+        std::cout << "t3: " << t3 << std::endl;
+
+        std::cout << "s1: " << s1 << std::endl;
+        std::cout << "s2: " << s2 << std::endl;
+        std::cout << "s3: " << s3 << std::endl;
+
         double A = ((s2 - s1) * (t3 - t1) - (s3 - s1) * (t2 - t1)) / 2;
+
+        std::cout << "A: " << A << std::endl;
         VectorXd Ss = (q1 * (t2 - t3) + q2 * (t3 - t1) + q3 * (t1 - t2)) / (2 * A);
         VectorXd St = (q1 * (s3 - s2) + q2 * (s1 - s3) + q3 * (s2 - s1)) / (2 * A);
 
@@ -178,7 +192,12 @@ void quasi_conformal_energy(
 
         double sigma = sqrt((a + c + sqrt((a - c) * (a - c) + 4 * b * b)) / 2);
         double gamma = sqrt((a + c - sqrt((a - c) * (a - c) + 4 * b * b)) / 2);
-
+        gamma = 1;
+        std::cout << "a: " << a << std::endl;
+        std::cout << "b: " << b << std::endl;
+        std::cout << "c: " << c << std::endl;
+        std::cout << "sigma: " << sigma << std::endl;
+        std::cout << "gamma: " << gamma << std::endl;
         E(ff) = sigma / gamma;
     }
 }
@@ -484,6 +503,12 @@ void local_joint_flatten_case2_all_colinear(
     std::vector<std::vector<int>> bd_loops;
     igl::boundary_loop(F_joint_after, bd_loops);
     if (bd_loops.size() != 1) {
+        for (auto& bd_loop : bd_loops) {
+            for (auto& v : bd_loop) {
+                std::cout << v << " ";
+            }
+            std::cout << std::endl;
+        }
         throw std::runtime_error("bd loops size is not 1!");
     }
     auto bd_loop = bd_loops[0];
@@ -496,19 +521,150 @@ void local_joint_flatten_case2_all_colinear(
     Eigen::VectorXi b_UV;
     Eigen::VectorXd bc_UV;
 
-    b_UV.resize(2 + 1 + 2 + 1, 1);
-    bc_UV.resize(2 + 1 + 2 + 1, 1);
+    b_UV.resize(7, 1);
+    bc_UV.resize(7, 1);
     bc_UV.setZero();
-    b_UV(0) = vi_before;
+
+    b_UV(0) = vi_before + V_joint.rows();
     b_UV(1) = vj_before;
     bc_UV(1) = 1;
     b_UV(2) = vj_before + V_joint.rows();
     b_UV(3) = 2 * V_joint.rows() - 1; // vi_after in the end
     b_UV(4) = bd_loop[(idx + 1) % bd_loop.size()] + V_joint.rows();
     b_UV(5) = bd_loop[(idx + bd_loop.size() - 1) % bd_loop.size()] + V_joint.rows();
-
+    b_UV(6) = vi_before;
     // flatten
     flatten(V_joint, V_joint, F_joint_before, F_joint_after, b_UV, bc_UV, UV_joint);
+
+    Eigen::VectorXd E_before;
+    quasi_conformal_energy(V_joint, F_joint_before, UV_joint, E_before);
+    Eigen::VectorXd E_after;
+    quasi_conformal_energy(V_joint, F_joint_after, UV_joint, E_after);
+
+    std::cout << "E_before: \n" << E_before << std::endl;
+    std::cout << "E_after: \n" << E_after << std::endl;
+}
+
+
+void local_joint_flatten_case2_3_colinear(
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXd& V_before,
+    const std::vector<int64_t>& v_id_map_before,
+    Eigen::MatrixXi& F_after,
+    const Eigen::MatrixXd& V_after,
+    const std::vector<int64_t>& v_id_map_after,
+    Eigen::MatrixXd& UV_joint,
+    std::vector<int64_t>& v_id_map_joint)
+{
+    // get V_joint_before, F_joint_before, V_joint_after, F_joint_after
+    // TODO: this could be easier if we get local mesh from a "good" order
+    // this part is the same as case0
+    int vi_after = 0;
+    std::vector<int> local_vid_after_to_before_map(v_id_map_after.size(), -1);
+
+    for (int i = 1; i < v_id_map_after.size(); i++) {
+        auto it = std::find(v_id_map_before.begin(), v_id_map_before.end(), v_id_map_after[i]);
+        if (it == v_id_map_before.end()) {
+            std::runtime_error("There is vertex that is unituq in before!");
+        }
+        local_vid_after_to_before_map[i] = std::distance(v_id_map_before.begin(), it);
+    }
+    int vi_before = 0, vj_before = -1;
+    for (int i = 0; i < v_id_map_before.size(); i++) {
+        if (std::find(v_id_map_after.begin(), v_id_map_after.end(), v_id_map_before[i]) ==
+            v_id_map_after.end()) {
+            vj_before = i;
+            break;
+        }
+    }
+    if (vj_before == -1 || vj_before == vi_before) {
+        throw std::runtime_error("Cannot find the joint vertex!");
+    }
+
+    // get two bds
+    std::vector<std::vector<int>> bd_loops_before;
+    igl::boundary_loop(F_before, bd_loops_before);
+    if (bd_loops_before.size() != 1) {
+        throw std::runtime_error("bd loops size is not 1!");
+    }
+    auto bd_loop_before = bd_loops_before[0];
+    auto it_i = std::find(bd_loop_before.begin(), bd_loop_before.end(), vi_before);
+    auto it_j = std::find(bd_loop_before.begin(), bd_loop_before.end(), vj_before);
+    int it_i_idx = std::distance(bd_loop_before.begin(), it_i);
+    int it_j_idx = std::distance(bd_loop_before.begin(), it_j);
+    int bd_v_i = bd_loop_before[(it_i_idx + bd_loop_before.size() - 1) % bd_loop_before.size()];
+    int bd_v_j = bd_loop_before[(it_j_idx + 1) % bd_loop_before.size()];
+    if (bd_v_i == vj_before) {
+        bd_v_i = bd_loop_before[(it_i_idx + 1) % bd_loop_before.size()];
+        bd_v_j = bd_loop_before[(it_j_idx + bd_loop_before.size() - 1) % bd_loop_before.size()];
+    }
+    // decide which side to keep
+    int v_to_keep = vi_before;
+    int bd_v_to_keep = bd_v_j;
+    bool find_all = false;
+    for (int i = 0; i < F_before.rows(); i++) {
+        int count = 0;
+        for (int j = 0; j < 3; j++) {
+            if (F_before(i, j) == vi_before || F_before(i, j) == vj_before ||
+                F_before(i, j) == bd_v_i) {
+                count++;
+            }
+        }
+        if (count == 3) {
+            find_all = true;
+            break;
+        }
+    }
+    if (find_all) {
+        v_to_keep = vj_before;
+        bd_v_to_keep = bd_v_i;
+    }
+
+    Eigen::MatrixXd V_joint_before = V_before;
+    Eigen::MatrixXd V_joint_after = V_joint_before;
+
+    V_joint_after.row(v_to_keep) = V_after.row(vi_after);
+    Eigen::MatrixXi F_joint_before = F_before;
+    Eigen::MatrixXi F_joint_after = F_after;
+    // update F_joint after
+    for (int i = 0; i < F_joint_after.rows(); i++) {
+        for (int j = 0; j < 3; j++) {
+            if (F_joint_after(i, j) == vi_after) {
+                F_joint_after(i, j) = v_to_keep; // mapped to the boundary vertex
+            } else {
+                F_joint_after(i, j) = local_vid_after_to_before_map[F_joint_after(i, j)];
+            }
+        }
+    }
+
+    // bc
+    Eigen::VectorXi b_UV;
+    Eigen::VectorXd bc_UV;
+
+    b_UV.resize(2 * 2 + 1, 1);
+    bc_UV.resize(2 * 2 + 1, 1);
+
+    b_UV << vi_before, vj_before, vi_before + V_joint_before.rows(),
+        bd_v_to_keep + V_joint_before.rows(), bd_v_to_keep;
+    bc_UV << 0, 0, 0, 1, 0;
+
+    // flatten
+    flatten(V_joint_before, V_joint_after, F_joint_before, F_joint_after, b_UV, bc_UV, UV_joint);
+
+    // modify UV_joint, F_after and v_id_map_joint
+    UV_joint.conservativeResize(UV_joint.rows() + 1, UV_joint.cols());
+    UV_joint.row(UV_joint.rows() - 1) = UV_joint.row(v_to_keep);
+    std::cout << UV_joint << std::endl;
+    F_after = F_joint_after;
+    for (int i = 0; i < F_after.rows(); i++) {
+        for (int j = 0; j < 3; j++) {
+            if (F_after(i, j) == v_to_keep) {
+                F_after(i, j) = UV_joint.rows() - 1;
+            }
+        }
+    }
+    v_id_map_joint = v_id_map_before;
+    v_id_map_joint.push_back(v_id_map_after[vi_after]);
 }
 
 void local_joint_flatten(
@@ -536,7 +692,7 @@ void local_joint_flatten(
             v_id_map_joint);
     } else if (is_bd_v0 && is_bd_v1) {
         std::cout << "case 2: boundary edge" << std::endl;
-        local_joint_flatten_case2_all_colinear(
+        local_joint_flatten_case2_3_colinear(
             F_before,
             V_before,
             v_id_map_before,
@@ -545,6 +701,7 @@ void local_joint_flatten(
             v_id_map_after,
             UV_joint,
             v_id_map_joint);
+
     } else {
         std::cout << "case 1: edge connect a interior vertex and a boundary vertex" << std::endl;
 
