@@ -20,6 +20,9 @@ set(SRC_FILES
     ParaviewWriter.hpp
     ParaviewWriter.cpp
 
+    ObjWriter.hpp
+    ObjWriter.cpp
+
     CachedMultiMesh.hpp
     CachedMultiMesh.cpp
 )
