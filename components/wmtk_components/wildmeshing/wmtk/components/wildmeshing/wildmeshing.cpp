@@ -722,18 +722,23 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         SchedulerStats pass_stats;
         int jj = 0;
         for (auto& op : ops) {
-            auto stats = scheduler.run_operation_on_all(*op);
-            pass_stats += stats;
-            logger().info(
-                "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
-                "executing: {}",
-                ops_name[jj],
-                stats.number_of_performed_operations(),
-                stats.number_of_successful_operations(),
-                stats.number_of_failed_operations(),
-                stats.collecting_time,
-                stats.sorting_time,
-                stats.executing_time);
+            int success = 10;
+            while (success > 0) {
+                auto stats = scheduler.run_operation_on_all(*op);
+                pass_stats += stats;
+                logger().info(
+                    "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
+                    "executing: {}",
+                    ops_name[jj],
+                    stats.number_of_performed_operations(),
+                    stats.number_of_successful_operations(),
+                    stats.number_of_failed_operations(),
+                    stats.collecting_time,
+                    stats.sorting_time,
+                    stats.executing_time);
+
+                success = stats.number_of_successful_operations();
+            }
             ++jj;
         }
 
@@ -777,6 +782,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                     if (!p[d].is_rounded()) {
                         rational = true;
                         ++unrounded;
+                        break;
                     }
                 }
             }
