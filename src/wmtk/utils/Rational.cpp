@@ -78,6 +78,24 @@ Rational::Rational(const Rational& other, bool rounded)
     }
 }
 
+
+Rational::Rational(const std::string& data, bool rounded)
+    : m_is_rounded(rounded)
+{
+    if (m_is_rounded) {
+        mpq_t tmp_r;
+        mpq_init(tmp_r);
+        mpq_set_str(tmp_r, data.c_str(), 10);
+
+        d_value = mpq_get_d(tmp_r);
+        mpq_clear(tmp_r);
+    } else {
+        mpq_init(value);
+        mpq_set_str(value, data.c_str(), 10);
+        d_value = std::numeric_limits<double>::lowest();
+    }
+}
+
 Rational::~Rational()
 {
     if (!m_is_rounded) mpq_clear(value);

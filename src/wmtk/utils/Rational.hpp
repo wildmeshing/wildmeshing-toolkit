@@ -19,6 +19,7 @@ public:
     Rational(const Rational& other);
     Rational(const Rational& other, bool rounded);
     Rational(const Eigen::VectorX<char>& data);
+    Rational(const std::string& data, bool rounded = false);
 
     Rational& operator=(const Rational& x);
     Rational& operator=(const double x);
