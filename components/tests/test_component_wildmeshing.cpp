@@ -145,9 +145,10 @@ TEST_CASE("wildmeshing_3d_multimesh", "[components][wildmeshing][.]")
 
 TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
 {
-    const double target_edge_length = 0.05;
+    // const double target_edge_length = 1.21271;
     const double target_max_amips = 10;
     const double min_edge_length = 0.001;
+    const double target_edge_length = 1.04;
 
 
     using namespace wmtk;
@@ -159,7 +160,7 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
     using namespace function;
     using namespace invariants;
 
-    std::ifstream file("/Users/teseo/Downloads/tw/split_initial_state.obj");
+    std::ifstream file("/home/jiacheng/jiacheng/tetwild/TetWild/build/split_initial_state.obj");
     std::vector<Vector3r> vertices;
     std::vector<Vector4l> tets;
     std::string x, y, z, token;
@@ -202,6 +203,22 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
             v.row(t(i, 3)));
         CHECK(ori > 0);
     }
+
+    const Vector3d bbox_max(
+        v.col(0).cast<double>().maxCoeff(),
+        v.col(1).cast<double>().maxCoeff(),
+        v.col(2).cast<double>().maxCoeff());
+    const Vector3d bbox_min(
+        v.col(0).cast<double>().minCoeff(),
+        v.col(1).cast<double>().minCoeff(),
+        v.col(2).cast<double>().minCoeff());
+
+    std::cout << bbox_max << std::endl;
+    std::cout << bbox_min << std::endl;
+
+    double diag = (bbox_max - bbox_min).norm();
+    std::cout << diag << std::endl;
+    std::cout << 0.05 * diag << std::endl;
 
 
     auto mesh = std::make_shared<TetMesh>();
