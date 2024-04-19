@@ -688,17 +688,20 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
     std::shared_ptr<function::PerSimplexFunction> amips =
         std::make_shared<AMIPS>(*mesh, pt_attribute);
 
-    auto function_invariant =
-        std::make_shared<MaxFunctionInvariant>(mesh->top_simplex_type(), amips);
+    auto function_invariant = std::make_shared<MaxFunctionInvariant>(
+        mesh->top_simplex_type(),
+        amips,
+        pt_attribute.as<Rational>());
 
     //////////////////////////////////
     // 2) EdgeCollapse
     //////////////////////////////////
     auto collapse = std::make_shared<EdgeCollapse>(*mesh);
+    collapse->add_invariant(todo_smaller);
+    collapse->add_invariant(invariant_separate_substructures);
     collapse->add_invariant(link_condition);
     collapse->add_invariant(inversion_invariant);
-    collapse->add_invariant(invariant_separate_substructures);
-
+    collapse->add_invariant(function_invariant);
 
     collapse->set_new_attribute_strategy(pt_attribute, clps_strat);
     for (const auto& attr : pass_through_attributes) {
@@ -706,10 +709,8 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
     }
 
     collapse->set_priority(short_edges_first);
-    collapse->add_invariant(todo_smaller);
+
     // collapse->add_invariant(envelope_invariant);
-    collapse->add_invariant(inversion_invariant);
-    collapse->add_invariant(function_invariant);
 
     collapse->add_transfer_strategy(amips_update);
     collapse->add_transfer_strategy(edge_length_update);
