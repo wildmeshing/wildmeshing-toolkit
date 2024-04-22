@@ -42,6 +42,13 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
         ++index;
     }
 
+    wmtk::logger().info(
+        "Input bbox max {}, min {}, diag {}, potential target edge length: {}",
+        bbox.max(),
+        bbox.min(),
+        bbox.diagonal().norm(),
+        bbox.diagonal().norm() * options.box_scale);
+
     if (options.add_box && !options.add_grid) {
         auto center = bbox.center();
         auto r = bbox.diagonal() / 2.;
@@ -94,6 +101,13 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
                 }
             }
         }
+
+        wmtk::logger().info(
+            "Grid bbox max {}, min {}, diag {}, potential target edge length: {}",
+            bbox.max(),
+            bbox.min(),
+            bbox.diagonal().norm(),
+            bbox.diagonal().norm() * options.box_scale);
         // else 2d and 1d
 
         if (options.min_dist >= 0) {
