@@ -155,7 +155,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     }
 
     const double bbdiag = (bmax - bmin).norm();
-    const double target_edge_length = options.target_edge_length * bbdiag;
+    const double target_edge_length =
+        options.target_edge_length * bbdiag /
+        std::min(
+            2.0,
+            1 + options.target_edge_length * 2); // min to prevent bad option.target_edge_length
+
+    wmtk::logger().info("target edge length: {}", target_edge_length);
 
     //////////////////////////////////
     // store amips
@@ -380,7 +386,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
     auto clps_strat = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
     clps_strat->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
-    clps_strat->set_strategy(CollapseBasicStrategy::Default);
+    // clps_strat->set_strategy(CollapseBasicStrategy::Default);
+    clps_strat->set_strategy(CollapseBasicStrategy::CopyOther);
 
 
     //////////////////////////////////
@@ -492,9 +499,21 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // 2) EdgeCollapse
     //////////////////////////////////
     auto collapse = std::make_shared<EdgeCollapse>(*mesh);
-    collapse->add_invariant(link_condition);
-    collapse->add_invariant(inversion_invariant);
+    // before
+    collapse->add_invariant(todo_smaller);
     collapse->add_invariant(invariant_separate_substructures);
+    collapse->add_invariant(link_condition);
+
+    // after
+    collapse->add_invariant(inversion_invariant);
+    collapse->add_invariant(function_invariant);
+    collapse->add_invariant(envelope_invariant);
+
+    // update
+    collapse->add_transfer_strategy(amips_update);
+    collapse->add_transfer_strategy(edge_length_update);
+    // collapse->add_transfer_strategy(target_edge_length_update);
+
 
     collapse->set_new_attribute_strategy(pt_attribute, clps_strat);
     for (const auto& attr : pass_through_attributes) {
@@ -504,58 +523,36 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         collapse->add_transfer_strategy(s);
     }
 
-    auto proj_collapse = std::make_shared<ProjectOperation>(collapse, mesh_constraint_pairs);
-    proj_collapse->set_priority(short_edges_first);
+    // auto proj_collapse = std::make_shared<ProjectOperation>(collapse, mesh_constraint_pairs);
+    // proj_collapse->set_priority(short_edges_first);
 
-    proj_collapse->add_invariant(todo_smaller);
-    proj_collapse->add_invariant(envelope_invariant);
-    proj_collapse->add_invariant(inversion_invariant);
-    proj_collapse->add_invariant(function_invariant);
+    // proj_collapse->add_invariant(todo_smaller);
+    // proj_collapse->add_invariant(envelope_invariant);
+    // proj_collapse->add_invariant(inversion_invariant);
+    // proj_collapse->add_invariant(function_invariant);
 
-    proj_collapse->add_transfer_strategy(amips_update);
-    proj_collapse->add_transfer_strategy(edge_length_update);
-    for (auto& s : update_parent_positon) {
-        proj_collapse->add_transfer_strategy(s);
-    }
-    for (auto& s : update_child_positon) {
-        proj_collapse->add_transfer_strategy(s);
-    }
+    // proj_collapse->add_transfer_strategy(amips_update);
+    // proj_collapse->add_transfer_strategy(edge_length_update);
+    // for (auto& s : update_parent_positon) {
+    //     proj_collapse->add_transfer_strategy(s);
+    // }
+    // for (auto& s : update_child_positon) {
+    //     proj_collapse->add_transfer_strategy(s);
+    // }
     // proj_collapse->add_transfer_strategy(target_edge_length_update);
 
-    auto proj_collapse_then_round = std::make_shared<OperationSequence>(*mesh);
-    proj_collapse_then_round->add_operation(proj_collapse);
-    proj_collapse_then_round->add_operation(rounding);
+    // auto proj_collapse_then_round = std::make_shared<OperationSequence>(*mesh);
+    // proj_collapse_then_round->add_operation(proj_collapse);
+    // proj_collapse_then_round->add_operation(rounding);
 
-    ops.emplace_back(proj_collapse_then_round);
+    auto collapse_then_round = std::make_shared<OperationSequence>(*mesh);
+    collapse_then_round->add_operation(collapse);
+    collapse_then_round->add_operation(rounding);
+
+    ops.emplace_back(collapse_then_round);
     ops_name.emplace_back("collapse");
     ops.emplace_back(rounding);
     ops_name.emplace_back("rounding");
-
-    ops.emplace_back(proj_collapse_then_round);
-    ops_name.emplace_back("collapse");
-    ops.emplace_back(rounding);
-    ops_name.emplace_back("rounding");
-
-    ops.emplace_back(proj_collapse_then_round);
-    ops_name.emplace_back("collapse");
-    ops.emplace_back(rounding);
-    ops_name.emplace_back("rounding");
-
-
-    // ops.emplace_back(proj_collapse);
-    // ops_name.emplace_back("collapse");
-    // ops.emplace_back(rounding);
-    // ops_name.emplace_back("rounding");
-
-    // ops.emplace_back(proj_collapse);
-    // ops_name.emplace_back("collapse");
-    // ops.emplace_back(rounding);
-    // ops_name.emplace_back("rounding");
-
-    // ops.emplace_back(proj_collapse);
-    // ops_name.emplace_back("collapse");
-    // ops.emplace_back(rounding);
-    // ops_name.emplace_back("rounding");
 
     //////////////////////////////////
     // 3) Swap
@@ -579,8 +576,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             op.add_transfer_strategy(s);
         }
 
-        collapse.add_invariant(link_condition);
         collapse.add_invariant(invariant_separate_substructures);
+        collapse.add_invariant(link_condition);
+
 
         collapse.set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::CopyOther);
         split.set_new_attribute_strategy(pt_attribute);
@@ -694,15 +692,15 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
     // Running all ops in order n times
     Scheduler scheduler;
+    int64_t success = 10;
 
     //////////////////////////////////
     // preprocessing
 
     SchedulerStats pre_stats;
 
-    for (int64_t i = 0; i < 3; ++i) {
-        // pre_stats = scheduler.run_operation_on_all(*proj_collapse);
-        pre_stats = scheduler.run_operation_on_all(*proj_collapse_then_round);
+    while (success > 0) {
+        pre_stats = scheduler.run_operation_on_all(*collapse_then_round);
         logger().info(
             "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
             "executing: {}",
@@ -713,6 +711,22 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             pre_stats.collecting_time,
             pre_stats.sorting_time,
             pre_stats.executing_time);
+
+        success = pre_stats.number_of_successful_operations();
+
+        // verbose logger, can be removed
+        int64_t unrounded = 0;
+        for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
+            const auto p = pt_accessor.vector_attribute(v);
+            for (int64_t d = 0; d < 3; ++d) {
+                if (!p[d].is_rounded()) {
+                    ++unrounded;
+                    break;
+                }
+            }
+        }
+
+        logger().info("Mesh has {} unrounded vertices", unrounded);
     }
 
     int iii = 0;
@@ -738,6 +752,20 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                     stats.executing_time);
 
                 success = stats.number_of_successful_operations();
+
+                // verbose logger, can be removed
+                int64_t unrounded = 0;
+                for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
+                    const auto p = pt_accessor.vector_attribute(v);
+                    for (int64_t d = 0; d < 3; ++d) {
+                        if (!p[d].is_rounded()) {
+                            ++unrounded;
+                            break;
+                        }
+                    }
+                }
+
+                logger().info("Mesh has {} unrounded vertices", unrounded);
             }
             ++jj;
         }
