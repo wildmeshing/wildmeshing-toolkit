@@ -10,6 +10,7 @@
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include "wmtk/function/simplex/AMIPS.hpp"
+#include "wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp"
 #include "wmtk/utils/Logger.hpp"
 
 namespace wmtk::components::internal {
@@ -506,54 +507,77 @@ void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::strin
         }
     }
 
-    auto amips_attribute =
-        mesh.register_attribute<double>("wildmeshing_amips", mesh.top_simplex_type(), 1);
-    auto amips_accessor = mesh.create_accessor(amips_attribute.as<double>());
-    auto compute_amips = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-        assert(P.rows() == 2 || P.rows() == 3); // rows --> attribute dimension
-        assert(P.cols() == P.rows() + 1);
-        if (P.cols() == 3) {
-            // triangle
-            assert(P.rows() == 2);
-            std::array<double, 6> pts;
-            for (size_t i = 0; i < 3; ++i) {
-                for (size_t j = 0; j < 2; ++j) {
-                    pts[2 * i + j] = P(j, i);
-                }
-            }
-            const double a = wmtk::function::Tri_AMIPS_energy(pts);
-            return Eigen::VectorXd::Constant(1, a);
-        } else {
-            // tet
-            assert(P.rows() == 3);
-            std::array<double, 12> pts;
-            for (size_t i = 0; i < 4; ++i) {
-                for (size_t j = 0; j < 3; ++j) {
-                    pts[3 * i + j] = P(j, i);
-                }
-            }
-            const double a = wmtk::function::Tet_AMIPS_energy(pts);
-            return Eigen::VectorXd::Constant(1, a);
-        }
-    };
-    auto amips_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-            amips_attribute,
-            pos_handle,
-            compute_amips);
-    amips_update->run_on_all();
+    // auto amips_attribute =
+    //     mesh.register_attribute<double>("wildmeshing_amips", mesh.top_simplex_type(), 1);
+    // auto amips_accessor = mesh.create_accessor(amips_attribute.as<double>());
+    // auto compute_amips = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+    //     assert(P.rows() == 2 || P.rows() == 3); // rows --> attribute dimension
+    //     assert(P.cols() == P.rows() + 1);
+    //     if (P.cols() == 3) {
+    //         // triangle
+    //         assert(P.rows() == 2);
+    //         std::array<double, 6> pts;
+    //         for (size_t i = 0; i < 3; ++i) {
+    //             for (size_t j = 0; j < 2; ++j) {
+    //                 pts[2 * i + j] = P(j, i);
+    //             }
+    //         }
+    //         const double a = wmtk::function::Tri_AMIPS_energy(pts);
+    //         return Eigen::VectorXd::Constant(1, a);
+    //     } else {
+    //         // tet
+    //         assert(P.rows() == 3);
+    //         std::array<double, 12> pts;
+    //         for (size_t i = 0; i < 4; ++i) {
+    //             for (size_t j = 0; j < 3; ++j) {
+    //                 pts[3 * i + j] = P(j, i);
+    //             }
+    //         }
+    //         const double a = wmtk::function::Tet_AMIPS_energy(pts);
+    //         return Eigen::VectorXd::Constant(1, a);
+    //     }
+    // };
+    // auto amips_update =
+    //     std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+    //         amips_attribute,
+    //         pos_handle,
+    //         compute_amips);
+    // amips_update->run_on_all();
 
     // {
     //     ParaviewWriter writer(output_file, "vertices", mesh, false, false, false, true);
     //     mesh.serialize(writer);
     // }
 
-    double max_amips = 0;
-    for (const Tuple t : mesh.get_all(wmtk::PrimitiveType::Tetrahedron)) {
-        max_amips = std::max(max_amips, amips_accessor.scalar_attribute(t));
+    // double max_amips = 0;
+    // for (const Tuple t : mesh.get_all(wmtk::PrimitiveType::Tetrahedron)) {
+    //     max_amips = std::max(max_amips, amips_accessor.scalar_attribute(t));
+    // }
+
+    // spdlog::info("max_amips: {}\n", max_amips);
+    mesh.consolidate();
+    auto face_handle =
+        mesh.register_attribute<int64_t>("face_constraint_tag", PrimitiveType::Triangle, 1);
+    auto acc_face = mesh.create_accessor<int64_t>(face_handle);
+
+    for (const Tuple& face : mesh.get_all(wmtk::PrimitiveType::Triangle)) {
+        if (!mesh.is_boundary_face(face)) {
+            if (acc_tag.scalar_attribute(face) !=
+                acc_tag.scalar_attribute(mesh.switch_tetrahedron(face))) {
+                acc_face.scalar_attribute(face) = 1;
+            }
+        }
     }
 
-    spdlog::info("max_amips: {}\n", max_amips);
+    {
+        auto child_mesh = multimesh::utils::extract_and_register_child_mesh_from_tag(
+            mesh,
+            "face_constraint_tag",
+            1,
+            wmtk::PrimitiveType::Triangle);
+        HDF5Writer writer(output_file + ".constraint.hdf5");
+        child_mesh->serialize(writer);
+    }
 
     {
         HDF5Writer writer(output_file + ".hdf5");
