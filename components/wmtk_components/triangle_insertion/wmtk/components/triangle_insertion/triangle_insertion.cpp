@@ -290,7 +290,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
     if (has_nonmanifold_edge) {
         names["nonmanifold_edges"] = nonmanifold_edge_mesh->absolute_multi_mesh_id();
 
-        logger().info("Nonmanifold edge child EdgeMehs registered");
+        logger().info("Nonmanifold edge child EdgeMesh registered");
     }
 
     names["bbox"] = bbox_mesh->absolute_multi_mesh_id();
