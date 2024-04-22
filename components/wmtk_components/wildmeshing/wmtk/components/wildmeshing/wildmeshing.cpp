@@ -143,7 +143,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     Eigen::VectorXd bmin(mesh->top_cell_dimension());
     bmin.setConstant(std::numeric_limits<double>::max());
     Eigen::VectorXd bmax(mesh->top_cell_dimension());
-    bmax.setConstant(std::numeric_limits<double>::min());
+    bmax.setConstant(std::numeric_limits<double>::lowest());
 
     const auto vertices = mesh->get_all(PrimitiveType::Vertex);
     for (const auto& v : vertices) {
@@ -154,12 +154,18 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         }
     }
 
+
     const double bbdiag = (bmax - bmin).norm();
-    const double target_edge_length =
-        options.target_edge_length * bbdiag /
-        std::min(
-            2.0,
-            1 + options.target_edge_length * 2); // min to prevent bad option.target_edge_length
+
+    wmtk::logger().info("bbox max {}, bbox min {}, diag {}", bmax, bmin, bbdiag);
+
+    const double target_edge_length = options.target_edge_length * bbdiag;
+
+    // const double target_edge_length =
+    //     options.target_edge_length * bbdiag /
+    //     std::min(
+    //         2.0,
+    //         1 + options.target_edge_length * 2); // min to prevent bad option.target_edge_length
 
     wmtk::logger().info("target edge length: {}", target_edge_length);
 
