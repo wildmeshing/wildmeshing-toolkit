@@ -9,6 +9,7 @@
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
+#include "wmtk/components/multimesh_from_tag/internal/MultiMeshFromTag.hpp"
 #include "wmtk/function/simplex/AMIPS.hpp"
 #include "wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp"
 #include "wmtk/utils/Logger.hpp"
@@ -482,6 +483,10 @@ void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::strin
     TetMesh mesh;
     mesh.initialize(T);
 
+    if (!mesh.is_connectivity_valid()) {
+        throw std::runtime_error("invalid_input");
+    }
+
     mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
 
     auto tag_handle = mesh.register_attribute<int64_t>("tag", PrimitiveType::Tetrahedron, 1);
@@ -556,8 +561,12 @@ void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::strin
 
     // spdlog::info("max_amips: {}\n", max_amips);
     mesh.consolidate();
-    auto face_handle =
-        mesh.register_attribute<int64_t>("face_constraint_tag", PrimitiveType::Triangle, 1);
+    if (!mesh.is_connectivity_valid()) {
+        throw std::runtime_error("invalid_input");
+    }
+
+
+    auto face_handle = mesh.register_attribute<int64_t>("surface", PrimitiveType::Triangle, 1);
     auto acc_face = mesh.create_accessor<int64_t>(face_handle);
 
     for (const Tuple& face : mesh.get_all(wmtk::PrimitiveType::Triangle)) {
@@ -569,20 +578,39 @@ void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::strin
         }
     }
 
-    {
-        auto child_mesh = multimesh::utils::extract_and_register_child_mesh_from_tag(
-            mesh,
-            "face_constraint_tag",
-            1,
-            wmtk::PrimitiveType::Triangle);
-        HDF5Writer writer(output_file + ".constraint.hdf5");
-        child_mesh->serialize(writer);
-    }
 
     {
-        HDF5Writer writer(output_file + ".hdf5");
-        mesh.serialize(writer);
+        // auto child_mesh = multimesh::utils::extract_and_register_child_mesh_from_tag(
+        //     mesh,
+        //     "surface",
+        //     1,
+        //     wmtk::PrimitiveType::Triangle);
+        // HDF5Writer writer(output_file + ".constraint.hdf5");
+        // child_mesh->serialize(writer);
+
+        // if (!child_mesh->is_connectivity_valid()) {
+        //     std::runtime_error("invalid_input");
+        // }
+
+        if (!mesh.is_connectivity_valid()) {
+            throw std::runtime_error("invalid_input");
+        }
+
+        internal::MultiMeshFromTag surface_mesh_from_tag(mesh, face_handle, 1);
+        surface_mesh_from_tag.compute_substructure_mesh();
+
+        auto child_mesh = mesh.get_child_meshes().back();
+        surface_mesh_from_tag.remove_soup();
     }
+
+    // {
+    //     HDF5Writer writer(output_file + ".hdf5");
+    //     mesh.serialize(writer);
+    // }
     spdlog::info("max:{} B\n", wmtk::getPeakRSS());
+
+    if (!mesh.is_connectivity_valid()) {
+        std::runtime_error("invalid_input");
+    }
 }
 } // namespace wmtk::components::internal

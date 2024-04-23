@@ -49,6 +49,14 @@ void multimesh(const base::Paths& paths, const nlohmann::json& j, io::Cache& cac
             name = options.mesh;
             out_name = options.name;
             mesh_in = cache.read_mesh(options.mesh);
+
+
+            // {
+            //     if (!mesh_in->is_connectivity_valid()) {
+            //         std::runtime_error("invalid input");
+            //     }
+            // }
+
             auto tmp = base::get_attributes(cache, *mesh_in, options.position);
             assert(tmp.size() == 1);
             position = tmp.front();
@@ -107,6 +115,12 @@ void multimesh(const base::Paths& paths, const nlohmann::json& j, io::Cache& cac
 
         names[tag] = child_mesh->absolute_multi_mesh_id();
     }
+
+    // {
+    //     if (!parent->is_connectivity_valid()) {
+    //         std::runtime_error("invalid input");
+    //     }
+    // }
 
     // output
     cache.write_mesh(*parent, out_name, names);

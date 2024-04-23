@@ -82,3 +82,25 @@ TEST_CASE("mesh_with_tag_from_image", "[components][input]")
         false);
     m->serialize(writer);
 }
+
+TEST_CASE("testss", "[components][input]")
+{
+    using namespace wmtk;
+    io::Cache cache("wmtk_cache", std::filesystem::current_path());
+
+
+    const std::filesystem::path input_file = data_dir / "mydata/head.out.hdf5";
+    json component_json = {
+        {"type", "input"},
+        {"name", "input_mesh"},
+        {"file", input_file.string()},
+        {"ignore_z", false},
+        {"tetrahedron_attributes", json::array()}};
+
+
+    CHECK_NOTHROW(wmtk::components::input(Paths(), component_json, cache));
+    auto mesh = cache.read_mesh("input_mesh");
+    if (!mesh->is_connectivity_valid()) {
+        std::runtime_error("invalid!");
+    }
+}
