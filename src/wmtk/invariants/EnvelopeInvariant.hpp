@@ -32,7 +32,7 @@ public:
 private:
     std::shared_ptr<fastEnvelope::FastEnvelope> m_envelope = nullptr;
     std::shared_ptr<SimpleBVH::BVH> m_bvh = nullptr;
-    const TypedAttributeHandle<Rational> m_coordinate_handle;
+    const attribute::MeshAttributeHandle m_coordinate_handle;
 
     const double m_envelope_size;
 };
