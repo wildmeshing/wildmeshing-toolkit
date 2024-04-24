@@ -23,6 +23,25 @@ public:
     // main entry point of the operator by the scheduler
     std::vector<simplex::Simplex> operator()(const simplex::Simplex& simplex) override;
 
+    std::vector<double> priority(const simplex::Simplex& simplex) const override
+    {
+        assert(!m_operations.empty());
+        return m_priority == nullptr ? m_operations.front()->priority(simplex)
+                                     : m_priority(simplex);
+    }
+
+    bool use_random_priority() const override
+    {
+        assert(!m_operations.empty());
+        return m_operations.front()->use_random_priority();
+    }
+
+    bool& use_random_priority() override
+    {
+        assert(!m_operations.empty());
+        return m_operations.front()->use_random_priority();
+    }
+
     PrimitiveType primitive_type() const override;
 
     void reserve_enough_simplices() override;

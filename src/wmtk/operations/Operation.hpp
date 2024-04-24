@@ -37,8 +37,8 @@ public:
         return m_priority == nullptr ? std::vector<double>({0}) : m_priority(simplex);
     }
 
-    bool use_random_priority() const { return m_use_random_priority; }
-    bool& use_random_priority() { return m_use_random_priority; }
+    virtual bool use_random_priority() const { return m_use_random_priority; }
+    virtual bool& use_random_priority() { return m_use_random_priority; }
 
     virtual PrimitiveType primitive_type() const = 0;
 
@@ -101,9 +101,10 @@ private:
     Mesh& m_mesh;
     bool m_use_random_priority = false;
 
-    std::function<std::vector<double>(const simplex::Simplex&)> m_priority = nullptr;
 
 protected:
+    std::function<std::vector<double>(const simplex::Simplex&)> m_priority = nullptr;
+
     invariants::InvariantCollection m_invariants;
 
     std::vector<std::shared_ptr<operations::AttributeTransferStrategyBase>>
