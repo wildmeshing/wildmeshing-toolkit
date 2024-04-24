@@ -28,14 +28,19 @@ public:
     wmtk::attribute::Accessor<int64_t> m_edge_rgb_state_accessor;
     wmtk::attribute::Accessor<int64_t> m_edge_todo_accessor;
 
+    wmtk::attribute::Accessor<double> m_edge_split_best_point_accessor;
+
     std::vector<std::shared_ptr<wmtk::operations::Operation>> m_ops;
 
+    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>> m_uv_update;
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_uvmesh_xyz_update;
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_distance_error_update;
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_curved_edge_length_update;
+    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
+        m_edge_split_best_point_update;
 
     std::function<std::vector<double>(const Simplex&)> m_triangle_distance_edge_length;
     std::function<std::vector<long>(const Simplex&)> m_valence_improvement;
@@ -54,6 +59,9 @@ public:
     void initialize_distance_error();
     void set_curved_edge_length_update_rule();
     void initialize_curved_edge_length();
+    void set_edge_split_best_point_update_rule();
+    void initialize_edge_split_best_point();
+    void set_new_attribute_split_strategy_None(wmtk::operations::EdgeSplit& op);
 
     static double curved_edge_length_on_displaced_surface(
         const Eigen::Vector2d& uv0,

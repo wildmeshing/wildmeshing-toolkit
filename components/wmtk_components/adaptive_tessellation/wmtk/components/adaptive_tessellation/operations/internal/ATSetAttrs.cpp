@@ -19,11 +19,11 @@
 #include "ATOperations.hpp"
 
 #include <finitediff.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/pixel_image_triangle_helper.hpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/LineQuadrature.hpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/Quadrature.hpp>
 
 namespace wmtk::components::operations::internal {
-
 
 void ATOperations::set_uvmesh_xyz_update_rule()
 { // 3d vert position update
@@ -97,6 +97,41 @@ void ATOperations::initialize_distance_error()
     }
 }
 
+void ATOperations::set_edge_split_best_point_update_rule()
+{
+    auto compute_edge_split_best_point = [&](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        assert(P.cols() == 2);
+        assert(P.rows() == 2);
+        Eigen::Vector2<double> uv0 = P.col(0);
+        Eigen::Vector2<double> uv1 = P.col(1);
+
+        Eigen::VectorXd error(2);
+        error =
+            wmtk::function::utils::max_distance_and_uv_on_edge(*m_atdata.evaluator_ptr(), uv0, uv1)
+                .second;
+        return error;
+    };
+    m_edge_split_best_point_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            m_atdata.m_edge_split_best_point_handle,
+            m_atdata.uv_handle(),
+            compute_edge_split_best_point);
+}
+
+void ATOperations::initialize_edge_split_best_point()
+{
+    // initialize edge split best point values
+    for (auto& e : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Edge)) {
+        const auto uv0 = m_uv_accessor.vector_attribute(e);
+        const auto uv1 = m_uv_accessor.vector_attribute(
+            m_atdata.uv_mesh_ptr()->switch_tuple(e, PrimitiveType::Vertex));
+        Eigen::Vector2d best_uv =
+            wmtk::function::utils::max_distance_and_uv_on_edge(*m_atdata.evaluator_ptr(), uv0, uv1)
+                .second;
+        m_edge_split_best_point_accessor.vector_attribute(e) = best_uv;
+    }
+}
+
 void ATOperations::set_curved_edge_length_update_rule()
 {
     auto compute_curved_edge_length = [&](const Eigen::Matrix<double, 2, 2>& P) -> Eigen::VectorXd {
@@ -122,8 +157,10 @@ void ATOperations::initialize_curved_edge_length()
         const auto uv0 = m_uv_accessor.vector_attribute(e);
         const auto uv1 = m_uv_accessor.vector_attribute(
             m_atdata.uv_mesh_ptr()->switch_tuple(e, PrimitiveType::Vertex));
-        m_curved_edge_length_accessor.scalar_attribute(e) =
+        double curve_length =
             curved_edge_length_on_displaced_surface(uv0, uv1, m_atdata.evaluator_ptr());
+        logger().info("curved length {}", curve_length);
+        m_curved_edge_length_accessor.scalar_attribute(e) = curve_length;
     }
 }
 

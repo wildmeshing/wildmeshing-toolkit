@@ -7,10 +7,14 @@
 namespace wmtk::operations::composite {
 RGBSplit::RGBSplit(
     Mesh& m,
+    attribute::MeshAttributeHandle& uv_handle,
+    attribute::MeshAttributeHandle& best_point_handle,
     attribute::MeshAttributeHandle& triangle_rgb_state_handle,
     attribute::MeshAttributeHandle& edge_rgb_state_handle)
     : Operation(m)
     , m_split(m)
+    , m_uv_handle(uv_handle)
+    , m_best_point_handle(best_point_handle)
     , m_triangle_rgb_state_handle(triangle_rgb_state_handle)
     , m_edge_rgb_state_handle(edge_rgb_state_handle)
     , m_triangle_rgb_state_accessor(
@@ -25,6 +29,8 @@ std::vector<simplex::Simplex> RGBSplit::unmodified_primitives(const simplex::Sim
 
 std::vector<simplex::Simplex> RGBSplit::execute(const simplex::Simplex& simplex)
 {
+    auto best_point_accessor = mesh().create_accessor(m_best_point_handle.as<double>());
+    Eigen::Vector2d best_uv = best_point_accessor.vector_attribute(simplex.tuple());
     Eigen::Vector2<int64_t> edge_color_level =
         m_edge_rgb_state_accessor.vector_attribute(simplex.tuple());
     Eigen::Vector2<int64_t> my_face_color_level =
@@ -41,6 +47,11 @@ std::vector<simplex::Simplex> RGBSplit::execute(const simplex::Simplex& simplex)
     assert(split_return.size() == 1);
     // now we do the attributes update
     Tuple split_return_tuple = split_return[0].tuple();
+    // update uv coordinate to the best coord
+    auto uv_accessor = mesh().create_accessor(m_uv_handle.as<double>());
+
+    uv_accessor.vector_attribute(split_return_tuple) = best_uv;
+
     assert(edge_color_level[0] == 0);
     // edge attributes update:
     //     split rib edge update:

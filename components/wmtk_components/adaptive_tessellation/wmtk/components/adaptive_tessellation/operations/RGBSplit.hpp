@@ -12,6 +12,8 @@ class RGBSplit : public Operation
 public:
     RGBSplit(
         Mesh& m,
+        attribute::MeshAttributeHandle& uv_handle,
+        attribute::MeshAttributeHandle& best_point_handle,
         attribute::MeshAttributeHandle& triangle_rgb_state_handle,
         attribute::MeshAttributeHandle& edge_rgb_state_handle);
 
@@ -26,6 +28,9 @@ protected:
 
 private:
     EdgeSplit m_split;
+
+    attribute::MeshAttributeHandle m_uv_handle;
+    attribute::MeshAttributeHandle m_best_point_handle;
     attribute::MeshAttributeHandle m_triangle_rgb_state_handle;
     attribute::MeshAttributeHandle m_edge_rgb_state_handle;
     attribute::Accessor<int64_t> m_triangle_rgb_state_accessor;

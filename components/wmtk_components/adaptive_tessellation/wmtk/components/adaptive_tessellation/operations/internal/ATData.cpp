@@ -241,6 +241,12 @@ void ATData::initialize_handles()
             ->register_attribute<int64_t>("edge_rgb_state", PrimitiveType::Edge, 2, true, 0);
     m_edge_todo_handle =
         m_uv_mesh_ptr->register_attribute<int64_t>("edge_todo", PrimitiveType::Edge, 1, true, 0);
+
+    m_edge_split_best_point_handle = m_uv_mesh_ptr->register_attribute<double>(
+        "edge_split_best_point",
+        PrimitiveType::Edge,
+        2,
+        true);
 }
 
 const std::array<std::shared_ptr<image::Image>, 3>& ATData::images() const

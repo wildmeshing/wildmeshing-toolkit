@@ -44,6 +44,7 @@ public:
     wmtk::attribute::MeshAttributeHandle m_face_rgb_state_handle;
     wmtk::attribute::MeshAttributeHandle m_edge_rgb_state_handle;
     wmtk::attribute::MeshAttributeHandle m_edge_todo_handle;
+    wmtk::attribute::MeshAttributeHandle m_edge_split_best_point_handle;
 
     std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
         m_evaluator_ptr;

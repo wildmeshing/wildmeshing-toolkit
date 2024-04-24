@@ -529,7 +529,12 @@ TEST_CASE("rgb_split")
     wmtk::attribute::Accessor<int64_t> m_edge_rgb_state_accessor =
         m.create_accessor(m_edge_rgb_state_handle.as<int64_t>());
     wmtk::attribute::Accessor<double> m_uv_accessor = m.create_accessor(m_uv_handle.as<double>());
-    wmtk::operations::composite::RGBSplit op(m, m_face_rgb_state_handle, m_edge_rgb_state_handle);
+    wmtk::operations::composite::RGBSplit op(
+        m,
+        m_uv_handle,
+        m_uv_handle,
+        m_face_rgb_state_handle,
+        m_edge_rgb_state_handle);
     op.split().set_new_attribute_strategy(
         m_uv_handle,
         wmtk::operations::SplitBasicStrategy::None,
@@ -850,6 +855,8 @@ std::shared_ptr<wmtk::operations::Operation> rgb_split(
     std::shared_ptr<wmtk::operations::composite::RGBSplit> op_split =
         std::make_shared<wmtk::operations::composite::RGBSplit>(
             m,
+            m_uv_handle,
+            m_uv_handle,
             m_face_rgb_state_handle,
             m_edge_rgb_state_handle);
     op_split->split().set_new_attribute_strategy(
@@ -1419,7 +1426,10 @@ TEST_CASE("max_dist")
                 double dist = (p - bary_p).norm();
                 max_sampled_dist = std::max(dist, max_sampled_dist);
             }
-            wmtk::logger().info("max_dist: {}, max_sampled_dist: {}", max_dist, max_sampled_dist);
+            wmtk::logger().info(
+                "max_dist: {}, max_sampled_dist: {} should be within 1e-4",
+                max_dist,
+                max_sampled_dist * wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2));
         }
     }
 }
