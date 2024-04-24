@@ -76,9 +76,9 @@ int wmtk_orient3d(
         }
 
         Eigen::Matrix3<Rational> M;
-        M.row(0) = p1r - p0r;
-        M.row(1) = p2r - p0r;
-        M.row(2) = p3r - p0r;
+        M.row(0) = p0r - p3r;
+        M.row(1) = p1r - p3r;
+        M.row(2) = p2r - p3r;
 
 #ifndef NDEBUG
         for (int i = 0; i < 3; ++i) {
