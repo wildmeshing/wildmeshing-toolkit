@@ -9,6 +9,7 @@
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
+#include <wmtk/utils/orient.hpp>
 
 #include "predicates.h"
 
@@ -43,7 +44,7 @@ std::shared_ptr<Mesh> MshReader::read(
             Eigen::Vector3d p2 = V.row(S(0, 2));
             Eigen::Vector3d p3 = V.row(S(0, 3));
 
-            if (orient3d(p0.data(), p1.data(), p2.data(), p3.data()) < 0) {
+            if (wmtk::utils::wmtk_orient3d(p0, p1, p2, p3) < 0) {
                 // swap col 0 and 1 of S
                 S.col(0).swap(S.col(1));
                 wmtk::logger().info(
@@ -58,7 +59,7 @@ std::shared_ptr<Mesh> MshReader::read(
                 Eigen::Vector3d p1 = V.row(S(i, 1));
                 Eigen::Vector3d p2 = V.row(S(i, 2));
                 Eigen::Vector3d p3 = V.row(S(i, 3));
-                auto orient = orient3d(p0.data(), p1.data(), p2.data(), p3.data());
+                auto orient = wmtk::utils::wmtk_orient3d(p0, p1, p2, p3);
 
                 if (orient < 0) {
                     log_and_throw_error("Input tet orientation is inconsistent.");
