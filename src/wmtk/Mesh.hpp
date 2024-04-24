@@ -65,7 +65,8 @@ class SimplexComparisons;
 
 namespace io {
 class ParaviewWriter;
-}
+class ObjWriter;
+} // namespace io
 namespace multimesh {
 template <int64_t cell_dimension, typename NodeFunctor>
 class MultiMeshSimplexVisitor;
@@ -97,6 +98,7 @@ public:
     template <typename T>
     friend class attribute::Accessor;
     friend class io::ParaviewWriter;
+    friend class io::ObjWriter;
     friend class HDF5Reader;
     friend class multimesh::attribute::UseParentScopeRAII;
     friend class multimesh::MultiMeshManager;

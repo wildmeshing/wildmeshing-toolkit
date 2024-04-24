@@ -108,7 +108,7 @@ def __main__():
     converter = MshConverter()
 
     input_path,output_path = sys.argv[1:]
-    converter.convert(input_path, ".".join(output_path.split('.')[:-1]))
+    converter.convert(input_path,output_path)
 
 
 
