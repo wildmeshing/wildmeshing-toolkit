@@ -195,7 +195,7 @@ $(document).ready(function(){initNavTree('_simplex_collection_8cpp_source.html',
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        std::back_inserter(tmp),</div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        [&amp;](<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&amp; s) { return std::make_pair(m_mesh.id(s), s); });</div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keyword">auto</span> cmp = [](<span class="keyword">const</span> SimplexIdPair&amp; a, <span class="keyword">const</span> SimplexIdPair&amp; b) {</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keyword">auto</span> <a class="code" href="namespacewmtk.html#a2f35ead9c86e0fd722118c11a8cbcf08">cmp</a> = [](<span class="keyword">const</span> SimplexIdPair&amp; a, <span class="keyword">const</span> SimplexIdPair&amp; b) {</div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="keywordflow">if</span> (a.second.primitive_type() == b.second.primitive_type()) {</div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            <span class="keywordflow">return</span> a.first &lt; b.first;</div>
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        } <span class="keywordflow">else</span> {</div>
@@ -205,7 +205,7 @@ $(document).ready(function(){initNavTree('_simplex_collection_8cpp_source.html',
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keyword">auto</span> equal = [](<span class="keyword">const</span> SimplexIdPair&amp; a, <span class="keyword">const</span> SimplexIdPair&amp; b) {</div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        <span class="keywordflow">return</span> a.first == b.first &amp;&amp; a.second.primitive_type() == b.second.primitive_type();</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    };</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    std::sort(tmp.begin(), tmp.end(), cmp);</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    std::sort(tmp.begin(), tmp.end(), <a class="code" href="namespacewmtk.html#a2f35ead9c86e0fd722118c11a8cbcf08">cmp</a>);</div>
 <div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> last = std::unique(tmp.begin(), tmp.end(), equal);</div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    tmp.erase(last, tmp.end());</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
@@ -312,6 +312,7 @@ $(document).ready(function(){initNavTree('_simplex_collection_8cpp_source.html',
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_collection_html_af66394c610ee9b919b56aab5026a0d41"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex_collection.html#af66394c610ee9b919b56aab5026a0d41">wmtk::simplex::SimplexCollection::m_simplices</a></div><div class="ttdeci">std::vector&lt; Simplex &gt; m_simplices</div><div class="ttdef"><b>Definition:</b> <a href="_simplex_collection_8hpp_source.html#l00105">SimplexCollection.hpp:105</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> <a href="_simplex_8hpp_source.html#l00013">Simplex.hpp:14</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1simplex_html"><div class="ttname"><a href="namespacewmtk_1_1simplex.html">wmtk::simplex</a></div><div class="ttdef"><b>Definition:</b> <a href="_hybrid_rational_accessor_8hpp_source.html#l00006">HybridRationalAccessor.hpp:6</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_a2f35ead9c86e0fd722118c11a8cbcf08"><div class="ttname"><a href="namespacewmtk.html#a2f35ead9c86e0fd722118c11a8cbcf08">wmtk::cmp</a></div><div class="ttdeci">int cmp(const Rational &amp;r, const Rational &amp;r1)</div><div class="ttdef"><b>Definition:</b> <a href="_rational_8cpp_source.html#l00259">Rational.cpp:259</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">wmtk::PrimitiveType</a></div><div class="ttdeci">PrimitiveType</div><div class="ttdef"><b>Definition:</b> <a href="_primitive_type_8hpp_source.html#l00009">PrimitiveType.hpp:9</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

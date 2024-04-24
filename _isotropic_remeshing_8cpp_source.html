@@ -235,7 +235,7 @@ $(document).ready(function(){initNavTree('_isotropic_remeshing_8cpp_source.html'
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="keyword">auto</span> op_collapse = std::make_shared&lt;EdgeCollapse&gt;(mesh);</div>
 <div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    op_collapse-&gt;add_invariant(invariant_link_condition);</div>
 <div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keywordflow">if</span> (position_for_inversion) {</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        op_collapse-&gt;add_invariant(std::make_shared&lt;SimplexInversionInvariant&gt;(</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        op_collapse-&gt;add_invariant(std::make_shared&lt;<a class="code" href="classwmtk_1_1_simplex_inversion_invariant.html">SimplexInversionInvariant&lt;double&gt;</a>&gt;(</div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            position_for_inversion.value().mesh(),</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            position_for_inversion.value().as&lt;<span class="keywordtype">double</span>&gt;()));</div>
 <div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    }</div>
@@ -297,7 +297,7 @@ $(document).ready(function(){initNavTree('_isotropic_remeshing_8cpp_source.html'
 <div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;            SplitRibBasicStrategy::Mean);</div>
 <div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    }</div>
 <div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <span class="keywordflow">if</span> (position_for_inversion) {</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;        op_swap-&gt;collapse().add_invariant(std::make_shared&lt;SimplexInversionInvariant&gt;(</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;        op_swap-&gt;collapse().add_invariant(std::make_shared&lt;<a class="code" href="classwmtk_1_1_simplex_inversion_invariant.html">SimplexInversionInvariant&lt;double&gt;</a>&gt;(</div>
 <div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;            position_for_inversion.value().mesh(),</div>
 <div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;            position_for_inversion.value().as&lt;<span class="keywordtype">double</span>&gt;()));</div>
 <div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    }</div>
@@ -330,7 +330,7 @@ $(document).ready(function(){initNavTree('_isotropic_remeshing_8cpp_source.html'
 <div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    }</div>
 <div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160; </div>
 <div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    <span class="keywordflow">if</span> (position_for_inversion) {</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;        op_smooth-&gt;add_invariant(std::make_shared&lt;SimplexInversionInvariant&gt;(</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;        op_smooth-&gt;add_invariant(std::make_shared&lt;<a class="code" href="classwmtk_1_1_simplex_inversion_invariant.html">SimplexInversionInvariant&lt;double&gt;</a>&gt;(</div>
 <div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;            position_for_inversion.value().mesh(),</div>
 <div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;            position_for_inversion.value().as&lt;<span class="keywordtype">double</span>&gt;()));</div>
 <div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;    }</div>
@@ -394,6 +394,7 @@ $(document).ready(function(){initNavTree('_isotropic_remeshing_8cpp_source.html'
 <div class="ttc" id="aclasswmtk_1_1_scheduler_stats_html_a938490720dd56f5aa6b87ecd34574bd3"><div class="ttname"><a href="classwmtk_1_1_scheduler_stats.html#a938490720dd56f5aa6b87ecd34574bd3">wmtk::SchedulerStats::executing_time</a></div><div class="ttdeci">double executing_time</div><div class="ttdef"><b>Definition:</b> <a href="_scheduler_8hpp_source.html#l00047">Scheduler.hpp:47</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_scheduler_stats_html_ac19aa99b03c45e0b51c2cf3a4aa18de1"><div class="ttname"><a href="classwmtk_1_1_scheduler_stats.html#ac19aa99b03c45e0b51c2cf3a4aa18de1">wmtk::SchedulerStats::sorting_time</a></div><div class="ttdeci">double sorting_time</div><div class="ttdef"><b>Definition:</b> <a href="_scheduler_8hpp_source.html#l00046">Scheduler.hpp:46</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_scheduler_stats_html_ae6e50990c7c4705a810c633755e9c2c0"><div class="ttname"><a href="classwmtk_1_1_scheduler_stats.html#ae6e50990c7c4705a810c633755e9c2c0">wmtk::SchedulerStats::number_of_successful_operations</a></div><div class="ttdeci">int64_t number_of_successful_operations() const</div><div class="ttdoc">Returns the number of successful operations performed by the scheduler.</div><div class="ttdef"><b>Definition:</b> <a href="_scheduler_8hpp_source.html#l00015">Scheduler.hpp:15</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_simplex_inversion_invariant_html"><div class="ttname"><a href="classwmtk_1_1_simplex_inversion_invariant.html">wmtk::SimplexInversionInvariant</a></div><div class="ttdef"><b>Definition:</b> <a href="_simplex_inversion_invariant_8hpp_source.html#l00008">SimplexInversionInvariant.hpp:9</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_8hpp_source.html#l00018">TriMesh.hpp:19</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_html_a6375662ccb85d7c8868b3c76d708bae5"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html#a6375662ccb85d7c8868b3c76d708bae5">wmtk::TriMesh::is_connectivity_valid</a></div><div class="ttdeci">bool is_connectivity_valid() const final override</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_8cpp_source.html#l00379">TriMesh.cpp:379</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_mesh_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_attribute_handle_8hpp_source.html#l00022">MeshAttributeHandle.hpp:23</a></div></div>

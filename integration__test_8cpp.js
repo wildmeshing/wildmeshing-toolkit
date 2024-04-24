@@ -13,7 +13,5 @@ var integration__test_8cpp =
     [ "WMTK_INTEGRATION", "integration__test_8cpp.html#a07e752ab47f6626716b7c6d6d782878e", null ],
     [ "WMTK_INTEGRATION", "integration__test_8cpp.html#abcaaa8128e5fd5532a90f1cdf831b7d0", null ],
     [ "WMTK_INTEGRATION", "integration__test_8cpp.html#ab37ff8065f9b3818a57fcb8233285fa0", null ],
-    [ "WMTK_INTEGRATION", "integration__test_8cpp.html#ad9b63d84b1aa7a5a5f3e45aeff967ed3", null ],
-    [ "WMTK_INTEGRATION", "integration__test_8cpp.html#a3867342af689c66a21f8b1dbd7522f53", null ],
-    [ "WMTK_INTEGRATION", "integration__test_8cpp.html#a1b1c0b3b7a6c6396f6c3fe63262c4ade", null ]
+    [ "WMTK_INTEGRATION", "integration__test_8cpp.html#ad9b63d84b1aa7a5a5f3e45aeff967ed3", null ]
 ];

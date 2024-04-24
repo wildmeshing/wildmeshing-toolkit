@@ -182,6 +182,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html">TagIntersectionOptions</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_winding_number_options.html">WindingNumberOptions</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
@@ -238,6 +240,12 @@ Functions</h2></td></tr>
 <tr class="separator:a5167173a30d388b3b1f1cd81cd6a167a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a41722ce1685a7dec1703284ea7b17090"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a41722ce1685a7dec1703284ea7b17090">NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (<a class="el" href="structwmtk_1_1components_1_1internal_1_1_tag_intersection_values.html">TagIntersectionValues</a>, vertex_values, edge_values, face_values, tetrahedron_values)</td></tr>
 <tr class="separator:a41722ce1685a7dec1703284ea7b17090"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18a56f1ee7f5d72c7557922789a96802"><td class="memItemLeft" align="right" valign="top">Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a18a56f1ee7f5d72c7557922789a96802">winding_number</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;surface)</td></tr>
+<tr class="separator:a18a56f1ee7f5d72c7557922789a96802"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb68ce2cd6102c4f403bb39329da8a02"><td class="memItemLeft" align="right" valign="top">Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#afb68ce2cd6102c4f403bb39329da8a02">winding_number_internal</a> (const Eigen::MatrixXd &amp;query_points, const Eigen::MatrixXd &amp;surface_V, const <a class="el" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX</a>&lt; int64_t &gt; &amp;surface_F)</td></tr>
+<tr class="separator:afb68ce2cd6102c4f403bb39329da8a02"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac37ed3f255d6cb7b44f2423cf4079170"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#ac37ed3f255d6cb7b44f2423cf4079170">NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (<a class="el" href="structwmtk_1_1components_1_1internal_1_1_winding_number_options.html">WindingNumberOptions</a>, <a class="el" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">input</a>, filtering_base, <a class="el" href="namespacewmtk_1_1components.html#afb654c569d4536f122b7cdfb9156c7d7">output</a>, threshold)</td></tr>
+<tr class="separator:ac37ed3f255d6cb7b44f2423cf4079170"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="ae80c4178ab57d7bc05e9512f49be096a"></a>
@@ -619,7 +627,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a298027ac60629f1a77a3b963bb25aa37"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a298027ac60629f1a77a3b963bb25aa37">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[1/14]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a298027ac60629f1a77a3b963bb25aa37">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[1/15]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -665,7 +673,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a163f2df8912b357a44313f201d62cdc2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a163f2df8912b357a44313f201d62cdc2">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[2/14]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a163f2df8912b357a44313f201d62cdc2">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[2/15]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -693,7 +701,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="ab4d5aa85b7e849adbde7c7fedc6453bf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab4d5aa85b7e849adbde7c7fedc6453bf">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[3/14]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4d5aa85b7e849adbde7c7fedc6453bf">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[3/15]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -727,7 +735,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a54b94df0200765de12723783395d875f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a54b94df0200765de12723783395d875f">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[4/14]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a54b94df0200765de12723783395d875f">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[4/15]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -755,7 +763,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a09304330ff9ccc9e10955e0e762f9db2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a09304330ff9ccc9e10955e0e762f9db2">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[5/14]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a09304330ff9ccc9e10955e0e762f9db2">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[5/15]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -801,7 +809,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a1f51db9e8abba0eb8b907b905e0064d5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1f51db9e8abba0eb8b907b905e0064d5">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[6/14]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f51db9e8abba0eb8b907b905e0064d5">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[6/15]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -847,7 +855,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="aef589070cd8047eeef633efc806e2f94"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aef589070cd8047eeef633efc806e2f94">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[7/14]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aef589070cd8047eeef633efc806e2f94">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[7/15]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -929,7 +937,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="ad16f398cf6c2ef302d36251472787381"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad16f398cf6c2ef302d36251472787381">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[8/14]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad16f398cf6c2ef302d36251472787381">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[8/15]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -975,7 +983,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a82ea78e67966e7a58c4f86b0c3cad0ab"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a82ea78e67966e7a58c4f86b0c3cad0ab">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[9/14]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a82ea78e67966e7a58c4f86b0c3cad0ab">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[9/15]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1003,7 +1011,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="ad58e354780e68401b26189ae8cb2b4c0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad58e354780e68401b26189ae8cb2b4c0">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[10/14]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad58e354780e68401b26189ae8cb2b4c0">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[10/15]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1055,7 +1063,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="aefad15989853c3a0e0da1b2c8ca164e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aefad15989853c3a0e0da1b2c8ca164e4">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[11/14]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aefad15989853c3a0e0da1b2c8ca164e4">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[11/15]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1083,7 +1091,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="ab03ae1c627430d666b51520c01ab8aa9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab03ae1c627430d666b51520c01ab8aa9">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[12/14]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab03ae1c627430d666b51520c01ab8aa9">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[12/15]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1123,7 +1131,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a5167173a30d388b3b1f1cd81cd6a167a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5167173a30d388b3b1f1cd81cd6a167a">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[13/14]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5167173a30d388b3b1f1cd81cd6a167a">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[13/15]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1169,7 +1177,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a41722ce1685a7dec1703284ea7b17090"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a41722ce1685a7dec1703284ea7b17090">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[14/14]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a41722ce1685a7dec1703284ea7b17090">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[14/15]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1202,6 +1210,52 @@ Here is the caller graph for this function:</div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">tetrahedron_values&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac37ed3f255d6cb7b44f2423cf4079170"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac37ed3f255d6cb7b44f2423cf4079170">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[15/15]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::components::internal::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_winding_number_options.html">WindingNumberOptions</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">input</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">filtering_base&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacewmtk_1_1components.html#afb654c569d4536f122b7cdfb9156c7d7">output</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">threshold&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -1335,6 +1389,96 @@ Here is the caller graph for this function:</div>
 <p class="definition">Definition at line <a class="el" href="_tag_intersection_options_8cpp_source.html#l00007">7</a> of file <a class="el" href="_tag_intersection_options_8cpp_source.html">TagIntersectionOptions.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_tag_intersection_options_8hpp_source.html#l00044">wmtk::components::internal::TagIntersectionOptions::attributes</a>, <a class="el" href="_tag_intersection_options_8hpp_source.html#l00042">wmtk::components::internal::TagIntersectionOptions::input</a>, <a class="el" href="_tag_intersection_options_8hpp_source.html#l00043">wmtk::components::internal::TagIntersectionOptions::output</a>, <a class="el" href="_tag_intersection_options_8hpp_source.html#l00046">wmtk::components::internal::TagIntersectionOptions::output_attributes</a>, <a class="el" href="_tag_intersection_options_8hpp_source.html#l00047">wmtk::components::internal::TagIntersectionOptions::output_values</a>, <a class="el" href="_tag_intersection_options_8hpp_source.html#l00048">wmtk::components::internal::TagIntersectionOptions::pass_through</a>, and <a class="el" href="_tag_intersection_options_8hpp_source.html#l00045">wmtk::components::internal::TagIntersectionOptions::values</a>.</p>
+
+</div>
+</div>
+<a id="a18a56f1ee7f5d72c7557922789a96802"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18a56f1ee7f5d72c7557922789a96802">&#9670;&nbsp;</a></span>winding_number()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Eigen::VectorXd wmtk::components::internal::winding_number </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>surface</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="internal_2winding__number_8cpp_source.html#l00014">14</a> of file <a class="el" href="internal_2winding__number_8cpp_source.html">winding_number.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_eigen_matrix_writer_8cpp_source.html#l00026">wmtk::utils::EigenMatrixWriter::get_EV_matrix()</a>, <a class="el" href="_eigen_matrix_writer_8cpp_source.html#l00021">wmtk::utils::EigenMatrixWriter::get_FV_matrix()</a>, <a class="el" href="_eigen_matrix_writer_8cpp_source.html#l00005">wmtk::utils::EigenMatrixWriter::get_position_matrix()</a>, <a class="el" href="_eigen_matrix_writer_8cpp_source.html#l00016">wmtk::utils::EigenMatrixWriter::get_TV_matrix()</a>, <a class="el" href="_mesh_8cpp_source.html#l00045">wmtk::Mesh::serialize()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_mesh_8hpp_source.html#l00995">wmtk::Mesh::top_simplex_type()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="internal_2winding__number_8cpp_source.html#l00071">winding_number_internal()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="winding__number_8cpp_source.html#l00017">wmtk::components::winding_number()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a18a56f1ee7f5d72c7557922789a96802_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a18a56f1ee7f5d72c7557922789a96802_icgraph.svg" width="471" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="afb68ce2cd6102c4f403bb39329da8a02"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb68ce2cd6102c4f403bb39329da8a02">&#9670;&nbsp;</a></span>winding_number_internal()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Eigen::VectorXd wmtk::components::internal::winding_number_internal </td>
+          <td>(</td>
+          <td class="paramtype">const Eigen::MatrixXd &amp;&#160;</td>
+          <td class="paramname"><em>query_points</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Eigen::MatrixXd &amp;&#160;</td>
+          <td class="paramname"><em>surface_V</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX</a>&lt; int64_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>surface_F</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="internal_2winding__number_8cpp_source.html#l00071">71</a> of file <a class="el" href="internal_2winding__number_8cpp_source.html">winding_number.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="internal_2winding__number_8cpp_source.html#l00014">winding_number()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_afb68ce2cd6102c4f403bb39329da8a02_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
 
 </div>
 </div>

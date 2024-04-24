@@ -19,5 +19,6 @@ var namespacewmtk_1_1function =
     [ "Tri_AMIPS_energy", "namespacewmtk_1_1function.html#acd1fbbd6c163ab50ae7d2f684690f439", null ],
     [ "Tri_AMIPS_hessian", "namespacewmtk_1_1function.html#a8573ef05c1016e7127e37128472dcc35", null ],
     [ "Tri_AMIPS_jacobian", "namespacewmtk_1_1function.html#a9567d869f1e3e762ec382755de6da7df", null ],
-    [ "unbox", "namespacewmtk_1_1function.html#ae671fa9e27ca8687ce906dc2cda5287f", null ]
+    [ "unbox", "namespacewmtk_1_1function.html#ae671fa9e27ca8687ce906dc2cda5287f", null ],
+    [ "unbox", "namespacewmtk_1_1function.html#ac01c542b5c742bfb6ce210eca1511e90", null ]
 ];

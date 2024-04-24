@@ -85,7 +85,8 @@ var annotated_dup =
           [ "RegularSpaceOptions", "structwmtk_1_1components_1_1internal_1_1_regular_space_options.html", "structwmtk_1_1components_1_1internal_1_1_regular_space_options" ],
           [ "TagIntersectionAttributes", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_attributes.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_attributes" ],
           [ "TagIntersectionValues", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values" ],
-          [ "TagIntersectionOptions", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options" ]
+          [ "TagIntersectionOptions", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options" ],
+          [ "WindingNumberOptions", "structwmtk_1_1components_1_1internal_1_1_winding_number_options.html", "structwmtk_1_1components_1_1internal_1_1_winding_number_options" ]
         ] ],
         [ "FusionOptions", "structwmtk_1_1components_1_1_fusion_options.html", "structwmtk_1_1components_1_1_fusion_options" ],
         [ "MultimeshUVOptions", "structwmtk_1_1components_1_1_multimesh_u_v_options.html", "structwmtk_1_1components_1_1_multimesh_u_v_options" ],
@@ -196,6 +197,8 @@ var annotated_dup =
           [ "RoundRationalToDouble", "classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double.html", "classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double" ],
           [ "UpdateEdgeOperationMultiMeshMapFunctor", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor" ]
         ] ],
+        [ "AdjustSizingField", "classwmtk_1_1operations_1_1_adjust_sizing_field.html", "classwmtk_1_1operations_1_1_adjust_sizing_field" ],
+        [ "AMIPSOptimizationSmoothing", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing.html", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing" ],
         [ "BaseCollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy" ],
         [ "CollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy" ],
         [ "CollapseNewAttributeTopoInfo", "classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html", "classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info" ],
@@ -212,7 +215,9 @@ var annotated_dup =
         [ "EdgeOperationData", "classwmtk_1_1operations_1_1_edge_operation_data.html", "classwmtk_1_1operations_1_1_edge_operation_data" ],
         [ "EdgeSplit", "classwmtk_1_1operations_1_1_edge_split.html", "classwmtk_1_1operations_1_1_edge_split" ],
         [ "Operation", "classwmtk_1_1operations_1_1_operation.html", "classwmtk_1_1operations_1_1_operation" ],
+        [ "OperationSequence", "classwmtk_1_1operations_1_1_operation_sequence.html", "classwmtk_1_1operations_1_1_operation_sequence" ],
         [ "OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", "classwmtk_1_1operations_1_1_optimization_smoothing" ],
+        [ "Rounding", "classwmtk_1_1operations_1_1_rounding.html", "classwmtk_1_1operations_1_1_rounding" ],
         [ "VertexLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth" ],
         [ "VertexTangentialLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth" ]
       ] ],
@@ -306,6 +311,7 @@ var annotated_dup =
       [ "MultiMeshLinkConditionInvariant", "classwmtk_1_1_multi_mesh_link_condition_invariant.html", "classwmtk_1_1_multi_mesh_link_condition_invariant" ],
       [ "MultiMeshMapValidInvariant", "classwmtk_1_1_multi_mesh_map_valid_invariant.html", "classwmtk_1_1_multi_mesh_map_valid_invariant" ],
       [ "MultiMeshEdgeTopologyInvariant", "classwmtk_1_1_multi_mesh_edge_topology_invariant.html", "classwmtk_1_1_multi_mesh_edge_topology_invariant" ],
+      [ "RoundedInvariant", "classwmtk_1_1_rounded_invariant.html", "classwmtk_1_1_rounded_invariant" ],
       [ "SimplexInversionInvariant", "classwmtk_1_1_simplex_inversion_invariant.html", "classwmtk_1_1_simplex_inversion_invariant" ],
       [ "Swap23EnergyBeforeInvariant", "classwmtk_1_1_swap23_energy_before_invariant.html", "classwmtk_1_1_swap23_energy_before_invariant" ],
       [ "Swap32EnergyBeforeInvariant", "classwmtk_1_1_swap32_energy_before_invariant.html", "classwmtk_1_1_swap32_energy_before_invariant" ],

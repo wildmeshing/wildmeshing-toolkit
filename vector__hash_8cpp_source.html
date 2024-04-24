@@ -164,15 +164,15 @@ $(document).ready(function(){initNavTree('vector__hash_8cpp_source.html',''); in
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    std::transform(data.begin(), data.end(), std::back_inserter(hashes), [](<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_rational.html">Rational</a>&amp; r) {</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        std::vector&lt;size_t&gt; v;</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        std::hash&lt;std::string&gt; h;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        v.emplace_back(h(r.numerator()));</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        v.emplace_back(h(r.denominator()));</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        v.emplace_back(h(r.serialize()));</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        return vector_hash(v);</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    });</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacewmtk_1_1utils.html#aa9921982a676a496296f2d90452ddede">vector_hash</a>(hashes);</div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;}</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;} <span class="comment">// namespace wmtk::utils</span></div>
 <div class="ttc" id="a_rational_8hpp_html"><div class="ttname"><a href="_rational_8hpp.html">Rational.hpp</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_rational_html"><div class="ttname"><a href="classwmtk_1_1_rational.html">wmtk::Rational</a></div><div class="ttdef"><b>Definition:</b> <a href="_rational_8hpp_source.html#l00008">Rational.hpp:9</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_rational_html"><div class="ttname"><a href="classwmtk_1_1_rational.html">wmtk::Rational</a></div><div class="ttdef"><b>Definition:</b> <a href="_rational_8hpp_source.html#l00012">Rational.hpp:13</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1utils_html"><div class="ttname"><a href="namespacewmtk_1_1utils.html">wmtk::utils</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00022">Tuple.hpp:22</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1utils_html_aa9921982a676a496296f2d90452ddede"><div class="ttname"><a href="namespacewmtk_1_1utils.html#aa9921982a676a496296f2d90452ddede">wmtk::utils::vector_hash</a></div><div class="ttdeci">std::size_t vector_hash(const std::vector&lt; size_t &gt; &amp;data)</div><div class="ttdef"><b>Definition:</b> <a href="vector__hash_8cpp_source.html#l00028">vector_hash.cpp:28</a></div></div>
 <div class="ttc" id="avector__hash_8hpp_html"><div class="ttname"><a href="vector__hash_8hpp.html">vector_hash.hpp</a></div></div>

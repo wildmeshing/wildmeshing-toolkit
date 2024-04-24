@@ -8,7 +8,6 @@ var hierarchy =
     [ "wmtk::attribute::AccessorBase< T, Eigen::Dynamic >", "classwmtk_1_1attribute_1_1_accessor_base.html", [
       [ "wmtk::attribute::CachingAccessor< T, Dim >", "classwmtk_1_1attribute_1_1_caching_accessor.html", [
         [ "wmtk::attribute::Accessor< int64_t >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
-        [ "wmtk::attribute::Accessor< double >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
         [ "wmtk::attribute::Accessor< int64_t, MeshType >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
         [ "wmtk::attribute::Accessor< int64_t, wmtk::EdgeMesh >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
         [ "wmtk::attribute::Accessor< int64_t, wmtk::TriMesh >", "classwmtk_1_1attribute_1_1_accessor.html", null ],
@@ -177,7 +176,8 @@ var hierarchy =
       [ "wmtk::MultiMeshEdgeTopologyInvariant", "classwmtk_1_1_multi_mesh_edge_topology_invariant.html", null ],
       [ "wmtk::MultiMeshLinkConditionInvariant", "classwmtk_1_1_multi_mesh_link_condition_invariant.html", null ],
       [ "wmtk::MultiMeshMapValidInvariant", "classwmtk_1_1_multi_mesh_map_valid_invariant.html", null ],
-      [ "wmtk::SimplexInversionInvariant", "classwmtk_1_1_simplex_inversion_invariant.html", null ],
+      [ "wmtk::RoundedInvariant", "classwmtk_1_1_rounded_invariant.html", null ],
+      [ "wmtk::SimplexInversionInvariant< T >", "classwmtk_1_1_simplex_inversion_invariant.html", null ],
       [ "wmtk::Swap23EnergyBeforeInvariant", "classwmtk_1_1_swap23_energy_before_invariant.html", null ],
       [ "wmtk::Swap32EnergyBeforeInvariant", "classwmtk_1_1_swap32_energy_before_invariant.html", null ],
       [ "wmtk::Swap44EnergyBeforeInvariant", "classwmtk_1_1_swap44_energy_before_invariant.html", null ],
@@ -256,13 +256,17 @@ var hierarchy =
     [ "wmtk::simplex::OpenStarIterable", "classwmtk_1_1simplex_1_1_open_star_iterable.html", null ],
     [ "wmtk::operations::Operation", "classwmtk_1_1operations_1_1_operation.html", [
       [ "wmtk::operations::AttributesUpdate", "classwmtk_1_1operations_1_1_attributes_update.html", [
+        [ "wmtk::operations::AMIPSOptimizationSmoothing", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing.html", null ],
+        [ "wmtk::operations::AdjustSizingField", "classwmtk_1_1operations_1_1_adjust_sizing_field.html", null ],
         [ "wmtk::operations::AttributesUpdateWithFunction", "classwmtk_1_1operations_1_1_attributes_update_with_function.html", null ],
         [ "wmtk::operations::OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", null ],
+        [ "wmtk::operations::Rounding", "classwmtk_1_1operations_1_1_rounding.html", null ],
         [ "wmtk::operations::composite::ProjectOperation", "classwmtk_1_1operations_1_1composite_1_1_project_operation.html", null ],
         [ "wmtk::operations::utils::RoundRationalToDouble", "classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double.html", null ]
       ] ],
       [ "wmtk::operations::EdgeCollapse", "classwmtk_1_1operations_1_1_edge_collapse.html", null ],
       [ "wmtk::operations::EdgeSplit", "classwmtk_1_1operations_1_1_edge_split.html", null ],
+      [ "wmtk::operations::OperationSequence", "classwmtk_1_1operations_1_1_operation_sequence.html", null ],
       [ "wmtk::operations::composite::TetCellSplit", "classwmtk_1_1operations_1_1composite_1_1_tet_cell_split.html", null ],
       [ "wmtk::operations::composite::TetEdgeSwap", "classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html", null ],
       [ "wmtk::operations::composite::TetFaceSwap", "classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html", null ],
@@ -286,7 +290,8 @@ var hierarchy =
     [ "wmtk::function::utils::PositionMapEvaluator", "classwmtk_1_1function_1_1utils_1_1_position_map_evaluator.html", null ],
     [ "wmtk::Primitive", "classwmtk_1_1_primitive.html", null ],
     [ "polysolve::nonlinear::Problem", null, [
-      [ "wmtk::operations::OptimizationSmoothing::WMTKProblem", "classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html", null ]
+      [ "wmtk::operations::AMIPSOptimizationSmoothing::WMTKAMIPSProblem< S >", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing_1_1_w_m_t_k_a_m_i_p_s_problem.html", null ],
+      [ "wmtk::operations::OptimizationSmoothing::WMTKProblem< T >", "classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html", null ]
     ] ],
     [ "wmtk::components::internal::ProceduralOptions", "structwmtk_1_1components_1_1internal_1_1_procedural_options.html", null ],
     [ "wmtk::utils::RandomSeedSingleton", "classwmtk_1_1utils_1_1_random_seed_singleton.html", null ],
@@ -351,6 +356,7 @@ var hierarchy =
     [ "wmtk::attribute::TypedAttributeHandle< T >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", null ],
     [ "wmtk::attribute::TypedAttributeHandle< double >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", null ],
     [ "wmtk::attribute::TypedAttributeHandle< int64_t >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", null ],
+    [ "wmtk::attribute::TypedAttributeHandle< wmtk::Rational >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", null ],
     [ "wmtk::utils::metaprogramming::unwrap_reference< T >", "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html", null ],
     [ "wmtk::utils::metaprogramming::unwrap_reference< std::decay_t< T > >", "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html", [
       [ "wmtk::utils::metaprogramming::unwrap_ref_decay< T >", "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__ref__decay.html", null ]
@@ -365,5 +371,6 @@ var hierarchy =
     [ "wmtk::components::WildmeshingOptions", "structwmtk_1_1components_1_1_wildmeshing_options.html", null ],
     [ "wmtk::components::WildmeshingOptionsAttributes", "structwmtk_1_1components_1_1_wildmeshing_options_attributes.html", null ],
     [ "wmtk::components::WildmeshingOptionsEnvelope", "structwmtk_1_1components_1_1_wildmeshing_options_envelope.html", null ],
-    [ "wmtk::components::WildmeshingOptionsEnvelopeMesh", "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh.html", null ]
+    [ "wmtk::components::WildmeshingOptionsEnvelopeMesh", "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh.html", null ],
+    [ "wmtk::components::internal::WindingNumberOptions", "structwmtk_1_1components_1_1internal_1_1_winding_number_options.html", null ]
 ];

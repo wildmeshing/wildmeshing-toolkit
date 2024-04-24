@@ -13,6 +13,7 @@ var namespacewmtk_1_1utils =
     [ "TupleCellLessThan", "classwmtk_1_1utils_1_1_tuple_cell_less_than.html", "classwmtk_1_1utils_1_1_tuple_cell_less_than" ],
     [ "TupleInspector", "classwmtk_1_1utils_1_1_tuple_inspector.html", null ],
     [ "mesh_type_from_primitive_type_t", "namespacewmtk_1_1utils.html#a4a14004fe275472582e54f21d079b230", null ],
+    [ "exactinit", "namespacewmtk_1_1utils.html#a5f6998f980cb239bfc739e9600e3d03e", null ],
     [ "generate_background_mesh", "namespacewmtk_1_1utils.html#a81fce5e5de645986df7e56f010ca2886", null ],
     [ "generate_raw_tetmesh_from_input_surface", "namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456", null ],
     [ "generate_raw_tetmesh_with_surface_from_input", "namespacewmtk_1_1utils.html#a4ea0d7c148b4066c6692a8e31c7b7b7a", null ],
@@ -34,5 +35,13 @@ var namespacewmtk_1_1utils =
     [ "vector_hash", "namespacewmtk_1_1utils.html#ac02c195a92eb9c9582984a2d94fba796", null ],
     [ "vector_hash", "namespacewmtk_1_1utils.html#aa9921982a676a496296f2d90452ddede", null ],
     [ "vector_hash", "namespacewmtk_1_1utils.html#abfdeacbb173bcc7af1a15955b29c78be", null ],
-    [ "vector_unique", "namespacewmtk_1_1utils.html#ae2c7b3137347cfeaffd619c0f6511b85", null ]
+    [ "vector_unique", "namespacewmtk_1_1utils.html#ae2c7b3137347cfeaffd619c0f6511b85", null ],
+    [ "wmtk_orient1d", "namespacewmtk_1_1utils.html#a6ac13755b6465d9ea3095d42f0ef4672", null ],
+    [ "wmtk_orient1d", "namespacewmtk_1_1utils.html#a1c5198487b4421eb17ef97f5b8d410a3", null ],
+    [ "wmtk_orient2d", "namespacewmtk_1_1utils.html#ad691a0e7385782bb392820d1188e26b0", null ],
+    [ "wmtk_orient2d", "namespacewmtk_1_1utils.html#ab2ad1870c97d30a03b43658624067b7e", null ],
+    [ "wmtk_orient2d", "namespacewmtk_1_1utils.html#a0cb19465e2461093c45f16bac27bce3c", null ],
+    [ "wmtk_orient3d", "namespacewmtk_1_1utils.html#a3957cc0910b1bcc4925f2baa0a1155a6", null ],
+    [ "wmtk_orient3d", "namespacewmtk_1_1utils.html#a91478b1d9b2b612a04454739dd289e73", null ],
+    [ "wmtk_orient3d", "namespacewmtk_1_1utils.html#a8b0d39847476855fd919fef505658858", null ]
 ];

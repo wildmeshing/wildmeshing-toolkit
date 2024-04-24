@@ -36,6 +36,7 @@ var namespacewmtk_1_1components_1_1internal =
     [ "TagIntersectionAttributes", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_attributes.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_attributes" ],
     [ "TagIntersectionValues", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values" ],
     [ "TagIntersectionOptions", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options" ],
+    [ "WindingNumberOptions", "structwmtk_1_1components_1_1internal_1_1_winding_number_options.html", "structwmtk_1_1components_1_1internal_1_1_winding_number_options" ],
     [ "delaunay_2d", "namespacewmtk_1_1components_1_1internal.html#ae80c4178ab57d7bc05e9512f49be096a", null ],
     [ "delaunay_3d", "namespacewmtk_1_1components_1_1internal.html#a2b8f841c866f2be5ad04a5b453746b6e", null ],
     [ "delaunay_geogram", "namespacewmtk_1_1components_1_1internal.html#ae00fb07c978db1538564754acf291d2e", null ],
@@ -58,8 +59,11 @@ var namespacewmtk_1_1components_1_1internal =
     [ "NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE", "namespacewmtk_1_1components_1_1internal.html#ab03ae1c627430d666b51520c01ab8aa9", null ],
     [ "NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE", "namespacewmtk_1_1components_1_1internal.html#a5167173a30d388b3b1f1cd81cd6a167a", null ],
     [ "NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE", "namespacewmtk_1_1components_1_1internal.html#a41722ce1685a7dec1703284ea7b17090", null ],
+    [ "NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE", "namespacewmtk_1_1components_1_1internal.html#ac37ed3f255d6cb7b44f2423cf4079170", null ],
     [ "tags_from_image", "namespacewmtk_1_1components_1_1internal.html#a65a1573d5b1ffbceb133940480162253", null ],
     [ "to_json", "namespacewmtk_1_1components_1_1internal.html#a5450a3ab21d590cbd8b68220592345f6", null ],
     [ "to_json", "namespacewmtk_1_1components_1_1internal.html#a967f1070f24c7de9b9bb12030deb5f60", null ],
-    [ "to_json", "namespacewmtk_1_1components_1_1internal.html#a46caf88594dc94f3a9b7264bd6807de0", null ]
+    [ "to_json", "namespacewmtk_1_1components_1_1internal.html#a46caf88594dc94f3a9b7264bd6807de0", null ],
+    [ "winding_number", "namespacewmtk_1_1components_1_1internal.html#a18a56f1ee7f5d72c7557922789a96802", null ],
+    [ "winding_number_internal", "namespacewmtk_1_1components_1_1internal.html#afb68ce2cd6102c4f403bb39329da8a02", null ]
 ];

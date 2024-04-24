@@ -7,5 +7,6 @@ var structwmtk_1_1components_1_1_to_pts_options =
     [ "input", "structwmtk_1_1components_1_1_to_pts_options.html#a0bac450284463557f30f7773e06dcd94", null ],
     [ "min_dist", "structwmtk_1_1components_1_1_to_pts_options.html#afa4331f070db9b6b1b9f4c52c2fd1309", null ],
     [ "name", "structwmtk_1_1components_1_1_to_pts_options.html#a96aa130436d5fa421209d0de84f4f81d", null ],
-    [ "position", "structwmtk_1_1components_1_1_to_pts_options.html#a3c776a4b6d3d9c9fed892fa45e935666", null ]
+    [ "position", "structwmtk_1_1components_1_1_to_pts_options.html#a3c776a4b6d3d9c9fed892fa45e935666", null ],
+    [ "remove_duplicates", "structwmtk_1_1components_1_1_to_pts_options.html#a74fda8d43f0caaef8fc18d1796e8160a", null ]
 ];

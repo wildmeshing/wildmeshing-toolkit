@@ -8,6 +8,7 @@ var classwmtk_1_1utils_1_1_eigen_matrix_writer =
     [ "get_FV_matrix", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html#abad266697117582fd962efd4129a4389", null ],
     [ "get_int64_t_matrix", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html#ab6ea4733784a08f80e81b23769f5fb5c", null ],
     [ "get_position_matrix", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a3907d601b0f4f64c662e4c32da9ca52c", null ],
+    [ "get_position_matrix", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html#af48616218047f7898f1a500f5bec04c9", null ],
     [ "get_Rational_matrix", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a5b61505902f9279f64ec54a2c1bf1454", null ],
     [ "get_TV_matrix", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a7d76c607fec79828f387677795e990ab", null ],
     [ "write", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a94cf9078f2e4f1b95c45ff7610147e2b", null ],

@@ -16,6 +16,8 @@ var classwmtk_1_1operations_1_1_split_new_attribute_strategy =
     [ "set_rib_strategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a736dff31e721f6af81a578fd5ad41eab", null ],
     [ "set_strategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a948548c534775a2ca3a3e003b562d75f", null ],
     [ "set_strategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#ab87413423c9340c5506dccdcc94553e0", null ],
+    [ "standard_split_rib_strategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a32d8359d4041603d3c64fb27645cc6d4", null ],
+    [ "standard_split_strategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a82f4cc71d4768b0454a27c287a4a5e69", null ],
     [ "update", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a2a79ef8fa40d881a8d205a701e8ca108", null ],
     [ "update_handle_mesh", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a0435f2af604239de539271d971914b4d", null ],
     [ "m_handle", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a1a58edd9b054d9b7ef6e04dd64c8893b", null ],

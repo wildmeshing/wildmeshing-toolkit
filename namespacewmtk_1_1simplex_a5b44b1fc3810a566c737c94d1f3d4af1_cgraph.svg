@@ -140,8 +140,8 @@ var sectionId = 'dynsection-16';
 <!-- Node1&#45;&gt;Node8 -->
 <g id="edge8" class="edge">
 <title>Node1&#45;&gt;Node8</title>
-<path fill="none" stroke="midnightblue" d="M72.73,-98.97C89.68,-84.37 124.22,-56.49 158,-40.5 163,-38.13 168.26,-35.96 173.63,-33.96"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="175.09,-37.16 183.37,-30.56 172.78,-30.55 175.09,-37.16"/>
+<path fill="none" stroke="midnightblue" d="M72.68,-98.77C89.57,-83.89 124.03,-55.52 158,-39.5 162.3,-37.47 166.8,-35.6 171.39,-33.86"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="172.66,-37.13 180.93,-30.5 170.33,-30.52 172.66,-37.13"/>
 </g>
 <!-- Node3&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
@@ -180,6 +180,21 @@ var sectionId = 'dynsection-16';
 <title>Node4&#45;&gt;Node6</title>
 <path fill="none" stroke="midnightblue" d="M500.03,-121.08C508.45,-119.76 517.16,-118.4 525.71,-117.06"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="526.31,-120.5 535.64,-115.5 525.22,-113.59 526.31,-120.5"/>
+</g>
+<!-- Node9 -->
+<g id="node9" class="node">
+<title>Node9</title>
+<g id="a_node9"><a xlink:href="namespacewmtk.html#a2f35ead9c86e0fd722118c11a8cbcf08" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="403.5,-6 403.5,-25 474.5,-25 474.5,-6 403.5,-6"/>
+<text text-anchor="middle" x="439" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::cmp</text>
+</a>
+</g>
+</g>
+<!-- Node8&#45;&gt;Node9 -->
+<g id="edge9" class="edge">
+<title>Node8&#45;&gt;Node9</title>
+<path fill="none" stroke="midnightblue" d="M342.03,-15.5C359.69,-15.5 377.47,-15.5 392.84,-15.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="393.07,-19 403.07,-15.5 393.07,-12 393.07,-19"/>
 </g>
 </g>
 </svg>

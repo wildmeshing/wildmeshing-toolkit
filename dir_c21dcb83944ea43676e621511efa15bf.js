@@ -19,5 +19,6 @@ var dir_c21dcb83944ea43676e621511efa15bf =
     [ "test_component_tag_intersection.cpp", "test__component__tag__intersection_8cpp.html", "test__component__tag__intersection_8cpp" ],
     [ "test_component_to_points.cpp", "test__component__to__points_8cpp.html", null ],
     [ "test_component_triangle_insertion.cpp", "test__component__triangle__insertion_8cpp.html", null ],
-    [ "test_component_wildmeshing.cpp", "test__component__wildmeshing_8cpp.html", "test__component__wildmeshing_8cpp" ]
+    [ "test_component_wildmeshing.cpp", "test__component__wildmeshing_8cpp.html", "test__component__wildmeshing_8cpp" ],
+    [ "test_component_winding_number.cpp", "test__component__winding__number_8cpp.html", null ]
 ];

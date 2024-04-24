@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 583;
+var viewWidth = 821;
 var viewHeight = 382;
 var sectionId = 'dynsection-4';
 </script>
@@ -58,9 +58,9 @@ var sectionId = 'dynsection-4';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="423,-171.5 423,-201.5 575,-201.5 575,-171.5 423,-171.5"/>
-<text text-anchor="start" x="431" y="-189.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
-<text text-anchor="middle" x="499" y="-178.5" font-family="Helvetica,sans-Serif" font-size="10.00">Function::attribute_handle</text>
+<polygon fill="#bfbfbf" stroke="black" points="661,-171.5 661,-201.5 813,-201.5 813,-171.5 661,-171.5"/>
+<text text-anchor="start" x="669" y="-189.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
+<text text-anchor="middle" x="737" y="-178.5" font-family="Helvetica,sans-Serif" font-size="10.00">Function::attribute_handle</text>
 </a>
 </g>
 </g>
@@ -68,185 +68,201 @@ var sectionId = 'dynsection-4';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classwmtk_1_1function_1_1_per_simplex_function.html#a102906d1b23aa53d451853ca779ca2c4" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="211,-171.5 211,-201.5 383,-201.5 383,-171.5 211,-171.5"/>
-<text text-anchor="start" x="219" y="-189.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
-<text text-anchor="middle" x="297" y="-178.5" font-family="Helvetica,sans-Serif" font-size="10.00">Function::embedded_dimension</text>
+<polygon fill="none" stroke="black" points="449,-171.5 449,-201.5 621,-201.5 621,-171.5 449,-171.5"/>
+<text text-anchor="start" x="457" y="-189.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
+<text text-anchor="middle" x="535" y="-178.5" font-family="Helvetica,sans-Serif" font-size="10.00">Function::embedded_dimension</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M412.83,-186.5C403.02,-186.5 393.02,-186.5 383.21,-186.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="412.96,-190 422.96,-186.5 412.96,-183 412.96,-190"/>
+<path fill="none" stroke="midnightblue" d="M650.83,-186.5C641.02,-186.5 631.02,-186.5 621.21,-186.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="650.96,-190 660.96,-186.5 650.96,-183 650.96,-190"/>
 </g>
 <!-- Node8 -->
 <g id="node8" class="node">
 <title>Node8</title>
 <g id="a_node8"><a xlink:href="classwmtk_1_1function_1_1_a_m_i_p_s.html#a36709a007132c33f85efe0b4abd16b93" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="22,-0.5 22,-30.5 149,-30.5 149,-0.5 22,-0.5"/>
-<text text-anchor="start" x="30" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::AMIPS</text>
-<text text-anchor="middle" x="85.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">::get_raw_coordinates</text>
+<polygon fill="none" stroke="black" points="260,-0.5 260,-30.5 387,-30.5 387,-0.5 260,-0.5"/>
+<text text-anchor="start" x="268" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::AMIPS</text>
+<text text-anchor="middle" x="323.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">::get_raw_coordinates</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node8 -->
-<g id="edge14" class="edge">
+<g id="edge15" class="edge">
 <title>Node1&#45;&gt;Node8</title>
-<path fill="none" stroke="midnightblue" d="M459.23,-166.84C398.77,-136.69 277.85,-78.46 171,-39.5 162.26,-36.31 152.89,-33.28 143.68,-30.51"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="457.89,-170.08 468.4,-171.43 461.02,-163.82 457.89,-170.08"/>
+<path fill="none" stroke="midnightblue" d="M697.23,-166.84C636.77,-136.69 515.85,-78.46 409,-39.5 400.26,-36.31 390.89,-33.28 381.68,-30.51"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="695.89,-170.08 706.4,-171.43 699.02,-163.82 695.89,-170.08"/>
 </g>
-<!-- Node11 -->
-<g id="node11" class="node">
-<title>Node11</title>
-<g id="a_node11"><a xlink:href="classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a478ad8a8370ae38cdf1899cfd3707fde" target="_top" xlink:title="This is a helper function that obtains the coordinates of the variables for the function f(x) where f...">
-<polygon fill="none" stroke="black" points="207,-269.5 207,-299.5 387,-299.5 387,-269.5 207,-269.5"/>
-<text text-anchor="start" x="215" y="-287.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
-<text text-anchor="middle" x="297" y="-276.5" font-family="Helvetica,sans-Serif" font-size="10.00">AutodiffFunction::get_coordinates</text>
+<!-- Node12 -->
+<g id="node12" class="node">
+<title>Node12</title>
+<g id="a_node12"><a xlink:href="classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a478ad8a8370ae38cdf1899cfd3707fde" target="_top" xlink:title="This is a helper function that obtains the coordinates of the variables for the function f(x) where f...">
+<polygon fill="none" stroke="black" points="445,-269.5 445,-299.5 625,-299.5 625,-269.5 445,-269.5"/>
+<text text-anchor="start" x="453" y="-287.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
+<text text-anchor="middle" x="535" y="-276.5" font-family="Helvetica,sans-Serif" font-size="10.00">AutodiffFunction::get_coordinates</text>
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node11 -->
-<g id="edge10" class="edge">
-<title>Node1&#45;&gt;Node11</title>
-<path fill="none" stroke="midnightblue" d="M457.94,-206.13C419.89,-224.77 363.51,-252.4 328.85,-269.39"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="459.75,-209.14 467.19,-201.6 456.67,-202.85 459.75,-209.14"/>
+<!-- Node1&#45;&gt;Node12 -->
+<g id="edge11" class="edge">
+<title>Node1&#45;&gt;Node12</title>
+<path fill="none" stroke="midnightblue" d="M695.94,-206.13C657.89,-224.77 601.51,-252.4 566.85,-269.39"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="697.75,-209.14 705.19,-201.6 694.67,-202.85 697.75,-209.14"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="classwmtk_1_1function_1_1_triangle_a_m_i_p_s.html#a9efeeacdc9da3b8000a13d44be7e62b7" target="_top" xlink:title="This function defines a function f(x) where f is defined over a simplex domain and the variables for ...">
-<polygon fill="none" stroke="black" points="18.5,-196.5 18.5,-226.5 152.5,-226.5 152.5,-196.5 18.5,-196.5"/>
-<text text-anchor="start" x="26.5" y="-214.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::Triangle</text>
-<text text-anchor="middle" x="85.5" y="-203.5" font-family="Helvetica,sans-Serif" font-size="10.00">AMIPS::eval</text>
+<polygon fill="none" stroke="black" points="256.5,-196.5 256.5,-226.5 390.5,-226.5 390.5,-196.5 256.5,-196.5"/>
+<text text-anchor="start" x="264.5" y="-214.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::Triangle</text>
+<text text-anchor="middle" x="323.5" y="-203.5" font-family="Helvetica,sans-Serif" font-size="10.00">AMIPS::eval</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node3 -->
 <g id="edge2" class="edge">
 <title>Node2&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M200.73,-197.87C184.49,-199.81 167.95,-201.78 152.68,-203.6"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="201.27,-201.33 210.79,-196.67 200.44,-194.38 201.27,-201.33"/>
+<path fill="none" stroke="midnightblue" d="M438.73,-197.87C422.49,-199.81 405.95,-201.78 390.68,-203.6"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="439.27,-201.33 448.79,-196.67 438.44,-194.38 439.27,-201.33"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
 <g id="a_node4"><a xlink:href="classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a2acd918687731413b8476532ed726308" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="3.5,-343.5 3.5,-373.5 167.5,-373.5 167.5,-343.5 3.5,-343.5"/>
-<text text-anchor="start" x="11.5" y="-361.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
-<text text-anchor="middle" x="85.5" y="-350.5" font-family="Helvetica,sans-Serif" font-size="10.00">AutodiffFunction::get_gradient</text>
+<polygon fill="none" stroke="black" points="241.5,-343.5 241.5,-373.5 405.5,-373.5 405.5,-343.5 241.5,-343.5"/>
+<text text-anchor="start" x="249.5" y="-361.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
+<text text-anchor="middle" x="323.5" y="-350.5" font-family="Helvetica,sans-Serif" font-size="10.00">AutodiffFunction::get_gradient</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
 <title>Node2&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M264.66,-207.4C246.15,-220.91 223.24,-239.79 207,-260.5 184.43,-289.28 199.04,-311.01 171,-334.5 166.91,-337.93 162.36,-340.87 157.55,-343.39"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="266.7,-210.24 272.81,-201.58 262.64,-204.54 266.7,-210.24"/>
+<path fill="none" stroke="midnightblue" d="M502.66,-207.4C484.15,-220.91 461.24,-239.79 445,-260.5 422.43,-289.28 437.04,-311.01 409,-334.5 404.91,-337.93 400.36,-340.87 395.55,-343.39"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="504.7,-210.24 510.81,-201.58 500.64,-204.54 504.7,-210.24"/>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
 <g id="a_node5"><a xlink:href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a8f4a1942d320c2d613d1af447738f1ea" target="_top" xlink:title="get_gradient collects the local neigh and call the gradient of m_function on all simplicies">
-<polygon fill="none" stroke="black" points="0,-147.5 0,-177.5 171,-177.5 171,-147.5 0,-147.5"/>
-<text text-anchor="start" x="8" y="-165.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::LocalNeighbors</text>
-<text text-anchor="middle" x="85.5" y="-154.5" font-family="Helvetica,sans-Serif" font-size="10.00">SumFunction::get_gradient</text>
+<polygon fill="none" stroke="black" points="238,-147.5 238,-177.5 409,-177.5 409,-147.5 238,-147.5"/>
+<text text-anchor="start" x="246" y="-165.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::LocalNeighbors</text>
+<text text-anchor="middle" x="323.5" y="-154.5" font-family="Helvetica,sans-Serif" font-size="10.00">SumFunction::get_gradient</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node5 -->
 <g id="edge4" class="edge">
 <title>Node2&#45;&gt;Node5</title>
-<path fill="none" stroke="midnightblue" d="M200.64,-175.58C190.86,-174.45 180.96,-173.32 171.3,-172.21"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="200.45,-179.08 210.79,-176.74 201.25,-172.12 200.45,-179.08"/>
+<path fill="none" stroke="midnightblue" d="M438.64,-175.58C428.86,-174.45 418.96,-173.32 409.3,-172.21"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="438.45,-179.08 448.79,-176.74 439.25,-172.12 438.45,-179.08"/>
 </g>
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
 <g id="a_node6"><a xlink:href="classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a3155c5a79c212490864deb51ad023534" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="5,-294.5 5,-324.5 166,-324.5 166,-294.5 5,-294.5"/>
-<text text-anchor="start" x="13" y="-312.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
-<text text-anchor="middle" x="85.5" y="-301.5" font-family="Helvetica,sans-Serif" font-size="10.00">AutodiffFunction::get_hessian</text>
+<polygon fill="none" stroke="black" points="243,-294.5 243,-324.5 404,-324.5 404,-294.5 243,-294.5"/>
+<text text-anchor="start" x="251" y="-312.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
+<text text-anchor="middle" x="323.5" y="-301.5" font-family="Helvetica,sans-Serif" font-size="10.00">AutodiffFunction::get_hessian</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node6 -->
 <g id="edge5" class="edge">
 <title>Node2&#45;&gt;Node6</title>
-<path fill="none" stroke="midnightblue" d="M269.7,-208.23C236.33,-235.66 181.79,-279.97 171,-285.5 164.35,-288.91 157.15,-291.89 149.85,-294.48"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="272.2,-210.71 277.69,-201.65 267.75,-205.31 272.2,-210.71"/>
+<path fill="none" stroke="midnightblue" d="M507.7,-208.23C474.33,-235.66 419.79,-279.97 409,-285.5 402.35,-288.91 395.15,-291.89 387.85,-294.48"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="510.2,-210.71 515.69,-201.65 505.75,-205.31 510.2,-210.71"/>
 </g>
 <!-- Node7 -->
 <g id="node7" class="node">
 <title>Node7</title>
 <g id="a_node7"><a xlink:href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a45bfd84c9f092364f449605199731442" target="_top" xlink:title="get_hessian evaluates the hessian of the function f(x) defined wrt the variable x.">
-<polygon fill="none" stroke="black" points="0,-98.5 0,-128.5 171,-128.5 171,-98.5 0,-98.5"/>
-<text text-anchor="start" x="8" y="-116.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::LocalNeighbors</text>
-<text text-anchor="middle" x="85.5" y="-105.5" font-family="Helvetica,sans-Serif" font-size="10.00">SumFunction::get_hessian</text>
+<polygon fill="none" stroke="black" points="238,-98.5 238,-128.5 409,-128.5 409,-98.5 238,-98.5"/>
+<text text-anchor="start" x="246" y="-116.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::LocalNeighbors</text>
+<text text-anchor="middle" x="323.5" y="-105.5" font-family="Helvetica,sans-Serif" font-size="10.00">SumFunction::get_hessian</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node7 -->
 <g id="edge6" class="edge">
 <title>Node2&#45;&gt;Node7</title>
-<path fill="none" stroke="midnightblue" d="M249.74,-167.73C226.31,-158.48 197.31,-147.43 171,-138.5 161,-135.11 150.26,-131.73 139.89,-128.6"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="248.5,-171.01 259.09,-171.44 251.08,-164.5 248.5,-171.01"/>
+<path fill="none" stroke="midnightblue" d="M487.74,-167.73C464.31,-158.48 435.31,-147.43 409,-138.5 399,-135.11 388.26,-131.73 377.89,-128.6"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="486.5,-171.01 497.09,-171.44 489.08,-164.5 486.5,-171.01"/>
 </g>
 <!-- Node2&#45;&gt;Node8 -->
 <g id="edge7" class="edge">
 <title>Node2&#45;&gt;Node8</title>
-<path fill="none" stroke="midnightblue" d="M267.91,-165.07C249.15,-149.82 224.76,-128.11 207,-105.5 186.36,-79.22 197.1,-60.36 171,-39.5 164.57,-34.36 157.09,-30.32 149.29,-27.15"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="265.83,-167.88 275.82,-171.39 270.19,-162.41 265.83,-167.88"/>
-</g>
-<!-- Node9 -->
-<g id="node9" class="node">
-<title>Node9</title>
-<g id="a_node9"><a xlink:href="classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a5dbdaadd8398ba89b96ae7e799d6c7e7" target="_top" xlink:title="This function is defined over a simplex (normally a triangle or tetrahedron).">
-<polygon fill="none" stroke="black" points="9.5,-245.5 9.5,-275.5 161.5,-275.5 161.5,-245.5 9.5,-245.5"/>
-<text text-anchor="start" x="17.5" y="-263.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
-<text text-anchor="middle" x="85.5" y="-252.5" font-family="Helvetica,sans-Serif" font-size="10.00">AutodiffFunction::get_value</text>
-</a>
-</g>
-</g>
-<!-- Node2&#45;&gt;Node9 -->
-<g id="edge8" class="edge">
-<title>Node2&#45;&gt;Node9</title>
-<path fill="none" stroke="midnightblue" d="M251.65,-205.55C227.94,-215.39 198.12,-227.25 171,-236.5 161.91,-239.6 152.17,-242.63 142.66,-245.43"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="253.2,-208.69 261.07,-201.6 250.5,-202.23 253.2,-208.69"/>
+<path fill="none" stroke="midnightblue" d="M505.91,-165.07C487.15,-149.82 462.76,-128.11 445,-105.5 424.36,-79.22 435.1,-60.36 409,-39.5 402.57,-34.36 395.09,-30.32 387.29,-27.15"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="503.83,-167.88 513.82,-171.39 508.19,-162.41 503.83,-167.88"/>
 </g>
 <!-- Node10 -->
 <g id="node10" class="node">
 <title>Node10</title>
-<g id="a_node10"><a xlink:href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a0b81383595fa81fb270266bb6cee71da" target="_top" xlink:title="collects the local neigh and call the same m_function on all simplicies">
-<polygon fill="none" stroke="black" points="0,-49.5 0,-79.5 171,-79.5 171,-49.5 0,-49.5"/>
-<text text-anchor="start" x="8" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::LocalNeighbors</text>
-<text text-anchor="middle" x="85.5" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">SumFunction::get_value</text>
+<g id="a_node10"><a xlink:href="classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a5dbdaadd8398ba89b96ae7e799d6c7e7" target="_top" xlink:title="This function is defined over a simplex (normally a triangle or tetrahedron).">
+<polygon fill="none" stroke="black" points="247.5,-245.5 247.5,-275.5 399.5,-275.5 399.5,-245.5 247.5,-245.5"/>
+<text text-anchor="start" x="255.5" y="-263.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
+<text text-anchor="middle" x="323.5" y="-252.5" font-family="Helvetica,sans-Serif" font-size="10.00">AutodiffFunction::get_value</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node10 -->
 <g id="edge9" class="edge">
 <title>Node2&#45;&gt;Node10</title>
-<path fill="none" stroke="midnightblue" d="M273.4,-164.28C249.72,-142.13 210.52,-108.62 171,-88.5 164.34,-85.11 157.13,-82.14 149.84,-79.55"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="271.15,-166.97 280.82,-171.31 275.97,-161.89 271.15,-166.97"/>
+<path fill="none" stroke="midnightblue" d="M489.65,-205.55C465.94,-215.39 436.12,-227.25 409,-236.5 399.91,-239.6 390.17,-242.63 380.66,-245.43"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="491.2,-208.69 499.07,-201.6 488.5,-202.23 491.2,-208.69"/>
 </g>
-<!-- Node11&#45;&gt;Node4 -->
-<g id="edge11" class="edge">
-<title>Node11&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M251.65,-303.55C227.94,-313.39 198.12,-325.25 171,-334.5 161.91,-337.6 152.17,-340.63 142.66,-343.43"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="253.2,-306.69 261.07,-299.6 250.5,-300.23 253.2,-306.69"/>
+<!-- Node11 -->
+<g id="node11" class="node">
+<title>Node11</title>
+<g id="a_node11"><a xlink:href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a0b81383595fa81fb270266bb6cee71da" target="_top" xlink:title="collects the local neigh and call the same m_function on all simplicies">
+<polygon fill="none" stroke="black" points="238,-49.5 238,-79.5 409,-79.5 409,-49.5 238,-49.5"/>
+<text text-anchor="start" x="246" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::LocalNeighbors</text>
+<text text-anchor="middle" x="323.5" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">SumFunction::get_value</text>
+</a>
 </g>
-<!-- Node11&#45;&gt;Node6 -->
+</g>
+<!-- Node2&#45;&gt;Node11 -->
+<g id="edge10" class="edge">
+<title>Node2&#45;&gt;Node11</title>
+<path fill="none" stroke="midnightblue" d="M511.4,-164.28C487.72,-142.13 448.52,-108.62 409,-88.5 402.34,-85.11 395.13,-82.14 387.84,-79.55"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="509.15,-166.97 518.82,-171.31 513.97,-161.89 509.15,-166.97"/>
+</g>
+<!-- Node9 -->
+<g id="node9" class="node">
+<title>Node9</title>
+<g id="a_node9"><a xlink:href="classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing.html#a2c409cd3da46f4360119e142ef3c3682" target="_top" xlink:title="returns an empty vector in case of failure">
+<polygon fill="none" stroke="black" points="0,-0.5 0,-30.5 202,-30.5 202,-0.5 0,-0.5"/>
+<text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::AMIPSOptimization</text>
+<text text-anchor="middle" x="101" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">Smoothing::execute</text>
+</a>
+</g>
+</g>
+<!-- Node8&#45;&gt;Node9 -->
+<g id="edge8" class="edge">
+<title>Node8&#45;&gt;Node9</title>
+<path fill="none" stroke="midnightblue" d="M249.6,-15.5C234.45,-15.5 218.23,-15.5 202.29,-15.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="249.9,-19 259.9,-15.5 249.9,-12 249.9,-19"/>
+</g>
+<!-- Node12&#45;&gt;Node4 -->
 <g id="edge12" class="edge">
-<title>Node11&#45;&gt;Node6</title>
-<path fill="none" stroke="midnightblue" d="M196.69,-296.35C186.5,-297.57 176.23,-298.79 166.28,-299.98"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="197.33,-299.8 206.85,-295.14 196.51,-292.85 197.33,-299.8"/>
+<title>Node12&#45;&gt;Node4</title>
+<path fill="none" stroke="midnightblue" d="M489.65,-303.55C465.94,-313.39 436.12,-325.25 409,-334.5 399.91,-337.6 390.17,-340.63 380.66,-343.43"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="491.2,-306.69 499.07,-299.6 488.5,-300.23 491.2,-306.69"/>
 </g>
-<!-- Node11&#45;&gt;Node9 -->
+<!-- Node12&#45;&gt;Node6 -->
 <g id="edge13" class="edge">
-<title>Node11&#45;&gt;Node9</title>
-<path fill="none" stroke="midnightblue" d="M196.58,-273.11C184.85,-271.77 173.03,-270.41 161.71,-269.12"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="196.52,-276.63 206.85,-274.29 197.31,-269.67 196.52,-276.63"/>
+<title>Node12&#45;&gt;Node6</title>
+<path fill="none" stroke="midnightblue" d="M434.69,-296.35C424.5,-297.57 414.23,-298.79 404.28,-299.98"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="435.33,-299.8 444.85,-295.14 434.51,-292.85 435.33,-299.8"/>
+</g>
+<!-- Node12&#45;&gt;Node10 -->
+<g id="edge14" class="edge">
+<title>Node12&#45;&gt;Node10</title>
+<path fill="none" stroke="midnightblue" d="M434.58,-273.11C422.85,-271.77 411.03,-270.41 399.71,-269.12"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="434.52,-276.63 444.85,-274.29 435.31,-269.67 434.52,-276.63"/>
 </g>
 </g>
 </svg>

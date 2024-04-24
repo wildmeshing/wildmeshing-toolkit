@@ -113,7 +113,6 @@ $(document).ready(function(){initNavTree('classwmtk_1_1function_1_1_a_m_i_p_s.ht
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="classwmtk_1_1function_1_1_a_m_i_p_s-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">wmtk::function::AMIPS Class Reference</div>  </div>
@@ -148,6 +147,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3491cbd4f25629486e37fb245b61395e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1f046fa6237c8465a56f56f829d42b7"><td class="memItemLeft" align="right" valign="top">Eigen::MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_a_m_i_p_s.html#ac1f046fa6237c8465a56f56f829d42b7">get_hessian</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;domain_simplex, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;variable_simplex) const override</td></tr>
 <tr class="separator:ac1f046fa6237c8465a56f56f829d42b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36709a007132c33f85efe0b4abd16b93"><td class="memTemplParams" colspan="2">template&lt;int64_t NV, int64_t DIM&gt; </td></tr>
+<tr class="memitem:a36709a007132c33f85efe0b4abd16b93"><td class="memTemplItemLeft" align="right" valign="top">std::array&lt; double, NV *DIM &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_a_m_i_p_s.html#a36709a007132c33f85efe0b4abd16b93">get_raw_coordinates</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;domain_simplex, const std::optional&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt; &amp;variable_simplex={}) const</td></tr>
+<tr class="separator:a36709a007132c33f85efe0b4abd16b93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1function_1_1_per_simplex_function')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html">wmtk::function::PerSimplexFunction</a></td></tr>
 <tr class="memitem:a7f195c1820292d54c4d684e340abdfdb inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#a7f195c1820292d54c4d684e340abdfdb">PerSimplexFunction</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;<a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#a59a059a94c9997cb6dff0eb014a294d1">mesh</a>, const <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> primitive_type, const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &amp;variable_attribute_handle)</td></tr>
 <tr class="separator:a7f195c1820292d54c4d684e340abdfdb inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -160,12 +162,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a102906d1b23aa53d451853ca779ca2c4 inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#a102906d1b23aa53d451853ca779ca2c4">embedded_dimension</a> () const</td></tr>
 <tr class="separator:a102906d1b23aa53d451853ca779ca2c4 inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
-Private Member Functions</h2></td></tr>
-<tr class="memitem:a36709a007132c33f85efe0b4abd16b93"><td class="memTemplParams" colspan="2">template&lt;int64_t NV, int64_t DIM&gt; </td></tr>
-<tr class="memitem:a36709a007132c33f85efe0b4abd16b93"><td class="memTemplItemLeft" align="right" valign="top">std::array&lt; double, NV *DIM &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_a_m_i_p_s.html#a36709a007132c33f85efe0b4abd16b93">get_raw_coordinates</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;domain_simplex, const std::optional&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt; &amp;variable_simplex={}) const</td></tr>
-<tr class="separator:a36709a007132c33f85efe0b4abd16b93"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_attribs_classwmtk_1_1function_1_1_per_simplex_function"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classwmtk_1_1function_1_1_per_simplex_function')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html">wmtk::function::PerSimplexFunction</a></td></tr>
@@ -174,7 +170,7 @@ Additional Inherited Members</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="simplex_2_a_m_i_p_s_8hpp_source.html#l00013">13</a> of file <a class="el" href="simplex_2_a_m_i_p_s_8hpp_source.html">AMIPS.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simplex_2_a_m_i_p_s_8hpp_source.html#l00019">19</a> of file <a class="el" href="simplex_2_a_m_i_p_s_8hpp_source.html">AMIPS.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a445e420261d3e8e8f2541993bd87fa95"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a445e420261d3e8e8f2541993bd87fa95">&#9670;&nbsp;</a></span>AMIPS()</h2>
@@ -211,7 +207,7 @@ Additional Inherited Members</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00602">602</a> of file <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html">AMIPS.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00649">649</a> of file <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html">AMIPS.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
@@ -240,7 +236,7 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="simplex_2_a_m_i_p_s_8hpp_source.html#l00024">24</a> of file <a class="el" href="simplex_2_a_m_i_p_s_8hpp_source.html">AMIPS.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simplex_2_a_m_i_p_s_8hpp_source.html#l00030">30</a> of file <a class="el" href="simplex_2_a_m_i_p_s_8hpp_source.html">AMIPS.hpp</a>.</p>
 
 </div>
 </div>
@@ -281,13 +277,13 @@ Additional Inherited Members</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#a08c1a24068af2c8fd152d01a7e6e44c4">wmtk::function::PerSimplexFunction</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00623">623</a> of file <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html">AMIPS.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00670">670</a> of file <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html">AMIPS.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_simplex_8hpp_source.html#l00039">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00074">wmtk::function::Tet_AMIPS_jacobian()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00470">wmtk::function::Tri_AMIPS_jacobian()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1function_1_1_a_m_i_p_s_a3491cbd4f25629486e37fb245b61395e_cgraph.svg" width="408" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1function_1_1_a_m_i_p_s_a3491cbd4f25629486e37fb245b61395e_cgraph.svg" width="551" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -329,13 +325,13 @@ Here is the call graph for this function:</div>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#ad543cc6ef0d7b7a93a0984d9050d6542">wmtk::function::PerSimplexFunction</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00639">639</a> of file <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html">AMIPS.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00686">686</a> of file <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html">AMIPS.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_simplex_8hpp_source.html#l00039">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00171">wmtk::function::Tet_AMIPS_hessian()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00509">wmtk::function::Tri_AMIPS_hessian()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1function_1_1_a_m_i_p_s_ac1f046fa6237c8465a56f56f829d42b7_cgraph.svg" width="408" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1function_1_1_a_m_i_p_s_ac1f046fa6237c8465a56f56f829d42b7_cgraph.svg" width="551" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -348,9 +344,6 @@ Here is the call graph for this function:</div>
 <div class="memproto">
 <div class="memtemplate">
 template&lt;int64_t NV, int64_t DIM&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">std::array&lt; double, NV *DIM &gt; wmtk::function::AMIPS::get_raw_coordinates </td>
@@ -370,20 +363,23 @@ template&lt;int64_t NV, int64_t DIM&gt; </div>
           <td></td><td> const</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00583">583</a> of file <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html">AMIPS.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00605">605</a> of file <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html">AMIPS.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_per_simplex_function_8hpp_source.html#l00042">wmtk::function::PerSimplexFunction::attribute_handle()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a4a20dcdac339e7a4f6f8a6570114cbe6">wmtk::Mesh::create_const_accessor()</a>, <a class="el" href="_per_simplex_function_8cpp_source.html#l00019">wmtk::function::PerSimplexFunction::embedded_dimension()</a>, <a class="el" href="_simplex_getter_8cpp_source.html#l00009">wmtk::function::utils::get_simplex_attributes()</a>, <a class="el" href="_per_simplex_function_8hpp_source.html#l00055">wmtk::function::PerSimplexFunction::m_primitive_type</a>, <a class="el" href="_per_simplex_function_8hpp_source.html#l00041">wmtk::function::PerSimplexFunction::mesh()</a>, and <a class="el" href="_simplex_8hpp_source.html#l00041">wmtk::simplex::Simplex::tuple()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_a_m_i_p_s_optimization_smoothing_8cpp_source.html#l00175">wmtk::operations::AMIPSOptimizationSmoothing::execute()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1function_1_1_a_m_i_p_s_a36709a007132c33f85efe0b4abd16b93_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1function_1_1_a_m_i_p_s_a36709a007132c33f85efe0b4abd16b93_icgraph.svg" width="498" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -425,7 +421,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#a73fc985110007ca8b66bc844f9d4cff7">wmtk::function::PerSimplexFunction</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00607">607</a> of file <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html">AMIPS.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00654">654</a> of file <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html">AMIPS.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_simplex_8hpp_source.html#l00039">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00374">wmtk::function::Tet_AMIPS_energy()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="simplex_2_a_m_i_p_s_8cpp_source.html#l00434">wmtk::function::Tri_AMIPS_energy()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>.</p>
 <div class="dynheader">

@@ -12,6 +12,7 @@ var classwmtk_1_1operations_1_1_collapse_new_attribute_strategy =
     [ "primitive_type", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac8c24eb322e81d1f9f780bf11064b600", null ],
     [ "set_strategy", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#abcad03b6a6544761b5b96fafc87e0435", null ],
     [ "set_strategy", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ae9756dc5225d6d12179b4a62fd1d8763", null ],
+    [ "standard_collapse_strategy", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a3640858b7429c4743f220a3780313e91", null ],
     [ "update", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a49ea0904446e71447fd073a3ecb3f70f", null ],
     [ "update_handle_mesh", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a8804bc937b50c71e4bd65dbdd7c61a22", null ],
     [ "m_collapse_op", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a9df1912263a7c0cc1216fa526fe42965", null ],
