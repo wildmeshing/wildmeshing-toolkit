@@ -1341,30 +1341,28 @@ TEST_CASE("max_dist")
     auto MD = wmtk::components::function::utils::MaxDistanceToLimit(*m_evaluator_ptr);
     SECTION("intersections")
     {
-        std::vector<Eigen::RowVector2d> intersects0 = MD._debug_grid_line_intersections(a, b, bbox);
+        std::vector<double> intersects0 = MD._debug_grid_line_intersections(a, b);
         REQUIRE(intersects0.size() == 5);
-        std::vector<Eigen::RowVector2d> intersects1 = MD._debug_grid_line_intersections(c, a, bbox);
+        std::vector<double> intersects1 = MD._debug_grid_line_intersections(c, a);
         REQUIRE(intersects1.size() == 6);
-        std::vector<Eigen::RowVector2d> intersects2 = MD._debug_grid_line_intersections(c, b, bbox);
+
+        std::vector<double> intersects2 = MD._debug_grid_line_intersections(c, b);
         REQUIRE(intersects2.size() == 6);
 
         for (auto& inter : intersects0) {
-            auto pos_pixel_uv =
-                m_evaluator_ptr->pixel_coord_to_position_bilinear<double>(inter.transpose());
-            auto pos_uv = m_evaluator_ptr->uv_to_position<double>(inter.transpose() / 5.);
-            REQUIRE((pos_pixel_uv.transpose() - pos_uv.transpose()).norm() < 1e-5);
+            REQUIRE(inter >= 0);
+            REQUIRE(inter <= 1);
+            auto uv = a * (1 - inter) + b * inter;
         }
         for (auto& inter : intersects1) {
-            auto pos_pixel_uv =
-                m_evaluator_ptr->pixel_coord_to_position_bilinear<double>(inter.transpose());
-            auto pos_uv = m_evaluator_ptr->uv_to_position<double>(inter.transpose() / 5.);
-            REQUIRE((pos_pixel_uv.transpose() - pos_uv.transpose()).norm() < 1e-5);
+            REQUIRE(inter >= 0);
+            REQUIRE(inter <= 1);
+            auto uv = a * (1 - inter) + b * inter;
         }
         for (auto& inter : intersects2) {
-            auto pos_pixel_uv =
-                m_evaluator_ptr->pixel_coord_to_position_bilinear<double>(inter.transpose());
-            auto pos_uv = m_evaluator_ptr->uv_to_position<double>(inter.transpose() / 5.);
-            REQUIRE((pos_pixel_uv.transpose() - pos_uv.transpose()).norm() < 1e-5);
+            REQUIRE(inter >= 0);
+            REQUIRE(inter <= 1);
+            auto uv = a * (1 - inter) + b * inter;
         }
     }
 

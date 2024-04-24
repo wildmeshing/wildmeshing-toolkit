@@ -13,11 +13,18 @@
 #include "BarycentricTriangle.hpp"
 #include "ThreeChannelPositionMapEvaluator.hpp"
 #include "Triangle2DTo3DMapping.hpp"
+#include "pixel_image_triangle_helper.hpp"
 namespace image = wmtk::components::image;
 namespace wmtk::components::function::utils {
 
 class MaxDistanceToLimit : public Triangle2DTo3DMapping
 {
+    class GridLineIntersections
+    {
+    public:
+        std::vector<Eigen::RowVector2d> intersections;
+    };
+
 public:
     MaxDistanceToLimit(const ThreeChannelPositionMapEvaluator& evaluator);
 
@@ -38,12 +45,12 @@ public:
         throw std::runtime_error("DScalar type in MaxDistanceToLimit Not implemented");
     }
 
-    std::vector<Eigen::RowVector2d> _debug_grid_line_intersections(
-        const Vector2d& a,
-        const Vector2d& b,
-        const Eigen::AlignedBox2d& bbox) const
+    std::vector<double> _debug_grid_line_intersections(const Vector2d& a, const Vector2d& b) const
     {
-        return grid_line_intersections(a, b, bbox);
+        return wmtk::function::utils::pixel_grid_edge_intersections_in_barycentric(
+            m_three_channel_evaluator,
+            a,
+            b);
     }
 
     double _debug_max_disatance_pixel_corners_inside_triangle(
@@ -72,16 +79,6 @@ protected:
         bbox.extend(Vector2d(image::utils::get_double(uv2)));
         return bbox;
     }
-
-    std::vector<Eigen::RowVector2d> grid_line_intersections(
-        const Vector2d& a,
-        const Vector2d& b,
-        const Eigen::AlignedBox2d& bbox) const;
-
-    double l2_distance_to_limit(
-        Eigen::Vector2d& uv,
-        const Eigen::Matrix<double, 3, 3, Eigen::ColMajor>& position_triangle_ColMajor,
-        BarycentricTriangle<double>& bary) const;
 
     double pixel_coord_l2_distance_to_limit(
         Eigen::Vector2d& pixel_uv,

@@ -3,8 +3,6 @@
 #include <Eigen/Geometry>
 #include <algorithm>
 #include <set>
-#include <wmtk/components/adaptive_tessellation/quadrature/PolygonClipping.cpp>
-#include <wmtk/components/adaptive_tessellation/quadrature/PolygonClipping.hpp>
 #include <wmtk/utils/point_inside_triangle_check.hpp>
 #include <wmtk/utils/triangle_areas.hpp>
 namespace wmtk::components::function::utils {
@@ -51,138 +49,12 @@ double MaxDistanceToLimit::distance(
         position_triangle_ColMajor,
         bbox);
 
-    // axis aligned half plane intersection each edge of the triangle
-    // stores the intersection points of the half planes with every triangle edges (including
-    // triangle vertices)
-    std::vector<Eigen::RowVector2d> grid_line_intersections_01 =
-        grid_line_intersections(uv0, uv1, bbox);
-    std::vector<Eigen::RowVector2d> grid_line_intersections_12 =
-        grid_line_intersections(uv1, uv2, bbox);
-    std::vector<Eigen::RowVector2d> grid_line_intersections_20 =
-        grid_line_intersections(uv2, uv0, bbox);
-    // check all the intersections collected
-    for (int64_t i = 0; i < grid_line_intersections_01.size(); ++i) {
-        Eigen::Vector2d inter = grid_line_intersections_01[i];
-
-        auto tmp = pixel_coord_l2_distance_to_limit(inter, position_triangle_ColMajor, bary);
-        if (tmp > max_dist) {
-            max_dist = std::max(max_dist, tmp);
-        }
-    }
-    for (int64_t i = 0; i < grid_line_intersections_12.size(); ++i) {
-        Eigen::Vector2d inter = grid_line_intersections_12[i];
-        auto tmp = pixel_coord_l2_distance_to_limit(inter, position_triangle_ColMajor, bary);
-        if (tmp > max_dist) {
-            max_dist = std::max(max_dist, tmp);
-        }
-    }
-    for (int64_t i = 0; i < grid_line_intersections_20.size(); ++i) {
-        Eigen::Vector2d inter = grid_line_intersections_20[i];
-        auto tmp = pixel_coord_l2_distance_to_limit(inter, position_triangle_ColMajor, bary);
-        if (tmp > max_dist) {
-            max_dist = std::max(max_dist, tmp);
-        }
-    }
+    // check the edge of the triangle
+    double max_dist_on_edge =
+        wmtk::function::utils::max_distance_and_uv_on_edge(m_three_channel_evaluator, uv0, uv1)
+            .first;
+    max_dist = std::max(max_dist, max_dist_on_edge);
     return max_dist * wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
-}
-
-// include two end points of the edge in the ordered intersection list
-// the vector is order by x then y of each intersection point
-std::vector<Eigen::RowVector2d> MaxDistanceToLimit::grid_line_intersections(
-    const Vector2d& a,
-    const Vector2d& b,
-    const Eigen::AlignedBox2d& bbox) const
-{
-    // for each horizontal and vertical halfplane of the bbox do line halfplane intersection
-    auto compare = [](const Eigen::Vector2d& x, const Eigen::Vector2d& y) {
-        // Replace this with some method of comparing Coordinates
-        return x.x() != y.x() || x.y() != y.y();
-    };
-
-    std::set<Eigen::RowVector2d, decltype(compare)> intersections(compare);
-
-
-    auto [xx1, yy1] = m_three_channel_evaluator.pixel_index_floor(bbox.min());
-    auto [xx2, yy2] = m_three_channel_evaluator.pixel_index_ceil(bbox.max());
-    int size = std::max(m_three_channel_evaluator.width(), m_three_channel_evaluator.height());
-    Eigen::Vector2d left, right, top, bottom;
-
-    if (a.x() < b.x()) {
-        left = a * size;
-        right = b * size;
-    } else {
-        left = b * size;
-        right = a * size;
-    }
-    if (a.y() < b.y()) {
-        bottom = a * size;
-        top = b * size;
-    } else {
-        bottom = b * size;
-        top = a * size;
-    }
-    double pixel_size = m_three_channel_evaluator.pixel_size();
-
-    for (int i = 0; i <= xx2 - xx1; ++i) {
-        // construct the halfplane with x = xxi
-        AlignedHalfPlane<0, true> vertical{0.5 + i};
-
-        int status_floor = point_is_in_aligned_half_plane(left, vertical);
-        int status_ceil = point_is_in_aligned_half_plane(right, vertical);
-
-        if (status_floor > 0 && status_ceil < 0) {
-            // the plane line is between floor and ceil
-            // get the intersection
-            Eigen::RowVector2d intersect;
-            auto intersection = intersect_line_half_plane(left, right, vertical, intersect);
-            if (intersection) {
-                intersections.insert(intersect);
-            }
-        } else {
-            continue;
-        }
-    }
-    for (int j = 0; j <= yy2 - yy1; ++j) {
-        // construct the halfplane with y = yyi
-        AlignedHalfPlane<1, true> horizontal{0.5 + j};
-        int status_floor = point_is_in_aligned_half_plane(bottom, horizontal);
-        int status_ceil = point_is_in_aligned_half_plane(top, horizontal);
-
-        if (status_floor > 0 && status_ceil < 0) {
-            // the plane line is between floor and ceil
-            // get the intersection
-            Eigen::RowVector2d intersect;
-            auto intersection = intersect_line_half_plane(bottom, top, horizontal, intersect);
-            if (intersection) {
-                intersections.insert(intersect);
-            }
-        } else {
-            continue;
-        }
-    }
-    intersections.insert(a * size);
-    intersections.insert(b * size);
-    // sort the intersections
-    std::vector<Eigen::RowVector2d> sorted_intersections;
-    for (const auto& inter : intersections) {
-        sorted_intersections.push_back(inter);
-    }
-    std::sort(
-        sorted_intersections.begin(),
-        sorted_intersections.end(),
-        [](const Eigen::RowVector2d& x, const Eigen::RowVector2d& y) { return x.x() < y.x(); });
-    return sorted_intersections;
-}
-
-
-double MaxDistanceToLimit::l2_distance_to_limit(
-    Eigen::Vector2d& uv,
-    const Eigen::Matrix<double, 3, 3, Eigen::ColMajor>& position_triangle_ColMajor,
-    BarycentricTriangle<double>& bary) const
-{
-    Eigen::Vector3d texture_position = m_three_channel_evaluator.uv_to_position(uv);
-    Eigen::Vector3d position = position_triangle_ColMajor * bary.get(uv);
-    return (texture_position - position).norm();
 }
 
 /**

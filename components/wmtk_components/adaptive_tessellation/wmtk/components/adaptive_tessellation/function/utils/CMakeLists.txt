@@ -22,5 +22,7 @@ set(SRC_FILES
     UVMapEvaluator.cpp
 
     area_barrier.hpp
+    pixel_image_triangle_helper.hpp 
+    pixel_image_triangle_helper.cpp 
 )
 target_sources(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${SRC_FILES})
