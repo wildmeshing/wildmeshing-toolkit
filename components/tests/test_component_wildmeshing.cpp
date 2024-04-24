@@ -160,8 +160,7 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
     using namespace function;
     using namespace invariants;
 
-    std::ifstream file(
-        "/home/jiacheng/jiacheng/tetwild/TetWild/build/split_initial_state_test.obj");
+    std::ifstream file(data_dir / "split_initial_state_test.obj");
     std::vector<Vector3r> vertices;
     std::vector<Vector4l> tets;
     std::string x, y, z, token;
@@ -184,7 +183,7 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
             vertices.emplace_back(x, y, z);
         } else if (line[0] == 't') {
             Vector4l f;
-            iss >> f[0] >> f[1] >> f[2] >> f[3];
+            iss >> f[0] >> f[1] >> f[3] >> f[2];
             tets.push_back(f);
         }
     }
@@ -439,6 +438,17 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
         }
 
         logger().info("Mesh has {} unrounded vertices", unrounded);
+
+        double max_energy = std::numeric_limits<double>::lowest();
+        double min_energy = std::numeric_limits<double>::max();
+        for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
+            // double e = amips->get_value(simplex::Simplex(mesh->top_simplex_type(), t));
+            double e = amips_accessor.scalar_attribute(t);
+            max_energy = std::max(max_energy, e);
+            min_energy = std::min(min_energy, e);
+        }
+
+        logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
     }
 }
 
@@ -459,10 +469,8 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
     using namespace function;
     using namespace invariants;
 
-    // std::ifstream file(
-    //     "/home/jiacheng/jiacheng/tetwild/TetWild/build/collapse_initial_state_48843.obj");
-    std::ifstream file(
-        "/home/jiacheng/jiacheng/tetwild/TetWild/build/collapse_initial_state_141017.obj");
+
+    std::ifstream file(data_dir / "collapse_initial_state_141017.obj");
     std::vector<Vector3r> vertices;
     std::vector<Vector4l> tets;
     std::string x, y, z, token;
@@ -485,7 +493,7 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
             vertices.emplace_back(x, y, z);
         } else if (line[0] == 't') {
             Vector4l f;
-            iss >> f[0] >> f[1] >> f[2] >> f[3];
+            iss >> f[0] >> f[1] >> f[3] >> f[2];
             tets.push_back(f);
         }
     }
