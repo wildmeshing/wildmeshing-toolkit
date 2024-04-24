@@ -24,11 +24,11 @@
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/OperationSequence.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
+#include <wmtk/operations/OrOperationSequence.hpp>
 #include <wmtk/operations/Rounding.hpp>
 #include <wmtk/operations/composite/ProjectOperation.hpp>
 #include <wmtk/operations/composite/TetEdgeSwap.hpp>
 #include <wmtk/operations/composite/TetFaceSwap.hpp>
-#include <wmtk/operations/composite/TetTwoWayEdgeCollapse.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 
 
@@ -1033,10 +1033,15 @@ TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
     rounding->add_invariant(inversion_invariant);
     ////////////////////////////////
 
-    auto clps_strat = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
-    clps_strat->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
-    // clps_strat->set_strategy(CollapseBasicStrategy::Default);
-    clps_strat->set_strategy(CollapseBasicStrategy::CopyOther);
+    auto clps_strat1 = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
+    clps_strat1->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+    // clps_strat1->set_strategy(CollapseBasicStrategy::Default);
+    clps_strat1->set_strategy(CollapseBasicStrategy::CopyOther);
+
+    auto clps_strat2 = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
+    clps_strat2->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+    // clps_strat2->set_strategy(CollapseBasicStrategy::Default);
+    clps_strat2->set_strategy(CollapseBasicStrategy::CopyTuple);
 
 
     auto short_edges_first = [&](const simplex::Simplex& s) {
@@ -1061,28 +1066,41 @@ TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
     //////////////////////////////////
     // 2) EdgeCollapse
     //////////////////////////////////
-    auto twoway_collapse = std::make_shared<TetTwoWayEdgeCollapse>(*mesh);
-    twoway_collapse->add_invariant(todo_smaller);
-    twoway_collapse->collapse().add_invariant(invariant_separate_substructures);
-    twoway_collapse->collapse().add_invariant(link_condition);
-    twoway_collapse->collapse().add_invariant(inversion_invariant);
-    twoway_collapse->collapse().add_invariant(function_invariant);
+    auto setup_collapse = [&](std::shared_ptr<EdgeCollapse>& collapse) {
+        collapse->add_invariant(invariant_separate_substructures);
+        collapse->add_invariant(link_condition);
+        collapse->add_invariant(inversion_invariant);
+        collapse->add_invariant(function_invariant);
 
-    twoway_collapse->collapse().set_new_attribute_strategy(pt_attribute, clps_strat);
-    for (const auto& attr : pass_through_attributes) {
-        twoway_collapse->collapse().set_new_attribute_strategy(attr);
-    }
+        for (const auto& attr : pass_through_attributes) {
+            collapse->set_new_attribute_strategy(attr);
+        }
 
-    twoway_collapse->set_priority(short_edges_first);
+        collapse->set_priority(short_edges_first);
 
-    // collapse->add_invariant(envelope_invariant);
+        // collapse->add_invariant(envelope_invariant);
 
-    twoway_collapse->add_transfer_strategy(amips_update);
-    twoway_collapse->add_transfer_strategy(edge_length_update);
-    // proj_collapse->add_transfer_strategy(target_edge_length_update);
+        collapse->add_transfer_strategy(amips_update);
+        collapse->add_transfer_strategy(edge_length_update);
+        // proj_collapse->add_transfer_strategy(target_edge_length_update);
+    };
+
+    auto collapse1 = std::make_shared<EdgeCollapse>(*mesh);
+    collapse1->set_new_attribute_strategy(pt_attribute, clps_strat1);
+    setup_collapse(collapse1);
+
+    auto collapse2 = std::make_shared<EdgeCollapse>(*mesh);
+    collapse2->set_new_attribute_strategy(pt_attribute, clps_strat2);
+    setup_collapse(collapse2);
+
+    auto collapse = std::make_shared<OrOperationSequence>(*mesh);
+    collapse->add_operation(collapse1);
+    collapse->add_operation(collapse2);
+    collapse->add_invariant(todo_smaller);
+
 
     auto collapse_then_round = std::make_shared<OperationSequence>(*mesh);
-    collapse_then_round->add_operation(twoway_collapse);
+    collapse_then_round->add_operation(collapse);
     collapse_then_round->add_operation(rounding);
 
     Scheduler scheduler;
@@ -1119,7 +1137,7 @@ TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
 
     success = 10;
     while (success > 0) {
-        auto stats = scheduler.run_operation_on_all(*twoway_collapse);
+        auto stats = scheduler.run_operation_on_all(*collapse_then_round);
         logger().info(
             "Collpase, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
             "executing: {}",
