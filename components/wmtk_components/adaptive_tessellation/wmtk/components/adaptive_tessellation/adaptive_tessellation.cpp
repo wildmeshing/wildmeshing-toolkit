@@ -78,7 +78,7 @@ void write(
         "vertices",
         *uv_mesh,
         false,
-        false,
+        true,
         true,
         false);
     logger().info("saving uv mesh on {}", data_dir / (uv_output + "_" + std::to_string(index)));
@@ -231,21 +231,24 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
             if (todo_edge_cnt == 0) {
                 break;
             }
+            multimesh::consolidate(*atdata.uv_mesh_ptr());
             if (options.target_triangle_number > 0 &&
                 atdata.uv_mesh_ptr()->capacity(PrimitiveType::Triangle) >=
                     options.target_triangle_number) {
                 break;
             }
-
+            logger().critical("outter to do is not zero and triangle number is not enough");
             while (true) {
                 int64_t inner_i = 1;
                 while (true) {
                     const auto stats =
                         scheduler.run_operation_on_all(*at_ops.m_ops[rgb_split_index]);
+                    logger().warn("finished split");
                     if (stats.number_of_successful_operations() == 0) {
                         break;
                     }
                 }
+                multimesh::consolidate(*atdata.uv_mesh_ptr());
                 if (options.target_triangle_number > 0 &&
                     atdata.uv_mesh_ptr()->capacity(PrimitiveType::Triangle) >=
                         options.target_triangle_number) {
@@ -254,12 +257,12 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
                 while (true) {
                     const auto stats =
                         scheduler.run_operation_on_all(*at_ops.m_ops[rgb_swap_index]);
+                    logger().warn("finished swap");
+                    multimesh::consolidate(*atdata.uv_mesh_ptr());
                     if (stats.number_of_successful_operations() == 0) {
                         break;
                     }
-                    multimesh::consolidate(*atdata.uv_mesh_ptr());
                 }
-
                 int64_t inner_todo_edge_cnt = 0;
                 for (auto& e : atdata.uv_mesh_ptr()->get_all(wmtk::PrimitiveType::Edge)) {
                     if (at_ops.m_edge_todo_accessor.scalar_attribute(e) == 1) {
@@ -275,10 +278,12 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
                 if (inner_todo_edge_cnt == 0) {
                     break;
                 }
+                inner_i++;
+                logger().critical("inner to do is not zero");
             }
             cnt++;
         }
-
+        multimesh::consolidate(*atdata.uv_mesh_ptr());
         write(
             atdata.uv_mesh_ptr(),
             atdata.uv_mesh_ptr(),

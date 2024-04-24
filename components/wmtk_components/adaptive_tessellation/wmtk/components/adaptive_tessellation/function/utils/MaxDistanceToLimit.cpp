@@ -48,11 +48,18 @@ double MaxDistanceToLimit::distance(
         uv2,
         position_triangle_ColMajor,
         bbox);
-
     // check the edge of the triangle
     double max_dist_on_edge =
         wmtk::function::utils::max_distance_and_uv_on_edge(m_three_channel_evaluator, uv0, uv1)
             .first;
+    max_dist_on_edge = std::max(
+        max_dist_on_edge,
+        wmtk::function::utils::max_distance_and_uv_on_edge(m_three_channel_evaluator, uv1, uv2)
+            .first);
+    max_dist_on_edge = std::max(
+        max_dist_on_edge,
+        wmtk::function::utils::max_distance_and_uv_on_edge(m_three_channel_evaluator, uv2, uv0)
+            .first);
     max_dist = std::max(max_dist, max_dist_on_edge);
     return max_dist * wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2);
 }
