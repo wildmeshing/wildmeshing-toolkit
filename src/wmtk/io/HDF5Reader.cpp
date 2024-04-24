@@ -82,7 +82,8 @@ std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
             auto parent_to_child_handle =
                 parent_mesh
                     ->get_attribute_handle<int64_t>(
-                        multimesh::MultiMeshManager::parent_to_child_map_attribute_name(child_index),
+                        multimesh::MultiMeshManager::parent_to_child_map_attribute_name(
+                            child_index),
                         child_primitive_type)
                     .as<int64_t>();
 
@@ -167,15 +168,20 @@ std::shared_ptr<Mesh> HDF5Reader::read_mesh(h5pp::File& hdf5_file, const std::st
 
             set_attribute<double>(default_val, name, pt, stride, v, *mesh);
         } else if (type == "rational") {
-            auto tmp = hdf5_file.readDataset<std::vector<std::string>>(dataset);
-            assert(tmp.size() % 2 == 0);
-            std::string numer = hdf5_file.readAttribute<std::string>(dataset, "default_value");
-            const auto default_val = Rational(numer, "1");
+            const Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> tmp =
+                hdf5_file.readDataset<
+                    Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(dataset);
+            const Eigen::Matrix<char, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> tmp_char =
+                tmp.cast<char>();
+
+            const std::string data = hdf5_file.readAttribute<std::string>(dataset, "default_value");
+            Rational default_val;
+            default_val.init_from_binary(data);
 
             std::vector<Rational> v;
-            v.reserve(tmp.size() / 2);
-            for (size_t i = 0; i < tmp.size(); i += 2) {
-                v.emplace_back(tmp[i], tmp[i + 1]);
+            v.reserve(tmp.rows());
+            for (size_t i = 0; i < tmp.rows(); ++i) {
+                v.emplace_back(tmp_char.row(i));
             }
 
             set_attribute<Rational>(default_val, name, pt, stride, v, *mesh);

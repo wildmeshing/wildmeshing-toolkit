@@ -55,12 +55,12 @@ private:
 
     std::string dataset_path() const;
 
-    template <typename T>
+    template <typename Data, typename T>
     void write_internal(
         const std::string& name,
         const int64_t type,
         const int64_t stride,
-        const std::vector<T>& val,
+        const Data& val,
         const T& default_val);
 };
 

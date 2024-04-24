@@ -119,7 +119,7 @@ void isotropic_remeshing(
     auto op_collapse = std::make_shared<EdgeCollapse>(mesh);
     op_collapse->add_invariant(invariant_link_condition);
     if (position_for_inversion) {
-        op_collapse->add_invariant(std::make_shared<SimplexInversionInvariant>(
+        op_collapse->add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
             position_for_inversion.value().mesh(),
             position_for_inversion.value().as<double>()));
     }
@@ -182,7 +182,7 @@ void isotropic_remeshing(
             SplitRibBasicStrategy::Mean);
     }
     if (position_for_inversion) {
-        op_swap->collapse().add_invariant(std::make_shared<SimplexInversionInvariant>(
+        op_swap->collapse().add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
             position_for_inversion.value().mesh(),
             position_for_inversion.value().as<double>()));
     }
@@ -216,7 +216,7 @@ void isotropic_remeshing(
     }
 
     if (position_for_inversion) {
-        op_smooth->add_invariant(std::make_shared<SimplexInversionInvariant>(
+        op_smooth->add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
             position_for_inversion.value().mesh(),
             position_for_inversion.value().as<double>()));
     }

@@ -72,6 +72,14 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
         }
     }
 
+    if (source_mesh_primitive_type == PrimitiveType::Tetrahedron &&
+        target_mesh_primitive_type == PrimitiveType::Edge) {
+        if (source_mesh_target_tuple.m_local_fid != source_mesh_base_tuple.m_local_fid) {
+            source_mesh_target_tuple =
+                source_mesh.switch_tuple(source_mesh_target_tuple, PrimitiveType::Triangle);
+        }
+    }
+
     assert(
         source_mesh_base_tuple.m_global_cid ==
         source_mesh_target_tuple

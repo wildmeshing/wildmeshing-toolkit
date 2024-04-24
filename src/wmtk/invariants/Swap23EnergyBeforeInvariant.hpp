@@ -7,12 +7,14 @@ namespace wmtk {
 class Swap23EnergyBeforeInvariant : public Invariant
 {
 public:
-    Swap23EnergyBeforeInvariant(const Mesh& m, const attribute::TypedAttributeHandle<double>& coordinate);
+    Swap23EnergyBeforeInvariant(
+        const Mesh& m,
+        const attribute::TypedAttributeHandle<Rational>& coordinate);
     using Invariant::Invariant;
 
     bool before(const simplex::Simplex& t) const override;
 
 private:
-    const attribute::TypedAttributeHandle<double> m_coordinate_handle;
+    const attribute::TypedAttributeHandle<Rational> m_coordinate_handle;
 };
 } // namespace wmtk
