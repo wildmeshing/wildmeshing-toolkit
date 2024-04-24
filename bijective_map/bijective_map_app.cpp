@@ -189,6 +189,222 @@ void back_track_map(path dirPath, std::vector<query_point>& query_points, bool d
     }
 }
 
+void forward_track_app(
+    const Eigen::MatrixXd& V_in,
+    const Eigen::MatrixXi& F_in,
+    const Eigen::MatrixXd& V_out,
+    const Eigen::MatrixXi& F_out,
+    const path& operation_logs_dir)
+{
+    // TODO: get test example for query_points
+    std::vector<query_point> query_points;
+    for (int i = 0; i < F_in.rows(); i++) {
+        query_point qp;
+        qp.f_id = i;
+        qp.bc = Eigen::Vector3d(1.0 / 3, 1.0 / 3, 1.0 / 3);
+        qp.fv_ids = F_in.row(i);
+        query_points.push_back(qp);
+    }
+
+    std::vector<query_point> query_points_origin = query_points;
+
+    Eigen::MatrixXd pts_on_surface_before(query_points.size(), 3);
+    for (int ii = 0; ii < query_points.size(); ii++) {
+        const query_point& qp = query_points[ii];
+        Eigen::Vector3d p(0, 0, 0);
+        for (int i = 0; i < 3; i++) {
+            p += V_in.row(qp.fv_ids[i]) * qp.bc(i);
+        }
+        pts_on_surface_before.row(ii) = p;
+    }
+
+
+    // do back track
+    back_track_map(operation_logs_dir, query_points, true);
+
+    Eigen::MatrixXd pts_on_surface_after(query_points.size(), 3);
+    for (int ii = 0; ii < query_points.size(); ii++) {
+        const query_point& qp = query_points[ii];
+        Eigen::Vector3d p(0, 0, 0);
+        for (int i = 0; i < 3; i++) {
+            p += V_out.row(qp.fv_ids[i]) * qp.bc(i);
+        }
+        pts_on_surface_after.row(ii) = p;
+    }
+    // viewer
+
+    igl::opengl::glfw::Viewer viewer;
+    Eigen::Vector4f backColor;
+    backColor << 208 / 255., 237 / 255., 227 / 255., 1.;
+    const Eigen::RowVector3d blue(149.0 / 255, 217.0 / 255, 244.0 / 255);
+    viewer.core().background_color = backColor;
+    viewer.data().set_mesh(V_in, F_in);
+    viewer.data().set_colors(blue);
+    viewer.data().add_points(pts_on_surface_before, Eigen::RowVector3d(0, 0, 0));
+    viewer.data().point_size = 10;
+
+    viewer.callback_key_down =
+        [&](igl::opengl::glfw::Viewer& viewer, unsigned char key, int mod) -> bool {
+        switch (key) {
+        case '0':
+            viewer.data().clear();
+            viewer.data().set_mesh(V_in, F_in);
+            viewer.data().set_colors(blue);
+            viewer.data().add_points(pts_on_surface_before, Eigen::RowVector3d(0, 0, 0));
+            viewer.data().point_size = 10;
+            break;
+        case '1':
+            viewer.data().clear();
+            viewer.data().set_mesh(V_out, F_out);
+            viewer.data().set_colors(blue);
+            viewer.data().add_points(pts_on_surface_after, Eigen::RowVector3d(0, 0, 0));
+            viewer.data().point_size = 10;
+            break;
+        default: return false;
+        }
+        return true;
+    };
+    viewer.launch();
+}
+
+void back_track_app(
+    const Eigen::MatrixXd& V_in,
+    const Eigen::MatrixXi& F_in,
+    const Eigen::MatrixXd& V_out,
+    const Eigen::MatrixXi& F_out,
+    const path& operation_logs_dir)
+{
+    std::vector<query_point> query_points;
+    for (int i = 0; i < F_out.rows(); i++) {
+        query_point qp;
+        qp.f_id = i;
+        qp.bc = Eigen::Vector3d(1.0 / 3, 1.0 / 3, 1.0 / 3);
+        qp.fv_ids = F_out.row(i);
+        query_points.push_back(qp);
+    }
+
+    std::vector<query_point> query_points_origin = query_points;
+    Eigen::MatrixXd pts_on_surface_after(query_points.size(), 3);
+    for (int ii = 0; ii < query_points_origin.size(); ii++) {
+        const query_point& qp = query_points_origin[ii];
+        Eigen::Vector3d p(0, 0, 0);
+        for (int i = 0; i < 3; i++) {
+            p += V_out.row(qp.fv_ids[i]) * qp.bc(i);
+        }
+        pts_on_surface_after.row(ii) = p;
+    }
+    // do back track
+    back_track_map(operation_logs_dir, query_points);
+
+    Eigen::MatrixXd pts_on_surface_before(query_points.size(), 3);
+    for (int ii = 0; ii < query_points.size(); ii++) {
+        const query_point& qp = query_points[ii];
+        Eigen::Vector3d p(0, 0, 0);
+        for (int i = 0; i < 3; i++) {
+            p += V_in.row(qp.fv_ids[i]) * qp.bc(i);
+        }
+        pts_on_surface_before.row(ii) = p;
+    }
+
+    // viewer
+
+    igl::opengl::glfw::Viewer viewer;
+    Eigen::Vector4f backColor;
+    backColor << 208 / 255., 237 / 255., 227 / 255., 1.;
+    const Eigen::RowVector3d blue(149.0 / 255, 217.0 / 255, 244.0 / 255);
+    viewer.core().background_color = backColor;
+    viewer.data().set_mesh(V_in, F_in);
+    viewer.data().set_colors(blue);
+    viewer.data().add_points(pts_on_surface_before, Eigen::RowVector3d(0, 0, 0));
+    viewer.data().point_size = 10;
+
+    viewer.callback_key_down =
+        [&](igl::opengl::glfw::Viewer& viewer, unsigned char key, int mod) -> bool {
+        switch (key) {
+        case '0':
+            viewer.data().clear();
+            viewer.data().set_mesh(V_in, F_in);
+            viewer.data().set_colors(blue);
+            viewer.data().add_points(pts_on_surface_before, Eigen::RowVector3d(0, 0, 0));
+            viewer.data().point_size = 10;
+            break;
+        case '1':
+            viewer.data().clear();
+            viewer.data().set_mesh(V_out, F_out);
+            viewer.data().set_colors(blue);
+            viewer.data().add_points(pts_on_surface_after, Eigen::RowVector3d(0, 0, 0));
+            viewer.data().point_size = 10;
+            break;
+        default: return false;
+        }
+        return true;
+    };
+    viewer.launch();
+}
+
+void render_app(
+    const Eigen::MatrixXd& V_in,
+    const Eigen::MatrixXi& F_in,
+    const Eigen::MatrixXd& V_out,
+    const Eigen::MatrixXi& F_out,
+    const path& operation_logs_dir)
+{
+    // funciton to generate the picture
+    auto writePNG = [&](const std::string& name, int W, int H, camera_info cam) {
+        std::cout << "try get png" << std::endl;
+        Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R, G, B, A;
+        R.resize(W, H);
+        G.resize(W, H);
+        B.resize(W, H);
+        A.resize(W, H);
+        R.setConstant(255);
+        G.setConstant(255);
+        B.setConstant(255);
+        A.setConstant(255);
+
+        auto [fids, bcs] = get_pt_mat(cam, V_out, F_out, W, H);
+
+        std::vector<query_point> query_points;
+        for (int ii = 0; ii < fids.size(); ii++) {
+            query_point qp;
+            qp.f_id = fids[ii];
+
+            if (fids[ii] == -1) {
+                qp.fv_ids = F_out.row(0);
+            } else {
+                qp.fv_ids = F_out.row(fids[ii]);
+            }
+            qp.bc = bcs[ii];
+
+            query_points.push_back(qp);
+        }
+        igl::Timer timer;
+        timer.start();
+        back_track_map(operation_logs_dir, query_points);
+        timer.stop();
+        std::cout << "query time: " << timer.getElapsedTime() << " s" << std::endl;
+
+        igl::parallel_for(W * H, [&](int id) {
+            if (fids[id] != -1) {
+                R(id % W, H - 1 - id / W) = color_map[query_points[id].f_id % 20][0];
+                G(id % W, H - 1 - id / W) = color_map[query_points[id].f_id % 20][1];
+                B(id % W, H - 1 - id / W) = color_map[query_points[id].f_id % 20][2];
+            } else {
+                A(id % W, H - 1 - id / W) = 0;
+            }
+        });
+        igl::stb::write_image(name + ".png", R, G, B, A);
+        addShading(R, G, B, V_out, F_out, fids, bcs, std::get<0>(cam), false);
+        igl::stb::write_image(name + "_shading.png", R, G, B, A);
+    };
+
+    igl::opengl::glfw::Viewer viewer;
+    viewer.data().set_mesh(V_out, F_out);
+    viewer.launch();
+    camera_info camera =
+        std::make_tuple(viewer.core().view, viewer.core().proj, viewer.core().viewport);
+    writePNG("iso_out", 1280, 800, camera);
+}
 
 int main(int argc, char** argv)
 {
@@ -224,205 +440,14 @@ int main(int argc, char** argv)
     std::cout << "F_out size" << F_out.rows() << ", " << F_out.cols() << std::endl;
     std::cout << "V_out size" << V_out.rows() << ", " << V_in.cols() << std::endl;
 
-    std::vector<std::vector<int>> bd_loops;
-    igl::boundary_loop(F_out, bd_loops);
-    std::cout << "bd_loops size" << bd_loops.size() << std::endl;
 
     // test forward track
     if (application_name == "forward") {
-        // TODO: get test example for query_points
-        std::vector<query_point> query_points;
-        for (int i = 0; i < F_in.rows(); i++) {
-            query_point qp;
-            qp.f_id = i;
-            qp.bc = Eigen::Vector3d(1.0 / 3, 1.0 / 3, 1.0 / 3);
-            qp.fv_ids = F_in.row(i);
-            query_points.push_back(qp);
-        }
-
-        std::vector<query_point> query_points_origin = query_points;
-
-        Eigen::MatrixXd pts_on_surface_before(query_points.size(), 3);
-        for (int ii = 0; ii < query_points.size(); ii++) {
-            const query_point& qp = query_points[ii];
-            Eigen::Vector3d p(0, 0, 0);
-            for (int i = 0; i < 3; i++) {
-                p += V_in.row(qp.fv_ids[i]) * qp.bc(i);
-            }
-            pts_on_surface_before.row(ii) = p;
-        }
-
-
-        // do back track
-        back_track_map(operation_logs_dir, query_points, true);
-
-        Eigen::MatrixXd pts_on_surface_after(query_points.size(), 3);
-        for (int ii = 0; ii < query_points.size(); ii++) {
-            const query_point& qp = query_points[ii];
-            Eigen::Vector3d p(0, 0, 0);
-            for (int i = 0; i < 3; i++) {
-                p += V_out.row(qp.fv_ids[i]) * qp.bc(i);
-            }
-            pts_on_surface_after.row(ii) = p;
-        }
-        // viewer
-
-        igl::opengl::glfw::Viewer viewer;
-        Eigen::Vector4f backColor;
-        backColor << 208 / 255., 237 / 255., 227 / 255., 1.;
-        const Eigen::RowVector3d blue(149.0 / 255, 217.0 / 255, 244.0 / 255);
-        viewer.core().background_color = backColor;
-        viewer.data().set_mesh(V_in, F_in);
-        viewer.data().set_colors(blue);
-        viewer.data().add_points(pts_on_surface_before, Eigen::RowVector3d(0, 0, 0));
-        viewer.data().point_size = 10;
-
-        viewer.callback_key_down =
-            [&](igl::opengl::glfw::Viewer& viewer, unsigned char key, int mod) -> bool {
-            switch (key) {
-            case '0':
-                viewer.data().clear();
-                viewer.data().set_mesh(V_in, F_in);
-                viewer.data().set_colors(blue);
-                viewer.data().add_points(pts_on_surface_before, Eigen::RowVector3d(0, 0, 0));
-                viewer.data().point_size = 10;
-                break;
-            case '1':
-                viewer.data().clear();
-                viewer.data().set_mesh(V_out, F_out);
-                viewer.data().set_colors(blue);
-                viewer.data().add_points(pts_on_surface_after, Eigen::RowVector3d(0, 0, 0));
-                viewer.data().point_size = 10;
-                break;
-            default: return false;
-            }
-            return true;
-        };
-        viewer.launch();
+        forward_track_app(V_in, F_in, V_out, F_out, operation_logs_dir);
     } else if (application_name == "back") {
-        // TODO: get test example for query_points
-        std::vector<query_point> query_points;
-        for (int i = 0; i < F_out.rows(); i++) {
-            query_point qp;
-            qp.f_id = i;
-            qp.bc = Eigen::Vector3d(1.0 / 3, 1.0 / 3, 1.0 / 3);
-            qp.fv_ids = F_out.row(i);
-            query_points.push_back(qp);
-        }
-
-        std::vector<query_point> query_points_origin = query_points;
-        Eigen::MatrixXd pts_on_surface_after(query_points.size(), 3);
-        for (int ii = 0; ii < query_points_origin.size(); ii++) {
-            const query_point& qp = query_points_origin[ii];
-            Eigen::Vector3d p(0, 0, 0);
-            for (int i = 0; i < 3; i++) {
-                p += V_out.row(qp.fv_ids[i]) * qp.bc(i);
-            }
-            pts_on_surface_after.row(ii) = p;
-        }
-        // do back track
-        back_track_map(operation_logs_dir, query_points);
-
-        Eigen::MatrixXd pts_on_surface_before(query_points.size(), 3);
-        for (int ii = 0; ii < query_points.size(); ii++) {
-            const query_point& qp = query_points[ii];
-            Eigen::Vector3d p(0, 0, 0);
-            for (int i = 0; i < 3; i++) {
-                p += V_in.row(qp.fv_ids[i]) * qp.bc(i);
-            }
-            pts_on_surface_before.row(ii) = p;
-        }
-
-        // viewer
-
-        igl::opengl::glfw::Viewer viewer;
-        Eigen::Vector4f backColor;
-        backColor << 208 / 255., 237 / 255., 227 / 255., 1.;
-        const Eigen::RowVector3d blue(149.0 / 255, 217.0 / 255, 244.0 / 255);
-        viewer.core().background_color = backColor;
-        viewer.data().set_mesh(V_in, F_in);
-        viewer.data().set_colors(blue);
-        viewer.data().add_points(pts_on_surface_before, Eigen::RowVector3d(0, 0, 0));
-        viewer.data().point_size = 10;
-
-        viewer.callback_key_down =
-            [&](igl::opengl::glfw::Viewer& viewer, unsigned char key, int mod) -> bool {
-            switch (key) {
-            case '0':
-                viewer.data().clear();
-                viewer.data().set_mesh(V_in, F_in);
-                viewer.data().set_colors(blue);
-                viewer.data().add_points(pts_on_surface_before, Eigen::RowVector3d(0, 0, 0));
-                viewer.data().point_size = 10;
-                break;
-            case '1':
-                viewer.data().clear();
-                viewer.data().set_mesh(V_out, F_out);
-                viewer.data().set_colors(blue);
-                viewer.data().add_points(pts_on_surface_after, Eigen::RowVector3d(0, 0, 0));
-                viewer.data().point_size = 10;
-                break;
-            default: return false;
-            }
-            return true;
-        };
-        viewer.launch();
+        back_track_app(V_in, F_in, V_out, F_out, operation_logs_dir);
     } else if (application_name == "render") {
-        // funciton to generate the picture
-        auto writePNG = [&](const std::string& name, int W, int H, camera_info cam) {
-            std::cout << "try get png" << std::endl;
-            Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R, G, B, A;
-            R.resize(W, H);
-            G.resize(W, H);
-            B.resize(W, H);
-            A.resize(W, H);
-            R.setConstant(255);
-            G.setConstant(255);
-            B.setConstant(255);
-            A.setConstant(255);
-
-            auto [fids, bcs] = get_pt_mat(cam, V_out, F_out, W, H);
-
-            std::vector<query_point> query_points;
-            for (int ii = 0; ii < fids.size(); ii++) {
-                query_point qp;
-                qp.f_id = fids[ii];
-
-                if (fids[ii] == -1) {
-                    qp.fv_ids = F_out.row(0);
-                } else {
-                    qp.fv_ids = F_out.row(fids[ii]);
-                }
-                qp.bc = bcs[ii];
-
-                query_points.push_back(qp);
-            }
-            igl::Timer timer;
-            timer.start();
-            back_track_map(operation_logs_dir, query_points);
-            timer.stop();
-            std::cout << "query time: " << timer.getElapsedTime() << " s" << std::endl;
-
-            igl::parallel_for(W * H, [&](int id) {
-                if (fids[id] != -1) {
-                    R(id % W, H - 1 - id / W) = color_map[query_points[id].f_id % 20][0];
-                    G(id % W, H - 1 - id / W) = color_map[query_points[id].f_id % 20][1];
-                    B(id % W, H - 1 - id / W) = color_map[query_points[id].f_id % 20][2];
-                } else {
-                    A(id % W, H - 1 - id / W) = 0;
-                }
-            });
-            igl::stb::write_image(name + ".png", R, G, B, A);
-            addShading(R, G, B, V_out, F_out, fids, bcs, std::get<0>(cam), false);
-            igl::stb::write_image(name + "_shading.png", R, G, B, A);
-        };
-
-        igl::opengl::glfw::Viewer viewer;
-        viewer.data().set_mesh(V_out, F_out);
-        viewer.launch();
-        camera_info camera =
-            std::make_tuple(viewer.core().view, viewer.core().proj, viewer.core().viewport);
-        writePNG("iso_out", 1280, 800, camera);
+        render_app(V_in, F_in, V_out, F_out, operation_logs_dir);
     }
     return 0;
 }
