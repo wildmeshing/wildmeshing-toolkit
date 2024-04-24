@@ -107,7 +107,7 @@ int wmtk_orient3d(
     Eigen::Vector3d p3nc = p3;
 
     exactinit();
-    const auto res = orient3d(p3nc.data(), p0nc.data(), p1nc.data(), p2nc.data());
+    const auto res = orient3d(p0nc.data(), p1nc.data(), p2nc.data(), p3nc.data());
 
     if (res > 0)
         return 1;
