@@ -64,7 +64,46 @@ void back_track_map(path dirPath, std::vector<query_point>& query_points, bool d
             } else {
                 handle_consolidate(face_ids_maps, vertex_ids_maps, query_points);
             }
-        } else if (operation_name == "AttributesUpdate") {
+        } else if (operation_name == "TriEdgeSwap") {
+            std::cout << "This Operations is TriEdgeSwap" << std::endl;
+            Eigen::MatrixXi F_after, F_before;
+            Eigen::MatrixXd V_after, V_before;
+            std::vector<int64_t> id_map_after, id_map_before;
+            std::vector<int64_t> v_id_map_after, v_id_map_before;
+            parse_edge_split_file(
+                operation_log,
+                V_before,
+                F_before,
+                id_map_before,
+                v_id_map_before,
+                V_after,
+                F_after,
+                id_map_after,
+                v_id_map_after);
+
+            if (do_forward) {
+                handle_split_edge(
+                    V_after,
+                    F_after,
+                    id_map_after,
+                    v_id_map_after,
+                    V_before,
+                    F_before,
+                    id_map_before,
+                    v_id_map_before,
+                    query_points);
+            } else {
+                handle_swap_edge(
+                    V_before,
+                    F_before,
+                    id_map_before,
+                    v_id_map_before,
+                    V_after,
+                    F_after,
+                    id_map_after,
+                    v_id_map_after,
+                    query_points);
+            }
             // std::cout << "This Operations is AttributeUpdate" << std::endl;
         } else if (operation_name == "EdgeSplit") {
             std::cout << "This Operations is EdgeSplit" << std::endl;

@@ -264,7 +264,6 @@ void handle_split_edge(
                         V_before.row(F_before(i, 1)),
                         V_before.row(F_before(i, 2)));
                 }
-
                 if (-bc.minCoeff() < bc_min_coef) {
                     bc_min_coef = -bc.minCoeff();
                     local_index_in_f_before = i;
@@ -298,6 +297,110 @@ void handle_split_edge(
     }
     // });
 }
+
+void handle_swap_edge(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& v_id_map_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& id_map_after,
+    const std::vector<int64_t>& v_id_map_after,
+    std::vector<query_point>& query_points)
+{
+    std::cout << "Handling EdgeSwap" << std::endl;
+    // igl::parallel_for(query_points.size(), [&](int id) {
+    for (int id = 0; id < query_points.size(); id++) {
+        query_point& qp = query_points[id];
+        if (qp.f_id < 0) continue;
+        // find if qp is in the id_map_after
+        auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
+        if (it != id_map_after.end()) {
+            // std::cout << "find qp: " << qp.f_id << std::endl;
+            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
+            //           << std::endl;
+
+            // find the index of qp in id_map_after
+            int local_index_in_f_after = std::distance(id_map_after.begin(), it);
+            // offset of the qp.fv_ids
+            int offset_in_f_after = -1;
+            for (int i = 0; i < 3; i++) {
+                if (v_id_map_after[F_after(local_index_in_f_after, i)] == qp.fv_ids[0]) {
+                    offset_in_f_after = i;
+                    break;
+                }
+            }
+            if (offset_in_f_after == -1) {
+                std::cout << "something is wrong!" << std::endl;
+                continue;
+                // return;
+            }
+
+            // compute the location of the qp
+            int V_cols = V_after.cols();
+            Eigen::VectorXd p = Eigen::VectorXd::Zero(V_cols);
+            for (int i = 0; i < 3; i++) {
+                p += V_after.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3)) *
+                     qp.bc(i);
+            }
+
+
+            // compute bc of the p in (V, F)_before
+            int local_index_in_f_before = -1;
+            double bc_min_coef = 1;
+            bool bc_updated = false;
+            for (int i = 0; i < F_before.rows(); i++) {
+                Eigen::Vector3d bc;
+                if (V_cols == 2) {
+                    bc = ComputeBarycentricCoordinates2D(
+                        p,
+                        V_before.row(F_before(i, 0)),
+                        V_before.row(F_before(i, 1)),
+                        V_before.row(F_before(i, 2)));
+                } else // V_cols == 3
+                {
+                    bc = ComputeBarycentricCoordinates3D(
+                        p,
+                        V_before.row(F_before(i, 0)),
+                        V_before.row(F_before(i, 1)),
+                        V_before.row(F_before(i, 2)),
+                        100000);
+                }
+                if (-bc.minCoeff() < bc_min_coef) {
+                    bc_min_coef = -bc.minCoeff();
+                    local_index_in_f_before = i;
+                    qp.bc = bc;
+                    bc_updated = true;
+                }
+            }
+
+            if (!bc_updated) {
+                std::cout << "bc not updated\n" << std::endl;
+                continue;
+                // return;
+            }
+
+            // update qp
+            qp.f_id = id_map_before[local_index_in_f_before];
+            for (int i = 0; i < 3; i++) {
+                qp.fv_ids[i] = v_id_map_before[F_before(local_index_in_f_before, i)];
+            }
+            // avoid numerical issue
+            qp.bc[0] = std::max(0.0, std::min(1.0, qp.bc[0]));
+            qp.bc[1] = std::max(0.0, std::min(1.0, qp.bc[1]));
+            qp.bc[2] = std::max(0.0, std::min(1.0, qp.bc[2]));
+            qp.bc /= qp.bc.sum();
+
+            // std::cout << "qp-> " << qp.f_id << std::endl;
+            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
+            //           << std::endl
+            //           << std::endl;
+        }
+    }
+    // });
+}
+
 
 void parse_consolidate_file(
     const json& operation_log,
