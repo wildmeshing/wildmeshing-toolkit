@@ -642,8 +642,7 @@ std::array<double, NV * DIM> AMIPS::get_raw_coordinates(
     }
 
     assert(false);
-    std::array<double, NV * DIM> empty;
-    return empty;
+    throw std::runtime_error("AMIP coordinate handle with invalid type");
 }
 
 
