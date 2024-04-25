@@ -92,15 +92,15 @@ template <typename T, typename MeshType, int Dim>
 int64_t Accessor<T, MeshType, Dim>::index(const simplex::Simplex& t) const
 {
     assert(t.primitive_type() == primitive_type());
-    const int64_t i = t.m_index;
+    int64_t i = t.m_index;
     if (i == -1) {
         assert(mesh().is_valid_slow(t.tuple()));
-        return static_cast<const MeshType&>(mesh()).id(
-            t,
+        i = static_cast<const MeshType&>(mesh()).id(
+            t.tuple(),
             BaseType::typed_handle().primitive_type());
-    } else {
-        return i;
+        const_cast<simplex::Simplex&>(t).m_index = i;
     }
+    return i;
 }
 
 template <typename T, typename MeshType, int Dim>
