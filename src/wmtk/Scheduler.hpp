@@ -48,6 +48,35 @@ public:
     double sorting_time = 0;
     double executing_time = 0;
 
+    std::vector<SchedulerStats> sub_stats;
+
+    double avg_sub_collecting_time() const
+    {
+        double res = 0;
+        for (const auto& s : sub_stats) {
+            res += s.collecting_time;
+        }
+        return res / sub_stats.size();
+    }
+
+    double avg_sub_sorting_time() const
+    {
+        double res = 0;
+        for (const auto& s : sub_stats) {
+            res += s.sorting_time;
+        }
+        return res / sub_stats.size();
+    }
+
+    double avg_sub_executing_time() const
+    {
+        double res = 0;
+        for (const auto& s : sub_stats) {
+            res += s.executing_time;
+        }
+        return res / sub_stats.size();
+    }
+
 private:
     int64_t m_num_op_success = 0;
     int64_t m_num_op_fail = 0;

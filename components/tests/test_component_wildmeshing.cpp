@@ -406,15 +406,19 @@ void run_tetwild_test(
 
     auto stats = scheduler.run_operation_on_all(*op, visited_edge_flag.as<char>());
     logger().info(
-        "Split, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
-        "executing: {}. Total {}",
+        "Split, {} ops (S/F) {}/{}. Passes: {}. Time collecting: {}, sorting: {}, "
+        "executing: {}; total {}. Passes (avg) collecting: {}, sorting: {}, executing: {}",
         stats.number_of_performed_operations(),
         stats.number_of_successful_operations(),
         stats.number_of_failed_operations(),
+        stats.sub_stats.size(),
         stats.collecting_time,
         stats.sorting_time,
         stats.executing_time,
-        stats.total_time());
+        stats.total_time(),
+        stats.avg_sub_collecting_time(),
+        stats.avg_sub_sorting_time(),
+        stats.avg_sub_executing_time());
 
     int64_t unrounded = 0;
     for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {

@@ -148,7 +148,9 @@ SchedulerStats Scheduler::run_operation_on_all(
 
         success = internal_stats.number_of_successful_operations();
         res += internal_stats;
+        res.sub_stats.push_back(internal_stats);
         m_stats += internal_stats;
+        m_stats.sub_stats.push_back(internal_stats);
     }
 
     return res;
