@@ -450,6 +450,11 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
         }
 
         logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
+        logger().info(
+            "{} vertices, {} edges, {} tets",
+            mesh->get_all(PrimitiveType::Vertex).size(),
+            mesh->get_all(PrimitiveType::Edge).size(),
+            mesh->get_all(PrimitiveType::Tetrahedron).size());
     }
 }
 
