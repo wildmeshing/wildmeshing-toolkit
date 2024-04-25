@@ -45,8 +45,10 @@ public:
     // constructor
     ATOperations(ATData& atdata, double target_distance, int64_t target_triangle_number);
 
+    void set_split_all_attribute_update_None(wmtk::operations::EdgeSplit& op);
     int64_t AT_rgb_split();
     int64_t AT_rgb_swap();
+    int64_t AT_rgb_split_with_position_optimization();
     ///// update
     void set_uvmesh_xyz_update_rule();
     void initialize_xyz();

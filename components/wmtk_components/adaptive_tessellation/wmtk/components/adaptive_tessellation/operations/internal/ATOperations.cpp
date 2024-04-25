@@ -32,6 +32,7 @@
 #include <wmtk/operations/composite/TriFaceSplit.hpp>
 
 #include <wmtk/components/adaptive_tessellation/operations/RGBSplit.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/RGBSplitWithPositionOptimization.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/RGBSwap.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/RGRefine.hpp>
 
@@ -102,6 +103,37 @@ ATOperations::ATOperations(ATData& atdata, double target_distance, int64_t targe
              -m_curved_edge_length_accessor.scalar_attribute(s.tuple())});
     };
 }
+void ATOperations::set_split_all_attribute_update_None(wmtk::operations::EdgeSplit& op)
+{
+    op.set_new_attribute_strategy(
+        m_atdata.uv_handle(),
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    op.set_new_attribute_strategy(
+        m_atdata.m_uvmesh_xyz_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    op.set_new_attribute_strategy(
+        m_atdata.m_distance_error_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    op.set_new_attribute_strategy(
+        m_atdata.m_curved_edge_length_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    op.set_new_attribute_strategy(
+        m_atdata.m_face_rgb_state_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    op.set_new_attribute_strategy(
+        m_atdata.m_edge_rgb_state_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    op.set_new_attribute_strategy(
+        m_atdata.m_edge_todo_handle,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+}
 
 int64_t ATOperations::AT_rgb_split()
 {
@@ -112,28 +144,11 @@ int64_t ATOperations::AT_rgb_split()
         m_atdata.m_face_rgb_state_handle,
         m_atdata.m_edge_rgb_state_handle);
 
-    rgb_split->split().set_new_attribute_strategy(m_atdata.m_uv_handle);
-    rgb_split->split().set_new_attribute_strategy(m_atdata.m_uvmesh_xyz_handle);
-    rgb_split->split().set_new_attribute_strategy(m_atdata.m_distance_error_handle);
-    rgb_split->split().set_new_attribute_strategy(m_atdata.m_curved_edge_length_handle);
+    set_split_all_attribute_update_None(rgb_split->split());
 
     rgb_split->split().add_transfer_strategy(m_uvmesh_xyz_update);
     rgb_split->split().add_transfer_strategy(m_distance_error_update);
     rgb_split->split().add_transfer_strategy(m_curved_edge_length_update);
-
-
-    rgb_split->split().set_new_attribute_strategy(
-        m_atdata.m_face_rgb_state_handle,
-        wmtk::operations::SplitBasicStrategy::None,
-        wmtk::operations::SplitRibBasicStrategy::None);
-    rgb_split->split().set_new_attribute_strategy(
-        m_atdata.m_edge_rgb_state_handle,
-        wmtk::operations::SplitBasicStrategy::None,
-        wmtk::operations::SplitRibBasicStrategy::None);
-    rgb_split->split().set_new_attribute_strategy(
-        m_atdata.m_edge_todo_handle,
-        wmtk::operations::SplitBasicStrategy::None,
-        wmtk::operations::SplitRibBasicStrategy::None);
 
     rgb_split->add_invariant(std::make_shared<wmtk::RGBSplitInvariant>(
         *uv_mesh_ptr,
@@ -150,6 +165,43 @@ int64_t ATOperations::AT_rgb_split()
             m_target_triangle_number));
     }
     m_ops.emplace_back(rgb_split);
+    return m_ops.size() - 1;
+}
+
+int64_t ATOperations::AT_rgb_split_with_position_optimization()
+{
+    std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
+
+    auto rgb_split_w_position =
+        std::make_shared<wmtk::operations::composite::RGBSplitWithPositionOptimization>(
+            *uv_mesh_ptr,
+            m_atdata.uv_handle(),
+            m_atdata.m_mapping_ptr,
+            m_atdata.m_face_rgb_state_handle,
+            m_atdata.m_edge_rgb_state_handle);
+
+    set_split_all_attribute_update_None(rgb_split_w_position->split().split());
+    rgb_split_w_position->split().split().set_new_attribute_strategy(m_atdata.uv_handle());
+
+    rgb_split_w_position->split().add_transfer_strategy(m_uvmesh_xyz_update);
+    rgb_split_w_position->split().add_transfer_strategy(m_distance_error_update);
+    rgb_split_w_position->split().add_transfer_strategy(m_curved_edge_length_update);
+
+    rgb_split_w_position->add_invariant(std::make_shared<wmtk::RGBSplitInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.m_face_rgb_state_handle.as<int64_t>(),
+        m_atdata.m_edge_rgb_state_handle.as<int64_t>()));
+
+    rgb_split_w_position->add_invariant(std::make_shared<wmtk::TodoInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.m_edge_todo_handle.as<int64_t>(),
+        1));
+    if (m_target_triangle_number > 0) {
+        rgb_split_w_position->add_invariant(std::make_shared<wmtk::MaxTriangleNumberInvariant>(
+            *uv_mesh_ptr,
+            m_target_triangle_number));
+    }
+    m_ops.emplace_back(rgb_split_w_position);
     return m_ops.size() - 1;
 }
 

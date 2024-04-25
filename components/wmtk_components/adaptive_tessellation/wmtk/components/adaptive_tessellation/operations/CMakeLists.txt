@@ -5,6 +5,8 @@ set(SRC_FILES
     RGBSplit.cpp
     RGBSwap.hpp
     RGBSwap.cpp
+    RGBSplitWithPositionOptimization.hpp
+    RGBSplitWithPositionOptimization.cpp
 )
 
 
