@@ -66,6 +66,8 @@ set(SRC_FILES
     Swap32EnergyBeforeInvariant.cpp
     Swap23EnergyBeforeInvariant.hpp
     Swap23EnergyBeforeInvariant.cpp
+    Swap56EnergyBeforeInvariant.hpp
+    Swap56EnergyBeforeInvariant.cpp
 
     SeparateSubstructuresInvariant.hpp
     SeparateSubstructuresInvariant.cpp
