@@ -11,6 +11,7 @@ var classwmtk_1_1simplex_1_1_simplex =
     [ "operator==", "classwmtk_1_1simplex_1_1_simplex.html#a7b47a320d9d19d34211b9f2cc1992dc5", null ],
     [ "primitive_type", "classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163", null ],
     [ "tuple", "classwmtk_1_1simplex_1_1_simplex.html#a3650fd31ff1864285502dba66db3c73c", null ],
+    [ "attribute::Accessor", "classwmtk_1_1simplex_1_1_simplex.html#a858527dd650e9b888f757f3e70f0940e", null ],
     [ "wmtk::Mesh", "classwmtk_1_1simplex_1_1_simplex.html#a40e16ebf947f9980244ad9e954e38aa3", null ],
     [ "wmtk::MeshCRTP", "classwmtk_1_1simplex_1_1_simplex.html#ad2e0470ed74cad483df90c473293cc10", null ],
     [ "m_index", "classwmtk_1_1simplex_1_1_simplex.html#a1f43b685a99028454b685f511a2d63ab", null ],

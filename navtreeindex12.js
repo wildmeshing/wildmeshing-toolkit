@@ -1,5 +1,13 @@
 var NAVTREEINDEX12 =
 {
+"classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#a910c4e1ac96f1bb0e00f160b69c88f14":[5,0,2,6,15,4],
+"classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#aa5bf8a5fdf8527d9843f3f578c646b41":[5,0,2,6,15,9],
+"classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#ac5cd8fe704e6576b71278a3c4bac1296":[5,0,2,6,15,12],
+"classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#ace0810cb6960ee2a01d35b2db20006c3":[5,0,2,6,15,7],
+"classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#ace66a79835e575308bbd1d0b5b3b47c5":[5,0,2,6,15,1],
+"classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#afc2500dd9feeea3f48880c3f1f0d4b48":[5,0,2,6,15,3],
+"classwmtk_1_1operations_1_1_split_new_attribute_strategy.html":[5,0,2,6,12],
+"classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a0435f2af604239de539271d971914b4d":[5,0,2,6,12,19],
 "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a1a58edd9b054d9b7ef6e04dd64c8893b":[5,0,2,6,12,20],
 "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a1e5f10fabe4fddc6683b125556a9a947":[5,0,2,6,12,1],
 "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a26bb25c33105feb9f5117e1c691bdc45":[5,0,2,6,12,7],
@@ -241,13 +249,5 @@ var NAVTREEINDEX12 =
 "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#a756bab482d580d864f71439794990aac":[5,0,2,6,4,3,6],
 "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#a7b01f9336b09415bcfdd8a75cdce08b9":[5,0,2,6,4,3,10],
 "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#a8784cdae3cf7a6f1ad6b5c361dd8fc03":[5,0,2,6,4,3,5],
-"classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#a8ccb8992821b1327c22deb5725e90427":[5,0,2,6,4,3,11],
-"classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#a9b36575024b847b2c0367ced7f1c5caa":[5,0,2,6,4,3,4],
-"classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#aac119196791985369035cec5059809fd":[5,0,2,6,4,3,8],
-"classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#aea3b79c818c10455e635602977d16b45":[5,0,2,6,4,3,2],
-"classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#afd6d65df8ef875fd68cee598aab2e020":[5,0,2,6,4,3,0],
-"classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#affd40fcd5b842c963ae1511a255ba646":[5,0,2,6,4,3,12],
-"classwmtk_1_1simplex_1_1_closed_star_iterable.html":[5,0,2,7,2],
-"classwmtk_1_1simplex_1_1_closed_star_iterable.html#a91c462df91b6039d62c672a29a5e6a83":[5,0,2,7,2,1],
-"classwmtk_1_1simplex_1_1_closed_star_iterable.html#a9f7945cdbca9d5a1a48c80f1246e23b8":[5,0,2,7,2,3]
+"classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#a8ccb8992821b1327c22deb5725e90427":[5,0,2,6,4,3,11]
 };
