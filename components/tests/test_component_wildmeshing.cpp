@@ -57,6 +57,15 @@
 #include <fstream>
 
 using namespace wmtk::components::base;
+using namespace wmtk;
+using namespace simplex;
+using namespace operations;
+using namespace operations::tri_mesh;
+using namespace operations::tet_mesh;
+using namespace operations::composite;
+using namespace wmtk::attribute;
+using namespace function;
+using namespace invariants;
 
 using json = nlohmann::json;
 
@@ -144,24 +153,24 @@ TEST_CASE("wildmeshing_3d_multimesh", "[components][wildmeshing][.]")
     CHECK_NOTHROW(wmtk::components::wildmeshing(Paths(), input, cache));
 }
 
-TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
+void run_tetwild_test(
+    const std::string& path,
+    std::function<std::shared_ptr<Operation>(
+        Mesh&,
+        std::shared_ptr<Rounding>&,
+        MeshAttributeHandle&,
+        MeshAttributeHandle&,
+        std::vector<attribute::MeshAttributeHandle>&,
+        std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&,
+        std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&)>
+        create_op)
 {
     // const double target_edge_length = 1.21271;
     const double target_max_amips = 10;
     const double min_edge_length = 0.001;
     const double target_edge_length = 1.04;
 
-
-    using namespace wmtk;
-    using namespace simplex;
-    using namespace operations;
-    using namespace operations::tri_mesh;
-    using namespace operations::tet_mesh;
-    using namespace operations::composite;
-    using namespace function;
-    using namespace invariants;
-
-    std::ifstream file(data_dir / "split_initial_state_test.obj");
+    std::ifstream file(data_dir / path);
     std::vector<Vector3r> vertices;
     std::vector<Vector4l> tets;
     std::string x, y, z, token;
@@ -214,12 +223,12 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
         v.col(1).cast<double>().minCoeff(),
         v.col(2).cast<double>().minCoeff());
 
-    std::cout << bbox_max << std::endl;
-    std::cout << bbox_min << std::endl;
+    // std::cout << bbox_max << std::endl;
+    // std::cout << bbox_min << std::endl;
 
     double diag = (bbox_max - bbox_min).norm();
-    std::cout << diag << std::endl;
-    std::cout << 0.05 * diag << std::endl;
+    // std::cout << diag << std::endl;
+    // std::cout << 0.05 * diag << std::endl;
 
 
     auto mesh = std::make_shared<TetMesh>();
@@ -288,14 +297,8 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
             compute_edge_length);
     edge_length_update->run_on_all();
 
-
     auto visited_edge_flag =
         mesh->register_attribute<char>("visited_edge", PrimitiveType::Edge, 1, false, 1);
-
-    auto long_edges_first = [&](const simplex::Simplex& s) {
-        assert(s.primitive_type() == PrimitiveType::Edge);
-        return -edge_length_accessor.scalar_attribute(s);
-    };
 
     auto target_edge_length_attribute = mesh->register_attribute<double>(
         "wildmeshing_target_edge_length",
@@ -347,14 +350,8 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
 
     // ////////////////////////////////////////////////////
 
-    auto todo_larger = std::make_shared<TodoLargerInvariant>(
-        *mesh,
-        edge_length_attribute.as<double>(),
-        target_edge_length_attribute.as<double>(),
-        4.0 / 3.0);
     auto inversion_invariant =
         std::make_shared<SimplexInversionInvariant<Rational>>(*mesh, pt_attribute.as<Rational>());
-
 
     ///////////////////////////
 
@@ -366,31 +363,9 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
     rounding->add_invariant(inversion_invariant);
     ////////////////////////////////
 
-    auto split = std::make_shared<EdgeSplit>(*mesh);
-    split->set_priority(long_edges_first);
-
-    split->add_invariant(todo_larger);
-
-    split->set_new_attribute_strategy(pt_attribute);
-    split->set_new_attribute_strategy(
-        visited_edge_flag,
-        wmtk::operations::SplitBasicStrategy::None,
-        wmtk::operations::SplitRibBasicStrategy::None);
-    for (const auto& attr : pass_through_attributes) {
-        split->set_new_attribute_strategy(attr);
-    }
-
-    split->add_transfer_strategy(amips_update);
-    split->add_transfer_strategy(edge_length_update);
-
-    auto split_then_round = std::make_shared<OperationSequence>(*mesh);
-    split_then_round->add_operation(split);
-    split_then_round->add_operation(rounding);
 
     Scheduler scheduler;
-    int success;
-
-    success = 10;
+    int success = 10;
     while (success > 0) {
         auto stats = scheduler.run_operation_on_all(*rounding);
         logger().info(
@@ -420,7 +395,16 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
         logger().info("Mesh has {} unrounded vertices", unrounded);
     }
 
-    auto stats = scheduler.run_operation_on_all(*split_then_round, visited_edge_flag.as<char>());
+    auto op = create_op(
+        *mesh,
+        rounding,
+        pt_attribute,
+        visited_edge_flag,
+        pass_through_attributes,
+        amips_update,
+        edge_length_update);
+
+    auto stats = scheduler.run_operation_on_all(*op, visited_edge_flag.as<char>());
     logger().info(
         "Split, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
         "executing: {}. Total {}",
@@ -431,9 +415,6 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
         stats.sorting_time,
         stats.executing_time,
         stats.total_time());
-
-    success = stats.number_of_successful_operations();
-    scheduler.run_operation_on_all(*rounding);
 
     int64_t unrounded = 0;
     for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
@@ -463,6 +444,63 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
         mesh->get_all(PrimitiveType::Vertex).size(),
         mesh->get_all(PrimitiveType::Edge).size(),
         mesh->get_all(PrimitiveType::Tetrahedron).size());
+}
+
+
+TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
+{
+    run_tetwild_test(
+        "split_initial_state_test.obj",
+        [](Mesh& mesh,
+           std::shared_ptr<Rounding>& rounding,
+           MeshAttributeHandle& pt_attribute,
+           MeshAttributeHandle& visited_edge_flag,
+           std::vector<attribute::MeshAttributeHandle>& pass_through_attributes,
+           std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&
+               amips_update,
+           std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&
+               edge_length_update) {
+            auto edge_length_attribute =
+                mesh.get_attribute_handle<double>("edge_length", PrimitiveType::Edge);
+            auto target_edge_length_attribute = mesh.get_attribute_handle<double>(
+                "wildmeshing_target_edge_length",
+                PrimitiveType::Edge);
+            auto edge_length_accessor = mesh.create_accessor(edge_length_attribute.as<double>());
+
+            auto long_edges_first = [&](const simplex::Simplex& s) {
+                assert(s.primitive_type() == PrimitiveType::Edge);
+                return -edge_length_accessor.scalar_attribute(s);
+            };
+
+            auto todo_larger = std::make_shared<TodoLargerInvariant>(
+                mesh,
+                edge_length_attribute.as<double>(),
+                target_edge_length_attribute.as<double>(),
+                4.0 / 3.0);
+
+            auto split = std::make_shared<EdgeSplit>(mesh);
+            split->set_priority(long_edges_first);
+
+            split->add_invariant(todo_larger);
+
+            split->set_new_attribute_strategy(pt_attribute);
+            split->set_new_attribute_strategy(
+                visited_edge_flag,
+                wmtk::operations::SplitBasicStrategy::None,
+                wmtk::operations::SplitRibBasicStrategy::None);
+            for (const auto& attr : pass_through_attributes) {
+                split->set_new_attribute_strategy(attr);
+            }
+
+            split->add_transfer_strategy(amips_update);
+            split->add_transfer_strategy(edge_length_update);
+
+            auto split_then_round = std::make_shared<OperationSequence>(mesh);
+            split_then_round->add_operation(split);
+            split_then_round->add_operation(rounding);
+
+            return split_then_round;
+        });
 }
 
 TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
