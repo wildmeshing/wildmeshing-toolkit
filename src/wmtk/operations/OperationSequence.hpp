@@ -23,7 +23,7 @@ public:
     // main entry point of the operator by the scheduler
     std::vector<simplex::Simplex> operator()(const simplex::Simplex& simplex) override;
 
-    std::vector<double> priority(const simplex::Simplex& simplex) const override
+    double priority(const simplex::Simplex& simplex) const override
     {
         assert(!m_operations.empty());
         return m_priority == nullptr ? m_operations.front()->priority(simplex)

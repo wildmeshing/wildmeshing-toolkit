@@ -290,7 +290,7 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
 
     auto long_edges_first = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
-        return std::vector<double>({-edge_length_accessor.scalar_attribute(s.tuple())});
+        return -edge_length_accessor.scalar_attribute(s.tuple());
     };
 
     auto target_edge_length_attribute = mesh->register_attribute<double>(
@@ -685,7 +685,7 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
 
     auto short_edges_first = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
-        return std::vector<double>({edge_length_accessor.scalar_attribute(s.tuple())});
+        return edge_length_accessor.scalar_attribute(s.tuple());
     };
 
     auto todo_smaller = std::make_shared<TodoSmallerInvariant>(
@@ -1046,7 +1046,7 @@ TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
 
     auto short_edges_first = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
-        return std::vector<double>({edge_length_accessor.scalar_attribute(s.tuple())});
+        return edge_length_accessor.scalar_attribute(s.tuple());
     };
 
     auto todo_smaller = std::make_shared<TodoSmallerInvariant>(

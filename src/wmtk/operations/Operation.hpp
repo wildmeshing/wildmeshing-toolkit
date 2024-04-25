@@ -32,9 +32,9 @@ public:
     // main entry point of the operator by the scheduler
     virtual std::vector<simplex::Simplex> operator()(const simplex::Simplex& simplex);
 
-    virtual std::vector<double> priority(const simplex::Simplex& simplex) const
+    virtual double priority(const simplex::Simplex& simplex) const
     {
-        return m_priority == nullptr ? std::vector<double>({0}) : m_priority(simplex);
+        return m_priority == nullptr ? 0 : m_priority(simplex);
     }
 
     virtual bool use_random_priority() const { return m_use_random_priority; }
@@ -47,7 +47,7 @@ public:
 
     void add_invariant(std::shared_ptr<Invariant> invariant) { m_invariants.add(invariant); }
 
-    void set_priority(const std::function<std::vector<double>(const simplex::Simplex&)>& func)
+    void set_priority(const std::function<double(const simplex::Simplex&)>& func)
     {
         m_priority = func;
     }
@@ -103,7 +103,7 @@ private:
 
 
 protected:
-    std::function<std::vector<double>(const simplex::Simplex&)> m_priority = nullptr;
+    std::function<double(const simplex::Simplex&)> m_priority = nullptr;
 
     invariants::InvariantCollection m_invariants;
 

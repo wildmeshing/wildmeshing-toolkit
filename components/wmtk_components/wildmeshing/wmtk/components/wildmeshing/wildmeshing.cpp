@@ -317,11 +317,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
     auto long_edges_first = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
-        return std::vector<double>({-edge_length_accessor.scalar_attribute(s.tuple())});
+        return -edge_length_accessor.scalar_attribute(s.tuple());
     };
     auto short_edges_first = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
-        return std::vector<double>({edge_length_accessor.scalar_attribute(s.tuple())});
+        return edge_length_accessor.scalar_attribute(s.tuple());
     };
 
 
