@@ -116,7 +116,7 @@ public:
 
 
     void initialize_handles();
-    wmtk::attribute::MeshAttributeHandle uv_handle();
+    wmtk::attribute::MeshAttributeHandle& uv_handle();
     Mesh& uv_mesh() const;
     Mesh& position_mesh() const;
     std::shared_ptr<Mesh> uv_mesh_ptr() const;

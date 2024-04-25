@@ -252,7 +252,7 @@ const std::array<std::shared_ptr<image::Sampling>, 3>& ATData::funcs() const
     return m_funcs;
 }
 
-MeshAttributeHandle ATData::uv_handle()
+MeshAttributeHandle& ATData::uv_handle()
 {
     return m_uv_handle;
 }

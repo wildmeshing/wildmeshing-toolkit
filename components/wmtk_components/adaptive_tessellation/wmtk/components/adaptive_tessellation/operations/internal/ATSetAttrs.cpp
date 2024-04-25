@@ -122,8 +122,10 @@ void ATOperations::initialize_curved_edge_length()
         const auto uv0 = m_uv_accessor.vector_attribute(e);
         const auto uv1 = m_uv_accessor.vector_attribute(
             m_atdata.uv_mesh_ptr()->switch_tuple(e, PrimitiveType::Vertex));
-        m_curved_edge_length_accessor.scalar_attribute(e) =
+        double curve_length =
             curved_edge_length_on_displaced_surface(uv0, uv1, m_atdata.evaluator_ptr());
+        logger().warn("current_length: {}", curve_length);
+        m_curved_edge_length_accessor.scalar_attribute(e) = curve_length;
     }
 }
 
@@ -133,30 +135,32 @@ double ATOperations::curved_edge_length_on_displaced_surface(
     const std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
         m_evaluator_ptr)
 {
-    auto displacement =
-        [&m_evaluator_ptr](const Eigen::Vector2d& x) -> Eigen::Matrix<double, 3, 2> {
-        Eigen::Matrix<double, 3, 2> Jac;
-        for (int i = 0; i < 3; ++i) {
-            auto disp_i = [&i, &x, &m_evaluator_ptr](const Eigen::Vector2d& uv) -> double {
-                return m_evaluator_ptr->uv_to_position(x)(i);
-            };
-            Eigen::VectorXd grad_i;
-            fd::finite_gradient(x, disp_i, grad_i, fd::AccuracyOrder::FOURTH);
-            Jac.row(i) = grad_i;
-        }
-        return Jac;
-    };
+    // auto displacement =
+    //     [&m_evaluator_ptr](const Eigen::Vector2d& x) -> Eigen::Matrix<double, 3, 2> {
+    //     Eigen::Matrix<double, 3, 2> Jac;
+    //     for (int i = 0; i < 3; ++i) {
+    //         auto disp_i = [&i, &x, &m_evaluator_ptr](const Eigen::Vector2d& uv) -> double {
+    //             return m_evaluator_ptr->uv_to_position(x)(i);
+    //         };
+    //         Eigen::VectorXd grad_i;
+    //         fd::finite_gradient(x, disp_i, grad_i, fd::AccuracyOrder::FOURTH);
+    //         Jac.row(i) = grad_i;
+    //     }
+    //     return Jac;
+    // };
 
-    wmtk::Quadrature quadrature;
-    wmtk::LineQuadrature line_quadrature;
-    line_quadrature.get_quadrature(6, quadrature);
+    // wmtk::Quadrature quadrature;
+    // wmtk::LineQuadrature line_quadrature;
+    // line_quadrature.get_quadrature(6, quadrature);
 
-    double arc_length = 0;
-    for (auto i = 0; i < quadrature.size(); ++i) {
-        Eigen::Vector2d quad_point_uv = quadrature.points()(i) * (uv1 - uv0) + uv0;
-        Eigen::Matrix<double, 3, 2> Jac = displacement(quad_point_uv);
-        arc_length += quadrature.weights()[i] * (Jac * (uv1 - uv0)).norm();
-    }
+    // double arc_length = 0;
+    // for (auto i = 0; i < quadrature.size(); ++i) {
+    //     Eigen::Vector2d quad_point_uv = quadrature.points()(i) * (uv1 - uv0) + uv0;
+    //     Eigen::Matrix<double, 3, 2> Jac = displacement(quad_point_uv);
+    //     arc_length += quadrature.weights()[i] * (Jac * (uv1 - uv0)).norm();
+    // }
+    double arc_length =
+        (m_evaluator_ptr->uv_to_position(uv1) - m_evaluator_ptr->uv_to_position(uv0)).norm();
     return arc_length;
 }
 

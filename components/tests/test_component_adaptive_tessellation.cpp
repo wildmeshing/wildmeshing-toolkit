@@ -1419,7 +1419,10 @@ TEST_CASE("max_dist")
                 double dist = (p - bary_p).norm();
                 max_sampled_dist = std::max(dist, max_sampled_dist);
             }
-            wmtk::logger().info("max_dist: {}, max_sampled_dist: {}", max_dist, max_sampled_dist);
+            wmtk::logger().info(
+                "max_dist: {}, max_sampled_dist: {}",
+                max_dist,
+                max_sampled_dist * wmtk::utils::triangle_unsigned_2d_area(uv0, uv1, uv2));
         }
     }
 }
