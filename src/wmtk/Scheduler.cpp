@@ -45,7 +45,7 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
         } else {
             order.reserve(simplices.size());
             for (int64_t i = 0; i < simplices.size(); ++i) {
-                order.push_back({i, op.priority(simplices[i])});
+                order.emplace_back(i, op.priority(simplices[i]));
             }
 
             std::stable_sort(order.begin(), order.end(), [](const auto& s_a, const auto& s_b) {
@@ -123,7 +123,7 @@ SchedulerStats Scheduler::run_operation_on_all(
                 order.clear();
                 order.reserve(simplices.size());
                 for (int64_t i = 0; i < simplices.size(); ++i) {
-                    order.push_back({i, op.priority(simplices[i])});
+                    order.emplace_back(i, op.priority(simplices[i]));
                 }
 
                 std::stable_sort(order.begin(), order.end(), [](const auto& s_a, const auto& s_b) {
