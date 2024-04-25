@@ -6,6 +6,7 @@
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 
 namespace wmtk::components {

@@ -72,6 +72,14 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
         }
     }
 
+    if (source_mesh_primitive_type == PrimitiveType::Tetrahedron &&
+        target_mesh_primitive_type == PrimitiveType::Edge) {
+        if (source_mesh_target_tuple.m_local_fid != source_mesh_base_tuple.m_local_fid) {
+            source_mesh_target_tuple =
+                source_mesh.switch_tuple(source_mesh_target_tuple, PrimitiveType::Triangle);
+        }
+    }
+
     assert(
         source_mesh_base_tuple.m_global_cid ==
         source_mesh_target_tuple
@@ -240,6 +248,68 @@ void MultiMeshManager::register_child_mesh(
             child_to_parent_accessor,
             my_tuple,
             child_tuple);
+    }
+}
+
+void MultiMeshManager::deregister_child_mesh(
+    Mesh& my_mesh,
+    const std::shared_ptr<Mesh>& child_mesh_ptr)
+{
+    Mesh& child_mesh = *child_mesh_ptr;
+
+    MultiMeshManager& child_manager = child_mesh.m_multi_mesh_manager;
+    MultiMeshManager& parent_manager = my_mesh.m_multi_mesh_manager;
+
+
+    auto& child_to_parent_handle = child_manager.map_to_parent_handle;
+
+    const int64_t child_id = child_manager.child_id();
+    ChildData& child_data = parent_manager.m_children[child_id];
+    auto& parent_to_child_handle = child_data.map_handle;
+
+    assert(child_data.mesh == child_mesh_ptr);
+    assert(child_manager.children()
+               .empty()); // The current implementation does not update the attributes properly for
+                          // the case that the child also has children
+
+    // remove map attribute from parent
+    my_mesh.m_attribute_manager.get<int64_t>(child_mesh.top_simplex_type())
+        .remove_attributes({parent_to_child_handle.base_handle()});
+
+    // remove map attribute from child
+    child_mesh.m_attribute_manager.get<int64_t>(child_mesh.top_simplex_type())
+        .remove_attributes({child_to_parent_handle.base_handle()});
+
+    // set child_id to -1 --> make it a root
+    child_manager.m_child_id = -1;
+    // remove parent pointer
+    child_manager.m_parent = nullptr;
+
+    // remove child_data from parent
+    auto& children = parent_manager.m_children;
+    children.erase(children.begin() + child_id);
+
+    update_child_handles(my_mesh);
+}
+
+void MultiMeshManager::update_child_handles(Mesh& my_mesh)
+{
+    MultiMeshManager& parent_manager = my_mesh.m_multi_mesh_manager;
+    auto& children = parent_manager.m_children;
+    // update handles for all children
+    for (size_t i = 0; i < children.size(); ++i) {
+        auto new_handle = my_mesh.get_attribute_handle_typed<int64_t>(
+            parent_to_child_map_attribute_name(children[i].mesh->m_multi_mesh_manager.m_child_id),
+            children[i].mesh->top_simplex_type());
+        children[i] = ChildData{children[i].mesh, new_handle};
+    }
+
+    //  update child ids for all children
+    for (size_t i = 0; i < children.size(); ++i) {
+        children[i].mesh->m_multi_mesh_manager.m_child_id = i;
+        my_mesh.m_attribute_manager.set_name<int64_t>(
+            children[i].map_handle,
+            parent_to_child_map_attribute_name(i));
     }
 }
 

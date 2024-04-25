@@ -2,12 +2,11 @@
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/function/utils/SimplexGetter.hpp>
-#include <wmtk/utils/Rational.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/utils/Rational.hpp>
 
 
 namespace wmtk::function {
-namespace {
 
 double Tet_AMIPS_energy_aux(const std::array<double, 12>& T)
 {
@@ -579,7 +578,28 @@ std::array<double, NV * DIM> unbox(
     return res;
 }
 
-} // namespace
+template <int64_t NV, int64_t DIM>
+std::array<Rational, NV * DIM> unbox(
+    const std::vector<std::decay_t<typename attribute::ConstMapResult<Rational>>>& data,
+    const int64_t index)
+{
+    std::array<Rational, NV * DIM> res;
+    assert(data.size() == NV);
+
+    const size_t start = index < 0 ? 0 : index;
+
+    for (size_t i = 0; i < NV; ++i) {
+        const size_t ii = (i + start) % NV;
+        assert(data[ii].size() == DIM);
+
+        for (size_t j = 0; j < DIM; ++j) {
+            res[DIM * i + j] = data[ii][j];
+        }
+    }
+
+    return res;
+}
+
 
 template <int64_t NV, int64_t DIM>
 std::array<double, NV * DIM> AMIPS::get_raw_coordinates(
@@ -587,17 +607,42 @@ std::array<double, NV * DIM> AMIPS::get_raw_coordinates(
     const std::optional<simplex::Simplex>& variable_simplex) const
 {
     if (embedded_dimension() != DIM) throw std::runtime_error("AMIPS wrong dimension");
-    const attribute::Accessor<double> accessor =
-        mesh().create_const_accessor(attribute_handle().as<double>());
 
-    auto [attrs, index] = utils::get_simplex_attributes(
-        mesh(),
-        accessor,
-        m_primitive_type,
-        domain_simplex,
-        variable_simplex.has_value() ? variable_simplex->tuple() : std::optional<Tuple>());
+    if (attribute_handle().holds<double>()) {
+        const attribute::Accessor<double> accessor =
+            mesh().create_const_accessor(attribute_handle().as<double>());
 
-    return unbox<NV, DIM>(attrs, index);
+        auto [attrs, index] = utils::get_simplex_attributes(
+            mesh(),
+            accessor,
+            m_primitive_type,
+            domain_simplex,
+            variable_simplex.has_value() ? variable_simplex->tuple() : std::optional<Tuple>());
+
+        return unbox<NV, DIM>(attrs, index);
+    } else if (attribute_handle().holds<Rational>()) {
+        const attribute::Accessor<Rational> accessor =
+            mesh().create_const_accessor(attribute_handle().as<Rational>());
+
+        auto [attrs, index] = utils::get_simplex_attributes(
+            mesh(),
+            accessor,
+            m_primitive_type,
+            domain_simplex,
+            variable_simplex.has_value() ? variable_simplex->tuple() : std::optional<Tuple>());
+
+        const auto coord_rational = unbox<NV, DIM>(attrs, index);
+        std::array<double, coord_rational.size()> coord;
+
+        for (int i = 0; i < coord_rational.size(); ++i) {
+            coord[i] = coord_rational[i].to_double();
+        }
+
+        return coord;
+    }
+
+    assert(false);
+    throw std::runtime_error("AMIP coordinate handle with invalid type");
 }
 
 

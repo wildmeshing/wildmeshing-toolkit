@@ -26,10 +26,14 @@ EdgeSplit::EdgeSplit(Mesh& m)
             for (const auto& attr : mesh.custom_attributes()) {
                 std::visit(
                     [&](auto&& tah) noexcept {
-                        using T = typename std::decay_t<decltype(tah)>::Type;
-                        m_new_attr_strategies.emplace_back(
-                            std::make_shared<operations::SplitNewAttributeStrategy<T>>(
-                                attribute::MeshAttributeHandle(mesh, attr)));
+                        using HandleType = typename std::decay_t<decltype(tah)>;
+                        if constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic<
+                                          HandleType>()) {
+                            using T = typename HandleType::Type;
+                            m_new_attr_strategies.emplace_back(
+                                std::make_shared<operations::SplitNewAttributeStrategy<T>>(
+                                    attribute::MeshAttributeHandle(mesh, attr)));
+                        }
                     },
                     attr);
             }
@@ -50,7 +54,7 @@ std::vector<simplex::Simplex> EdgeSplit::execute(const simplex::Simplex& simplex
         mesh(),
         simplex,
         m_new_attr_strategies);
-};
+}
 std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives(
     const simplex::Simplex& simplex) const
 {
@@ -88,15 +92,19 @@ void EdgeSplit::set_new_attribute_strategy(
     const wmtk::operations::SplitRibBasicStrategy& rib)
 {
     std::visit(
-        [&](auto&& val) -> void {
-            using T = typename std::decay_t<decltype(val)>::Type;
-            using OpType = operations::SplitNewAttributeStrategy<T>;
+        [&](auto&& val) noexcept -> void {
+            using HandleType = typename std::decay_t<decltype(val)>;
+            if constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic<
+                              HandleType>()) {
+                using T = typename HandleType::Type;
+                using OpType = operations::SplitNewAttributeStrategy<T>;
 
-            std::shared_ptr<OpType> tmp = std::make_shared<OpType>(attribute);
-            tmp->set_strategy(spine);
-            tmp->set_rib_strategy(rib);
+                std::shared_ptr<OpType> tmp = std::make_shared<OpType>(attribute);
+                tmp->set_strategy(spine);
+                tmp->set_rib_strategy(rib);
 
-            set_new_attribute_strategy(attribute, tmp);
+                set_new_attribute_strategy(attribute, tmp);
+            }
         },
         attribute.handle());
 }

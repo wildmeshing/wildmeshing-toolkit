@@ -22,10 +22,14 @@ EdgeCollapse::EdgeCollapse(Mesh& m)
             for (const auto& attr : mesh.custom_attributes()) {
                 std::visit(
                     [&](auto&& tah) noexcept {
-                        using T = typename std::decay_t<decltype(tah)>::Type;
-                        m_new_attr_strategies.emplace_back(
-                            std::make_shared<operations::CollapseNewAttributeStrategy<T>>(
-                                attribute::MeshAttributeHandle(mesh, attr)));
+                        using HandleType = typename std::decay_t<decltype(tah)>;
+                        if constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic<
+                                          HandleType>()) {
+                            using T = typename HandleType::Type;
+                            m_new_attr_strategies.emplace_back(
+                                std::make_shared<operations::CollapseNewAttributeStrategy<T>>(
+                                    attribute::MeshAttributeHandle(mesh, attr)));
+                        }
                     },
                     attr);
             }
@@ -53,7 +57,8 @@ std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives(
 {
     return mesh().parent_scope([&]() -> std::vector<simplex::Simplex> {
         const simplex::Simplex v0 = simplex::Simplex::vertex(simplex.tuple());
-        const simplex::Simplex v1 = simplex::Simplex::vertex(mesh().switch_tuple(simplex.tuple(), PrimitiveType::Vertex));
+        const simplex::Simplex v1 =
+            simplex::Simplex::vertex(mesh().switch_tuple(simplex.tuple(), PrimitiveType::Vertex));
         return {v0, v1};
     });
 }
@@ -89,14 +94,18 @@ void EdgeCollapse::set_new_attribute_strategy(
     const wmtk::operations::CollapseBasicStrategy& strategy)
 {
     std::visit(
-        [&](auto&& val) -> void {
-            using T = typename std::decay_t<decltype(val)>::Type;
-            using OpType = operations::CollapseNewAttributeStrategy<T>;
+        [&](auto&& val) noexcept -> void {
+            using HandleType = typename std::decay_t<decltype(val)>;
+            if constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic<
+                              HandleType>()) {
+                using T = typename HandleType::Type;
+                using OpType = operations::CollapseNewAttributeStrategy<T>;
 
-            std::shared_ptr<OpType> tmp = std::make_shared<OpType>(attribute);
-            tmp->set_strategy(strategy);
+                std::shared_ptr<OpType> tmp = std::make_shared<OpType>(attribute);
+                tmp->set_strategy(strategy);
 
-            set_new_attribute_strategy(attribute, tmp);
+                set_new_attribute_strategy(attribute, tmp);
+            }
         },
         attribute.handle());
 }

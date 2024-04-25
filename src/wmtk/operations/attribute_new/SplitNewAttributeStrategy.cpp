@@ -35,6 +35,33 @@ SplitNewAttributeStrategy<T>::standard_split_strategy(SplitBasicStrategy optype)
     return {};
 }
 
+template <>
+typename SplitNewAttributeStrategy<Rational>::SplitFuncType
+SplitNewAttributeStrategy<Rational>::standard_split_strategy(SplitBasicStrategy optype)
+{
+    using VT = SplitNewAttributeStrategy::VecType;
+
+    switch (optype) {
+    default: [[fallthrough]];
+    case SplitBasicStrategy::Default: [[fallthrough]];
+    case SplitBasicStrategy::Copy:
+        return [](const VT& a, const std::bitset<2>&) -> std::array<VT, 2> {
+            return std::array<VT, 2>{{a, a}};
+        };
+    case SplitBasicStrategy::Half:
+        return [](const VT& a, const std::bitset<2>&) -> std::array<VT, 2> {
+            return std::array<VT, 2>{{a / Rational(2, true), a / Rational(2, true)}};
+        };
+    case SplitBasicStrategy::Throw:
+        return [](const VT&, const std::bitset<2>&) -> std::array<VT, 2> {
+            throw std::runtime_error("Split should have a new attribute");
+        };
+    case SplitBasicStrategy::None: return {};
+    }
+    return {};
+}
+
+
 template <typename T>
 typename SplitNewAttributeStrategy<T>::SplitRibFuncType
 SplitNewAttributeStrategy<T>::standard_split_rib_strategy(SplitRibBasicStrategy optype)
@@ -71,6 +98,53 @@ SplitNewAttributeStrategy<T>::standard_split_rib_strategy(SplitRibBasicStrategy 
         return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
             if (bs[0] == bs[1]) {
                 return (a + b) / T(2);
+            } else if (bs[0]) {
+                return a;
+
+            } else {
+                return b;
+            }
+        };
+    case SplitRibBasicStrategy::Throw:
+        return [](const VT&, const VT&, const std::bitset<2>&) -> VT {
+            throw std::runtime_error("Split should have a new attribute");
+        };
+    case SplitRibBasicStrategy::None: return {};
+    }
+    return {};
+}
+template <>
+typename SplitNewAttributeStrategy<Rational>::SplitRibFuncType
+SplitNewAttributeStrategy<Rational>::standard_split_rib_strategy(SplitRibBasicStrategy optype)
+{
+    using VT = SplitNewAttributeStrategy::VecType;
+
+    switch (optype) {
+    default: [[fallthrough]];
+    case SplitRibBasicStrategy::Default:
+        return standard_split_rib_strategy(SplitRibBasicStrategy::Mean);
+    case SplitRibBasicStrategy::CopyTuple:
+        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+            // if both are boundary then return a (failed link anyway but oh well)
+            // if a is boundary but b is interior get b though
+            if (!bs[1] && bs[0]) {
+                return b;
+            } else {
+                return a;
+            }
+        };
+    case SplitRibBasicStrategy::CopyOther:
+        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+            if (!bs[0] && bs[1]) {
+                return a;
+            } else {
+                return b;
+            }
+        };
+    case SplitRibBasicStrategy::Mean:
+        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+            if (bs[0] == bs[1]) {
+                return (a + b) / Rational(2, true);
             } else if (bs[0]) {
                 return a;
 

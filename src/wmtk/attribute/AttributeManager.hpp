@@ -87,6 +87,9 @@ public:
     std::string get_name(const attribute::MeshAttributeHandle::HandleVariant& attr) const;
 
     template <typename T>
+    void set_name(const TypedAttributeHandle<T>& attr, const std::string& name);
+
+    template <typename T>
     const std::vector<MeshAttributes<T>>& get() const;
 
     template <typename T>
@@ -107,6 +110,10 @@ public:
 
     template <typename T>
     int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
+
+    template <typename T>
+    const T& get_attribute_default_value(const TypedAttributeHandle<T>& handle) const;
+
 
     /**
      * @brief Remove all custom attributes besides the one passed in.
@@ -207,9 +214,26 @@ inline int64_t AttributeManager::get_attribute_dimension(
 }
 
 template <typename T>
+inline const T& AttributeManager::get_attribute_default_value(
+    const TypedAttributeHandle<T>& handle) const
+{
+    assert(handle.is_valid());
+    return get(handle).default_value(handle.m_base_handle);
+}
+
+template <typename T>
 inline std::string AttributeManager::get_name(const TypedAttributeHandle<T>& handle) const
 {
     return get(handle).get_name(handle.m_base_handle);
 }
+
+template <typename T>
+inline void AttributeManager::set_name(
+    const TypedAttributeHandle<T>& handle,
+    const std::string& name)
+{
+    return get(handle).set_name(handle.m_base_handle, name);
+}
+
 } // namespace attribute
 } // namespace wmtk

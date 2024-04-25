@@ -1,9 +1,15 @@
 set(SRC_FILES
+    AMIPSOptimizationSmoothing.hpp
+    AMIPSOptimizationSmoothing.cpp
+
     AttributesUpdate.hpp
     AttributesUpdate.cpp
 
     Operation.hpp
     Operation.cpp
+
+    OperationSequence.hpp
+    OperationSequence.cpp
 
     #MeshOperation.hpp
     #MeshOperation.cpp
@@ -19,6 +25,9 @@ set(SRC_FILES
 
     OptimizationSmoothing.cpp
     OptimizationSmoothing.hpp
+
+    Rounding.hpp
+    Rounding.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

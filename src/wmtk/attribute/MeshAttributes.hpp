@@ -80,7 +80,10 @@ public:
 
 
     int64_t dimension(const AttributeHandle& handle) const;
+    const T& default_value(const AttributeHandle& handle) const;
     std::string get_name(const AttributeHandle& handle) const;
+
+    void set_name(const AttributeHandle& handle, const std::string& name);
 
     bool has_attribute(const std::string& name) const;
 
@@ -125,6 +128,11 @@ template <typename T>
 inline int64_t MeshAttributes<T>::dimension(const AttributeHandle& handle) const
 {
     return attribute(handle).dimension();
+}
+template <typename T>
+inline const T& MeshAttributes<T>::default_value(const AttributeHandle& handle) const
+{
+    return attribute(handle).default_value();
 }
 } // namespace attribute
 } // namespace wmtk

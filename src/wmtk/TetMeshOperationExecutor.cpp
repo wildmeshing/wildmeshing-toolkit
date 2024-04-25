@@ -164,6 +164,37 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
             m_mesh.id(s),
             wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
     }
+
+
+    // // geet hash_update_region as the one ring
+    // simplex::SimplexCollection hash_update_region =
+    //     simplex::closed_star(m_mesh, simplex::Simplex::vertex(operating_tuple), false);
+    // hash_update_region.add(simplex::closed_star(
+    //     m_mesh,
+    //     simplex::Simplex::vertex(m_mesh.switch_tuple(operating_tuple, PrimitiveType::Vertex)),
+    //     false));
+    // hash_update_region.sort_and_clean();
+
+    // global_simplex_ids_with_potentially_modified_hashes.resize(4);
+    // simplex::SimplexCollection faces(m_mesh);
+    // faces.reserve(hash_update_region.simplex_vector().size() * 15);
+
+    // for (const simplex::Simplex& t : hash_update_region.simplex_vector()) {
+    //     cell_ids_to_update_hash.push_back(m_mesh.id(t));
+
+    //     faces.add(wmtk::simplex::faces(m, t, false));
+    //     faces.add(t);
+    // }
+
+    // faces.sort_and_clean();
+
+    // for (const auto& s : faces) {
+    //     const int64_t index = static_cast<int64_t>(s.primitive_type());
+    //     if (!m.has_child_mesh_in_dimension(index)) continue;
+    //     global_simplex_ids_with_potentially_modified_hashes.at(index).emplace_back(
+    //         m_mesh.id(s),
+    //         wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
+    // }
 #endif
 }
 

@@ -22,7 +22,8 @@ TEST_CASE("component_input", "[components][input]")
             {"type", "input"},
             {"name", "input_mesh"},
             {"file", input_file.string()},
-            {"ignore_z", false}};
+            {"ignore_z", false},
+            {"tetrahedron_attributes", json::array()}};
 
 
         CHECK_NOTHROW(wmtk::components::input(Paths(), component_json, cache));
@@ -34,7 +35,8 @@ TEST_CASE("component_input", "[components][input]")
             {"type", "input"},
             {"name", "input_mesh"},
             {"file", "In case you ever name your file like that: What is wrong with you?"},
-            {"ignore_z", false}};
+            {"ignore_z", false},
+            {"tetrahedron_attributes", json::array()}};
 
         CHECK_THROWS(wmtk::components::input(Paths(), component_json, cache));
     }
@@ -49,7 +51,8 @@ TEST_CASE("component_input_point", "[components][input][.]")
         {"type", "input"},
         {"name", "input_mesh"},
         {"file", (data_dir / "point_clouds" / "bunny_pts.msh").string()},
-        {"ignore_z", false}};
+        {"ignore_z", false},
+        {"tetrahedron_attributes", json::array()}};
 
     std::map<std::string, std::filesystem::path> files;
 

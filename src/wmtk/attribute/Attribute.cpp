@@ -40,8 +40,7 @@ std::map<std::string, size_t> Attribute<T>::child_hashes() const
     hashes["dimension"] = m_dimension;
     if constexpr (std::is_same_v<T, Rational>) {
         constexpr static std::hash<std::string> h;
-        hashes["default_numerator"] = h(m_default_value.numerator());
-        hashes["default_denominator"] = h(m_default_value.denominator());
+        hashes["default_value"] = h(m_default_value.serialize());
     } else {
         hashes["default_value"] = m_default_value;
     }

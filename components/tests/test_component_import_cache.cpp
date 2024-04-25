@@ -20,7 +20,8 @@ TEST_CASE("component_import_cache", "[components][import_cache]")
         json component_json = {
             {"name", "input_mesh"},
             {"file", input_file.string()},
-            {"ignore_z", false}};
+            {"ignore_z", false},
+            {"tetrahedron_attributes", json::array()}};
 
 
         CHECK_NOTHROW(wmtk::components::input(Paths(), component_json, cache));

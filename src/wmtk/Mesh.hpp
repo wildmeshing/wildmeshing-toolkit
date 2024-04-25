@@ -22,8 +22,6 @@
 #include <wmtk/simplex/Simplex.hpp>
 #include "Tuple.hpp"
 #include "Types.hpp"
-#include "attribute/AccessorBase.hpp" // Why do we need to include this now?
-#include "attribute/Attribute.hpp" // Why do we need to include this now?
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
@@ -245,6 +243,9 @@ public:
 
     template <typename T>
     int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
+
+    template <typename T>
+    const T& get_attribute_default_value(const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
     std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;
@@ -555,9 +556,25 @@ public:
      * @param mesh_tuples a sequence of corresponding tuples between meshes
      */
     void register_child_mesh(
-        const std::shared_ptr<Mesh>& child_mesh,
+        const std::shared_ptr<Mesh>& child_mesh_ptr,
         const std::vector<std::array<Tuple, 2>>& map_tuples);
 
+    /**
+     * @brief Deregister a child mesh.
+     *
+     * The child mesh is not deleted. It is only detached from the multi-mesh structure. The child
+     * mesh becomes the new root for its own children. Attribute handles for the child and parent
+     * mesh will be invalidated by deregistration.
+     */
+    void deregister_child_mesh(const std::shared_ptr<Mesh>& child_mesh_ptr);
+
+private:
+    /**
+     * @brief Update the child handles after clearing attributes.
+     */
+    void update_child_handles();
+
+public:
     /**
      * @brief maps a simplex from this mesh to any other mesh
      *

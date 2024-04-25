@@ -66,5 +66,11 @@ set(SRC_FILES
     Swap32EnergyBeforeInvariant.cpp
     Swap23EnergyBeforeInvariant.hpp
     Swap23EnergyBeforeInvariant.cpp
+
+    SeparateSubstructuresInvariant.hpp
+    SeparateSubstructuresInvariant.cpp
+
+    RoundedInvariant.hpp
+    RoundedInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

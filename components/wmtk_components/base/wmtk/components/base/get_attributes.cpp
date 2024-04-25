@@ -10,9 +10,6 @@
 
 namespace wmtk::components::base {
 
-namespace {
-
-
 attribute::MeshAttributeHandle get_attribute(const Mesh& m, const std::string& name)
 {
     int64_t count = 0;
@@ -65,8 +62,6 @@ get_attribute(const io::Cache& cache, const Mesh& m, const nlohmann::json& attri
 
     log_and_throw_error("Invalid type for {}.", attribute);
 }
-
-} // namespace
 
 
 std::vector<attribute::MeshAttributeHandle>

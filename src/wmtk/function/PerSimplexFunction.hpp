@@ -2,7 +2,7 @@
 
 #include <wmtk/Primitive.hpp>
 
-#include <wmtk/attribute/MeshAttributes.hpp>
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
 
 #include <Eigen/Core>
 

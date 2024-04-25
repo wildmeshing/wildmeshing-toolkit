@@ -1,8 +1,11 @@
-#include <fmt/format.h>
+// #include <fmt/format.h> // duplicated in logger.hpp
 #include <wmtk/Mesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
 
+#include <wmtk/utils/Logger.hpp>
+
 #include "CachedMultiMesh.hpp"
+
 namespace wmtk::io {
 
 
@@ -47,6 +50,10 @@ std::shared_ptr<Mesh> CachedMultiMesh::get_from_path(const std::string& name)
 
 std::shared_ptr<Mesh> CachedMultiMesh::get(const std::string& name)
 {
+    if (m_multimesh_names.find(name) == m_multimesh_names.end()) {
+        wmtk::logger().warn("Cannot find {} in the cache", name);
+        return nullptr;
+    }
     return m_root->get_multi_mesh_mesh(m_multimesh_names.at(name)).shared_from_this();
 }
 std::shared_ptr<Mesh> CachedMultiMesh::get_root()

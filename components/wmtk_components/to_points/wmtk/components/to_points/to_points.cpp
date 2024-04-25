@@ -9,6 +9,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
 namespace wmtk::components {
@@ -41,6 +42,12 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
         ++index;
     }
 
+    wmtk::logger().info(
+        "Input bbox max {}, min {}, diag {}, potential target edge length: {}",
+        bbox.max(),
+        bbox.min(),
+        bbox.diagonal().norm(),
+        bbox.diagonal().norm() * options.box_scale);
 
     if (options.add_box && !options.add_grid) {
         auto center = bbox.center();
@@ -59,14 +66,20 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
     }
 
     if (options.add_grid) {
-        auto center = bbox.center();
-        auto r = bbox.diagonal() / 2.;
+        const double bbox_diag = bbox.diagonal().norm();
+        const auto r = Eigen::VectorXd::Ones(pts_acc.dimension()) * bbox_diag;
         const double grid_spacing = options.grid_spacing;
 
-        bbox.min() = center - options.box_scale * r;
-        bbox.max() = center + options.box_scale * r;
-        Eigen::VectorXd diag = bbox.max() - bbox.min();
-        Eigen::VectorXi res = (diag / grid_spacing).cast<int>();
+
+        bbox.min() -= options.box_scale * r;
+        bbox.max() += options.box_scale * r;
+        // Eigen::VectorXi res = (diag / grid_spacing).cast<int>();
+
+        // // TODO: remove the hack
+        // // hack grid spacing as relative
+        const Eigen::VectorXi res = (bbox.diagonal() / (bbox_diag * grid_spacing)).cast<int>() +
+                                    Eigen::VectorXi::Ones(pts_acc.dimension());
+
         Eigen::MatrixXd background_V;
 
 
@@ -81,16 +94,23 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
                 for (int j = 0; j <= res[1]; ++j) {
                     for (int i = 0; i <= res[0]; ++i) {
                         const Eigen::Vector3d iii(i, j, k);
-                        const Eigen::Vector3d ttmp = diag.array() * iii.array();
+                        const Eigen::Vector3d ttmp = bbox.diagonal().array() * iii.array();
                         background_V.row(v_index(i, j, k)) =
                             bbox.min().array() + ttmp.array() / res.cast<double>().array();
                     }
                 }
             }
         }
+
+        wmtk::logger().info(
+            "Grid bbox max {}, min {}, diag {}, potential target edge length: {}",
+            bbox.max(),
+            bbox.min(),
+            bbox.diagonal().norm(),
+            bbox.diagonal().norm() * options.box_scale);
         // else 2d and 1d
 
-        if (options.min_dist > 0) {
+        if (options.min_dist >= 0) {
             int64_t count = 0;
             int64_t index = 0;
 
@@ -120,12 +140,15 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
             SimpleBVH::BVH bvh;
             bvh.init(vertices, faces, 1e-10);
 
+            const double min_dist =
+                options.min_dist > 0 ? (options.min_dist * options.min_dist * bbox_diag * bbox_diag)
+                                     : (bbox_diag * bbox_diag * grid_spacing * grid_spacing / 4);
             std::vector<Eigen::VectorXd> good;
             SimpleBVH::VectorMax3d nearest_point;
             for (int64_t i = 0; i < background_V.rows(); ++i) {
                 double sq_dist;
                 bvh.nearest_facet(background_V.row(i), nearest_point, sq_dist);
-                if (sq_dist >= options.min_dist) good.emplace_back(background_V.row(i));
+                if (sq_dist >= min_dist) good.emplace_back(background_V.row(i));
             }
             int64_t current_size = pts.rows();
             pts.conservativeResize(current_size + good.size(), pts.cols());
@@ -137,6 +160,35 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
             // TODO
         }
     }
+
+    // remove duplicates
+    int64_t old_size = pts.rows();
+    auto remove_duplicated_vertices = [](Eigen::MatrixXd& P) -> Eigen::MatrixXd {
+        std::vector<Eigen::VectorXd> vec;
+        for (int64_t i = 0; i < P.rows(); ++i) vec.push_back(P.row(i));
+
+        std::sort(vec.begin(), vec.end(), [](Eigen::VectorXd const& p1, Eigen::VectorXd const& p2) {
+            return (p1(0) < p2(0)) || (p1(0) == p2(0) && p1(1) < p2(1)) ||
+                   (p1(0) == p2(0) && p1(1) == p2(1) && p1(2) < p2(2));
+        });
+
+        auto it = std::unique(vec.begin(), vec.end());
+        vec.resize(std::distance(vec.begin(), it));
+
+        Eigen::MatrixXd new_P(vec.size(), P.cols());
+        for (int64_t i = 0; i < vec.size(); ++i) {
+            new_P.row(i) = vec[i];
+        }
+
+        return new_P;
+    };
+
+    if (options.remove_duplicates) {
+        pts = remove_duplicated_vertices(pts);
+        wmtk::logger().info("removed {} duplicated vertices", pts.rows() - old_size);
+    }
+
+    wmtk::logger().info("generated {} vertices", pts.rows());
     std::shared_ptr<PointMesh> pts_mesh = std::make_shared<PointMesh>(pts.rows());
 
     mesh_utils::set_matrix_attribute(pts, options.position, PrimitiveType::Vertex, *pts_mesh);

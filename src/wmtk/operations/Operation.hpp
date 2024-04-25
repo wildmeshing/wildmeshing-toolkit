@@ -3,8 +3,8 @@
 #include "attribute_new/NewAttributeStrategy.hpp"
 #include "attribute_update/AttributeTransferStrategyBase.hpp"
 
-#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 
 
@@ -30,7 +30,7 @@ public:
     virtual ~Operation();
 
     // main entry point of the operator by the scheduler
-    std::vector<simplex::Simplex> operator()(const simplex::Simplex& simplex);
+    virtual std::vector<simplex::Simplex> operator()(const simplex::Simplex& simplex);
 
     virtual std::vector<double> priority(const simplex::Simplex& simplex) const
     {

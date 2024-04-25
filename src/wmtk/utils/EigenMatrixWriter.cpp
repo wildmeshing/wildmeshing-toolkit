@@ -7,6 +7,12 @@ void EigenMatrixWriter::get_position_matrix(MatrixX<double>& matrix)
     get_double_matrix("vertices", PrimitiveType::Vertex, matrix);
 }
 
+void EigenMatrixWriter::get_position_matrix(MatrixX<Rational>& matrix)
+{
+    get_Rational_matrix("vertices", PrimitiveType::Vertex, matrix);
+}
+
+
 void EigenMatrixWriter::get_TV_matrix(MatrixX<int64_t>& matrix)
 {
     get_int64_t_matrix("m_tv", PrimitiveType::Tetrahedron, matrix);

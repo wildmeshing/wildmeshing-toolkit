@@ -18,6 +18,7 @@ namespace wmtk::operations {
 class OptimizationSmoothing : public AttributesUpdate
 {
 private:
+    template <typename T>
     class WMTKProblem;
 
 public:

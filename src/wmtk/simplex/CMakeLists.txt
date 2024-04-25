@@ -41,6 +41,8 @@ set(SRC_FILES
     faces_single_dimension.cpp
     k_ring.hpp
     k_ring.cpp
+    tuples_preserving_primitive_types.hpp
+    tuples_preserving_primitive_types.cpp
 
     neighbors_single_dimension.hpp
     neighbors_single_dimension.cpp
