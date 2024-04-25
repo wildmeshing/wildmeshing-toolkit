@@ -143,7 +143,7 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     }
     hash_update_region.sort_and_clean();
 
-#if defined(WMTK_USE_MULTIMESH)
+#if defined(WMTK_ENABLE_MULTIMESH)
     global_simplex_ids_with_potentially_modified_hashes.resize(4);
     simplex::SimplexCollection faces(m_mesh);
     faces.reserve(hash_update_region.simplex_vector().size() * 15);
