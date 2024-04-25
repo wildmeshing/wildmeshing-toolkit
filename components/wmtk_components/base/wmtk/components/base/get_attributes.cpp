@@ -5,7 +5,6 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 
-#include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 

@@ -4,7 +4,9 @@
 #include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
 #include "attribute_new/CollapseNewAttributeStrategy.hpp"
 
+#if defined(WMTK_ENABLE_MULTIMESH)
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
+#endif
 #include "utils/multi_mesh_edge_collapse.hpp"
 
 
@@ -30,8 +32,12 @@ EdgeCollapse::EdgeCollapse(Mesh& m)
         }
     };
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     multimesh::MultiMeshVisitor custom_attribute_collector(collect_attrs);
     custom_attribute_collector.execute_from_root(m);
+#else
+    collect_attrs(m);
+#endif
 }
 
 std::vector<simplex::Simplex> EdgeCollapse::execute(const simplex::Simplex& simplex)

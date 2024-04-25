@@ -1,4 +1,13 @@
 set(SRC_FILES
+    VertexLaplacianSmooth.hpp
+    VertexLaplacianSmooth.cpp
+
+    VertexTangentialLaplacianSmooth.hpp
+    VertexTangentialLaplacianSmooth.cpp
+    )
+target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+if(WMTK_ENABLE_MULTIMESH)
+set(SRC_FILES
     MultiMeshEdgeCollapseFunctor.cpp
     MultiMeshEdgeCollapseFunctor.hpp
     MultiMeshEdgeSplitFunctor.cpp
@@ -11,13 +20,7 @@ set(SRC_FILES
     multi_mesh_edge_split.hpp
     UpdateVertexMultiMeshMapHash.hpp
     UpdateVertexMultiMeshMapHash.cpp
-
-
-    VertexLaplacianSmooth.hpp
-    VertexLaplacianSmooth.cpp
-
-    VertexTangentialLaplacianSmooth.hpp
-    VertexTangentialLaplacianSmooth.cpp
     )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+endif()
 

@@ -7,7 +7,9 @@
 #include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
 #include <wmtk/utils/Logger.hpp>
 
+#if defined(WMTK_ENABLE_MULTIMESH)
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
+#endif
 #include <wmtk/utils/Logger.hpp>
 
 #include "attribute_new/SplitNewAttributeStrategy.hpp"
@@ -34,8 +36,12 @@ EdgeSplit::EdgeSplit(Mesh& m)
         }
     };
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     multimesh::MultiMeshVisitor custom_attribute_collector(collect_attrs);
     custom_attribute_collector.execute_from_root(m);
+#else
+    collect_attrs(m);
+#endif
 }
 
 std::vector<simplex::Simplex> EdgeSplit::execute(const simplex::Simplex& simplex)

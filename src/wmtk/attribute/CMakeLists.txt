@@ -38,6 +38,9 @@ set(SRC_FILES
     Accessor.hxx
     Accessor.hpp
 
+    UseParentScopeRAII.hpp
+    UseParentScopeRAII.cpp
+
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(internal)

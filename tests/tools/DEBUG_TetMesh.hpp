@@ -16,11 +16,12 @@ public:
 
     // uses spdlog to print out a variety of information about the mesh
     void print_state() const;
-
+#if defined(WMTK_ENABLE_MULTIMESH)
     wmtk::tests::DEBUG_MultiMeshManager& multi_mesh_manager()
     {
         return reinterpret_cast<wmtk::tests::DEBUG_MultiMeshManager&>(m_multi_mesh_manager);
     }
+#endif
 
     using TetMesh::m_attribute_manager;
 

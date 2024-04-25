@@ -92,8 +92,10 @@ public:
     // for multimesh we need to know which global ids are modified to trigger
     // for every simplex dimension (We have 3 in trimesh):
     // a list of [simplex index, {all versions of that simplex}]
+#if defined(WMTK_ENABLE_MULTIMESH)
     std::vector<std::vector<std::tuple<int64_t, std::vector<Tuple>>>>
         global_simplex_ids_with_potentially_modified_hashes;
+#endif
 
 
     // common simplicies

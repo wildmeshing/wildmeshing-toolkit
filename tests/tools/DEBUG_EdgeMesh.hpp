@@ -24,10 +24,12 @@ public:
     auto edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple;
     auto tuple_from_edge_id(const int64_t eid) const -> Tuple;
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     DEBUG_MultiMeshManager& multi_mesh_manager()
     {
         return reinterpret_cast<DEBUG_MultiMeshManager&>(m_multi_mesh_manager);
     }
+#endif
 
     template <typename T>
     attribute::AccessorBase<T> create_base_accessor(const TypedAttributeHandle<T>& handle)
