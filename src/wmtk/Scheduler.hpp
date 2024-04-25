@@ -28,6 +28,8 @@ public:
      */
     int64_t number_of_performed_operations() const { return m_num_op_success + m_num_op_fail; }
 
+    inline double total_time() const { return collecting_time + sorting_time + executing_time; }
+
     inline void succeed() { ++m_num_op_success; }
     inline void fail() { ++m_num_op_fail; }
 

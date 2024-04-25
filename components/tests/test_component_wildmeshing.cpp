@@ -395,13 +395,14 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
         auto stats = scheduler.run_operation_on_all(*rounding);
         logger().info(
             "Rounding, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
-            "executing: {}",
+            "executing: {}. Total {}",
             stats.number_of_performed_operations(),
             stats.number_of_successful_operations(),
             stats.number_of_failed_operations(),
             stats.collecting_time,
             stats.sorting_time,
-            stats.executing_time);
+            stats.executing_time,
+            stats.total_time());
 
         success = stats.number_of_successful_operations();
 
@@ -419,16 +420,17 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
         logger().info("Mesh has {} unrounded vertices", unrounded);
     }
 
-    auto stats = scheduler.run_operation_on_all(*split, visited_edge_flag.as<char>());
+    auto stats = scheduler.run_operation_on_all(*split_then_round, visited_edge_flag.as<char>());
     logger().info(
         "Split, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
-        "executing: {}",
+        "executing: {}. Total {}",
         stats.number_of_performed_operations(),
         stats.number_of_successful_operations(),
         stats.number_of_failed_operations(),
         stats.collecting_time,
         stats.sorting_time,
-        stats.executing_time);
+        stats.executing_time,
+        stats.total_time());
 
     success = stats.number_of_successful_operations();
     scheduler.run_operation_on_all(*rounding);
