@@ -58,6 +58,9 @@ public:
     ~Scheduler();
 
     SchedulerStats run_operation_on_all(operations::Operation& op);
+    SchedulerStats run_operation_on_all(
+        operations::Operation& op,
+        const TypedAttributeHandle<char>& flag_handle);
 
     const SchedulerStats& stats() const { return m_stats; }
 

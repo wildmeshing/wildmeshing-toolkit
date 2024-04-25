@@ -288,6 +288,10 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
             compute_edge_length);
     edge_length_update->run_on_all();
 
+
+    auto visited_edge_flag =
+        mesh->register_attribute<char>("visited_edge", PrimitiveType::Edge, 1, false, 1);
+
     auto long_edges_first = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         return -edge_length_accessor.scalar_attribute(s.tuple());
@@ -368,6 +372,10 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
     split->add_invariant(todo_larger);
 
     split->set_new_attribute_strategy(pt_attribute);
+    split->set_new_attribute_strategy(
+        visited_edge_flag,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
     for (const auto& attr : pass_through_attributes) {
         split->set_new_attribute_strategy(attr);
     }
@@ -411,51 +419,48 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
         logger().info("Mesh has {} unrounded vertices", unrounded);
     }
 
-    success = 10;
-    while (success > 0) {
-        auto stats = scheduler.run_operation_on_all(*split);
-        logger().info(
-            "Split, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
-            "executing: {}",
-            stats.number_of_performed_operations(),
-            stats.number_of_successful_operations(),
-            stats.number_of_failed_operations(),
-            stats.collecting_time,
-            stats.sorting_time,
-            stats.executing_time);
+    auto stats = scheduler.run_operation_on_all(*split, visited_edge_flag.as<char>());
+    logger().info(
+        "Split, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
+        "executing: {}",
+        stats.number_of_performed_operations(),
+        stats.number_of_successful_operations(),
+        stats.number_of_failed_operations(),
+        stats.collecting_time,
+        stats.sorting_time,
+        stats.executing_time);
 
-        success = stats.number_of_successful_operations();
-        scheduler.run_operation_on_all(*rounding);
+    success = stats.number_of_successful_operations();
+    scheduler.run_operation_on_all(*rounding);
 
-        int64_t unrounded = 0;
-        for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
-            const auto p = pt_accessor.vector_attribute(v);
-            for (int64_t d = 0; d < 3; ++d) {
-                if (!p[d].is_rounded()) {
-                    ++unrounded;
-                    break;
-                }
+    int64_t unrounded = 0;
+    for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
+        const auto p = pt_accessor.vector_attribute(v);
+        for (int64_t d = 0; d < 3; ++d) {
+            if (!p[d].is_rounded()) {
+                ++unrounded;
+                break;
             }
         }
-
-        logger().info("Mesh has {} unrounded vertices", unrounded);
-
-        double max_energy = std::numeric_limits<double>::lowest();
-        double min_energy = std::numeric_limits<double>::max();
-        for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
-            // double e = amips->get_value(simplex::Simplex(mesh->top_simplex_type(), t));
-            double e = amips_accessor.scalar_attribute(t);
-            max_energy = std::max(max_energy, e);
-            min_energy = std::min(min_energy, e);
-        }
-
-        logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
-        logger().info(
-            "{} vertices, {} edges, {} tets",
-            mesh->get_all(PrimitiveType::Vertex).size(),
-            mesh->get_all(PrimitiveType::Edge).size(),
-            mesh->get_all(PrimitiveType::Tetrahedron).size());
     }
+
+    logger().info("Mesh has {} unrounded vertices", unrounded);
+
+    double max_energy = std::numeric_limits<double>::lowest();
+    double min_energy = std::numeric_limits<double>::max();
+    for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
+        // double e = amips->get_value(simplex::Simplex(mesh->top_simplex_type(), t));
+        double e = amips_accessor.scalar_attribute(t);
+        max_energy = std::max(max_energy, e);
+        min_energy = std::min(min_energy, e);
+    }
+
+    logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
+    logger().info(
+        "{} vertices, {} edges, {} tets",
+        mesh->get_all(PrimitiveType::Vertex).size(),
+        mesh->get_all(PrimitiveType::Edge).size(),
+        mesh->get_all(PrimitiveType::Tetrahedron).size());
 }
 
 TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
