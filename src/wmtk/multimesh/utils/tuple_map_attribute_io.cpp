@@ -1,5 +1,5 @@
 #include "tuple_map_attribute_io.hpp"
-#include <wmtk/attribute/TupleAccessor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
@@ -88,7 +88,7 @@ std::tuple<Tuple, Tuple> read_tuple_map_attribute(
 #endif
     assert(accessor.dimension() == 4);
 
-    const wmtk::attribute::TupleAccessor<MeshType> acc(accessor);
+    const wmtk::attribute::Accessor<MeshType> acc(accessor);
     assert(acc.dimension() == 2);
     auto map = acc.const_vector_attribute(source_tuple);
     return std::tie(map(0), map(1));
@@ -116,7 +116,7 @@ void write_tuple_map_attribute(
     const Tuple& target_tuple)
 {
     assert(map_accessor.dimension() == 4);
-    wmtk::attribute::TupleAccessor<MeshType> acc(map_accessor);
+    wmtk::attribute::Accessor<MeshType> acc(map_accessor);
     assert(acc.dimension() == 2);
     auto map = acc.vector_attribute(source_tuple);
     map(0) = source_tuple;
