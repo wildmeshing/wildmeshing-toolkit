@@ -7,6 +7,10 @@ namespace wmtk {
 class Mesh;
 template <typename Derived>
 class MeshCRTP;
+namespace attribute {
+template <typename T, typename MeshType, int Dim>
+class Accessor;
+}
 } // namespace wmtk
 namespace wmtk::simplex {
 
@@ -15,6 +19,8 @@ class Simplex
     friend class wmtk::Mesh;
     template <typename Derived>
     friend class wmtk::MeshCRTP;
+    template <typename T, typename MeshType, int Dim>
+    friend class attribute::Accessor;
     PrimitiveType m_primitive_type;
     Tuple m_tuple;
     // the mesh class can use this index value to cache/accelerate operations
