@@ -155,6 +155,7 @@ TEST_CASE("wildmeshing_3d_multimesh", "[components][wildmeshing][.]")
 
 void run_tetwild_test(
     const std::string& path,
+    const std::string& name,
     std::function<std::shared_ptr<Operation>(
         Mesh&,
         std::shared_ptr<Rounding>&,
@@ -406,8 +407,9 @@ void run_tetwild_test(
 
     auto stats = scheduler.run_operation_on_all(*op, visited_edge_flag.as<char>());
     logger().info(
-        "Split, {} ops (S/F) {}/{}. Passes: {}. Time collecting: {}, sorting: {}, "
+        "{}, {} ops (S/F) {}/{}. Passes: {}. Time collecting: {}, sorting: {}, "
         "executing: {}; total {}. Passes (avg) collecting: {}, sorting: {}, executing: {}",
+        name,
         stats.number_of_performed_operations(),
         stats.number_of_successful_operations(),
         stats.number_of_failed_operations(),
@@ -455,6 +457,7 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
 {
     run_tetwild_test(
         "split_initial_state_test.obj",
+        "Split",
         [](Mesh& mesh,
            std::shared_ptr<Rounding>& rounding,
            MeshAttributeHandle& pt_attribute,
@@ -512,6 +515,7 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
     // logger().set_level(spdlog::level::trace);
     run_tetwild_test(
         "collapse_initial_state_141017.obj",
+        "Collapse",
         [](Mesh& mesh,
            std::shared_ptr<Rounding>& rounding,
            MeshAttributeHandle& pt_attribute,
@@ -598,374 +602,115 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
 
 TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
 {
-    // const double target_edge_length = 1.21271;
-    const double target_max_amips = 10;
-    const double min_edge_length = 0.001;
-    const double target_edge_length = 1.04;
+    run_tetwild_test(
+        "collapse_initial_state_141017.obj",
+        "Collapse-Two",
+        [](Mesh& mesh,
+           std::shared_ptr<Rounding>& rounding,
+           MeshAttributeHandle& pt_attribute,
+           MeshAttributeHandle& visited_edge_flag,
+           std::vector<attribute::MeshAttributeHandle>& pass_through_attributes,
+           std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&
+               amips_update,
+           std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&
+               edge_length_update) {
+            auto edge_length_attribute =
+                mesh.get_attribute_handle<double>("edge_length", PrimitiveType::Edge);
+            auto target_edge_length_attribute = mesh.get_attribute_handle<double>(
+                "wildmeshing_target_edge_length",
+                PrimitiveType::Edge);
+            auto edge_length_accessor = mesh.create_accessor(edge_length_attribute.as<double>());
 
 
-    using namespace wmtk;
-    using namespace simplex;
-    using namespace operations;
-    using namespace operations::tri_mesh;
-    using namespace operations::tet_mesh;
-    using namespace operations::composite;
-    using namespace function;
-    using namespace invariants;
+            auto clps_strat =
+                std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
+            clps_strat->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+            // clps_strat->set_strategy(CollapseBasicStrategy::Default);
+            clps_strat->set_strategy(CollapseBasicStrategy::CopyOther);
 
 
-    std::ifstream file(data_dir / "collapse_initial_state_141017.obj");
-    std::vector<Vector3r> vertices;
-    std::vector<Vector4l> tets;
-    std::string x, y, z, token;
+            auto inversion_invariant = std::make_shared<SimplexInversionInvariant<Rational>>(
+                mesh,
+                pt_attribute.as<Rational>());
+            auto link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(mesh);
+            auto invariant_separate_substructures =
+                std::make_shared<invariants::SeparateSubstructuresInvariant>(mesh);
 
-    while (file.good()) {
-        std::string line;
-        std::getline(file, line);
-        std::istringstream iss(line);
-        iss >> token;
-        if (line[0] == 'v') {
-            int sx = line.find(' ', 2);
-            x = line.substr(2, sx - 2);
+            auto short_edges_first = [&](const simplex::Simplex& s) {
+                assert(s.primitive_type() == PrimitiveType::Edge);
+                return edge_length_accessor.scalar_attribute(s);
+            };
 
-            int sy = line.find(' ', sx + 1);
-            y = line.substr(sx + 1, sy - (sx + 1));
+            auto todo_smaller = std::make_shared<TodoSmallerInvariant>(
+                mesh,
+                edge_length_attribute.as<double>(),
+                target_edge_length_attribute.as<double>(),
+                4.0 / 5.0);
 
-            int sz = line.find(' ', sy + 1);
-            z = line.substr(sy + 1, sz - (sy + 1));
+            std::shared_ptr<function::PerSimplexFunction> amips =
+                std::make_shared<AMIPS>(mesh, pt_attribute);
 
-            vertices.emplace_back(x, y, z);
-        } else if (line[0] == 't') {
-            Vector4l f;
-            iss >> f[0] >> f[1] >> f[3] >> f[2];
-            tets.push_back(f);
-        }
-    }
+            auto function_invariant = std::make_shared<MaxFunctionInvariant>(
+                mesh.top_simplex_type(),
+                amips,
+                pt_attribute.as<Rational>());
 
-    RowVectors3r v(vertices.size(), 3);
-    for (int64_t i = 0; i < vertices.size(); ++i) {
-        v.row(i) = vertices[i];
-    }
+            //////////////////////////////////
+            // 2) EdgeCollapse
+            //////////////////////////////////
+            auto clps_strat1 =
+                std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
+            clps_strat1->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+            // clps_strat1->set_strategy(CollapseBasicStrategy::Default);
+            clps_strat1->set_strategy(CollapseBasicStrategy::CopyOther);
 
-    RowVectors4l t(tets.size(), 4);
-    for (int64_t i = 0; i < tets.size(); ++i) {
-        t.row(i) = tets[i];
-        const auto ori = wmtk::utils::wmtk_orient3d<Rational>(
-            v.row(t(i, 0)),
-            v.row(t(i, 1)),
-            v.row(t(i, 2)),
-            v.row(t(i, 3)));
-        CHECK(ori > 0);
-    }
+            auto clps_strat2 =
+                std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
+            clps_strat2->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+            // clps_strat2->set_strategy(CollapseBasicStrategy::Default);
+            clps_strat2->set_strategy(CollapseBasicStrategy::CopyTuple);
 
-    const Vector3d bbox_max(
-        v.col(0).cast<double>().maxCoeff(),
-        v.col(1).cast<double>().maxCoeff(),
-        v.col(2).cast<double>().maxCoeff());
-    const Vector3d bbox_min(
-        v.col(0).cast<double>().minCoeff(),
-        v.col(1).cast<double>().minCoeff(),
-        v.col(2).cast<double>().minCoeff());
-
-    std::cout << bbox_max << std::endl;
-    std::cout << bbox_min << std::endl;
-
-    double diag = (bbox_max - bbox_min).norm();
-    std::cout << diag << std::endl;
-    std::cout << 0.05 * diag << std::endl;
+            auto setup_collapse = [&](std::shared_ptr<EdgeCollapse>& collapse) {
+                collapse->add_invariant(invariant_separate_substructures);
+                collapse->add_invariant(link_condition);
+                collapse->add_invariant(inversion_invariant);
+                collapse->add_invariant(function_invariant);
 
 
-    auto mesh = std::make_shared<TetMesh>();
-    mesh->initialize(t);
-    mesh_utils::set_matrix_attribute(v, "vertices", PrimitiveType::Vertex, *mesh);
-    logger().info("Mesh has {} vertices {} tests", vertices.size(), tets.size());
+                collapse->set_new_attribute_strategy(
+                    visited_edge_flag,
+                    wmtk::operations::CollapseBasicStrategy::None);
 
-
-    /////////////////////////
-    auto pt_attribute = mesh->get_attribute_handle<Rational>("vertices", PrimitiveType::Vertex);
-    auto pt_accessor = mesh->create_accessor(pt_attribute.as<Rational>());
-
-    auto amips_attribute =
-        mesh->register_attribute<double>("wildmeshing_amips", mesh->top_simplex_type(), 1);
-    auto amips_accessor = mesh->create_accessor(amips_attribute.as<double>());
-    // amips update
-    auto compute_amips = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorXd {
-        assert(P.rows() == 2 || P.rows() == 3); // rows --> attribute dimension
-        assert(P.cols() == P.rows() + 1);
-        if (P.cols() == 3) {
-            // triangle
-            assert(P.rows() == 2);
-            std::array<double, 6> pts;
-            for (size_t i = 0; i < 3; ++i) {
-                for (size_t j = 0; j < 2; ++j) {
-                    pts[2 * i + j] = P(j, i).to_double();
+                for (const auto& attr : pass_through_attributes) {
+                    collapse->set_new_attribute_strategy(attr);
                 }
-            }
-            const double a = Tri_AMIPS_energy(pts);
-            return Eigen::VectorXd::Constant(1, a);
-        } else {
-            // tet
-            assert(P.rows() == 3);
-            std::array<double, 12> pts;
-            for (size_t i = 0; i < 4; ++i) {
-                for (size_t j = 0; j < 3; ++j) {
-                    pts[3 * i + j] = P(j, i).to_double();
-                }
-            }
-            const double a = Tet_AMIPS_energy(pts);
-            return Eigen::VectorXd::Constant(1, a);
-        }
-    };
-    auto amips_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>(
-            amips_attribute,
-            pt_attribute,
-            compute_amips);
-    amips_update->run_on_all();
+                // THis triggers a segfault in release
+                // collapse->set_priority(short_edges_first);
 
-    //////////////////////////////////
-    // Storing edge lengths
-    auto edge_length_attribute =
-        mesh->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
-    auto edge_length_accessor = mesh->create_accessor(edge_length_attribute.as<double>());
-    // Edge length update
-    auto compute_edge_length = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorXd {
-        assert(P.cols() == 2);
-        assert(P.rows() == 2 || P.rows() == 3);
-        return Eigen::VectorXd::Constant(1, sqrt((P.col(0) - P.col(1)).squaredNorm().to_double()));
-    };
-    auto edge_length_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>(
-            edge_length_attribute,
-            pt_attribute,
-            compute_edge_length);
-    edge_length_update->run_on_all();
+                // collapse->add_invariant(envelope_invariant);
 
-    auto long_edges_first = [&](const simplex::Simplex& s) {
-        assert(s.primitive_type() == PrimitiveType::Edge);
-        return std::vector<double>({-edge_length_accessor.scalar_attribute(s.tuple())});
-    };
+                collapse->add_transfer_strategy(amips_update);
+                collapse->add_transfer_strategy(edge_length_update);
+                // proj_collapse->add_transfer_strategy(target_edge_length_update);
+            };
 
-    auto target_edge_length_attribute = mesh->register_attribute<double>(
-        "wildmeshing_target_edge_length",
-        PrimitiveType::Edge,
-        1,
-        false,
-        target_edge_length); // defaults to target edge length
+            auto collapse1 = std::make_shared<EdgeCollapse>(mesh);
+            collapse1->set_new_attribute_strategy(pt_attribute, clps_strat1);
+            setup_collapse(collapse1);
 
+            auto collapse2 = std::make_shared<EdgeCollapse>(mesh);
+            collapse2->set_new_attribute_strategy(pt_attribute, clps_strat2);
+            setup_collapse(collapse2);
 
-    auto compute_target_edge_length =
-        [target_edge_length,
-         target_max_amips,
-         min_edge_length,
-         target_edge_length_attribute,
-         &mesh](const Eigen::MatrixXd& P, const std::vector<Tuple>& neighs) -> Eigen::VectorXd {
-        auto target_edge_length_accessor =
-            mesh->create_accessor(target_edge_length_attribute.as<double>());
+            auto collapse = std::make_shared<OrOperationSequence>(mesh);
+            collapse->add_operation(collapse1);
+            collapse->add_operation(collapse2);
+            collapse->add_invariant(todo_smaller);
 
-        assert(P.rows() == 1); // rows --> attribute dimension
-        assert(!neighs.empty());
-        assert(P.cols() == neighs.size());
-        const double current_target_edge_length =
-            target_edge_length_accessor.const_scalar_attribute(neighs[0]);
-        const double max_amips = P.maxCoeff();
+            auto collapse_then_round = std::make_shared<OperationSequence>(mesh);
+            collapse_then_round->add_operation(collapse);
+            collapse_then_round->add_operation(rounding);
 
-        double new_target_edge_length = current_target_edge_length;
-        if (max_amips > target_max_amips) {
-            new_target_edge_length *= 0.5;
-        } else {
-            new_target_edge_length *= 1.5;
-        }
-        new_target_edge_length =
-            std::min(new_target_edge_length, target_edge_length); // upper bound
-        new_target_edge_length = std::max(new_target_edge_length, min_edge_length); // lower bound
-
-        return Eigen::VectorXd::Constant(1, new_target_edge_length);
-    };
-    auto target_edge_length_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-            target_edge_length_attribute,
-            amips_attribute,
-            compute_target_edge_length);
-
-
-    std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
-    pass_through_attributes.push_back(edge_length_attribute);
-    pass_through_attributes.push_back(amips_attribute);
-    pass_through_attributes.push_back(target_edge_length_attribute);
-
-    // ////////////////////////////////////////////////////
-
-    auto todo_larger = std::make_shared<TodoLargerInvariant>(
-        *mesh,
-        edge_length_attribute.as<double>(),
-        target_edge_length_attribute.as<double>(),
-        4.0 / 3.0);
-    auto inversion_invariant =
-        std::make_shared<SimplexInversionInvariant<Rational>>(*mesh, pt_attribute.as<Rational>());
-
-
-    auto link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(*mesh);
-
-    auto invariant_separate_substructures =
-        std::make_shared<invariants::SeparateSubstructuresInvariant>(*mesh);
-
-    ///////////////////////////
-
-    auto rounding_pt_attribute =
-        mesh->get_attribute_handle_typed<Rational>("vertices", PrimitiveType::Vertex);
-    auto rounding = std::make_shared<Rounding>(*mesh, rounding_pt_attribute);
-    rounding->add_invariant(
-        std::make_shared<RoundedInvariant>(*mesh, pt_attribute.as<Rational>(), true));
-    rounding->add_invariant(inversion_invariant);
-    ////////////////////////////////
-
-    auto clps_strat1 = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
-    clps_strat1->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
-    // clps_strat1->set_strategy(CollapseBasicStrategy::Default);
-    clps_strat1->set_strategy(CollapseBasicStrategy::CopyOther);
-
-    auto clps_strat2 = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
-    clps_strat2->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
-    // clps_strat2->set_strategy(CollapseBasicStrategy::Default);
-    clps_strat2->set_strategy(CollapseBasicStrategy::CopyTuple);
-
-
-    auto short_edges_first = [&](const simplex::Simplex& s) {
-        assert(s.primitive_type() == PrimitiveType::Edge);
-        return edge_length_accessor.scalar_attribute(s.tuple());
-    };
-
-    auto todo_smaller = std::make_shared<TodoSmallerInvariant>(
-        *mesh,
-        edge_length_attribute.as<double>(),
-        target_edge_length_attribute.as<double>(),
-        4.0 / 5.0);
-
-    std::shared_ptr<function::PerSimplexFunction> amips =
-        std::make_shared<AMIPS>(*mesh, pt_attribute);
-
-    auto function_invariant = std::make_shared<MaxFunctionInvariant>(
-        mesh->top_simplex_type(),
-        amips,
-        pt_attribute.as<Rational>());
-
-    //////////////////////////////////
-    // 2) EdgeCollapse
-    //////////////////////////////////
-    auto setup_collapse = [&](std::shared_ptr<EdgeCollapse>& collapse) {
-        collapse->add_invariant(invariant_separate_substructures);
-        collapse->add_invariant(link_condition);
-        collapse->add_invariant(inversion_invariant);
-        collapse->add_invariant(function_invariant);
-
-        for (const auto& attr : pass_through_attributes) {
-            collapse->set_new_attribute_strategy(attr);
-        }
-
-        collapse->set_priority(short_edges_first);
-
-        // collapse->add_invariant(envelope_invariant);
-
-        collapse->add_transfer_strategy(amips_update);
-        collapse->add_transfer_strategy(edge_length_update);
-        // proj_collapse->add_transfer_strategy(target_edge_length_update);
-    };
-
-    auto collapse1 = std::make_shared<EdgeCollapse>(*mesh);
-    collapse1->set_new_attribute_strategy(pt_attribute, clps_strat1);
-    setup_collapse(collapse1);
-
-    auto collapse2 = std::make_shared<EdgeCollapse>(*mesh);
-    collapse2->set_new_attribute_strategy(pt_attribute, clps_strat2);
-    setup_collapse(collapse2);
-
-    auto collapse = std::make_shared<OrOperationSequence>(*mesh);
-    collapse->add_operation(collapse1);
-    collapse->add_operation(collapse2);
-    collapse->add_invariant(todo_smaller);
-
-
-    auto collapse_then_round = std::make_shared<OperationSequence>(*mesh);
-    collapse_then_round->add_operation(collapse);
-    collapse_then_round->add_operation(rounding);
-
-    Scheduler scheduler;
-    int success;
-
-    success = 10;
-    while (success > 0) {
-        auto stats = scheduler.run_operation_on_all(*rounding);
-        logger().info(
-            "Rounding, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
-            "executing: {}",
-            stats.number_of_performed_operations(),
-            stats.number_of_successful_operations(),
-            stats.number_of_failed_operations(),
-            stats.collecting_time,
-            stats.sorting_time,
-            stats.executing_time);
-
-        success = stats.number_of_successful_operations();
-
-        int64_t unrounded = 0;
-        for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
-            const auto p = pt_accessor.vector_attribute(v);
-            for (int64_t d = 0; d < 3; ++d) {
-                if (!p[d].is_rounded()) {
-                    ++unrounded;
-                    break;
-                }
-            }
-        }
-
-        logger().info("Mesh has {} unrounded vertices", unrounded);
-    }
-
-    success = 10;
-    while (success > 0) {
-        auto stats = scheduler.run_operation_on_all(*collapse_then_round);
-        logger().info(
-            "Collpase, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
-            "executing: {}",
-            stats.number_of_performed_operations(),
-            stats.number_of_successful_operations(),
-            stats.number_of_failed_operations(),
-            stats.collecting_time,
-            stats.sorting_time,
-            stats.executing_time);
-
-        success = stats.number_of_successful_operations();
-        scheduler.run_operation_on_all(*rounding);
-
-        int64_t unrounded = 0;
-        for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
-            const auto p = pt_accessor.vector_attribute(v);
-            for (int64_t d = 0; d < 3; ++d) {
-                if (!p[d].is_rounded()) {
-                    ++unrounded;
-                    break;
-                }
-            }
-        }
-
-        // compute max energy
-        double max_energy = std::numeric_limits<double>::lowest();
-        double min_energy = std::numeric_limits<double>::max();
-        for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
-            // double e = amips->get_value(simplex::Simplex(mesh->top_simplex_type(), t));
-            double e = amips_accessor.scalar_attribute(t);
-            max_energy = std::max(max_energy, e);
-            min_energy = std::min(min_energy, e);
-        }
-
-        logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
-
-        logger().info("Mesh has {} unrounded vertices", unrounded);
-        logger().info(
-            "{} vertices, {} edges, {} tets",
-            mesh->get_all(PrimitiveType::Vertex).size(),
-            mesh->get_all(PrimitiveType::Edge).size(),
-            mesh->get_all(PrimitiveType::Tetrahedron).size());
-    }
+            return collapse_then_round;
+        });
 }
