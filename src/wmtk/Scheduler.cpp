@@ -22,7 +22,7 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
 {
     SchedulerStats res;
     std::vector<simplex::Simplex> simplices;
-    op.reserve_enough_simplices();
+    // op.reserve_enough_simplices();
 
     const auto type = op.primitive_type();
     {
@@ -34,6 +34,7 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
 
 
     // logger().debug("Executing on {} simplices", simplices.size());
+    std::vector<std::pair<int64_t, double>> order;
 
     {
         POLYSOLVE_SCOPED_STOPWATCH("Sorting", res.sorting_time, logger());
@@ -42,19 +43,21 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
 
             std::shuffle(simplices.begin(), simplices.end(), gen);
         } else {
-            std::stable_sort(
-                simplices.begin(),
-                simplices.end(),
-                [&op](const auto& s_a, const auto& s_b) {
-                    return op.priority(s_a) < op.priority(s_b);
-                });
+            order.reserve(simplices.size());
+            for (int64_t i = 0; i < simplices.size(); ++i) {
+                order.push_back({i, op.priority(simplices[i])});
+            }
+
+            std::stable_sort(order.begin(), order.end(), [](const auto& s_a, const auto& s_b) {
+                return s_a.second < s_b.second;
+            });
         }
     }
 
     {
         POLYSOLVE_SCOPED_STOPWATCH("Executing operation", res.executing_time, logger());
-        for (const simplex::Simplex& s : simplices) {
-            auto mods = op(s);
+        for (const auto& o : order) {
+            auto mods = op(simplices[o.first]);
             if (mods.empty())
                 res.fail();
             else
@@ -87,10 +90,11 @@ SchedulerStats Scheduler::run_operation_on_all(
 
     SchedulerStats res = run_operation_on_all(op);
     int64_t success = res.number_of_successful_operations();
+    std::vector<std::pair<int64_t, double>> order;
 
     while (success > 0) {
         SchedulerStats internal_stats;
-        op.reserve_enough_simplices();
+        // op.reserve_enough_simplices();
 
         {
             POLYSOLVE_SCOPED_STOPWATCH(
@@ -116,12 +120,15 @@ SchedulerStats Scheduler::run_operation_on_all(
 
                 std::shuffle(simplices.begin(), simplices.end(), gen);
             } else {
-                std::stable_sort(
-                    simplices.begin(),
-                    simplices.end(),
-                    [&op](const auto& s_a, const auto& s_b) {
-                        return op.priority(s_a) < op.priority(s_b);
-                    });
+                order.clear();
+                order.reserve(simplices.size());
+                for (int64_t i = 0; i < simplices.size(); ++i) {
+                    order.push_back({i, op.priority(simplices[i])});
+                }
+
+                std::stable_sort(order.begin(), order.end(), [](const auto& s_a, const auto& s_b) {
+                    return s_a.second < s_b.second;
+                });
             }
         }
 
@@ -130,8 +137,8 @@ SchedulerStats Scheduler::run_operation_on_all(
                 "Executing operation",
                 internal_stats.executing_time,
                 logger());
-            for (const simplex::Simplex& s : simplices) {
-                auto mods = op(s);
+            for (const auto& o : order) {
+                auto mods = op(simplices[o.first]);
                 if (mods.empty())
                     internal_stats.fail();
                 else

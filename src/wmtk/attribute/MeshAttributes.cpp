@@ -201,7 +201,7 @@ template <typename T>
 void MeshAttributes<T>::guarantee_at_least(const int64_t size)
 {
     if (size > m_reserved_size) {
-        logger().warn("Pre-reserve enough simplices before your operation.");
+        // logger().warn("Pre-reserve enough simplices before your operation.");
         reserve(size);
     }
 }
