@@ -33,7 +33,7 @@ bool Swap56EnergyBeforeInvariant::before(const simplex::Simplex& t) const
     }
     assert(iter_tuple == e0);
 
-    // five iterable vertices remap to 0-4 by m_collapse_index, 5: e0, 6: e1
+    // five iterable vertices remap to 0-4 by m_collapse_index, 0: m_collapse_index, 5: e0, 6: e1
     std::array<Eigen::Vector3<Rational>, 7> positions = {
         {accessor.const_vector_attribute(v[(m_collapse_index + 0) % 5]),
          accessor.const_vector_attribute(v[(m_collapse_index + 1) % 5]),
@@ -44,13 +44,13 @@ bool Swap56EnergyBeforeInvariant::before(const simplex::Simplex& t) const
          accessor.const_vector_attribute(e1)}};
 
     std::array<Eigen::Vector3d, 7> positions_double = {
-        {accessor.const_vector_attribute(v[(m_collapse_index + 0) % 5]).cast<double>(),
-         accessor.const_vector_attribute(v[(m_collapse_index + 1) % 5]).cast<double>(),
-         accessor.const_vector_attribute(v[(m_collapse_index + 2) % 5]).cast<double>(),
-         accessor.const_vector_attribute(v[(m_collapse_index + 3) % 5]).cast<double>(),
-         accessor.const_vector_attribute(v[(m_collapse_index + 4) % 5]).cast<double>(),
-         accessor.const_vector_attribute(e0).cast<double>(),
-         accessor.const_vector_attribute(e1).cast<double>()}};
+        {positions[0].cast<double>(),
+         positions[1].cast<double>(),
+         positions[2].cast<double>(),
+         positions[3].cast<double>(),
+         positions[4].cast<double>(),
+         positions[5].cast<double>(),
+         positions[6].cast<double>()}};
 
     std::array<std::array<int, 4>, 5> old_tets = {
         {{{0, 1, 5, 6}}, {{1, 2, 5, 6}}, {{2, 3, 5, 6}}, {{3, 4, 5, 6}}, {{4, 0, 5, 6}}}};
