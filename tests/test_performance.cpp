@@ -3,7 +3,9 @@
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
+#if defined(WMTK_ENABLE_MULTIMESH)
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#endif
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
@@ -195,6 +197,7 @@ TEST_CASE("split_with_attributes", "[performance][.]")
     }
 }
 
+#if defined(WMTK_ENABLE_MULTIMESH)
 TEST_CASE("collapse_performance", "[performance][.]")
 {
     using namespace operations;
@@ -232,3 +235,4 @@ TEST_CASE("collapse_performance", "[performance][.]")
         logger().info("#successful operations: {}", pass_stats.number_of_successful_operations());
     }
 }
+#endif

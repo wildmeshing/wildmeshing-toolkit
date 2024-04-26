@@ -7,7 +7,9 @@
 #include <wmtk/TriMeshOperationExecutor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
+#if defined(WMTK_ENABLE_MULTIMESH)
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#endif
 #include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
@@ -89,6 +91,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         CHECK(fv_accessor.vector_attribute(6)[2] == 0);
         CHECK(fv_accessor.vector_attribute(7)[0] == 0);
     }
+#if defined(WMTK_ENABLE_MULTIMESH)
     SECTION("edge_from_boundary_allowed")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
@@ -148,8 +151,10 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         const bool fail = op(Simplex::edge(edge)).empty();
         CHECK(fail);
     }
+#endif
 }
 
+#if defined(WMTK_ENABLE_MULTIMESH)
 TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
 {
     DEBUG_TriMesh m = edge_region();
@@ -207,6 +212,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         CHECK(m.id(ret, PF) == 1);
     }
 }
+#endif
 TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
 {
     //  3--1--- 0

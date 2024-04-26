@@ -34,6 +34,7 @@ public:
     // if k < j: the system evaluates the function at every j-simplex that is a coface of k
     // if j == k: the system assumes a point-wise update with no neighbors
     //
+#if defined(WMTK_ENABLE_MULTIMESH)
     static std::vector<Tuple> get_parent_simplices(
         const Mesh& m,
         const Mesh& parent,
@@ -44,6 +45,7 @@ public:
         const attribute::MeshAttributeHandle& me,
         const attribute::MeshAttributeHandle& parent,
         const simplex::Simplex& s);
+#endif
 
     const attribute::MeshAttributeHandle& handle() const { return m_handle; }
     attribute::MeshAttributeHandle& handle() { return m_handle; }

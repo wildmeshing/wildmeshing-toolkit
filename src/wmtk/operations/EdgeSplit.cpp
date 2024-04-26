@@ -9,11 +9,14 @@
 
 #if defined(WMTK_ENABLE_MULTIMESH)
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
+#include "utils/multi_mesh_edge_split.hpp"
+#else
+#include <wmtk/utils/metaprogramming/as_mesh_variant.hpp>
+#include "utils/EdgeSplitFunctor.hpp"
 #endif
 #include <wmtk/utils/Logger.hpp>
 
 #include "attribute_new/SplitNewAttributeStrategy.hpp"
-#include "utils/multi_mesh_edge_split.hpp"
 
 namespace wmtk::operations {
 
@@ -50,10 +53,25 @@ EdgeSplit::EdgeSplit(Mesh& m)
 
 std::vector<simplex::Simplex> EdgeSplit::execute(const simplex::Simplex& simplex)
 {
+#if defined(WMTK_ENABLE_MULTIMESH)
     return utils::multi_mesh_edge_split_with_modified_simplices(
         mesh(),
         simplex,
         m_new_attr_strategies);
+#else
+    return std::visit([&](auto&& mesh_ref) noexcept -> std::vector<simplex::Simplex> {
+
+            using T = std::decay_t<typename std::decay_t<decltype(mesh_ref)>::type>;
+            if constexpr(!(std::is_same_v<Mesh,T> || std::is_same_v<PointMesh,T>)) {
+           auto edge_op_data = utils::EdgeSplitFunctor{}(mesh_ref.get(), simplex);
+
+           return {simplex::Simplex::vertex(edge_op_data.m_output_tuple)};
+           } else {
+           return {};
+           }
+           }, wmtk::utils::metaprogramming::as_mesh_variant(mesh()));
+
+#endif
 }
 std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives(
     const simplex::Simplex& simplex) const

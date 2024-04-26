@@ -3,7 +3,9 @@
 #include <numeric>
 #include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/EdgeMeshOperationExecutor.hpp>
+#if defined(WMTK_ENABLE_MULTIMESH)
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#endif
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -151,6 +153,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         CHECK(ev.vector_attribute(3)[0] == 3);
     }
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     SECTION("single_line")
     {
         DEBUG_EdgeMesh m = single_line();
@@ -188,6 +191,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
 
         CHECK(m.is_connectivity_valid());
     }
+#endif
 
     SECTION("two_line_loop")
     {

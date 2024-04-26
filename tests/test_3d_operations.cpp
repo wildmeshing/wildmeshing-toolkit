@@ -5,7 +5,9 @@
 #include <wmtk/TetMeshOperationExecutor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
+#if defined(WMTK_ENABLE_MULTIMESH)
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#endif
 #include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
@@ -449,6 +451,7 @@ TEST_CASE("tet_edge_split", "[operations][split][3d]")
         CHECK(m.id(m.switch_vertex(m.switch_edge(spine_edge1)), PrimitiveType::Vertex) == 3);
     }
 }
+#if defined(WMTK_ENABLE_MULTIMESH)
 
 TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
 {
@@ -514,6 +517,7 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
             1);
     }
 }
+#endif
 
 
 TEST_CASE("tet_tet_split", "[operations][split][collapse][3d][.]")
@@ -632,6 +636,7 @@ TEST_CASE("tet_tet_split", "[operations][split][collapse][3d][.]")
         */
     }
 }
+#if defined(WMTK_ENABLE_MULTIMESH)
 
 TEST_CASE("tet_split_with_tags", "[operations][split][3d][.]")
 {
@@ -879,3 +884,4 @@ TEST_CASE("tetmesh_face_swap", "[operations][swap][split][collapse][3d]")
         CHECK(m.id(m.switch_vertex(ret_edges.front().tuple()), PV) == 1);
     }
 }
+#endif

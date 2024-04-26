@@ -31,6 +31,7 @@ void InvariantCollection::add(std::shared_ptr<Invariant> invariant)
 bool InvariantCollection::before(const simplex::Simplex& t) const
 {
     for (const auto& invariant : m_invariants) {
+#if defined(WMTK_ENABLE_MULTIMESH)
         if (&mesh() != &invariant->mesh()) {
             for (const Tuple& ct : mesh().map_tuples(invariant->mesh(), t)) {
                 if (!invariant->before(simplex::Simplex(t.primitive_type(), ct))) {
@@ -38,10 +39,13 @@ bool InvariantCollection::before(const simplex::Simplex& t) const
                 }
             }
         } else {
+#endif
             if (!invariant->before(t)) {
                 return false;
             }
+#if defined(WMTK_ENABLE_MULTIMESH)
         }
+#endif
     }
     return true;
 }
@@ -50,6 +54,7 @@ bool InvariantCollection::after(
     const std::vector<Tuple>& top_dimension_tuples_after) const
 {
     for (const auto& invariant : m_invariants) {
+#if defined(WMTK_ENABLE_MULTIMESH)
         if (&mesh() != &invariant->mesh()) {
             const bool invariant_uses_old_state = invariant->use_old_state_in_after();
             const bool invariant_uses_new_state = invariant->use_new_state_in_after();
@@ -68,10 +73,13 @@ bool InvariantCollection::after(
                 return false;
             }
         } else {
+#endif
             if (!invariant->after(top_dimension_tuples_before, top_dimension_tuples_after)) {
                 return false;
             }
+#if defined(WMTK_ENABLE_MULTIMESH)
         }
+#endif
         // assert(&mesh() != &invariant->mesh());
         // if (!invariant->after(type, tuples)) {
         //     return false;
@@ -94,6 +102,7 @@ bool InvariantCollection::directly_modified_after(
 #endif
 
     for (const auto& invariant : m_invariants) {
+#if defined(WMTK_ENABLE_MULTIMESH)
         if (&mesh() != &invariant->mesh()) {
             auto mapped_simplices_after = mesh().map(invariant->mesh(), simplices_after);
             auto mapped_simplices_before = mesh().parent_scope(
@@ -113,10 +122,13 @@ bool InvariantCollection::directly_modified_after(
                 return false;
             }
         } else {
+#endif
             if (!invariant->directly_modified_after(simplices_before, simplices_after)) {
                 return false;
             }
+#if defined(WMTK_ENABLE_MULTIMESH)
         }
+#endif
     }
     return true;
 }

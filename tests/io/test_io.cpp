@@ -103,6 +103,7 @@ TEST_CASE("hdf5_3d", "[io]")
     mesh.serialize(writer);
 }
 
+#if defined(WMTK_ENABLE_MULTIMESH)
 TEST_CASE("hdf5_multimesh", "[io]")
 {
     DEBUG_TriMesh parent = two_neighbors();
@@ -135,6 +136,7 @@ TEST_CASE("hdf5_multimesh", "[io]")
 
     CHECK(*mesh == parent);
 }
+#endif
 
 TEST_CASE("paraview_3d", "[io]")
 {

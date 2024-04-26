@@ -20,7 +20,12 @@ set(SRC_FILES
     ParaviewWriter.hpp
     ParaviewWriter.cpp
 
-    CachedMultiMesh.hpp
-    CachedMultiMesh.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+
+if(WMTK_ENABLE_MULTIMESH)
+    target_sources(wildmeshing_toolkit PRIVATE 
+    CachedMultiMesh.hpp
+    CachedMultiMesh.cpp
+    )
+endif()

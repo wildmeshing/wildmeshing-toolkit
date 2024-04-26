@@ -5,7 +5,7 @@
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/multimesh/operations/extract_operation_tuples.hpp>
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/utils/MultiMeshEdgeCollapseFunctor.hpp>
+#include <wmtk/operations/utils/EdgeCollapseFunctor.hpp>
 #include <wmtk/operations/utils/UpdateEdgeOperationMultiMeshMapFunctor.hpp>
 
 #include <wmtk/TriMesh.hpp>
@@ -27,7 +27,7 @@ CollapseReturnData multi_mesh_edge_collapse(
 {
     multimesh::MultiMeshSimplexVisitor visitor(
         std::integral_constant<int64_t, 1>{}, // specify that this runs over edges
-        MultiMeshEdgeCollapseFunctor{});
+        EdgeCollapseFunctor{});
     visitor.execute_from_root(mesh, simplex::Simplex(PrimitiveType::Edge, t));
 
     multimesh::MultiMeshSimplexEventVisitor event_visitor(visitor);

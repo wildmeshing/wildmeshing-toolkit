@@ -133,6 +133,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     }
     hash_update_region.sort_and_clean();
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     global_simplex_ids_with_potentially_modified_hashes.resize(3);
     simplex::SimplexCollection faces(m_mesh);
 
@@ -166,6 +167,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     // load(PrimitiveType::Vertex, 0);
     // load(PrimitiveType::Edge, 1);
     // load(PrimitiveType::Face, 2);
+#endif
 }
 
 void TriMesh::TriMeshOperationExecutor::delete_simplices()

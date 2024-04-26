@@ -5,7 +5,7 @@
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/multimesh/operations/extract_operation_tuples.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/utils/MultiMeshEdgeSplitFunctor.hpp>
+#include <wmtk/operations/utils/EdgeSplitFunctor.hpp>
 #include <wmtk/operations/utils/UpdateEdgeOperationMultiMeshMapFunctor.hpp>
 
 #include <wmtk/TriMesh.hpp>
@@ -27,7 +27,7 @@ SplitReturnData multi_mesh_edge_split(
 {
     multimesh::MultiMeshSimplexVisitor visitor(
         std::integral_constant<int64_t, 1>{}, // specify that this runs on edges
-        MultiMeshEdgeSplitFunctor{});
+        EdgeSplitFunctor{});
     visitor.execute_from_root(mesh, simplex::Simplex(PrimitiveType::Edge, t));
     multimesh::MultiMeshSimplexEventVisitor event_visitor(visitor);
     event_visitor.run_on_edges(UpdateEdgeOperationMultiMeshMapFunctor{});

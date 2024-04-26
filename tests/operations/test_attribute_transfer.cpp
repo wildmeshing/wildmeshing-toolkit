@@ -103,6 +103,7 @@ TEST_CASE("split_edge_attr_update", "[operations][split][2D]")
     check_lengths();
 }
 
+#if defined(WMTK_ENABLE_MULTIMESH)
 TEST_CASE("collapse_edge_new_attr", "[operations][collapse][2D]")
 {
     using namespace operations;
@@ -187,6 +188,8 @@ TEST_CASE("collapse_edge_new_attr", "[operations][collapse][2D]")
     check_lengths();
 }
 
+#endif
+
 TEST_CASE("attribute_strategy_missing", "[operations][split]")
 {
     using namespace operations;
@@ -212,6 +215,8 @@ TEST_CASE("attribute_strategy_missing", "[operations][split]")
     op.set_new_attribute_strategy(pos_handle);
     CHECK_NOTHROW(op(Simplex::edge(edge)));
 }
+
+#if defined(WMTK_ENABLE_MULTIMESH)
 TEST_CASE("attribute_update_multimesh", "[attribute_updates][multimesh]")
 {
     using namespace operations;
@@ -343,3 +348,4 @@ TEST_CASE("attribute_update_multimesh", "[attribute_updates][multimesh]")
     }
 }
 
+#endif

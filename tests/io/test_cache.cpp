@@ -153,7 +153,7 @@ TEST_CASE("cache_read_write_mesh", "[cache][io]")
 
     const std::string name = "cached_mesh";
     cache.write_mesh(mesh, name);
-    cache.flush_multimeshes();
+    cache.flush_meshes();
 
     auto mesh_from_cache = cache.read_mesh(name);
 

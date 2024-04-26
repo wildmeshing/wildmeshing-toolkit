@@ -172,7 +172,9 @@ void Mesh::clear_attributes(
     auto a = this->custom_attributes();
     auto b = keep_attributes;
     m_attribute_manager.clear_attributes(variant_diff(a, b));
+#if defined(WMTK_ENABLE_MULTIMESH)
     update_child_handles();
+#endif
 }
 void Mesh::clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes)
 {
@@ -185,10 +187,17 @@ void Mesh::clear_attributes(const std::vector<attribute::MeshAttributeHandle>& k
     }
 }
 
+#if defined(WMTK_ENABLE_MULTIMESH)
 multimesh::attribute::AttributeScopeHandle Mesh::create_scope()
 {
     return multimesh::attribute::AttributeScopeHandle(*this);
 }
+#else
+attribute::AttributeScopeHandle Mesh::create_scope()
+{
+    return create_single_mesh_scope();
+}
+#endif
 
 attribute::AttributeScopeHandle Mesh::create_single_mesh_scope()
 {
@@ -251,6 +260,7 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
         }
     }
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     {
         constexpr static int64_t TUPLE_SIZE = multimesh::utils::TUPLE_SIZE; // in terms of int64_t
         constexpr static int64_t GLOBAL_ID_INDEX = multimesh::utils::GLOBAL_ID_INDEX;
@@ -292,6 +302,7 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
             }
         }
     }
+#endif
 
     // Return both maps for custom attribute remapping
     return {new2old, old2new};
@@ -306,8 +317,10 @@ std::vector<attribute::MeshAttributeHandle::HandleVariant> Mesh::builtin_attribu
     data.emplace_back(m_cell_hash_handle);
     std::copy(m_flag_handles.begin(), m_flag_handles.end(), std::back_inserter(data));
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     auto mm_handles = m_multi_mesh_manager.map_handles();
     std::copy(mm_handles.begin(), mm_handles.end(), std::back_inserter(data));
+#endif
     return data;
 }
 

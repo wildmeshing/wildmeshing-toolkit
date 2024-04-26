@@ -35,5 +35,9 @@ size_t wmtk::hash<wmtk::attribute::MeshAttributeHandle>::mesh_hash(
     }
     // here we hash off of the absolute mesh id rather than the mesh itself to prevent cyclic
     // hashing
+#if defined(WMTK_ENABLE_MULTIMESH)
     return wmtk::utils::vector_hash(handle.mesh().absolute_multi_mesh_id());
+#else
+    return 0;
+#endif
 }

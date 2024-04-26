@@ -465,6 +465,7 @@ std::shared_ptr<TriMesh> individual_triangles(int number)
     return mptr;
 }
 
+#if defined(WMTK_ENABLE_MULTIMESH)
 std::shared_ptr<TriMesh> disk_to_individual_multimesh(int number)
 {
     auto d = disk(number);
@@ -474,4 +475,5 @@ std::shared_ptr<TriMesh> disk_to_individual_multimesh(int number)
     d->register_child_mesh(i, map);
     return d;
 }
+#endif
 } // namespace wmtk::tests

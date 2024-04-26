@@ -1,4 +1,4 @@
-#include "MultiMeshEdgeSplitFunctor.hpp"
+#include "EdgeSplitFunctor.hpp"
 
 #include <wmtk/EdgeMeshOperationExecutor.hpp>
 #include <wmtk/TetMeshOperationExecutor.hpp>
@@ -9,12 +9,12 @@
 
 namespace wmtk::operations::utils {
 
-void MultiMeshEdgeSplitFunctor::operator()(const Mesh&, const simplex::Simplex&) const
+void EdgeSplitFunctor::operator()(const Mesh&, const simplex::Simplex&) const
 {
     throw std::runtime_error("Unimplemented!");
 }
 
-edge_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
+edge_mesh::EdgeOperationData EdgeSplitFunctor::operator()(
     EdgeMesh& m,
     const simplex::Simplex& s) const
 {
@@ -23,7 +23,7 @@ edge_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
     exec.split_edge();
     return exec;
 }
-tri_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
+tri_mesh::EdgeOperationData EdgeSplitFunctor::operator()(
     TriMesh& m,
     const simplex::Simplex& s) const
 {
@@ -31,6 +31,7 @@ tri_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
     TriMesh::TriMeshOperationExecutor exec(m, s.tuple(), hash_accessor);
 
     exec.split_edge();
+#if defined(WMTK_ENABLE_MULTIMESH)
     for (const auto& id : exec.incident_face_datas()) {
         logger().trace(
             "[{}] mapped {}->{}",
@@ -38,10 +39,11 @@ tri_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
             id.fid,
             fmt::join(id.split_f, ","));
     }
+#endif
 
     return exec;
 }
-tet_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
+tet_mesh::EdgeOperationData EdgeSplitFunctor::operator()(
     TetMesh& m,
     const simplex::Simplex& s) const
 {

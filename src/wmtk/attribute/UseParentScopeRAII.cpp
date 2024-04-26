@@ -5,7 +5,9 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 // clang-format on
+#if defined(WMTK_ENABLE_MULTIMESH)
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
+#endif
 
 namespace wmtk::attribute {
 

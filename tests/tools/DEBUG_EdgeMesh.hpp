@@ -1,7 +1,9 @@
 #pragma once
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/EdgeMeshOperationExecutor.hpp>
+#if defined(WMTK_ENABLE_MULTIMESH)
 #include "DEBUG_MultiMeshManager.hpp"
+#endif
 
 namespace wmtk::tests {
 class DEBUG_EdgeMesh : public EdgeMesh

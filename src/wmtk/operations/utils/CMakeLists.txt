@@ -7,14 +7,16 @@ set(SRC_FILES
 
     RoundRationalToDouble.hpp
     RoundRationalToDouble.cpp
+
+    ExtractOperationTuplesFunctor.hpp
+    EdgeCollapseFunctor.cpp
+    EdgeCollapseFunctor.hpp
+    EdgeSplitFunctor.cpp
+    EdgeSplitFunctor.hpp
     )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 if(WMTK_ENABLE_MULTIMESH)
 set(SRC_FILES
-    MultiMeshEdgeCollapseFunctor.cpp
-    MultiMeshEdgeCollapseFunctor.hpp
-    MultiMeshEdgeSplitFunctor.cpp
-    MultiMeshEdgeSplitFunctor.hpp
     UpdateEdgeOperationMultiMeshMapFunctor.cpp
     UpdateEdgeOperationMultiMeshMapFunctor.hpp
     multi_mesh_edge_collapse.cpp

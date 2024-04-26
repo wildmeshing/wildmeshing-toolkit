@@ -53,6 +53,8 @@ class EdgeCollapse;
 class EdgeSplit;
 class EdgeOperationData;
 namespace utils {
+class EdgeCollapseFunctor;
+class EdgeSplitFunctor;
 #if defined(WMTK_ENABLE_MULTIMESH)
 class UpdateEdgeOperationMultiMeshMapFunctor;
 #endif
@@ -128,6 +130,8 @@ public:
     friend class operations::EdgeCollapse;
     friend class operations::EdgeSplit;
     friend class operations::EdgeOperationData;
+    friend class operations::utils::EdgeCollapseFunctor;
+    friend class operations::utils::EdgeSplitFunctor;
 
 #if defined(WMTK_ENABLE_MULTIMESH)
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
@@ -265,7 +269,11 @@ public:
 
 
     // creates a scope as int64_t as the AttributeScopeHandle exists
+#if defined(WMTK_ENABLE_MULTIMESH)
     [[nodiscard]] multimesh::attribute::AttributeScopeHandle create_scope();
+#else
+    [[nodiscard]] attribute::AttributeScopeHandle create_scope();
+#endif
 
 
     /**
@@ -784,17 +792,6 @@ public:
      * check if the returned vector is empty rather than call this function.
      */
     bool can_map(const Mesh& other_mesh, const simplex::Simplex& my_simplex) const;
-
-    /**
-     * @brief wrapper function to update hashes (for parent mesh *this and its child meshes) after
-     * vertex operations
-     *
-     * @param vertex operating vertex tuple
-     * @param hash_accessor hash accesor of the parent mesh (*this)
-     */
-    void update_vertex_operation_hashes(
-        const Tuple& vertex,
-        attribute::Accessor<int64_t>& hash_accessor);
 
 
     /**

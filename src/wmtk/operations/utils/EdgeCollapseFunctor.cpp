@@ -1,5 +1,5 @@
 
-#include "MultiMeshEdgeCollapseFunctor.hpp"
+#include "EdgeCollapseFunctor.hpp"
 #include <wmtk/EdgeMeshOperationExecutor.hpp>
 #include <wmtk/TetMeshOperationExecutor.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
@@ -7,12 +7,12 @@
 
 namespace wmtk::operations::utils {
 
-void MultiMeshEdgeCollapseFunctor::operator()(const Mesh&, const simplex::Simplex&) const
+void EdgeCollapseFunctor::operator()(const Mesh&, const simplex::Simplex&) const
 {
     throw std::runtime_error("Unimplemented!");
 }
 
-edge_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
+edge_mesh::EdgeOperationData EdgeCollapseFunctor::operator()(
     EdgeMesh& m,
     const simplex::Simplex& s) const
 {
@@ -21,7 +21,7 @@ edge_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
     exec.collapse_edge();
     return exec;
 }
-tri_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
+tri_mesh::EdgeOperationData EdgeCollapseFunctor::operator()(
     TriMesh& m,
     const simplex::Simplex& s) const
 {
@@ -31,7 +31,7 @@ tri_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
 
     return exec;
 }
-tet_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
+tet_mesh::EdgeOperationData EdgeCollapseFunctor::operator()(
     TetMesh& m,
     const simplex::Simplex& s) const
 {

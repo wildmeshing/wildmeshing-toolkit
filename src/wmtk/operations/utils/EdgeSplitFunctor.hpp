@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <wmtk/operations/edge_mesh/EdgeOperationData.hpp>
@@ -14,7 +15,7 @@ class TetMesh;
 
 namespace wmtk::operations::utils {
 
-class MultiMeshEdgeCollapseFunctor
+class EdgeSplitFunctor
 {
 public:
     [[noreturn]] void operator()(const Mesh&, const simplex::Simplex&) const;

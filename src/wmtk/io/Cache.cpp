@@ -7,7 +7,12 @@
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <wmtk/io/HDF5Writer.hpp>
+
+// if multimesh is disabled this class has to read meshes
+// otherwise the MultiMeshCache handles that responsibility
+#if !defined(WMTK_ENABLE_MULTIMESH)
 #include <wmtk/io/MeshReader.hpp>
+#endif
 #include <wmtk/utils/Logger.hpp>
 
 #include <filesystem>
@@ -31,7 +36,11 @@ namespace wmtk::io {
 Cache::Cache(Cache&& o)
     : m_cache_dir(std::move(o.m_cache_dir))
     , m_file_paths(std::move(o.m_file_paths))
+#if defined(WMTK_ENABLE_MULTIMESH)
     , m_multimeshes(std::move(o.m_multimeshes))
+#else
+    , m_meshes(std::move(o.m_meshes))
+#endif
     , m_delete_cache(o.m_delete_cache)
 {
     // make sure that the other cache doesn't use delete semantics anymore
@@ -41,7 +50,11 @@ Cache& Cache::operator=(Cache&& o)
 {
     m_cache_dir = std::move(o.m_cache_dir);
     m_file_paths = std::move(o.m_file_paths);
+#if defined(WMTK_ENABLE_MULTIMESH)
     m_multimeshes = std::move(o.m_multimeshes);
+#else
+    m_meshes = std::move(o.m_meshes);
+#endif
     m_delete_cache = o.m_delete_cache;
     // make sure that the other cache doesn't use delete semantics anymore
     o.m_delete_cache = false;
@@ -146,14 +159,17 @@ std::filesystem::path Cache::get_cache_path() const
 {
     return m_cache_dir;
 }
+#if defined(WMTK_ENABLE_MULTIMESH)
 std::vector<int64_t> Cache::absolute_multi_mesh_id(const std::string& name) const
 {
     auto mm_name = name.substr(0, name.find('.'));
     return m_multimeshes.at(mm_name).get_id_from_path(name);
 }
+#endif
 
-void Cache::load_multimesh(const std::string& name) const
+void Cache::load_mesh(const std::string& name) const
 {
+#if defined(WMTK_ENABLE_MULTIMESH)
     auto mm_name = name.substr(0, name.find('.'));
     if (m_multimeshes.find(mm_name) == m_multimeshes.end()) {
         m_multimeshes.emplace(
@@ -165,19 +181,38 @@ void Cache::load_multimesh(const std::string& name) const
         const fs::path p = get_file_path(mm_name);
         cmm.load(p);
     }
+#else
+    if (m_meshes.find(name) == m_meshes.end()) {
+
+        const fs::path p = get_file_path(name);
+        m_meshes.emplace(
+                name,
+                wmtk::read_mesh(p));
+    }
+#endif
 }
 
 std::shared_ptr<Mesh> Cache::read_mesh(const std::string& name) const
 {
+#if defined(WMTK_ENABLE_MULTIMESH)
     auto mm_name = name.substr(0, name.find('.'));
-    load_multimesh(mm_name);
+    load_mesh(mm_name);
     return m_multimeshes.at(mm_name).get_from_path(name);
+#else
+    load_mesh(name);
+    return m_meshes.at(name);
+#endif
 }
-void Cache::flush_multimeshes()
+void Cache::flush_meshes()
 {
+    // for multimesh we don't destroy the objects beacuse we need to preserve names
+#if defined(WMTK_ENABLE_MULTIMESH)
     for (auto& pr : m_multimeshes) {
         pr.second.flush();
     }
+#else
+    m_meshes.clear();
+#endif
 }
 
 void Cache::write_mesh(
@@ -197,6 +232,7 @@ void Cache::write_mesh(
         p = it->second;
     }
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     std::map<std::string, std::vector<int64_t>> mm_names = multimesh_names;
     if (m_multimeshes.find(name) != m_multimeshes.end()) {
         mm_names = m_multimeshes.at(name).get_multimesh_names();
@@ -213,6 +249,9 @@ void Cache::write_mesh(
                 multimesh_names,
                 const_cast<Mesh&>(m).get_multi_mesh_root().shared_from_this()));
     }
+#else
+    m_meshes.at(name) = const_cast<Mesh&>(m).shared_from_this();
+#endif
 
     HDF5Writer writer(p);
     m.serialize(writer, &m);

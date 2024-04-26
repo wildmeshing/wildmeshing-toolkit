@@ -54,7 +54,9 @@ void Mesh::serialize(MeshWriter& writer, const Mesh* local_root) const
     writer.write_top_simplex_type(top_simplex_type());
     m_attribute_manager.serialize(writer);
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     m_multi_mesh_manager.serialize(writer, local_root);
+#endif
 }
 
 
@@ -217,12 +219,6 @@ Tuple Mesh::switch_tuples_unsafe(
 }
 
 
-void Mesh::update_vertex_operation_hashes(
-    const Tuple& vertex,
-    attribute::Accessor<int64_t>& hash_accessor)
-{
-    MultiMeshManager::update_vertex_operation_hashes_internal(*this, vertex, hash_accessor);
-}
 
 void Mesh::assert_capacity_valid() const
 {

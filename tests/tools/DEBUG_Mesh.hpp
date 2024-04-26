@@ -14,6 +14,8 @@ public:
 
     // uses spdlog to print out a variety of information about the mesh
     void print_state() const;
+
+#if defined(WMTK_ENABLE_MULTIMESH)
     DEBUG_MultiMeshManager& multi_mesh_manager()
     {
         return reinterpret_cast<DEBUG_MultiMeshManager&>(m_multi_mesh_manager);
@@ -22,6 +24,7 @@ public:
     {
         return reinterpret_cast<const DEBUG_MultiMeshManager&>(m_multi_mesh_manager);
     }
+#endif
 
     template <typename T>
     attribute::AccessorBase<T> create_base_accessor(const attribute::TypedAttributeHandle<T>& handle)

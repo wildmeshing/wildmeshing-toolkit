@@ -49,6 +49,7 @@ void test_split(DEBUG_TriMesh& mesh, int64_t edge_index, bool should_succeed)
     test_split(mesh, e, should_succeed);
 }
 
+#if defined(WMTK_ENABLE_MULTIMESH)
 // because TriMesh::collapse_edge isn'ta waare of preconditions we need to tell the system whether
 // something should succeed
 void test_collapse(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
@@ -81,6 +82,7 @@ void test_collapse(DEBUG_TriMesh& mesh, int64_t edge_index, bool should_succeed)
     REQUIRE(mesh.id(e, PE) == edge_index);
     test_collapse(mesh, e, should_succeed);
 }
+#endif
 } // namespace
 
 TEST_CASE("trimesh_split_collapse_factories", "[operations][2D]")
@@ -97,6 +99,7 @@ TEST_CASE("trimesh_split_collapse_factories", "[operations][2D]")
 
         test_split(m, e, true);
     }
+#if defined(WMTK_ENABLE_MULTIMESH)
     SECTION("collapse")
     {
         DEBUG_TriMesh m;
@@ -120,6 +123,7 @@ TEST_CASE("trimesh_split_collapse_factories", "[operations][2D]")
             test_collapse(m, e, false);
         }
     }
+#endif
 }
 
 /*

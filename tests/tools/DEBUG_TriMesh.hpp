@@ -1,7 +1,9 @@
 #pragma once
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
+#if defined(WMTK_ENABLE_MULTIMESH)
 #include "DEBUG_MultiMeshManager.hpp"
+#endif
 
 namespace wmtk::tests {
 class DEBUG_TriMesh : public TriMesh //, public virtual DEBUG_Mesh

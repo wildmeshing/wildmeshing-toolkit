@@ -22,6 +22,7 @@ void AttributeTransferStrategyBase::run_on_all()
     }
 }
 
+#if defined(WMTK_ENABLE_MULTIMESH)
 std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
     const attribute::MeshAttributeHandle& me,
     const attribute::MeshAttributeHandle& parent,
@@ -59,6 +60,7 @@ std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
     }
     return parent_tuples;
 }
+#endif
 
 bool AttributeTransferStrategyBase::matches_attribute(
     const wmtk::attribute::MeshAttributeHandle& attr) const

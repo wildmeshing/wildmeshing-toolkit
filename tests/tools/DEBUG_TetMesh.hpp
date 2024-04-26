@@ -1,7 +1,9 @@
 #pragma once
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TetMeshOperationExecutor.hpp>
+#if defined(WMTK_ENABLE_MULTIMESH)
 #include "DEBUG_MultiMeshManager.hpp"
+#endif
 namespace wmtk::tests_3d {
 class DEBUG_TetMesh : public TetMesh
 {

@@ -20,7 +20,6 @@ public:
         const Tuple& input_tuple,
         PrimitiveType pt) const final override;
 
-private:
     // the sipmlices that were merged together
     std::vector<std::array<Tuple, 2>> merged_simplices(
         const EdgeOperationData& ret_data,

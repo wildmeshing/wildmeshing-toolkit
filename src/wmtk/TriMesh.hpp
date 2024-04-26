@@ -9,8 +9,8 @@
 
 namespace wmtk {
 namespace operations::utils {
-class MultiMeshEdgeSplitFunctor;
-class MultiMeshEdgeCollapseFunctor;
+class EdgeSplitFunctor;
+class EdgeCollapseFunctor;
 class UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations::utils
 
@@ -19,8 +19,8 @@ class TriMesh : public MeshCRTP<TriMesh>
 {
 public:
     friend class MeshCRTP<TriMesh>;
-    friend class operations::utils::MultiMeshEdgeCollapseFunctor;
-    friend class operations::utils::MultiMeshEdgeSplitFunctor;
+    friend class operations::utils::EdgeCollapseFunctor;
+    friend class operations::utils::EdgeSplitFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     template <typename U, typename MeshType, int Dim>
     friend class attribute::Accessor;

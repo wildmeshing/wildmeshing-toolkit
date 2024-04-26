@@ -25,12 +25,18 @@ tools/DEBUG_TetMesh.cpp
 
 tools/DEBUG_Mesh.hpp
 tools/DEBUG_Mesh.cpp
-tools/DEBUG_MultiMeshManager.hpp
-tools/DEBUG_MultiMeshManager.cpp
 tools/DEBUG_Tuple.hpp
 tools/DEBUG_Tuple.cpp
 )
 add_library(wmtk_test_tools ${TEST_TOOLS})
+
+if(WMTK_ENABLE_MULTIMESH)
+target_sources(wmtk_test_tools PRIVATE 
+    tools/DEBUG_MultiMeshManager.hpp
+    tools/DEBUG_MultiMeshManager.cpp
+    )
+endif()
+
 target_include_directories(wmtk_test_tools PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 ## Dependencies
 include(finite-diff)
@@ -63,11 +69,14 @@ set(TEST_SOURCES
     test_variant_metaprogramming.cpp
     test_tuple_metaprogramming.cpp
     test_autodiff.cpp
-    test_local_switch_search.cpp
     test_primitive.cpp
     test_performance.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
+if(WMTK_ENABLE_MULTIMESH)
+target_sources(wmtk_test PRIVATE  test_local_switch_search.cpp)
+endif()
+
 target_link_libraries(wmtk_tests PUBLIC wmtk_test_tools
     Catch2::Catch2WithMain
     wmtk::toolkit

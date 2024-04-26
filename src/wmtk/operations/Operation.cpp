@@ -1,7 +1,9 @@
 #include "Operation.hpp"
 
 #include <wmtk/Mesh.hpp>
+#if defined(WMTK_ENABLE_MULTIMESH)
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
+#endif
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 
@@ -86,6 +88,7 @@ bool Operation::before(const simplex::Simplex& simplex) const
         return false;
     }
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     // map simplex to the invariant mesh
     const Mesh& invariant_mesh = m_invariants.mesh();
 
@@ -97,6 +100,12 @@ bool Operation::before(const simplex::Simplex& simplex) const
             return false;
         }
     }
+#else
+    if (!m_invariants.before(simplex)) {
+        return false;
+    }
+    
+#endif
 
     return true;
 }
@@ -116,12 +125,18 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
     }
     all.sort_and_clean();
     for (const auto& at_ptr : m_attr_transfer_strategies) {
+#if defined(WMTK_ENABLE_MULTIMESH)
         if (&m_mesh == &(at_ptr->mesh())) {
+#else
+        assert(&m_mesh == &(at_ptr->mesh()));
+        {// scope to just keep indentation consistent as if we had the if statement
+#endif
             for (const auto& s : all.simplex_vector()) {
                 if (s.primitive_type() == at_ptr->primitive_type()) {
                     at_ptr->run(s);
                 }
             }
+#if defined(WMTK_ENABLE_MULTIMESH)
         } else {
             auto& at_mesh = at_ptr->mesh();
             auto at_mesh_simplices = m_mesh.map(at_mesh, direct_mods);
@@ -138,6 +153,7 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
                     at_ptr->run(s);
                 }
             }
+#endif
         }
     }
 }
@@ -172,8 +188,12 @@ void Operation::reserve_enough_simplices()
             m.reserve_more_attributes(cap);
         }
     };
+#if defined(WMTK_ENABLE_MULTIMESH)
     multimesh::MultiMeshVisitor visitor(run);
     visitor.execute_from_root(mesh());
+#else
+    run(mesh());
+#endif
 }
 
 } // namespace wmtk::operations

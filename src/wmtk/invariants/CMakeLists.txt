@@ -15,18 +15,12 @@ set(SRC_FILES
     InteriorVertexInvariant.cpp
     InteriorEdgeInvariant.hpp
     InteriorEdgeInvariant.cpp
-    MultiMeshLinkConditionInvariant.hpp
-    MultiMeshLinkConditionInvariant.cpp
-    MultiMeshMapValidInvariant.hpp
-    MultiMeshMapValidInvariant.cpp
 
     MaxEdgeLengthInvariant.hpp
     MaxEdgeLengthInvariant.cpp
     MinEdgeLengthInvariant.hpp
     MinEdgeLengthInvariant.cpp
 
-    MultiMeshTopologyInvariant.hpp
-    MultiMeshTopologyInvariant.cpp
     MinIncidentValenceInvariant.hpp
     MinIncidentValenceInvariant.cpp
     TriMeshSubstructureTopologyPreservingInvariant.hpp
@@ -49,11 +43,7 @@ set(SRC_FILES
     MaxFunctionInvariant.hpp
     MaxFunctionInvariant.cpp
 
-    FusionEdgeInvariant.hpp
-    FusionEdgeInvariant.cpp
 
-    uvEdgeInvariant.hpp
-    uvEdgeInvariant.cpp
 
     internal/ConstantInvariant.hpp
     internal/ConstantInvariant.cpp
@@ -67,10 +57,25 @@ set(SRC_FILES
     Swap23EnergyBeforeInvariant.hpp
     Swap23EnergyBeforeInvariant.cpp
 
-    SeparateSubstructuresInvariant.hpp
-    SeparateSubstructuresInvariant.cpp
 
     RoundedInvariant.hpp
     RoundedInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+
+if(WMTK_ENABLE_MULTIMESH)
+    target_sources(wildmeshing_toolkit PRIVATE 
+    uvEdgeInvariant.hpp
+    uvEdgeInvariant.cpp
+        MultiMeshLinkConditionInvariant.hpp
+        MultiMeshLinkConditionInvariant.cpp
+        MultiMeshMapValidInvariant.hpp
+        MultiMeshMapValidInvariant.cpp
+        MultiMeshTopologyInvariant.hpp
+        MultiMeshTopologyInvariant.cpp
+        FusionEdgeInvariant.hpp
+        FusionEdgeInvariant.cpp
+    SeparateSubstructuresInvariant.hpp
+    SeparateSubstructuresInvariant.cpp
+        )
+endif()
