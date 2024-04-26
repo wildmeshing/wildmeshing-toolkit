@@ -74,7 +74,7 @@ set(TEST_SOURCES
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 if(WMTK_ENABLE_MULTIMESH)
-target_sources(wmtk_test PRIVATE  test_local_switch_search.cpp)
+target_sources(wmtk_tests PRIVATE  test_local_switch_search.cpp)
 endif()
 
 target_link_libraries(wmtk_tests PUBLIC wmtk_test_tools

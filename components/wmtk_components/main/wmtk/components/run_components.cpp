@@ -82,7 +82,7 @@ wmtk::io::Cache run_components(const nlohmann::json& json_input_file, bool stric
         for (auto& el : component_json.items()) {
             wmtk::logger().info("Component {}", el.key());
             components[el.key()](paths, el.value(), cache);
-            cache.flush_multimeshes();
+            cache.flush_meshes();
         }
     }
 

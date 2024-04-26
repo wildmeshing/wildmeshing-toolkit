@@ -3,7 +3,7 @@
 #include <wmtk/multimesh/operations/SplitReturnData.hpp>
 #include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
 #include <wmtk/operations/utils/multi_mesh_edge_split.hpp>
-#include <wmtk/operation/utils/ExtractOperationTuplesFunctor.hpp>
+#include <wmtk/operations/utils/ExtractOperationTuplesFunctor.hpp>
 
 
 #include "extract_operation_tuples.hpp"
@@ -32,7 +32,7 @@ std::map<const Mesh*, std::vector<std::array<Tuple, 2>>> extract_operation_tuple
 
     for (const auto& [key, value_var] : return_data) {
         const auto [mesh_ptr, input_simplex] = key;
-        auto tups = std::visit(wmtk::operation::utils::ExtractOperationTuplesFunctor{}, value_var);
+        auto tups = std::visit(wmtk::operations::utils::ExtractOperationTuplesFunctor{}, value_var);
         assert(tups[0] == input_simplex.tuple());
         ret[mesh_ptr].emplace_back(tups);
     }

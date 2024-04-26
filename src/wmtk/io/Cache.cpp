@@ -10,9 +10,7 @@
 
 // if multimesh is disabled this class has to read meshes
 // otherwise the MultiMeshCache handles that responsibility
-#if !defined(WMTK_ENABLE_MULTIMESH)
 #include <wmtk/io/MeshReader.hpp>
-#endif
 #include <wmtk/utils/Logger.hpp>
 
 #include <filesystem>
