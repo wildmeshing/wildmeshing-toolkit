@@ -24,15 +24,20 @@ EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
     // update hash on neighborhood
 #if defined(WMTK_ENABLE_HASH_UPDATE)
     cell_ids_to_update_hash.emplace_back(m_mesh.id_edge(m_operating_tuple));
+#endif
     if (!m_mesh.is_boundary_vertex(m_operating_tuple)) {
         m_neighbor_eids[0] = m_mesh.id_edge(m_mesh.switch_edge(m_operating_tuple));
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         cell_ids_to_update_hash.emplace_back(m_neighbor_eids[0]);
+#endif
     }
     if (!m_mesh.is_boundary_vertex(operating_tuple_switch_vertex)) {
         m_neighbor_eids[1] = m_mesh.id_edge(m_mesh.switch_edge(operating_tuple_switch_vertex));
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         cell_ids_to_update_hash.emplace_back(m_neighbor_eids[1]);
-    }
 #endif
+    }
+
 
     if (m_neighbor_eids[0] == m_neighbor_eids[1] && m_neighbor_eids[0] == m_operating_edge_id) {
         m_is_self_loop = true;
