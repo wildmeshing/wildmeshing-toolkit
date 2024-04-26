@@ -137,7 +137,10 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     simplex::SimplexCollection faces(m_mesh);
 
     for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+
         cell_ids_to_update_hash.push_back(m_mesh.id(f));
+#endif
 
         faces.add(wmtk::simplex::faces(m, f, false));
         faces.add(f);
@@ -179,7 +182,9 @@ void TriMesh::TriMeshOperationExecutor::delete_simplices()
 
 void TriMesh::TriMeshOperationExecutor::update_cell_hash()
 {
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     m_mesh.update_cell_hashes(cell_ids_to_update_hash, hash_accessor);
+#endif
 }
 
 const std::array<std::vector<int64_t>, 3>
