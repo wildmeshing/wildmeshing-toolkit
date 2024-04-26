@@ -169,7 +169,8 @@ void run_tetwild_test(
     // const double target_edge_length = 1.21271;
     const double target_max_amips = 10;
     const double min_edge_length = 0.001;
-    const double target_edge_length = 1.04;
+    // const double target_edge_length = 1.04; // for collapse
+    const double target_edge_length = 0.59019; // for split
 
     std::ifstream file(data_dir / path);
     std::vector<Vector3r> vertices;
@@ -228,8 +229,8 @@ void run_tetwild_test(
     // std::cout << bbox_min << std::endl;
 
     double diag = (bbox_max - bbox_min).norm();
-    // std::cout << diag << std::endl;
-    // std::cout << 0.05 * diag << std::endl;
+    std::cout << diag << std::endl;
+    std::cout << 0.05 * diag << std::endl;
 
 
     auto mesh = std::make_shared<TetMesh>();
