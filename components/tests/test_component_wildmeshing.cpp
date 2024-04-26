@@ -163,7 +163,8 @@ void run_tetwild_test(
         MeshAttributeHandle&,
         std::vector<attribute::MeshAttributeHandle>&,
         std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&,
-        std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&)>
+        std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&,
+        std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<char, Rational>>&)>
         create_op)
 {
     // const double target_edge_length = 1.21271;
@@ -300,7 +301,7 @@ void run_tetwild_test(
     edge_length_update->run_on_all();
 
     auto visited_edge_flag =
-        mesh->register_attribute<char>("visited_edge", PrimitiveType::Edge, 1, false, 1);
+        mesh->register_attribute<char>("visited_edge", PrimitiveType::Edge, 1, false, char(1));
 
     auto target_edge_length_attribute = mesh->register_attribute<double>(
         "wildmeshing_target_edge_length",
@@ -343,6 +344,16 @@ void run_tetwild_test(
             target_edge_length_attribute,
             amips_attribute,
             compute_target_edge_length);
+    auto update_flag_func = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<char> {
+        assert(P.cols() == 2);
+        assert(P.rows() == 2 || P.rows() == 3);
+        return Eigen::VectorX<char>::Constant(1, char(1));
+    };
+    auto flag_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<char, Rational>>(
+            visited_edge_flag,
+            pt_attribute,
+            update_flag_func);
 
 
     std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
@@ -404,7 +415,8 @@ void run_tetwild_test(
         visited_edge_flag,
         pass_through_attributes,
         amips_update,
-        edge_length_update);
+        edge_length_update,
+        flag_update);
 
     auto stats = scheduler.run_operation_on_all(*op, visited_edge_flag.as<char>());
     logger().info(
@@ -456,6 +468,8 @@ void run_tetwild_test(
 
 TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
 {
+    logger().set_level(spdlog::level::debug);
+
     run_tetwild_test(
         "split_initial_state_test.obj",
         "Split",
@@ -467,7 +481,9 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
            std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&
                amips_update,
            std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&
-               edge_length_update) {
+               edge_length_update,
+           std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<char, Rational>>&
+               tag_update) {
             auto edge_length_attribute =
                 mesh.get_attribute_handle<double>("edge_length", PrimitiveType::Edge);
             auto target_edge_length_attribute = mesh.get_attribute_handle<double>(
@@ -502,6 +518,7 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
 
             split->add_transfer_strategy(amips_update);
             split->add_transfer_strategy(edge_length_update);
+            split->add_transfer_strategy(tag_update);
 
             auto split_then_round = std::make_shared<OperationSequence>(mesh);
             split_then_round->add_operation(split);
@@ -525,7 +542,9 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
            std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&
                amips_update,
            std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&
-               edge_length_update) {
+               edge_length_update,
+           std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<char, Rational>>&
+               tag_update) {
             auto edge_length_attribute =
                 mesh.get_attribute_handle<double>("edge_length", PrimitiveType::Edge);
             auto target_edge_length_attribute = mesh.get_attribute_handle<double>(
@@ -582,6 +601,7 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
             // collapse->add_invariant(envelope_invariant);
 
             collapse->set_new_attribute_strategy(pt_attribute, clps_strat);
+            collapse->add_transfer_strategy(tag_update);
             collapse->set_new_attribute_strategy(
                 visited_edge_flag,
                 wmtk::operations::CollapseBasicStrategy::None);
@@ -603,6 +623,7 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
 
 TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
 {
+    logger().set_level(spdlog::level::trace);
     run_tetwild_test(
         "collapse_initial_state_141017.obj",
         "Collapse-Two",
@@ -614,7 +635,9 @@ TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
            std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&
                amips_update,
            std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&
-               edge_length_update) {
+               edge_length_update,
+           std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<char, Rational>>&
+               tag_update) {
             auto edge_length_attribute =
                 mesh.get_attribute_handle<double>("edge_length", PrimitiveType::Edge);
             auto target_edge_length_attribute = mesh.get_attribute_handle<double>(
@@ -682,6 +705,7 @@ TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
                     visited_edge_flag,
                     wmtk::operations::CollapseBasicStrategy::None);
 
+                collapse->add_transfer_strategy(tag_update);
                 for (const auto& attr : pass_through_attributes) {
                     collapse->set_new_attribute_strategy(attr);
                 }

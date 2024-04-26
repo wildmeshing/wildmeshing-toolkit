@@ -84,8 +84,9 @@ SchedulerStats Scheduler::run_operation_on_all(
     const auto type = op.primitive_type();
 
     auto flag_accessor = op.mesh().create_accessor(flag_handle);
-    for (const auto& s : simplices) {
-        flag_accessor.scalar_attribute(s.tuple()) = 0;
+    auto tups = op.mesh().get_all(type);
+    for (const auto& t : tups) {
+        flag_accessor.scalar_attribute(t) = char(0);
     }
 
     SchedulerStats res = run_operation_on_all(op);
@@ -102,13 +103,20 @@ SchedulerStats Scheduler::run_operation_on_all(
                 internal_stats.collecting_time,
                 logger());
 
-            auto tups = op.mesh().get_all(type);
+            tups = op.mesh().get_all(type);
+            const auto n_primitives = tups.size();
             tups.erase(
                 std::remove_if(
                     tups.begin(),
                     tups.end(),
-                    [&](const Tuple& t) { return flag_accessor.scalar_attribute(t) == 0; }),
+                    [&](const Tuple& t) { return flag_accessor.scalar_attribute(t) == char(0); }),
                 tups.end());
+            for (const auto& t : tups) {
+                flag_accessor.scalar_attribute(t) = char(0);
+            }
+
+            logger().debug("Processing {}/{}", tups.size(), n_primitives);
+
             simplices =
                 wmtk::simplex::utils::tuple_vector_to_homogeneous_simplex_vector(tups, type);
         }

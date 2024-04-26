@@ -15,7 +15,6 @@
 namespace wmtk {
 
 
-
 std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 {
     return get_all(type, false);
@@ -69,7 +68,7 @@ bool Mesh::is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>&
 
     const int64_t desired_hash = get_cell_hash(cid, hash_accessor);
     if (tuple.m_hash != desired_hash) {
-        logger().debug("Hash is not valid: {} != {}", tuple.m_hash, desired_hash);
+        // logger().debug("Hash is not valid: {} != {}", tuple.m_hash, desired_hash);
         return false;
     }
     return true;
