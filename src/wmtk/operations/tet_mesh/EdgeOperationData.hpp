@@ -117,7 +117,6 @@ public:
 
     std::array<std::vector<int64_t>, 4> simplex_ids_to_delete;
     std::array<std::vector<Tuple>, 4> simplex_tuples_to_delete;
-    std::vector<int64_t> cell_ids_to_update_hash;
 
 
     // only returns valid tuples for the state before an operation occurred

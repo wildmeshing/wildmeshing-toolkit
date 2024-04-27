@@ -125,6 +125,8 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
         std::swap(m_incident_face_datas[0], m_incident_face_datas[1]);
     }
 
+
+#if defined(WMTK_ENABLE_MULTIMESH)
     // update hash on all faces in the two-ring neighborhood
     simplex::SimplexCollection hash_update_region(m);
     for (const simplex::Simplex& v : edge_closed_star.simplex_vector(PrimitiveType::Vertex)) {
@@ -132,14 +134,10 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
         hash_update_region.add(v_closed_star);
     }
     hash_update_region.sort_and_clean();
-
-#if defined(WMTK_ENABLE_MULTIMESH)
     global_simplex_ids_with_potentially_modified_hashes.resize(3);
     simplex::SimplexCollection faces(m_mesh);
 
     for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
-        cell_ids_to_update_hash.push_back(m_mesh.id(f));
-
         faces.add(wmtk::simplex::faces(m, f, false));
         faces.add(f);
     }
@@ -168,9 +166,9 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     // load(PrimitiveType::Edge, 1);
     // load(PrimitiveType::Face, 2);
 #else
-    for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
-        cell_ids_to_update_hash.push_back(m_mesh.id(f));
-    }
+    //for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
+    //    cell_ids_to_update_hash.push_back(m_mesh.id(f));
+    //}
 #endif
 }
 
@@ -185,6 +183,22 @@ void TriMesh::TriMeshOperationExecutor::delete_simplices()
 
 void TriMesh::TriMeshOperationExecutor::update_cell_hash()
 {
+    std::vector<int64_t> cell_ids_to_update_hash;
+    m_mesh.parent_scope([&](){
+
+    const simplex::SimplexCollection edge_closed_star =
+        simplex::closed_star(m_mesh, simplex::Simplex::edge(m_operating_tuple));
+    // update hash on all faces in the two-ring neighborhood
+    simplex::SimplexCollection hash_update_region(m_mesh);
+    for (const simplex::Simplex& v : edge_closed_star.simplex_vector(PrimitiveType::Vertex)) {
+        const simplex::SimplexCollection v_closed_star = simplex::top_dimension_cofaces(m_mesh, v);
+        hash_update_region.add(v_closed_star);
+    }
+    hash_update_region.sort_and_clean();
+    for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
+        cell_ids_to_update_hash.push_back(m_mesh.id(f));
+    }
+            });
     m_mesh.update_cell_hashes(cell_ids_to_update_hash, hash_accessor);
 }
 

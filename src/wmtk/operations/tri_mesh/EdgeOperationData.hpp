@@ -87,7 +87,6 @@ public:
 
 
     std::array<std::vector<int64_t>, 3> simplex_ids_to_delete;
-    std::vector<int64_t> cell_ids_to_update_hash;
 
     // for multimesh we need to know which global ids are modified to trigger
     // for every simplex dimension (We have 3 in trimesh):
