@@ -167,6 +167,10 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     // load(PrimitiveType::Vertex, 0);
     // load(PrimitiveType::Edge, 1);
     // load(PrimitiveType::Face, 2);
+#else
+    for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
+        cell_ids_to_update_hash.push_back(m_mesh.id(f));
+    }
 #endif
 }
 

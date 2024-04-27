@@ -195,6 +195,11 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     //         m_mesh.id(s),
     //         wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
     // }
+#else
+     for (const simplex::Simplex& t : hash_update_region.simplex_vector()) {
+         cell_ids_to_update_hash.push_back(m_mesh.id(t));
+     }
+
 #endif
 }
 
