@@ -195,7 +195,7 @@ Tuple EdgeMesh::tuple_from_global_ids(int64_t eid, int64_t vid) const
 
     int64_t lvid = -1;
 
-    for (int j = 0; j < 2; ++j) {
+    for (int64_t j = 0; j < 2; ++j) {
         if (ev(j) == vid) {
             lvid = j;
         }
@@ -235,7 +235,7 @@ bool EdgeMesh::is_connectivity_valid() const
             wmtk::logger().debug("Vertex {} is deleted", i);
             continue;
         }
-        int cnt = 0;
+        int64_t cnt = 0;
         for (int64_t j = 0; j < 2; ++j) {
             if (ev_accessor.index_access().const_vector_attribute<2>(
                     ve_accessor.index_access().const_scalar_attribute(i))[j] == i) {

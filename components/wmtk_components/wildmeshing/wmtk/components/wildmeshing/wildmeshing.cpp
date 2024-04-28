@@ -115,6 +115,7 @@ void write(
 
 void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
+    spdlog::info("118\n");
     //////////////////////////////////
     // Load mesh from settings
     WildmeshingOptions options = j.get<WildmeshingOptions>();
@@ -258,6 +259,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     target_edge_length_update->run_on_all();
 
 
+    spdlog::info("262\n");
+
     //////////////////////////////////
     // Storing edge lengths
     auto edge_length_attribute =
@@ -296,6 +299,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     };
 
 
+    spdlog::info("302\n");
+
     //////////////////////////////////
     // envelopes
     //////////////////////////////////
@@ -322,13 +327,18 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         auto envelope = cache.read_mesh(v.geometry.mesh);
         envelopes.emplace_back(envelope);
 
+        spdlog::info("330\n");
         auto constrained = base::get_attributes(cache, *mesh, v.constrained_position);
         multimesh_meshes.push_back(constrained.front().mesh().shared_from_this());
         assert(constrained.size() == 1);
         pass_through_attributes.emplace_back(constrained.front());
 
+        spdlog::info("336\n");
+        // auto envelope_position_handle =
+        //     envelope->get_attribute_handle<double>(v.geometry.position, PrimitiveType::Vertex);
         auto envelope_position_handle =
             envelope->get_attribute_handle<double>(v.geometry.position, PrimitiveType::Vertex);
+        spdlog::info("339\n");
 
         mesh_constraint_pairs.emplace_back(envelope_position_handle, constrained.front());
 
@@ -360,7 +370,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
 
     //////////////////////////////////
-
+    spdlog::info("368\n");
 
     //////////////////////////////////
     // Invariants
@@ -412,6 +422,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto invariant_separate_substructures =
         std::make_shared<invariants::SeparateSubstructuresInvariant>(*mesh);
 
+    spdlog::info("420\n");
 
     //////////////////////////////////
     // Creation of the 4 ops
@@ -428,8 +439,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     split->add_invariant(todo_larger);
 
     split->set_new_attribute_strategy(pt_attribute);
+    int i = 0;
     for (const auto& attr : pass_through_attributes) {
         split->set_new_attribute_strategy(attr);
+        i++;
+        spdlog::info("{}/{}\n", i, pass_through_attributes.size());
     }
 
     split->add_transfer_strategy(amips_update);
@@ -549,11 +563,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         ops_name.push_back("swap32");
 
         // 3 - 3) TetFaceSwap 2-3
-        auto swap23 = std::make_shared<TetFaceSwap>(*mesh);
-        setup_swap(*swap23, swap23->collapse(), swap23->split(), interior_face);
-        swap23->add_invariant(swap23_energy_before); // check energy before swap
-        ops.push_back(swap23);
-        ops_name.push_back("swap23");
+        // auto swap23 = std::make_shared<TetFaceSwap>(*mesh);
+        // setup_swap(*swap23, swap23->collapse(), swap23->split(), interior_face);
+        // swap23->add_invariant(swap23_energy_before); // check energy before swap
+        // ops.push_back(swap23);
+        // ops_name.push_back("swap23");
     }
 
     // 4) Smoothing
@@ -585,6 +599,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         options.attributes.position,
         0,
         options.intermediate_output);
+
+
+    spdlog::info("599\n");
 
     //////////////////////////////////
     // Running all ops in order n times

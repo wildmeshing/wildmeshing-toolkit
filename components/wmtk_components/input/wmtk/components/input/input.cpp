@@ -11,6 +11,8 @@
 #include "wmtk/TetMesh.hpp"
 #include "wmtk/attribute/MeshAttributeHandle.hpp"
 
+#include "wmtk/operations/attribute_update/AttributeTransferStrategy.hpp"
+
 namespace wmtk::components {
 
 void input(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
@@ -28,8 +30,8 @@ void input(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
     std::shared_ptr<Mesh> mesh = read_mesh(file, options.ignore_z, options.tetrahedron_attributes);
     assert(mesh->is_connectivity_valid());
 
-    {
-        // mesh->consolidate();
+    if (false) {
+        mesh->consolidate();
         // auto tet_handle = mesh->get_attribute_handle<int64_t>("tag", PrimitiveType::Tetrahedron);
         // auto face_handle = mesh->register_attribute<int64_t>("surface", PrimitiveType::Triangle,
         // 1); auto acc_tet = mesh->create_accessor<int64_t>(tet_handle); auto acc_face =
@@ -42,11 +44,30 @@ void input(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         //         }
         //     }
         // }
-        // multimesh::utils::extract_and_register_child_mesh_from_tag(
-        //     *mesh,
-        //     "surface",
-        //     1,
-        //     PrimitiveType::Triangle);
+        auto child_mesh = multimesh::utils::extract_and_register_child_mesh_from_tag(
+            *mesh,
+            "surface",
+            1,
+            PrimitiveType::Triangle);
+
+        auto position = mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+
+        auto child_position_handle = child_mesh->register_attribute<double>(
+            "vertices",
+            PrimitiveType::Vertex,
+            position.dimension());
+
+        auto propagate_to_child_position = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+            return P;
+        };
+        auto update_child_positon =
+            std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+                child_position_handle,
+                position,
+                propagate_to_child_position);
+        update_child_positon->run_on_all();
+
+        cache.write_mesh(*child_mesh, "surface_mesh");
 
         // mesh->consolidate();
         // auto tag_handle = mesh->get_attribute_handle<int64_t>("tag", PrimitiveType::Tetrahedron);
@@ -79,7 +100,6 @@ void input(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         // names["periodic"] = mesh->absolute_multi_mesh_id();
         // names["surface"] = child_mesh->absolute_multi_mesh_id();
 
-        //     cache.write_mesh(*mesh, "surface");
         // }
 
         // {
@@ -93,6 +113,21 @@ void input(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         // }
     }
 
+    if (true) {
+        auto hack_handle = mesh->register_attribute<int64_t>("hack_tag", PrimitiveType::Vertex, 1);
+        auto hack_acc = mesh->create_accessor<int64_t>(hack_handle);
+        auto face_handle = mesh->get_attribute_handle<int64_t>("surface", PrimitiveType::Triangle);
+        auto face_acc = mesh->create_accessor<int64_t>(face_handle);
+
+        for (Tuple& face : mesh->get_all(PrimitiveType::Triangle)) {
+            if (face_acc.scalar_attribute(face) == 1) {
+                hack_acc.scalar_attribute(face) = 1;
+                hack_acc.scalar_attribute(mesh->switch_tuple(face, PrimitiveType::Vertex)) = 1;
+                hack_acc.scalar_attribute(
+                    mesh->switch_tuples(face, {PrimitiveType::Edge, PrimitiveType::Vertex})) = 1;
+            }
+        }
+    }
 
     cache.write_mesh(*mesh, options.name);
 }

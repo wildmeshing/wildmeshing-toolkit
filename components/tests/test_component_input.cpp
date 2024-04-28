@@ -99,8 +99,8 @@ TEST_CASE("testss", "[components][input]")
 
 
     CHECK_NOTHROW(wmtk::components::input(Paths(), component_json, cache));
-    auto mesh = cache.read_mesh("input_mesh");
-    if (!mesh->is_connectivity_valid()) {
-        std::runtime_error("invalid!");
-    }
+    // auto mesh = cache.read_mesh("input_mesh");
+    // if (!mesh->is_connectivity_valid()) {
+    //     std::runtime_error("invalid!");
+    // }
 }

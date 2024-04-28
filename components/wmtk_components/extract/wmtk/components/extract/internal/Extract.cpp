@@ -507,8 +507,8 @@ void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::strin
         if (idx_0 >= 0 && idx_0 < volumetric_data.size() && idx_1 > 0 &&
             idx_1 < volumetric_data[0].size() && idx_2 > 0 &&
             idx_2 < volumetric_data[0][0].size()) {
-            int64_t v = volumetric_data[idx_0][idx_1][idx_2];
-            acc_tag.scalar_attribute(t) = v;
+            int64_t intValue = volumetric_data[idx_0][idx_1][idx_2];
+            acc_tag.scalar_attribute(t) = intValue;
         }
     }
 
@@ -560,11 +560,14 @@ void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::strin
     // }
 
     // spdlog::info("max_amips: {}\n", max_amips);
-    mesh.consolidate();
+    spdlog::info("before\n");
+    // mesh.consolidate();
+    spdlog::info("after\n");
     if (!mesh.is_connectivity_valid()) {
         throw std::runtime_error("invalid_input");
     }
 
+    int cnt = 0;
 
     auto face_handle = mesh.register_attribute<int64_t>("surface", PrimitiveType::Triangle, 1);
     auto acc_face = mesh.create_accessor<int64_t>(face_handle);
@@ -574,10 +577,12 @@ void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::strin
             if (acc_tag.scalar_attribute(face) !=
                 acc_tag.scalar_attribute(mesh.switch_tetrahedron(face))) {
                 acc_face.scalar_attribute(face) = 1;
+                cnt++;
             }
         }
     }
 
+    spdlog::info("cnt:{}\n", cnt);
 
     {
         // auto child_mesh = multimesh::utils::extract_and_register_child_mesh_from_tag(
@@ -592,21 +597,21 @@ void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::strin
         //     std::runtime_error("invalid_input");
         // }
 
-        if (!mesh.is_connectivity_valid()) {
-            throw std::runtime_error("invalid_input");
-        }
+        // if (!mesh.is_connectivity_valid()) {
+        //     throw std::runtime_error("invalid_input");
+        // }
 
-        internal::MultiMeshFromTag surface_mesh_from_tag(mesh, face_handle, 1);
-        surface_mesh_from_tag.compute_substructure_mesh();
+        // internal::MultiMeshFromTag surface_mesh_from_tag(mesh, face_handle, 1);
+        // surface_mesh_from_tag.compute_substructure_mesh();
 
-        auto child_mesh = mesh.get_child_meshes().back();
-        surface_mesh_from_tag.remove_soup();
+        // auto child_mesh = mesh.get_child_meshes().back();
+        // surface_mesh_from_tag.remove_soup();
     }
 
-    // {
-    //     HDF5Writer writer(output_file + ".hdf5");
-    //     mesh.serialize(writer);
-    // }
+    {
+        HDF5Writer writer(output_file + ".hdf5");
+        mesh.serialize(writer);
+    }
     spdlog::info("max:{} B\n", wmtk::getPeakRSS());
 
     if (!mesh.is_connectivity_valid()) {

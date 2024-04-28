@@ -62,14 +62,14 @@ TetMesh& TetMesh::operator=(TetMesh&& o)
 
 void TetMesh::make_cached_accessors()
 {
-    m_vt_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_vt_handle);
-    m_et_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_et_handle);
-    m_ft_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_ft_handle);
+    m_vt_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_vt_handle);
+    m_et_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_et_handle);
+    m_ft_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_ft_handle);
 
-    m_tv_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_tv_handle);
-    m_te_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_te_handle);
-    m_tf_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_tf_handle);
-    m_tt_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_tt_handle);
+    m_tv_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_tv_handle);
+    m_te_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_te_handle);
+    m_tf_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_tf_handle);
+    m_tt_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_tt_handle);
 }
 
 
@@ -409,8 +409,8 @@ bool TetMesh::is_connectivity_valid() const
             wmtk::logger().debug("Vertex {} is deleted", i);
             continue;
         }
-        int cnt = 0;
-        for (int j = 0; j < 4; ++j) {
+        int64_t cnt = 0;
+        for (int64_t j = 0; j < 4; ++j) {
             if (tv_accessor.index_access().const_vector_attribute<4>(
                     vt_accessor.index_access().const_scalar_attribute(i))[j] == i) {
                 cnt++;
@@ -428,8 +428,8 @@ bool TetMesh::is_connectivity_valid() const
             wmtk::logger().debug("Edge {} is deleted", i);
             continue;
         }
-        int cnt = 0;
-        for (int j = 0; j < 6; ++j) {
+        int64_t cnt = 0;
+        for (int64_t j = 0; j < 6; ++j) {
             if (te_accessor.index_access().const_vector_attribute<6>(
                     et_accessor.index_access().const_scalar_attribute(i))[j] == i) {
                 cnt++;
@@ -447,8 +447,8 @@ bool TetMesh::is_connectivity_valid() const
             wmtk::logger().debug("Face {} is deleted", i);
             continue;
         }
-        int cnt = 0;
-        for (int j = 0; j < 4; ++j) {
+        int64_t cnt = 0;
+        for (int64_t j = 0; j < 4; ++j) {
             if (tf_accessor.index_access().const_vector_attribute<4>(
                     ft_accessor.index_access().const_scalar_attribute(i))[j] == i) {
                 cnt++;
@@ -467,7 +467,7 @@ bool TetMesh::is_connectivity_valid() const
             continue;
         }
 
-        for (int j = 0; j < 4; ++j) {
+        for (int64_t j = 0; j < 4; ++j) {
             int64_t nb = tt_accessor.index_access().const_vector_attribute<4>(i)(j);
             if (nb == -1) {
                 if (ft_accessor.index_access().const_scalar_attribute(
@@ -478,9 +478,9 @@ bool TetMesh::is_connectivity_valid() const
                 continue;
             }
 
-            int cnt = 0;
-            int id_in_nb;
-            for (int k = 0; k < 4; ++k) {
+            int64_t cnt = 0;
+            int64_t id_in_nb;
+            for (int64_t k = 0; k < 4; ++k) {
                 if (tt_accessor.index_access().const_vector_attribute<4>(nb)(k) == i) {
                     cnt++;
                     id_in_nb = k;
@@ -526,7 +526,7 @@ Tuple TetMesh::tuple_from_global_ids(int64_t tid, int64_t fid, int64_t eid, int6
 
     int64_t lvid = -1, leid = -1, lfid = -1;
 
-    for (int j = 0; j < 4; ++j) {
+    for (int64_t j = 0; j < 4; ++j) {
         if (tv(j) == vid) {
             lvid = j;
         }
@@ -535,7 +535,7 @@ Tuple TetMesh::tuple_from_global_ids(int64_t tid, int64_t fid, int64_t eid, int6
         }
     }
 
-    for (int j = 0; j < 6; ++j) {
+    for (int64_t j = 0; j < 6; ++j) {
         if (te(j) == eid) {
             leid = j;
             break;

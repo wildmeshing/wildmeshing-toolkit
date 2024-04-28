@@ -40,7 +40,7 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
         RowVectors2l edge_mesh_matrix;
         edge_mesh_matrix.resize(tagged_tuples.size(), 2);
 
-        for (size_t i = 0; i < tagged_tuples.size(); ++i) {
+        for (int64_t i = 0; i < tagged_tuples.size(); ++i) {
             const std::array<int64_t, 2> vs = {
                 {m.id(tagged_tuples[i], PrimitiveType::Vertex),
                  m.id(
@@ -49,7 +49,7 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
 
 
             // check and add v0, v1 to the vertex map
-            for (int k = 0; k < 2; k++) {
+            for (int64_t k = 0; k < 2; k++) {
                 size_t size = parent_to_child_vertex_map.size();
                 parent_to_child_vertex_map.try_emplace(vs[k], size);
                 edge_mesh_matrix(i, k) = parent_to_child_vertex_map[vs[k]];
@@ -82,7 +82,7 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
                      PrimitiveType::Vertex)}};
 
             // check and add v0, v1, v2 to the vertex map
-            for (int k = 0; k < 3; k++) {
+            for (int64_t k = 0; k < 3; k++) {
                 size_t size = parent_to_child_vertex_map.size();
                 parent_to_child_vertex_map.try_emplace(vs[k], size);
                 tri_mesh_matrix(i, k) = parent_to_child_vertex_map.at(vs[k]);
@@ -119,7 +119,7 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
                          {PrimitiveType::Edge, PrimitiveType::Vertex}),
                      PrimitiveType::Vertex)}};
 
-            for (int k = 0; k < 4; ++k) {
+            for (int64_t k = 0; k < 4; ++k) {
                 size_t size = parent_to_child_vertex_map.size();
                 parent_to_child_vertex_map.try_emplace(vs[k], size);
                 tet_mesh_matrix(i, k) = parent_to_child_vertex_map[vs[k]];

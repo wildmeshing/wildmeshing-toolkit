@@ -72,6 +72,18 @@ void multimesh(const base::Paths& paths, const nlohmann::json& j, io::Cache& cac
             for (const auto& t : mesh.get_all(ptype)) {
                 is_boundary_accessor.scalar_attribute(t) = mesh.is_boundary(ptype, t) ? value : 0;
             }
+
+            // HACK STUFF!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            if (true) {
+                auto handle = mesh.get_attribute_handle<int64_t>("hack_tag", PrimitiveType::Vertex);
+                auto acc = mesh.create_accessor<int64_t>(handle);
+                for (const auto& t : mesh.get_all(PrimitiveType::Vertex)) {
+                    if (acc.scalar_attribute(t) == 1) {
+                        is_boundary_accessor.scalar_attribute(t) =
+                            mesh.is_boundary(ptype, t) ? value : 0;
+                    }
+                }
+            }
         } else {
             MultimeshTOptions options = j.get<MultimeshTOptions>();
             mesh_in = cache.read_mesh(options.mesh);

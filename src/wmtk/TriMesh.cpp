@@ -19,11 +19,11 @@ TriMesh::TriMesh()
 
 void TriMesh::make_cached_accessors()
 {
-    m_vf_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_vf_handle);
-    m_ef_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_ef_handle);
-    m_fv_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_fv_handle);
-    m_fe_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_fe_handle);
-    m_ff_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_ff_handle);
+    m_vf_accessor = std::make_unique<attribute::Accessor<int64_t, TriMesh>>(*this, m_vf_handle);
+    m_ef_accessor = std::make_unique<attribute::Accessor<int64_t, TriMesh>>(*this, m_ef_handle);
+    m_fv_accessor = std::make_unique<attribute::Accessor<int64_t, TriMesh>>(*this, m_fv_handle);
+    m_fe_accessor = std::make_unique<attribute::Accessor<int64_t, TriMesh>>(*this, m_fe_handle);
+    m_ff_accessor = std::make_unique<attribute::Accessor<int64_t, TriMesh>>(*this, m_ff_handle);
 }
 
 TriMesh::TriMesh(TriMesh&& o)
@@ -241,7 +241,7 @@ Tuple TriMesh::tuple_from_global_ids(int64_t fid, int64_t eid, int64_t vid) cons
     int64_t lvid = -1;
     int64_t leid = -1;
 
-    for (int j = 0; j < 3; ++j) {
+    for (int64_t j = 0; j < 3; ++j) {
         if (fv(j) == vid) {
             lvid = j;
         }
@@ -394,7 +394,7 @@ bool TriMesh::is_connectivity_valid() const
             wmtk::logger().debug("Edge {} is deleted", i);
             continue;
         }
-        int cnt = 0;
+        int64_t cnt = 0;
         long ef_val = ef_accessor.index_access().const_scalar_attribute(i);
 
         auto fe_val = fe_accessor.index_access().const_vector_attribute<3>(ef_val);
@@ -423,7 +423,7 @@ bool TriMesh::is_connectivity_valid() const
             wmtk::logger().debug("Vertex {} is deleted", i);
             continue;
         }
-        int cnt = 0;
+        int64_t cnt = 0;
 
         auto fv = fv_accessor.index_access().const_vector_attribute<3>(vf);
         for (int64_t j = 0; j < 3; ++j) {
@@ -453,7 +453,7 @@ bool TriMesh::is_connectivity_valid() const
         auto ff = ff_accessor.index_access().const_vector_attribute<3>(i);
 
         for (int64_t j = 0; j < 3; ++j) {
-            int neighbor_fid = ff(j);
+            int64_t neighbor_fid = ff(j);
             const bool is_boundary = neighbor_fid == -1;
             if (is_boundary) {
                 auto ef = ef_accessor.index_access().const_scalar_attribute(fe(j));
@@ -486,8 +486,9 @@ bool TriMesh::is_connectivity_valid() const
                     auto neighbor_fe =
                         fe_accessor.index_access().const_vector_attribute<3>(neighbor_fid);
 
-                    int edge_shared_count = 0;
-                    for (int local_neighbor_eid = 0; local_neighbor_eid < 3; ++local_neighbor_eid) {
+                    int64_t edge_shared_count = 0;
+                    for (int64_t local_neighbor_eid = 0; local_neighbor_eid < 3;
+                         ++local_neighbor_eid) {
                         // find some edge which is shared
                         if (neighbor_ff(local_neighbor_eid) == i) {
                             if (fe(j) == neighbor_fe(local_neighbor_eid)) {
