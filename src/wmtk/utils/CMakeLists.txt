@@ -11,9 +11,13 @@ set(SRC_FILES
     getRSS.cpp
     getRSS.h
     Rational.hpp
+    Rational.cpp
     mesh_utils.hpp
     mesh_utils.cpp
     TupleInspector.hpp
+
+    orient.hpp
+    orient.cpp
 
     TupleInspector.cpp
     triangle_areas.hpp

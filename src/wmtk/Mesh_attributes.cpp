@@ -34,6 +34,12 @@ attribute::TypedAttributeHandle<T> Mesh::register_attribute_typed(
     return attr;
 }
 
+template <typename T>
+const T& Mesh::get_attribute_default_value(const TypedAttributeHandle<T>& handle) const
+{
+    return m_attribute_manager.get_attribute_default_value(handle);
+}
+
 std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t count)
 {
     // passses back a set of new consecutive ids. in hte future this could do
@@ -150,7 +156,8 @@ std::vector<attribute::MeshAttributeHandle::HandleVariant> Mesh::custom_attribut
     return variant_diff(all, builtins);
 }
 
-std::string Mesh::get_attribute_name(const attribute::MeshAttributeHandle::HandleVariant& handle) const
+std::string Mesh::get_attribute_name(
+    const attribute::MeshAttributeHandle::HandleVariant& handle) const
 {
     return m_attribute_manager.get_name(handle);
 }
@@ -165,6 +172,7 @@ void Mesh::clear_attributes(
     auto a = this->custom_attributes();
     auto b = keep_attributes;
     m_attribute_manager.clear_attributes(variant_diff(a, b));
+    update_child_handles();
 }
 void Mesh::clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes)
 {
@@ -199,7 +207,8 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
 
     // Initialize both maps
     for (int64_t d = 0; d < tcp; d++) {
-        attribute::Accessor<char> flag_accessor = get_flag_accessor(wmtk::get_primitive_type_from_id(d));
+        attribute::Accessor<char> flag_accessor =
+            get_flag_accessor(wmtk::get_primitive_type_from_id(d));
         for (int64_t i = 0; i < capacity(wmtk::get_primitive_type_from_id(d)); ++i) {
             if (flag_accessor.index_access().scalar_attribute(i) & 1) {
                 old2new[d].push_back(new2old[d].size());
@@ -213,7 +222,7 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
     // Use new2oldmap to compact all attributes
     auto run = [&](auto&& mesh_attrs) {
         for (int64_t d = 0; d < mesh_attrs.size(); ++d) {
-            mesh_attrs[d].reserve(new2old.size());
+            mesh_attrs[d].reserve(new2old[d].size());
             for (auto& h : mesh_attrs[d].m_attributes) {
                 h->consolidate(new2old[d]);
             }
@@ -321,4 +330,13 @@ template TypedAttributeHandle<double>
 Mesh::register_attribute_typed(const std::string&, PrimitiveType, int64_t, bool, double);
 template TypedAttributeHandle<Rational>
 Mesh::register_attribute_typed(const std::string&, PrimitiveType, int64_t, bool, Rational);
+
+template const int64_t& Mesh::get_attribute_default_value(
+    const TypedAttributeHandle<int64_t>& handle) const;
+template const char& Mesh::get_attribute_default_value(
+    const TypedAttributeHandle<char>& handle) const;
+template const double& Mesh::get_attribute_default_value(
+    const TypedAttributeHandle<double>& handle) const;
+template const wmtk::Rational& Mesh::get_attribute_default_value(
+    const TypedAttributeHandle<wmtk::Rational>& handle) const;
 } // namespace wmtk

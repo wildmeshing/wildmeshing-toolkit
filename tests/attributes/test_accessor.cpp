@@ -106,14 +106,23 @@ TEST_CASE("test_accessor_basic", "[accessor]")
 
     // test default initialization to 0
     for (const wmtk::Tuple& tup : vertices) {
+        const wmtk::simplex::Simplex s(wmtk::PrimitiveType::Vertex, tup);
         CHECK(char_acc.const_scalar_attribute(tup) == 0);
         CHECK(int64_t_acc.const_scalar_attribute(tup) == 0);
         CHECK((double_acc.const_vector_attribute(tup).array() == 0).all());
+
+        CHECK(char_acc.const_scalar_attribute(s) == 0);
+        CHECK(int64_t_acc.const_scalar_attribute(s) == 0);
+        CHECK((double_acc.const_vector_attribute(s).array() == 0).all());
 
         // checking that default initialization of 1 worked
         CHECK(char_def1_acc.const_scalar_attribute(tup) == 1);
         CHECK(int64_t_def1_acc.const_scalar_attribute(tup) == 1);
         CHECK((double_def1_acc.const_vector_attribute(tup).array() == 1).all());
+
+        CHECK(char_def1_acc.const_scalar_attribute(s) == 1);
+        CHECK(int64_t_def1_acc.const_scalar_attribute(s) == 1);
+        CHECK((double_def1_acc.const_vector_attribute(s).array() == 1).all());
     }
 
     // use global set to force all values

@@ -40,4 +40,4 @@ tet_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
     exec.collapse_edge();
     return exec;
 }
-}; // namespace wmtk::operations::utils
+} // namespace wmtk::operations::utils
