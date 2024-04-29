@@ -79,7 +79,13 @@ bool Mesh::is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>&
 bool Mesh::is_valid_slow(const Tuple& tuple) const
 {
     const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
+
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     return is_valid(tuple, hash_accessor);
+#else
+    const auto& flag_accessor = get_const_flag_accessor(top_simplex_type());
+    return flag_accessor.const_scalar_attribute(tuple) & 0x1;
+#endif
 }
 
 
