@@ -342,7 +342,7 @@ bool TetMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& h
     return Mesh::is_hash_valid(tuple, hash_accessor);
 #else
     const auto& flag_accessor = get_const_flag_accessor(PrimitiveType::Tetrahedron);
-    return flag_accessor.const_scalar_attribute(tuple) & 0x1;
+    return flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1;
 #endif
 }
 
