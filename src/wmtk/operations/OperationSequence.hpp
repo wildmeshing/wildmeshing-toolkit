@@ -14,9 +14,6 @@ namespace operations {
 class OperationSequence : public Operation
 {
 public:
-    // friend class utils::MultiMeshEdgeSplitFunctor;
-    // friend class utils::MultiMeshEdgeCollapseFunctor;
-
     OperationSequence(Mesh& mesh, const std::vector<std::shared_ptr<Operation>>& operations = {});
     virtual ~OperationSequence();
 
@@ -33,21 +30,22 @@ public:
     bool use_random_priority() const override
     {
         assert(!m_operations.empty());
+        if (m_internal_random_priority) return Operation::use_random_priority();
+
         return m_operations.front()->use_random_priority();
     }
 
     bool& use_random_priority() override
     {
         assert(!m_operations.empty());
-        return m_operations.front()->use_random_priority();
+        m_internal_random_priority = true;
+        return Operation::use_random_priority();
     }
 
     PrimitiveType primitive_type() const override;
-
     void reserve_enough_simplices() override;
 
     void add_operation(const std::shared_ptr<Operation>& op) { m_operations.push_back(op); }
-
 
 protected:
     /**
@@ -67,8 +65,12 @@ protected:
         throw std::runtime_error("This shoud never be called");
     }
 
-private:
+    virtual std::vector<simplex::Simplex> execute_operations(const simplex::Simplex& simplex) = 0;
+
     std::vector<std::shared_ptr<Operation>> m_operations;
+
+private:
+    bool m_internal_random_priority = false;
 };
 
 } // namespace operations

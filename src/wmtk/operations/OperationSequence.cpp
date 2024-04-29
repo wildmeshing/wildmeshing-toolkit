@@ -18,19 +18,13 @@ std::vector<simplex::Simplex> OperationSequence::operator()(const simplex::Simpl
 {
     assert(!m_operations.empty());
 
-    std::vector<simplex::Simplex> queue;
-    queue.push_back(simplex);
-    for (int64_t i = 0; i < m_operations.size(); ++i) {
-        auto& o = m_operations[i];
-        assert(queue.size() == 1);
-
-        const auto new_queue = (*o)(simplex::Simplex(o->primitive_type(), queue.front().tuple()));
-        if (new_queue.empty()) return i == 0 ? std::vector<simplex::Simplex>() : queue;
-
-        queue = new_queue;
+    if (!before(simplex)) {
+        return {};
     }
 
-    return queue;
+    return execute_operations(simplex);
+
+    // TODO after?
 }
 
 
@@ -47,7 +41,11 @@ PrimitiveType OperationSequence::primitive_type() const
 {
     assert(!m_operations.empty());
     const PrimitiveType res = m_operations.front()->primitive_type();
-
+    // #ifndef NDEBUG
+    //     for (const auto& o : m_operations) {
+    //         assert(o->primitive_type() == res);
+    //     }
+    // #endif
     return res;
 }
 

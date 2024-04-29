@@ -7,14 +7,14 @@ namespace wmtk::operations {
 MinOperationSequence::MinOperationSequence(
     Mesh& mesh,
     const std::vector<std::shared_ptr<Operation>>& operations)
-    : Operation(mesh)
-    , m_operations(operations)
+    : OperationSequence(mesh, operations)
 {}
 
 MinOperationSequence::~MinOperationSequence() = default;
 
 
-std::vector<simplex::Simplex> MinOperationSequence::operator()(const simplex::Simplex& simplex)
+std::vector<simplex::Simplex> MinOperationSequence::execute_operations(
+    const simplex::Simplex& simplex)
 {
     assert(m_value != nullptr);
     assert(!m_operations.empty());
@@ -36,31 +36,6 @@ std::vector<simplex::Simplex> MinOperationSequence::operator()(const simplex::Si
     }
 
     return {};
-}
-
-void MinOperationSequence::reserve_enough_simplices()
-{
-    assert(!m_operations.empty());
-    assert(m_value != nullptr);
-
-    for (auto& o : m_operations) {
-        o->reserve_enough_simplices();
-    }
-}
-
-PrimitiveType MinOperationSequence::primitive_type() const
-{
-    assert(!m_operations.empty());
-    assert(m_value != nullptr);
-
-    const PrimitiveType res = m_operations.front()->primitive_type();
-#ifndef NDEBUG
-    for (const auto& o : m_operations) {
-        assert(o->primitive_type() == res);
-    }
-#endif
-
-    return res;
 }
 
 
