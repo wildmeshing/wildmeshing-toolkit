@@ -438,9 +438,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto valence_3 = std::make_shared<EdgeValenceInvariant>(*mesh, 3);
     auto valence_4 = std::make_shared<EdgeValenceInvariant>(*mesh, 4);
     auto swap44_energy_before =
-        std::make_shared<Swap44EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>());
+        std::make_shared<Swap44EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>(), 0);
     auto swap44_2_energy_before =
-        std::make_shared<Swap44_2EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>());
+        std::make_shared<Swap44EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>(), 1);
+    // auto swap44_2_energy_before =
+    //     std::make_shared<Swap44_2EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>());
     auto swap32_energy_before =
         std::make_shared<Swap32EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>());
     auto swap23_energy_before =

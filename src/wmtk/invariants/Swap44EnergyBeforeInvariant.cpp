@@ -1,18 +1,22 @@
 #include "Swap44EnergyBeforeInvariant.hpp"
 #include <wmtk/Mesh.hpp>
 #include <wmtk/function/utils/amips.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/orient.hpp>
 
 namespace wmtk {
 Swap44EnergyBeforeInvariant::Swap44EnergyBeforeInvariant(
     const Mesh& m,
-    const attribute::TypedAttributeHandle<Rational>& coordinate)
+    const attribute::TypedAttributeHandle<Rational>& coordinate,
+    int64_t collapse_index)
     : Invariant(m, true, false, false)
     , m_coordinate_handle(coordinate)
+    , m_collapse_index(collapse_index)
 {}
 
 bool Swap44EnergyBeforeInvariant::before(const simplex::Simplex& t) const
 {
+    assert(simplex::top_dimension_cofaces(mesh(), t).size() == 4);
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
     constexpr static PrimitiveType PF = PrimitiveType::Triangle;
@@ -22,33 +26,36 @@ bool Swap44EnergyBeforeInvariant::before(const simplex::Simplex& t) const
 
     // get the coords of the vertices
     // input edge end points
-    const Tuple v0 = t.tuple();
-    const Tuple v1 = mesh().switch_tuple(v0, PV);
+    const Tuple e0 = t.tuple();
+    const Tuple e1 = mesh().switch_tuple(e0, PV);
     // other four vertices
-    const Tuple v2 = mesh().switch_tuples(v0, {PE, PV});
-    const Tuple v3 = mesh().switch_tuples(v0, {PF, PE, PV});
-    const Tuple v4 = mesh().switch_tuples(v0, {PF, PT, PF, PE, PV});
-    const Tuple v5 = mesh().switch_tuples(v0, {PT, PF, PE, PV});
+    std::array<Tuple, 4> v;
+    auto iter_tuple = e0;
+    for (int64_t i = 0; i < 4; ++i) {
+        v[i] = mesh().switch_tuples(iter_tuple, {PE, PV});
+        iter_tuple = mesh().switch_tuples(iter_tuple, {PF, PT});
+    }
+    assert(iter_tuple == e0);
 
     std::array<Eigen::Vector3<Rational>, 6> positions = {
-        {accessor.const_vector_attribute(v0),
-         accessor.const_vector_attribute(v1),
-         accessor.const_vector_attribute(v2),
-         accessor.const_vector_attribute(v3),
-         accessor.const_vector_attribute(v4),
-         accessor.const_vector_attribute(v5)}};
+        {accessor.const_vector_attribute(v[(m_collapse_index + 0) % 4]),
+         accessor.const_vector_attribute(v[(m_collapse_index + 1) % 4]),
+         accessor.const_vector_attribute(v[(m_collapse_index + 2) % 4]),
+         accessor.const_vector_attribute(v[(m_collapse_index + 3) % 4]),
+         accessor.const_vector_attribute(e0),
+         accessor.const_vector_attribute(e1)}};
     std::array<Eigen::Vector3d, 6> positions_double = {
-        {accessor.const_vector_attribute(v0).cast<double>(),
-         accessor.const_vector_attribute(v1).cast<double>(),
-         accessor.const_vector_attribute(v2).cast<double>(),
-         accessor.const_vector_attribute(v3).cast<double>(),
-         accessor.const_vector_attribute(v4).cast<double>(),
-         accessor.const_vector_attribute(v5).cast<double>()}};
+        {positions[0].cast<double>(),
+         positions[1].cast<double>(),
+         positions[2].cast<double>(),
+         positions[3].cast<double>(),
+         positions[4].cast<double>(),
+         positions[5].cast<double>()}};
 
     std::array<std::array<int, 4>, 4> old_tets = {
-        {{{0, 1, 2, 3}}, {{0, 1, 3, 4}}, {{0, 1, 4, 5}}, {{0, 1, 5, 2}}}};
+        {{{0, 1, 4, 5}}, {{1, 2, 4, 5}}, {{2, 3, 4, 5}}, {{3, 0, 4, 5}}}};
     std::array<std::array<int, 4>, 4> new_tets = {
-        {{{2, 4, 0, 3}}, {{2, 4, 3, 1}}, {{2, 4, 1, 5}}, {{2, 4, 5, 0}}}};
+        {{{0, 1, 2, 4}}, {{0, 2, 3, 4}}, {{0, 1, 2, 5}}, {{0, 2, 3, 5}}}};
 
     double old_energy_max = std::numeric_limits<double>::lowest();
     double new_energy_max = std::numeric_limits<double>::lowest();

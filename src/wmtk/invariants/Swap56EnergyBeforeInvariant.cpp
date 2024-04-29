@@ -1,6 +1,7 @@
 #include "Swap56EnergyBeforeInvariant.hpp"
 #include <wmtk/Mesh.hpp>
 #include <wmtk/function/utils/amips.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/orient.hpp>
 
 namespace wmtk {
@@ -15,6 +16,7 @@ Swap56EnergyBeforeInvariant::Swap56EnergyBeforeInvariant(
 
 bool Swap56EnergyBeforeInvariant::before(const simplex::Simplex& t) const
 {
+    assert(simplex::top_dimension_cofaces(mesh(), t).size() == 5);
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
     constexpr static PrimitiveType PF = PrimitiveType::Triangle;
