@@ -88,6 +88,7 @@ inline void AttributeScopeStack<T>::change_to_previous_scope()
     } else {
         m_active++;
     }
+    m_at_current_scope = (m_active == m_scopes.end());
 }
 
 template <typename T>
@@ -97,6 +98,7 @@ inline void AttributeScopeStack<T>::change_to_next_scope()
         assert(!empty());
         assert(m_active == m_scopes.end()); // just making sure the definition doesn't change as
                                             // this should be m_scopes.end()-1
+        m_at_current_scope = false;
         m_active--;
     } else {
         m_active--;
@@ -105,12 +107,15 @@ inline void AttributeScopeStack<T>::change_to_next_scope()
 template <typename T>
 inline void AttributeScopeStack<T>::change_to_current_scope()
 {
+    m_at_current_scope = true;
     m_active = m_scopes.end();
 }
 template <typename T>
 inline bool AttributeScopeStack<T>::at_current_scope() const
 {
-    return m_active == m_scopes.end();
+    assert(m_at_current_scope == (m_active == m_scopes.end()));
+    return m_at_current_scope;
+    // return m_active == m_scopes.end();
 }
 template <typename T>
 inline bool AttributeScopeStack<T>::writing_enabled() const

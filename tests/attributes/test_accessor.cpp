@@ -475,3 +475,4 @@ TEST_CASE("custom_attributes_vector", "[attributes]")
 
     CHECK(m.custom_attributes().size() == 1);
 }
+

@@ -28,9 +28,9 @@ class AttributeScopeStack
 {
 public:
     template <int D = Eigen::Dynamic>
-    using MapResult = internal::MapResult<T,D>;
+    using MapResult = internal::MapResult<T, D>;
     template <int D = Eigen::Dynamic>
-    using ConstMapResult = internal::ConstMapResult<T,D>;
+    using ConstMapResult = internal::ConstMapResult<T, D>;
     // stack is implemented by a parent pointing graph, so we track a pointer
     // to the leaf
     AttributeScopeStack();
@@ -49,22 +49,24 @@ public:
 
     /// default mutable vector access
     template <int D = Eigen::Dynamic, int D2 = Eigen::Dynamic>
-    MapResult<D> vector_attribute(AccessorBase<T,D2>& accessor, int64_t index);
+    MapResult<D> vector_attribute(AccessorBase<T, D2>& accessor, int64_t index);
     /// default immutable vector access
 
     template <int D = Eigen::Dynamic, int D2 = Eigen::Dynamic>
-    ConstMapResult<D> const_vector_attribute(const AccessorBase<T, D2>& accessor, int64_t index) const;
+    ConstMapResult<D> const_vector_attribute(const AccessorBase<T, D2>& accessor, int64_t index)
+        const;
     /// default mutable scalar access
     template <int D2>
-    T& scalar_attribute(AccessorBase<T,D2>& accessor, int64_t index);
+    T& scalar_attribute(AccessorBase<T, D2>& accessor, int64_t index);
 
     /// default immutable scalar access
     template <int D = Eigen::Dynamic>
-    T const_scalar_attribute(const AccessorBase<T,D>& accessor, int64_t index) const;
+    T const_scalar_attribute(const AccessorBase<T, D>& accessor, int64_t index) const;
 
     template <int D = Eigen::Dynamic>
     /// specialized immutable scalar access useful for topological operations
-    T const_scalar_attribute(const AccessorBase<T, D>& accessor, int64_t index, int8_t offset) const;
+    T const_scalar_attribute(const AccessorBase<T, D>& accessor, int64_t index, int8_t offset)
+        const;
 
     void emplace();
     void pop(Attribute<T>& attribute, bool preserve_changes);
@@ -92,6 +94,7 @@ private:
 protected:
     std::vector<AttributeScope<T>> m_scopes;
     typename std::vector<AttributeScope<T>>::const_iterator m_active;
+    bool m_at_current_scope = true;
     // Mesh& m_mesh;
     // AttributeManager& m_attribute_manager;
     // MeshAttributeHandle<T> m_handle;
@@ -130,11 +133,10 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
     const AccessorBase<T, D2>& accessor,
     int64_t index) const -> ConstMapResult<D>
 {
-    if (!at_current_scope()) {
+    if (!at_current_scope()) [[unlikely]] {
         assert(m_active >= m_scopes.begin());
         assert(m_active < m_scopes.end());
         for (auto it = m_active; it < m_scopes.end(); ++it) {
-            // for (auto it = m_active; it < m_scopes.rend(); ++it) {
             if (auto mapit = it->find_value(index); it->is_value(mapit)) {
                 const auto& d = mapit->second;
                 auto dat = d.template data_as_const_map<D>();
@@ -147,7 +149,8 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
 
 template <typename T>
 template <int D2>
-inline auto AttributeScopeStack<T>::scalar_attribute(AccessorBase<T, D2>& accessor, int64_t index) -> T&
+inline auto AttributeScopeStack<T>::scalar_attribute(AccessorBase<T, D2>& accessor, int64_t index)
+    -> T&
 {
     assert(writing_enabled());
     T& value = accessor.scalar_attribute(index);
