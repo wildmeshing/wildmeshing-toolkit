@@ -233,11 +233,11 @@ bool EnvelopeInvariant::after(
                 std::vector<SimpleBVH::VectorMax3d> pts;
 
                 for (const Tuple& tuple : top_dimension_tuples_after) {
-                    SimpleBVH::VectorMax3d p0 =
-                        accessor.const_vector_attribute(tuple).cast<double>();
-                    SimpleBVH::VectorMax3d p1 =
+                    const auto p0 =
+                        accessor.const_vector_attribute(tuple).cast<double>().eval();
+                    const auto p1 =
                         accessor.const_vector_attribute(mesh().switch_tuple(tuple, PV))
-                            .cast<double>();
+                            .cast<double>().eval();
 
                     const int64_t N = (p0 - p1).norm() / d + 1;
                     pts.reserve(pts.size() + N);
