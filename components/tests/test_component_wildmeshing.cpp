@@ -53,7 +53,6 @@
 #include <wmtk/invariants/Swap23EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/Swap32EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/Swap44EnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/Swap44_2EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/Swap56EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 
@@ -626,7 +625,7 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
 
 TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
 {
-    logger().set_level(spdlog::level::trace);
+    logger().set_level(spdlog::level::debug);
     run_tetwild_test(
         "collapse_initial_state_141017.obj",
         "Collapse-Two",
@@ -713,7 +712,7 @@ TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
                     collapse->set_new_attribute_strategy(attr);
                 }
                 // THis triggers a segfault in release
-                // collapse->set_priority(short_edges_first);
+                collapse->set_priority(short_edges_first);
 
                 // collapse->add_invariant(envelope_invariant);
 
@@ -745,7 +744,7 @@ TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
 
 TEST_CASE("tetwild-swap", "[components][wildmeshing][.]")
 {
-    // logger().set_level(spdlog::level::trace);
+    logger().set_level(spdlog::level::debug);
     run_tetwild_test(
         "swap_initial_state.obj",
         "Swap",
@@ -1077,13 +1076,16 @@ TEST_CASE("tetwild-swap", "[components][wildmeshing][.]")
             // all swaps
 
             auto swap_all = std::make_shared<OrOperationSequence>(mesh);
-            swap_all->add_invariant(std::make_shared<InteriorEdgeInvariant>(mesh));
+            // swap_all->add_invariant(std::make_shared<InteriorEdgeInvariant>(mesh));
             swap_all->add_operation(swap32);
             swap_all->add_operation(swap44);
             swap_all->add_operation(swap56);
+            swap_all->add_transfer_strategy(tag_update);
 
             auto swap_then_round = std::make_shared<AndOperationSequence>(mesh);
             swap_then_round->add_operation(swap_all);
+            // swap_then_round->add_operation(swap44);
+            swap_then_round->add_invariant(std::make_shared<InteriorEdgeInvariant>(mesh));
             swap_then_round->add_operation(rounding);
 
 
