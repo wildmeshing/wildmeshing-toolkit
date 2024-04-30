@@ -65,6 +65,8 @@ public:
     ConstMapResult<D> const_vector_attribute(const int64_t index) const;
     template <int D = Eigen::Dynamic>
     MapResult<D> vector_attribute(const int64_t index);
+    template <int D = Eigen::Dynamic>
+    MapResult<D> vector_attribute2(const int64_t index);
 
     T const_scalar_attribute(const int64_t index) const;
     T& scalar_attribute(const int64_t index);
@@ -198,7 +200,16 @@ template <typename T>
 template <int D>
 inline auto Attribute<T>::vector_attribute(const int64_t index) -> MapResult<D>
 {
-    return vector_attribute<D>(index, m_data);
+    return MapResult<D>(m_data.data(), m_dimension);
+    // return vector_attribute<D>(index, m_data);
+}
+
+template <typename T>
+template <int D>
+inline auto Attribute<T>::vector_attribute2(const int64_t index) -> MapResult<D>
+{
+    return MapResult<D>(m_data.data(), m_dimension);
+    // return vector_attribute<D>(index, m_data);
 }
 template <typename T>
 template <int D>

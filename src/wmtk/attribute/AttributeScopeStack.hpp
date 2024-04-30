@@ -94,6 +94,7 @@ private:
 protected:
     std::vector<AttributeScope<T>> m_scopes;
     typename std::vector<AttributeScope<T>>::const_iterator m_active;
+    typename std::vector<AttributeScope<T>>::iterator m_back;
     bool m_at_current_scope = true;
     // Mesh& m_mesh;
     // AttributeManager& m_attribute_manager;
@@ -121,10 +122,14 @@ inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T, D2>& access
     assert(writing_enabled());
 
     auto data = accessor.template vector_attribute<D>(index);
+    /*
     // we are typically only going to write when caching is enabled so better to optimize for this
-    if (!empty()) [[likely]] {
-        m_scopes.back().try_caching(index, data);
+    if (!empty()) [[unlikely]] {
+        assert(m_scopes.back() == *m_back);
+        //m_scopes.back().try_caching(index, data);
+        m_back->try_caching(index,data);
     }
+    */
     return data;
 }
 
@@ -157,6 +162,7 @@ inline auto AttributeScopeStack<T>::scalar_attribute(AccessorBase<T, D2>& access
     T& value = accessor.scalar_attribute(index);
     if (!empty()) {
         m_scopes.back().try_caching(index, value);
+        //m_active->try_caching(index, value);
     }
     return value;
 }

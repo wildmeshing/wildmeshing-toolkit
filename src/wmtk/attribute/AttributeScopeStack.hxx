@@ -108,6 +108,7 @@ template <typename T>
 inline void AttributeScopeStack<T>::change_to_current_scope()
 {
     m_at_current_scope = true;
+    m_back = m_scopes.end()-1;
     m_active = m_scopes.end();
 }
 template <typename T>
