@@ -20,10 +20,10 @@
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 
 #include <wmtk/operations/AMIPSOptimizationSmoothing.hpp>
+#include <wmtk/operations/AndOperationSequence.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/MinOperationSequence.hpp>
-#include <wmtk/operations/OperationSequence.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
 #include <wmtk/operations/OrOperationSequence.hpp>
 #include <wmtk/operations/Rounding.hpp>
@@ -523,7 +523,7 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
             split->add_transfer_strategy(edge_length_update);
             split->add_transfer_strategy(tag_update);
 
-            auto split_then_round = std::make_shared<OperationSequence>(mesh);
+            auto split_then_round = std::make_shared<AndOperationSequence>(mesh);
             split_then_round->add_operation(split);
             split_then_round->add_operation(rounding);
 
@@ -616,7 +616,7 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
             collapse->add_transfer_strategy(edge_length_update);
             // proj_collapse->add_transfer_strategy(target_edge_length_update);
 
-            auto collapse_then_round = std::make_shared<OperationSequence>(mesh);
+            auto collapse_then_round = std::make_shared<AndOperationSequence>(mesh);
             collapse_then_round->add_operation(collapse);
             collapse_then_round->add_operation(rounding);
 
@@ -735,7 +735,7 @@ TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
             collapse->add_operation(collapse2);
             collapse->add_invariant(todo_smaller);
 
-            auto collapse_then_round = std::make_shared<OperationSequence>(mesh);
+            auto collapse_then_round = std::make_shared<AndOperationSequence>(mesh);
             collapse_then_round->add_operation(collapse);
             collapse_then_round->add_operation(rounding);
 
@@ -1082,7 +1082,7 @@ TEST_CASE("tetwild-swap", "[components][wildmeshing][.]")
             swap_all->add_operation(swap44);
             swap_all->add_operation(swap56);
 
-            auto swap_then_round = std::make_shared<OperationSequence>(mesh);
+            auto swap_then_round = std::make_shared<AndOperationSequence>(mesh);
             swap_then_round->add_operation(swap_all);
             swap_then_round->add_operation(rounding);
 

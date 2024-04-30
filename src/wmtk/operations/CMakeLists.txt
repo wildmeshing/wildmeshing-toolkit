@@ -11,6 +11,9 @@ set(SRC_FILES
     OperationSequence.hpp
     OperationSequence.cpp
 
+    AndOperationSequence.hpp
+    AndOperationSequence.cpp
+
     OrOperationSequence.hpp
     OrOperationSequence.cpp
 

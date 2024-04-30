@@ -16,9 +16,9 @@
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 
 #include <wmtk/operations/AMIPSOptimizationSmoothing.hpp>
+#include <wmtk/operations/AndOperationSequence.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
-#include <wmtk/operations/OperationSequence.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
 #include <wmtk/operations/Rounding.hpp>
 #include <wmtk/operations/composite/ProjectOperation.hpp>
@@ -490,7 +490,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         split->add_transfer_strategy(s);
     }
 
-    auto split_then_round = std::make_shared<OperationSequence>(*mesh);
+    auto split_then_round = std::make_shared<AndOperationSequence>(*mesh);
     split_then_round->add_operation(split);
     split_then_round->add_operation(rounding);
 
@@ -549,11 +549,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // }
     // proj_collapse->add_transfer_strategy(target_edge_length_update);
 
-    // auto proj_collapse_then_round = std::make_shared<OperationSequence>(*mesh);
+    // auto proj_collapse_then_round = std::make_shared<AndOperationSequence>(*mesh);
     // proj_collapse_then_round->add_operation(proj_collapse);
     // proj_collapse_then_round->add_operation(rounding);
 
-    auto collapse_then_round = std::make_shared<OperationSequence>(*mesh);
+    auto collapse_then_round = std::make_shared<AndOperationSequence>(*mesh);
     collapse_then_round->add_operation(collapse);
     collapse_then_round->add_operation(rounding);
 
