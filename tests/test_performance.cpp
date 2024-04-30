@@ -8,6 +8,8 @@
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
+#include <wmtk/simplex/closed_star.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
@@ -286,5 +288,103 @@ TEST_CASE("collapse_performance", "[performance][.]")
         logger().set_level(spdlog::level::trace);
         logger().info("#performed operations : {}", pass_stats.number_of_performed_operations());
         logger().info("#successful operations: {}", pass_stats.number_of_successful_operations());
+    }
+}
+
+TEST_CASE("navigation_performance", "[simplex][performance][.]")
+{
+    //const std::filesystem::path meshfile = data_dir / "tetwild_fig8_mid.msh"; // 3D
+    const std::filesystem::path meshfile = data_dir / "armadillo.msh"; // 2D
+
+    logger().set_level(spdlog::level::trace);
+
+    auto mesh_in = wmtk::read_mesh(meshfile);
+    Mesh& m = *mesh_in;
+
+    auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto pos_acc = m.create_accessor<double>(pos_handle);
+
+    const size_t n_repetitions = 20;
+
+    const auto vertices = m.get_all(PrimitiveType::Vertex);
+
+    logger().info("#operations (#vertices * #reps): {}", n_repetitions * vertices.size());
+
+    size_t counter = 0;
+    if (false) {
+        POLYSOLVE_SCOPED_STOPWATCH("top_dimension_cofaces_tuples", logger());
+        for (size_t i = 0; i < n_repetitions; ++i) {
+            for (const Tuple& t : vertices) {
+                const auto neighs =
+                    simplex::top_dimension_cofaces_tuples(m, simplex::Simplex::vertex(t));
+                counter += neighs.size();
+            }
+        }
+        logger().info("sum = {}", counter);
+    }
+
+    counter = 0;
+    if (true) {
+        POLYSOLVE_SCOPED_STOPWATCH("top_dimension_cofaces_tuples with pre-reserve", logger());
+        std::vector<Tuple> n;
+        n.reserve(100);
+        for (size_t i = 0; i < n_repetitions; ++i) {
+            n.clear();
+            for (const Tuple& t : vertices) {
+                simplex::top_dimension_cofaces_tuples(m, simplex::Simplex::vertex(t), n);
+                counter += n.size();
+            }
+        }
+        logger().info("sum = {}", counter);
+    }
+
+    counter = 0;
+    if (false) {
+        POLYSOLVE_SCOPED_STOPWATCH("top_dimension_cofaces (no sort)", logger());
+        for (size_t i = 0; i < n_repetitions; ++i) {
+            for (const Tuple& t : vertices) {
+                const auto neighs =
+                    simplex::top_dimension_cofaces(m, simplex::Simplex::vertex(t), false);
+                counter += neighs.size();
+            }
+        }
+        logger().info("sum = {}", counter);
+    }
+
+    counter = 0;
+    if (false) {
+        POLYSOLVE_SCOPED_STOPWATCH("top_dimension_cofaces (sort)", logger());
+        for (size_t i = 0; i < n_repetitions; ++i) {
+            for (const Tuple& t : vertices) {
+                const auto neighs =
+                    simplex::top_dimension_cofaces(m, simplex::Simplex::vertex(t), true);
+                counter += neighs.size();
+            }
+        }
+        logger().info("sum = {}", counter);
+    }
+
+    counter = 0;
+    if (false) {
+        POLYSOLVE_SCOPED_STOPWATCH("closed_star (no sort)", logger());
+        for (size_t i = 0; i < n_repetitions; ++i) {
+            for (const Tuple& t : vertices) {
+                const auto neighs = simplex::closed_star(m, simplex::Simplex::vertex(t), false);
+                counter += neighs.size();
+            }
+        }
+        logger().info("sum = {}", counter);
+    }
+
+    counter = 0;
+    if (false) {
+        POLYSOLVE_SCOPED_STOPWATCH("closed_star (sort)", logger());
+        for (size_t i = 0; i < n_repetitions; ++i) {
+            for (const Tuple& t : vertices) {
+                const auto neighs = simplex::closed_star(m, simplex::Simplex::vertex(t), true);
+                counter += neighs.size();
+            }
+        }
+        logger().info("sum = {}", counter);
     }
 }
