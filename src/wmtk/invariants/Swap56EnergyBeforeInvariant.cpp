@@ -8,10 +8,12 @@ namespace wmtk {
 Swap56EnergyBeforeInvariant::Swap56EnergyBeforeInvariant(
     const Mesh& m,
     const attribute::TypedAttributeHandle<Rational>& coordinate,
-    int64_t collapse_index)
+    int64_t collapse_index,
+    double eps)
     : Invariant(m, true, false, false)
     , m_coordinate_handle(coordinate)
     , m_collapse_index(collapse_index)
+    , m_eps(eps)
 {}
 
 bool Swap56EnergyBeforeInvariant::before(const simplex::Simplex& t) const
@@ -156,6 +158,6 @@ bool Swap56EnergyBeforeInvariant::before(const simplex::Simplex& t) const
         }
     }
 
-    return old_energy_max > new_energy_max;
+    return old_energy_max > new_energy_max * m_eps;
 }
 } // namespace wmtk
