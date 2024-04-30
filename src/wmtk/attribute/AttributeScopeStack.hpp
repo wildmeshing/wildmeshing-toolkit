@@ -121,7 +121,8 @@ inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T, D2>& access
     assert(writing_enabled());
 
     auto data = accessor.template vector_attribute<D>(index);
-    if (!empty()) {
+    // we are typically only going to write when caching is enabled so better to optimize for this
+    if (!empty()) [[likely]] {
         m_scopes.back().try_caching(index, data);
     }
     return data;
