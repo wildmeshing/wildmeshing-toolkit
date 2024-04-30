@@ -79,7 +79,7 @@ auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> Incid
         face_data.ears.begin(),
         [&](const Tuple& edge) {
             // accessing ear face id through FF to make it work also at boundaries
-            const int64_t ear_fid = ff_accessor.vector_attribute(edge)[edge.m_local_eid];
+            const int64_t ear_fid = ff_accessor.const_vector_attribute(edge)[edge.m_local_eid];
 
             return EarData{
                 /*.fid = */ ear_fid,
@@ -314,8 +314,8 @@ void TriMesh::TriMeshOperationExecutor::connect_faces_across_spine()
     const int64_t f_old_bottom = m_incident_face_datas[1].fid;
     const int64_t f0_bottom = m_incident_face_datas[1].split_f[0];
     const int64_t f1_bottom = m_incident_face_datas[1].split_f[1];
-    auto ff_old_top = ff_accessor.index_access().vector_attribute(f_old_top);
-    auto ff_old_bottom = ff_accessor.index_access().vector_attribute(f_old_bottom);
+    auto ff_old_top = ff_accessor.index_access().const_vector_attribute(f_old_top);
+    auto ff_old_bottom = ff_accessor.index_access().const_vector_attribute(f_old_bottom);
     assert(m_mesh.capacity(PrimitiveType::Triangle) > f0_top);
     assert(m_mesh.capacity(PrimitiveType::Triangle) > f1_top);
     assert(m_mesh.capacity(PrimitiveType::Triangle) > f0_bottom);
