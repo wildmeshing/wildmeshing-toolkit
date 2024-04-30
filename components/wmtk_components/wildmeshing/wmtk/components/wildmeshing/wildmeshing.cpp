@@ -19,7 +19,9 @@
 #include <wmtk/operations/AndOperationSequence.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
+#include <wmtk/operations/MinOperationSequence.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
+#include <wmtk/operations/OrOperationSequence.hpp>
 #include <wmtk/operations/Rounding.hpp>
 #include <wmtk/operations/composite/ProjectOperation.hpp>
 #include <wmtk/operations/composite/TetEdgeSwap.hpp>
@@ -31,6 +33,7 @@
 #include <wmtk/function/PerSimplexFunction.hpp>
 #include <wmtk/function/simplex/AMIPS.hpp>
 
+#include <wmtk/function/utils/amips.hpp>
 #include <wmtk/invariants/EdgeValenceInvariant.hpp>
 #include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/FunctionInvariant.hpp>
@@ -46,15 +49,16 @@
 #include <wmtk/invariants/Swap23EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/Swap32EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/Swap44EnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/Swap44_2EnergyBeforeInvariant.hpp>
+#include <wmtk/invariants/Swap56EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 
+#include <wmtk/utils/Rational.hpp>
+#include <wmtk/utils/orient.hpp>
+
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
-
-#include <wmtk/utils/Rational.hpp>
 
 
 namespace wmtk::components {
@@ -388,15 +392,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     }
 
     //////////////////////////////////
-    // collapse transfer
-    //////////////////////////////////
-    auto clps_strat = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
-    clps_strat->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
-    // clps_strat->set_strategy(CollapseBasicStrategy::Default);
-    clps_strat->set_strategy(CollapseBasicStrategy::CopyOther);
-
-
-    //////////////////////////////////
 
 
     //////////////////////////////////
@@ -441,8 +436,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         std::make_shared<Swap44EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>(), 0);
     auto swap44_2_energy_before =
         std::make_shared<Swap44EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>(), 1);
-    // auto swap44_2_energy_before =
-    //     std::make_shared<Swap44_2EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>());
     auto swap32_energy_before =
         std::make_shared<Swap32EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>());
     auto swap23_energy_before =
@@ -450,6 +443,23 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     auto invariant_separate_substructures =
         std::make_shared<invariants::SeparateSubstructuresInvariant>(*mesh);
+
+    //////////////////////////////////
+    // renew flags
+    //////////////////////////////////
+    auto visited_edge_flag =
+        mesh->register_attribute<char>("visited_edge", PrimitiveType::Edge, 1, false, char(1));
+
+    auto update_flag_func = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<char> {
+        assert(P.cols() == 2);
+        assert(P.rows() == 2 || P.rows() == 3);
+        return Eigen::VectorX<char>::Constant(1, char(1));
+    };
+    auto tag_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<char, Rational>>(
+            visited_edge_flag,
+            pt_attribute,
+            update_flag_func);
 
 
     //////////////////////////////////
@@ -479,12 +489,17 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     split->add_invariant(todo_larger);
 
     split->set_new_attribute_strategy(pt_attribute);
+    split->set_new_attribute_strategy(
+        visited_edge_flag,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
     for (const auto& attr : pass_through_attributes) {
         split->set_new_attribute_strategy(attr);
     }
 
     split->add_transfer_strategy(amips_update);
     split->add_transfer_strategy(edge_length_update);
+    split->add_transfer_strategy(tag_update); // for renew the queue
     // split->add_transfer_strategy(target_edge_length_update);
     for (auto& s : update_child_positon) {
         split->add_transfer_strategy(s);
@@ -497,61 +512,69 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     ops.emplace_back(split_then_round);
     ops_name.emplace_back("split");
 
-    // ops.emplace_back(split);
-    // ops_name.emplace_back("split");
-
     ops.emplace_back(rounding);
     ops_name.emplace_back("rounding");
+
+
+    //////////////////////////////////
+    // collapse transfer
+    //////////////////////////////////
+    auto clps_strat1 = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
+    clps_strat1->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+    // clps_strat1->set_strategy(CollapseBasicStrategy::Default);
+    clps_strat1->set_strategy(CollapseBasicStrategy::CopyOther);
+
+    auto clps_strat2 = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
+    clps_strat2->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+    // clps_strat2->set_strategy(CollapseBasicStrategy::Default);
+    clps_strat2->set_strategy(CollapseBasicStrategy::CopyTuple);
 
     //////////////////////////////////
     // 2) EdgeCollapse
     //////////////////////////////////
-    auto collapse = std::make_shared<EdgeCollapse>(*mesh);
-    // before
+
+    auto setup_collapse = [&](std::shared_ptr<EdgeCollapse>& collapse) {
+        collapse->add_invariant(invariant_separate_substructures);
+        collapse->add_invariant(link_condition);
+        collapse->add_invariant(inversion_invariant);
+        collapse->add_invariant(function_invariant);
+
+
+        collapse->set_new_attribute_strategy(
+            visited_edge_flag,
+            wmtk::operations::CollapseBasicStrategy::None);
+
+        collapse->add_transfer_strategy(tag_update);
+        for (const auto& attr : pass_through_attributes) {
+            collapse->set_new_attribute_strategy(attr);
+        }
+        // THis triggers a segfault in release
+        // solved somehow
+        collapse->set_priority(short_edges_first);
+
+        collapse->add_invariant(envelope_invariant);
+
+        collapse->add_transfer_strategy(amips_update);
+        collapse->add_transfer_strategy(edge_length_update);
+        // collapse->add_transfer_strategy(target_edge_length_update);
+    };
+
+    auto collapse1 = std::make_shared<EdgeCollapse>(*mesh);
+    collapse1->set_new_attribute_strategy(pt_attribute, clps_strat1);
+    setup_collapse(collapse1);
+
+    auto collapse2 = std::make_shared<EdgeCollapse>(*mesh);
+    collapse2->set_new_attribute_strategy(pt_attribute, clps_strat2);
+    setup_collapse(collapse2);
+
+    auto collapse = std::make_shared<OrOperationSequence>(*mesh);
+    collapse->add_operation(collapse1);
+    collapse->add_operation(collapse2);
     collapse->add_invariant(todo_smaller);
-    collapse->add_invariant(invariant_separate_substructures);
-    collapse->add_invariant(link_condition);
 
-    // after
-    collapse->add_invariant(inversion_invariant);
-    collapse->add_invariant(function_invariant);
-    collapse->add_invariant(envelope_invariant);
-
-    // update
-    collapse->add_transfer_strategy(amips_update);
-    collapse->add_transfer_strategy(edge_length_update);
-    // collapse->add_transfer_strategy(target_edge_length_update);
-
-
-    collapse->set_new_attribute_strategy(pt_attribute, clps_strat);
-    for (const auto& attr : pass_through_attributes) {
-        collapse->set_new_attribute_strategy(attr);
-    }
     for (auto& s : update_child_positon) {
         collapse->add_transfer_strategy(s);
     }
-
-    // auto proj_collapse = std::make_shared<ProjectOperation>(collapse, mesh_constraint_pairs);
-    // proj_collapse->set_priority(short_edges_first);
-
-    // proj_collapse->add_invariant(todo_smaller);
-    // proj_collapse->add_invariant(envelope_invariant);
-    // proj_collapse->add_invariant(inversion_invariant);
-    // proj_collapse->add_invariant(function_invariant);
-
-    // proj_collapse->add_transfer_strategy(amips_update);
-    // proj_collapse->add_transfer_strategy(edge_length_update);
-    // for (auto& s : update_parent_positon) {
-    //     proj_collapse->add_transfer_strategy(s);
-    // }
-    // for (auto& s : update_child_positon) {
-    //     proj_collapse->add_transfer_strategy(s);
-    // }
-    // proj_collapse->add_transfer_strategy(target_edge_length_update);
-
-    // auto proj_collapse_then_round = std::make_shared<AndOperationSequence>(*mesh);
-    // proj_collapse_then_round->add_operation(proj_collapse);
-    // proj_collapse_then_round->add_operation(rounding);
 
     auto collapse_then_round = std::make_shared<AndOperationSequence>(*mesh);
     collapse_then_round->add_operation(collapse);
@@ -559,6 +582,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     ops.emplace_back(collapse_then_round);
     ops_name.emplace_back("collapse");
+
     ops.emplace_back(rounding);
     ops_name.emplace_back("rounding");
 
@@ -616,43 +640,299 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         ops_name.emplace_back("rounding");
 
     } else if (mesh->top_simplex_type() == PrimitiveType::Tetrahedron) {
-        // 3 - 1 - 1) TetEdgeSwap 4-4 1
-        auto swap44 = std::make_shared<TetEdgeSwap>(*mesh, 0);
-        setup_swap(*swap44, swap44->collapse(), swap44->split(), interior_edge);
-        swap44->add_invariant(valence_4); // extra edge valance invariant
-        swap44->add_invariant(swap44_energy_before); // check energy before swap
+        auto swap56 = std::make_shared<MinOperationSequence>(*mesh);
+        for (int i = 0; i < 5; ++i) {
+            auto swap = std::make_shared<TetEdgeSwap>(*mesh, i);
+            swap->collapse().add_invariant(invariant_separate_substructures);
+            swap->collapse().add_invariant(link_condition);
+            swap->collapse().set_new_attribute_strategy(
+                pt_attribute,
+                CollapseBasicStrategy::CopyOther);
+            swap->split().set_new_attribute_strategy(pt_attribute);
+            swap->split().set_new_attribute_strategy(
+                visited_edge_flag,
+                wmtk::operations::SplitBasicStrategy::None,
+                wmtk::operations::SplitRibBasicStrategy::None);
+            swap->collapse().set_new_attribute_strategy(
+                visited_edge_flag,
+                wmtk::operations::CollapseBasicStrategy::None);
 
-        ops.push_back(swap44);
-        ops_name.push_back("swap44");
-        ops.emplace_back(rounding);
-        ops_name.emplace_back("rounding");
+            swap->add_invariant(std::make_shared<Swap56EnergyBeforeInvariant>(
+                *mesh,
+                pt_attribute.as<Rational>(),
+                i));
 
-        // 3 - 1 - 2) TetEdgeSwap 4-4 2
-        auto swap44_2 = std::make_shared<TetEdgeSwap>(*mesh, 1);
-        setup_swap(*swap44_2, swap44_2->collapse(), swap44_2->split(), interior_edge);
-        swap44_2->add_invariant(valence_4); // extra edge valance invariant
-        swap44_2->add_invariant(swap44_2_energy_before); // check energy before swap
-        ops.push_back(swap44_2);
-        ops_name.push_back("swap44_2");
-        ops.emplace_back(rounding);
-        ops_name.emplace_back("rounding");
+            for (const auto& attr : pass_through_attributes) {
+                swap->split().set_new_attribute_strategy(attr);
+                swap->collapse().set_new_attribute_strategy(attr);
+            }
 
-        // 3 - 2) TetEdgeSwap 3-2
+            swap56->add_operation(swap);
+        }
+
+        auto swap56_energy_check = [&](int64_t idx, const simplex::Simplex& t) -> double {
+            constexpr static PrimitiveType PV = PrimitiveType::Vertex;
+            constexpr static PrimitiveType PE = PrimitiveType::Edge;
+            constexpr static PrimitiveType PF = PrimitiveType::Triangle;
+            constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
+
+            auto accessor = mesh->create_const_accessor(pt_attribute.as<Rational>());
+
+            const Tuple e0 = t.tuple();
+            const Tuple e1 = mesh->switch_tuple(e0, PV);
+
+            std::array<Tuple, 5> v;
+            auto iter_tuple = e0;
+            for (int64_t i = 0; i < 5; ++i) {
+                v[i] = mesh->switch_tuples(iter_tuple, {PE, PV});
+                iter_tuple = mesh->switch_tuples(iter_tuple, {PF, PT});
+            }
+            if (iter_tuple != e0) return 0;
+            assert(iter_tuple == e0);
+
+            // five iterable vertices remap to 0-4 by m_collapse_index, 0: m_collapse_index, 5:
+            // e0, 6: e1
+            std::array<Eigen::Vector3<Rational>, 7> positions = {
+                {accessor.const_vector_attribute(v[(idx + 0) % 5]),
+                 accessor.const_vector_attribute(v[(idx + 1) % 5]),
+                 accessor.const_vector_attribute(v[(idx + 2) % 5]),
+                 accessor.const_vector_attribute(v[(idx + 3) % 5]),
+                 accessor.const_vector_attribute(v[(idx + 4) % 5]),
+                 accessor.const_vector_attribute(e0),
+                 accessor.const_vector_attribute(e1)}};
+
+            std::array<Eigen::Vector3d, 7> positions_double = {
+                {positions[0].cast<double>(),
+                 positions[1].cast<double>(),
+                 positions[2].cast<double>(),
+                 positions[3].cast<double>(),
+                 positions[4].cast<double>(),
+                 positions[5].cast<double>(),
+                 positions[6].cast<double>()}};
+
+            std::array<std::array<int, 4>, 6> new_tets = {
+                {{{0, 1, 2, 5}},
+                 {{0, 2, 3, 5}},
+                 {{0, 3, 4, 5}},
+                 {{0, 1, 2, 6}},
+                 {{0, 2, 3, 6}},
+                 {{0, 3, 4, 6}}}};
+
+            double new_energy_max = std::numeric_limits<double>::lowest();
+
+            for (int i = 0; i < 6; ++i) {
+                if (wmtk::utils::wmtk_orient3d(
+                        positions[new_tets[i][0]],
+                        positions[new_tets[i][1]],
+                        positions[new_tets[i][2]],
+                        positions[new_tets[i][3]]) > 0) {
+                    auto energy = wmtk::function::utils::Tet_AMIPS_energy({{
+                        positions_double[new_tets[i][0]][0],
+                        positions_double[new_tets[i][0]][1],
+                        positions_double[new_tets[i][0]][2],
+                        positions_double[new_tets[i][1]][0],
+                        positions_double[new_tets[i][1]][1],
+                        positions_double[new_tets[i][1]][2],
+                        positions_double[new_tets[i][2]][0],
+                        positions_double[new_tets[i][2]][1],
+                        positions_double[new_tets[i][2]][2],
+                        positions_double[new_tets[i][3]][0],
+                        positions_double[new_tets[i][3]][1],
+                        positions_double[new_tets[i][3]][2],
+                    }});
+
+
+                    if (energy > new_energy_max) new_energy_max = energy;
+                } else {
+                    auto energy = wmtk::function::utils::Tet_AMIPS_energy({{
+                        positions_double[new_tets[i][1]][0],
+                        positions_double[new_tets[i][1]][1],
+                        positions_double[new_tets[i][1]][2],
+                        positions_double[new_tets[i][0]][0],
+                        positions_double[new_tets[i][0]][1],
+                        positions_double[new_tets[i][0]][2],
+                        positions_double[new_tets[i][2]][0],
+                        positions_double[new_tets[i][2]][1],
+                        positions_double[new_tets[i][2]][2],
+                        positions_double[new_tets[i][3]][0],
+                        positions_double[new_tets[i][3]][1],
+                        positions_double[new_tets[i][3]][2],
+                    }});
+
+
+                    if (energy > new_energy_max) new_energy_max = energy;
+                }
+            }
+
+            return new_energy_max;
+        };
+
+        swap56->set_value_function(swap56_energy_check);
+        swap56->add_invariant(std::make_shared<EdgeValenceInvariant>(*mesh, 5));
+
+        // swap44
+
+        auto swap44 = std::make_shared<MinOperationSequence>(*mesh);
+        for (int i = 0; i < 2; ++i) {
+            auto swap = std::make_shared<TetEdgeSwap>(*mesh, i);
+            swap->collapse().add_invariant(invariant_separate_substructures);
+            swap->collapse().add_invariant(link_condition);
+            swap->collapse().set_new_attribute_strategy(
+                pt_attribute,
+                CollapseBasicStrategy::CopyOther);
+            swap->split().set_new_attribute_strategy(pt_attribute);
+            swap->split().set_new_attribute_strategy(
+                visited_edge_flag,
+                wmtk::operations::SplitBasicStrategy::None,
+                wmtk::operations::SplitRibBasicStrategy::None);
+            swap->collapse().set_new_attribute_strategy(
+                visited_edge_flag,
+                wmtk::operations::CollapseBasicStrategy::None);
+
+            swap->add_invariant(std::make_shared<Swap44EnergyBeforeInvariant>(
+                *mesh,
+                pt_attribute.as<Rational>(),
+                i));
+
+            for (const auto& attr : pass_through_attributes) {
+                swap->split().set_new_attribute_strategy(attr);
+                swap->collapse().set_new_attribute_strategy(attr);
+            }
+
+            swap44->add_operation(swap);
+        }
+
+        auto swap44_energy_check = [&](int64_t idx, const simplex::Simplex& t) -> double {
+            constexpr static PrimitiveType PV = PrimitiveType::Vertex;
+            constexpr static PrimitiveType PE = PrimitiveType::Edge;
+            constexpr static PrimitiveType PF = PrimitiveType::Triangle;
+            constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
+
+            auto accessor = mesh->create_const_accessor(pt_attribute.as<Rational>());
+
+            // get the coords of the vertices
+            // input edge end points
+            const Tuple e0 = t.tuple();
+            const Tuple e1 = mesh->switch_tuple(e0, PV);
+            // other four vertices
+            std::array<Tuple, 4> v;
+            auto iter_tuple = e0;
+            for (int64_t i = 0; i < 4; ++i) {
+                v[i] = mesh->switch_tuples(iter_tuple, {PE, PV});
+                iter_tuple = mesh->switch_tuples(iter_tuple, {PF, PT});
+            }
+
+            if (iter_tuple != e0) return 0;
+            assert(iter_tuple == e0);
+
+            std::array<Eigen::Vector3<Rational>, 6> positions = {
+                {accessor.const_vector_attribute(v[(idx + 0) % 4]),
+                 accessor.const_vector_attribute(v[(idx + 1) % 4]),
+                 accessor.const_vector_attribute(v[(idx + 2) % 4]),
+                 accessor.const_vector_attribute(v[(idx + 3) % 4]),
+                 accessor.const_vector_attribute(e0),
+                 accessor.const_vector_attribute(e1)}};
+            std::array<Eigen::Vector3d, 6> positions_double = {
+                {positions[0].cast<double>(),
+                 positions[1].cast<double>(),
+                 positions[2].cast<double>(),
+                 positions[3].cast<double>(),
+                 positions[4].cast<double>(),
+                 positions[5].cast<double>()}};
+
+            std::array<std::array<int, 4>, 4> new_tets = {
+                {{{0, 1, 2, 4}}, {{0, 2, 3, 4}}, {{0, 1, 2, 5}}, {{0, 2, 3, 5}}}};
+
+            double new_energy_max = std::numeric_limits<double>::lowest();
+
+            for (int i = 0; i < 4; ++i) {
+                if (wmtk::utils::wmtk_orient3d(
+                        positions[new_tets[i][0]],
+                        positions[new_tets[i][1]],
+                        positions[new_tets[i][2]],
+                        positions[new_tets[i][3]]) > 0) {
+                    auto energy = wmtk::function::utils::Tet_AMIPS_energy({{
+                        positions_double[new_tets[i][0]][0],
+                        positions_double[new_tets[i][0]][1],
+                        positions_double[new_tets[i][0]][2],
+                        positions_double[new_tets[i][1]][0],
+                        positions_double[new_tets[i][1]][1],
+                        positions_double[new_tets[i][1]][2],
+                        positions_double[new_tets[i][2]][0],
+                        positions_double[new_tets[i][2]][1],
+                        positions_double[new_tets[i][2]][2],
+                        positions_double[new_tets[i][3]][0],
+                        positions_double[new_tets[i][3]][1],
+                        positions_double[new_tets[i][3]][2],
+                    }});
+
+                    if (energy > new_energy_max) new_energy_max = energy;
+                } else {
+                    auto energy = wmtk::function::utils::Tet_AMIPS_energy({{
+                        positions_double[new_tets[i][1]][0],
+                        positions_double[new_tets[i][1]][1],
+                        positions_double[new_tets[i][1]][2],
+                        positions_double[new_tets[i][0]][0],
+                        positions_double[new_tets[i][0]][1],
+                        positions_double[new_tets[i][0]][2],
+                        positions_double[new_tets[i][2]][0],
+                        positions_double[new_tets[i][2]][1],
+                        positions_double[new_tets[i][2]][2],
+                        positions_double[new_tets[i][3]][0],
+                        positions_double[new_tets[i][3]][1],
+                        positions_double[new_tets[i][3]][2],
+                    }});
+
+                    if (energy > new_energy_max) new_energy_max = energy;
+                }
+            }
+
+            return new_energy_max;
+        };
+
+        swap44->set_value_function(swap44_energy_check);
+        swap44->add_invariant(std::make_shared<EdgeValenceInvariant>(*mesh, 4));
+
+        // swap 32
         auto swap32 = std::make_shared<TetEdgeSwap>(*mesh, 0);
-        setup_swap(*swap32, swap32->collapse(), swap32->split(), interior_edge);
-        swap32->add_invariant(valence_3); // extra edge valance invariant
-        swap32->add_invariant(swap32_energy_before); // check energy before swap
-        ops.push_back(swap32);
-        ops_name.push_back("swap32");
-        ops.emplace_back(rounding);
-        ops_name.emplace_back("rounding");
+        swap32->add_invariant(std::make_shared<EdgeValenceInvariant>(*mesh, 3));
+        swap32->add_invariant(
+            std::make_shared<Swap32EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>()));
 
-        // 3 - 3) TetFaceSwap 2-3
-        auto swap23 = std::make_shared<TetFaceSwap>(*mesh);
-        setup_swap(*swap23, swap23->collapse(), swap23->split(), interior_face, false);
-        swap23->add_invariant(swap23_energy_before); // check energy before swap
-        ops.push_back(swap23);
-        ops_name.push_back("swap23");
+        swap32->collapse().add_invariant(invariant_separate_substructures);
+        swap32->collapse().add_invariant(link_condition);
+        swap32->collapse().set_new_attribute_strategy(
+            pt_attribute,
+            CollapseBasicStrategy::CopyOther);
+        swap32->split().set_new_attribute_strategy(pt_attribute);
+        swap32->split().set_new_attribute_strategy(
+            visited_edge_flag,
+            wmtk::operations::SplitBasicStrategy::None,
+            wmtk::operations::SplitRibBasicStrategy::None);
+        swap32->collapse().set_new_attribute_strategy(
+            visited_edge_flag,
+            wmtk::operations::CollapseBasicStrategy::None);
+
+        for (const auto& attr : pass_through_attributes) {
+            swap32->split().set_new_attribute_strategy(attr);
+            swap32->collapse().set_new_attribute_strategy(attr);
+        }
+
+        // all swaps
+
+        auto swap_all = std::make_shared<OrOperationSequence>(*mesh);
+        swap_all->add_operation(swap32);
+        swap_all->add_operation(swap44);
+        swap_all->add_operation(swap56);
+        swap_all->add_transfer_strategy(tag_update);
+
+        auto swap_then_round = std::make_shared<AndOperationSequence>(*mesh);
+        swap_then_round->add_operation(swap_all);
+        swap_then_round->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+        swap_then_round->add_operation(rounding);
+
+        ops.push_back(swap_then_round);
+        ops_name.push_back("edge swap");
         ops.emplace_back(rounding);
         ops_name.emplace_back("rounding");
     }
@@ -704,77 +984,109 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     //////////////////////////////////
     // preprocessing
+    //////////////////////////////////
 
     SchedulerStats pre_stats;
 
-    while (success > 0) {
-        pre_stats = scheduler.run_operation_on_all(*collapse_then_round);
-        logger().info(
-            "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
-            "executing: {}",
-            "collapse",
-            pre_stats.number_of_performed_operations(),
-            pre_stats.number_of_successful_operations(),
-            pre_stats.number_of_failed_operations(),
-            pre_stats.collecting_time,
-            pre_stats.sorting_time,
-            pre_stats.executing_time);
+    logger().info("----------------------- Preprocess Collapse -----------------------");
+    logger().info("Executing collapse ...");
 
-        success = pre_stats.number_of_successful_operations();
+    pre_stats = scheduler.run_operation_on_all(*collapse_then_round, visited_edge_flag.as<char>());
+    logger().info(
+        "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
+        "executing: {}",
+        "preprocessing collapse",
+        pre_stats.number_of_performed_operations(),
+        pre_stats.number_of_successful_operations(),
+        pre_stats.number_of_failed_operations(),
+        pre_stats.collecting_time,
+        pre_stats.sorting_time,
+        pre_stats.executing_time);
 
-        // verbose logger, can be removed
-        int64_t unrounded = 0;
-        for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
-            const auto p = pt_accessor.vector_attribute(v);
-            for (int64_t d = 0; d < 3; ++d) {
-                if (!p[d].is_rounded()) {
-                    ++unrounded;
-                    break;
-                }
+    success = pre_stats.number_of_successful_operations();
+
+    // verbose logger, can be removed
+    int64_t unrounded = 0;
+    for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
+        const auto p = pt_accessor.vector_attribute(v);
+        for (int64_t d = 0; d < 3; ++d) {
+            if (!p[d].is_rounded()) {
+                ++unrounded;
+                break;
             }
         }
-
-        logger().info("Mesh has {} unrounded vertices", unrounded);
     }
+
+    logger().info("Mesh has {} unrounded vertices", unrounded);
+
+    // compute max energy
+    double max_energy = std::numeric_limits<double>::lowest();
+    double min_energy = std::numeric_limits<double>::max();
+    for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
+        // double e = amips->get_value(simplex::Simplex(mesh->top_simplex_type(), t));
+        double e = amips_accessor.scalar_attribute(t);
+        max_energy = std::max(max_energy, e);
+        min_energy = std::min(min_energy, e);
+    }
+
+    logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
+
 
     int iii = 0;
     bool is_double = false;
     for (int64_t i = 0; i < options.passes; ++i) {
-        logger().info("Pass {}", i);
+        logger().info("--------------------------- Pass {} ---------------------------", i);
         SchedulerStats pass_stats;
         int jj = 0;
         for (auto& op : ops) {
-            int success = 10;
-            while (success > 0) {
-                auto stats = scheduler.run_operation_on_all(*op);
-                pass_stats += stats;
-                logger().info(
-                    "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
-                    "executing: {}",
-                    ops_name[jj],
-                    stats.number_of_performed_operations(),
-                    stats.number_of_successful_operations(),
-                    stats.number_of_failed_operations(),
-                    stats.collecting_time,
-                    stats.sorting_time,
-                    stats.executing_time);
+            logger().info("Executing {} ...", ops_name[jj]);
+            SchedulerStats stats;
+            if (op->primitive_type() == PrimitiveType::Edge) {
+                stats = scheduler.run_operation_on_all(*op, visited_edge_flag.as<char>());
+            } else {
+                stats = scheduler.run_operation_on_all(*op);
+            }
+            pass_stats += stats;
+            logger().info(
+                "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
+                "executing: {}",
+                ops_name[jj],
+                stats.number_of_performed_operations(),
+                stats.number_of_successful_operations(),
+                stats.number_of_failed_operations(),
+                stats.collecting_time,
+                stats.sorting_time,
+                stats.executing_time);
 
-                success = stats.number_of_successful_operations();
+            success = stats.number_of_successful_operations();
 
-                // verbose logger, can be removed
-                int64_t unrounded = 0;
-                for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
-                    const auto p = pt_accessor.vector_attribute(v);
-                    for (int64_t d = 0; d < 3; ++d) {
-                        if (!p[d].is_rounded()) {
-                            ++unrounded;
-                            break;
-                        }
+            // verbose logger, can be removed
+            int64_t unrounded = 0;
+            for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
+                const auto p = pt_accessor.vector_attribute(v);
+                for (int64_t d = 0; d < 3; ++d) {
+                    if (!p[d].is_rounded()) {
+                        ++unrounded;
+                        break;
                     }
                 }
-
-                logger().info("Mesh has {} unrounded vertices", unrounded);
             }
+
+            logger().info("Mesh has {} unrounded vertices", unrounded);
+
+            // compute max energy
+            max_energy = std::numeric_limits<double>::lowest();
+            min_energy = std::numeric_limits<double>::max();
+            for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
+                // double e = amips->get_value(simplex::Simplex(mesh->top_simplex_type(), t));
+                double e = amips_accessor.scalar_attribute(t);
+                max_energy = std::max(max_energy, e);
+                min_energy = std::min(min_energy, e);
+            }
+
+            logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
+
+
             ++jj;
         }
 
@@ -800,8 +1112,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         assert(mesh->is_connectivity_valid());
 
         // compute max energy
-        double max_energy = std::numeric_limits<double>::lowest();
-        double min_energy = std::numeric_limits<double>::max();
+        max_energy = std::numeric_limits<double>::lowest();
+        min_energy = std::numeric_limits<double>::max();
         for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
             // double e = amips->get_value(simplex::Simplex(mesh->top_simplex_type(), t));
             double e = amips_accessor.scalar_attribute(t);
@@ -828,7 +1140,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         logger().info("Mesh has {} unrounded vertices", unrounded);
         logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
-
 
         // stop at good quality
         if (max_energy <= target_max_amips && is_double) break;
