@@ -1,6 +1,7 @@
 #include "top_dimension_cofaces.hpp"
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleCellLessThanFunctor.hpp>
+#include <wmtk/utils/TupleInspector.hpp>
 #include "utils/tuple_vector_to_homogeneous_simplex_vector.hpp"
 
 #include <queue>
@@ -23,30 +24,35 @@ void top_dimension_cofaces_tuples_vertex(
     std::vector<Tuple>& collection)
 {
     assert(mesh.is_valid_slow(t_in));
-    std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
-    std::queue<Tuple> q;
-    q.push(t_in);
-    while (!q.empty()) {
-        const Tuple t = q.front();
-        q.pop();
-
-        {
-            // check if cell already exists
-            const auto [it, did_insert] = touched_cells.insert(t);
-            if (!did_insert) {
-                continue;
-            }
-        }
+    Tuple t = t_in;
+    do {
         collection.emplace_back(t);
 
-        if (!mesh.is_boundary_edge(t)) {
-            q.push(mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Edge}));
+        if (mesh.is_boundary_edge(t)) {
+            break;
         }
-        const Tuple t_other = mesh.switch_edge(t);
-        if (!mesh.is_boundary_edge(t_other)) {
-            q.push(mesh.switch_face(t_other));
-        }
+        t = mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Edge});
+    } while (t != t_in);
+
+    if (t == t_in && !mesh.is_boundary_edge(t)) {
+        return;
     }
+
+    t = mesh.switch_edge(t_in);
+
+    if (mesh.is_boundary_edge(t)) {
+        return;
+    }
+    t = mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Edge});
+
+    do {
+        collection.emplace_back(t);
+
+        if (mesh.is_boundary_edge(t)) {
+            break;
+        }
+        t = mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Edge});
+    } while (true);
 }
 void top_dimension_cofaces_tuples_edge(
     const TriMesh& mesh,
@@ -71,7 +77,7 @@ void top_dimension_cofaces_tuples_vertex(
     const Tuple& input,
     std::vector<Tuple>& collection)
 {
-    std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
+    std::set<int64_t> touched_cells;
     std::queue<Tuple> q;
     q.push(input);
     while (!q.empty()) {
@@ -80,7 +86,8 @@ void top_dimension_cofaces_tuples_vertex(
 
         {
             // check if cell already exists
-            const auto& [it, was_inserted] = touched_cells.insert(t);
+            const auto& [it, was_inserted] =
+                touched_cells.insert(wmtk::utils::TupleInspector::global_cid(t));
             if (!was_inserted) {
                 continue;
             }
@@ -93,13 +100,16 @@ void top_dimension_cofaces_tuples_vertex(
         const Tuple t3 = mesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Triangle});
 
         if (!mesh.is_boundary_face(t1)) {
-            q.push(mesh.switch_tetrahedron(t1));
+            const Tuple ts = mesh.switch_tetrahedron(t1);
+            q.push(ts);
         }
         if (!mesh.is_boundary_face(t2)) {
-            q.push(mesh.switch_tetrahedron(t2));
+            const Tuple ts = mesh.switch_tetrahedron(t2);
+            q.push(ts);
         }
         if (!mesh.is_boundary_face(t3)) {
-            q.push(mesh.switch_tetrahedron(t3));
+            const Tuple ts = mesh.switch_tetrahedron(t3);
+            q.push(ts);
         }
     }
 }
