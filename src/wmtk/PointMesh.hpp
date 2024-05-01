@@ -36,6 +36,8 @@ public:
     bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
         const override;
 
+    bool is_removed(const Tuple& tuple) const final override;
+
     bool is_connectivity_valid() const override { return true; }
 
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()

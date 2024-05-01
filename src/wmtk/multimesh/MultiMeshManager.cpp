@@ -27,7 +27,7 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
     const wmtk::attribute::Accessor<int64_t>& map_accessor,
     const Tuple& source_tuple)
 {
-    assert(source_mesh.is_valid_slow(source_tuple));
+    assert(!source_mesh.is_removed(source_tuple));
 
     PrimitiveType source_mesh_primitive_type = source_mesh.top_simplex_type();
     PrimitiveType target_mesh_primitive_type = target_mesh.top_simplex_type();
@@ -41,8 +41,8 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
         return Tuple(); // return null tuple
     }
 
-    assert(source_mesh.is_valid_slow(source_mesh_base_tuple));
-    assert(target_mesh.is_valid_slow(target_mesh_base_tuple));
+    assert(!source_mesh.is_removed(source_mesh_base_tuple));
+    assert(!target_mesh.is_removed(target_mesh_base_tuple));
 
 
     if (source_mesh_base_tuple.m_global_cid != source_mesh_target_tuple.m_global_cid) {
@@ -241,8 +241,8 @@ void MultiMeshManager::register_child_mesh(
 
     // register maps
     for (const auto& [child_tuple, my_tuple] : child_tuple_my_tuple_map) {
-        assert(my_mesh.is_valid_slow(my_tuple));
-        assert(child_mesh_ptr->is_valid_slow(child_tuple));
+        assert(!my_mesh.is_removed(my_tuple));
+        assert(!child_mesh_ptr->is_removed(child_tuple));
         wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
             parent_to_child_accessor,
             child_to_parent_accessor,
@@ -798,11 +798,14 @@ void MultiMeshManager::update_map_tuple_hashes(
             std::tie(parent_tuple, child_tuple) =
                 wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
 
+// TODO: should have new logic here without hash
+#if defined(WMTK_ENABLE_HASH_UPDATE)
             // If the parent tuple is valid, it means this parent-child pair has already been
             // handled, so we can skip it
-            if (my_mesh.is_valid_slow(parent_tuple)) {
+            if (!my_mesh.is_valid_slow(parent_tuple)) {
                 continue;
             }
+#endif()
             // If the parent tuple is invalid then there was no map so we can try the next cell
             if (parent_tuple.is_null()) {
                 continue;
@@ -818,9 +821,13 @@ void MultiMeshManager::update_map_tuple_hashes(
                 child_to_parent_accessor.const_vector_attribute(child_tuple);
             Tuple parent_tuple_from_child_map = wmtk::multimesh::utils::vector_to_tuple(
                 child_to_parent_data.tail<wmtk::multimesh::utils::TUPLE_SIZE>());
+
+// TODO: should have new logic here without hash
+#if defined(WMTK_ENABLE_HASH_UPDATE)
             if (my_mesh.is_valid_slow(parent_tuple_from_child_map)) {
                 continue;
             }
+#endif()
             // if the child simplex is deleted then we can skip it
             const char child_flag = child_flag_accessor.const_scalar_attribute(child_tuple);
             bool child_exists = 1 == (child_flag & 1);

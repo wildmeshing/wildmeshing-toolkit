@@ -78,13 +78,15 @@ bool Mesh::is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>&
 
 bool Mesh::is_valid_slow(const Tuple& tuple) const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
     const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
     return is_valid(tuple, hash_accessor);
-#else
+}
+
+bool Mesh::is_removed(const Tuple& tuple) const
+{
+    assert(is_valid_slow(tuple));
     const auto& flag_accessor = get_const_flag_accessor(top_simplex_type());
-    return flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1;
-#endif
+    return !(flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1);
 }
 
 

@@ -483,6 +483,16 @@ public:
     bool is_valid_slow(const Tuple& tuple) const;
 
 
+    /**
+     * @brief check if the tuple is removed
+     *
+     * @param tuple
+     * @return true if top primitive type is removed
+     * @return false
+     */
+    virtual bool is_removed(const Tuple& tuple) const;
+
+
     //============================
     // MultiMesh interface
     //============================

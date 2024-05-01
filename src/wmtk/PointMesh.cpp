@@ -65,11 +65,16 @@ bool PointMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>&
 #if defined(WMTK_ENABLE_HASH_UPDATE)
     return Mesh::is_hash_valid(tuple, hash_accessor);
 #else
-    const auto& flag_accessor = get_const_flag_accessor(PrimitiveType::Vertex);
-    return flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1;
+    return true;
 #endif
 }
 
+bool PointMesh::is_removed(const Tuple& tuple) const
+{
+    assert(is_valid_slow(tuple));
+    const auto& flag_accessor = get_const_flag_accessor(PrimitiveType::Vertex);
+    return !(flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1);
+}
 
 Tuple PointMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
 {

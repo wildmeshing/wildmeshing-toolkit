@@ -262,8 +262,8 @@ void Marching::process()
                 v1 = e;
             }
         }
-        assert(m_mesh.is_valid_slow(v0));
-        assert(m_mesh.is_valid_slow(v1));
+        assert(!m_mesh.is_removed(v0));
+        assert(!m_mesh.is_removed(v1));
         const auto p0 = pos_acc.const_vector_attribute(v0);
         const auto p1 = pos_acc.const_vector_attribute(v1);
         pos_acc.vector_attribute(v) = (1 - m_weight) * p0 + m_weight * p1;

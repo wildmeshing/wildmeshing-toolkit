@@ -259,7 +259,7 @@ Tuple TetMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
 
 Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
-    assert(is_valid_slow(tuple));
+    assert(!is_removed(tuple));
     switch (type) {
     // bool ccw = is_ccw(tuple);
     case PrimitiveType::Tetrahedron: {
@@ -311,7 +311,7 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         assert(lfid_new != -1);
 
         const Tuple res(lvid_new, leid_new, lfid_new, gcid_new, get_cell_hash_slow(gcid_new));
-        assert(is_valid_slow(res));
+        assert(!is_removed(res));
         return res;
     }
     case PrimitiveType::Vertex:
@@ -341,9 +341,15 @@ bool TetMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& h
 #if defined(WMTK_ENABLE_HASH_UPDATE)
     return Mesh::is_hash_valid(tuple, hash_accessor);
 #else
-    const auto& flag_accessor = get_const_flag_accessor(PrimitiveType::Tetrahedron);
-    return flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1;
+    return true;
 #endif
+}
+
+bool TetMesh::is_removed(const Tuple& tuple) const
+{
+    assert(is_valid_slow(tuple));
+    const auto& flag_accessor = get_const_flag_accessor(PrimitiveType::Tetrahedron);
+    return !(flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1);
 }
 
 bool TetMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
