@@ -202,8 +202,8 @@ template <typename T>
 template <int D>
 inline auto Attribute<T>::vector_attribute(const int64_t index) -> MapResult<D>
 {
-    return MapResult<D>(m_data.data(), m_dimension);
-    // return vector_attribute<D>(index, m_data);
+    // return MapResult<D>(m_data.data(), m_dimension);
+    return vector_attribute<D>(index, m_data);
 }
 
 template <typename T>

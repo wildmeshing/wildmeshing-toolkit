@@ -17,6 +17,7 @@ template <typename T>
 class AttributeScope;
 class AttributeManager;
 
+#define WMTK_ATTRIBUTE_SCOPE_STACK_CACHE_ACTIVE
 /**
  * A stack of changes applied to an Attribute.
  * The stack consists of AttributeScopes which hold all changes applied inside one scope. Whenever a
@@ -94,11 +95,13 @@ private:
 protected:
     std::vector<AttributeScope<T>> m_scopes;
     typename std::vector<AttributeScope<T>>::const_iterator m_active;
-    typename std::vector<AttributeScope<T>>::iterator m_back;
+    // typename std::vector<AttributeScope<T>>::iterator m_back;
+#if defined(WMTK_ATTRIBUTE_SCOPE_STACK_CACHE_ACTIVE)
     bool m_at_current_scope = true;
-    // Mesh& m_mesh;
-    // AttributeManager& m_attribute_manager;
-    // MeshAttributeHandle<T> m_handle;
+#endif
+    //  Mesh& m_mesh;
+    //  AttributeManager& m_attribute_manager;
+    //  MeshAttributeHandle<T> m_handle;
 };
 template <typename T>
 inline int64_t AttributeScopeStack<T>::size() const
@@ -122,14 +125,12 @@ inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T, D2>& access
     assert(writing_enabled());
 
     auto data = accessor.template vector_attribute<D>(index);
-    /*
     // we are typically only going to write when caching is enabled so better to optimize for this
     if (!empty()) [[unlikely]] {
         assert(m_scopes.back() == *m_back);
-        //m_scopes.back().try_caching(index, data);
-        m_back->try_caching(index,data);
+        m_scopes.back().try_caching(index, data);
+        // m_back->try_caching(index,data);
     }
-    */
     return data;
 }
 
@@ -162,7 +163,7 @@ inline auto AttributeScopeStack<T>::scalar_attribute(AccessorBase<T, D2>& access
     T& value = accessor.scalar_attribute(index);
     if (!empty()) {
         m_scopes.back().try_caching(index, value);
-        //m_active->try_caching(index, value);
+        // m_active->try_caching(index, value);
     }
     return value;
 }

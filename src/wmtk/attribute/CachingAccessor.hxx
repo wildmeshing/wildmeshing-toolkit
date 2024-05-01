@@ -45,8 +45,8 @@ template <typename T, int Dim>
 template <int D>
 inline auto CachingAccessor<T, Dim>::vector_attribute(const int64_t index) -> MapResult<D>
 {
-    //return m_cache_stack.template vector_attribute<D>(*this, index);
-    return BaseType::template vector_attribute<D>( index);
+    return m_cache_stack.template vector_attribute<D>(*this, index);
+    //return BaseType::template vector_attribute<D>( index);
 }
 
 
