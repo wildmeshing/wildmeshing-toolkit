@@ -137,33 +137,65 @@ void top_dimension_cofaces_tuples_edge(
     const Tuple& input,
     std::vector<Tuple>& collection)
 {
-    std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
-    std::queue<Tuple> q;
-    q.push(input);
-    while (!q.empty()) {
-        const Tuple t = q.front();
-        q.pop();
+    // std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
+    // std::queue<Tuple> q;
+    // q.push(input);
+    // while (!q.empty()) {
+    //     const Tuple t = q.front();
+    //     q.pop();
+    //
+    //     {
+    //        // check if cell already exists
+    //        const auto& [it, was_inserted] = touched_cells.insert(t);
+    //        if (!was_inserted) {
+    //            continue;
+    //        }
+    //    }
+    //
+    //    collection.emplace_back(t);
+    //
+    //    const Tuple& t1 = t;
+    //    const Tuple t2 = mesh.switch_face(t);
+    //
+    //    if (!mesh.is_boundary_face(t1)) {
+    //        q.push(mesh.switch_tuples(t1, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle}));
+    //    }
+    //    if (!mesh.is_boundary_face(t2)) {
+    //        q.push(mesh.switch_tetrahedron(t2));
+    //    }
+    //}
 
-        {
-            // check if cell already exists
-            const auto& [it, was_inserted] = touched_cells.insert(t);
-            if (!was_inserted) {
-                continue;
-            }
-        }
 
+    assert(mesh.is_valid_slow(input));
+    Tuple t = input;
+    do {
         collection.emplace_back(t);
 
-        const Tuple& t1 = t;
-        const Tuple t2 = mesh.switch_face(t);
+        if (mesh.is_boundary_face(t)) {
+            break;
+        }
+        t = mesh.switch_tuples(t, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle});
+    } while (t != input);
 
-        if (!mesh.is_boundary_face(t1)) {
-            q.push(mesh.switch_tuples(t1, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle}));
-        }
-        if (!mesh.is_boundary_face(t2)) {
-            q.push(mesh.switch_tetrahedron(t2));
-        }
+    if (t == input && !mesh.is_boundary_face(t)) {
+        return;
     }
+
+    t = mesh.switch_face(input);
+
+    if (mesh.is_boundary_face(t)) {
+        return;
+    }
+    t = mesh.switch_tuples(t, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle});
+
+    do {
+        collection.emplace_back(t);
+
+        if (mesh.is_boundary_face(t)) {
+            break;
+        }
+        t = mesh.switch_tuples(t, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle});
+    } while (true);
 }
 
 void top_dimension_cofaces_tuples_face(
