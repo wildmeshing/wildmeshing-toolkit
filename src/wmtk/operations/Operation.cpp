@@ -82,7 +82,9 @@ bool Operation::before(const simplex::Simplex& simplex) const
 {
     const attribute::Accessor<int64_t> accessor = hash_accessor();
 
-    if (!mesh().is_valid(simplex.tuple(), accessor)) {
+    if (!mesh().is_valid(
+            simplex.tuple(),
+            accessor)) { // TODO: chang to is_removed and resurrect later
         return false;
     }
 
