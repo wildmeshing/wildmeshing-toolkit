@@ -77,23 +77,42 @@ void top_dimension_cofaces_tuples_vertex(
     const Tuple& input,
     std::vector<Tuple>& collection)
 {
-    std::vector<bool> visited(mesh.capacity(PrimitiveType::Tetrahedron), false);
+    std::vector<int64_t> visited;
+    visited.reserve(50);
 
-    std::queue<Tuple> q;
-    q.push(input);
-    while (!q.empty()) {
-        const Tuple t = q.front();
-        q.pop();
-
-        {
-            const int64_t c = wmtk::utils::TupleInspector::global_cid(t);
-            if (visited[c]) {
-                continue;
+    auto is_visited = [&visited](const Tuple& t) -> bool {
+        const int64_t c = wmtk::utils::TupleInspector::global_cid(t);
+        for (const int64_t v : visited) {
+            if (v == c) {
+                return true;
             }
-            visited[c] = true;
+        }
+        visited.emplace_back(c);
+        return false;
+    };
+
+    std::vector<Tuple> q(200);
+    size_t q_front = 0;
+    size_t q_back = 1;
+    q[0] = input;
+
+    while (q_front != q_back) {
+        const Tuple t = q[q_front++];
+
+
+        if (is_visited(t)) {
+            continue;
         }
 
         collection.emplace_back(t);
+
+        if (q_back + 4 >= q.size()) {
+            q.resize(q.size() * 1.5);
+            // logger().info(
+            //     "Increasing size of queue in top_dimension_cofaces_tuples_vertex to {}.",
+            //     q.size());
+            // logger().info("Current collection size: {}", collection.size());
+        }
 
         const Tuple& t1 = t;
         const Tuple t2 = mesh.switch_face(t);
@@ -101,15 +120,15 @@ void top_dimension_cofaces_tuples_vertex(
 
         if (!mesh.is_boundary_face(t1)) {
             const Tuple ts = mesh.switch_tetrahedron(t1);
-            q.push(ts);
+            q[q_back++] = ts;
         }
         if (!mesh.is_boundary_face(t2)) {
             const Tuple ts = mesh.switch_tetrahedron(t2);
-            q.push(ts);
+            q[q_back++] = ts;
         }
         if (!mesh.is_boundary_face(t3)) {
             const Tuple ts = mesh.switch_tetrahedron(t3);
-            q.push(ts);
+            q[q_back++] = ts;
         }
     }
 }
