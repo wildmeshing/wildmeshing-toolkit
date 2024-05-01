@@ -77,7 +77,8 @@ void top_dimension_cofaces_tuples_vertex(
     const Tuple& input,
     std::vector<Tuple>& collection)
 {
-    std::set<int64_t> touched_cells;
+    std::vector<bool> visited(mesh.capacity(PrimitiveType::Tetrahedron), false);
+
     std::queue<Tuple> q;
     q.push(input);
     while (!q.empty()) {
@@ -85,12 +86,11 @@ void top_dimension_cofaces_tuples_vertex(
         q.pop();
 
         {
-            // check if cell already exists
-            const auto& [it, was_inserted] =
-                touched_cells.insert(wmtk::utils::TupleInspector::global_cid(t));
-            if (!was_inserted) {
+            const int64_t c = wmtk::utils::TupleInspector::global_cid(t);
+            if (visited[c]) {
                 continue;
             }
+            visited[c] = true;
         }
 
         collection.emplace_back(t);
