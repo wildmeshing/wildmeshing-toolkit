@@ -136,8 +136,8 @@ Collaboration diagram for wmtk::Swap32EnergyBeforeInvariant:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a696326d3fbcabe1ef74c2c65a1f83dbc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_swap32_energy_before_invariant.html#a696326d3fbcabe1ef74c2c65a1f83dbc">Swap32EnergyBeforeInvariant</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">attribute::TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt; &amp;coordinate)</td></tr>
-<tr class="separator:a696326d3fbcabe1ef74c2c65a1f83dbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d9d53794fccfa75a365e6df93ea3a60"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_swap32_energy_before_invariant.html#a3d9d53794fccfa75a365e6df93ea3a60">Swap32EnergyBeforeInvariant</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">attribute::TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt; &amp;coordinate, double eps=1.0001)</td></tr>
+<tr class="separator:a3d9d53794fccfa75a365e6df93ea3a60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab57dde58cf0edb77bb38a8ba31a68108"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_swap32_energy_before_invariant.html#ab57dde58cf0edb77bb38a8ba31a68108">before</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;t) const override</td></tr>
 <tr class="separator:ab57dde58cf0edb77bb38a8ba31a68108"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab4f0c7c0b863decf5f5dded67ae8919c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_swap32_energy_before_invariant.html#ab4f0c7c0b863decf5f5dded67ae8919c">Invariant</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m)</td></tr>
@@ -170,13 +170,15 @@ Public Member Functions</h2></td></tr>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a61fd241c3a4ebf855bd902ce01c770ba"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">attribute::TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_swap32_energy_before_invariant.html#a61fd241c3a4ebf855bd902ce01c770ba">m_coordinate_handle</a></td></tr>
 <tr class="separator:a61fd241c3a4ebf855bd902ce01c770ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af67257620767ecfc7a442beb0d948559"><td class="memItemLeft" align="right" valign="top">const double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_swap32_energy_before_invariant.html#af67257620767ecfc7a442beb0d948559">m_eps</a></td></tr>
+<tr class="separator:af67257620767ecfc7a442beb0d948559"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
 <p class="definition">Definition at line <a class="el" href="_swap32_energy_before_invariant_8hpp_source.html#l00007">7</a> of file <a class="el" href="_swap32_energy_before_invariant_8hpp_source.html">Swap32EnergyBeforeInvariant.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a696326d3fbcabe1ef74c2c65a1f83dbc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a696326d3fbcabe1ef74c2c65a1f83dbc">&#9670;&nbsp;</a></span>Swap32EnergyBeforeInvariant()</h2>
+<a id="a3d9d53794fccfa75a365e6df93ea3a60"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d9d53794fccfa75a365e6df93ea3a60">&#9670;&nbsp;</a></span>Swap32EnergyBeforeInvariant()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -191,7 +193,13 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">attribute::TypedAttributeHandle</a>&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>coordinate</em>&#160;</td>
+          <td class="paramname"><em>coordinate</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>eps</em> = <code>1.0001</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -232,9 +240,9 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1invariants_1_1_invariant.html#ae43f95bda332585aa73a8fd0624a39d3">wmtk::invariants::Invariant</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_swap32_energy_before_invariant_8cpp_source.html#l00014">14</a> of file <a class="el" href="_swap32_energy_before_invariant_8cpp_source.html">Swap32EnergyBeforeInvariant.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_swap32_energy_before_invariant_8cpp_source.html#l00016">16</a> of file <a class="el" href="_swap32_energy_before_invariant_8cpp_source.html">Swap32EnergyBeforeInvariant.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="classwmtk_1_1_mesh.html#a4a20dcdac339e7a4f6f8a6570114cbe6">wmtk::Mesh::create_const_accessor()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_swap32_energy_before_invariant_8hpp_source.html#l00018">m_coordinate_handle</a>, <a class="el" href="_invariant_8cpp_source.html#l00035">wmtk::invariants::Invariant::mesh()</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00017">wmtk::PE</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">PF</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00006">PT</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00016">wmtk::PV</a>, <a class="el" href="classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7">wmtk::Mesh::switch_tuple()</a>, <a class="el" href="_mesh_8hpp_source.html#l00970">wmtk::Mesh::switch_tuples()</a>, <a class="el" href="utils_2_a_m_i_p_s_8cpp_source.html#l00380">wmtk::function::utils::Tet_AMIPS_energy()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, <a class="el" href="_simplex_8hpp_source.html#l00047">wmtk::simplex::Simplex::tuple()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="orient_8cpp_source.html#l00053">wmtk::utils::wmtk_orient3d()</a>.</p>
+<p class="reference">References <a class="el" href="classwmtk_1_1_mesh.html#a4a20dcdac339e7a4f6f8a6570114cbe6">wmtk::Mesh::create_const_accessor()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_swap32_energy_before_invariant_8hpp_source.html#l00019">m_coordinate_handle</a>, <a class="el" href="_swap32_energy_before_invariant_8hpp_source.html#l00020">m_eps</a>, <a class="el" href="_invariant_8cpp_source.html#l00035">wmtk::invariants::Invariant::mesh()</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00017">wmtk::PE</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">PF</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00006">PT</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00016">wmtk::PV</a>, <a class="el" href="classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7">wmtk::Mesh::switch_tuple()</a>, <a class="el" href="_mesh_8hpp_source.html#l00972">wmtk::Mesh::switch_tuples()</a>, <a class="el" href="utils_2_a_m_i_p_s_8cpp_source.html#l00380">wmtk::function::utils::Tet_AMIPS_energy()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, <a class="el" href="_simplex_8hpp_source.html#l00047">wmtk::simplex::Simplex::tuple()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="orient_8cpp_source.html#l00053">wmtk::utils::wmtk_orient3d()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -297,9 +305,35 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_swap32_energy_before_invariant_8hpp_source.html#l00018">18</a> of file <a class="el" href="_swap32_energy_before_invariant_8hpp_source.html">Swap32EnergyBeforeInvariant.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_swap32_energy_before_invariant_8hpp_source.html#l00019">19</a> of file <a class="el" href="_swap32_energy_before_invariant_8hpp_source.html">Swap32EnergyBeforeInvariant.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_swap32_energy_before_invariant_8cpp_source.html#l00014">before()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_swap32_energy_before_invariant_8cpp_source.html#l00016">before()</a>.</p>
+
+</div>
+</div>
+<a id="af67257620767ecfc7a442beb0d948559"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af67257620767ecfc7a442beb0d948559">&#9670;&nbsp;</a></span>m_eps</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const double wmtk::Swap32EnergyBeforeInvariant::m_eps</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_swap32_energy_before_invariant_8hpp_source.html#l00020">20</a> of file <a class="el" href="_swap32_energy_before_invariant_8hpp_source.html">Swap32EnergyBeforeInvariant.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_swap32_energy_before_invariant_8cpp_source.html#l00016">before()</a>.</p>
 
 </div>
 </div>

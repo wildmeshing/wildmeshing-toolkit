@@ -84,13 +84,13 @@ var dir_5421ed8c8fde3f7a08a046a47d931eae =
     [ "Swap32EnergyBeforeInvariant.hpp", "_swap32_energy_before_invariant_8hpp.html", [
       [ "Swap32EnergyBeforeInvariant", "classwmtk_1_1_swap32_energy_before_invariant.html", "classwmtk_1_1_swap32_energy_before_invariant" ]
     ] ],
-    [ "Swap44_2EnergyBeforeInvariant.cpp", "_swap44__2_energy_before_invariant_8cpp.html", null ],
-    [ "Swap44_2EnergyBeforeInvariant.hpp", "_swap44__2_energy_before_invariant_8hpp.html", [
-      [ "Swap44_2EnergyBeforeInvariant", "classwmtk_1_1_swap44__2_energy_before_invariant.html", "classwmtk_1_1_swap44__2_energy_before_invariant" ]
-    ] ],
     [ "Swap44EnergyBeforeInvariant.cpp", "_swap44_energy_before_invariant_8cpp.html", null ],
     [ "Swap44EnergyBeforeInvariant.hpp", "_swap44_energy_before_invariant_8hpp.html", [
       [ "Swap44EnergyBeforeInvariant", "classwmtk_1_1_swap44_energy_before_invariant.html", "classwmtk_1_1_swap44_energy_before_invariant" ]
+    ] ],
+    [ "Swap56EnergyBeforeInvariant.cpp", "_swap56_energy_before_invariant_8cpp.html", null ],
+    [ "Swap56EnergyBeforeInvariant.hpp", "_swap56_energy_before_invariant_8hpp.html", [
+      [ "Swap56EnergyBeforeInvariant", "classwmtk_1_1_swap56_energy_before_invariant.html", "classwmtk_1_1_swap56_energy_before_invariant" ]
     ] ],
     [ "TetMeshSubstructureTopologyPreservingInvariant.cpp", "_tet_mesh_substructure_topology_preserving_invariant_8cpp.html", null ],
     [ "TetMeshSubstructureTopologyPreservingInvariant.hpp", "_tet_mesh_substructure_topology_preserving_invariant_8hpp.html", [

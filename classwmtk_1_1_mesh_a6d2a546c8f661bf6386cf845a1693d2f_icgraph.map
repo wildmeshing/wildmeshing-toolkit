@@ -1,52 +1,52 @@
 <map id="wmtk::Mesh::get_all" name="wmtk::Mesh::get_all">
-<area shape="rect" id="node1" title="Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index." alt="" coords="1025,877,1180,904"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a00b7df05e0cd44c1a2d4e6ee39dbaacf" title="Create the adjacency (stored as attribute) of the substructure." alt="" coords="747,5,952,61"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a96647e9413f2b7e13dd17f02cf29b12d" title="Create a manifold mesh from the substructure." alt="" coords="438,85,657,141"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ad1b3fcd12c4e092d9e92f2aa7db224bf" title=" " alt="" coords="730,870,969,911"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1components_1_1_tag_intersection.html#aa089317765f51a727fdde846aad4c276" title=" " alt="" coords="722,935,977,977"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#afb744eb2b5ec264a9a682ccfd3f8dfcb" title="Compute the ids of the manifold substructure." alt="" coords="740,85,959,141"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#ad18667b876fc81c8cfb79a408d632b25" title="Create a multimesh where the child&#45;mesh is just a soup (no connectivity) of m_mesh." alt="" coords="747,165,952,221"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a89f54c784fb3d50bba75eb8d5db6ed8a" title=" " alt="" coords="752,1001,947,1071"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#ad517c516675acd9b4964890cf78ce9c9" title="Go through edges of the parent mesh (triangle mesh) and initialize all the vertex tags to be &#45;1." alt="" coords="763,1096,936,1152"/>
-<area shape="rect" id="node19" href="$namespacewmtk_1_1components.html#ae2940d2f56c63d17f0f4d53eee921a8b" title=" " alt="" coords="738,1176,961,1203"/>
-<area shape="rect" id="node21" href="$classwmtk_1_1io_1_1_paraview_writer.html#abca390cc74eae5a2b2fc2a431ad0d0b8" title=" " alt="" coords="756,1227,943,1269"/>
-<area shape="rect" id="node22" href="$namespacewmtk_1_1components.html#a1646363f25b9134edc803de5b208d6e1" title=" " alt="" coords="752,1293,947,1334"/>
-<area shape="rect" id="node23" href="$classwmtk_1_1components_1_1internal_1_1_marching.html#a9e2d1de9a85f917baa06fd06feffe8f3" title=" " alt="" coords="445,170,650,211"/>
-<area shape="rect" id="node26" href="$classwmtk_1_1operations_1_1composite_1_1_project_operation.html#a2502ed31a22f3171e399e5362b920a81" title=" " alt="" coords="721,1358,977,1399"/>
-<area shape="rect" id="node27" href="$classwmtk_1_1components_1_1internal_1_1_regular_space.html#af9adef544fff10ba9257d128fd13393c" title=" " alt="" coords="434,235,661,277"/>
-<area shape="rect" id="node30" href="$namespacewmtk_1_1components.html#ab30eafa8d03d56830d5a7cec85d5712c" title=" " alt="" coords="747,639,952,681"/>
-<area shape="rect" id="node33" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a76f9d0aa5d7d0de388e17b239faab649" title=" " alt="" coords="763,1423,936,1465"/>
-<area shape="rect" id="node35" href="$classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#afe24374c96b133e4a02b4ee6363c55d4" title=" " alt="" coords="731,1489,967,1530"/>
-<area shape="rect" id="node36" href="$classwmtk_1_1_scheduler.html#a246ccf6605333ebb7c020aa8fae1e959" title=" " alt="" coords="769,398,929,439"/>
-<area shape="rect" id="node41" href="$namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80" title=" " alt="" coords="766,753,933,794"/>
-<area shape="rect" id="node49" href="$namespacewmtk_1_1components.html#a9f615850a1b53a1f3bd0842e9d1ce920" title=" " alt="" coords="463,986,631,1027"/>
-<area shape="rect" id="node50" href="$test__component__isotropic__remeshing_8cpp.html#a9e0dd9408a6fe42f1fb8e8764f740dda" title=" " alt="" coords="802,1555,897,1581"/>
-<area shape="rect" id="node4" href="$namespacewmtk_1_1components.html#a43e4bf82099343e153b21c9be07cd2d1" title="Generate a multi&#45;mesh from a mesh with a tag that represents the substructure." alt="" coords="148,75,373,117"/>
-<area shape="rect" id="node6" href="$test__component__multimesh__from__tag_8cpp.html#a18cd3d411cfadc472201c20662d62869" title=" " alt="" coords="213,24,308,51"/>
-<area shape="rect" id="node7" href="$namespacewmtk_1_1components.html#ad26e15d638e76cf767b43e34d5d68465" title=" " alt="" coords="158,359,363,401"/>
-<area shape="rect" id="node5" href="$test__component__multimesh__from__tag_8cpp.html#a2b0208caf4b963a36a43604c3e7cf34a" title=" " alt="" coords="5,83,100,109"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a01d41f4e6fd9e1c07166ac2470068eaf" title=" " alt="" coords="441,1051,654,1093"/>
-<area shape="rect" id="node14" href="$namespacewmtk_1_1multimesh_1_1utils.html#a197be9245149c7042613aeacf231ec1d" title="extract a child mesh based on the tag handle and the tag value, and register it to the input (parent)..." alt="" coords="461,1117,634,1173"/>
-<area shape="rect" id="node15" href="$namespacewmtk_1_1multimesh_1_1utils.html#a3ba02c50321ce0e6095c107cbb5edc13" title="extract a child mesh based on the tag handle and the tag value, and register it to the input (parent)..." alt="" coords="437,1197,657,1253"/>
-<area shape="rect" id="node16" href="$namespacewmtk_1_1multimesh_1_1utils.html#a9349b24597b61459c9d98753ae5234f1" title="extract a child mesh based on the given tag and tag value, and register it to the input (parent) mesh" alt="" coords="174,1197,347,1253"/>
-<area shape="rect" id="node18" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acca3241a2661355c5351269aa5a275c6" title=" " alt="" coords="461,1277,634,1333"/>
-<area shape="rect" id="node20" href="$test__component__mesh__info_8cpp.html#ae25bd2a8d9e0eab8fb1941fed8422302" title=" " alt="" coords="500,1357,595,1384"/>
-<area shape="rect" id="node24" href="$namespacewmtk_1_1components.html#a2089f999b4072674bda24b29e86257e1" title="Perform maching tetrahedra/triangles." alt="" coords="153,192,369,219"/>
-<area shape="rect" id="node25" href="$test__component__marching_8cpp.html#af20fbc246d1ad31be8d9ec0011ac52d6" title=" " alt="" coords="213,141,308,168"/>
-<area shape="rect" id="node28" href="$namespacewmtk_1_1components.html#a899899fc78b0d9575cf5996f9d10d012" title=" " alt="" coords="160,294,361,335"/>
-<area shape="rect" id="node29" href="$test__component__regular__space_8cpp.html#a5e69783b3ce0c074477e3081ab8cf658" title=" " alt="" coords="213,243,308,269"/>
-<area shape="rect" id="node31" href="$namespacewmtk_1_1components.html#a1a5ffb0788dc02e8b355a7a1ad447c7f" title=" " alt="" coords="155,593,366,634"/>
-<area shape="rect" id="node32" href="$test__component__isotropic__remeshing_8cpp.html#a64dc4992576434e79fdb0838f9092ab8" title=" " alt="" coords="5,600,100,627"/>
-<area shape="rect" id="node34" href="$namespacewmtk_1_1multimesh_1_1utils.html#a3eeab2c4a43e5e6d5fb50d399a88d0a3" title="Do two passes on the edges of a triangle mesh to create vertex tags and edge tags." alt="" coords="461,1423,634,1465"/>
-<area shape="rect" id="node37" href="$namespacewmtk_1_1components_1_1internal.html#a49432d47b0fca2f5fe80f1e9c634fa14" title=" " alt="" coords="445,534,650,575"/>
-<area shape="rect" id="node39" href="$test__component__isotropic__remeshing_8cpp.html#adf1e479866f5fbf4faa9038ece31a877" title=" " alt="" coords="500,301,595,328"/>
-<area shape="rect" id="node40" href="$namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0" title=" " alt="" coords="428,403,667,429"/>
-<area shape="rect" id="node38" href="$test__component__isotropic__remeshing_8cpp.html#a51ae85bc413e9940267e8a366e0bcc9f" title=" " alt="" coords="213,541,308,568"/>
-<area shape="rect" id="node42" href="$namespacewmtk_1_1components.html#a21e25d3a6f734e991354c2294bf49bbe" title=" " alt="" coords="421,884,673,911"/>
-<area shape="rect" id="node43" href="$namespacewmtk_1_1components.html#a2aa35ea56a54c5b65349ced551dd1429" title=" " alt="" coords="450,651,645,677"/>
-<area shape="rect" id="node44" href="$test__component__fusion_8cpp.html#ad717d3fcca492f6237e8e5f0e3455e4e" title=" " alt="" coords="213,797,308,824"/>
-<area shape="rect" id="node45" href="$namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456" title="input a triangle surface mesh, embed it into a regular grid and generate a tetmesh,..." alt="" coords="451,453,643,509"/>
-<area shape="rect" id="node46" href="$namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872" title=" " alt="" coords="445,702,650,743"/>
-<area shape="rect" id="node47" href="$namespacewmtk_1_1components_1_1internal.html#a7e292eba37fd37581ede0aa29943c3db" title="Build a tagged triangle mesh from a greyscale image." alt="" coords="440,767,655,809"/>
-<area shape="rect" id="node48" href="$classwmtk_1_1_msh_reader.html#afd780afbbde030daa41a17137bc37085" title=" " alt="" coords="459,833,636,860"/>
+<area shape="rect" id="node1" title="Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index." alt="" coords="1025,925,1180,951"/>
+<area shape="rect" id="node2" href="$classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a00b7df05e0cd44c1a2d4e6ee39dbaacf" title="Create the adjacency (stored as attribute) of the substructure." alt="" coords="747,239,952,295"/>
+<area shape="rect" id="node3" href="$classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a96647e9413f2b7e13dd17f02cf29b12d" title="Create a manifold mesh from the substructure." alt="" coords="438,78,657,134"/>
+<area shape="rect" id="node8" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ad1b3fcd12c4e092d9e92f2aa7db224bf" title=" " alt="" coords="730,917,969,959"/>
+<area shape="rect" id="node10" href="$classwmtk_1_1components_1_1_tag_intersection.html#aa089317765f51a727fdde846aad4c276" title=" " alt="" coords="722,983,977,1024"/>
+<area shape="rect" id="node11" href="$classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#afb744eb2b5ec264a9a682ccfd3f8dfcb" title="Compute the ids of the manifold substructure." alt="" coords="740,29,959,85"/>
+<area shape="rect" id="node12" href="$classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#ad18667b876fc81c8cfb79a408d632b25" title="Create a multimesh where the child&#45;mesh is just a soup (no connectivity) of m_mesh." alt="" coords="747,109,952,165"/>
+<area shape="rect" id="node13" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a89f54c784fb3d50bba75eb8d5db6ed8a" title=" " alt="" coords="752,1048,947,1119"/>
+<area shape="rect" id="node17" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#ad517c516675acd9b4964890cf78ce9c9" title="Go through edges of the parent mesh (triangle mesh) and initialize all the vertex tags to be &#45;1." alt="" coords="763,1143,936,1199"/>
+<area shape="rect" id="node19" href="$namespacewmtk_1_1components.html#ae2940d2f56c63d17f0f4d53eee921a8b" title=" " alt="" coords="738,1223,961,1250"/>
+<area shape="rect" id="node21" href="$classwmtk_1_1io_1_1_paraview_writer.html#abca390cc74eae5a2b2fc2a431ad0d0b8" title=" " alt="" coords="756,1275,943,1316"/>
+<area shape="rect" id="node22" href="$namespacewmtk_1_1components.html#a1646363f25b9134edc803de5b208d6e1" title=" " alt="" coords="752,1340,947,1381"/>
+<area shape="rect" id="node23" href="$classwmtk_1_1components_1_1internal_1_1_marching.html#a9e2d1de9a85f917baa06fd06feffe8f3" title=" " alt="" coords="445,159,650,200"/>
+<area shape="rect" id="node26" href="$classwmtk_1_1operations_1_1composite_1_1_project_operation.html#a2502ed31a22f3171e399e5362b920a81" title=" " alt="" coords="721,1405,977,1447"/>
+<area shape="rect" id="node27" href="$classwmtk_1_1components_1_1internal_1_1_regular_space.html#af9adef544fff10ba9257d128fd13393c" title=" " alt="" coords="434,224,661,265"/>
+<area shape="rect" id="node30" href="$namespacewmtk_1_1components.html#ab30eafa8d03d56830d5a7cec85d5712c" title=" " alt="" coords="747,691,952,732"/>
+<area shape="rect" id="node33" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a76f9d0aa5d7d0de388e17b239faab649" title=" " alt="" coords="763,1471,936,1512"/>
+<area shape="rect" id="node35" href="$classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#afe24374c96b133e4a02b4ee6363c55d4" title=" " alt="" coords="731,1536,967,1577"/>
+<area shape="rect" id="node36" href="$classwmtk_1_1_scheduler.html#a246ccf6605333ebb7c020aa8fae1e959" title=" " alt="" coords="769,421,929,463"/>
+<area shape="rect" id="node41" href="$namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80" title=" " alt="" coords="766,800,933,841"/>
+<area shape="rect" id="node49" href="$namespacewmtk_1_1components.html#a9f615850a1b53a1f3bd0842e9d1ce920" title=" " alt="" coords="463,1041,631,1083"/>
+<area shape="rect" id="node50" href="$test__component__isotropic__remeshing_8cpp.html#a9e0dd9408a6fe42f1fb8e8764f740dda" title=" " alt="" coords="802,1602,897,1629"/>
+<area shape="rect" id="node4" href="$namespacewmtk_1_1components.html#a43e4bf82099343e153b21c9be07cd2d1" title="Generate a multi&#45;mesh from a mesh with a tag that represents the substructure." alt="" coords="148,5,373,47"/>
+<area shape="rect" id="node6" href="$test__component__multimesh__from__tag_8cpp.html#a18cd3d411cfadc472201c20662d62869" title=" " alt="" coords="213,71,308,98"/>
+<area shape="rect" id="node7" href="$namespacewmtk_1_1components.html#ad26e15d638e76cf767b43e34d5d68465" title=" " alt="" coords="158,341,363,383"/>
+<area shape="rect" id="node5" href="$test__component__multimesh__from__tag_8cpp.html#a2b0208caf4b963a36a43604c3e7cf34a" title=" " alt="" coords="5,13,100,39"/>
+<area shape="rect" id="node9" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a01d41f4e6fd9e1c07166ac2470068eaf" title=" " alt="" coords="441,1107,654,1148"/>
+<area shape="rect" id="node14" href="$namespacewmtk_1_1multimesh_1_1utils.html#a197be9245149c7042613aeacf231ec1d" title="extract a child mesh based on the tag handle and the tag value, and register it to the input (parent)..." alt="" coords="461,1173,634,1229"/>
+<area shape="rect" id="node15" href="$namespacewmtk_1_1multimesh_1_1utils.html#a3ba02c50321ce0e6095c107cbb5edc13" title="extract a child mesh based on the tag handle and the tag value, and register it to the input (parent)..." alt="" coords="437,1253,657,1309"/>
+<area shape="rect" id="node16" href="$namespacewmtk_1_1multimesh_1_1utils.html#a9349b24597b61459c9d98753ae5234f1" title="extract a child mesh based on the given tag and tag value, and register it to the input (parent) mesh" alt="" coords="174,1253,347,1309"/>
+<area shape="rect" id="node18" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acca3241a2661355c5351269aa5a275c6" title=" " alt="" coords="461,1333,634,1389"/>
+<area shape="rect" id="node20" href="$test__component__mesh__info_8cpp.html#ae25bd2a8d9e0eab8fb1941fed8422302" title=" " alt="" coords="500,1413,595,1439"/>
+<area shape="rect" id="node24" href="$namespacewmtk_1_1components.html#a2089f999b4072674bda24b29e86257e1" title="Perform maching tetrahedra/triangles." alt="" coords="153,122,369,149"/>
+<area shape="rect" id="node25" href="$test__component__marching_8cpp.html#af20fbc246d1ad31be8d9ec0011ac52d6" title=" " alt="" coords="213,173,308,199"/>
+<area shape="rect" id="node28" href="$namespacewmtk_1_1components.html#a899899fc78b0d9575cf5996f9d10d012" title=" " alt="" coords="160,224,361,265"/>
+<area shape="rect" id="node29" href="$test__component__regular__space_8cpp.html#a5e69783b3ce0c074477e3081ab8cf658" title=" " alt="" coords="213,290,308,317"/>
+<area shape="rect" id="node31" href="$namespacewmtk_1_1components.html#a1a5ffb0788dc02e8b355a7a1ad447c7f" title=" " alt="" coords="155,579,366,620"/>
+<area shape="rect" id="node32" href="$test__component__isotropic__remeshing_8cpp.html#a64dc4992576434e79fdb0838f9092ab8" title=" " alt="" coords="5,586,100,613"/>
+<area shape="rect" id="node34" href="$namespacewmtk_1_1multimesh_1_1utils.html#a3eeab2c4a43e5e6d5fb50d399a88d0a3" title="Do two passes on the edges of a triangle mesh to create vertex tags and edge tags." alt="" coords="461,1471,634,1512"/>
+<area shape="rect" id="node37" href="$namespacewmtk_1_1components_1_1internal.html#a49432d47b0fca2f5fe80f1e9c634fa14" title=" " alt="" coords="445,509,650,551"/>
+<area shape="rect" id="node38" href="$classwmtk_1_1_scheduler.html#a4a654a64c9b1823bb3ddb5fa7a59c7d8" title=" " alt="" coords="467,392,627,433"/>
+<area shape="rect" id="node39" href="$test__component__isotropic__remeshing_8cpp.html#adf1e479866f5fbf4faa9038ece31a877" title=" " alt="" coords="500,458,595,485"/>
+<area shape="rect" id="node40" href="$namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0" title=" " alt="" coords="428,290,667,317"/>
+<area shape="rect" id="node42" href="$namespacewmtk_1_1components.html#a21e25d3a6f734e991354c2294bf49bbe" title=" " alt="" coords="421,990,673,1017"/>
+<area shape="rect" id="node43" href="$namespacewmtk_1_1components.html#a2aa35ea56a54c5b65349ced551dd1429" title=" " alt="" coords="450,757,645,783"/>
+<area shape="rect" id="node44" href="$test__component__fusion_8cpp.html#ad717d3fcca492f6237e8e5f0e3455e4e" title=" " alt="" coords="213,731,308,758"/>
+<area shape="rect" id="node45" href="$namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456" title="input a triangle surface mesh, embed it into a regular grid and generate a tetmesh,..." alt="" coords="451,575,643,631"/>
+<area shape="rect" id="node46" href="$namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872" title=" " alt="" coords="445,808,650,849"/>
+<area shape="rect" id="node47" href="$namespacewmtk_1_1components_1_1internal.html#a7e292eba37fd37581ede0aa29943c3db" title="Build a tagged triangle mesh from a greyscale image." alt="" coords="440,873,655,915"/>
+<area shape="rect" id="node48" href="$classwmtk_1_1_msh_reader.html#afd780afbbde030daa41a17137bc37085" title=" " alt="" coords="459,939,636,966"/>
 </map>

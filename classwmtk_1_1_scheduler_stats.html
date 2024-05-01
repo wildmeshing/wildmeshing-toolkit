@@ -134,12 +134,20 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6eb636bacf541d1f62a86bfffa3b4b0e"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_scheduler_stats.html#a6eb636bacf541d1f62a86bfffa3b4b0e">number_of_performed_operations</a> () const</td></tr>
 <tr class="memdesc:a6eb636bacf541d1f62a86bfffa3b4b0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of performed operations performed by the scheduler.  <a href="classwmtk_1_1_scheduler_stats.html#a6eb636bacf541d1f62a86bfffa3b4b0e">More...</a><br /></td></tr>
 <tr class="separator:a6eb636bacf541d1f62a86bfffa3b4b0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1fd67de12d109a2ccd651a495ede7423"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_scheduler_stats.html#a1fd67de12d109a2ccd651a495ede7423">total_time</a> () const</td></tr>
+<tr class="separator:a1fd67de12d109a2ccd651a495ede7423"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a743d45b86c6ac7d696c26e2cad573ac9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_scheduler_stats.html#a743d45b86c6ac7d696c26e2cad573ac9">succeed</a> ()</td></tr>
 <tr class="separator:a743d45b86c6ac7d696c26e2cad573ac9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4af2233b8bafa0ee528cbef4de10fa1d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_scheduler_stats.html#a4af2233b8bafa0ee528cbef4de10fa1d">fail</a> ()</td></tr>
 <tr class="separator:a4af2233b8bafa0ee528cbef4de10fa1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a65ce3dba578b98c1b365ad3e711123c7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_scheduler_stats.html#a65ce3dba578b98c1b365ad3e711123c7">operator+=</a> (const <a class="el" href="classwmtk_1_1_scheduler_stats.html">SchedulerStats</a> &amp;s)</td></tr>
 <tr class="separator:a65ce3dba578b98c1b365ad3e711123c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4573eda170888fc2955489d9145a644d"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_scheduler_stats.html#a4573eda170888fc2955489d9145a644d">avg_sub_collecting_time</a> () const</td></tr>
+<tr class="separator:a4573eda170888fc2955489d9145a644d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3e098b40e5225c07ab22c92fb1b12e3"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_scheduler_stats.html#ac3e098b40e5225c07ab22c92fb1b12e3">avg_sub_sorting_time</a> () const</td></tr>
+<tr class="separator:ac3e098b40e5225c07ab22c92fb1b12e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49888d34ab1e7a6e4e8c5a47adf4cd3e"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_scheduler_stats.html#a49888d34ab1e7a6e4e8c5a47adf4cd3e">avg_sub_executing_time</a> () const</td></tr>
+<tr class="separator:a49888d34ab1e7a6e4e8c5a47adf4cd3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -149,6 +157,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ac19aa99b03c45e0b51c2cf3a4aa18de1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a938490720dd56f5aa6b87ecd34574bd3"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_scheduler_stats.html#a938490720dd56f5aa6b87ecd34574bd3">executing_time</a> = 0</td></tr>
 <tr class="separator:a938490720dd56f5aa6b87ecd34574bd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a368a3d014aa179697d0954e9b1fcee64"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_scheduler_stats.html">SchedulerStats</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_scheduler_stats.html#a368a3d014aa179697d0954e9b1fcee64">sub_stats</a></td></tr>
+<tr class="separator:a368a3d014aa179697d0954e9b1fcee64"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -161,6 +171,93 @@ Private Attributes</h2></td></tr>
 <div class="textblock">
 <p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00007">7</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="a4573eda170888fc2955489d9145a644d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4573eda170888fc2955489d9145a644d">&#9670;&nbsp;</a></span>avg_sub_collecting_time()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::SchedulerStats::avg_sub_collecting_time </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00053">53</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00051">sub_stats</a>.</p>
+
+</div>
+</div>
+<a id="a49888d34ab1e7a6e4e8c5a47adf4cd3e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49888d34ab1e7a6e4e8c5a47adf4cd3e">&#9670;&nbsp;</a></span>avg_sub_executing_time()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::SchedulerStats::avg_sub_executing_time </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00071">71</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00051">sub_stats</a>.</p>
+
+</div>
+</div>
+<a id="ac3e098b40e5225c07ab22c92fb1b12e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3e098b40e5225c07ab22c92fb1b12e3">&#9670;&nbsp;</a></span>avg_sub_sorting_time()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::SchedulerStats::avg_sub_sorting_time </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00062">62</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00051">sub_stats</a>.</p>
+
+</div>
+</div>
 <a id="a4af2233b8bafa0ee528cbef4de10fa1d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4af2233b8bafa0ee528cbef4de10fa1d">&#9670;&nbsp;</a></span>fail()</h2>
 
@@ -184,11 +281,11 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00032">32</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00034">34</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00051">m_num_op_fail</a>.</p>
+<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00082">m_num_op_fail</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_scheduler_8cpp_source.html#l00020">wmtk::Scheduler::run_operation_on_all()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_scheduler_8cpp_source.html#l00021">wmtk::Scheduler::run_operation_on_all()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -226,9 +323,9 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00022">22</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00051">m_num_op_fail</a>.</p>
+<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00082">m_num_op_fail</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00122">wmtk::components::wildmeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00126">wmtk::components::wildmeshing()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -266,9 +363,9 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00029">29</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00051">m_num_op_fail</a>, and <a class="el" href="_scheduler_8hpp_source.html#l00050">m_num_op_success</a>.</p>
+<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00082">m_num_op_fail</a>, and <a class="el" href="_scheduler_8hpp_source.html#l00081">m_num_op_success</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00122">wmtk::components::wildmeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00126">wmtk::components::wildmeshing()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -306,13 +403,13 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00015">15</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00050">m_num_op_success</a>.</p>
+<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00081">m_num_op_success</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00122">wmtk::components::wildmeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00088">wmtk::Scheduler::run_operation_on_all()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00126">wmtk::components::wildmeshing()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_scheduler_stats_ae6e50990c7c4705a810c633755e9c2c0_icgraph.svg" width="100%" height="400"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_scheduler_stats_ae6e50990c7c4705a810c633755e9c2c0_icgraph.svg" width="100%" height="449"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -342,9 +439,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00034">34</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00036">36</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00045">collecting_time</a>, <a class="el" href="_scheduler_8hpp_source.html#l00047">executing_time</a>, <a class="el" href="_scheduler_8hpp_source.html#l00051">m_num_op_fail</a>, <a class="el" href="_scheduler_8hpp_source.html#l00050">m_num_op_success</a>, and <a class="el" href="_scheduler_8hpp_source.html#l00046">sorting_time</a>.</p>
+<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00047">collecting_time</a>, <a class="el" href="_scheduler_8hpp_source.html#l00049">executing_time</a>, <a class="el" href="_scheduler_8hpp_source.html#l00082">m_num_op_fail</a>, <a class="el" href="_scheduler_8hpp_source.html#l00081">m_num_op_success</a>, and <a class="el" href="_scheduler_8hpp_source.html#l00048">sorting_time</a>.</p>
 
 </div>
 </div>
@@ -371,17 +468,46 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00031">31</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00033">33</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00050">m_num_op_success</a>.</p>
+<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00081">m_num_op_success</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_scheduler_8cpp_source.html#l00020">wmtk::Scheduler::run_operation_on_all()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_scheduler_8cpp_source.html#l00021">wmtk::Scheduler::run_operation_on_all()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_scheduler_stats_a743d45b86c6ac7d696c26e2cad573ac9_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
+
+</div>
+</div>
+<a id="a1fd67de12d109a2ccd651a495ede7423"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1fd67de12d109a2ccd651a495ede7423">&#9670;&nbsp;</a></span>total_time()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::SchedulerStats::total_time </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00031">31</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00047">collecting_time</a>, <a class="el" href="_scheduler_8hpp_source.html#l00049">executing_time</a>, and <a class="el" href="_scheduler_8hpp_source.html#l00048">sorting_time</a>.</p>
 
 </div>
 </div>
@@ -398,9 +524,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00045">45</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00047">47</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00034">operator+=()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00020">wmtk::Scheduler::run_operation_on_all()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00122">wmtk::components::wildmeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00036">operator+=()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00021">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00031">total_time()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00126">wmtk::components::wildmeshing()</a>.</p>
 
 </div>
 </div>
@@ -416,9 +542,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00047">47</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00049">49</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00034">operator+=()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00020">wmtk::Scheduler::run_operation_on_all()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00122">wmtk::components::wildmeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00036">operator+=()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00021">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00031">total_time()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00126">wmtk::components::wildmeshing()</a>.</p>
 
 </div>
 </div>
@@ -442,9 +568,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00051">51</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00082">82</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_scheduler_8hpp_source.html#l00032">fail()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00022">number_of_failed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00029">number_of_performed_operations()</a>, and <a class="el" href="_scheduler_8hpp_source.html#l00034">operator+=()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_scheduler_8hpp_source.html#l00034">fail()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00022">number_of_failed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00029">number_of_performed_operations()</a>, and <a class="el" href="_scheduler_8hpp_source.html#l00036">operator+=()</a>.</p>
 
 </div>
 </div>
@@ -468,9 +594,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00050">50</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00081">81</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_scheduler_8hpp_source.html#l00029">number_of_performed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00015">number_of_successful_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00034">operator+=()</a>, and <a class="el" href="_scheduler_8hpp_source.html#l00031">succeed()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_scheduler_8hpp_source.html#l00029">number_of_performed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00015">number_of_successful_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00036">operator+=()</a>, and <a class="el" href="_scheduler_8hpp_source.html#l00033">succeed()</a>.</p>
 
 </div>
 </div>
@@ -486,9 +612,27 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00046">46</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00048">48</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00034">operator+=()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00020">wmtk::Scheduler::run_operation_on_all()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00122">wmtk::components::wildmeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00027">wmtk::components::internal::isotropic_remeshing()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00036">operator+=()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00021">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00031">total_time()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00126">wmtk::components::wildmeshing()</a>.</p>
+
+</div>
+</div>
+<a id="a368a3d014aa179697d0954e9b1fcee64"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a368a3d014aa179697d0954e9b1fcee64">&#9670;&nbsp;</a></span>sub_stats</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="classwmtk_1_1_scheduler_stats.html">SchedulerStats</a>&gt; wmtk::SchedulerStats::sub_stats</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_scheduler_8hpp_source.html#l00051">51</a> of file <a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_scheduler_8hpp_source.html#l00053">avg_sub_collecting_time()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00071">avg_sub_executing_time()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00062">avg_sub_sorting_time()</a>, and <a class="el" href="_scheduler_8cpp_source.html#l00088">wmtk::Scheduler::run_operation_on_all()</a>.</p>
 
 </div>
 </div>

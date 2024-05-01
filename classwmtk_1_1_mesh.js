@@ -69,6 +69,7 @@ var classwmtk_1_1_mesh =
     [ "is_from_same_multi_mesh_structure", "classwmtk_1_1_mesh.html#ad054c074d4776010002321117ec459e8", null ],
     [ "is_hash_valid", "classwmtk_1_1_mesh.html#aad291410ffabfd61e42d0a813a610805", null ],
     [ "is_multi_mesh_root", "classwmtk_1_1_mesh.html#a92d2cdf5a3be21e814e5e6044800f63d", null ],
+    [ "is_removed", "classwmtk_1_1_mesh.html#ade176d345902d97af8c5da04aa3a095b", null ],
     [ "is_valid", "classwmtk_1_1_mesh.html#a918c509096fc08691924c05c6143b9c3", null ],
     [ "is_valid_slow", "classwmtk_1_1_mesh.html#abbb1c54cfd6ec17f4730317ee5fab78d", null ],
     [ "lub_map", "classwmtk_1_1_mesh.html#a41b770767cdea17fe0adc0c991202091", null ],

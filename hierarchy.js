@@ -181,7 +181,7 @@ var hierarchy =
       [ "wmtk::Swap23EnergyBeforeInvariant", "classwmtk_1_1_swap23_energy_before_invariant.html", null ],
       [ "wmtk::Swap32EnergyBeforeInvariant", "classwmtk_1_1_swap32_energy_before_invariant.html", null ],
       [ "wmtk::Swap44EnergyBeforeInvariant", "classwmtk_1_1_swap44_energy_before_invariant.html", null ],
-      [ "wmtk::Swap44_2EnergyBeforeInvariant", "classwmtk_1_1_swap44__2_energy_before_invariant.html", null ],
+      [ "wmtk::Swap56EnergyBeforeInvariant", "classwmtk_1_1_swap56_energy_before_invariant.html", null ],
       [ "wmtk::TodoInvariant", "classwmtk_1_1_todo_invariant.html", null ],
       [ "wmtk::TodoLargerInvariant", "classwmtk_1_1_todo_larger_invariant.html", null ],
       [ "wmtk::TodoSmallerInvariant", "classwmtk_1_1_todo_smaller_invariant.html", null ],
@@ -266,7 +266,11 @@ var hierarchy =
       ] ],
       [ "wmtk::operations::EdgeCollapse", "classwmtk_1_1operations_1_1_edge_collapse.html", null ],
       [ "wmtk::operations::EdgeSplit", "classwmtk_1_1operations_1_1_edge_split.html", null ],
-      [ "wmtk::operations::OperationSequence", "classwmtk_1_1operations_1_1_operation_sequence.html", null ],
+      [ "wmtk::operations::OperationSequence", "classwmtk_1_1operations_1_1_operation_sequence.html", [
+        [ "wmtk::operations::AndOperationSequence", "classwmtk_1_1operations_1_1_and_operation_sequence.html", null ],
+        [ "wmtk::operations::MinOperationSequence", "classwmtk_1_1operations_1_1_min_operation_sequence.html", null ],
+        [ "wmtk::operations::OrOperationSequence", "classwmtk_1_1operations_1_1_or_operation_sequence.html", null ]
+      ] ],
       [ "wmtk::operations::composite::TetCellSplit", "classwmtk_1_1operations_1_1composite_1_1_tet_cell_split.html", null ],
       [ "wmtk::operations::composite::TetEdgeSwap", "classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html", null ],
       [ "wmtk::operations::composite::TetFaceSwap", "classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html", null ],

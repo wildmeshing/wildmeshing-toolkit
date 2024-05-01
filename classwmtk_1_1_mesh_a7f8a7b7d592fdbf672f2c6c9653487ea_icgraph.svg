@@ -48,7 +48,7 @@ if (edges && edges.length) {
 <script type="text/javascript">
 var viewWidth = 999;
 var viewHeight = 1019;
-var sectionId = 'dynsection-133';
+var sectionId = 'dynsection-134';
 </script>
 <script xlink:href="svgpan.js"/>
 <svg id="graph" class="graph">
@@ -99,9 +99,9 @@ var sectionId = 'dynsection-133';
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:href="classwmtk_1_1_swap44__2_energy_before_invariant.html#ae47f8e48c0c38ab1b040d55ea59750d6" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="668.5,-793 668.5,-823 834.5,-823 834.5,-793 668.5,-793"/>
-<text text-anchor="start" x="676.5" y="-811" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Swap44_2EnergyBefore</text>
+<g id="a_node4"><a xlink:href="classwmtk_1_1_swap44_energy_before_invariant.html#ad084e9675c0844f9229f4a9f452a9f4a" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="674,-793 674,-823 829,-823 829,-793 674,-793"/>
+<text text-anchor="start" x="682" y="-811" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Swap44EnergyBefore</text>
 <text text-anchor="middle" x="751.5" y="-800" font-family="Helvetica,sans-Serif" font-size="10.00">Invariant::before</text>
 </a>
 </g>
@@ -109,15 +109,15 @@ var sectionId = 'dynsection-133';
 <!-- Node1&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
 <title>Node1&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M933.79,-480.68C934.23,-542.21 926.41,-699.25 841,-784 837.61,-787.36 833.8,-790.27 829.71,-792.78"/>
+<path fill="none" stroke="midnightblue" d="M933.79,-480.68C934.23,-542.21 926.41,-699.25 841,-784 837.5,-787.48 833.54,-790.46 829.3,-793.03"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="937.29,-480.28 933.63,-470.34 930.29,-480.39 937.29,-480.28"/>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
-<g id="a_node5"><a xlink:href="classwmtk_1_1_swap44_energy_before_invariant.html#ad084e9675c0844f9229f4a9f452a9f4a" target="_top" xlink:title=" ">
+<g id="a_node5"><a xlink:href="classwmtk_1_1_swap56_energy_before_invariant.html#a904628eeefa17ffc85adcf81413f823a" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="674,-744 674,-774 829,-774 829,-744 674,-744"/>
-<text text-anchor="start" x="682" y="-762" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Swap44EnergyBefore</text>
+<text text-anchor="start" x="682" y="-762" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Swap56EnergyBefore</text>
 <text text-anchor="middle" x="751.5" y="-751" font-family="Helvetica,sans-Serif" font-size="10.00">Invariant::before</text>
 </a>
 </g>

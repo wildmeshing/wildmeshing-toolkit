@@ -318,7 +318,7 @@ $(document).ready(function(){initNavTree('_mesh_attributes_8cpp_source.html','')
 <div class="line"><a name="l00201"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a4f739618d61b5d574ea7225624d32e22">  201</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a4f739618d61b5d574ea7225624d32e22">MeshAttributes&lt;T&gt;::guarantee_at_least</a>(<span class="keyword">const</span> int64_t size)</div>
 <div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;{</div>
 <div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    <span class="keywordflow">if</span> (size &gt; m_reserved_size) {</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;        <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">logger</a>().warn(<span class="stringliteral">&quot;Pre-reserve enough simplices before your operation.&quot;</span>);</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;        <span class="comment">// logger().warn(&quot;Pre-reserve enough simplices before your operation.&quot;);</span></div>
 <div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;        reserve(size);</div>
 <div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    }</div>
 <div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;}</div>
@@ -443,7 +443,6 @@ $(document).ready(function(){initNavTree('_mesh_attributes_8cpp_source.html','')
 <div class="ttc" id="anamespacewmtk_1_1attribute_html"><div class="ttname"><a href="namespacewmtk_1_1attribute.html">wmtk::attribute</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8hpp_source.html#l00016">Accessor.hpp:16</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1simplex_1_1utils_html_accca10e19c43ac50ef093dceba76e556"><div class="ttname"><a href="namespacewmtk_1_1simplex_1_1utils.html#accca10e19c43ac50ef093dceba76e556">wmtk::simplex::utils::make_unique</a></div><div class="ttdeci">std::vector&lt; Simplex &gt; make_unique(const Mesh &amp;m, const std::vector&lt; Simplex &gt; &amp;s)</div><div class="ttdef"><b>Definition:</b> <a href="make__unique_8cpp_source.html#l00008">make_unique.cpp:8</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_a441d6ad4f19569c7d4946e743da1a925"><div class="ttname"><a href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">wmtk::log_and_throw_error</a></div><div class="ttdeci">void log_and_throw_error(const std::string &amp;msg)</div><div class="ttdef"><b>Definition:</b> <a href="_logger_8cpp_source.html#l00093">Logger.cpp:93</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_a6a35f11c12436093d26fdd8be6fecc06"><div class="ttname"><a href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a></div><div class="ttdeci">spdlog::logger &amp; logger()</div><div class="ttdoc">Retrieves the current logger.</div><div class="ttdef"><b>Definition:</b> <a href="_logger_8cpp_source.html#l00050">Logger.cpp:50</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

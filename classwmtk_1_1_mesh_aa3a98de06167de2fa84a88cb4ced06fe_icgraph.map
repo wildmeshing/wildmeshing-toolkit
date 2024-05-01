@@ -1,22 +1,25 @@
 <map id="wmtk::Mesh::resurrect_tuple" name="wmtk::Mesh::resurrect_tuple">
-<area shape="rect" id="node1" title="return the same tuple but with updated hash" alt="" coords="928,443,1096,484"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1operations_1_1_operation.html#a5da7c3c9bd540516ab1160ee9fff3147" title="utility for subclasses" alt="" coords="642,201,850,243"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1_mesh.html#a3bb2f7ff22ab4aab437168c5962d6266" title="same as resurrect_tuple but slow because it creates a new accessor" alt="" coords="662,267,830,308"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#a4c69338c29bf0105b1881d829a177d45" title=" " alt="" coords="612,333,880,389"/>
-<area shape="rect" id="node14" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#abe80ff5ed63ac45969a4d7d087a5ffd8" title=" " alt="" coords="615,413,877,455"/>
-<area shape="rect" id="node16" href="$namespacewmtk_1_1operations_1_1utils.html#a62fab811bf86bb7a2702f63304574002" title=" " alt="" coords="347,509,540,565"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#af971c830121bdd645f1bf3fc28aa76dd" title="update all the hashes of the top&#45;simplces of the parent mesh around a vertex hashes of the parent tup..." alt="" coords="337,618,550,674"/>
-<area shape="rect" id="node19" href="$namespacewmtk_1_1operations_1_1utils.html#a45a56d2f7cd5b33c464cfe0779be372a" title=" " alt="" coords="649,530,843,586"/>
-<area shape="rect" id="node20" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a49bf5ccfd29d9bbc2e2b0de2cfa67670" title=" " alt="" coords="639,661,853,732"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1operations_1_1_attributes_update.html#a7cd88fcf959543990319f8e21c95b340" title="returns an empty vector in case of failure" alt="" coords="339,136,547,177"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0" title="returns an empty vector in case of failure" alt="" coords="337,201,549,243"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a31cbdc65275c3680519e077a22f0f47e" title="returns an empty vector in case of failure" alt="" coords="337,267,549,308"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing.html#a2c409cd3da46f4360119e142ef3c3682" title="returns an empty vector in case of failure" alt="" coords="5,5,275,47"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1operations_1_1_attributes_update_with_function.html#a1c4a62e2c40a2cd6bcdac2219b5a4b52" title="returns an empty vector in case of failure" alt="" coords="33,71,247,112"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1operations_1_1_optimization_smoothing.html#a6ea07d48fc6e10f364221732d99d0a65" title="returns an empty vector in case of failure" alt="" coords="26,136,254,177"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1operations_1_1_rounding.html#a44d2c792261c5d0b9094b23932dac8fc" title="returns an empty vector in case of failure" alt="" coords="37,201,243,243"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double.html#abdf0afb7a81efab03ae4894f0816df42" title="returns an empty vector in case of failure" alt="" coords="47,267,233,323"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#a57611fefa85bea3d1858ca385b0f350a" title=" " alt="" coords="19,375,261,431"/>
-<area shape="rect" id="node15" href="$classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#affd40fcd5b842c963ae1511a255ba646" title=" " alt="" coords="323,405,564,461"/>
-<area shape="rect" id="node18" href="$classwmtk_1_1_mesh.html#a0b6f79f2dffa07d93a342306abd28b7e" title="wrapper function to update hashes (for parent mesh *this and its child meshes) after vertex operation..." alt="" coords="43,625,237,667"/>
+<area shape="rect" id="node1" title="return the same tuple but with updated hash" alt="" coords="928,515,1096,556"/>
+<area shape="rect" id="node2" href="$classwmtk_1_1operations_1_1_operation.html#a5da7c3c9bd540516ab1160ee9fff3147" title="utility for subclasses" alt="" coords="642,245,850,287"/>
+<area shape="rect" id="node14" href="$classwmtk_1_1_mesh.html#a3bb2f7ff22ab4aab437168c5962d6266" title="same as resurrect_tuple but slow because it creates a new accessor" alt="" coords="662,339,830,380"/>
+<area shape="rect" id="node15" href="$classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#a4c69338c29bf0105b1881d829a177d45" title=" " alt="" coords="612,405,880,461"/>
+<area shape="rect" id="node17" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#abe80ff5ed63ac45969a4d7d087a5ffd8" title=" " alt="" coords="615,485,877,527"/>
+<area shape="rect" id="node19" href="$namespacewmtk_1_1operations_1_1utils.html#a62fab811bf86bb7a2702f63304574002" title=" " alt="" coords="347,579,540,635"/>
+<area shape="rect" id="node20" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#af971c830121bdd645f1bf3fc28aa76dd" title="update all the hashes of the top&#45;simplces of the parent mesh around a vertex hashes of the parent tup..." alt="" coords="337,703,550,759"/>
+<area shape="rect" id="node22" href="$namespacewmtk_1_1operations_1_1utils.html#a45a56d2f7cd5b33c464cfe0779be372a" title=" " alt="" coords="649,602,843,658"/>
+<area shape="rect" id="node23" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a49bf5ccfd29d9bbc2e2b0de2cfa67670" title=" " alt="" coords="639,733,853,804"/>
+<area shape="rect" id="node3" href="$classwmtk_1_1operations_1_1_operation.html#ae802270b57ba3fe8ed2345b5777f46af" title=" " alt="" coords="339,71,547,112"/>
+<area shape="rect" id="node4" href="$classwmtk_1_1operations_1_1_operation.html#a9c6426d34b54642aacb28e7cf93e328f" title=" " alt="" coords="36,5,244,47"/>
+<area shape="rect" id="node6" href="$classwmtk_1_1operations_1_1_attributes_update.html#a7cd88fcf959543990319f8e21c95b340" title="returns an empty vector in case of failure" alt="" coords="339,213,547,255"/>
+<area shape="rect" id="node12" href="$classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0" title="returns an empty vector in case of failure" alt="" coords="337,279,549,320"/>
+<area shape="rect" id="node13" href="$classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a31cbdc65275c3680519e077a22f0f47e" title="returns an empty vector in case of failure" alt="" coords="337,344,549,385"/>
+<area shape="rect" id="node5" href="$classwmtk_1_1operations_1_1_operation_sequence.html#a547ec2a6ed8a354eff76e733b2e7fb2c" title=" " alt="" coords="36,71,244,112"/>
+<area shape="rect" id="node7" href="$classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing.html#a2c409cd3da46f4360119e142ef3c3682" title="returns an empty vector in case of failure" alt="" coords="5,136,275,177"/>
+<area shape="rect" id="node8" href="$classwmtk_1_1operations_1_1_attributes_update_with_function.html#a1c4a62e2c40a2cd6bcdac2219b5a4b52" title="returns an empty vector in case of failure" alt="" coords="33,201,247,243"/>
+<area shape="rect" id="node9" href="$classwmtk_1_1operations_1_1_optimization_smoothing.html#a6ea07d48fc6e10f364221732d99d0a65" title="returns an empty vector in case of failure" alt="" coords="26,267,254,308"/>
+<area shape="rect" id="node10" href="$classwmtk_1_1operations_1_1_rounding.html#a44d2c792261c5d0b9094b23932dac8fc" title="returns an empty vector in case of failure" alt="" coords="37,332,243,373"/>
+<area shape="rect" id="node11" href="$classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double.html#abdf0afb7a81efab03ae4894f0816df42" title="returns an empty vector in case of failure" alt="" coords="47,398,233,454"/>
+<area shape="rect" id="node16" href="$classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#a57611fefa85bea3d1858ca385b0f350a" title=" " alt="" coords="19,478,261,534"/>
+<area shape="rect" id="node18" href="$classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#affd40fcd5b842c963ae1511a255ba646" title=" " alt="" coords="323,478,564,534"/>
+<area shape="rect" id="node21" href="$classwmtk_1_1_mesh.html#a0b6f79f2dffa07d93a342306abd28b7e" title="wrapper function to update hashes (for parent mesh *this and its child meshes) after vertex operation..." alt="" coords="43,711,237,752"/>
 </map>

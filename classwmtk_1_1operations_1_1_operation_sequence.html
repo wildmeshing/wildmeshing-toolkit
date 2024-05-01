@@ -114,10 +114,11 @@ $(document).ready(function(){initNavTree('classwmtk_1_1operations_1_1_operation_
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1operations_1_1_operation_sequence-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">wmtk::operations::OperationSequence Class Reference</div>  </div>
+<div class="title">wmtk::operations::OperationSequence Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -125,7 +126,7 @@ $(document).ready(function(){initNavTree('classwmtk_1_1operations_1_1_operation_
 <div class="dynheader">
 Inheritance diagram for wmtk::operations::OperationSequence:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_operation_sequence__inherit__graph.svg" width="219" height="127"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_operation_sequence__inherit__graph.svg" width="100%" height="437"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -143,6 +144,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:afd4ce21dd73fd37d840d0e058004f756"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a547ec2a6ed8a354eff76e733b2e7fb2c"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation_sequence.html#a547ec2a6ed8a354eff76e733b2e7fb2c">operator()</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;simplex) override</td></tr>
 <tr class="separator:a547ec2a6ed8a354eff76e733b2e7fb2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f1b0a248806d45851ee5f6f4842aac6"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation_sequence.html#a2f1b0a248806d45851ee5f6f4842aac6">priority</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;simplex) const override</td></tr>
+<tr class="separator:a2f1b0a248806d45851ee5f6f4842aac6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a166e5d0fdd181db1acf50eced9d93614"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation_sequence.html#a166e5d0fdd181db1acf50eced9d93614">use_random_priority</a> () const override</td></tr>
+<tr class="separator:a166e5d0fdd181db1acf50eced9d93614"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af181b6e2191146b3f95ed8ea9e65dd0c"><td class="memItemLeft" align="right" valign="top">bool &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation_sequence.html#af181b6e2191146b3f95ed8ea9e65dd0c">use_random_priority</a> () override</td></tr>
+<tr class="separator:af181b6e2191146b3f95ed8ea9e65dd0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71fe10612708c2c99d3e11a7390208b0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation_sequence.html#a71fe10612708c2c99d3e11a7390208b0">primitive_type</a> () const override</td></tr>
 <tr class="separator:a71fe10612708c2c99d3e11a7390208b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e6663582184ce4e93c4a36dcec15c7f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation_sequence.html#a0e6663582184ce4e93c4a36dcec15c7f">reserve_enough_simplices</a> () override</td></tr>
@@ -154,20 +161,14 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aee0fd5daaaf5d3929a6d02ee7a819149 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79565c281727c6d14654bb89d9197205 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#a79565c281727c6d14654bb89d9197205">~Operation</a> ()</td></tr>
 <tr class="separator:a79565c281727c6d14654bb89d9197205 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf139a6e1f74a0ea4d97738fc36c3082 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top">virtual std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#acf139a6e1f74a0ea4d97738fc36c3082">priority</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;simplex) const</td></tr>
-<tr class="separator:acf139a6e1f74a0ea4d97738fc36c3082 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa0c646b0871dfa2c87540c7db2969544 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#aa0c646b0871dfa2c87540c7db2969544">use_random_priority</a> () const</td></tr>
-<tr class="separator:aa0c646b0871dfa2c87540c7db2969544 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9be3cddedfbf05cb1c17356d7cf4273e inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top">bool &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#a9be3cddedfbf05cb1c17356d7cf4273e">use_random_priority</a> ()</td></tr>
-<tr class="separator:a9be3cddedfbf05cb1c17356d7cf4273e inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a524a78a76bb262cffcaafdd36afa037b inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#a524a78a76bb262cffcaafdd36afa037b">mesh</a> () const</td></tr>
 <tr class="separator:a524a78a76bb262cffcaafdd36afa037b inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a64b6eee318eedb346d4be7352be38006 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#a64b6eee318eedb346d4be7352be38006">mesh</a> ()</td></tr>
 <tr class="separator:a64b6eee318eedb346d4be7352be38006 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15a2b269f98ec16b4b8d1d88feb60b85 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#a15a2b269f98ec16b4b8d1d88feb60b85">add_invariant</a> (std::shared_ptr&lt; <a class="el" href="namespacewmtk.html#aedc5944c76b67357bbdf8174977cf37c">Invariant</a> &gt; invariant)</td></tr>
 <tr class="separator:a15a2b269f98ec16b4b8d1d88feb60b85 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afbd6dcef97f60e4109029fc8b985ddc0 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#afbd6dcef97f60e4109029fc8b985ddc0">set_priority</a> (const std::function&lt; std::vector&lt; double &gt;(const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;)&gt; &amp;func)</td></tr>
-<tr class="separator:afbd6dcef97f60e4109029fc8b985ddc0 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42a8a0517f52e496690401a56f1d2224 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#a42a8a0517f52e496690401a56f1d2224">set_priority</a> (const std::function&lt; double(const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;)&gt; &amp;func)</td></tr>
+<tr class="separator:a42a8a0517f52e496690401a56f1d2224 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abf22bd59abe1fbc8221deba547566ff2 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html">operations::AttributeTransferStrategyBase</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#abf22bd59abe1fbc8221deba547566ff2">get_transfer_strategy</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &amp;attribute)</td></tr>
 <tr class="separator:abf22bd59abe1fbc8221deba547566ff2 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a426832d3c5fc10064b52f72ac2959b0e inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#a426832d3c5fc10064b52f72ac2959b0e">add_transfer_strategy</a> (const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html">operations::AttributeTransferStrategyBase</a> &gt; &amp;other)</td></tr>
@@ -183,6 +184,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:aba4e348ce8e14d98b87551dd12619338"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation_sequence.html#aba4e348ce8e14d98b87551dd12619338">unmodified_primitives</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;simplex) const override</td></tr>
 <tr class="memdesc:aba4e348ce8e14d98b87551dd12619338"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns all simplices that will be potentially affected by the <a class="el" href="classwmtk_1_1operations_1_1_operation_sequence.html">OperationSequence</a>.  <a href="classwmtk_1_1operations_1_1_operation_sequence.html#aba4e348ce8e14d98b87551dd12619338">More...</a><br /></td></tr>
 <tr class="separator:aba4e348ce8e14d98b87551dd12619338"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac58f8f4a9e262293a2df12b00dafd061"><td class="memItemLeft" align="right" valign="top">virtual std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation_sequence.html#ac58f8f4a9e262293a2df12b00dafd061">execute_operations</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;simplex)=0</td></tr>
+<tr class="separator:ac58f8f4a9e262293a2df12b00dafd061"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1operations_1_1_operation"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1operations_1_1_operation')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1operations_1_1_operation.html">wmtk::operations::Operation</a></td></tr>
 <tr class="memitem:ae802270b57ba3fe8ed2345b5777f46af inherit pro_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#ae802270b57ba3fe8ed2345b5777f46af">before</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;simplex) const</td></tr>
 <tr class="separator:ae802270b57ba3fe8ed2345b5777f46af inherit pro_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -200,18 +203,22 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:af181d255eb0ef5297646e0dc9dc817a7 inherit pro_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#af181d255eb0ef5297646e0dc9dc817a7">apply_attribute_transfer</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt; &amp;direct_mods)</td></tr>
 <tr class="separator:af181d255eb0ef5297646e0dc9dc817a7 inherit pro_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
-Private Attributes</h2></td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
+Protected Attributes</h2></td></tr>
 <tr class="memitem:aeca84fc8445087bb2b1f22d4a5daf3c6"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_operation.html">Operation</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation_sequence.html#aeca84fc8445087bb2b1f22d4a5daf3c6">m_operations</a></td></tr>
 <tr class="separator:aeca84fc8445087bb2b1f22d4a5daf3c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
-Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_attribs_classwmtk_1_1operations_1_1_operation"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classwmtk_1_1operations_1_1_operation')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classwmtk_1_1operations_1_1_operation.html">wmtk::operations::Operation</a></td></tr>
+<tr class="memitem:af16f7b110bc77a714f8099db723a9746 inherit pro_attribs_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top">std::function&lt; double(const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#af16f7b110bc77a714f8099db723a9746">m_priority</a> = nullptr</td></tr>
+<tr class="separator:af16f7b110bc77a714f8099db723a9746 inherit pro_attribs_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acde05432c356e62eb0d2b860527406df inherit pro_attribs_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1invariants_1_1_invariant_collection.html">invariants::InvariantCollection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#acde05432c356e62eb0d2b860527406df">m_invariants</a></td></tr>
 <tr class="separator:acde05432c356e62eb0d2b860527406df inherit pro_attribs_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afcc1ed4d86610e9cdbce5f3b7c8e2868 inherit pro_attribs_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html">operations::AttributeTransferStrategyBase</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#afcc1ed4d86610e9cdbce5f3b7c8e2868">m_attr_transfer_strategies</a></td></tr>
 <tr class="separator:afcc1ed4d86610e9cdbce5f3b7c8e2868 inherit pro_attribs_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:af1cb5da7c6a6692bdf9f935441111a6d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation_sequence.html#af1cb5da7c6a6692bdf9f935441111a6d">m_internal_random_priority</a> = false</td></tr>
+<tr class="separator:af1cb5da7c6a6692bdf9f935441111a6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -297,9 +304,9 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_operation_sequence_8hpp_source.html#l00030">30</a> of file <a class="el" href="_operation_sequence_8hpp_source.html">OperationSequence.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_operation_sequence_8hpp_source.html#l00048">48</a> of file <a class="el" href="_operation_sequence_8hpp_source.html">OperationSequence.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_operation_sequence_8hpp_source.html#l00052">m_operations</a>.</p>
+<p class="reference">References <a class="el" href="_operation_sequence_8hpp_source.html#l00070">m_operations</a>.</p>
 
 </div>
 </div>
@@ -331,7 +338,43 @@ Additional Inherited Members</h2></td></tr>
 
 <p>Implements <a class="el" href="classwmtk_1_1operations_1_1_operation.html#a7714f630ddc44c5cbc27b0b9ed5e63b9">wmtk::operations::Operation</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_operation_sequence_8hpp_source.html#l00037">37</a> of file <a class="el" href="_operation_sequence_8hpp_source.html">OperationSequence.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_operation_sequence_8hpp_source.html#l00054">54</a> of file <a class="el" href="_operation_sequence_8hpp_source.html">OperationSequence.hpp</a>.</p>
+
+</div>
+</div>
+<a id="ac58f8f4a9e262293a2df12b00dafd061"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac58f8f4a9e262293a2df12b00dafd061">&#9670;&nbsp;</a></span>execute_operations()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual std::vector&lt;<a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&gt; wmtk::operations::OperationSequence::execute_operations </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;&#160;</td>
+          <td class="paramname"><em>simplex</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classwmtk_1_1operations_1_1_or_operation_sequence.html#adf0b428b0d3b5719b3cdeaff2bf471bb">wmtk::operations::OrOperationSequence</a>, <a class="el" href="classwmtk_1_1operations_1_1_min_operation_sequence.html#ab4d9cdac66fa73e1ec5488c5f9ab7116">wmtk::operations::MinOperationSequence</a>, and <a class="el" href="classwmtk_1_1operations_1_1_and_operation_sequence.html#ad7524fe4ad6dd9f8c56e07d0eb1a7371">wmtk::operations::AndOperationSequence</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_operation_sequence_8cpp_source.html#l00017">operator()()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_operation_sequence_ac58f8f4a9e262293a2df12b00dafd061_icgraph.svg" width="487" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
 
 </div>
 </div>
@@ -363,7 +406,13 @@ Additional Inherited Members</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="_operation_sequence_8cpp_source.html#l00017">17</a> of file <a class="el" href="_operation_sequence_8cpp_source.html">OperationSequence.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_operation_sequence_8hpp_source.html#l00052">m_operations</a>.</p>
+<p class="reference">References <a class="el" href="_operation_8cpp_source.html#l00084">wmtk::operations::Operation::before()</a>, <a class="el" href="classwmtk_1_1operations_1_1_operation_sequence.html#ac58f8f4a9e262293a2df12b00dafd061">execute_operations()</a>, and <a class="el" href="_operation_sequence_8hpp_source.html#l00070">m_operations</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_operation_sequence_a547ec2a6ed8a354eff76e733b2e7fb2c_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
 
 </div>
 </div>
@@ -392,9 +441,41 @@ Additional Inherited Members</h2></td></tr>
 
 <p>Implements <a class="el" href="classwmtk_1_1operations_1_1_operation.html#a55110365dd31bcf41716087c9df8c57d">wmtk::operations::Operation</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_operation_sequence_8cpp_source.html#l00046">46</a> of file <a class="el" href="_operation_sequence_8cpp_source.html">OperationSequence.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_operation_sequence_8cpp_source.html#l00040">40</a> of file <a class="el" href="_operation_sequence_8cpp_source.html">OperationSequence.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_operation_sequence_8hpp_source.html#l00052">m_operations</a>.</p>
+<p class="reference">References <a class="el" href="_operation_sequence_8hpp_source.html#l00070">m_operations</a>.</p>
+
+</div>
+</div>
+<a id="a2f1b0a248806d45851ee5f6f4842aac6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f1b0a248806d45851ee5f6f4842aac6">&#9670;&nbsp;</a></span>priority()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::operations::OperationSequence::priority </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;&#160;</td>
+          <td class="paramname"><em>simplex</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1operations_1_1_operation.html#a872859aa53451b747c012c161b27ab5d">wmtk::operations::Operation</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="_operation_sequence_8hpp_source.html#l00023">23</a> of file <a class="el" href="_operation_sequence_8hpp_source.html">OperationSequence.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_operation_sequence_8hpp_source.html#l00070">m_operations</a>, and <a class="el" href="_operation_8hpp_source.html#l00106">wmtk::operations::Operation::m_priority</a>.</p>
 
 </div>
 </div>
@@ -423,9 +504,9 @@ Additional Inherited Members</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1operations_1_1_operation.html#a882eca46d5f1bc42c25dde3baf0a8297">wmtk::operations::Operation</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_operation_sequence_8cpp_source.html#l00037">37</a> of file <a class="el" href="_operation_sequence_8cpp_source.html">OperationSequence.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_operation_sequence_8cpp_source.html#l00031">31</a> of file <a class="el" href="_operation_sequence_8cpp_source.html">OperationSequence.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_operation_sequence_8hpp_source.html#l00052">m_operations</a>.</p>
+<p class="reference">References <a class="el" href="_operation_sequence_8hpp_source.html#l00070">m_operations</a>.</p>
 
 </div>
 </div>
@@ -457,11 +538,111 @@ Additional Inherited Members</h2></td></tr>
 
 <p>Implements <a class="el" href="classwmtk_1_1operations_1_1_operation.html#ac3a7663793ab40bc2e8d0501e353faab">wmtk::operations::Operation</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_operation_sequence_8hpp_source.html#l00045">45</a> of file <a class="el" href="_operation_sequence_8hpp_source.html">OperationSequence.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_operation_sequence_8hpp_source.html#l00062">62</a> of file <a class="el" href="_operation_sequence_8hpp_source.html">OperationSequence.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a166e5d0fdd181db1acf50eced9d93614"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a166e5d0fdd181db1acf50eced9d93614">&#9670;&nbsp;</a></span>use_random_priority() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::operations::OperationSequence::use_random_priority </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1operations_1_1_operation.html#ad40213d2f06b2568c2c6de742166b7f9">wmtk::operations::Operation</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="_operation_sequence_8hpp_source.html#l00030">30</a> of file <a class="el" href="_operation_sequence_8hpp_source.html">OperationSequence.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_operation_sequence_8hpp_source.html#l00073">m_internal_random_priority</a>, <a class="el" href="_operation_sequence_8hpp_source.html#l00070">m_operations</a>, and <a class="el" href="_operation_8hpp_source.html#l00040">wmtk::operations::Operation::use_random_priority()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_operation_sequence_a166e5d0fdd181db1acf50eced9d93614_cgraph.svg" width="494" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="af181b6e2191146b3f95ed8ea9e65dd0c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af181b6e2191146b3f95ed8ea9e65dd0c">&#9670;&nbsp;</a></span>use_random_priority() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool&amp; wmtk::operations::OperationSequence::use_random_priority </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1operations_1_1_operation.html#aed5e96c9f4423570815995203c436707">wmtk::operations::Operation</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="_operation_sequence_8hpp_source.html#l00038">38</a> of file <a class="el" href="_operation_sequence_8hpp_source.html">OperationSequence.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_operation_sequence_8hpp_source.html#l00073">m_internal_random_priority</a>, <a class="el" href="_operation_sequence_8hpp_source.html#l00070">m_operations</a>, and <a class="el" href="_operation_8hpp_source.html#l00040">wmtk::operations::Operation::use_random_priority()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_operation_sequence_af181b6e2191146b3f95ed8ea9e65dd0c_cgraph.svg" width="494" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="af1cb5da7c6a6692bdf9f935441111a6d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af1cb5da7c6a6692bdf9f935441111a6d">&#9670;&nbsp;</a></span>m_internal_random_priority</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::operations::OperationSequence::m_internal_random_priority = false</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_operation_sequence_8hpp_source.html#l00073">73</a> of file <a class="el" href="_operation_sequence_8hpp_source.html">OperationSequence.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_operation_sequence_8hpp_source.html#l00030">use_random_priority()</a>.</p>
+
+</div>
+</div>
 <a id="aeca84fc8445087bb2b1f22d4a5daf3c6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aeca84fc8445087bb2b1f22d4a5daf3c6">&#9670;&nbsp;</a></span>m_operations</h2>
 
@@ -477,14 +658,14 @@ Additional Inherited Members</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_operation_sequence_8hpp_source.html#l00052">52</a> of file <a class="el" href="_operation_sequence_8hpp_source.html">OperationSequence.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_operation_sequence_8hpp_source.html#l00070">70</a> of file <a class="el" href="_operation_sequence_8hpp_source.html">OperationSequence.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_operation_sequence_8hpp_source.html#l00030">add_operation()</a>, <a class="el" href="_operation_sequence_8cpp_source.html#l00017">operator()()</a>, <a class="el" href="_operation_sequence_8cpp_source.html#l00046">primitive_type()</a>, and <a class="el" href="_operation_sequence_8cpp_source.html#l00037">reserve_enough_simplices()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_operation_sequence_8hpp_source.html#l00048">add_operation()</a>, <a class="el" href="_and_operation_sequence_8cpp_source.html#l00015">wmtk::operations::AndOperationSequence::execute_operations()</a>, <a class="el" href="_min_operation_sequence_8cpp_source.html#l00016">wmtk::operations::MinOperationSequence::execute_operations()</a>, <a class="el" href="_or_operation_sequence_8cpp_source.html#l00016">wmtk::operations::OrOperationSequence::execute_operations()</a>, <a class="el" href="_operation_sequence_8cpp_source.html#l00017">operator()()</a>, <a class="el" href="_operation_sequence_8cpp_source.html#l00040">primitive_type()</a>, <a class="el" href="_operation_sequence_8hpp_source.html#l00023">priority()</a>, <a class="el" href="_operation_sequence_8cpp_source.html#l00031">reserve_enough_simplices()</a>, and <a class="el" href="_operation_sequence_8hpp_source.html#l00030">use_random_priority()</a>.</p>
 
 </div>
 </div>

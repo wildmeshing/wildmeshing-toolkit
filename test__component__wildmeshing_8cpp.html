@@ -137,10 +137,12 @@ $(document).ready(function(){initNavTree('test__component__wildmeshing_8cpp.html
 <code>#include &lt;<a class="el" href="_split_new_attribute_strategy_8hpp_source.html">wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_attribute_transfer_strategy_8hpp_source.html">wmtk/operations/attribute_update/AttributeTransferStrategy.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_a_m_i_p_s_optimization_smoothing_8hpp_source.html">wmtk/operations/AMIPSOptimizationSmoothing.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_and_operation_sequence_8hpp_source.html">wmtk/operations/AndOperationSequence.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_edge_collapse_8hpp_source.html">wmtk/operations/EdgeCollapse.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_edge_split_8hpp_source.html">wmtk/operations/EdgeSplit.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_operation_sequence_8hpp_source.html">wmtk/operations/OperationSequence.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_min_operation_sequence_8hpp_source.html">wmtk/operations/MinOperationSequence.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_optimization_smoothing_8hpp_source.html">wmtk/operations/OptimizationSmoothing.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_or_operation_sequence_8hpp_source.html">wmtk/operations/OrOperationSequence.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_rounding_8hpp_source.html">wmtk/operations/Rounding.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_project_operation_8hpp_source.html">wmtk/operations/composite/ProjectOperation.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_tet_edge_swap_8hpp_source.html">wmtk/operations/composite/TetEdgeSwap.hpp</a>&gt;</code><br />
@@ -149,6 +151,7 @@ $(document).ready(function(){initNavTree('test__component__wildmeshing_8cpp.html
 <code>#include &lt;<a class="el" href="_local_neighbors_sum_function_8hpp_source.html">wmtk/function/LocalNeighborsSumFunction.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_per_simplex_function_8hpp_source.html">wmtk/function/PerSimplexFunction.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="simplex_2_a_m_i_p_s_8hpp_source.html">wmtk/function/simplex/AMIPS.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="utils_2_a_m_i_p_s_8hpp_source.html">wmtk/function/utils/amips.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_edge_valence_invariant_8hpp_source.html">wmtk/invariants/EdgeValenceInvariant.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_envelope_invariant_8hpp_source.html">wmtk/invariants/EnvelopeInvariant.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_function_invariant_8hpp_source.html">wmtk/invariants/FunctionInvariant.hpp</a>&gt;</code><br />
@@ -164,15 +167,9 @@ $(document).ready(function(){initNavTree('test__component__wildmeshing_8cpp.html
 <code>#include &lt;<a class="el" href="_swap23_energy_before_invariant_8hpp_source.html">wmtk/invariants/Swap23EnergyBeforeInvariant.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_swap32_energy_before_invariant_8hpp_source.html">wmtk/invariants/Swap32EnergyBeforeInvariant.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_swap44_energy_before_invariant_8hpp_source.html">wmtk/invariants/Swap44EnergyBeforeInvariant.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_swap44__2_energy_before_invariant_8hpp_source.html">wmtk/invariants/Swap44_2EnergyBeforeInvariant.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_swap56_energy_before_invariant_8hpp_source.html">wmtk/invariants/Swap56EnergyBeforeInvariant.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_todo_invariant_8hpp_source.html">wmtk/invariants/TodoInvariant.hpp</a>&gt;</code><br />
 <code>#include &lt;fstream&gt;</code><br />
-</div><div class="textblock"><div class="dynheader">
-Include dependency graph for test_component_wildmeshing.cpp:</div>
-<div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="test__component__wildmeshing_8cpp__incl.svg" width="100%" height="540"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
-</div>
-</div>
 </div>
 <p><a href="test__component__wildmeshing_8cpp_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
@@ -189,10 +186,16 @@ Functions</h2></td></tr>
 <tr class="separator:a1442f82a0c3eaa36bb22b44b4478a4ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7eb9e08aaba7f6635ea47c52c3a5b18"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="test__component__wildmeshing_8cpp.html#aa7eb9e08aaba7f6635ea47c52c3a5b18">TEST_CASE</a> (&quot;wildmeshing_3d_multimesh&quot;, &quot;[components][wildmeshing][.]&quot;)</td></tr>
 <tr class="separator:aa7eb9e08aaba7f6635ea47c52c3a5b18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06bf2a9a821b41a6630220037797c254"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="test__component__wildmeshing_8cpp.html#a06bf2a9a821b41a6630220037797c254">run_tetwild_test</a> (const std::string &amp;path, const std::string &amp;name, std::function&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_operation.html">Operation</a> &gt;(<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_rounding.html">Rounding</a> &gt; &amp;, <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a> &amp;, <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a> &amp;, std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt; &amp;, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html">wmtk::operations::SingleAttributeTransferStrategy</a>&lt; double, <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt;&gt; &amp;, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html">wmtk::operations::SingleAttributeTransferStrategy</a>&lt; double, <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt;&gt; &amp;, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html">wmtk::operations::SingleAttributeTransferStrategy</a>&lt; char, <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt;&gt; &amp;)&gt; create_op)</td></tr>
+<tr class="separator:a06bf2a9a821b41a6630220037797c254"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32f135b5d243dcf3bdcc152448a2753e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="test__component__wildmeshing_8cpp.html#a32f135b5d243dcf3bdcc152448a2753e">TEST_CASE</a> (&quot;tetwild-split&quot;, &quot;[components][wildmeshing][.]&quot;)</td></tr>
 <tr class="separator:a32f135b5d243dcf3bdcc152448a2753e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ee2f46cc807aa9c5e737b66416cc920"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="test__component__wildmeshing_8cpp.html#a7ee2f46cc807aa9c5e737b66416cc920">TEST_CASE</a> (&quot;tetwild-collapse&quot;, &quot;[components][wildmeshing][.]&quot;)</td></tr>
 <tr class="separator:a7ee2f46cc807aa9c5e737b66416cc920"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae863e9e7f7c6acebcbf17764a3670866"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="test__component__wildmeshing_8cpp.html#ae863e9e7f7c6acebcbf17764a3670866">TEST_CASE</a> (&quot;tetwild-collapse-twoway&quot;, &quot;[components][wildmeshing][.]&quot;)</td></tr>
+<tr class="separator:ae863e9e7f7c6acebcbf17764a3670866"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a44c2951b72bd29a8f4b87bea013765ec"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="test__component__wildmeshing_8cpp.html#a44c2951b72bd29a8f4b87bea013765ec">TEST_CASE</a> (&quot;tetwild-swap&quot;, &quot;[components][wildmeshing][.]&quot;)</td></tr>
+<tr class="separator:a44c2951b72bd29a8f4b87bea013765ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -212,13 +215,49 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00060">60</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00072">72</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="a06bf2a9a821b41a6630220037797c254"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06bf2a9a821b41a6630220037797c254">&#9670;&nbsp;</a></span>run_tetwild_test()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void run_tetwild_test </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>path</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::function&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_operation.html">Operation</a> &gt;(<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_rounding.html">Rounding</a> &gt; &amp;, <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a> &amp;, <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a> &amp;, std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt; &amp;, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html">wmtk::operations::SingleAttributeTransferStrategy</a>&lt; double, <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt;&gt; &amp;, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html">wmtk::operations::SingleAttributeTransferStrategy</a>&lt; double, <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt;&gt; &amp;, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html">wmtk::operations::SingleAttributeTransferStrategy</a>&lt; char, <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt;&gt; &amp;)&gt;&#160;</td>
+          <td class="paramname"><em>create_op</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00150">150</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a7ee2f46cc807aa9c5e737b66416cc920"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7ee2f46cc807aa9c5e737b66416cc920">&#9670;&nbsp;</a></span>TEST_CASE() <span class="overload">[1/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ee2f46cc807aa9c5e737b66416cc920">&#9670;&nbsp;</a></span>TEST_CASE() <span class="overload">[1/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -243,12 +282,42 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00437">437</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00578">578</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ae863e9e7f7c6acebcbf17764a3670866"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae863e9e7f7c6acebcbf17764a3670866">&#9670;&nbsp;</a></span>TEST_CASE() <span class="overload">[2/7]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">TEST_CASE </td>
+          <td>(</td>
+          <td class="paramtype">&quot;tetwild-collapse-twoway&quot;&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&quot;&quot;&#160;</td>
+          <td class="paramname">[components][wildmeshing][.]&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00682">682</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
 
 </div>
 </div>
 <a id="a32f135b5d243dcf3bdcc152448a2753e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a32f135b5d243dcf3bdcc152448a2753e">&#9670;&nbsp;</a></span>TEST_CASE() <span class="overload">[2/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a32f135b5d243dcf3bdcc152448a2753e">&#9670;&nbsp;</a></span>TEST_CASE() <span class="overload">[3/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -273,12 +342,42 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00138">138</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00466">466</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a44c2951b72bd29a8f4b87bea013765ec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a44c2951b72bd29a8f4b87bea013765ec">&#9670;&nbsp;</a></span>TEST_CASE() <span class="overload">[4/7]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">TEST_CASE </td>
+          <td>(</td>
+          <td class="paramtype">&quot;tetwild-swap&quot;&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&quot;&quot;&#160;</td>
+          <td class="paramname">[components][wildmeshing][.]&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00812">812</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
 
 </div>
 </div>
 <a id="a219d81c90b83b8e8c21801a6bba773cc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a219d81c90b83b8e8c21801a6bba773cc">&#9670;&nbsp;</a></span>TEST_CASE() <span class="overload">[3/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a219d81c90b83b8e8c21801a6bba773cc">&#9670;&nbsp;</a></span>TEST_CASE() <span class="overload">[5/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -303,9 +402,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00064">64</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00076">76</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00062">data_dir</a>, and <a class="el" href="input_8cpp_source.html#l00012">wmtk::components::input()</a>.</p>
+<p class="reference">References <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00074">data_dir</a>, and <a class="el" href="input_8cpp_source.html#l00012">wmtk::components::input()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -316,7 +415,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="a1442f82a0c3eaa36bb22b44b4478a4ec"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1442f82a0c3eaa36bb22b44b4478a4ec">&#9670;&nbsp;</a></span>TEST_CASE() <span class="overload">[4/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1442f82a0c3eaa36bb22b44b4478a4ec">&#9670;&nbsp;</a></span>TEST_CASE() <span class="overload">[6/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -341,12 +440,12 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00083">83</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00095">95</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
 
 </div>
 </div>
 <a id="aa7eb9e08aaba7f6635ea47c52c3a5b18"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa7eb9e08aaba7f6635ea47c52c3a5b18">&#9670;&nbsp;</a></span>TEST_CASE() <span class="overload">[5/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa7eb9e08aaba7f6635ea47c52c3a5b18">&#9670;&nbsp;</a></span>TEST_CASE() <span class="overload">[7/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -371,7 +470,7 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00111">111</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00123">123</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
 
 </div>
 </div>
@@ -388,9 +487,9 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00062">62</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00074">74</a> of file <a class="el" href="test__component__wildmeshing_8cpp_source.html">test_component_wildmeshing.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00064">TEST_CASE()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="test__component__wildmeshing_8cpp_source.html#l00076">TEST_CASE()</a>.</p>
 
 </div>
 </div>

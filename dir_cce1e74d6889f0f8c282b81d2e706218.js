@@ -17,6 +17,10 @@ var dir_cce1e74d6889f0f8c282b81d2e706218 =
     [ "AMIPSOptimizationSmoothing.hpp", "_a_m_i_p_s_optimization_smoothing_8hpp.html", [
       [ "AMIPSOptimizationSmoothing", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing.html", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing" ]
     ] ],
+    [ "AndOperationSequence.cpp", "_and_operation_sequence_8cpp.html", null ],
+    [ "AndOperationSequence.hpp", "_and_operation_sequence_8hpp.html", [
+      [ "AndOperationSequence", "classwmtk_1_1operations_1_1_and_operation_sequence.html", "classwmtk_1_1operations_1_1_and_operation_sequence" ]
+    ] ],
     [ "AttributesUpdate.cpp", "_attributes_update_8cpp.html", null ],
     [ "AttributesUpdate.hpp", "_attributes_update_8hpp.html", [
       [ "AttributesUpdate", "classwmtk_1_1operations_1_1_attributes_update.html", "classwmtk_1_1operations_1_1_attributes_update" ],
@@ -34,6 +38,10 @@ var dir_cce1e74d6889f0f8c282b81d2e706218 =
     [ "EdgeSplit.hpp", "_edge_split_8hpp.html", [
       [ "EdgeSplit", "classwmtk_1_1operations_1_1_edge_split.html", "classwmtk_1_1operations_1_1_edge_split" ]
     ] ],
+    [ "MinOperationSequence.cpp", "_min_operation_sequence_8cpp.html", null ],
+    [ "MinOperationSequence.hpp", "_min_operation_sequence_8hpp.html", [
+      [ "MinOperationSequence", "classwmtk_1_1operations_1_1_min_operation_sequence.html", "classwmtk_1_1operations_1_1_min_operation_sequence" ]
+    ] ],
     [ "Operation.cpp", "_operation_8cpp.html", null ],
     [ "Operation.hpp", "_operation_8hpp.html", [
       [ "Operation", "classwmtk_1_1operations_1_1_operation.html", "classwmtk_1_1operations_1_1_operation" ]
@@ -47,6 +55,10 @@ var dir_cce1e74d6889f0f8c282b81d2e706218 =
     ] ],
     [ "OptimizationSmoothing.hpp", "_optimization_smoothing_8hpp.html", [
       [ "OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", "classwmtk_1_1operations_1_1_optimization_smoothing" ]
+    ] ],
+    [ "OrOperationSequence.cpp", "_or_operation_sequence_8cpp.html", null ],
+    [ "OrOperationSequence.hpp", "_or_operation_sequence_8hpp.html", [
+      [ "OrOperationSequence", "classwmtk_1_1operations_1_1_or_operation_sequence.html", "classwmtk_1_1operations_1_1_or_operation_sequence" ]
     ] ],
     [ "Rounding.cpp", "_rounding_8cpp.html", null ],
     [ "Rounding.hpp", "_rounding_8hpp.html", [
