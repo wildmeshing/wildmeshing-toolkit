@@ -60,8 +60,6 @@ set(SRC_FILES
 
     Swap44EnergyBeforeInvariant.hpp
     Swap44EnergyBeforeInvariant.cpp
-    Swap44_2EnergyBeforeInvariant.hpp
-    Swap44_2EnergyBeforeInvariant.cpp
     Swap32EnergyBeforeInvariant.hpp
     Swap32EnergyBeforeInvariant.cpp
     Swap23EnergyBeforeInvariant.hpp

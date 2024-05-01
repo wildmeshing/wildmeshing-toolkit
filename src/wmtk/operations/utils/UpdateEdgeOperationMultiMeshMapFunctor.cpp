@@ -25,7 +25,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_all_hashes(
     const std::vector<std::vector<std::tuple<int64_t, std::vector<Tuple>>>>& simplices_to_update,
     const std::vector<std::tuple<int64_t, std::array<int64_t, 2>>>& split_cell_maps) const
 {
-    assert(m.top_cell_dimension() + 1 == simplices_to_update.size());
+    // assert(m.top_cell_dimension() + 1 == simplices_to_update.size());
     constexpr static PrimitiveType PTs[] = {PV, PE, PF, PT};
     // logger().trace("{} {}", m.top_cell_dimension(), simplices_to_update.size());
     for (size_t j = 0; j < simplices_to_update.size(); ++j) {

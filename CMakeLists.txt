@@ -129,7 +129,7 @@ if(WMTK_ENABLE_GENERIC_CHECKPOINTS)
     target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_ENABLE_GENERIC_CHECKPOINTS)
 endif()
 
-option(WMTK_ENABLE_HASH_UPDATE "Enable hash update" OFF)
+option(WMTK_ENABLE_HASH_UPDATE "Enable hash update" ON)
 if(WMTK_ENABLE_HASH_UPDATE)
     target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_ENABLE_HASH_UPDATE)
 endif()

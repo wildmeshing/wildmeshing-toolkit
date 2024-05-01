@@ -20,10 +20,10 @@
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 
 #include <wmtk/operations/AMIPSOptimizationSmoothing.hpp>
+#include <wmtk/operations/AndOperationSequence.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/MinOperationSequence.hpp>
-#include <wmtk/operations/OperationSequence.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
 #include <wmtk/operations/OrOperationSequence.hpp>
 #include <wmtk/operations/Rounding.hpp>
@@ -53,7 +53,6 @@
 #include <wmtk/invariants/Swap23EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/Swap32EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/Swap44EnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/Swap44_2EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/Swap56EnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 
@@ -174,7 +173,7 @@ void run_tetwild_test(
     const double target_max_amips = 10;
     const double min_edge_length = 0.001;
     const double target_edge_length = 1.04; // for collapse
-    // const double target_edge_length = 0.59019; // for split
+    // const double target_edge_length = 0.59019; // for split and swap
 
     std::ifstream file(data_dir / path);
     std::vector<Vector3r> vertices;
@@ -306,47 +305,47 @@ void run_tetwild_test(
     auto visited_edge_flag =
         mesh->register_attribute<char>("visited_edge", PrimitiveType::Edge, 1, false, char(1));
 
-    auto target_edge_length_attribute = mesh->register_attribute<double>(
-        "wildmeshing_target_edge_length",
-        PrimitiveType::Edge,
-        1,
-        false,
-        target_edge_length); // defaults to target edge length
+    // auto target_edge_length_attribute = mesh->register_attribute<double>(
+    //     "wildmeshing_target_edge_length",
+    //     PrimitiveType::Edge,
+    //     1,
+    //     false,
+    //     target_edge_length); // defaults to target edge length
 
 
-    auto compute_target_edge_length =
-        [target_edge_length,
-         target_max_amips,
-         min_edge_length,
-         target_edge_length_attribute,
-         &mesh](const Eigen::MatrixXd& P, const std::vector<Tuple>& neighs) -> Eigen::VectorXd {
-        auto target_edge_length_accessor =
-            mesh->create_accessor(target_edge_length_attribute.as<double>());
+    // auto compute_target_edge_length =
+    //     [target_edge_length,
+    //      target_max_amips,
+    //      min_edge_length,
+    //      target_edge_length_attribute,
+    //      &mesh](const Eigen::MatrixXd& P, const std::vector<Tuple>& neighs) -> Eigen::VectorXd {
+    //     auto target_edge_length_accessor =
+    //         mesh->create_accessor(target_edge_length_attribute.as<double>());
 
-        assert(P.rows() == 1); // rows --> attribute dimension
-        assert(!neighs.empty());
-        assert(P.cols() == neighs.size());
-        const double current_target_edge_length =
-            target_edge_length_accessor.const_scalar_attribute(neighs[0]);
-        const double max_amips = P.maxCoeff();
+    //     assert(P.rows() == 1); // rows --> attribute dimension
+    //     assert(!neighs.empty());
+    //     assert(P.cols() == neighs.size());
+    //     const double current_target_edge_length =
+    //         target_edge_length_accessor.const_scalar_attribute(neighs[0]);
+    //     const double max_amips = P.maxCoeff();
 
-        double new_target_edge_length = current_target_edge_length;
-        if (max_amips > target_max_amips) {
-            new_target_edge_length *= 0.5;
-        } else {
-            new_target_edge_length *= 1.5;
-        }
-        new_target_edge_length =
-            std::min(new_target_edge_length, target_edge_length); // upper bound
-        new_target_edge_length = std::max(new_target_edge_length, min_edge_length); // lower bound
+    //     double new_target_edge_length = current_target_edge_length;
+    //     if (max_amips > target_max_amips) {
+    //         new_target_edge_length *= 0.5;
+    //     } else {
+    //         new_target_edge_length *= 1.5;
+    //     }
+    //     new_target_edge_length =
+    //         std::min(new_target_edge_length, target_edge_length); // upper bound
+    //     new_target_edge_length = std::max(new_target_edge_length, min_edge_length); // lower bound
 
-        return Eigen::VectorXd::Constant(1, new_target_edge_length);
-    };
-    auto target_edge_length_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-            target_edge_length_attribute,
-            amips_attribute,
-            compute_target_edge_length);
+    //     return Eigen::VectorXd::Constant(1, new_target_edge_length);
+    // };
+    // auto target_edge_length_update =
+    //     std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+    //         target_edge_length_attribute,
+    //         amips_attribute,
+    //         compute_target_edge_length);
     auto update_flag_func = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<char> {
         assert(P.cols() == 2);
         assert(P.rows() == 2 || P.rows() == 3);
@@ -362,7 +361,7 @@ void run_tetwild_test(
     std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
     pass_through_attributes.push_back(edge_length_attribute);
     pass_through_attributes.push_back(amips_attribute);
-    pass_through_attributes.push_back(target_edge_length_attribute);
+    // pass_through_attributes.push_back(target_edge_length_attribute);
 
     // ////////////////////////////////////////////////////
 
@@ -466,6 +465,9 @@ void run_tetwild_test(
         mesh->get_all(PrimitiveType::Vertex).size(),
         mesh->get_all(PrimitiveType::Edge).size(),
         mesh->get_all(PrimitiveType::Tetrahedron).size());
+
+    logger().info(
+        "Reference performance of original TetWild: split: 0.08s, collapse: <1s, swap: 0.24s");
 }
 
 
@@ -487,11 +489,61 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
                edge_length_update,
            std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<char, Rational>>&
                tag_update) {
+            const double target_edge_length = 0.59019;
+            const double target_max_amips = 10;
+            const double min_edge_length = 0.001;
+
+            auto target_edge_length_attribute = mesh.register_attribute<double>(
+                "wildmeshing_target_edge_length",
+                PrimitiveType::Edge,
+                1,
+                false,
+                target_edge_length); // defaults to target edge length
+
+
+            auto compute_target_edge_length =
+                [target_edge_length,
+                 target_max_amips,
+                 min_edge_length,
+                 target_edge_length_attribute,
+                 &mesh](
+                    const Eigen::MatrixXd& P,
+                    const std::vector<Tuple>& neighs) -> Eigen::VectorXd {
+                auto target_edge_length_accessor =
+                    mesh.create_accessor(target_edge_length_attribute.as<double>());
+
+                assert(P.rows() == 1); // rows --> attribute dimension
+                assert(!neighs.empty());
+                assert(P.cols() == neighs.size());
+                const double current_target_edge_length =
+                    target_edge_length_accessor.const_scalar_attribute(neighs[0]);
+                const double max_amips = P.maxCoeff();
+
+                double new_target_edge_length = current_target_edge_length;
+                if (max_amips > target_max_amips) {
+                    new_target_edge_length *= 0.5;
+                } else {
+                    new_target_edge_length *= 1.5;
+                }
+                new_target_edge_length =
+                    std::min(new_target_edge_length, target_edge_length); // upper bound
+                new_target_edge_length =
+                    std::max(new_target_edge_length, min_edge_length); // lower bound
+
+                return Eigen::VectorXd::Constant(1, new_target_edge_length);
+            };
+
+            pass_through_attributes.push_back(target_edge_length_attribute);
+
+            auto update_flag_func = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<char> {
+                assert(P.cols() == 2);
+                assert(P.rows() == 2 || P.rows() == 3);
+                return Eigen::VectorX<char>::Constant(1, char(1));
+            };
+
             auto edge_length_attribute =
                 mesh.get_attribute_handle<double>("edge_length", PrimitiveType::Edge);
-            auto target_edge_length_attribute = mesh.get_attribute_handle<double>(
-                "wildmeshing_target_edge_length",
-                PrimitiveType::Edge);
+
             auto edge_length_accessor = mesh.create_accessor(edge_length_attribute.as<double>());
 
             auto long_edges_first = [&](const simplex::Simplex& s) {
@@ -523,7 +575,7 @@ TEST_CASE("tetwild-split", "[components][wildmeshing][.]")
             split->add_transfer_strategy(edge_length_update);
             split->add_transfer_strategy(tag_update);
 
-            auto split_then_round = std::make_shared<OperationSequence>(mesh);
+            auto split_then_round = std::make_shared<AndOperationSequence>(mesh);
             split_then_round->add_operation(split);
             split_then_round->add_operation(rounding);
 
@@ -548,11 +600,22 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
                edge_length_update,
            std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<char, Rational>>&
                tag_update) {
+            const double target_edge_length = 1.04;
+            const double target_max_amips = 10;
+            const double min_edge_length = 0.001;
+
+            auto target_edge_length_attribute = mesh.register_attribute<double>(
+                "wildmeshing_target_edge_length",
+                PrimitiveType::Edge,
+                1,
+                false,
+                target_edge_length); // defaults to target edge length
+
+            pass_through_attributes.push_back(target_edge_length_attribute);
+
             auto edge_length_attribute =
                 mesh.get_attribute_handle<double>("edge_length", PrimitiveType::Edge);
-            auto target_edge_length_attribute = mesh.get_attribute_handle<double>(
-                "wildmeshing_target_edge_length",
-                PrimitiveType::Edge);
+
             auto edge_length_accessor = mesh.create_accessor(edge_length_attribute.as<double>());
 
 
@@ -616,7 +679,7 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
             collapse->add_transfer_strategy(edge_length_update);
             // proj_collapse->add_transfer_strategy(target_edge_length_update);
 
-            auto collapse_then_round = std::make_shared<OperationSequence>(mesh);
+            auto collapse_then_round = std::make_shared<AndOperationSequence>(mesh);
             collapse_then_round->add_operation(collapse);
             collapse_then_round->add_operation(rounding);
 
@@ -626,7 +689,7 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
 
 TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
 {
-    logger().set_level(spdlog::level::trace);
+    logger().set_level(spdlog::level::debug);
     run_tetwild_test(
         "collapse_initial_state_141017.obj",
         "Collapse-Two",
@@ -641,11 +704,22 @@ TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
                edge_length_update,
            std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<char, Rational>>&
                tag_update) {
+            const double target_edge_length = 1.04;
+            const double target_max_amips = 10;
+            const double min_edge_length = 0.001;
+
+            auto target_edge_length_attribute = mesh.register_attribute<double>(
+                "wildmeshing_target_edge_length",
+                PrimitiveType::Edge,
+                1,
+                false,
+                target_edge_length); // defaults to target edge length
+
+            pass_through_attributes.push_back(target_edge_length_attribute);
+
             auto edge_length_attribute =
                 mesh.get_attribute_handle<double>("edge_length", PrimitiveType::Edge);
-            auto target_edge_length_attribute = mesh.get_attribute_handle<double>(
-                "wildmeshing_target_edge_length",
-                PrimitiveType::Edge);
+
             auto edge_length_accessor = mesh.create_accessor(edge_length_attribute.as<double>());
 
 
@@ -713,7 +787,7 @@ TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
                     collapse->set_new_attribute_strategy(attr);
                 }
                 // THis triggers a segfault in release
-                // collapse->set_priority(short_edges_first);
+                collapse->set_priority(short_edges_first);
 
                 // collapse->add_invariant(envelope_invariant);
 
@@ -735,7 +809,7 @@ TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
             collapse->add_operation(collapse2);
             collapse->add_invariant(todo_smaller);
 
-            auto collapse_then_round = std::make_shared<OperationSequence>(mesh);
+            auto collapse_then_round = std::make_shared<AndOperationSequence>(mesh);
             collapse_then_round->add_operation(collapse);
             collapse_then_round->add_operation(rounding);
 
@@ -745,7 +819,7 @@ TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
 
 TEST_CASE("tetwild-swap", "[components][wildmeshing][.]")
 {
-    // logger().set_level(spdlog::level::trace);
+    logger().set_level(spdlog::level::debug);
     run_tetwild_test(
         "swap_initial_state.obj",
         "Swap",
@@ -760,11 +834,22 @@ TEST_CASE("tetwild-swap", "[components][wildmeshing][.]")
                edge_length_update,
            std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<char, Rational>>&
                tag_update) {
+            const double target_edge_length = 0.59019;
+            const double target_max_amips = 10;
+            const double min_edge_length = 0.001;
+
+            auto target_edge_length_attribute = mesh.register_attribute<double>(
+                "wildmeshing_target_edge_length",
+                PrimitiveType::Edge,
+                1,
+                false,
+                target_edge_length); // defaults to target edge length
+
+            pass_through_attributes.push_back(target_edge_length_attribute);
+
             auto edge_length_attribute =
                 mesh.get_attribute_handle<double>("edge_length", PrimitiveType::Edge);
-            auto target_edge_length_attribute = mesh.get_attribute_handle<double>(
-                "wildmeshing_target_edge_length",
-                PrimitiveType::Edge);
+
             auto edge_length_accessor = mesh.create_accessor(edge_length_attribute.as<double>());
 
 
@@ -1077,13 +1162,16 @@ TEST_CASE("tetwild-swap", "[components][wildmeshing][.]")
             // all swaps
 
             auto swap_all = std::make_shared<OrOperationSequence>(mesh);
-            swap_all->add_invariant(std::make_shared<InteriorEdgeInvariant>(mesh));
+            // swap_all->add_invariant(std::make_shared<InteriorEdgeInvariant>(mesh));
             swap_all->add_operation(swap32);
             swap_all->add_operation(swap44);
             swap_all->add_operation(swap56);
+            swap_all->add_transfer_strategy(tag_update);
 
-            auto swap_then_round = std::make_shared<OperationSequence>(mesh);
+            auto swap_then_round = std::make_shared<AndOperationSequence>(mesh);
             swap_then_round->add_operation(swap_all);
+            // swap_then_round->add_operation(swap44);
+            swap_then_round->add_invariant(std::make_shared<InteriorEdgeInvariant>(mesh));
             swap_then_round->add_operation(rounding);
 
 
