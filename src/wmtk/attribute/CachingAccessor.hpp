@@ -10,8 +10,10 @@ class TriMesh;
 } // namespace wmtk
 namespace wmtk::attribute {
 
+    namespace internal {
 template <typename T>
-class AttributeCache;
+class AttributeMapCache;
+    }
 
 /**
  * An accessor for cached attribute values. This accessor or any of its derivatives should be used
@@ -26,7 +28,7 @@ public:
     friend class wmtk::TriMesh;
     using Scalar = T;
 
-    friend class AttributeCache<T>;
+    friend class internal::AttributeMapCache<T>;
     using BaseType = AccessorBase<T, Dim>;
 
     template <int D = Dim>

@@ -18,8 +18,10 @@ template <typename T>
 class PerThreadAttributeScopeStacks;
 template <typename T>
 class AttributeScopeStack;
+namespace internal {
 template <typename T>
-class AttributeCache;
+class AttributeMapCache;
+}
 
 /**
  * This class stores data of type T in a vector.
@@ -43,7 +45,7 @@ public:
 
     template <typename U, int D>
     friend class AccessorBase;
-    friend class AttributeCache<T>;
+    friend class internal::AttributeMapCache<T>;
     void serialize(const std::string& name, const int dim, MeshWriter& writer) const;
 
     /**
