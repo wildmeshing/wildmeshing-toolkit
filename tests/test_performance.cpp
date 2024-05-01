@@ -296,7 +296,7 @@ TEST_CASE("collapse_performance", "[performance][.]")
 
 TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
 {
-    using TI = utils::TupleInspector;
+    using TI = wmtk::utils::TupleInspector;
 
     //const std::filesystem::path meshfile = data_dir / "tetwild_fig8_mid.msh"; // 3D
     const std::filesystem::path meshfile = data_dir / "armadillo.msh"; // 2D
@@ -316,7 +316,7 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
     logger().info("#operations (#vertices * #reps): {}", n_repetitions * vertices.size());
 
     size_t counter = 0;
-    if (false) {
+    if (true) {
         POLYSOLVE_SCOPED_STOPWATCH("top_dimension_cofaces_tuples", logger());
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (const Tuple& t : vertices) {
@@ -333,10 +333,7 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
         TriMesh& mesh = static_cast<TriMesh&>(m);
 
         POLYSOLVE_SCOPED_STOPWATCH("manual navigation", logger());
-        std::vector<Tuple> n;
-        n.reserve(100);
         for (size_t i = 0; i < n_repetitions; ++i) {
-            n.clear();
             for (const Tuple& t_in : vertices) {
                 Tuple t = t_in;
                 do {
@@ -349,7 +346,7 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
                     }
                 } while (t != t_in);
 
-                if (t == t_in) {
+                if (t == t_in && !mesh.is_boundary_edge(t)) {
                     continue;
                 }
 
@@ -441,7 +438,7 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
                         }
                     } while (t != t_in);
 
-                    if (t == t_in) {
+                    if (t == t_in && !is_boundary_edge[3 * TI::global_cid(t) + TI::local_eid(t)]) {
                         continue;
                     }
 
@@ -468,7 +465,7 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
     }
 
     counter = 0;
-    if (false) {
+    if (true) {
         POLYSOLVE_SCOPED_STOPWATCH("top_dimension_cofaces_tuples with pre-reserve", logger());
         std::vector<Tuple> n;
         n.reserve(100);
@@ -502,6 +499,30 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
             for (const Tuple& t : vertices) {
                 const auto neighs =
                     simplex::top_dimension_cofaces(m, simplex::Simplex::vertex(t), true);
+                counter += neighs.size();
+            }
+        }
+        logger().info("sum = {}", counter);
+    }
+
+    counter = 0;
+    if (false) {
+        POLYSOLVE_SCOPED_STOPWATCH("closed_star (no sort)", logger());
+        for (size_t i = 0; i < n_repetitions; ++i) {
+            for (const Tuple& t : vertices) {
+                const auto neighs = simplex::closed_star(m, simplex::Simplex::vertex(t), false);
+                counter += neighs.size();
+            }
+        }
+        logger().info("sum = {}", counter);
+    }
+
+    counter = 0;
+    if (false) {
+        POLYSOLVE_SCOPED_STOPWATCH("closed_star (sort)", logger());
+        for (size_t i = 0; i < n_repetitions; ++i) {
+            for (const Tuple& t : vertices) {
+                const auto neighs = simplex::closed_star(m, simplex::Simplex::vertex(t), true);
                 counter += neighs.size();
             }
         }
