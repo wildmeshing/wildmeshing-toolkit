@@ -87,6 +87,12 @@ bool Mesh::is_valid_slow(const Tuple& tuple) const
 #endif
 }
 
+bool Mesh::is_removed(const Tuple& tuple) const
+{
+    const auto& flag_accessor = get_const_flag_accessor(top_simplex_type());
+    return !(flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1);
+}
+
 
 const attribute::Accessor<char> Mesh::get_flag_accessor(PrimitiveType type) const
 {
