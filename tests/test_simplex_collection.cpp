@@ -370,9 +370,75 @@ TEST_CASE("simplex_top_dimension_cofaces_tri", "[simplex_collection]")
 
         CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
     }
-    SECTION("vertex_boundary")
+    SECTION("vertex_boundary_1")
     {
         const Tuple t = m.edge_tuple_between_v1_v2(3, 4, 0);
+        Simplex input = simplex::Simplex::vertex(t);
+        SimplexCollection cc = top_dimension_cofaces(m, input);
+
+        REQUIRE(cc.simplex_vector().size() == 2);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Triangle).size() == 2);
+
+        const auto& cells = cc.simplex_vector();
+        CHECK(m.id(cells[0]) == 0);
+        CHECK(m.id(cells[1]) == 5);
+        for (const Simplex& s : cells) {
+            check_match_below_simplex_type(m, input, s);
+        }
+
+        SimplexCollection cc2(
+            m,
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+                top_dimension_cofaces_tuples(m, input),
+                PrimitiveType::Triangle));
+        cc2.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Triangle, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
+    }
+    SECTION("vertex_boundary_2")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(3, 0, 0);
+        Simplex input = simplex::Simplex::vertex(t);
+        SimplexCollection cc = top_dimension_cofaces(m, input);
+
+        REQUIRE(cc.simplex_vector().size() == 2);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Triangle).size() == 2);
+
+        const auto& cells = cc.simplex_vector();
+        CHECK(m.id(cells[0]) == 0);
+        CHECK(m.id(cells[1]) == 5);
+        for (const Simplex& s : cells) {
+            check_match_below_simplex_type(m, input, s);
+        }
+
+        SimplexCollection cc2(
+            m,
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+                top_dimension_cofaces_tuples(m, input),
+                PrimitiveType::Triangle));
+        cc2.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc2));
+
+        std::vector<Tuple> cc3_tuples;
+        top_dimension_cofaces_tuples(m, input, cc3_tuples);
+        SimplexCollection cc3(m);
+        cc3.add(PrimitiveType::Triangle, cc3_tuples);
+        cc3.sort_and_clean();
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(cc, cc3));
+    }
+    SECTION("vertex_boundary_3")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(3, 7, 5);
         Simplex input = simplex::Simplex::vertex(t);
         SimplexCollection cc = top_dimension_cofaces(m, input);
 

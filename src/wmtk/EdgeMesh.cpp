@@ -217,7 +217,12 @@ bool EdgeMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& 
 
     if (tuple.m_local_vid < 0 || tuple.m_global_cid < 0) return false;
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     return Mesh::is_hash_valid(tuple, hash_accessor);
+#else
+    const auto& flag_accessor = get_const_flag_accessor(PrimitiveType::Edge);
+    return flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1;
+#endif
 }
 
 bool EdgeMesh::is_connectivity_valid() const

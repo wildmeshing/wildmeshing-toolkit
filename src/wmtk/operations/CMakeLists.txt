@@ -11,6 +11,15 @@ set(SRC_FILES
     OperationSequence.hpp
     OperationSequence.cpp
 
+    AndOperationSequence.hpp
+    AndOperationSequence.cpp
+
+    OrOperationSequence.hpp
+    OrOperationSequence.cpp
+
+    MinOperationSequence.hpp
+    MinOperationSequence.cpp
+
     #MeshOperation.hpp
     #MeshOperation.cpp
 
