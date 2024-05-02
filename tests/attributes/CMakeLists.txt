@@ -4,5 +4,8 @@ set(TEST_SOURCES
     tuple_accessor.cpp
     compound_accessor.cpp
     hybrid_rational_accessor.cpp
+    old_wmtk_attributecollection.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})
+
+include(libigl)

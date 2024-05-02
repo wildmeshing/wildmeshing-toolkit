@@ -71,6 +71,7 @@ add_executable(wmtk_tests ${TEST_SOURCES})
 target_link_libraries(wmtk_tests PUBLIC wmtk_test_tools
     Catch2::Catch2WithMain
     wmtk::toolkit
+    igl::core
     )
 
 FetchContent_GetProperties(catch2)
