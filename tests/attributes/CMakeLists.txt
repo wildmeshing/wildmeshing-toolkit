@@ -6,5 +6,6 @@ set(TEST_SOURCES
     hybrid_rational_accessor.cpp
 
     performance.cpp
+    caches.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})

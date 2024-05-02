@@ -10,7 +10,7 @@
 #endif
 
 
-namespace wmtk::attribute{
+namespace wmtk::attribute {
 template <typename T>
 class Attribute;
 template <typename T, int Dim>
@@ -59,6 +59,7 @@ public:
     // applyes to some other buffer that was passed in
     void apply_to(const Attribute<T>& attribute, std::vector<T>& other) const;
 
+    const DataStorage& data() const { return m_data; }
 
 protected:
 #if defined(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
@@ -68,7 +69,7 @@ protected:
     DataStorage m_data;
 };
 
+} // namespace internal
 } // namespace wmtk::attribute
-} 
 
 #include "AttributeMapCache.hxx"

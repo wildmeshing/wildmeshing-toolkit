@@ -128,6 +128,10 @@ option(WMTK_ENABLE_GENERIC_CHECKPOINTS "Enable checkpoint selection" OFF)
 if(WMTK_ENABLE_GENERIC_CHECKPOINTS)
     target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_ENABLE_GENERIC_CHECKPOINTS)
 endif()
+option(WMTK_ENABLE_MAP_CACHE "Enable checkpoint selection" ON)
+if(WMTK_ENABLE_MAP_CACHE)
+    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_MAP_CACHE)
+endif()
 
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC

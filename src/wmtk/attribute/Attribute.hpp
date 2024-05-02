@@ -120,7 +120,6 @@ public:
     void index_remap(const std::vector<T>& old2new);
     void index_remap(const std::vector<T>& old2new, const std::vector<Eigen::Index>& cols);
 
-protected:
     /**
      * @brief Accesses the attribute using the specified vector as the underlying data
      * This is internally used by the single-arg const_vector_attribute and to help with
@@ -225,6 +224,8 @@ inline auto Attribute<T>::vector_attribute(const int64_t index, std::vector<T>& 
         assert(D == m_dimension);
     }
     const int64_t start = index * m_dimension;
+    assert(start < data.size());
+    assert(start + m_dimension < data.size());
     MapResult<D> R(data.data() + start, m_dimension);
     assert(R.size() == m_dimension);
     return R;

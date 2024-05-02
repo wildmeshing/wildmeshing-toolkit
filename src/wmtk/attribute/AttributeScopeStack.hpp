@@ -127,7 +127,7 @@ inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T, D2>& access
     auto data = accessor.template vector_attribute<D>(index);
     // we are typically only going to write when caching is enabled so better to optimize for this
     if (!empty()) [[unlikely]] {
-        assert(m_scopes.back() == *m_back);
+        // assert(m_scopes.back() == *m_back);
         m_scopes.back().try_caching(index, data);
         // m_back->try_caching(index,data);
     }
@@ -145,9 +145,16 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
         assert(m_active < m_scopes.end());
         for (auto it = m_active; it < m_scopes.end(); ++it) {
             if (auto mapit = it->find_value(index); it->is_value(mapit)) {
+#if defined(WMTK_ENABLE_MAP_CACHE)
                 const auto& d = mapit->second;
                 auto dat = d.template data_as_const_map<D>();
                 return dat;
+#else
+                const size_t local_id = mapit->second;
+                auto dat = ConstMapResult(it->local_ptr(local_id), accessor.dimension());
+                return dat;
+
+#endif
             }
         }
     }

@@ -39,7 +39,6 @@ public:
 private:
     using MapResult = typename AttributeCache<T>::MapResult;
     using ConstMapResult = typename AttributeCache<T>::ConstMapResult;
-    using DataStorage = typename AttributeCache<T>::DataStorage;
     using AttributeCache<T>::m_data;
 
     template <int Dim>
