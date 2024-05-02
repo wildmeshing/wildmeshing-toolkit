@@ -20,7 +20,6 @@ auto setup()
     auto pos_handle = m.get_attribute_handle<double>("vertices", wmtk::PrimitiveType::Vertex);
     auto pos_acc = m.create_accessor<double, 3>(pos_handle);
 
-
     const auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
 
     // create matrix of positions
@@ -52,18 +51,50 @@ TEST_CASE("accessor_read_performance", "[attributes][.]")
     auto [positions, pm_ptr, pph] = setup();
     auto& pm = *pm_ptr;
     auto pp_acc = pm.create_accessor<double>(pph);
+    std::vector<double> data(positions.size());
+    Eigen::Map<Eigen::MatrixXd>(data.data(), positions.rows(), positions.cols()) = positions;
+
     {
-        POLYSOLVE_SCOPED_STOPWATCH("Direct Read", wmtk::logger());
+        POLYSOLVE_SCOPED_STOPWATCH("Vector Direct Read (vec[3*i+j])", wmtk::logger());
         double sum = 0;
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (size_t i = 0; i < 20; ++i) {
-                sum += positions(i, 0);
+                for (int j = 0; j < 3; ++j) {
+                    sum += data[3 * i + j];
+                }
             }
+        }
+        std::cout << "sum = " << sum << std::endl;
+    }
+    {
+        POLYSOLVE_SCOPED_STOPWATCH("Eigen Array sum: (A.sum())", wmtk::logger());
+        double sum = 0;
+        for (size_t i = 0; i < n_repetitions; ++i) {
+            sum += positions.topRows<20>().array().sum();
+        }
+        std::cout << "sum = " << sum << std::endl;
+    }
+    {
+        POLYSOLVE_SCOPED_STOPWATCH("Eigen Direct Read (A(i,j))", wmtk::logger());
+        double sum = 0;
+        for (size_t i = 0; i < n_repetitions; ++i) {
             for (size_t i = 0; i < 20; ++i) {
-                sum += positions(i, 1);
+                for (int j = 0; j < 3; ++j) {
+                    sum += positions(i, j);
+                }
             }
+        }
+        std::cout << "sum = " << sum << std::endl;
+    }
+    {
+        POLYSOLVE_SCOPED_STOPWATCH("Eigen Direct Block Read (A.row(i)(j))", wmtk::logger());
+        double sum = 0;
+        for (size_t i = 0; i < n_repetitions; ++i) {
             for (size_t i = 0; i < 20; ++i) {
-                sum += positions(i, 2);
+                auto r = positions.row(i);
+                for (int j = 0; j < 3; ++j) {
+                    sum += r(j);
+                }
             }
         }
         std::cout << "sum = " << sum << std::endl;
@@ -72,17 +103,16 @@ TEST_CASE("accessor_read_performance", "[attributes][.]")
         auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
         vv.resize(20);
         const auto& attr = pp_acc.attribute();
-        POLYSOLVE_SCOPED_STOPWATCH("Attribute Read", wmtk::logger());
+        POLYSOLVE_SCOPED_STOPWATCH(
+            "Attribute Read (attr.const_vector_attribute(t)[j])",
+            wmtk::logger());
         double sum = 0;
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (size_t i = 0; i < 20; ++i) {
-                sum += attr.const_vector_attribute(i)[0];
-            }
-            for (size_t i = 0; i < 20; ++i) {
-                sum += attr.const_vector_attribute(i)[1];
-            }
-            for (size_t i = 0; i < 20; ++i) {
-                sum += attr.const_vector_attribute(i)[2];
+                auto v = attr.const_vector_attribute(i);
+                for (int j = 0; j < 3; ++j) {
+                    sum += v(j);
+                }
             }
         }
         std::cout << "sum = " << sum << std::endl;
@@ -90,17 +120,16 @@ TEST_CASE("accessor_read_performance", "[attributes][.]")
     {
         auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
         vv.resize(20);
-        POLYSOLVE_SCOPED_STOPWATCH("ConstAccessor no Scope", wmtk::logger());
+        POLYSOLVE_SCOPED_STOPWATCH(
+            "ConstAccessor no Scope (acc.const_vector_attribute(t)[j])",
+            wmtk::logger());
         double sum = 0;
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (const wmtk::Tuple& t : vv) {
-                sum += pp_acc.const_vector_attribute(t)[0];
-            }
-            for (const wmtk::Tuple& t : vv) {
-                sum += pp_acc.const_vector_attribute(t)[1];
-            }
-            for (const wmtk::Tuple& t : vv) {
-                sum += pp_acc.const_vector_attribute(t)[2];
+                auto v = pp_acc.const_vector_attribute(t);
+                for (int j = 0; j < 3; ++j) {
+                    sum += v(j);
+                }
             }
         }
         std::cout << "sum = " << sum << std::endl;
@@ -108,19 +137,18 @@ TEST_CASE("accessor_read_performance", "[attributes][.]")
     {
         auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
         vv.resize(20);
-        POLYSOLVE_SCOPED_STOPWATCH("ConstAccessor with Scope", wmtk::logger());
+        POLYSOLVE_SCOPED_STOPWATCH(
+            "ConstAccessor with Scope (create_scope for(t,j)(acc.const_vector_attribute(t)[j]))",
+            wmtk::logger());
         double sum = 0;
         for (size_t i = 0; i < n_repetitions; ++i) {
             auto scope = pm.create_scope();
 
             for (const wmtk::Tuple& t : vv) {
-                sum += pp_acc.const_vector_attribute(t)[0];
-            }
-            for (const wmtk::Tuple& t : vv) {
-                sum += pp_acc.const_vector_attribute(t)[1];
-            }
-            for (const wmtk::Tuple& t : vv) {
-                sum += pp_acc.const_vector_attribute(t)[2];
+                auto v = pp_acc.const_vector_attribute(t);
+                for (int j = 0; j < 3; ++j) {
+                    sum += v(j);
+                }
             }
         }
         std::cout << "sum = " << sum << std::endl;
@@ -129,17 +157,17 @@ TEST_CASE("accessor_read_performance", "[attributes][.]")
         auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
         vv.resize(20);
         auto scope = pm.create_scope();
-        POLYSOLVE_SCOPED_STOPWATCH("ConstAccessor with Scope Already there", wmtk::logger());
+        POLYSOLVE_SCOPED_STOPWATCH(
+            "ConstAccessor with Scope Already there (create_scope "
+            "for(iter,t,j)(acc.const_vector_attribute(t)[j]))",
+            wmtk::logger());
         double sum = 0;
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (const wmtk::Tuple& t : vv) {
-                sum += pp_acc.const_vector_attribute(t)[0];
-            }
-            for (const wmtk::Tuple& t : vv) {
-                sum += pp_acc.const_vector_attribute(t)[1];
-            }
-            for (const wmtk::Tuple& t : vv) {
-                sum += pp_acc.const_vector_attribute(t)[2];
+                auto v = pp_acc.const_vector_attribute(t);
+                for (int j = 0; j < 3; ++j) {
+                    sum += v(j);
+                }
             }
         }
         std::cout << "sum = " << sum << std::endl;
@@ -154,8 +182,24 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
     auto [positions, pm_ptr, pph] = setup();
     auto& pm = *pm_ptr;
     auto pp_acc = pm.create_accessor<double>(pph);
+
+
+    std::vector<double> data(positions.size());
+    Eigen::Map<Eigen::MatrixXd>(data.data(), positions.rows(), positions.cols()) = positions;
     {
-        POLYSOLVE_SCOPED_STOPWATCH("Direct Write", wmtk::logger());
+        POLYSOLVE_SCOPED_STOPWATCH("Vector Direct Write (vec[3*i+j])", wmtk::logger());
+        double sum = 0;
+        for (size_t i = 0; i < n_repetitions; ++i) {
+            for (size_t i = 0; i < 20; ++i) {
+                for (int j = 0; j < 3; ++j) {
+                    data[3 * i + j] += 1;
+                }
+            }
+        }
+        std::cout << "sum = " << sum << std::endl;
+    }
+    {
+        POLYSOLVE_SCOPED_STOPWATCH("Eigen Direct Write (A(i,j))", wmtk::logger());
         double sum = 0;
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (size_t i = 0; i < 20; ++i) {
@@ -166,14 +210,13 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         }
     }
     {
-        std::vector<double> data(3 * 20);
         POLYSOLVE_SCOPED_STOPWATCH("Vec map write", wmtk::logger());
         wmtk::attribute::Attribute<double>& attr = pp_acc.attribute();
         const size_t dim = attr.dimension();
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (size_t i = 0; i < 20; ++i) {
+                Eigen::Map<Eigen::Vector3d> d(data.data() + dim * i, dim);
                 for (int j = 0; j < 3; ++j) {
-                    Eigen::Map<Eigen::Vector3d> d(data.data() + dim * i, dim);
                     d(j) += 1;
                 }
             }
@@ -183,14 +226,15 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
         vv.resize(20);
         std::vector<double> data(3 * 20);
-        POLYSOLVE_SCOPED_STOPWATCH("Vec map read", wmtk::logger());
+        POLYSOLVE_SCOPED_STOPWATCH("Vec map write template size", wmtk::logger());
         wmtk::attribute::Attribute<double>& attr = pp_acc.attribute();
         double sum = 0;
+        const size_t dim = attr.dimension();
         for (size_t i = 0; i < n_repetitions; ++i) {
-            for (int j = 0; j < 3; ++j) {
-                for (size_t i = 0; i < 20; ++i) {
-                    Eigen::Map<const Eigen::Vector3d> d(data.data(), 3);
-                    sum += d(j);
+            for (size_t i = 0; i < 20; ++i) {
+                Eigen::Map<Eigen::Vector3d> d(data.data() + dim * i, 3);
+                for (int j = 0; j < 3; ++j) {
+                    d(j) += 1;
                 }
             }
         }
@@ -198,13 +242,16 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
     {
         auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
         vv.resize(20);
-        POLYSOLVE_SCOPED_STOPWATCH("Attribute Write", wmtk::logger());
+        POLYSOLVE_SCOPED_STOPWATCH(
+            "Attribute Write (attr.const_vector_attribute(t)[j])",
+            wmtk::logger());
         wmtk::attribute::Attribute<double>& attr = pp_acc.attribute();
         double sum = 0;
         for (size_t i = 0; i < n_repetitions; ++i) {
-            for (int j = 0; j < 3; ++j) {
-                for (size_t i = 0; i < 20; ++i) {
-                    attr.vector_attribute(i)(j) += 1;
+            for (size_t i = 0; i < 20; ++i) {
+                auto v = attr.vector_attribute(i);
+                for (int j = 0; j < 3; ++j) {
+                    v(j) += 1;
                 }
             }
         }
@@ -212,72 +259,54 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
     {
         auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
         vv.resize(20);
-        POLYSOLVE_SCOPED_STOPWATCH("Accessor no Scope", wmtk::logger());
+        POLYSOLVE_SCOPED_STOPWATCH(
+            "Accessor no Scope (acc.vector_attribute(t)[j])",
+            wmtk::logger());
         double sum = 0;
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (const wmtk::Tuple& t : vv) {
-                pp_acc.vector_attribute(t)[0] += 1;
-            }
-            for (const wmtk::Tuple& t : vv) {
-                pp_acc.vector_attribute(t)[1] += 1;
-            }
-            for (const wmtk::Tuple& t : vv) {
-                pp_acc.vector_attribute(t)[2] += 1;
+                auto v = pp_acc.vector_attribute(t);
+                for (int j = 0; j < 3; ++j) {
+                    v(j) += 1;
+                }
             }
         }
     }
     {
         auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
         vv.resize(20);
-        POLYSOLVE_SCOPED_STOPWATCH("Accessor with Scope", wmtk::logger());
+        POLYSOLVE_SCOPED_STOPWATCH(
+            "Accessor with Scope (create_scope for(t,j)(acc._vector_attribute(t)[j]))",
+            wmtk::logger());
         double sum = 0;
         for (size_t i = 0; i < n_repetitions; ++i) {
             auto scope = pm.create_scope();
 
             for (const wmtk::Tuple& t : vv) {
                 auto v = pp_acc.vector_attribute(t);
-                for(int j = 0; j < 3; ++j) {
-                v(j)  += 1;
+                for (int j = 0; j < 3; ++j) {
+                    v(j) += 1;
                 }
             }
-            /*
-            for (const wmtk::Tuple& t : vv) {
-                pp_acc.vector_attribute(t)[0] += 1;
-            }
-            for (const wmtk::Tuple& t : vv) {
-                pp_acc.vector_attribute(t)[1] += 1;
-            }
-            for (const wmtk::Tuple& t : vv) {
-                pp_acc.vector_attribute(t)[2] += 1;
-            }
-            */
         }
     }
     {
         auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
         vv.resize(20);
-        POLYSOLVE_SCOPED_STOPWATCH("Accessor with Scope already there", wmtk::logger());
+        POLYSOLVE_SCOPED_STOPWATCH(
+            "Accessor with Scope already there"
+            "(create_scope "
+            "for(iter,t,j)(acc.vector_attribute(t)[j]))",
+            wmtk::logger());
         auto scope = pm.create_scope();
         double sum = 0;
         for (size_t i = 0; i < n_repetitions; ++i) {
-
             for (const wmtk::Tuple& t : vv) {
                 auto v = pp_acc.vector_attribute(t);
-                for(int j = 0; j < 3; ++j) {
-                v(j)  += 1;
+                for (int j = 0; j < 3; ++j) {
+                    v(j) += 1;
                 }
             }
-            /*
-            for (const wmtk::Tuple& t : vv) {
-                pp_acc.vector_attribute(t)[0] += 1;
-            }
-            for (const wmtk::Tuple& t : vv) {
-                pp_acc.vector_attribute(t)[1] += 1;
-            }
-            for (const wmtk::Tuple& t : vv) {
-                pp_acc.vector_attribute(t)[2] += 1;
-            }
-            */
         }
     }
 }

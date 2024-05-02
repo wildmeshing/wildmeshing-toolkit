@@ -34,7 +34,7 @@ inline void AttributeFlatCache<T>::try_caching(
     size_t dim = value.size();
     size_t old_size = m_buffer.size();
 
-    assert(old_size / value.size() == indices.size());
+    assert(old_size / value.size() == m_indices.size());
     m_indices.emplace_back(index, m_indices.size()); //old_size / value.size());
 
 
