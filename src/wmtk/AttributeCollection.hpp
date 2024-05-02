@@ -90,7 +90,8 @@ struct AttributeCollection : public AbstractAttributeContainer
     T& operator[](size_t i)
     {
         if (recording.local()) {
-            m_rollback_list.local().emplace(i, m_attributes[i]);
+            // m_rollback_list.local().emplace(i, m_attributes[i]);
+            m_rollback_list_pair.local().emplace_back(i, m_attributes[i]);
         }
         return m_attributes[i];
     }
@@ -102,5 +103,6 @@ struct AttributeCollection : public AbstractAttributeContainer
     // experimenting with tbb, could be templated as well.
     tbb::concurrent_vector<T> m_attributes;
     tbb::enumerable_thread_specific<bool> recording{false};
+    tbb::enumerable_thread_specific<std::vector<std::pair<size_t, T>>> m_rollback_list_pair;
 };
 } // namespace wmtk
