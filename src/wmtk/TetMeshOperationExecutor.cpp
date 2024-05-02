@@ -761,8 +761,11 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
 
     // collect star before changing connectivity
     // update all tv's after other updates
+    // const simplex::SimplexCollection v0_star =
+    //     simplex::closed_star(m_mesh, simplex::Simplex::vertex(m_operating_tuple));
+
     const simplex::SimplexCollection v0_star =
-        simplex::closed_star(m_mesh, simplex::Simplex::vertex(m_operating_tuple));
+        simplex::top_dimension_cofaces(m_mesh, simplex::Simplex::vertex(m_operating_tuple));
 
     // collect incident tets and their ears
     // loop case and boundary case
@@ -1022,7 +1025,8 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
     const int64_t v0 = m_spine_vids[0];
     const int64_t v1 = m_spine_vids[1];
 
-    for (const simplex::Simplex& t : v0_star.simplex_vector(PrimitiveType::Tetrahedron)) {
+    for (const simplex::Simplex& t : v0_star) {
+        // for (const simplex::Simplex& t : v0_star.simplex_vector(PrimitiveType::Tetrahedron)) {
         const int64_t tid = m_mesh.id(t);
         auto tv = tv_accessor.index_access().vector_attribute(tid);
         auto te = te_accessor.index_access().vector_attribute(tid);

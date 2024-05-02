@@ -63,8 +63,12 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
         return {};
     }
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     const auto simplex_resurrect =
         simplex::Simplex(simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
+#else
+    const auto simplex_resurrect = simplex;
+#endif
 
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
@@ -95,8 +99,12 @@ bool Operation::before(const simplex::Simplex& simplex) const
         return false;
     }
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     const auto simplex_resurrect =
         simplex::Simplex(simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
+#else
+    const auto simplex_resurrect = simplex;
+#endif
 
     // map simplex to the invariant mesh
     const Mesh& invariant_mesh = m_invariants.mesh();
