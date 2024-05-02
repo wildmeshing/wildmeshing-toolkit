@@ -7,5 +7,8 @@ set(TEST_SOURCES
 
     performance.cpp
     caches.cpp
+    old_wmtk_attributecollection.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})
+
+include(libigl)

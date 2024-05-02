@@ -130,12 +130,6 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
         edge_closed_star_vertices.simplex_vector().size() ==
         edge_closed_star_vertices.simplex_vector(PrimitiveType::Vertex).size());
 
-    // get all tets incident to the edge
-    // TODO: having another implementation, remove this here
-    // for (const simplex::Simplex& t : edge_closed_star.get_tetrahedra()) {
-    //     m_incident_tet_datas.emplace_back(get_incident_tet_data(t.tuple()));
-    // }
-
     // update hash on all tets in the two-ring neighborhood
     simplex::SimplexCollection hash_update_region(m);
     for (const simplex::Simplex& v : edge_closed_star_vertices.simplex_vector()) {
@@ -148,7 +142,9 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     faces.reserve(hash_update_region.simplex_vector().size() * 15);
 
     for (const simplex::Simplex& t : hash_update_region.simplex_vector()) {
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         cell_ids_to_update_hash.push_back(m_mesh.id(t));
+#endif
 
         faces.add(wmtk::simplex::faces(m, t, false));
         faces.add(t);
@@ -163,37 +159,6 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
             m_mesh.id(s),
             wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
     }
-
-
-    // // geet hash_update_region as the one ring
-    // simplex::SimplexCollection hash_update_region =
-    //     simplex::closed_star(m_mesh, simplex::Simplex::vertex(operating_tuple), false);
-    // hash_update_region.add(simplex::closed_star(
-    //     m_mesh,
-    //     simplex::Simplex::vertex(m_mesh.switch_tuple(operating_tuple, PrimitiveType::Vertex)),
-    //     false));
-    // hash_update_region.sort_and_clean();
-
-    // global_simplex_ids_with_potentially_modified_hashes.resize(4);
-    // simplex::SimplexCollection faces(m_mesh);
-    // faces.reserve(hash_update_region.simplex_vector().size() * 15);
-
-    // for (const simplex::Simplex& t : hash_update_region.simplex_vector()) {
-    //     cell_ids_to_update_hash.push_back(m_mesh.id(t));
-
-    //     faces.add(wmtk::simplex::faces(m, t, false));
-    //     faces.add(t);
-    // }
-
-    // faces.sort_and_clean();
-
-    // for (const auto& s : faces) {
-    //     const int64_t index = static_cast<int64_t>(s.primitive_type());
-    //     if (!m.has_child_mesh_in_dimension(index)) continue;
-    //     global_simplex_ids_with_potentially_modified_hashes.at(index).emplace_back(
-    //         m_mesh.id(s),
-    //         wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
-    // }
 }
 
 void TetMesh::TetMeshOperationExecutor::delete_simplices()
@@ -207,7 +172,10 @@ void TetMesh::TetMeshOperationExecutor::delete_simplices()
 
 void TetMesh::TetMeshOperationExecutor::update_cell_hash()
 {
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+
     m_mesh.update_cell_hashes(cell_ids_to_update_hash, hash_accessor);
+#endif
 }
 
 const std::array<std::vector<int64_t>, 4>
@@ -793,8 +761,11 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
 
     // collect star before changing connectivity
     // update all tv's after other updates
+    // const simplex::SimplexCollection v0_star =
+    //     simplex::closed_star(m_mesh, simplex::Simplex::vertex(m_operating_tuple));
+
     const simplex::SimplexCollection v0_star =
-        simplex::closed_star(m_mesh, simplex::Simplex::vertex(m_operating_tuple));
+        simplex::top_dimension_cofaces(m_mesh, simplex::Simplex::vertex(m_operating_tuple));
 
     // collect incident tets and their ears
     // loop case and boundary case
@@ -1054,7 +1025,8 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
     const int64_t v0 = m_spine_vids[0];
     const int64_t v1 = m_spine_vids[1];
 
-    for (const simplex::Simplex& t : v0_star.simplex_vector(PrimitiveType::Tetrahedron)) {
+    for (const simplex::Simplex& t : v0_star) {
+        // for (const simplex::Simplex& t : v0_star.simplex_vector(PrimitiveType::Tetrahedron)) {
         const int64_t tid = m_mesh.id(t);
         auto tv = tv_accessor.index_access().vector_attribute(tid);
         auto te = te_accessor.index_access().vector_attribute(tid);
