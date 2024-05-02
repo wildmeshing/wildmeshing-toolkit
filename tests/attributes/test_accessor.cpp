@@ -257,7 +257,7 @@ TEST_CASE("test_accessor_caching", "[accessor]")
     }
 }
 
-TEST_CASE("test_accessor_caching_scope_fails", "[accessor]")
+TEST_CASE("test_accessor_caching_scope_fails", "[accessor][caching]")
 {
     int64_t size = 20;
     DEBUG_PointMesh m(size);
@@ -317,7 +317,7 @@ TEST_CASE("test_accessor_caching_scope_success_fails", "[accessor]")
     check(m, int64_t_acc, false);
     check(m, double_acc, false);
 }
-TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor]")
+TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor][caching]")
 {
     int64_t size = 20;
     DEBUG_PointMesh m(size);

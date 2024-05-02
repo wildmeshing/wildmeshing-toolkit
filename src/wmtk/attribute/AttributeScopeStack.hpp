@@ -144,18 +144,21 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
         assert(m_active >= m_scopes.begin());
         assert(m_active < m_scopes.end());
         for (auto it = m_active; it < m_scopes.end(); ++it) {
-            if (auto mapit = it->find_value(index); it->is_value(mapit)) {
 #if defined(WMTK_ENABLE_MAP_CACHE)
+            if (auto mapit = it->find_value(index); it->is_value(mapit)) {
                 const auto& d = mapit->second;
                 auto dat = d.template data_as_const_map<D>();
                 return dat;
+            }
 #else
-                const size_t local_id = mapit->second;
-                auto dat = ConstMapResult(it->local_ptr(local_id), accessor.dimension());
-                return dat;
+            for(const auto& [global,local]: it->indices()) {
+                if(global == index) {
+                    auto dat = ConstMapResult<D>(it->buffer().data() + local, accessor.dimension());
+                    return dat;
+                }
+            }
 
 #endif
-            }
         }
     }
     return accessor.template const_vector_attribute<D>(index);

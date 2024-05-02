@@ -10,7 +10,7 @@ template <typename T>
 inline AttributeFlatCache<T>::AttributeFlatCache()
     : m_buffer(64)
     , m_indices(32)
-{} //: m_data({m_resource}) {}
+{}
 template <typename T>
 inline AttributeFlatCache<T>::~AttributeFlatCache() = default;
 
@@ -59,9 +59,7 @@ inline void AttributeFlatCache<T>::apply_to(Attribute<T>& attribute) const
 template <typename T>
 inline void AttributeFlatCache<T>::apply_to(AttributeFlatCache<T>& other) const
 {
-    auto& o_data = other.m_data;
-
-    size_t offset = other.m_buffer.size();
+    size_t offset = other.m_indices.size();
     std::copy(m_buffer.begin(), m_buffer.end(), std::back_inserter(other.m_buffer));
     std::transform(
         m_indices.begin(),

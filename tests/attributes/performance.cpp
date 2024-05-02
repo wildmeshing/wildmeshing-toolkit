@@ -235,6 +235,13 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
             auto scope = pm.create_scope();
 
             for (const wmtk::Tuple& t : vv) {
+                auto v = pp_acc.vector_attribute(t);
+                for(int j = 0; j < 3; ++j) {
+                v(j)  += 1;
+                }
+            }
+            /*
+            for (const wmtk::Tuple& t : vv) {
                 pp_acc.vector_attribute(t)[0] += 1;
             }
             for (const wmtk::Tuple& t : vv) {
@@ -243,6 +250,7 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
             for (const wmtk::Tuple& t : vv) {
                 pp_acc.vector_attribute(t)[2] += 1;
             }
+            */
         }
     }
     {
@@ -252,6 +260,14 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         auto scope = pm.create_scope();
         double sum = 0;
         for (size_t i = 0; i < n_repetitions; ++i) {
+
+            for (const wmtk::Tuple& t : vv) {
+                auto v = pp_acc.vector_attribute(t);
+                for(int j = 0; j < 3; ++j) {
+                v(j)  += 1;
+                }
+            }
+            /*
             for (const wmtk::Tuple& t : vv) {
                 pp_acc.vector_attribute(t)[0] += 1;
             }
@@ -261,6 +277,7 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
             for (const wmtk::Tuple& t : vv) {
                 pp_acc.vector_attribute(t)[2] += 1;
             }
+            */
         }
     }
 }

@@ -39,7 +39,6 @@ public:
 private:
     using MapResult = typename AttributeCache<T>::MapResult;
     using ConstMapResult = typename AttributeCache<T>::ConstMapResult;
-    using AttributeCache<T>::m_data;
 
     template <int Dim>
     ConstMapResult load_const_cached_vector_value(const AccessorBase<T, Dim>& accessor, int64_t index)
