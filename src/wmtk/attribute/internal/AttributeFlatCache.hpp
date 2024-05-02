@@ -35,6 +35,8 @@ public:
     void try_caching(int64_t index, const T& value);
 
 
+    const T* get_value(int64_t index, size_t dim) const;
+
     void clear();
     size_t size() const { return m_indices.size(); }
 

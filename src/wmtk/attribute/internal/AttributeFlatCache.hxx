@@ -31,9 +31,13 @@ inline void AttributeFlatCache<T>::try_caching(
 {
     // basically try_emplace but optimizes to avoid accessing the pointed-to value
 
-    size_t old_size = m_buffer.size();
     size_t dim = value.size();
-    m_indices.emplace_back(index, old_size / value.size());
+    size_t old_size = m_buffer.size();
+
+    assert(old_size / value.size() == indices.size());
+    m_indices.emplace_back(index, m_indices.size()); //old_size / value.size());
+
+
     m_buffer.resize(old_size + dim);
     std::copy(value.begin(), value.end(), m_buffer.begin() + old_size);
 }
@@ -81,5 +85,17 @@ inline void AttributeFlatCache<T>::apply_to(const Attribute<T>& attribute, std::
         auto b = attribute.const_vector_attribute(local, m_buffer);
         a = b;
     }
+}
+
+template <typename T>
+inline auto AttributeFlatCache<T>::get_value(int64_t index, size_t dim) const -> const T*
+{
+    for (auto iit = m_indices.crbegin(); iit != m_indices.crend(); ++iit) {
+        const auto& [global, local] = *iit;
+        if (global == index) {
+            return m_buffer.data() + dim * local;
+        }
+    }
+    return nullptr;
 }
 } // namespace wmtk::attribute::internal

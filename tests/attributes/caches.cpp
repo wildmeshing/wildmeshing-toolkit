@@ -98,5 +98,10 @@ TEST_CASE("attribute_map_cache", "[attributes]")
 
     // map the child to the parent, then the parent to the vector data
     apply_child_and_check(vector);
+
+
+    for (int j = 0; j < 5; ++j) {
+        // TODO: test get_value function
+    }
 }
 

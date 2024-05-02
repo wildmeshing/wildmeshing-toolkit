@@ -1,6 +1,6 @@
 #include <wmtk/Types.hpp>
-#include <wmtk/utils/Rational.hpp>
 #include <wmtk/attribute/AccessorBase.hpp>
+#include <wmtk/utils/Rational.hpp>
 #include "AttributeMapCache.hpp"
 
 namespace wmtk::attribute::internal {
@@ -30,6 +30,17 @@ inline bool AttributeMapCache<T>::is_value(const typename DataStorage::const_ite
 }
 
 template <typename T>
+inline auto AttributeMapCache<T>::get_value(int64_t index, size_t) const -> const T*
+{
+    if (auto mapit = find_value(index); is_value(mapit)) {
+        const auto& d = mapit->second;
+        auto dat = d.data.data();
+    }
+    return nullptr;
+}
+
+
+template <typename T>
 inline void AttributeMapCache<T>::clear()
 {
     m_data.clear();
@@ -38,7 +49,9 @@ inline void AttributeMapCache<T>::clear()
 
 template <typename T>
 template <typename Derived>
-inline void AttributeMapCache<T>::try_caching(int64_t index, const Eigen::MatrixBase<Derived>& value)
+inline void AttributeMapCache<T>::try_caching(
+    int64_t index,
+    const Eigen::MatrixBase<Derived>& value)
 {
     // basically try_emplace but optimizes to avoid accessing the pointed-to value
     auto [it, did_insert] = m_data.try_emplace(index, AttributeCacheData<T>{});
@@ -84,10 +97,11 @@ inline void AttributeMapCache<T>::apply_to(AttributeMapCache<T>& other) const
 }
 
 template <typename T>
-inline void AttributeMapCache<T>::apply_to(const Attribute<T>& attribute, std::vector<T>& other) const
+inline void AttributeMapCache<T>::apply_to(const Attribute<T>& attribute, std::vector<T>& other)
+    const
 {
     for (auto& [index, data] : m_data) {
         attribute.vector_attribute(index, other) = data.data;
     }
 }
-} // namespace wmtk::attribute
+} // namespace wmtk::attribute::internal

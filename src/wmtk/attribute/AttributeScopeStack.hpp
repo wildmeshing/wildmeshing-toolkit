@@ -144,6 +144,7 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
         assert(m_active >= m_scopes.begin());
         assert(m_active < m_scopes.end());
         for (auto it = m_active; it < m_scopes.end(); ++it) {
+#if defined(WMTK_USE_MAP_CACHE_ITERATOR)
 #if defined(WMTK_ENABLE_MAP_CACHE)
             if (auto mapit = it->find_value(index); it->is_value(mapit)) {
                 const auto& d = mapit->second;
@@ -151,11 +152,24 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
                 return dat;
             }
 #else
-            for(const auto& [global,local]: it->indices()) {
-                if(global == index) {
-                    auto dat = ConstMapResult<D>(it->buffer().data() + local, accessor.dimension());
+
+            const auto& indices = it->indices();
+            for (auto iit = indices.crbegin(); iit != indices.crend(); ++iit) {
+                const auto& [global, local] = *iit;
+                if (global == index) {
+                    const int dim = accessor.dimension();
+                    auto dat = ConstMapResult<D>(it->buffer().data() + dim * local, dim);
                     return dat;
                 }
+            }
+
+#endif
+#else
+            const int dim = accessor.dimension();
+            const auto ptr = it->get_value(index, dim);
+            if (ptr != nullptr) {
+                auto dat = ConstMapResult<D>(ptr, dim);
+                return dat;
             }
 
 #endif

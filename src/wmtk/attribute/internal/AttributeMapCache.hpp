@@ -47,8 +47,10 @@ public:
     void try_caching(int64_t index, const Eigen::MatrixBase<Derived>& value);
     void try_caching(int64_t index, const T& value);
 
+
     typename DataStorage::const_iterator find_value(int64_t index) const;
     bool is_value(const typename DataStorage::const_iterator& it) const;
+    const T* get_value(int64_t index, size_t dim) const;
 
     void clear();
     size_t size() const { return m_data.size(); }
@@ -58,6 +60,7 @@ public:
 
     // applyes to some other buffer that was passed in
     void apply_to(const Attribute<T>& attribute, std::vector<T>& other) const;
+
 
     const DataStorage& data() const { return m_data; }
 
