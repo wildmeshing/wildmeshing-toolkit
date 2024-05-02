@@ -1,6 +1,7 @@
 #include "pixel_image_triangle_helper.hpp"
 #include <Eigen/Geometry>
 #include <set>
+#include <wmtk/utils/triangle_areas.hpp>
 namespace wmtk::function::utils {
 
 std::vector<double> pixel_grid_edge_intersections_in_barycentric(
@@ -114,5 +115,52 @@ std::pair<double, Eigen::Vector2d> max_distance_and_uv_on_edge(
         }
     }
     return {max_dist, max_uv};
+}
+
+Eigen::Vector2d get_best_uv(
+    const std::shared_ptr<wmtk::components::function::utils::Triangle2DTo3DMapping>& m_mapping_ptr,
+    const Eigen::Vector2d& edge_uv0,
+    const Eigen::Vector2d& edge_uv1,
+    const Eigen::Vector2d& top_uv,
+    const std::optional<Eigen::Vector2d>& btm_uv_opt)
+{
+    int sample_size = 8;
+    double t_size = 1.0 / (sample_size + 1);
+
+    Eigen::Vector2d best_uv = (edge_uv0 + edge_uv1) / 2;
+    double mini_distance = m_mapping_ptr->distance(best_uv, top_uv, edge_uv0) +
+                           m_mapping_ptr->distance(best_uv, top_uv, edge_uv1);
+    if (btm_uv_opt) {
+        mini_distance += m_mapping_ptr->distance(best_uv, btm_uv_opt.value(), edge_uv0) +
+                         m_mapping_ptr->distance(best_uv, btm_uv_opt.value(), edge_uv1);
+    }
+    for (int i = 0; i < sample_size; i++) {
+        double t = (i + 1) * t_size;
+        Eigen::Vector2d new_uv = (1 - t) * edge_uv0 + t * edge_uv1;
+
+        double new_distance = m_mapping_ptr->distance(new_uv, top_uv, edge_uv0) +
+                              m_mapping_ptr->distance(new_uv, top_uv, edge_uv1);
+        double avg_tri_area =
+            wmtk::utils::triangle_unsigned_2d_area(edge_uv0, edge_uv1, top_uv) / 2;
+
+        if (btm_uv_opt) {
+            new_distance += m_mapping_ptr->distance(new_uv, btm_uv_opt.value(), edge_uv0) +
+                            m_mapping_ptr->distance(new_uv, btm_uv_opt.value(), edge_uv1);
+            double other_tri_area =
+                wmtk::utils::triangle_unsigned_2d_area(edge_uv0, edge_uv1, btm_uv_opt.value()) / 2;
+            avg_tri_area = (avg_tri_area + other_tri_area) / 2;
+        }
+
+
+        if (abs(new_distance - mini_distance) < 1e-6 * avg_tri_area) {
+            // logger().info("new_distance == mini_distance");
+            continue;
+        }
+        if (new_distance < mini_distance) {
+            mini_distance = new_distance;
+            best_uv = new_uv;
+        }
+    }
+    return best_uv;
 }
 } // namespace wmtk::function::utils

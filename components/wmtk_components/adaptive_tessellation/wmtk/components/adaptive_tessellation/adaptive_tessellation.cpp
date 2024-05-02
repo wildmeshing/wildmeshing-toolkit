@@ -215,9 +215,9 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         opt_logger().set_level(spdlog::level::level_enum::critical);
 
 
-        // int64_t rgb_split_index = at_ops.AT_rgb_split();
-        int64_t rgb_split_position_optimization_index =
-            at_ops.AT_rgb_split_with_position_optimization();
+        int64_t rgb_split_index = at_ops.AT_rgb_split();
+        // int64_t rgb_split_position_optimization_index =
+        //     at_ops.AT_rgb_split_with_position_optimization();
         int64_t rgb_swap_index = at_ops.AT_rgb_swap();
         ATScheduler scheduler;
         int cnt = 0;
@@ -242,8 +242,8 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
             while (true) {
                 int64_t inner_i = 1;
                 while (true) {
-                    const auto stats = scheduler.run_operation_on_all(
-                        *at_ops.m_ops[rgb_split_position_optimization_index]);
+                    const auto stats =
+                        scheduler.run_operation_on_all(*at_ops.m_ops[rgb_split_index]);
 
                     if (stats.number_of_successful_operations() == 0) {
                         break;

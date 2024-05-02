@@ -5,6 +5,7 @@
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/PolygonClipping.hpp>
 #include "BarycentricTriangle.hpp"
+#include "Triangle2DTo3DMapping.hpp"
 
 namespace wmtk::function::utils {
 /**
@@ -55,5 +56,12 @@ std::pair<double, Eigen::Vector2d> max_distance_and_uv_on_edge(
         m_three_channel_evaluator,
     const Eigen::Vector2d& a,
     const Eigen::Vector2d& b);
+
+Eigen::Vector2d get_best_uv(
+    const std::shared_ptr<wmtk::components::function::utils::Triangle2DTo3DMapping>& m_mapping_ptr,
+    const Eigen::Vector2d& edge_uv0,
+    const Eigen::Vector2d& edge_uv1,
+    const Eigen::Vector2d& top_uv,
+    const std::optional<Eigen::Vector2d>& btm_uv_opt);
 
 } // namespace wmtk::function::utils

@@ -10,19 +10,16 @@
 
 namespace wmtk::operations::composite {
 
-class RGBSplitWithPositionOptimization : public Operation
+class PositionOptimizationOnEdge : public Operation
 {
 public:
-    RGBSplitWithPositionOptimization(
+    PositionOptimizationOnEdge(
         Mesh& m,
         attribute::MeshAttributeHandle& uv_handle,
-        std::shared_ptr<wmtk::components::function::utils::Triangle2DTo3DMapping> mapping_ptr,
-        attribute::MeshAttributeHandle& triangle_rgb_state_handle,
-        attribute::MeshAttributeHandle& edge_rgb_state_handle);
+        std::shared_ptr<wmtk::components::function::utils::Triangle2DTo3DMapping> mapping_ptr);
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 
-    inline RGBSplit& split() { return m_rgb_split; }
     inline AttributesUpdateWithFunction& attribute_update() { return m_attribute_update; }
 
 protected:
@@ -32,7 +29,6 @@ protected:
 
 
 private:
-    RGBSplit m_rgb_split;
     AttributesUpdateWithFunction m_attribute_update;
     attribute::MeshAttributeHandle m_uv_handle;
     std::shared_ptr<wmtk::components::function::utils::Triangle2DTo3DMapping> m_mapping_ptr;

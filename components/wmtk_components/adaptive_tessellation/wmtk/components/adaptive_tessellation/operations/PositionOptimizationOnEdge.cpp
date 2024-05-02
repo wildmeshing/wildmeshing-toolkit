@@ -1,4 +1,4 @@
-#include "RGBSplitWithPositionOptimization.hpp"
+#include "PositionOptimizationOnEdge.hpp"
 
 #include <optional>
 #include <wmtk/Mesh.hpp>
@@ -6,27 +6,23 @@
 #include <wmtk/components/adaptive_tessellation/function/utils/pixel_image_triangle_helper.hpp>
 
 namespace wmtk::operations::composite {
-RGBSplitWithPositionOptimization::RGBSplitWithPositionOptimization(
+PositionOptimizationOnEdge::PositionOptimizationOnEdge(
     Mesh& m,
     attribute::MeshAttributeHandle& uv_handle,
-    std::shared_ptr<wmtk::components::function::utils::Triangle2DTo3DMapping> mapping_ptr,
-    attribute::MeshAttributeHandle& triangle_rgb_state_handle,
-    attribute::MeshAttributeHandle& edge_rgb_state_handle)
+    std::shared_ptr<wmtk::components::function::utils::Triangle2DTo3DMapping> mapping_ptr)
     : Operation(m)
-    , m_rgb_split(m, triangle_rgb_state_handle, edge_rgb_state_handle)
     , m_attribute_update(m)
     , m_uv_handle(uv_handle)
     , m_mapping_ptr(mapping_ptr)
 {}
 
-std::vector<simplex::Simplex> RGBSplitWithPositionOptimization::unmodified_primitives(
+std::vector<simplex::Simplex> PositionOptimizationOnEdge::unmodified_primitives(
     const simplex::Simplex& simplex) const
 {
     return {simplex};
 }
 
-std::vector<simplex::Simplex> RGBSplitWithPositionOptimization::execute(
-    const simplex::Simplex& simplex)
+std::vector<simplex::Simplex> PositionOptimizationOnEdge::execute(const simplex::Simplex& simplex)
 {
     auto uv_accessor = mesh().create_accessor(m_uv_handle.as<double>());
     // get the two ends of the edge
@@ -41,12 +37,6 @@ std::vector<simplex::Simplex> RGBSplitWithPositionOptimization::execute(
             simplex.tuple(),
             {PrimitiveType::Triangle, PrimitiveType::Edge, PrimitiveType::Vertex}));
     }
-
-
-    auto split_return = m_rgb_split(simplex);
-    if (split_return.empty()) return {};
-    assert(split_return.size() == 1);
-
     std::function update_func = [&](Mesh& mesh, const simplex::Simplex& return_simplex) -> bool {
         Eigen::Vector2d best_uv = wmtk::function::utils::get_best_uv(
             m_mapping_ptr,
@@ -59,8 +49,8 @@ std::vector<simplex::Simplex> RGBSplitWithPositionOptimization::execute(
         return true;
     };
     m_attribute_update.set_function(update_func);
-    auto attribute_update_return = m_attribute_update(split_return[0]);
-
+    auto attribute_update_return = m_attribute_update(simplex);
+    assert(attribute_update_return.size() == 1);
 
     return attribute_update_return;
 }

@@ -20,6 +20,7 @@ set(SRC_FILES
     triangle_areas.cpp
 
     point_inside_triangle_check.hpp
+    orient_triangle_2d_vertices.hpp
 
     vector_hash.hpp
     vector_hash.cpp

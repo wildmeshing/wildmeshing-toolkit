@@ -49,6 +49,7 @@ public:
     int64_t AT_rgb_split();
     int64_t AT_rgb_swap();
     int64_t AT_rgb_split_with_position_optimization();
+    int64_t AT_position_optimization();
     ///// update
     void set_uvmesh_xyz_update_rule();
     void initialize_xyz();

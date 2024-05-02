@@ -45,6 +45,7 @@
 #include <tools/DEBUG_TriMesh.hpp>
 #include <tools/TriMesh_examples.hpp>
 
+
 using namespace wmtk;
 using namespace wmtk::tests;
 using DSVec = wmtk::function::PerSimplexAutodiffFunction::DSVec;
@@ -1426,6 +1427,68 @@ TEST_CASE("max_dist")
         }
     }
 }
+
+TEST_CASE("test_rgb_with_pos_optimization")
+{
+    std::array<std::shared_ptr<image::Image>, 3> images = {
+        {std::make_shared<image::Image>(500, 500),
+         std::make_shared<image::Image>(500, 500),
+         std::make_shared<image::Image>(500, 500)}};
+
+    auto u_func = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
+    auto v_func = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
+    auto gaussian_function = [](const double& u, [[maybe_unused]] const double& v) -> double {
+        return exp(-(pow(u - 0.1, 2) + pow(v - 0.1, 2)) / (2 * 0.1 * 0.1));
+        // return 1.;
+    };
+    images[0]->set(u_func);
+    images[1]->set(v_func);
+    images[2]->set(gaussian_function);
+
+    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator evaluator_gaussian(
+        images,
+        image::SAMPLING_METHOD::Bilinear);
+
+    std::shared_ptr<wmtk::components::function::utils::Triangle2DTo3DMapping> triangle_mapping =
+        std::make_shared<wmtk::components::function::utils::MaxDistanceToLimit>(evaluator_gaussian);
+
+    Eigen::Vector2d a(0., 0.);
+    Eigen::Vector2d b(1., 1.);
+    Eigen::Vector2d c(0, 1.);
+    Eigen::Vector2d d(1., 0.);
+    auto best_uv = wmtk::function::utils::get_best_uv(
+        triangle_mapping,
+        a,
+        b,
+        c,
+        std::make_optional<Eigen::Vector2d>(d));
+    Eigen::Vector2d mid_point(0.5, 0.5);
+    logger().warn("best_uv: {}, mid_point: {}", best_uv, mid_point);
+    REQUIRE(best_uv != mid_point);
+
+    auto constant_function = [](const double& u, const double& v) -> double { return 1.; };
+    images[2]->set(constant_function);
+    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator evaluator_constant(
+        images,
+        image::SAMPLING_METHOD::Bilinear);
+    std::shared_ptr<wmtk::components::function::utils::Triangle2DTo3DMapping>
+        triangle_mapping_constant =
+            std::make_shared<wmtk::components::function::utils::MaxDistanceToLimit>(
+                evaluator_constant);
+    Eigen::Vector2d a1(0., 0.);
+    Eigen::Vector2d b1(1e-6, 1e-6);
+    Eigen::Vector2d c1(0, 1e-6);
+    Eigen::Vector2d mid_point1(5e-7, 5e-7);
+
+    best_uv = wmtk::function::utils::get_best_uv(
+        triangle_mapping,
+        a1,
+        b1,
+        c1,
+        std::make_optional<Eigen::Vector2d>(d));
+    REQUIRE(best_uv == mid_point1);
+}
+
 
 TEST_CASE("downsample_image")
 {

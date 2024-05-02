@@ -7,6 +7,8 @@ set(SRC_FILES
     RGBSwap.cpp
     RGBSplitWithPositionOptimization.hpp
     RGBSplitWithPositionOptimization.cpp
+    PositionOptimizationOnEdge.hpp
+    PositionOptimizationOnEdge.cpp
 )
 
 
