@@ -266,8 +266,8 @@ TEST_CASE("attribute_performance", "[attribute][.]")
     double time = 0;
     igl::Timer timer;
 
-    size_t N = 2000;
-    size_t iter = 10000000;
+    size_t N = 200000;
+    size_t iter = 1000000;
 
     raw_vector.resize(N);
     attribute_collection.resize(N);
@@ -281,12 +281,13 @@ TEST_CASE("attribute_performance", "[attribute][.]")
     //     }
     // }
     for (size_t k = 0; k < iter; ++k) {
-        raw_vector[rand() % N] = rand();
+        for (size_t i = 0; i < 40; ++i) {
+            raw_vector[rand() % N] = rand();
+        }
     }
     std::cout << "raw vector write: " << timer.getElapsedTimeInMilliSec() << std::endl;
 
 
-    attribute_collection.begin_protect();
     // attribute_collection.end_protect();
     timer.start();
     // for (size_t k = 0; k < iter; ++k) {
@@ -295,12 +296,16 @@ TEST_CASE("attribute_performance", "[attribute][.]")
     //     }
     // }
     for (size_t k = 0; k < iter; ++k) {
-        attribute_collection[rand() % N] = rand();
+        attribute_collection.begin_protect();
+        for (size_t i = 0; i < 40; ++i) {
+            attribute_collection[rand() % N] = rand();
+        }
+        attribute_collection.end_protect();
     }
     std::cout << "attribute collection with map write: " << timer.getElapsedTimeInMilliSec()
               << std::endl;
 
-    ac_vectorpair.begin_protect();
+    // ac_vectorpair.begin_protect();
     // attribute_collection.end_protect();
     timer.start();
     // for (size_t k = 0; k < iter; ++k) {
@@ -309,7 +314,11 @@ TEST_CASE("attribute_performance", "[attribute][.]")
     //     }
     // }
     for (size_t k = 0; k < iter; ++k) {
-        ac_vectorpair[rand() % N] = rand();
+        ac_vectorpair.begin_protect();
+        for (size_t i = 0; i < 40; ++i) {
+            ac_vectorpair[rand() % N] = rand();
+        }
+        ac_vectorpair.end_protect();
     }
     std::cout << "attribute collection with vector pair write: " << timer.getElapsedTimeInMilliSec()
               << std::endl;
