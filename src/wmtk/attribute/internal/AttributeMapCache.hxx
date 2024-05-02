@@ -34,7 +34,7 @@ inline auto AttributeMapCache<T>::get_value(int64_t index, size_t) const -> cons
 {
     if (auto mapit = find_value(index); is_value(mapit)) {
         const auto& d = mapit->second;
-        auto dat = d.data.data();
+        return d.data.data();
     }
     return nullptr;
 }

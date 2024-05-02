@@ -18,6 +18,7 @@ class AttributeScope;
 class AttributeManager;
 
 #define WMTK_ATTRIBUTE_SCOPE_STACK_CACHE_ACTIVE
+//#define WMTK_USE_MAP_CACHE_ITERATOR 
 /**
  * A stack of changes applied to an Attribute.
  * The stack consists of AttributeScopes which hold all changes applied inside one scope. Whenever a
