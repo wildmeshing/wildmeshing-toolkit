@@ -1,6 +1,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <polysolve/Utils.hpp>
+#include <random>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -54,6 +55,14 @@ TEST_CASE("accessor_read_performance", "[attributes][.]")
     std::vector<double> data(positions.size());
     Eigen::Map<Eigen::MatrixXd>(data.data(), positions.rows(), positions.cols()) = positions;
 
+    auto vertex_tuples = pm.get_all(wmtk::PrimitiveType::Vertex);
+    std::mt19937 g(25);
+
+    std::shuffle(vertex_tuples.begin(), vertex_tuples.end(), g);
+
+    std::vector<wmtk::Tuple> vv = vertex_tuples;
+    vv.resize(20);
+
     {
         POLYSOLVE_SCOPED_STOPWATCH("Vector Direct Read (vec[3*i+j])", wmtk::logger());
         double sum = 0;
@@ -100,8 +109,6 @@ TEST_CASE("accessor_read_performance", "[attributes][.]")
         std::cout << "sum = " << sum << std::endl;
     }
     {
-        auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
-        vv.resize(20);
         const auto& attr = pp_acc.attribute();
         POLYSOLVE_SCOPED_STOPWATCH(
             "Attribute Read (attr.const_vector_attribute(t)[j])",
@@ -118,8 +125,6 @@ TEST_CASE("accessor_read_performance", "[attributes][.]")
         std::cout << "sum = " << sum << std::endl;
     }
     {
-        auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
-        vv.resize(20);
         POLYSOLVE_SCOPED_STOPWATCH(
             "ConstAccessor no Scope (acc.const_vector_attribute(t)[j])",
             wmtk::logger());
@@ -135,8 +140,6 @@ TEST_CASE("accessor_read_performance", "[attributes][.]")
         std::cout << "sum = " << sum << std::endl;
     }
     {
-        auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
-        vv.resize(20);
         POLYSOLVE_SCOPED_STOPWATCH(
             "ConstAccessor with Scope (create_scope for(t,j)(acc.const_vector_attribute(t)[j]))",
             wmtk::logger());
@@ -154,8 +157,6 @@ TEST_CASE("accessor_read_performance", "[attributes][.]")
         std::cout << "sum = " << sum << std::endl;
     }
     {
-        auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
-        vv.resize(20);
         auto scope = pm.create_scope();
         POLYSOLVE_SCOPED_STOPWATCH(
             "ConstAccessor with Scope Already there (create_scope "
@@ -183,6 +184,13 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
     auto& pm = *pm_ptr;
     auto pp_acc = pm.create_accessor<double>(pph);
 
+    auto vertex_tuples = pm.get_all(wmtk::PrimitiveType::Vertex);
+
+    std::mt19937 g(25);
+
+    std::shuffle(vertex_tuples.begin(), vertex_tuples.end(), g);
+    std::vector<wmtk::Tuple> vv = vertex_tuples;
+    vv.resize(20);
 
     std::vector<double> data(positions.size());
     Eigen::Map<Eigen::MatrixXd>(data.data(), positions.rows(), positions.cols()) = positions;
@@ -223,8 +231,6 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         }
     }
     {
-        auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
-        vv.resize(20);
         std::vector<double> data(3 * 20);
         POLYSOLVE_SCOPED_STOPWATCH("Vec map write template size", wmtk::logger());
         wmtk::attribute::Attribute<double>& attr = pp_acc.attribute();
@@ -240,8 +246,6 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         }
     }
     {
-        auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
-        vv.resize(20);
         POLYSOLVE_SCOPED_STOPWATCH(
             "Attribute Write (attr.const_vector_attribute(t)[j])",
             wmtk::logger());
@@ -257,8 +261,6 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         }
     }
     {
-        auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
-        vv.resize(20);
         POLYSOLVE_SCOPED_STOPWATCH(
             "Accessor no Scope (acc.vector_attribute(t)[j])",
             wmtk::logger());
@@ -273,8 +275,6 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         }
     }
     {
-        auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
-        vv.resize(20);
         POLYSOLVE_SCOPED_STOPWATCH(
             "Accessor with Scope (create_scope for(t,j)(acc._vector_attribute(t)[j]))",
             wmtk::logger());
@@ -291,8 +291,6 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         }
     }
     {
-        auto vv = pm.get_all(wmtk::PrimitiveType::Vertex);
-        vv.resize(20);
         POLYSOLVE_SCOPED_STOPWATCH(
             "Accessor with Scope already there"
             "(create_scope "
