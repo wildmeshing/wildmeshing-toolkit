@@ -614,6 +614,9 @@ public:
     int flood_fill();
 
     void save_paraview(const std::string& path, const bool use_hdf5);
+
+    // initialize sizing field (for topology preservation)
+    void init_sizing_field();
 };
 
 

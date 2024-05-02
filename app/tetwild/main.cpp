@@ -147,6 +147,8 @@ int main(int argc, char** argv)
 
     mesh.output_faces("test_ti_output_bbox.obj", [](auto& f) { return f.m_is_bbox_fs != -1; });
 
+    mesh.output_mesh(output_path + "_after_insertion.msh");
+
 
     /////////mesh improvement
     mesh.mesh_improvement(max_its);

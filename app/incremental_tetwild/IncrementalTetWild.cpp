@@ -1872,3 +1872,117 @@ void tetwild::TetWild::save_paraview(const std::string& path, const bool use_hdf
     writer->add_cell_field("part", parts);
     writer->write_mesh(out_path, V, T);
 }
+
+void tetwild::TetWild::init_sizing_field()
+{
+    const double min_refine_scalar = m_params.l_min / m_params.l;
+
+    const double R = m_params.l * 1.8;
+
+    for (auto v : get_vertices()) {
+        // compute the distance between a vertex and its Ring surfaces
+        // one ring vertices
+        double min_uv_dist = 100000;
+        double hit_surface_flag = false;
+        for (auto u : get_one_ring_vertices_for_vertex(v)) {
+            if (!m_vertex_attribute[u.vid(*this)].m_is_on_surface) continue;
+            hit_surface_flag = true;
+            double uv_dist =
+                (m_vertex_attribute[v.vid(*this)].m_posf - m_vertex_attribute[u.vid(*this)].m_posf)
+                    .norm();
+            if (uv_dist < min_uv_dist) min_uv_dist = uv_dist;
+        }
+
+        if (!hit_surface_flag) continue;
+
+        // edges
+        double min_ev_dist = 100000;
+        auto tets = get_one_ring_tets_for_vertex(v);
+
+        for (auto t : tets) {
+            std::array<Tuple, 4> fs;
+            Tuple fs[0] = t;
+            Tuple fs[1] = t.switch_face(*this);
+            Tuple fs[2] = t.switch_edge(*this).switch_face(*this);
+            Tuple fs[3] = t.switch_vertex(*this).switch_edge(*this).switch_face(*this);
+
+
+            for (int i = 0; i < 4; i++) {
+                auto f1vs = get_face_vertices(fs[i]);
+                if (m_vertex_attribute[f1vs[0].vid(*this)].m_is_on_surface &&
+                    m_vertex_attribute[f1vs[1].vid(*this)].m_is_on_surface &&
+                    m_vertex_attribute[f1vs[2].vid(*this)].m_is_on_surface) {
+                    if (m_face_attribute[f1.fid(*this)].m_is_surface_fs) {
+                        auto vs = f1vs;
+                        double ev_dist1 = (m_vertex_attribute[vs[0].vid(*this)].m_posf -
+                                           m_vertex_attribute[v.vid(*this)].m_posf)
+                                              .cross(
+                                                  m_vertex_attribute[vs[1].vid(*this)].m_posf -
+                                                  m_vertex_attribute[v.vid(*this)].m_posf)
+                                              .norm() /
+                                          (m_vertex_attribute[vs[0].vid(*this)].m_posf -
+                                           m_vertex_attribute[vs[1].vid(*this)].m_posf)
+                                              .norm();
+
+                        double ev_dist2 = (m_vertex_attribute[vs[0].vid(*this)].m_posf -
+                                           m_vertex_attribute[v.vid(*this)].m_posf)
+                                              .cross(
+                                                  m_vertex_attribute[vs[2].vid(*this)].m_posf -
+                                                  m_vertex_attribute[v.vid(*this)].m_posf)
+                                              .norm() /
+                                          (m_vertex_attribute[vs[0].vid(*this)].m_posf -
+                                           m_vertex_attribute[vs[2].vid(*this)].m_posf)
+                                              .norm();
+                        double ev_dist3 = (m_vertex_attribute[vs[1].vid(*this)].m_posf -
+                                           m_vertex_attribute[v.vid(*this)].m_posf)
+                                              .cross(
+                                                  m_vertex_attribute[vs[2].vid(*this)].m_posf -
+                                                  m_vertex_attribute[v.vid(*this)].m_posf)
+                                              .norm() /
+                                          (m_vertex_attribute[vs[1].vid(*this)].m_posf -
+                                           m_vertex_attribute[vs[2].vid(*this)].m_posf)
+                                              .norm();
+                        if (min_ev_dist < ev_dist1) min_ev_dist = ev_dist1;
+                        if (min_ev_dist < ev_dist2) min_ev_dist = ev_dist2;
+                        if (min_ev_dist < ev_dist3) min_ev_dist = ev_dist3;
+                    }
+                }
+            }
+        }
+
+        if (min_dist < m_params.l / 2) continue;
+
+        // adjust sizing field
+        double min_dist = (min_uv_dist < min_ev_dist) ? min_uv_dist : min_ev_dist;
+        double refine_scalar = min_dist / m_params.l;
+
+        m_vertex_attribute[v.vid(*this)].m_sizing_scalar =
+            std::min(refine_scalar, m_vertex_attribute[v.vid(*this)].m_sizing_scalar);
+
+        std::vector<bool> visited(vert_capacity(), false);
+        std::queue<size_t> v_queue;
+
+        for (auto u : get_one_ring_vertices_for_vertex(v)) {
+            v_queue.push(u.vid(*this));
+        }
+
+        while (!v_queue.empty()) {
+            size_t vid = v_queue.front();
+            v_queue.pop();
+            if (visited[vid]) continue;
+            visited[vid] = true;
+            double dist =
+                (m_vertex_attribute[vid].m_posf - m_vertex_attribute[v.vid(*this)].m_posf).norm();
+            if (dist > R) continue;
+            m_vertex_attribute[vid].m_sizing_scalar = std::min(
+                dist / R * (1 - refine_scalar) + refine_scalar,
+                m_vertex_attribute[v.vid(*this)].m_sizing_scalar);
+
+            auto vids = get_one_ring_vids_for_vertex(vid);
+            for (size_t n_vid : vids) {
+                if (visited[n_vid]) continue;
+                v_queue.push(n_vid);
+            }
+        }
+    }
+}
