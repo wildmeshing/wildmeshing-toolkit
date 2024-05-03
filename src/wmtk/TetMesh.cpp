@@ -62,14 +62,14 @@ TetMesh& TetMesh::operator=(TetMesh&& o)
 
 void TetMesh::make_cached_accessors()
 {
-    m_vt_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_vt_handle);
-    m_et_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_et_handle);
-    m_ft_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_ft_handle);
+    m_vt_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_vt_handle);
+    m_et_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_et_handle);
+    m_ft_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_ft_handle);
 
-    m_tv_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_tv_handle);
-    m_te_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_te_handle);
-    m_tf_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_tf_handle);
-    m_tt_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_tt_handle);
+    m_tv_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_tv_handle);
+    m_te_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_te_handle);
+    m_tf_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_tf_handle);
+    m_tt_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_tt_handle);
 }
 
 
@@ -338,7 +338,12 @@ bool TetMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& h
         return false;
     }
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     return Mesh::is_hash_valid(tuple, hash_accessor);
+#else
+    const auto& flag_accessor = get_const_flag_accessor(PrimitiveType::Tetrahedron);
+    return flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1;
+#endif
 }
 
 bool TetMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
