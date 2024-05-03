@@ -99,6 +99,24 @@ TEST_CASE("attribute_map_cache", "[attributes]")
     // map the child to the parent, then the parent to the vector data
     apply_child_and_check(vector);
 
+    spdlog::info("Flat child buffer: {}", fmt::join(child_flat_cache.buffer(),","));
+    spdlog::info("Flat child indices: {}", fmt::join(child_flat_cache.indices(),","));
+    for (int j = 0; j < 5; ++j) {
+            const int64_t* a = child_map_cache.get_value(j,2);
+            const int64_t* b = child_flat_cache.get_value(j,2);
+            if(a == nullptr || b == nullptr) {
+                REQUIRE(a == nullptr);
+                REQUIRE(b == nullptr);
+                continue;
+            }
+            std::cout << j << ": " << *a << std::endl;
+            CHECK(*a == *b);
+
+
+        // TODO: test get_value function
+    }
+    spdlog::info("Flat buffer: {}", fmt::join(flat_cache.buffer(),","));
+    spdlog::info("Flat indices: {}", fmt::join(flat_cache.buffer(),","));
 
     for (int j = 0; j < 5; ++j) {
             const int64_t* a = map_cache.get_value(j,2);

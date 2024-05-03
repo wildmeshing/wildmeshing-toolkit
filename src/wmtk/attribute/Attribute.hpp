@@ -127,12 +127,28 @@ public:
      */
     template <int D = Eigen::Dynamic>
     ConstMapResult<D> const_vector_attribute(const int64_t index, const std::vector<T>& data) const;
+
+    /**
+     * @brief Accesses the attribute using the specified vector as the underlying data
+     * This is internally used by the single-arg const_vector_attribute and to help with
+     * serialization. Start allows for assignment to buffers that dont' represent a 2d array
+     */
+    template <int D = Eigen::Dynamic>
+    ConstMapResult<D> const_vector_attribute_from_start(const int64_t index, const std::vector<T>& data) const;
     /**
      * @brief Accesses the attribute using the specified vector as the underlying data
      * This is internally used by the single-arg vector_attribute and to help with serialization
      */
     template <int D = Eigen::Dynamic>
     MapResult<D> vector_attribute(const int64_t index, std::vector<T>& data) const;
+
+    /**
+     * @brief Accesses the attribute using the specified vector as the underlying data
+     * This is internally used by the single-arg const_vector_attribute and to help with
+     * serialization. Start allows for assignment to buffers that dont' represent a 2d array
+     */
+    template <int D = Eigen::Dynamic>
+    MapResult<D> vector_attribute_from_start(const int64_t index, std::vector<T>& data) const;
     /**
      * @brief Accesses the attribute using the specified scalar as the underlying data
      * This is internally used by the single-arg const_scalar_attribute and to help with
@@ -177,6 +193,7 @@ inline auto Attribute<T>::const_vector_attribute(const int64_t index) const -> C
 {
     return const_vector_attribute<D>(index, m_data);
 }
+
 template <typename T>
 template <int D>
 inline auto Attribute<T>::const_vector_attribute(const int64_t index, const std::vector<T>& data)
@@ -184,11 +201,18 @@ inline auto Attribute<T>::const_vector_attribute(const int64_t index, const std:
 {
     assert(index < reserved_size(data));
     assert(data.size() % m_dimension == 0);
+    const int64_t start = index * m_dimension;
+    return const_vector_attribute_from_start<D>(start,data);
+}
+template <typename T>
+template <int D>
+inline auto Attribute<T>::const_vector_attribute_from_start(const int64_t start, const std::vector<T>& data)
+    const -> ConstMapResult<D>
+{
     assert(m_dimension > 0);
     if constexpr (D != Eigen::Dynamic) {
         assert(D == m_dimension);
     }
-    const int64_t start = index * m_dimension;
     ConstMapResult<D> R(data.data() + start, m_dimension);
 
     assert(R.size() == m_dimension);
@@ -212,6 +236,7 @@ inline auto Attribute<T>::vector_attribute2(const int64_t index) -> MapResult<D>
     return MapResult<D>(m_data.data(), m_dimension);
     // return vector_attribute<D>(index, m_data);
 }
+
 template <typename T>
 template <int D>
 inline auto Attribute<T>::vector_attribute(const int64_t index, std::vector<T>& data) const
@@ -219,11 +244,19 @@ inline auto Attribute<T>::vector_attribute(const int64_t index, std::vector<T>& 
 {
     assert(index < reserved_size(data));
     assert(data.size() % m_dimension == 0);
+    const int64_t start = index * m_dimension;
+    return vector_attribute_from_start<D>(start,data);
+}
+
+template <typename T>
+template <int D>
+inline auto Attribute<T>::vector_attribute_from_start(const int64_t start, std::vector<T>& data) const
+    -> MapResult<D>
+{
     assert(m_dimension > 0);
     if constexpr (D != Eigen::Dynamic) {
         assert(D == m_dimension);
     }
-    const int64_t start = index * m_dimension;
     //assert(start < data.size());
     //assert(start + m_dimension < data.size());
     MapResult<D> R(data.data() + start, m_dimension);
