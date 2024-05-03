@@ -262,6 +262,80 @@ struct AttributeCollectionWithVectorPairStatic : public AbstractAttributeContain
     bool recording = false;
     static std::vector<std::pair<size_t, T>> m_rollback_list_pair;
 };
+
+
+template <typename T>
+struct AttributeCollectionWithVectorPairIterators : public AbstractAttributeContainer
+{
+    AttributeCollectionWithVectorPairIterators() { m_rollback_list_pair.resize(100); }
+
+    void move(size_t from, size_t to) override
+    {
+        if (from == to) return;
+        m_attributes[to] = std::move(m_attributes[from]);
+    }
+    void resize(size_t s) override { m_attributes.resize(s); }
+
+    bool assign(size_t to, T&& val) // always use this in OP_after
+    {
+        m_attributes[to] = val;
+        if (recording) m_rollback_list[to] = val;
+        return true;
+    }
+    /**
+     * @brief retrieve the protected attribute data on operation-fail
+     *
+     */
+    void rollback() override
+    {
+        for (auto& [i, v] : m_rollback_list) {
+            m_attributes[i] = std::move(v);
+        }
+        end_protect();
+    }
+    /**
+     * @brief clean local buffers for attribute, and start recording
+     *
+     */
+    void begin_protect() override
+    {
+        m_rollback_list.clear();
+        m_record_end = m_record_begin;
+        recording = true;
+    };
+    /**
+     * @brief clear local buffers and finish recording
+     *
+     */
+    void end_protect() override
+    {
+        m_rollback_list.clear();
+        recording = false;
+    }
+
+    const T& operator[](size_t i) const { return m_attributes[i]; }
+
+    T& operator[](size_t i)
+    {
+        if (recording) {
+            if (m_record_end + 1 == m_rollback_list_pair.size()) {
+                m_rollback_list_pair.resize(1.5 * m_rollback_list_pair.size());
+            }
+            m_rollback_list_pair[m_record_end++] = std::pair<size_t, T>(i, m_attributes[i]);
+        }
+        return m_attributes[i];
+    }
+
+    const T& at(size_t i) const { return m_attributes[i]; }
+
+    size_t size() const { return m_attributes.size(); }
+    std::map<size_t, T> m_rollback_list;
+    std::vector<T> m_attributes;
+    bool recording = false;
+    std::vector<std::pair<size_t, T>> m_rollback_list_pair;
+    size_t m_record_begin = 0;
+    size_t m_record_end = 0;
+};
 } // namespace wmtk
 
 namespace {
@@ -579,8 +653,10 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
             "---------------------------- old wmtk test ---------------------------");
         using namespace wmtk;
         std::vector<Vector3d> raw_vector;
+        std::map<size_t, Vector3d> raw_map;
         AttributeCollection<Vector3d> attribute_collection;
         AttributeCollectionWithVectorPair<Vector3d> ac_vectorpair;
+        AttributeCollectionWithVectorPairIterators<Vector3d> ac_vecpair_iters;
 
         double time = 0;
         igl::Timer timer;
@@ -591,30 +667,43 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         raw_vector.resize(N);
         attribute_collection.resize(N);
         ac_vectorpair.resize(N);
+        ac_vecpair_iters.resize(N);
 
         for (int64_t i = 0; i < N; ++i) {
             raw_vector[i] = positions.row(i);
             attribute_collection[i] = positions.row(i);
             ac_vectorpair[i] = positions.row(i);
+            ac_vecpair_iters[i] = positions.row(i);
         }
 
         timer.start();
         for (size_t k = 0; k < iter; ++k) {
             for (size_t i = 0; i < 20; ++i) {
-                raw_vector[rand_entries[k][i]][0] += 1;
-                raw_vector[rand_entries[k][i]][1] += 1;
-                raw_vector[rand_entries[k][i]][2] += 1;
+                raw_vector[rand_entries[k][i]][0] = 1;
+                raw_vector[rand_entries[k][i]][1] = 1;
+                raw_vector[rand_entries[k][i]][2] = 1;
             }
         }
         wmtk::logger().info("raw vector write: {}", timer.getElapsedTime());
 
         timer.start();
         for (size_t k = 0; k < iter; ++k) {
+            raw_map.clear();
+            for (size_t i = 0; i < 20; ++i) {
+                raw_map[rand_entries[k][i]][0] = 1;
+                raw_map[rand_entries[k][i]][1] = 1;
+                raw_map[rand_entries[k][i]][2] = 1;
+            }
+        }
+        wmtk::logger().info("raw map write: {}", timer.getElapsedTime());
+
+        timer.start();
+        for (size_t k = 0; k < iter; ++k) {
             attribute_collection.begin_protect();
             for (size_t i = 0; i < 20; ++i) {
-                attribute_collection[rand_entries[k][i]][0] += 1;
-                attribute_collection[rand_entries[k][i]][1] += 1;
-                attribute_collection[rand_entries[k][i]][2] += 1;
+                attribute_collection[rand_entries[k][i]][0] = 1;
+                attribute_collection[rand_entries[k][i]][1] = 1;
+                attribute_collection[rand_entries[k][i]][2] = 1;
             }
             attribute_collection.end_protect();
         }
@@ -624,14 +713,28 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         for (size_t k = 0; k < iter; ++k) {
             ac_vectorpair.begin_protect();
             for (size_t i = 0; i < 20; ++i) {
-                ac_vectorpair[rand_entries[k][i]][0] += 1;
-                ac_vectorpair[rand_entries[k][i]][1] += 1;
-                ac_vectorpair[rand_entries[k][i]][2] += 1;
+                ac_vectorpair[rand_entries[k][i]][0] = 1;
+                ac_vectorpair[rand_entries[k][i]][1] = 1;
+                ac_vectorpair[rand_entries[k][i]][2] = 1;
             }
             ac_vectorpair.end_protect();
         }
         wmtk::logger().info(
             "attribute collection with vector pair write: {}",
+            timer.getElapsedTime());
+
+        timer.start();
+        for (size_t k = 0; k < iter; ++k) {
+            ac_vecpair_iters.begin_protect();
+            for (size_t i = 0; i < 20; ++i) {
+                ac_vecpair_iters[rand_entries[k][i]][0] = 1;
+                ac_vecpair_iters[rand_entries[k][i]][1] = 1;
+                ac_vecpair_iters[rand_entries[k][i]][2] = 1;
+            }
+            ac_vecpair_iters.end_protect();
+        }
+        wmtk::logger().info(
+            "attribute collection with vector pair iterator write: {}",
             timer.getElapsedTime());
     }
 }
