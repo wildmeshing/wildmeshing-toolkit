@@ -1,4 +1,3 @@
-
 #include <catch2/catch_test_macros.hpp>
 #include <polysolve/Utils.hpp>
 #include <random>
@@ -109,6 +108,9 @@ struct AttributeCollection : public AbstractAttributeContainer
 template <typename T>
 struct AttributeCollectionWithVectorPair : public AbstractAttributeContainer
 {
+    AttributeCollectionWithVectorPair() { m_rollback_list_pair.reserve(1000000); }
+
+
     void move(size_t from, size_t to) override
     {
         if (from == to) return;
@@ -149,7 +151,7 @@ struct AttributeCollectionWithVectorPair : public AbstractAttributeContainer
      */
     void begin_protect() override
     {
-        m_rollback_list.clear();
+        m_rollback_list_pair.clear();
         recording = true;
     };
     /**
@@ -158,7 +160,7 @@ struct AttributeCollectionWithVectorPair : public AbstractAttributeContainer
      */
     void end_protect() override
     {
-        m_rollback_list.clear();
+        m_rollback_list_pair.clear();
         recording = false;
     }
 
@@ -679,9 +681,9 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         timer.start();
         for (size_t k = 0; k < iter; ++k) {
             for (size_t i = 0; i < 20; ++i) {
-                raw_vector[rand_entries[k][i]][0] = 1;
-                raw_vector[rand_entries[k][i]][1] = 1;
-                raw_vector[rand_entries[k][i]][2] = 1;
+                raw_vector[rand_entries[k][i]][0] = rand_entries[k][i];
+                raw_vector[rand_entries[k][i]][1] = rand_entries[k][i];
+                raw_vector[rand_entries[k][i]][2] = rand_entries[k][i];
             }
         }
         wmtk::logger().info("raw vector write: {}", timer.getElapsedTime());
@@ -690,9 +692,9 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         for (size_t k = 0; k < iter; ++k) {
             raw_map.clear();
             for (size_t i = 0; i < 20; ++i) {
-                raw_map[rand_entries[k][i]][0] = 1;
-                raw_map[rand_entries[k][i]][1] = 1;
-                raw_map[rand_entries[k][i]][2] = 1;
+                raw_map[rand_entries[k][i]][0] = rand_entries[k][i];
+                raw_map[rand_entries[k][i]][1] = rand_entries[k][i];
+                raw_map[rand_entries[k][i]][2] = rand_entries[k][i];
             }
         }
         wmtk::logger().info("raw map write: {}", timer.getElapsedTime());
@@ -701,9 +703,9 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         for (size_t k = 0; k < iter; ++k) {
             attribute_collection.begin_protect();
             for (size_t i = 0; i < 20; ++i) {
-                attribute_collection[rand_entries[k][i]][0] = 1;
-                attribute_collection[rand_entries[k][i]][1] = 1;
-                attribute_collection[rand_entries[k][i]][2] = 1;
+                attribute_collection[rand_entries[k][i]][0] = rand_entries[k][i];
+                attribute_collection[rand_entries[k][i]][1] = rand_entries[k][i];
+                attribute_collection[rand_entries[k][i]][2] = rand_entries[k][i];
             }
             attribute_collection.end_protect();
         }
@@ -713,9 +715,9 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         for (size_t k = 0; k < iter; ++k) {
             ac_vectorpair.begin_protect();
             for (size_t i = 0; i < 20; ++i) {
-                ac_vectorpair[rand_entries[k][i]][0] = 1;
-                ac_vectorpair[rand_entries[k][i]][1] = 1;
-                ac_vectorpair[rand_entries[k][i]][2] = 1;
+                ac_vectorpair[rand_entries[k][i]][0] = rand_entries[k][i];
+                ac_vectorpair[rand_entries[k][i]][1] = rand_entries[k][i];
+                ac_vectorpair[rand_entries[k][i]][2] = rand_entries[k][i];
             }
             ac_vectorpair.end_protect();
         }
@@ -727,9 +729,9 @@ TEST_CASE("accessor_write_performance", "[attributes][.]")
         for (size_t k = 0; k < iter; ++k) {
             ac_vecpair_iters.begin_protect();
             for (size_t i = 0; i < 20; ++i) {
-                ac_vecpair_iters[rand_entries[k][i]][0] = 1;
-                ac_vecpair_iters[rand_entries[k][i]][1] = 1;
-                ac_vecpair_iters[rand_entries[k][i]][2] = 1;
+                ac_vecpair_iters[rand_entries[k][i]][0] = rand_entries[k][i];
+                ac_vecpair_iters[rand_entries[k][i]][1] = rand_entries[k][i];
+                ac_vecpair_iters[rand_entries[k][i]][2] = rand_entries[k][i];
             }
             ac_vecpair_iters.end_protect();
         }
