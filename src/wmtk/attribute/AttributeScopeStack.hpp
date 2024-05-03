@@ -18,7 +18,7 @@ class AttributeScope;
 class AttributeManager;
 
 #define WMTK_ATTRIBUTE_SCOPE_STACK_CACHE_ACTIVE
-//#define WMTK_USE_MAP_CACHE_ITERATOR 
+// #define WMTK_USE_MAP_CACHE_ITERATOR
 /**
  * A stack of changes applied to an Attribute.
  * The stack consists of AttributeScopes which hold all changes applied inside one scope. Whenever a
@@ -125,7 +125,15 @@ inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T, D2>& access
 {
     assert(writing_enabled());
 
+    static_assert(D == Eigen::Dynamic || D2 == Eigen::Dynamic || D == D2);
     auto data = accessor.template vector_attribute<D>(index);
+    assert(data.cols() == 1);
+    if constexpr (D != Eigen::Dynamic) {
+        assert(data.size() == D);
+    }
+    if constexpr (D2 != Eigen::Dynamic) {
+        assert(data.size() == D2);
+    }
     // we are typically only going to write when caching is enabled so better to optimize for this
     if (!empty()) [[unlikely]] {
         // assert(m_scopes.back() == *m_back);
@@ -141,6 +149,7 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
     const AccessorBase<T, D2>& accessor,
     int64_t index) const -> ConstMapResult<D>
 {
+    static_assert(D == Eigen::Dynamic || D2 == Eigen::Dynamic || D == D2);
     if (!at_current_scope()) [[unlikely]] {
         assert(m_active >= m_scopes.begin());
         assert(m_active < m_scopes.end());

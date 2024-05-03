@@ -34,19 +34,24 @@ inline void AttributeFlatCache<T>::try_caching(
     size_t dim = value.size();
     size_t old_size = m_buffer.size();
 
-    assert(old_size / value.size() == m_indices.size());
-    m_indices.emplace_back(index, m_indices.size()); //old_size / value.size());
+    assert(old_size % dim == 0);
+    //assert(old_size / value.size() == m_indices.size());
+    // m_indices.emplace_back(index, m_indices.size());
+    m_indices.emplace_back(index, old_size / dim);
 
 
     m_buffer.resize(old_size + dim);
     std::copy(value.begin(), value.end(), m_buffer.begin() + old_size);
+    // assert(dim * m_buffer.size() == m_indices.size());
 }
 
 template <typename T>
 inline void AttributeFlatCache<T>::try_caching(int64_t index, const T& value)
 {
+    assert(m_buffer.size() == m_indices.size());
     m_indices.emplace_back(index, m_buffer.size());
     m_buffer.emplace_back(value);
+    assert(m_buffer.size() == m_indices.size());
 }
 
 
@@ -90,7 +95,7 @@ inline void AttributeFlatCache<T>::apply_to(const Attribute<T>& attribute, std::
 template <typename T>
 inline auto AttributeFlatCache<T>::get_value(int64_t index, size_t dim) const -> const T*
 {
-    for (auto iit = m_indices.crbegin(); iit != m_indices.crend(); ++iit) {
+    for (auto iit = m_indices.cbegin(); iit != m_indices.cend(); ++iit) {
         const auto& [global, local] = *iit;
         if (global == index) {
             return m_buffer.data() + dim * local;

@@ -101,6 +101,17 @@ TEST_CASE("attribute_map_cache", "[attributes]")
 
 
     for (int j = 0; j < 5; ++j) {
+            const int64_t* a = map_cache.get_value(j,2);
+            const int64_t* b = flat_cache.get_value(j,2);
+            if(a == nullptr || b == nullptr) {
+                REQUIRE(a == nullptr);
+                REQUIRE(b == nullptr);
+                continue;
+            }
+            std::cout << j << ": " << *a << std::endl;
+            CHECK(*a == *b);
+
+
         // TODO: test get_value function
     }
 }
