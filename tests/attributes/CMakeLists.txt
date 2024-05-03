@@ -8,6 +8,8 @@ set(TEST_SOURCES
     performance.cpp
     caches.cpp
     old_wmtk_attributecollection.cpp
+
+    transaction_stack.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})
 

@@ -2,7 +2,11 @@
 
 #include <wmtk/utils/Rational.hpp>
 #include "AttributeScope.hpp"
+#if defined(WMTK_ENABLE_TRANSACTION_STACK)
+#include "internal/AttributeTransactionStack.hpp"
+#else
 #include "AttributeScopeStack.hpp"
+#endif
 #include "CachingAccessor.hpp"
 
 namespace wmtk::attribute {
@@ -46,7 +50,7 @@ template <int D>
 inline auto CachingAccessor<T, Dim>::vector_attribute(const int64_t index) -> MapResult<D>
 {
     return m_cache_stack.template vector_attribute<D>(*this, index);
-    //return BaseType::template vector_attribute<D>( index);
+    // return BaseType::template vector_attribute<D>( index);
 }
 
 

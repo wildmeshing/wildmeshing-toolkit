@@ -6,6 +6,7 @@
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 #include "MapTypes.hpp"
 #include "PerThreadAttributeScopeStacks.hpp"
+#include "wmtk/attribute/internal/AttributeTransactionStack.hpp"
 
 namespace wmtk {
 class MeshWriter;
@@ -21,7 +22,9 @@ class AttributeScopeStack;
 namespace internal {
 template <typename T>
 class AttributeMapCache;
-}
+template <typename T>
+class AttributeTransactionStack;
+} // namespace internal
 
 /**
  * This class stores data of type T in a vector.
@@ -46,6 +49,7 @@ public:
     template <typename U, int D>
     friend class AccessorBase;
     friend class internal::AttributeMapCache<T>;
+    friend class internal::AttributeTransactionStack<T>;
     void serialize(const std::string& name, const int dim, MeshWriter& writer) const;
 
     /**
@@ -104,8 +108,13 @@ public:
     void pop_scope(bool apply_updates);
     void rollback_current_scope();
 
+#if defined(WMTK_ENABLE_TRANSACTION_STACK)
+    const internal::AttributeTransactionStack<T>& get_local_scope_stack() const;
+    internal::AttributeTransactionStack<T>& get_local_scope_stack();
+#else
     const AttributeScopeStack<T>& get_local_scope_stack() const;
     AttributeScopeStack<T>& get_local_scope_stack();
+#endif
 
     /**
      * @brief Consolidate the vector, using the new2old map m provided and resizing the vector to
@@ -134,7 +143,9 @@ public:
      * serialization. Start allows for assignment to buffers that dont' represent a 2d array
      */
     template <int D = Eigen::Dynamic>
-    ConstMapResult<D> const_vector_attribute_from_start(const int64_t index, const std::vector<T>& data) const;
+    ConstMapResult<D> const_vector_attribute_from_start(
+        const int64_t index,
+        const std::vector<T>& data) const;
     /**
      * @brief Accesses the attribute using the specified vector as the underlying data
      * This is internally used by the single-arg vector_attribute and to help with serialization
@@ -202,12 +213,13 @@ inline auto Attribute<T>::const_vector_attribute(const int64_t index, const std:
     assert(index < reserved_size(data));
     assert(data.size() % m_dimension == 0);
     const int64_t start = index * m_dimension;
-    return const_vector_attribute_from_start<D>(start,data);
+    return const_vector_attribute_from_start<D>(start, data);
 }
 template <typename T>
 template <int D>
-inline auto Attribute<T>::const_vector_attribute_from_start(const int64_t start, const std::vector<T>& data)
-    const -> ConstMapResult<D>
+inline auto Attribute<T>::const_vector_attribute_from_start(
+    const int64_t start,
+    const std::vector<T>& data) const -> ConstMapResult<D>
 {
     assert(m_dimension > 0);
     if constexpr (D != Eigen::Dynamic) {
@@ -245,20 +257,20 @@ inline auto Attribute<T>::vector_attribute(const int64_t index, std::vector<T>& 
     assert(index < reserved_size(data));
     assert(data.size() % m_dimension == 0);
     const int64_t start = index * m_dimension;
-    return vector_attribute_from_start<D>(start,data);
+    return vector_attribute_from_start<D>(start, data);
 }
 
 template <typename T>
 template <int D>
-inline auto Attribute<T>::vector_attribute_from_start(const int64_t start, std::vector<T>& data) const
-    -> MapResult<D>
+inline auto Attribute<T>::vector_attribute_from_start(const int64_t start, std::vector<T>& data)
+    const -> MapResult<D>
 {
     assert(m_dimension > 0);
     if constexpr (D != Eigen::Dynamic) {
         assert(D == m_dimension);
     }
-    //assert(start < data.size());
-    //assert(start + m_dimension < data.size());
+    // assert(start < data.size());
+    // assert(start + m_dimension < data.size());
     MapResult<D> R(data.data() + start, m_dimension);
     assert(R.size() == m_dimension);
     return R;
@@ -333,6 +345,18 @@ inline const T& Attribute<T>::default_value() const
     return m_default_value;
 }
 
+#if defined(WMTK_ENABLE_TRANSACTION_STACK)
+template <typename T>
+inline const internal::AttributeTransactionStack<T>& Attribute<T>::get_local_scope_stack() const
+{
+    return m_scope_stacks.local();
+}
+template <typename T>
+inline internal::AttributeTransactionStack<T>& Attribute<T>::get_local_scope_stack()
+{
+    return m_scope_stacks.local();
+}
+#else
 template <typename T>
 inline const AttributeScopeStack<T>& Attribute<T>::get_local_scope_stack() const
 {
@@ -343,6 +367,7 @@ inline AttributeScopeStack<T>& Attribute<T>::get_local_scope_stack()
 {
     return m_scope_stacks.local();
 }
+#endif
 
 template <typename T>
 inline void Attribute<T>::push_scope()
