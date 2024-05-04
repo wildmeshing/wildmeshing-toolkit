@@ -22,7 +22,8 @@ inline AttributeTransactionStack<T>::~AttributeTransactionStack() = default;
 template <typename T>
 inline void AttributeTransactionStack<T>::clear()
 {
-    m_indices_end = m_transaction_starts.back();
+    // m_indices_end = m_transaction_starts.back();
+    // m_buffer_end = m_indices[m_indices_end].second;
 }
 
 template <typename T>
@@ -64,7 +65,7 @@ inline void AttributeTransactionStack<T>::try_caching(
     std::copy(value.begin(), value.end(), m_buffer.begin() + m_buffer_end);
     m_buffer_end += dim;
     m_indices_end++;
-    // assert(dim * m_buffer.size() == m_indices.size());
+    assert(m_buffer_end == m_indices_end * dim);
 }
 
 template <typename T>
@@ -74,10 +75,10 @@ inline void AttributeTransactionStack<T>::try_caching(int64_t index, const T& va
     // assert(m_buffer.size() == m_indices.size());
     m_indices[m_indices_end] = {index, m_buffer_end};
     m_buffer[m_buffer_end] = value;
-    // assert(m_buffer.size() == m_indices.size());
 
     m_buffer_end++;
     m_indices_end++;
+    assert(m_buffer_end == m_indices_end);
 }
 
 
