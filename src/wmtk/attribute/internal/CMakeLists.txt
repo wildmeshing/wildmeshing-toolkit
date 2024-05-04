@@ -5,6 +5,8 @@ set(SRC_FILES
     AttributeCacheData.hxx
     AttributeMapCache.hxx
     AttributeMapCache.hpp
+    AttributeTransactionStack.hxx
+    AttributeTransactionStack.hpp
     )
 
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
