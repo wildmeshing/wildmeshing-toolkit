@@ -89,7 +89,7 @@ TEST_CASE("multimesh_from_tag_tri_tri", "[components][multimesh][multimesh_from_
     non_manifold_root_simplices.sort_and_clean();
     for (const PrimitiveType pt : utils::primitive_below(m.top_simplex_type())) {
         for (const Tuple& t : m.get_all(pt)) {
-            const simplex::Simplex s(pt, t);
+            const simplex::Simplex s(m, pt, t);
             if (non_manifold_root_simplices.contains(s)) {
                 CHECK_FALSE(mmft.is_root_simplex_manifold(s));
             } else {
@@ -172,7 +172,7 @@ TEST_CASE("multimesh_from_tag_tri_edge", "[components][multimesh][multimesh_from
     non_manifold_root_simplices.sort_and_clean();
     for (const PrimitiveType pt : utils::primitive_below(m.top_simplex_type())) {
         for (const Tuple& t : m.get_all(pt)) {
-            const simplex::Simplex s(pt, t);
+            const simplex::Simplex s(m, pt, t);
             if (non_manifold_root_simplices.contains(s)) {
                 CHECK_FALSE(mmft.is_root_simplex_manifold(s));
             } else {
@@ -217,7 +217,7 @@ TEST_CASE("multimesh_from_tag_tri_point", "[components][multimesh][multimesh_fro
 
     for (const PrimitiveType pt : utils::primitive_below(m.top_simplex_type())) {
         for (const Tuple& t : m.get_all(pt)) {
-            const simplex::Simplex s(pt, t);
+            const simplex::Simplex s(m, pt, t);
             CHECK(mmft.is_root_simplex_manifold(s));
         }
     }
@@ -300,7 +300,7 @@ TEST_CASE("multimesh_from_tag_tet_tet", "[components][multimesh][multimesh_from_
     non_manifold_root_simplices.sort_and_clean();
     for (const PrimitiveType pt : utils::primitive_below(m.top_simplex_type())) {
         for (const Tuple& t : m.get_all(pt)) {
-            const simplex::Simplex s(pt, t);
+            const simplex::Simplex s(m, pt, t);
             if (non_manifold_root_simplices.contains(s)) {
                 CHECK_FALSE(mmft.is_root_simplex_manifold(s));
             } else {
@@ -398,7 +398,7 @@ TEST_CASE("multimesh_from_tag_tet_tri", "[components][multimesh][multimesh_from_
     non_manifold_root_simplices.sort_and_clean();
     for (const PrimitiveType pt : utils::primitive_below(m.top_simplex_type())) {
         for (const Tuple& t : m.get_all(pt)) {
-            const simplex::Simplex s(pt, t);
+            const simplex::Simplex s(m, pt, t);
             if (non_manifold_root_simplices.contains(s)) {
                 CHECK_FALSE(mmft.is_root_simplex_manifold(s));
             } else {

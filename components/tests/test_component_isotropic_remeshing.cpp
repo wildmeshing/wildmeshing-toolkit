@@ -252,7 +252,7 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
     AttributesUpdateWithFunction op(mesh);
     op.set_function(VertexTangentialLaplacianSmooth(pos_attribute));
 
-    const bool success = !op(Simplex::vertex(v1)).empty();
+    const bool success = !op(Simplex::vertex(mesh, v1)).empty();
     REQUIRE(success);
 
     v1 = mesh.tuple_from_id(PrimitiveType::Vertex, 1);
@@ -555,19 +555,20 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
     Tuple swap_edge = mesh.edge_tuple_between_v1_v2(6, 7, 5);
 
     auto vertex_one_ring = [](TriMesh& m, const Tuple& t) {
-        return simplex::link(m, simplex::Simplex::vertex(t)).simplex_vector(PrimitiveType::Vertex);
+        return simplex::link(m, simplex::Simplex::vertex(m, t))
+            .simplex_vector(PrimitiveType::Vertex);
     };
 
     SECTION("single_op_fail")
     {
         op.add_invariant(std::make_shared<invariants::ValenceImprovementInvariant>(mesh));
-        CHECK(op(Simplex::edge(swap_edge)).empty());
+        CHECK(op(Simplex::edge(mesh, swap_edge)).empty());
     }
     SECTION("swap_success")
     {
         // swap edge to create inbalence in valence
         {
-            const auto ret = op(Simplex::edge(swap_edge));
+            const auto ret = op(Simplex::edge(mesh, swap_edge));
             REQUIRE(!ret.empty());
             const Tuple& return_tuple = ret[0].tuple();
             swap_edge = return_tuple;
@@ -590,12 +591,12 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
 
         SECTION("single_op")
         {
-            const auto ret = op(Simplex::edge(swap_edge));
+            const auto ret = op(Simplex::edge(mesh, swap_edge));
             REQUIRE(!ret.empty());
             const Tuple& return_tuple = ret[0].tuple();
             swap_edge = return_tuple;
-            CHECK(mesh.id(Simplex::vertex(swap_edge)) == 7);
-            CHECK(mesh.id(Simplex::vertex(mesh.switch_vertex(swap_edge))) == 6);
+            CHECK(mesh.id(Simplex::vertex(mesh, swap_edge)) == 7);
+            CHECK(mesh.id(Simplex::vertex(mesh, mesh.switch_vertex(swap_edge))) == 6);
         }
         SECTION("with_scheduler")
         {
@@ -620,7 +621,7 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
     {
         const Tuple e = mesh.edge_tuple_between_v1_v2(6, 7, 5);
         op.add_invariant(std::make_shared<invariants::ValenceImprovementInvariant>(mesh));
-        const bool success = !op(Simplex::edge(e)).empty();
+        const bool success = !op(Simplex::edge(mesh, e)).empty();
         CHECK(!success);
     }
 }
@@ -935,7 +936,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     auto parent_vertex_accessor = mesh.create_accessor<int64_t>(parent_vertex_handle);
 
     for (const auto& v : child_ptr->get_all(PrimitiveType::Vertex)) {
-        auto parent_v = child_ptr->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
+        auto parent_v = child_ptr->map_to_root_tuple(Simplex(*child_ptr, PrimitiveType::Vertex, v));
         child_vertex_accessor.vector_attribute(v) =
             parent_vertex_accessor.vector_attribute(parent_v);
     }
