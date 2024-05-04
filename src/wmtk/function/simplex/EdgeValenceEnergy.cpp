@@ -16,13 +16,14 @@ double EdgeValenceEnergy::get_value(const simplex::Simplex& edge_simplex) const
     Tuple tuple = edge_simplex.tuple();
     const Tuple& current_v = tuple;
     const Tuple other_v = tri_mesh().switch_vertex(current_v);
-    int64_t val0 =
-        static_cast<int64_t>(simplex::link(tri_mesh(), simplex::Simplex::vertex(current_v))
-                                 .simplex_vector(PrimitiveType::Vertex)
-                                 .size());
-    int64_t val1 = static_cast<int64_t>(simplex::link(tri_mesh(), simplex::Simplex::vertex(other_v))
-                                            .simplex_vector(PrimitiveType::Vertex)
-                                            .size());
+    int64_t val0 = static_cast<int64_t>(
+        simplex::link(tri_mesh(), simplex::Simplex::vertex(tri_mesh(), current_v))
+            .simplex_vector(PrimitiveType::Vertex)
+            .size());
+    int64_t val1 = static_cast<int64_t>(
+        simplex::link(tri_mesh(), simplex::Simplex::vertex(tri_mesh(), other_v))
+            .simplex_vector(PrimitiveType::Vertex)
+            .size());
     if (tri_mesh().is_boundary_vertex(current_v)) {
         val0 += 2;
     }
@@ -44,13 +45,14 @@ double EdgeValenceEnergy::get_value(const simplex::Simplex& edge_simplex) const
     const Tuple top_v = tri_mesh().switch_vertex(tri_mesh().switch_edge(current_v));
     const Tuple bottom_v =
         tri_mesh().switch_vertex(tri_mesh().switch_edge(tri_mesh().switch_face(current_v)));
-    int64_t val2 = static_cast<int64_t>(simplex::link(tri_mesh(), simplex::Simplex::vertex(top_v))
-                                            .simplex_vector(PrimitiveType::Vertex)
-                                            .size());
-    int64_t val3 =
-        static_cast<int64_t>(simplex::link(tri_mesh(), simplex::Simplex::vertex(bottom_v))
+    int64_t val2 =
+        static_cast<int64_t>(simplex::link(tri_mesh(), simplex::Simplex::vertex(tri_mesh(), top_v))
                                  .simplex_vector(PrimitiveType::Vertex)
                                  .size());
+    int64_t val3 = static_cast<int64_t>(
+        simplex::link(tri_mesh(), simplex::Simplex::vertex(tri_mesh(), bottom_v))
+            .simplex_vector(PrimitiveType::Vertex)
+            .size());
 
     if (tri_mesh().is_boundary_vertex(top_v)) {
         val2 += 2;

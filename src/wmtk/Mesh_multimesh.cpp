@@ -133,7 +133,7 @@ Mesh::map_tuples(const Mesh& other_mesh, PrimitiveType pt, const std::vector<Tup
     std::vector<Tuple> ret;
     ret.reserve(tuples.size());
     for (const auto& t : tuples) {
-        auto v = map_tuples(other_mesh, simplex::Simplex(pt, t));
+        auto v = map_tuples(other_mesh, simplex::Simplex(*this, pt, t));
         ret.insert(ret.end(), v.begin(), v.end());
     }
 
@@ -157,7 +157,7 @@ std::vector<Tuple> Mesh::lub_map_tuples(
     std::vector<Tuple> ret;
     ret.reserve(tuples.size());
     for (const auto& t : tuples) {
-        auto v = lub_map_tuples(other_mesh, simplex::Simplex(pt, t));
+        auto v = lub_map_tuples(other_mesh, simplex::Simplex(*this, pt, t));
         ret.insert(ret.end(), v.begin(), v.end());
     }
 

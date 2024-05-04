@@ -35,8 +35,9 @@ std::vector<simplex::Simplex> TriEdgeSwap::execute(const simplex::Simplex& simpl
     //    \|/
 
     // switch also face to keep edge orientation
-    const Tuple collapse_input_tuple =
-        mesh().switch_tuples(split_simplicies.front().tuple(), {PrimitiveType::Edge, PrimitiveType::Triangle});
+    const Tuple collapse_input_tuple = mesh().switch_tuples(
+        split_simplicies.front().tuple(),
+        {PrimitiveType::Edge, PrimitiveType::Triangle});
     // switch edge - switch face
     //    /|\ .
     //   / ^ \ .
@@ -46,7 +47,7 @@ std::vector<simplex::Simplex> TriEdgeSwap::execute(const simplex::Simplex& simpl
     //   \ | /
     //    \|/
     const auto collapse_simplicies =
-        m_collapse(simplex::Simplex(m_collapse.primitive_type(), collapse_input_tuple));
+        m_collapse(simplex::Simplex(mesh(), m_collapse.primitive_type(), collapse_input_tuple));
     if (collapse_simplicies.empty()) return {};
     assert(collapse_simplicies.size() == 1);
 
@@ -60,10 +61,11 @@ std::vector<simplex::Simplex> TriEdgeSwap::execute(const simplex::Simplex& simpl
     //   \ | /
     //    \|/
     // adjust return tuple to be the swapped edge in the same orientation as the input
-    const Tuple output_tuple =
-        mesh().switch_tuples(collapse_simplicies.front().tuple(), {PrimitiveType::Edge, PrimitiveType::Vertex});
+    const Tuple output_tuple = mesh().switch_tuples(
+        collapse_simplicies.front().tuple(),
+        {PrimitiveType::Edge, PrimitiveType::Vertex});
 
-    return {simplex::Simplex::edge(output_tuple)};
+    return {simplex::Simplex::edge(mesh(), output_tuple)};
 }
 
 

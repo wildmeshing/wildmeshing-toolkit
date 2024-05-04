@@ -28,7 +28,7 @@ SplitReturnData multi_mesh_edge_split(
     multimesh::MultiMeshSimplexVisitor visitor(
         std::integral_constant<int64_t, 1>{}, // specify that this runs on edges
         MultiMeshEdgeSplitFunctor{});
-    visitor.execute_from_root(mesh, simplex::Simplex(PrimitiveType::Edge, t));
+    visitor.execute_from_root(mesh, simplex::Simplex(mesh, PrimitiveType::Edge, t));
     multimesh::MultiMeshSimplexEventVisitor event_visitor(visitor);
     event_visitor.run_on_edges(UpdateEdgeOperationMultiMeshMapFunctor{});
     event_visitor.run_on_nodes(UpdateEdgeOperationMultiMeshMapFunctor{});
@@ -59,8 +59,8 @@ std::vector<simplex::Simplex> multi_mesh_edge_split_with_modified_simplices(
 {
     auto return_data = multi_mesh_edge_split(mesh, simplex.tuple(), new_attr_strategies);
     return std::visit(
-        [](const auto& rt) -> std::vector<simplex::Simplex> {
-            return {simplex::Simplex::vertex(rt.m_output_tuple)};
+        [&mesh](const auto& rt) -> std::vector<simplex::Simplex> {
+            return {simplex::Simplex::vertex(mesh, rt.m_output_tuple)};
         },
         return_data.get_variant(mesh, simplex));
 }

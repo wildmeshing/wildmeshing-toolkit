@@ -43,7 +43,7 @@ bool MaxFunctionInvariant::after(
     auto max = [&](const std::vector<Tuple>& tuples) {
         double value = std::numeric_limits<double>::lowest();
         for (const auto& t : tuples) {
-            value = std::max(value, m_func->get_value(simplex::Simplex(m_type, t)));
+            value = std::max(value, m_func->get_value(simplex::Simplex(mesh(), m_type, t)));
         }
 
 

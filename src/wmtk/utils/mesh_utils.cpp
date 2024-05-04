@@ -4,8 +4,10 @@
 #include <wmtk/simplex/closed_star.hpp>
 
 namespace wmtk::mesh_utils {
-Eigen::Vector3d
-compute_face_normal_area_weighted(const TriMesh& m, const attribute::Accessor<double>& pos, const Tuple& f)
+Eigen::Vector3d compute_face_normal_area_weighted(
+    const TriMesh& m,
+    const attribute::Accessor<double>& pos,
+    const Tuple& f)
 {
     const Tuple v0 = f;
     const Tuple v1 = m.switch_vertex(f);
@@ -17,15 +19,17 @@ compute_face_normal_area_weighted(const TriMesh& m, const attribute::Accessor<do
     return ((p0 - p2).cross(p1 - p2));
 }
 
-Eigen::Vector3d compute_face_normal(const TriMesh& m, const attribute::Accessor<double>& pos, const Tuple& f)
+Eigen::Vector3d
+compute_face_normal(const TriMesh& m, const attribute::Accessor<double>& pos, const Tuple& f)
 {
     return compute_face_normal_area_weighted(m, pos, f).normalized();
 }
 
-Eigen::Vector3d compute_vertex_normal(const TriMesh& m, const attribute::Accessor<double>& pos, const Tuple& v)
+Eigen::Vector3d
+compute_vertex_normal(const TriMesh& m, const attribute::Accessor<double>& pos, const Tuple& v)
 {
     const simplex::SimplexCollection closed_star =
-        simplex::closed_star(m, simplex::Simplex::vertex(v));
+        simplex::closed_star(m, simplex::Simplex::vertex(m, v));
 
     Eigen::Vector3d n = Eigen::Vector3d::Zero();
     for (const simplex::Simplex& f : closed_star.simplex_vector(PrimitiveType::Triangle)) {

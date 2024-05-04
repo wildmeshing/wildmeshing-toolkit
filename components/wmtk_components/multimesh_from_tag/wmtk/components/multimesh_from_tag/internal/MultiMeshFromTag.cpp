@@ -105,7 +105,7 @@ void MultiMeshFromTag::compute_substructure_ids()
         for (const Tuple& cell_tuple : top_dimension_child_tuples) {
             const auto simplex_tuples = simplex::faces_single_dimension_tuples(
                 child,
-                simplex::Simplex(m_tag_ptype, cell_tuple),
+                simplex::Simplex(child, m_tag_ptype, cell_tuple),
                 pt);
 
             for (const Tuple& s_tuple : simplex_tuples) {
@@ -136,7 +136,7 @@ void MultiMeshFromTag::compute_substructure_ids()
 
             const auto face_tuples = simplex::faces_single_dimension_tuples(
                 child,
-                simplex::Simplex(m_tag_ptype, cell_tuple),
+                simplex::Simplex(child, m_tag_ptype, cell_tuple),
                 pt);
 
             assert(face_tuples.size() == id_acc.dimension());
@@ -187,7 +187,7 @@ std::vector<Tuple> MultiMeshFromTag::get_connected_region(
 
 
         for (const Tuple& t_version : pt_intersection) {
-            const simplex::Simplex face = simplex::Simplex(connecting_ptype, t_version);
+            const simplex::Simplex face = simplex::Simplex(child, connecting_ptype, t_version);
 
             const simplex::Simplex root_face = child.map_to_parent(face);
 
@@ -273,11 +273,11 @@ void MultiMeshFromTag::build_adjacency_matrix()
     for (const Tuple& cell_tuple : top_dimension_child_tuples) {
         const auto face_tuples = simplex::faces_single_dimension_tuples(
             child,
-            simplex::Simplex(m_tag_ptype, cell_tuple),
+            simplex::Simplex(child, m_tag_ptype, cell_tuple),
             connecting_ptype);
 
         for (const Tuple& ft : face_tuples) {
-            const simplex::Simplex face = simplex::Simplex(connecting_ptype, ft);
+            const simplex::Simplex face = simplex::Simplex(child, connecting_ptype, ft);
 
             const simplex::Simplex root_face = child.map_to_parent(face);
 
@@ -304,7 +304,7 @@ void MultiMeshFromTag::build_adjacency_matrix()
     for (size_t i = 0; i < top_dimension_child_tuples.size(); ++i) {
         const auto face_tuples = simplex::faces_single_dimension_tuples(
             child,
-            simplex::Simplex(m_tag_ptype, top_dimension_child_tuples[i]),
+            simplex::Simplex(child, m_tag_ptype, top_dimension_child_tuples[i]),
             connecting_ptype);
 
         assert(face_tuples.size() == adj_matrix.cols());

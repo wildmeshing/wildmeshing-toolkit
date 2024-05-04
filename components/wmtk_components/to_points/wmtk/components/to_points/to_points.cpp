@@ -123,7 +123,7 @@ void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& 
             for (const auto& f : facest) {
                 auto tmp = faces_single_dimension_tuples(
                     mesh,
-                    simplex::Simplex(mesh.top_simplex_type(), f),
+                    simplex::Simplex(mesh, mesh.top_simplex_type(), f),
                     PrimitiveType::Vertex);
 
                 assert(tmp.size() == dim);

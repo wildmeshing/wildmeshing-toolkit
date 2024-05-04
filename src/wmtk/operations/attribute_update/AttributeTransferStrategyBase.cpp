@@ -18,7 +18,7 @@ void AttributeTransferStrategyBase::run_on_all()
     auto tuples = m_handle.mesh().get_all(pt);
 
     for (const Tuple& t : tuples) {
-        run(simplex::Simplex(pt, t));
+        run(simplex::Simplex(m_handle.mesh(), pt, t));
     }
 }
 
@@ -48,7 +48,7 @@ std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
         for (const auto& parent_tup : parent_tuples) {
             std::vector<Tuple> c = simplex::neighbors_single_dimension_tuples(
                 m,
-                simplex::Simplex(my_primitive_type, parent_tup),
+                simplex::Simplex(m, my_primitive_type, parent_tup),
                 parent_primitive_type);
             std::copy(c.begin(), c.end(), std::back_inserter(r));
         }

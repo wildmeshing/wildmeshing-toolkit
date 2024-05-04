@@ -54,15 +54,15 @@ SimplexCollection link_single_dimension(
             all_cofaces.reserve(cell_tuples.size() * 2);
             for (Tuple t : cell_tuples) {
                 t = mesh.switch_tuples(t, {PV, PE});
-                all_cofaces.emplace_back(Simplex::vertex(t));
+                all_cofaces.emplace_back(Simplex::vertex(mesh, t));
                 t = mesh.switch_tuples(t, {PV});
-                all_cofaces.emplace_back(Simplex::vertex(t));
+                all_cofaces.emplace_back(Simplex::vertex(mesh, t));
             }
         } else if (link_type == PrimitiveType::Edge) {
             all_cofaces.reserve(cell_tuples.size());
             for (Tuple t : cell_tuples) {
                 t = mesh.switch_tuples(t, {PV, PE});
-                all_cofaces.emplace_back(Simplex::edge(t));
+                all_cofaces.emplace_back(Simplex::edge(mesh, t));
             }
         }
         break;
@@ -71,7 +71,7 @@ SimplexCollection link_single_dimension(
             all_cofaces.reserve(cell_tuples.size());
             for (Tuple t : cell_tuples) {
                 t = mesh.switch_tuples(t, {PE, PV});
-                all_cofaces.emplace_back(Simplex::vertex(t));
+                all_cofaces.emplace_back(Simplex::vertex(mesh, t));
             }
         }
         break;
@@ -110,28 +110,28 @@ SimplexCollection link_single_dimension(
             all_cofaces.reserve(cell_tuples.size() * 3);
             for (Tuple t : cell_tuples) {
                 t = mesh.switch_tuples(t, {PV, PE, PF});
-                all_cofaces.emplace_back(Simplex::vertex(t));
+                all_cofaces.emplace_back(Simplex::vertex(mesh, t));
                 t = mesh.switch_tuples(t, {PV, PE});
-                all_cofaces.emplace_back(Simplex::vertex(t));
+                all_cofaces.emplace_back(Simplex::vertex(mesh, t));
                 t = mesh.switch_tuples(t, {PV, PE});
-                all_cofaces.emplace_back(Simplex::vertex(t));
+                all_cofaces.emplace_back(Simplex::vertex(mesh, t));
             }
         } else if (link_type == PrimitiveType::Edge) {
             all_cofaces.reserve(cell_tuples.size() * 3);
             for (Tuple t : cell_tuples) {
                 t = mesh.switch_tuples(t, {PV, PE, PF});
-                all_cofaces.emplace_back(Simplex::edge(t));
+                all_cofaces.emplace_back(Simplex::edge(mesh, t));
                 t = mesh.switch_tuples(t, {PV, PE});
-                all_cofaces.emplace_back(Simplex::edge(t));
+                all_cofaces.emplace_back(Simplex::edge(mesh, t));
                 t = mesh.switch_tuples(t, {PV, PE});
-                all_cofaces.emplace_back(Simplex::edge(t));
+                all_cofaces.emplace_back(Simplex::edge(mesh, t));
             }
         }
         if (link_type == PrimitiveType::Triangle) {
             all_cofaces.reserve(cell_tuples.size());
             for (Tuple t : cell_tuples) {
                 t = mesh.switch_tuples(t, {PV, PE, PF});
-                all_cofaces.emplace_back(Simplex::face(t));
+                all_cofaces.emplace_back(Simplex::face(mesh, t));
             }
         }
         break;
@@ -140,15 +140,15 @@ SimplexCollection link_single_dimension(
             all_cofaces.reserve(cell_tuples.size() * 2);
             for (Tuple t : cell_tuples) {
                 t = mesh.switch_tuples(t, {PE, PV, PF, PE});
-                all_cofaces.emplace_back(Simplex::vertex(t));
-                all_cofaces.emplace_back(Simplex::vertex(mesh.switch_vertex(t)));
+                all_cofaces.emplace_back(Simplex::vertex(mesh, t));
+                all_cofaces.emplace_back(Simplex::vertex(mesh, mesh.switch_vertex(t)));
             }
         }
         if (link_type == PrimitiveType::Edge) {
             all_cofaces.reserve(cell_tuples.size());
             for (Tuple t : cell_tuples) {
                 t = mesh.switch_tuples(t, {PE, PV, PF, PE});
-                all_cofaces.emplace_back(Simplex::edge(t));
+                all_cofaces.emplace_back(Simplex::edge(mesh, t));
             }
         }
         break;
@@ -157,7 +157,7 @@ SimplexCollection link_single_dimension(
             all_cofaces.reserve(cell_tuples.size());
             for (Tuple t : cell_tuples) {
                 t = mesh.switch_tuples(t, {PE, PF, PE, PV});
-                all_cofaces.emplace_back(Simplex::vertex(t));
+                all_cofaces.emplace_back(Simplex::vertex(mesh, t));
             }
         }
         break;

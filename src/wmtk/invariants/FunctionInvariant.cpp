@@ -19,7 +19,8 @@ bool FunctionInvariant::after(
 {
     auto sum = [&](const std::vector<Tuple>& tuples) {
         double _before = 0;
-        for (const auto& t : tuples) _before += m_func->get_value(simplex::Simplex(m_type, t));
+        for (const auto& t : tuples)
+            _before += m_func->get_value(simplex::Simplex(mesh(), m_type, t));
 
         return _before;
     };

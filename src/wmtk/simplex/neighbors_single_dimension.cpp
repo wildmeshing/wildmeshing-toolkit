@@ -9,6 +9,7 @@ std::vector<Simplex>
 neighbors_single_dimension(const Mesh& m, const Simplex& s, const PrimitiveType pt)
 {
     return utils::tuple_vector_to_homogeneous_simplex_vector(
+        m,
         neighbors_single_dimension_tuples(m, s, pt),
         pt);
 }

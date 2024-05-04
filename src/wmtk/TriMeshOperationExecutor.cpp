@@ -43,27 +43,27 @@ auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> Incid
     for (int i = 0; i < 3; ++i) {
         if (simplex::utils::SimplexComparisons::equal(
                 m_mesh,
-                simplex::Simplex::edge(t),
-                simplex::Simplex::edge(m_operating_tuple))) {
+                simplex::Simplex::edge(m_mesh, t),
+                simplex::Simplex::edge(m_mesh, m_operating_tuple))) {
             break;
         }
         t = next_edge(t);
     }
     assert(simplex::utils::SimplexComparisons::equal(
         m_mesh,
-        simplex::Simplex::edge(t),
-        simplex::Simplex::edge(m_operating_tuple)));
+        simplex::Simplex::edge(m_mesh, t),
+        simplex::Simplex::edge(m_mesh, m_operating_tuple)));
 
     if (!simplex::utils::SimplexComparisons::equal(
             m_mesh,
-            simplex::Simplex::vertex(t),
-            simplex::Simplex::vertex(m_operating_tuple))) {
+            simplex::Simplex::vertex(m_mesh, t),
+            simplex::Simplex::vertex(m_mesh, m_operating_tuple))) {
         t = m_mesh.switch_vertex(t);
     }
     assert(simplex::utils::SimplexComparisons::equal(
         m_mesh,
-        simplex::Simplex::vertex(t),
-        simplex::Simplex::vertex(m_operating_tuple)));
+        simplex::Simplex::vertex(m_mesh, t),
+        simplex::Simplex::vertex(m_mesh, m_operating_tuple)));
 
     const std::array<Tuple, 2> ear_edges{
         {m_mesh.switch_edge(t), m_mesh.switch_edge(m_mesh.switch_vertex(t))}};
@@ -112,7 +112,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     m_spine_vids[1] = m_mesh.id_vertex(m_mesh.switch_vertex(m_operating_tuple));
 
     const simplex::SimplexCollection edge_closed_star =
-        simplex::closed_star(m_mesh, simplex::Simplex::edge(operating_tuple));
+        simplex::closed_star(m_mesh, simplex::Simplex::edge(m_mesh, operating_tuple));
 
     // get all faces incident to the edge
     for (const simplex::Simplex& f : edge_closed_star.simplex_vector(PrimitiveType::Triangle)) {
@@ -192,7 +192,7 @@ TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete(
     const Tuple& tuple,
     const TriMesh& m)
 {
-    const simplex::SimplexCollection sc = simplex::open_star(m, simplex::Simplex::edge(tuple));
+    const simplex::SimplexCollection sc = simplex::open_star(m, simplex::Simplex::edge(m, tuple));
     std::array<std::vector<int64_t>, 3> ids;
     for (const simplex::Simplex& s : sc) {
         ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
@@ -207,9 +207,9 @@ TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete(
     const TriMesh& m)
 {
     const simplex::SimplexCollection vertex_open_star =
-        simplex::open_star(m, simplex::Simplex::vertex(tuple));
+        simplex::open_star(m, simplex::Simplex::vertex(m, tuple));
     const simplex::SimplexCollection edge_closed_star =
-        simplex::closed_star(m, simplex::Simplex::edge(tuple));
+        simplex::closed_star(m, simplex::Simplex::edge(m, tuple));
 
     const simplex::SimplexCollection sc =
         simplex::SimplexCollection::get_intersection(vertex_open_star, edge_closed_star);
@@ -502,7 +502,7 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
 
     // must collect star before changing connectivity
     const simplex::SimplexCollection v0_star =
-        simplex::closed_star(m_mesh, simplex::Simplex::vertex(m_operating_tuple));
+        simplex::closed_star(m_mesh, simplex::Simplex::vertex(m_mesh, m_operating_tuple));
 
 
     connect_ears();

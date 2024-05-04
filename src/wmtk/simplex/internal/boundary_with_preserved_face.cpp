@@ -64,6 +64,7 @@ std::vector<Simplex> boundary_with_preserved_face_simplices(
         return {};
     }
     return utils::tuple_vector_to_homogeneous_simplex_vector(
+        mesh,
         boundary_with_preserved_face_tuples(mesh, t, pt, face_pt),
         get_primitive_type_from_id(get_primitive_type_id(pt) - 1));
 }

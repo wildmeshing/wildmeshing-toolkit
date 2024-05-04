@@ -20,9 +20,9 @@ bool SeparateSubstructuresInvariant::before(const simplex::Simplex& s) const
     const Tuple& t = s.tuple();
 
     const simplex::Simplex& e = s;
-    const simplex::Simplex v0 = simplex::Simplex::vertex(t);
+    const simplex::Simplex v0 = simplex::Simplex::vertex(mesh(), t);
     const simplex::Simplex v1 =
-        simplex::Simplex::vertex(mesh().switch_tuple(t, PrimitiveType::Vertex));
+        simplex::Simplex::vertex(mesh(), mesh().switch_tuple(t, PrimitiveType::Vertex));
 
     const Mesh& m = mesh();
 
