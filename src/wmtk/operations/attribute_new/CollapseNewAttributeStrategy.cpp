@@ -137,8 +137,10 @@ void CollapseNewAttributeStrategy<T>::update(
         const Tuple& input_tuple = tuple_pair[0];
         const Tuple& output_tuple = tuple_pair[1];
 
-        const auto& return_data_variant =
-            data.get_variant(mesh(), wmtk::simplex::Simplex::edge(mesh(), input_tuple));
+        simplex::Simplex input_simplex = mesh().parent_scope(
+            [this, &input_tuple]() { return simplex::Simplex::edge(mesh(), input_tuple); });
+
+        const auto& return_data_variant = data.get_variant(mesh(), input_simplex);
 
         for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type())) {
             auto merged_simps = m_topo_info->merged_simplices(return_data_variant, input_tuple, pt);

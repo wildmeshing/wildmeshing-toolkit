@@ -1032,7 +1032,8 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             REQUIRE(child2.is_valid_slow(cs0.tuple()));
             REQUIRE(cs0 == edge_f0_simplex);
             REQUIRE(child2.is_valid_slow(cs1.tuple()));
-            REQUIRE(cs1 == edge_simplex);
+            REQUIRE(cs1.tuple() == edge_simplex.tuple());
+            REQUIRE(cs1.primitive_type() == edge_simplex.primitive_type());
         }
 
         operations::EdgeSplit split(parent);
