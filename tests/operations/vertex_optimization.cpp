@@ -73,7 +73,8 @@ TEST_CASE("vertex_optimization_Newton_Method")
         std::vector<Tuple> tuples = mesh.get_all(PrimitiveType::Vertex);
         double min_grad_norm = std::numeric_limits<double>::max();
         for (const Tuple& tuple : tuples) {
-            double grad_norm = energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple)).norm();
+            double grad_norm =
+                energy->get_gradient(Simplex(mesh, PrimitiveType::Vertex, tuple)).norm();
             if (grad_norm < min_grad_norm) {
                 min_grad_norm = grad_norm;
             }
@@ -111,7 +112,8 @@ TEST_CASE("vertex_optimization_tet_amips")
         std::vector<Tuple> tuples = mesh.get_all(PrimitiveType::Vertex);
         double min_grad_norm = std::numeric_limits<double>::max();
         for (const Tuple& tuple : tuples) {
-            double grad_norm = energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple)).norm();
+            double grad_norm =
+                energy->get_gradient(Simplex(mesh, PrimitiveType::Vertex, tuple)).norm();
             if (grad_norm < min_grad_norm) {
                 min_grad_norm = grad_norm;
             }
@@ -152,7 +154,8 @@ TEST_CASE("vertex_optimization_Gradient_Descent")
         std::vector<Tuple> tuples = mesh.get_all(PrimitiveType::Vertex);
         double min_grad_norm = std::numeric_limits<double>::max();
         for (const Tuple& tuple : tuples) {
-            Eigen::Vector2d grad = energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple));
+            Eigen::Vector2d grad =
+                energy->get_gradient(Simplex(mesh, PrimitiveType::Vertex, tuple));
             double grad_norm = grad.norm();
             if (grad_norm < min_grad_norm) {
                 min_grad_norm = grad_norm;

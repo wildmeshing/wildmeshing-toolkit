@@ -739,24 +739,24 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     EdgeSplit split(m);
 
     Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-    split(Simplex::edge(edge));
+    split(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge2 = m.edge_tuple_between_v1_v2(3, 0, 0);
-    split(Simplex::edge(edge));
+    split(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
     REQUIRE(m.is_valid_slow(edge3));
-    split(Simplex::edge(edge));
+    split(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge4 = m.edge_tuple_between_v1_v2(4, 9, 8);
-    split(Simplex::edge(edge));
+    split(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge5 = m.edge_tuple_between_v1_v2(5, 6, 4);
-    split(Simplex::edge(edge));
+    split(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 }
 
@@ -781,7 +781,7 @@ TEST_CASE("split_edge_operation", "[operations][split][2D]")
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
     }
 
-    const bool success = !op(Simplex::edge(e)).empty();
+    const bool success = !op(Simplex::edge(m, e)).empty();
     CHECK(success == split_boundary_edges);
     if (split_boundary_edges) {
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 10);
@@ -800,7 +800,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeSplit split(m);
-        auto res = split(Simplex::edge(edge));
+        auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
@@ -817,7 +817,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 0);
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeSplit split(m);
-        auto res = split(Simplex::edge(edge));
+        auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
@@ -834,7 +834,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeSplit split(m);
-        auto res = split(Simplex::edge(edge));
+        auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
@@ -852,7 +852,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 3);
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeSplit split(m);
-        auto res = split(Simplex::edge(edge));
+        auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
@@ -893,7 +893,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
                 continue;
             }
 
-            split(Simplex::edge(e));
+            split(Simplex::edge(mesh, e));
             REQUIRE(mesh.is_connectivity_valid());
         }
     }
@@ -905,7 +905,7 @@ TEST_CASE("split_modified_primitives", "[operations][split]")
     EdgeSplit op(m);
 
     const Tuple e = m.edge_tuple_between_v1_v2(4, 5, 2);
-    const auto ret = op(Simplex::edge(e));
+    const auto ret = op(Simplex::edge(m, e));
     REQUIRE(!ret.empty());
     CHECK(ret.size() == 1);
     CHECK(ret[0].primitive_type() == PrimitiveType::Vertex);

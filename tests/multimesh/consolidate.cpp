@@ -64,7 +64,7 @@ TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
         EdgeCollapse collapse(m);
-        collapse(simplex::Simplex::edge(edge));
+        collapse(simplex::Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
@@ -93,7 +93,7 @@ TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
         EdgeCollapse collapse(m);
-        collapse(simplex::Simplex::edge(edge));
+        collapse(simplex::Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 1);
 
@@ -130,7 +130,7 @@ TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
 
         Tuple edge = parent.edge_tuple_between_v1_v2(1, 0, 1);
         operations::EdgeSplit split(parent);
-        REQUIRE(!split(Simplex::edge(edge)).empty());
+        REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         multimesh::consolidate(parent);
         REQUIRE(parent.is_connectivity_valid());
@@ -154,7 +154,7 @@ TEST_CASE("consolidate_multimesh_splits", "[mesh][consolidate_multimesh]")
 
     for (int j = 0; j < 3; ++j) {
         for (const auto& tup : dptr->get_all(wmtk::PrimitiveType::Edge)) {
-            split_op(simplex::Simplex::edge(tup)); //.empty();
+            split_op(simplex::Simplex::edge(*dptr, tup)); //.empty();
         }
     }
     DEBUG_TriMesh& debug_d = reinterpret_cast<DEBUG_TriMesh&>(*dptr);
@@ -165,7 +165,7 @@ TEST_CASE("consolidate_multimesh_splits", "[mesh][consolidate_multimesh]")
     debug_i.multi_mesh_manager().check_map_valid(debug_i);
     for (int j = 0; j < 3; ++j) {
         for (const auto& tup : dptr->get_all(wmtk::PrimitiveType::Edge)) {
-            split_op(simplex::Simplex::edge(tup));
+            split_op(simplex::Simplex::edge(*dptr, tup));
         }
     }
 }

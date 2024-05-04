@@ -48,7 +48,7 @@ TEST_CASE("split_edge_attr_update", "[operations][split][2D]")
 
     auto check_lengths = [&]() {
         for (const Tuple& e : m.get_all(PrimitiveType::Edge)) {
-            // el_strategy->update(simplex::Simplex::edge(e));
+            // el_strategy->update(simplex::Simplex::edge(m,e));
 
 
             const Tuple v0 = e;
@@ -77,28 +77,28 @@ TEST_CASE("split_edge_attr_update", "[operations][split][2D]")
                                       // in the update strategy
     op.set_new_attribute_strategy(pos_handle);
     const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-    bool success = !op(Simplex::edge(edge)).empty();
+    bool success = !op(Simplex::edge(m, edge)).empty();
     CHECK(success);
     check_lengths();
 
     const Tuple edge2 = m.edge_tuple_between_v1_v2(3, 0, 0);
-    success = !op(Simplex::edge(edge2)).empty();
+    success = !op(Simplex::edge(m, edge2)).empty();
     CHECK(success);
     check_lengths();
 
     const Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
-    success = !op(Simplex::edge(edge3)).empty();
+    success = !op(Simplex::edge(m, edge3)).empty();
     CHECK(success);
     REQUIRE(m.is_connectivity_valid());
     check_lengths();
 
     const Tuple edge4 = m.edge_tuple_between_v1_v2(4, 9, 8);
-    success = !op(Simplex::edge(edge4)).empty();
+    success = !op(Simplex::edge(m, edge4)).empty();
     CHECK(success);
     check_lengths();
 
     const Tuple edge5 = m.edge_tuple_between_v1_v2(5, 6, 4);
-    success = !op(Simplex::edge(edge5)).empty();
+    success = !op(Simplex::edge(m, edge5)).empty();
     CHECK(success);
     check_lengths();
 }
@@ -138,7 +138,7 @@ TEST_CASE("collapse_edge_new_attr", "[operations][collapse][2D]")
         // initialize
         auto edges = m.get_all(PrimitiveType::Edge);
         for (const auto& e : edges) {
-            el_strategy->run(simplex::Simplex::edge(e));
+            el_strategy->run(simplex::Simplex::edge(m, e));
         }
     }
 
@@ -182,7 +182,7 @@ TEST_CASE("collapse_edge_new_attr", "[operations][collapse][2D]")
         edge = m.edge_tuple_between_v1_v2(0, 1, 1);
     }
 
-    const bool success = !op(Simplex::edge(edge)).empty();
+    const bool success = !op(Simplex::edge(m, edge)).empty();
     CHECK(success);
     check_lengths();
 }
@@ -207,10 +207,10 @@ TEST_CASE("attribute_strategy_missing", "[operations][split]")
     const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
 
     // attributes without update strategy cause an exception in the operation
-    CHECK_THROWS(op(Simplex::edge(edge)));
+    CHECK_THROWS(op(Simplex::edge(m, edge)));
 
     op.set_new_attribute_strategy(pos_handle);
-    CHECK_NOTHROW(op(Simplex::edge(edge)));
+    CHECK_NOTHROW(op(Simplex::edge(m, edge)));
 }
 TEST_CASE("attribute_update_multimesh", "[attribute_updates][multimesh]")
 {
@@ -342,4 +342,3 @@ TEST_CASE("attribute_update_multimesh", "[attribute_updates][multimesh]")
         }
     }
 }
-

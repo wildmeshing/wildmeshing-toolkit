@@ -39,13 +39,13 @@ TEST_CASE("simplex_comparison", "[simplicial_complex][2D]")
         const std::vector<Tuple> vertices = m.get_all(PV);
         REQUIRE(vertices.size() == 4);
         for (const Tuple& t : vertices) {
-            const Simplex s0(PV, t);
-            const Simplex s1(PV, m.switch_tuple(t, PE));
+            const Simplex s0(m, PV, t);
+            const Simplex s1(m, PV, m.switch_tuple(t, PE));
             CHECK(simplex::utils::SimplexComparisons::equal(m, s0, s1));
             if (m.is_boundary_edge(t)) {
                 continue;
             }
-            const Simplex s2(PV, m.switch_tuple(t, PF));
+            const Simplex s2(m, PV, m.switch_tuple(t, PF));
             CHECK(simplex::utils::SimplexComparisons::equal(m, s0, s2));
             CHECK(simplex::utils::SimplexComparisons::equal(m, s1, s2));
         }
@@ -55,14 +55,14 @@ TEST_CASE("simplex_comparison", "[simplicial_complex][2D]")
         const std::vector<Tuple> edges = m.get_all(PE);
         REQUIRE(edges.size() == 5);
         for (const Tuple& t : edges) {
-            const Simplex s0(PE, t);
-            const Simplex s1(PE, m.switch_tuple(t, PV));
+            const Simplex s0(m, PE, t);
+            const Simplex s1(m, PE, m.switch_tuple(t, PV));
             CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s0, s1));
             CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s1, s0));
             if (m.is_boundary_edge(t)) {
                 continue;
             }
-            const Simplex s2(PE, m.switch_tuple(t, PF));
+            const Simplex s2(m, PE, m.switch_tuple(t, PF));
             CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s0, s2));
             CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s2, s0));
             CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s1, s2));
@@ -74,11 +74,11 @@ TEST_CASE("simplex_comparison", "[simplicial_complex][2D]")
         const std::vector<Tuple> faces = m.get_all(PF);
         REQUIRE(faces.size() == 2);
         for (const Tuple& t : faces) {
-            const Simplex s0(PF, t);
-            const Simplex s1(PF, m.switch_tuple(t, PV));
+            const Simplex s0(m, PF, t);
+            const Simplex s1(m, PF, m.switch_tuple(t, PV));
             CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s0, s1));
             CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s1, s0));
-            const Simplex s2(PF, m.switch_tuple(t, PE));
+            const Simplex s2(m, PF, m.switch_tuple(t, PE));
             CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s0, s2));
             CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s2, s0));
             CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s1, s2));
@@ -100,20 +100,21 @@ TEST_CASE("simplex_set", "[simplicial_complex][2D]")
     const internal::SimplexLessFunctor slf(m);
     std::set<Simplex, internal::SimplexLessFunctor> simplices(slf);
     for (const auto& t : vertices) {
-        simplices.insert(Simplex(PV, t));
+        simplices.insert(Simplex(m, PV, t));
     }
     for (const auto& t : edges) {
-        simplices.insert(Simplex(PE, t));
+        simplices.insert(Simplex(m, PE, t));
     }
     for (const auto& t : faces) {
-        simplices.insert(Simplex(PF, t));
+        simplices.insert(Simplex(m, PF, t));
     }
     // try inserting a valence 1 vertex
     REQUIRE(simplices.size() == 11);
-    auto [it, was_successful] = simplices.insert(Simplex(PV, vertices[2]));
+    auto [it, was_successful] = simplices.insert(Simplex(m, PV, vertices[2]));
     REQUIRE_FALSE(was_successful);
     REQUIRE(simplices.size() == 11);
-    std::tie(it, was_successful) = simplices.insert(Simplex(PV, m.switch_tuple(vertices[2], PE)));
+    std::tie(it, was_successful) =
+        simplices.insert(Simplex(m, PV, m.switch_tuple(vertices[2], PE)));
     REQUIRE_FALSE(was_successful);
     REQUIRE(simplices.size() == 11);
 }
@@ -147,14 +148,14 @@ TEST_CASE("link-case1", "[simplicial_complex][link][2D]")
     REQUIRE(m.id(m.switch_tuple(m.switch_tuple(t, PE), PV), PV) == 3);
 
 
-    SimplexCollection lnk_0 = link(m, Simplex(PV, t));
-    SimplexCollection lnk_1 = link(m, Simplex(PV, m.switch_tuple(t, PV)));
+    SimplexCollection lnk_0 = link(m, Simplex(m, PV, t));
+    SimplexCollection lnk_1 = link(m, Simplex(m, PV, m.switch_tuple(t, PV)));
 
 
     SimplexCollection lhs = SimplexCollection::get_intersection(lnk_0, lnk_1);
-    SimplexCollection lnk_01 = link(m, Simplex(PE, t));
+    SimplexCollection lnk_01 = link(m, Simplex(m, PE, t));
 
-    SimplexCollection lnk_10 = link(m, Simplex(PE, m.switch_tuple(t, PV)));
+    SimplexCollection lnk_10 = link(m, Simplex(m, PE, m.switch_tuple(t, PV)));
 
     REQUIRE(lnk_0.simplex_vector().size() == 5);
     REQUIRE(lnk_1.simplex_vector().size() == 5);
@@ -184,13 +185,13 @@ TEST_CASE("link-case2", "[simplicial_complex][link][2D]")
     REQUIRE(m.id(m.switch_tuple(t, PV), PV) == 1);
     REQUIRE(m.id(m.switch_tuple(m.switch_tuple(t, PE), PV), PV) == 2);
 
-    SimplexCollection lnk_0 = link(m, Simplex(PV, t));
-    SimplexCollection lnk_1 = link(m, Simplex(PV, m.switch_tuple(t, PV)));
+    SimplexCollection lnk_0 = link(m, Simplex(m, PV, t));
+    SimplexCollection lnk_1 = link(m, Simplex(m, PV, m.switch_tuple(t, PV)));
 
 
     SimplexCollection lhs = SimplexCollection::get_intersection(lnk_0, lnk_1);
-    SimplexCollection lnk_01 = link(m, Simplex(PE, t));
-    SimplexCollection lnk_10 = link(m, Simplex(PE, m.switch_tuple(t, PV)));
+    SimplexCollection lnk_01 = link(m, Simplex(m, PE, t));
+    SimplexCollection lnk_10 = link(m, Simplex(m, PE, m.switch_tuple(t, PV)));
 
 
     REQUIRE(lnk_0.simplex_vector().size() == 7);
@@ -243,7 +244,7 @@ TEST_CASE("k-ring", "[simplicial_complex][k-ring][2D]")
     // get the tuple point to V(3)
     int64_t hash = 0;
     Tuple t(1, 0, -1, 0, hash);
-    Simplex s = Simplex::vertex(t);
+    Simplex s = Simplex::vertex(m, t);
     REQUIRE(m.id(t, PV) == 3);
     // Old code
     //  const auto ret0 = vertex_one_ring(static_cast<Mesh&>(m), t);
@@ -268,7 +269,7 @@ TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
     SECTION("interior")
     {
         t = m.edge_tuple_between_v1_v2(4, 5, 2);
-        auto sc = link(static_cast<Mesh&>(m), Simplex::vertex(t));
+        auto sc = link(static_cast<Mesh&>(m), Simplex::vertex(m, t));
         ring0 = sc.simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 6);
         CHECK(sc.size() == 12);
@@ -276,7 +277,7 @@ TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
     SECTION("on_boundary_cw")
     {
         t = m.edge_tuple_between_v1_v2(0, 1, 1);
-        auto sc = link(static_cast<Mesh&>(m), Simplex::vertex(t));
+        auto sc = link(static_cast<Mesh&>(m), Simplex::vertex(m, t));
         ring0 = sc.simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 3);
         CHECK(sc.size() == 5);
@@ -284,7 +285,7 @@ TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
     SECTION("on_boundary_ccw")
     {
         t = m.edge_tuple_between_v1_v2(0, 3, 0);
-        auto sc = link(static_cast<Mesh&>(m), Simplex::vertex(t));
+        auto sc = link(static_cast<Mesh&>(m), Simplex::vertex(m, t));
         ring0 = sc.simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 3);
         CHECK(sc.size() == 5);
@@ -292,19 +293,19 @@ TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
     SECTION("single_boundary_triangle_cw")
     {
         t = m.edge_tuple_between_v1_v2(6, 5, 4);
-        ring0 =
-            link(static_cast<Mesh&>(m), Simplex::vertex(t)).simplex_vector(PrimitiveType::Vertex);
+        ring0 = link(static_cast<Mesh&>(m), Simplex::vertex(m, t))
+                    .simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 2);
     }
     SECTION("single_boundary_triangle_ccw")
     {
         t = m.edge_tuple_between_v1_v2(6, 2, 4);
-        ring0 =
-            link(static_cast<Mesh&>(m), Simplex::vertex(t)).simplex_vector(PrimitiveType::Vertex);
+        ring0 = link(static_cast<Mesh&>(m), Simplex::vertex(m, t))
+                    .simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 2);
     }
 
-    const auto ret1 = link(m, Simplex::vertex(t)).simplex_vector(PrimitiveType::Vertex);
+    const auto ret1 = link(m, Simplex::vertex(m, t)).simplex_vector(PrimitiveType::Vertex);
     CHECK(ring0.size() == ret1.size());
 }
 
@@ -318,31 +319,31 @@ TEST_CASE("open_star", "[simplicial_complex][star][2D]")
     Tuple t(0, 2, -1, 1, hash);
 
 
-    auto sc_v = open_star(m, Simplex(PV, t)).simplex_vector();
+    auto sc_v = open_star(m, Simplex(m, PV, t)).simplex_vector();
     REQUIRE(sc_v.size() == 8);
     for (size_t i = 0; i < 8; i++) {
         REQUIRE(simplex::utils::SimplexComparisons::equal(
             m,
-            Simplex(PV, t),
-            Simplex(PV, sc_v[i].tuple())));
+            Simplex(m, PV, t),
+            Simplex(m, PV, sc_v[i].tuple())));
     }
 
-    auto sc_e = open_star(m, Simplex(PE, t)).simplex_vector();
+    auto sc_e = open_star(m, Simplex(m, PE, t)).simplex_vector();
     REQUIRE(sc_e.size() == 3);
     for (size_t i = 0; i < 3; i++) {
         REQUIRE(simplex::utils::SimplexComparisons::equal(
             m,
-            Simplex(PE, t),
-            Simplex(PE, sc_e[i].tuple())));
+            Simplex(m, PE, t),
+            Simplex(m, PE, sc_e[i].tuple())));
     }
 
-    auto sc_f = open_star(m, Simplex(PF, t)).simplex_vector();
+    auto sc_f = open_star(m, Simplex(m, PF, t)).simplex_vector();
     REQUIRE(sc_f.size() == 1);
     for (size_t i = 0; i < 1; i++) {
         REQUIRE(simplex::utils::SimplexComparisons::equal(
             m,
-            Simplex(PF, t),
-            Simplex(PF, sc_f[i].tuple())));
+            Simplex(m, PF, t),
+            Simplex(m, PF, sc_f[i].tuple())));
     }
 }
 
@@ -359,13 +360,13 @@ TEST_CASE("closed_star", "[simplicial_complex][star][2D]")
     REQUIRE(m.id(m.switch_tuple(m.switch_tuple(t, PE), PV), PV) == 2);
 
 
-    SimplexCollection sc_v = closed_star(m, Simplex(PV, t));
+    SimplexCollection sc_v = closed_star(m, Simplex(m, PV, t));
     REQUIRE(sc_v.simplex_vector().size() == 15);
 
-    SimplexCollection sc_e = closed_star(m, Simplex(PE, t));
+    SimplexCollection sc_e = closed_star(m, Simplex(m, PE, t));
     REQUIRE(sc_e.simplex_vector().size() == 11);
 
-    SimplexCollection sc_f = closed_star(m, Simplex(PF, t));
+    SimplexCollection sc_f = closed_star(m, Simplex(m, PF, t));
     REQUIRE(sc_f.simplex_vector().size() == 7);
 }
 
@@ -377,25 +378,25 @@ TEST_CASE("open_star_3d", "[simplicial_complex][open_star][3D]")
 
     const Tuple t = m.edge_tuple_between_v1_v2(1, 2, 0);
 
-    SimplexCollection sc_v = open_star(m, Simplex(PV, t));
+    SimplexCollection sc_v = open_star(m, Simplex(m, PV, t));
     CHECK(sc_v.simplex_vector(PV).size() == 1);
     CHECK(sc_v.simplex_vector(PE).size() == 3);
     CHECK(sc_v.simplex_vector(PF).size() == 3);
     CHECK(sc_v.simplex_vector(PT).size() == 1);
 
-    SimplexCollection sc_e = open_star(m, Simplex(PE, t));
+    SimplexCollection sc_e = open_star(m, Simplex(m, PE, t));
     CHECK(sc_e.simplex_vector(PV).size() == 0);
     CHECK(sc_e.simplex_vector(PE).size() == 1);
     CHECK(sc_e.simplex_vector(PF).size() == 2);
     CHECK(sc_e.simplex_vector(PT).size() == 1);
 
-    SimplexCollection sc_f = open_star(m, Simplex(PF, t));
+    SimplexCollection sc_f = open_star(m, Simplex(m, PF, t));
     CHECK(sc_f.simplex_vector(PV).size() == 0);
     CHECK(sc_f.simplex_vector(PE).size() == 0);
     CHECK(sc_f.simplex_vector(PF).size() == 1);
     CHECK(sc_f.simplex_vector(PT).size() == 1);
 
-    SimplexCollection sc_t = open_star(m, Simplex(PT, t));
+    SimplexCollection sc_t = open_star(m, Simplex(m, PT, t));
     CHECK(sc_t.simplex_vector(PV).size() == 0);
     CHECK(sc_t.simplex_vector(PE).size() == 0);
     CHECK(sc_t.simplex_vector(PF).size() == 0);

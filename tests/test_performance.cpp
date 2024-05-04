@@ -321,7 +321,7 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (const Tuple& t : vertices) {
                 const auto neighs =
-                    simplex::top_dimension_cofaces_tuples(m, simplex::Simplex::vertex(t));
+                    simplex::top_dimension_cofaces_tuples(m, simplex::Simplex::vertex(m, t));
                 counter += neighs.size();
             }
         }
@@ -472,7 +472,7 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
         for (size_t i = 0; i < n_repetitions; ++i) {
             n.clear();
             for (const Tuple& t : vertices) {
-                simplex::top_dimension_cofaces_tuples(m, simplex::Simplex::vertex(t), n);
+                simplex::top_dimension_cofaces_tuples(m, simplex::Simplex::vertex(m, t), n);
                 counter += n.size();
             }
         }
@@ -485,7 +485,7 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (const Tuple& t : vertices) {
                 const auto neighs =
-                    simplex::top_dimension_cofaces(m, simplex::Simplex::vertex(t), false);
+                    simplex::top_dimension_cofaces(m, simplex::Simplex::vertex(m, t), false);
                 counter += neighs.size();
             }
         }
@@ -498,7 +498,7 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (const Tuple& t : vertices) {
                 const auto neighs =
-                    simplex::top_dimension_cofaces(m, simplex::Simplex::vertex(t), true);
+                    simplex::top_dimension_cofaces(m, simplex::Simplex::vertex(m, t), true);
                 counter += neighs.size();
             }
         }
@@ -510,7 +510,7 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
         POLYSOLVE_SCOPED_STOPWATCH("closed_star (no sort)", logger());
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (const Tuple& t : vertices) {
-                const auto neighs = simplex::closed_star(m, simplex::Simplex::vertex(t), false);
+                const auto neighs = simplex::closed_star(m, simplex::Simplex::vertex(m, t), false);
                 counter += neighs.size();
             }
         }
@@ -522,7 +522,7 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
         POLYSOLVE_SCOPED_STOPWATCH("closed_star (sort)", logger());
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (const Tuple& t : vertices) {
-                const auto neighs = simplex::closed_star(m, simplex::Simplex::vertex(t), true);
+                const auto neighs = simplex::closed_star(m, simplex::Simplex::vertex(m, t), true);
                 counter += neighs.size();
             }
         }
@@ -556,7 +556,7 @@ TEST_CASE("navigation_performance_tet", "[simplex][performance][.]")
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (const Tuple& t : vertices) {
                 const auto neighs =
-                    simplex::top_dimension_cofaces_tuples(m, simplex::Simplex::vertex(t));
+                    simplex::top_dimension_cofaces_tuples(m, simplex::Simplex::vertex(m, t));
                 counter += neighs.size();
             }
         }
@@ -571,7 +571,7 @@ TEST_CASE("navigation_performance_tet", "[simplex][performance][.]")
         for (size_t i = 0; i < n_repetitions; ++i) {
             n.clear();
             for (const Tuple& t : vertices) {
-                simplex::top_dimension_cofaces_tuples(m, simplex::Simplex::vertex(t), n);
+                simplex::top_dimension_cofaces_tuples(m, simplex::Simplex::vertex(m, t), n);
                 counter += n.size();
             }
         }
@@ -584,7 +584,7 @@ TEST_CASE("navigation_performance_tet", "[simplex][performance][.]")
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (const Tuple& t : vertices) {
                 const auto neighs =
-                    simplex::top_dimension_cofaces(m, simplex::Simplex::vertex(t), false);
+                    simplex::top_dimension_cofaces(m, simplex::Simplex::vertex(m, t), false);
                 counter += neighs.size();
             }
         }
@@ -597,7 +597,7 @@ TEST_CASE("navigation_performance_tet", "[simplex][performance][.]")
         for (size_t i = 0; i < n_repetitions; ++i) {
             for (const Tuple& t : vertices) {
                 const auto neighs =
-                    simplex::top_dimension_cofaces(m, simplex::Simplex::vertex(t), true);
+                    simplex::top_dimension_cofaces(m, simplex::Simplex::vertex(m, t), true);
                 counter += neighs.size();
             }
         }

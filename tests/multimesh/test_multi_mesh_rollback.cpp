@@ -47,7 +47,7 @@ TEST_CASE("split_all_fail_multimesh", "[operations][split]")
 
     for (int j = 0; j < 5; ++j) {
         for (const auto& tup : parent_ptr->get_all(wmtk::PrimitiveType::Edge)) {
-            CHECK(split_op(simplex::Simplex::edge(tup)).empty());
+            CHECK(split_op(simplex::Simplex::edge(*parent_ptr, tup)).empty());
         }
     }
 }

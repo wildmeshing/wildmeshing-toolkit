@@ -106,7 +106,7 @@ TEST_CASE("test_accessor_basic", "[accessor]")
 
     // test default initialization to 0
     for (const wmtk::Tuple& tup : vertices) {
-        const wmtk::simplex::Simplex s(wmtk::PrimitiveType::Vertex, tup);
+        const wmtk::simplex::Simplex s(m, wmtk::PrimitiveType::Vertex, tup);
         CHECK(char_acc.const_scalar_attribute(tup) == 0);
         CHECK(int64_t_acc.const_scalar_attribute(tup) == 0);
         CHECK((double_acc.const_vector_attribute(tup).array() == 0).all());
@@ -475,4 +475,3 @@ TEST_CASE("custom_attributes_vector", "[attributes]")
 
     CHECK(m.custom_attributes().size() == 1);
 }
-

@@ -3,8 +3,8 @@
 #include <filesystem>
 #include <numeric>
 #include <set>
-#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
@@ -53,7 +53,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeCollapse collapse(m);
-        collapse(Simplex::edge(edge));
+        collapse(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
@@ -74,7 +74,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 0, 0);
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeCollapse collapse(m);
-        collapse(Simplex::edge(edge));
+        collapse(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
@@ -96,7 +96,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
-        const bool success = !op(Simplex::edge(edge)).empty();
+        const bool success = !op(Simplex::edge(m, edge)).empty();
         CHECK(success);
     }
     SECTION("edge_from_boundary_prohibited")
@@ -107,7 +107,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
         op.add_invariant(std::make_shared<InteriorVertexInvariant>(m));
-        const bool fail = op(Simplex::edge(edge)).empty();
+        const bool fail = op(Simplex::edge(m, edge)).empty();
         CHECK(fail);
     }
     SECTION("boundary_edge")
@@ -116,7 +116,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-        op(Simplex::edge(edge));
+        op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
@@ -134,7 +134,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
-        const bool success = !op(Simplex::edge(edge)).empty();
+        const bool success = !op(Simplex::edge(m, edge)).empty();
         CHECK(success);
     }
     SECTION("boundary_edge_prohibited")
@@ -145,7 +145,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
-        const bool fail = op(Simplex::edge(edge)).empty();
+        const bool fail = op(Simplex::edge(m, edge)).empty();
         CHECK(fail);
     }
 }
@@ -161,7 +161,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-        auto res = op(Simplex::edge(edge));
+        auto res = op(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
 
@@ -180,7 +180,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(3, 4, 0);
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-        auto res = op(Simplex::edge(edge));
+        auto res = op(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
@@ -197,7 +197,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 3, 0);
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-        auto res = op(Simplex::edge(edge));
+        auto res = op(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
@@ -247,7 +247,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
             acc_tag_e.scalar_attribute(t) = 1;
         }
 
-        const auto res = op(Simplex::edge(t));
+        const auto res = op(Simplex::edge(m, t));
         CHECK(!res.empty());
 
         const Tuple spine1 = res.front().tuple();
@@ -288,7 +288,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     SECTION("no_todo_edges")
     {
         for (const Tuple& t : m.get_all(PV)) {
-            CHECK(op(Simplex::edge(t)).empty());
+            CHECK(op(Simplex::edge(m, t)).empty());
         }
     }
 
@@ -296,7 +296,8 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     {
         wmtk::attribute::Accessor<int64_t> acc_todo = m.create_accessor<int64_t>(todo_handle);
         wmtk::attribute::Accessor<int64_t> acc_tag_e = m.create_accessor<int64_t>(edge_tag_handle);
-        wmtk::attribute::Accessor<int64_t> acc_tag_v = m.create_accessor<int64_t>(vertex_tag_handle);
+        wmtk::attribute::Accessor<int64_t> acc_tag_v =
+            m.create_accessor<int64_t>(vertex_tag_handle);
         for (const Tuple& e : m.get_all(PE)) {
             if (!m.is_boundary_edge(e)) {
                 acc_tag_e.scalar_attribute(e) = 1;
@@ -307,7 +308,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         // should perform two iterations to split the two interior edges once
         for (int i = 0; i < 5; i++) {
             for (const Tuple& t : m.get_all(PE)) {
-                const auto res = op(Simplex::edge(t));
+                const auto res = op(Simplex::edge(m, t));
                 if (!res.empty()) {
                     const Tuple spine1 = res.front().tuple();
                     const Tuple rib1 = m.switch_edge(m.switch_face(spine1));
