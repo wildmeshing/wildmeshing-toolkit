@@ -99,7 +99,7 @@ TEST_CASE("test_insert_and_register_surface_mesh", "[triangleinsertion][.]")
 
     for (const auto& v : facemesh->get_all(PrimitiveType::Vertex)) {
         child_pos_accessor.vector_attribute(v) = parent_pos_accessor.vector_attribute(
-            facemesh->map_to_parent_tuple(simplex::Simplex::vertex(v)));
+            facemesh->map_to_parent_tuple(simplex::Simplex::vertex(*facemesh, v)));
     }
 
     ParaviewWriter
