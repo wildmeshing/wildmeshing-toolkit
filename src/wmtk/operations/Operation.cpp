@@ -65,7 +65,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
 #if defined(WMTK_ENABLE_HASH_UPDATE)
     const auto simplex_resurrect =
-        simplex::Simplex(simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
+        simplex::Simplex(mesh(), simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
 #else
     const auto simplex_resurrect = simplex;
 #endif
@@ -101,7 +101,7 @@ bool Operation::before(const simplex::Simplex& simplex) const
 
 #if defined(WMTK_ENABLE_HASH_UPDATE)
     const auto simplex_resurrect =
-        simplex::Simplex(simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
+        simplex::Simplex(mesh(), simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
 #else
     const auto simplex_resurrect = simplex;
 #endif
