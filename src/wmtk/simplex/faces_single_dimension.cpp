@@ -118,6 +118,7 @@ void edges(SimplexCollection& simplex_collection, const Simplex& simplex)
         simplex_collection.add(PrimitiveType::Edge, e0);
         simplex_collection.add(PrimitiveType::Edge, e1);
         simplex_collection.add(PrimitiveType::Edge, e2);
+        return;
     }
 
     const Tuple e3 = m.switch_tuples(e0, {PF, PE});
