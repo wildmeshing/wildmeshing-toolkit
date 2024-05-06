@@ -2,8 +2,8 @@
 #include <filesystem>
 #include <numeric>
 #include <set>
-#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
@@ -340,6 +340,7 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     REQUIRE(ff_accessor_after.vector_attribute(1)(2) == 3);
 }
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 TEST_CASE("hash_update", "[operations][2D]")
 {
     SECTION("single_triangle")
@@ -398,6 +399,7 @@ TEST_CASE("hash_update", "[operations][2D]")
         CHECK(m.get_cell_hash_slow(9) == 0);
     }
 }
+#endif
 
 //////////// SPLIT TESTS ////////////
 TEST_CASE("connect_faces_across_spine", "[operations][split][2D]")

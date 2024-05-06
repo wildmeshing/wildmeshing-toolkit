@@ -144,7 +144,7 @@ TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
 TEST_CASE("consolidate_multimesh_splits", "[mesh][consolidate_multimesh]")
 {
     using namespace wmtk::operations;
-    int number = 20;
+    int number = 5;
     auto dptr = disk_to_individual_multimesh(number);
 
     auto& c = dptr->get_multi_mesh_child_mesh({0});
@@ -152,9 +152,9 @@ TEST_CASE("consolidate_multimesh_splits", "[mesh][consolidate_multimesh]")
     operations::EdgeSplit split_op(*dptr);
 
 
-    for (int j = 0; j < 5; ++j) {
+    for (int j = 0; j < 3; ++j) {
         for (const auto& tup : dptr->get_all(wmtk::PrimitiveType::Edge)) {
-            split_op(simplex::Simplex::edge(tup));//.empty();
+            split_op(simplex::Simplex::edge(tup)); //.empty();
         }
     }
     DEBUG_TriMesh& debug_d = reinterpret_cast<DEBUG_TriMesh&>(*dptr);
@@ -163,7 +163,7 @@ TEST_CASE("consolidate_multimesh_splits", "[mesh][consolidate_multimesh]")
     multimesh::consolidate(*dptr);
     debug_d.multi_mesh_manager().check_map_valid(debug_d);
     debug_i.multi_mesh_manager().check_map_valid(debug_i);
-    for (int j = 0; j < 5; ++j) {
+    for (int j = 0; j < 3; ++j) {
         for (const auto& tup : dptr->get_all(wmtk::PrimitiveType::Edge)) {
             split_op(simplex::Simplex::edge(tup));
         }

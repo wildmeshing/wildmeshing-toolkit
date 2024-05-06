@@ -1,5 +1,6 @@
 #pragma once
 #include "CachingAccessor.hpp"
+#include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk {
 class Mesh;
@@ -29,7 +30,7 @@ public:
     friend class wmtk::PointMesh;
     using Scalar = T;
 
-    friend class AttributeCache<T>;
+    friend class internal::AttributeMapCache<T>;
     using BaseType = AccessorBase<T, Dim>;
     using CachingBaseType = CachingAccessor<T, Dim>;
 
@@ -50,6 +51,7 @@ public:
 
     T const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const;
     T& topological_scalar_attribute(const Tuple& t);
+    T& topological_scalar_attribute(const simplex::Simplex& t);
 
     T const_scalar_attribute(const Tuple& t) const;
     T& scalar_attribute(const Tuple& t);
@@ -58,6 +60,14 @@ public:
     ConstMapResult<D> const_vector_attribute(const Tuple& t) const;
     template <int D = Dim>
     MapResult<D> vector_attribute(const Tuple& t);
+
+    T const_scalar_attribute(const simplex::Simplex& t) const;
+    T& scalar_attribute(const simplex::Simplex& t);
+
+    template <int D = Dim>
+    ConstMapResult<D> const_vector_attribute(const simplex::Simplex& t) const;
+    template <int D = Dim>
+    MapResult<D> vector_attribute(const simplex::Simplex& t);
 
 
     using BaseType::dimension; // const() -> int64_t
@@ -76,6 +86,7 @@ public:
 
 protected:
     int64_t index(const Tuple& t) const;
+    int64_t index(const simplex::Simplex& t) const;
     using CachingBaseType::base_type;
     CachingBaseType& caching_base_type() { return *this; }
     const CachingBaseType& caching_base_type() const { return *this; }

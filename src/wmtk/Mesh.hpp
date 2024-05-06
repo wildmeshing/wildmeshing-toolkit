@@ -503,6 +503,8 @@ public:
         const = 0;
     bool is_valid_slow(const Tuple& tuple) const;
 
+    virtual bool is_removed(const Tuple& tuple) const;
+
 
 #if defined(WMTK_ENABLE_MULTIMESH)
     //============================

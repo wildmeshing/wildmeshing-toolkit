@@ -1,9 +1,9 @@
 #pragma once
 #include <Eigen/Core>
 #include <cassert>
-#include "internal/MapTypes.hpp"
+#include "MapTypes.hpp"
 
-namespace wmtk::attribute {
+namespace wmtk::attribute::internal {
 template <typename T>
 class AttributeCacheData
 {

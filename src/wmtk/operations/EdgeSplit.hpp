@@ -5,7 +5,6 @@
 #include "attribute_new/SplitNewAttributeStrategy.hpp"
 
 namespace wmtk::operations {
-
 class EdgeSplit : public Operation
 {
 public:
@@ -30,6 +29,9 @@ public:
         const wmtk::operations::SplitRibBasicStrategy& rib =
             wmtk::operations::SplitRibBasicStrategy::Default);
 
+    /**
+     * @return the new simplex, toward to the next simplex along the splited line
+     */
     std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
     std::vector<simplex::Simplex> unmodified_primitives(
         const simplex::Simplex& simplex) const override;
