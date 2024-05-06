@@ -37,6 +37,7 @@ constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Triangle;
 
 
+#if defined(WMTK_ENABLE_MULTIMESH)
 TEST_CASE("swap_edge", "[operations][swap][2D]")
 {
     using namespace operations::composite;
@@ -429,3 +430,4 @@ TEST_CASE("split_face", "[operations][split][2D]")
         CHECK(op(Simplex::face(f)).empty());
     }
 }
+#endif

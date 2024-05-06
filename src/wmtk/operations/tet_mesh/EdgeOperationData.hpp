@@ -117,7 +117,6 @@ public:
 
     std::array<std::vector<int64_t>, 4> simplex_ids_to_delete;
     std::array<std::vector<Tuple>, 4> simplex_tuples_to_delete;
-    std::vector<int64_t> cell_ids_to_update_hash;
 
 
     // only returns valid tuples for the state before an operation occurred
@@ -142,8 +141,10 @@ public:
     // for multimesh we need to know which global ids are modified to trigger
     // for every simplex dimension (We have 4 in tetmesh):
     // a list of [simplex index, {all versions of that simplex}]
+#if defined(WMTK_ENABLE_MULTIMESH)
     std::vector<std::vector<std::tuple<int64_t, std::vector<Tuple>>>>
         global_simplex_ids_with_potentially_modified_hashes;
+#endif
 
     bool is_collapse = false;
 

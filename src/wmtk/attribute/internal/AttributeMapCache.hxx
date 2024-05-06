@@ -1,13 +1,13 @@
 #include <wmtk/Types.hpp>
+#include <wmtk/attribute/AccessorBase.hpp>
 #include <wmtk/utils/Rational.hpp>
-#include "AccessorBase.hpp"
-#include "AttributeCache.hpp"
+#include "AttributeMapCache.hpp"
 
-namespace wmtk::attribute {
+namespace wmtk::attribute::internal {
 
 
 template <typename T>
-inline AttributeCache<T>::AttributeCache()
+inline AttributeMapCache<T>::AttributeMapCache()
 #if defined(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
     : m_buffer(32 * sizeof(typename DataStorage::value_type))
     , m_resource(m_buffer.data(), m_buffer.size())
@@ -15,22 +15,33 @@ inline AttributeCache<T>::AttributeCache()
 #endif
 {} //: m_data({m_resource}) {}
 template <typename T>
-inline AttributeCache<T>::~AttributeCache() = default;
+inline AttributeMapCache<T>::~AttributeMapCache() = default;
 
 template <typename T>
-inline auto AttributeCache<T>::find_value(int64_t index) const ->
+inline auto AttributeMapCache<T>::find_value(int64_t index) const ->
     typename DataStorage::const_iterator
 {
     return m_data.find(index);
 }
 template <typename T>
-inline bool AttributeCache<T>::is_value(const typename DataStorage::const_iterator& it) const
+inline bool AttributeMapCache<T>::is_value(const typename DataStorage::const_iterator& it) const
 {
     return it != m_data.end();
 }
 
 template <typename T>
-inline void AttributeCache<T>::clear()
+inline auto AttributeMapCache<T>::get_value(int64_t index, size_t) const -> const T*
+{
+    if (auto mapit = find_value(index); is_value(mapit)) {
+        const auto& d = mapit->second;
+        return d.data.data();
+    }
+    return nullptr;
+}
+
+
+template <typename T>
+inline void AttributeMapCache<T>::clear()
 {
     m_data.clear();
 }
@@ -38,7 +49,9 @@ inline void AttributeCache<T>::clear()
 
 template <typename T>
 template <typename Derived>
-inline void AttributeCache<T>::try_caching(int64_t index, const Eigen::MatrixBase<Derived>& value)
+inline void AttributeMapCache<T>::try_caching(
+    int64_t index,
+    const Eigen::MatrixBase<Derived>& value)
 {
     // basically try_emplace but optimizes to avoid accessing the pointed-to value
     auto [it, did_insert] = m_data.try_emplace(index, AttributeCacheData<T>{});
@@ -48,7 +61,7 @@ inline void AttributeCache<T>::try_caching(int64_t index, const Eigen::MatrixBas
 }
 
 template <typename T>
-inline void AttributeCache<T>::try_caching(int64_t index, const T& value)
+inline void AttributeMapCache<T>::try_caching(int64_t index, const T& value)
 {
     // basically try_emplace but optimizes to avoid accessing the pointed-to value
     auto [it, did_insert] = m_data.try_emplace(index, AttributeCacheData<T>{});
@@ -59,7 +72,7 @@ inline void AttributeCache<T>::try_caching(int64_t index, const T& value)
 
 
 template <typename T>
-inline void AttributeCache<T>::apply_to(Attribute<T>& attribute) const
+inline void AttributeMapCache<T>::apply_to(Attribute<T>& attribute) const
 {
     for (const auto& [index, data] : m_data) {
         {
@@ -70,7 +83,7 @@ inline void AttributeCache<T>::apply_to(Attribute<T>& attribute) const
     }
 }
 template <typename T>
-inline void AttributeCache<T>::apply_to(AttributeCache<T>& other) const
+inline void AttributeMapCache<T>::apply_to(AttributeMapCache<T>& other) const
 {
     auto& o_data = other.m_data;
 
@@ -84,10 +97,11 @@ inline void AttributeCache<T>::apply_to(AttributeCache<T>& other) const
 }
 
 template <typename T>
-inline void AttributeCache<T>::apply_to(const Attribute<T>& attribute, std::vector<T>& other) const
+inline void AttributeMapCache<T>::apply_to(const Attribute<T>& attribute, std::vector<T>& other)
+    const
 {
     for (auto& [index, data] : m_data) {
         attribute.vector_attribute(index, other) = data.data;
     }
 }
-} // namespace wmtk::attribute
+} // namespace wmtk::attribute::internal

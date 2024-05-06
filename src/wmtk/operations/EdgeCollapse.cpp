@@ -4,8 +4,13 @@
 #include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
 #include "attribute_new/CollapseNewAttributeStrategy.hpp"
 
+#if defined(WMTK_ENABLE_MULTIMESH)
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include "utils/multi_mesh_edge_collapse.hpp"
+#else
+#include <wmtk/utils/metaprogramming/as_mesh_variant.hpp>
+#include "utils/EdgeCollapseFunctor.hpp"
+#endif
 
 
 namespace wmtk::operations {
@@ -34,16 +39,36 @@ EdgeCollapse::EdgeCollapse(Mesh& m)
         }
     };
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     multimesh::MultiMeshVisitor custom_attribute_collector(collect_attrs);
     custom_attribute_collector.execute_from_root(m);
+#else
+    collect_attrs(m);
+#endif
 }
 
 std::vector<simplex::Simplex> EdgeCollapse::execute(const simplex::Simplex& simplex)
 {
+#if defined(WMTK_ENABLE_MULTIMESH)
+
     return utils::multi_mesh_edge_collapse_with_modified_simplices(
         mesh(),
         simplex,
         m_new_attr_strategies);
+#else
+    return std::visit([&](auto&& mesh_ref) noexcept -> std::vector<simplex::Simplex> {
+
+            using T = std::decay_t<typename std::decay_t<decltype(mesh_ref)>::type>;
+            if constexpr(!(std::is_same_v<Mesh,T> || std::is_same_v<PointMesh,T>)) {
+           auto edge_op_data = utils::EdgeCollapseFunctor{}(mesh_ref.get(), simplex);
+
+           return {simplex::Simplex::vertex(edge_op_data.m_output_tuple)};
+           } else {
+           return {};
+           }
+           }, wmtk::utils::metaprogramming::as_mesh_variant(mesh()));
+
+#endif
 }
 
 std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives(

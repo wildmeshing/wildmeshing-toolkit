@@ -88,6 +88,9 @@ inline void AttributeScopeStack<T>::change_to_previous_scope()
     } else {
         m_active++;
     }
+#if defined(WMTK_ATTRIBUTE_SCOPE_STACK_CACHE_ACTIVE)
+    m_at_current_scope = (m_active == m_scopes.end());
+#endif
 }
 
 template <typename T>
@@ -97,6 +100,9 @@ inline void AttributeScopeStack<T>::change_to_next_scope()
         assert(!empty());
         assert(m_active == m_scopes.end()); // just making sure the definition doesn't change as
                                             // this should be m_scopes.end()-1
+#if defined(WMTK_ATTRIBUTE_SCOPE_STACK_CACHE_ACTIVE)
+        m_at_current_scope = false;
+#endif
         m_active--;
     } else {
         m_active--;
@@ -105,12 +111,21 @@ inline void AttributeScopeStack<T>::change_to_next_scope()
 template <typename T>
 inline void AttributeScopeStack<T>::change_to_current_scope()
 {
+#if defined(WMTK_ATTRIBUTE_SCOPE_STACK_CACHE_ACTIVE)
+    m_at_current_scope = true;
+#endif
+    // m_back = m_scopes.end()-1;
     m_active = m_scopes.end();
 }
 template <typename T>
 inline bool AttributeScopeStack<T>::at_current_scope() const
 {
+#if defined(WMTK_ATTRIBUTE_SCOPE_STACK_CACHE_ACTIVE)
+    assert(m_at_current_scope == (m_active == m_scopes.end()));
+    return m_at_current_scope;
+#else
     return m_active == m_scopes.end();
+#endif
 }
 template <typename T>
 inline bool AttributeScopeStack<T>::writing_enabled() const

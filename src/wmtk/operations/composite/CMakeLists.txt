@@ -15,7 +15,15 @@ set(SRC_FILES
     TetFaceSwap.cpp
 
 
+)
+
+
+target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+
+if(WMTK_ENABLE_MULTIMESH)
+target_sources(wildmeshing_toolkit PRIVATE 
+
     ProjectOperation.cpp
     ProjectOperation.hpp
-)
-target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+    )
+endif()

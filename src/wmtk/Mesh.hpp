@@ -13,8 +13,10 @@
 // need to return this header
 #include "attribute/Accessor.hpp"
 
+#if defined(WMTK_ENABLE_MULTIMESH)
 // is a member of the Mesh class
 #include "MultiMeshManager.hpp"
+#endif
 
 // basic data for the class
 #include <wmtk/simplex/Simplex.hpp>
@@ -26,7 +28,7 @@
 #include "attribute/MeshAttributes.hpp"
 #include "multimesh/attribute/AttributeScopeHandle.hpp"
 
-#include "multimesh/attribute/UseParentScopeRAII.hpp"
+#include "attribute/UseParentScopeRAII.hpp"
 
 #include "simplex/Simplex.hpp"
 
@@ -51,12 +53,18 @@ class EdgeCollapse;
 class EdgeSplit;
 class EdgeOperationData;
 namespace utils {
+class EdgeCollapseFunctor;
+class EdgeSplitFunctor;
+#if defined(WMTK_ENABLE_MULTIMESH)
 class UpdateEdgeOperationMultiMeshMapFunctor;
-}
+#endif
+} // namespace utils
+
 } // namespace operations
 
 namespace simplex {
 class RawSimplex;
+class SimplexCollection;
 namespace utils {
 class SimplexComparisons;
 }
@@ -65,6 +73,7 @@ class SimplexComparisons;
 namespace io {
 class ParaviewWriter;
 }
+#if defined(WMTK_ENABLE_MULTIMESH)
 namespace multimesh {
 template <int64_t cell_dimension, typename NodeFunctor>
 class MultiMeshSimplexVisitor;
@@ -81,6 +90,7 @@ class TupleTag;
 }
 } // namespace utils
 } // namespace multimesh
+#endif
 
 
 // NOTE: the implementation of this class is split into several files to improve clang-format
@@ -97,9 +107,10 @@ public:
     friend class attribute::Accessor;
     friend class io::ParaviewWriter;
     friend class HDF5Reader;
-    friend class multimesh::attribute::UseParentScopeRAII;
-    friend class multimesh::MultiMeshManager;
     friend class attribute::AttributeManager;
+    friend class attribute::UseParentScopeRAII;
+#if defined(WMTK_ENABLE_MULTIMESH)
+    friend class multimesh::MultiMeshManager;
     template <int64_t cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshSimplexVisitor;
     template <typename Visitor>
@@ -111,6 +122,7 @@ public:
     friend class multimesh::attribute::AttributeScopeHandle;
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
+#endif
     friend class simplex::RawSimplex;
     friend class simplex::SimplexCollection;
     friend class simplex::utils::SimplexComparisons;
@@ -118,16 +130,21 @@ public:
     friend class operations::EdgeCollapse;
     friend class operations::EdgeSplit;
     friend class operations::EdgeOperationData;
+    friend class operations::utils::EdgeCollapseFunctor;
+    friend class operations::utils::EdgeSplitFunctor;
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
         const simplex::SimplexCollection& vertex_closed_star,
         attribute::Accessor<int64_t>& parent_hash_accessor);
 
+    // TODO: refactor this name perhaps to indicate that this lies in a multimesh file?
     friend void operations::utils::update_vertex_operation_hashes(
         Mesh& m,
         const Tuple& vertex,
         attribute::Accessor<int64_t>& hash_accessor);
+#endif
 
 
     int64_t top_cell_dimension() const;
@@ -252,7 +269,11 @@ public:
 
 
     // creates a scope as int64_t as the AttributeScopeHandle exists
+#if defined(WMTK_ENABLE_MULTIMESH)
     [[nodiscard]] multimesh::attribute::AttributeScopeHandle create_scope();
+#else
+    [[nodiscard]] attribute::AttributeScopeHandle create_scope();
+#endif
 
 
     /**
@@ -485,6 +506,7 @@ public:
     virtual bool is_removed(const Tuple& tuple) const;
 
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     //============================
     // MultiMesh interface
     //============================
@@ -773,17 +795,6 @@ public:
      */
     bool can_map(const Mesh& other_mesh, const simplex::Simplex& my_simplex) const;
 
-    /**
-     * @brief wrapper function to update hashes (for parent mesh *this and its child meshes) after
-     * vertex operations
-     *
-     * @param vertex operating vertex tuple
-     * @param hash_accessor hash accesor of the parent mesh (*this)
-     */
-    void update_vertex_operation_hashes(
-        const Tuple& vertex,
-        attribute::Accessor<int64_t>& hash_accessor);
-
 
     /**
      * @brief returns if the mesh has a child mesh in the given dimension
@@ -803,6 +814,7 @@ public:
      * @returns true if they are part of the same structure
      **/
     bool is_from_same_multi_mesh_structure(const Mesh& other) const;
+#endif
 
 protected:
     // creates a scope as int64_t as the AttributeScopeHandle exists
@@ -849,7 +861,9 @@ protected: // THese are protected so unit tests can access - do not use manually
            // classes?
     attribute::AttributeManager m_attribute_manager;
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     multimesh::MultiMeshManager m_multi_mesh_manager;
+#endif
 
     int64_t m_top_cell_dimension = -1;
 
@@ -959,7 +973,7 @@ inline std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handl
 template <typename Functor, typename... Args>
 inline decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args) const
 {
-    multimesh::attribute::UseParentScopeRAII raii(const_cast<Mesh&>(*this));
+    attribute::UseParentScopeRAII raii(const_cast<Mesh&>(*this));
 
     return std::invoke(std::forward<Functor>(f), std::forward<Args>(args)...);
 }

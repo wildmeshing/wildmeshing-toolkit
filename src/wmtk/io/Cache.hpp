@@ -81,7 +81,7 @@ public:
      */
     std::shared_ptr<Mesh> read_mesh(const std::string& name) const;
 
-    void load_multimesh(const std::string& name) const;
+    void load_mesh(const std::string& name) const;
 
     /**
      * @brief Write a mesh to cache.
@@ -117,7 +117,9 @@ public:
      */
     bool import_cache(const std::filesystem::path& import_location);
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     std::vector<int64_t> absolute_multi_mesh_id(const std::string& name) const;
+#endif
 
     /**
      * @brief Compare two caches for equality.
@@ -145,12 +147,16 @@ public:
 
 
     /// Unsets the mesh held by each cached mm - useful for debugging whether cache loading works
-    void flush_multimeshes();
+    void flush_meshes();
 
 private:
     std::filesystem::path m_cache_dir;
     std::map<std::string, std::filesystem::path> m_file_paths; // name --> file location
+#if defined(WMTK_ENABLE_MULTIMESH)
     mutable std::map<std::string, CachedMultiMesh> m_multimeshes;
+#else
+    mutable std::map<std::string, std::shared_ptr<Mesh>> m_meshes;
+#endif
     bool m_delete_cache = true;
 
     inline static const std::string m_cache_content_name =

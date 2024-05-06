@@ -3,7 +3,7 @@
 namespace wmtk {
 
 class Mesh;
-namespace multimesh::attribute {
+namespace attribute {
 class UseParentScopeRAII
 {
 public:
@@ -13,5 +13,5 @@ public:
 private:
     Mesh& m_mesh;
 };
-} // namespace multimesh::attribute
+} // namespace attribute
 } // namespace wmtk

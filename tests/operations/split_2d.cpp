@@ -6,7 +6,6 @@
 #include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
-#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
@@ -349,6 +348,8 @@ TEST_CASE("hash_update", "[operations][2D]")
         DEBUG_TriMesh m = single_triangle();
         REQUIRE(m.is_connectivity_valid());
 
+        auto scope = m.create_scope();
+
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
@@ -366,6 +367,7 @@ TEST_CASE("hash_update", "[operations][2D]")
         DEBUG_TriMesh m = edge_region();
         REQUIRE(m.is_connectivity_valid());
 
+        auto scope = m.create_scope();
         const Tuple edge = m.edge_tuple_between_v1_v2(3, 7, 5);
 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
@@ -668,6 +670,7 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
             m = single_triangle();
         }
         REQUIRE(m.is_connectivity_valid());
+        auto scope = m.create_scope();
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         const int64_t edge_id = m.id(edge, PE);
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
@@ -706,6 +709,7 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
             m.initialize(tris);
         }
         REQUIRE(m.is_connectivity_valid());
+        auto scope = m.create_scope();
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         const int64_t edge_id = m.id(edge, PE);
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();

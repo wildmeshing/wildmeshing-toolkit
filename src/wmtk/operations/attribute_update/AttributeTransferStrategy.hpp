@@ -116,8 +116,12 @@ auto SingleAttributeTransferStrategy<MyType, ParentType>::read_parent_values(
 {
     auto acc =
         m_parent_handle.mesh().create_const_accessor(m_parent_handle.template as<ParentType>());
+#if defined(WMTK_ENABLE_MULTIMESH)
     auto simps =
         AttributeTransferStrategyBase::get_parent_simplices(handle(), m_parent_handle, my_simplex);
+#else
+    std::vector<Tuple> simps = {my_simplex.tuple()};
+#endif
 
     MatrixX<ParentType> A(
         m_parent_handle.mesh().get_attribute_dimension(m_parent_handle.template as<ParentType>()),

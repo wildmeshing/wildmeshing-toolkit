@@ -38,7 +38,6 @@ public:
         const Tuple& input_tuple,
         PrimitiveType pt) const final override;
 
-private:
     std::vector<std::array<Tuple, 2>> input_ear_simplices(
         const EdgeOperationData& ret_data,
         const Tuple& input_tuple,

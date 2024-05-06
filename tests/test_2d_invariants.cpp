@@ -14,7 +14,9 @@
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/TetMeshSubstructureTopologyPreservingInvariant.hpp>
 #include <wmtk/invariants/TriMeshSubstructureTopologyPreservingInvariant.hpp>
+#if defined(WMTK_ENABLE_MULTIMESH)
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
+#endif
 #include <wmtk/utils/orient.hpp>
 
 using namespace wmtk;
@@ -65,6 +67,7 @@ TEST_CASE("MinIncidentValenceInvariant", "[invariants][2D]")
     }
 }
 
+#if defined(WMTK_ENABLE_MULTIMESH)
 TEST_CASE("MultiMeshEdgeTopologyInvariant", "[invariants][2D]")
 {
     DEBUG_TriMesh mesh = single_triangle();
@@ -107,6 +110,7 @@ TEST_CASE("MultiMeshEdgeTopologyInvariant", "[invariants][2D]")
     std::cout << inv.before(Simplex::edge(e0)) << std::endl;
     std::cout << inv.before(Simplex::edge(e1)) << std::endl;
 }
+#endif
 
 TEST_CASE("SubstructureTopologyPreservingInvariant_tri", "[invariants]")
 {

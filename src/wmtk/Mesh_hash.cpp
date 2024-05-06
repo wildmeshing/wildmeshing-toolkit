@@ -6,7 +6,9 @@ std::map<std::string, const wmtk::utils::Hashable*> Mesh::child_hashables() cons
 {
     std::map<std::string, const wmtk::utils::Hashable*> ret;
     ret["attribute_manager"] = &m_attribute_manager;
+#if defined(WMTK_ENABLE_MULTIMESH)
     ret["multimesh_manager"] = &m_multi_mesh_manager;
+#endif
     return ret;
 }
 std::map<std::string, std::size_t> Mesh::child_hashes() const

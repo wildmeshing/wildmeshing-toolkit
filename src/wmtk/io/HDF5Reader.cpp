@@ -9,6 +9,15 @@
 #pragma GCC diagnostic pop
 #endif
 
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+#include <string>
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
 #include "HDF5Reader.hpp"
 
 #include <wmtk/Mesh.hpp>
@@ -34,13 +43,16 @@ HDF5Reader::HDF5Reader() {}
 
 std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
 {
+#if defined(WMTK_ENABLE_MULTIMESH)
     constexpr static int64_t TWO_TUPLE_SIZE = wmtk::multimesh::utils::TWO_TUPLE_SIZE;
     constexpr static int64_t DEFAULT_TUPLES_VALUES = wmtk::multimesh::utils::DEFAULT_TUPLES_VALUES;
+#endif
 
     h5pp::File hdf5_file(filename, h5pp::FileAccess::READONLY);
 
     auto root = read_mesh(hdf5_file, "WMTK");
 
+#if defined(WMTK_ENABLE_MULTIMESH)
     if (hdf5_file.linkExists("WMTK/multimesh")) {
         std::map<std::vector<int64_t>, std::shared_ptr<Mesh>> meshes;
         meshes[{}] = root;
@@ -106,6 +118,7 @@ std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
         }
 #endif
     }
+#endif
 
 
     return root;

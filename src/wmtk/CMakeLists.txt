@@ -7,7 +7,6 @@ set(SRC_FILES
     Mesh_construction.cpp #the construction/destruction parts of Mesh class
     Mesh.hpp
     Mesh_hash.cpp
-    Mesh_multimesh.cpp
     PointMesh.cpp
     PointMesh.hpp
     EdgeMesh.hpp
@@ -31,7 +30,6 @@ set(SRC_FILES
     Types.hpp
     Scheduler.hpp
     Scheduler.cpp
-    MultiMeshManager.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
@@ -43,7 +41,12 @@ add_subdirectory(operations)
 add_subdirectory(autogen)
 #
 add_subdirectory(invariants)
+if(WMTK_ENABLE_MULTIMESH)
+    target_sources(wildmeshing_toolkit PRIVATE 
+    Mesh_multimesh.cpp
+        MultiMeshManager.hpp)
 add_subdirectory(multimesh)
+endif()
 #
 add_subdirectory(function)
 

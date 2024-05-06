@@ -79,7 +79,7 @@ auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> Incid
         face_data.ears.begin(),
         [&](const Tuple& edge) {
             // accessing ear face id through FF to make it work also at boundaries
-            const int64_t ear_fid = ff_accessor.vector_attribute(edge)[edge.m_local_eid];
+            const int64_t ear_fid = ff_accessor.const_vector_attribute(edge)[edge.m_local_eid];
 
             return EarData{
                 /*.fid = */ ear_fid,
@@ -125,6 +125,8 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
         std::swap(m_incident_face_datas[0], m_incident_face_datas[1]);
     }
 
+
+#if defined(WMTK_ENABLE_MULTIMESH)
     // update hash on all faces in the two-ring neighborhood
     simplex::SimplexCollection hash_update_region(m);
     for (const simplex::Simplex& v : edge_closed_star.simplex_vector(PrimitiveType::Vertex)) {
@@ -132,16 +134,10 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
         hash_update_region.add(v_closed_star);
     }
     hash_update_region.sort_and_clean();
-
     global_simplex_ids_with_potentially_modified_hashes.resize(3);
     simplex::SimplexCollection faces(m_mesh);
 
     for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-
-        cell_ids_to_update_hash.push_back(m_mesh.id(f));
-#endif
-
         faces.add(wmtk::simplex::faces(m, f, false));
         faces.add(f);
     }
@@ -169,6 +165,11 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     // load(PrimitiveType::Vertex, 0);
     // load(PrimitiveType::Edge, 1);
     // load(PrimitiveType::Face, 2);
+#else
+    //for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
+    //    cell_ids_to_update_hash.push_back(m_mesh.id(f));
+    //}
+#endif
 }
 
 void TriMesh::TriMeshOperationExecutor::delete_simplices()
@@ -183,7 +184,22 @@ void TriMesh::TriMeshOperationExecutor::delete_simplices()
 void TriMesh::TriMeshOperationExecutor::update_cell_hash()
 {
 #if defined(WMTK_ENABLE_HASH_UPDATE)
-    m_mesh.update_cell_hashes(cell_ids_to_update_hash, hash_accessor);
+    std::vector<int64_t> cell_ids_to_update_hash;
+    m_mesh.parent_scope([&](){
+
+    const simplex::SimplexCollection edge_closed_star =
+        simplex::closed_star(m_mesh, simplex::Simplex::edge(m_operating_tuple));
+    // update hash on all faces in the two-ring neighborhood
+    simplex::SimplexCollection hash_update_region(m_mesh);
+    for (const simplex::Simplex& v : edge_closed_star.simplex_vector(PrimitiveType::Vertex)) {
+        const simplex::SimplexCollection v_closed_star = simplex::top_dimension_cofaces(m_mesh, v);
+        hash_update_region.add(v_closed_star);
+    }
+    hash_update_region.sort_and_clean();
+    for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
+        cell_ids_to_update_hash.push_back(m_mesh.id(f));
+    }
+            });
 #endif
 }
 
@@ -319,8 +335,8 @@ void TriMesh::TriMeshOperationExecutor::connect_faces_across_spine()
     const int64_t f_old_bottom = m_incident_face_datas[1].fid;
     const int64_t f0_bottom = m_incident_face_datas[1].split_f[0];
     const int64_t f1_bottom = m_incident_face_datas[1].split_f[1];
-    auto ff_old_top = ff_accessor.index_access().vector_attribute(f_old_top);
-    auto ff_old_bottom = ff_accessor.index_access().vector_attribute(f_old_bottom);
+    auto ff_old_top = ff_accessor.index_access().const_vector_attribute(f_old_top);
+    auto ff_old_bottom = ff_accessor.index_access().const_vector_attribute(f_old_bottom);
     assert(m_mesh.capacity(PrimitiveType::Triangle) > f0_top);
     assert(m_mesh.capacity(PrimitiveType::Triangle) > f1_top);
     assert(m_mesh.capacity(PrimitiveType::Triangle) > f0_bottom);

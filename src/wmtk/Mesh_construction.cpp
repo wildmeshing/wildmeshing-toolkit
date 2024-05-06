@@ -11,7 +11,9 @@ namespace wmtk {
 
 Mesh::Mesh(Mesh&& other)
     : m_attribute_manager(std::move(other.m_attribute_manager))
+#if defined(WMTK_ENABLE_MULTIMESH)
     , m_multi_mesh_manager(std::move(other.m_multi_mesh_manager))
+#endif
     , m_top_cell_dimension(other.m_top_cell_dimension)
 {
     m_flag_handles = std::move(other.m_flag_handles);
@@ -22,7 +24,9 @@ Mesh::Mesh(Mesh&& other)
 Mesh& Mesh::operator=(Mesh&& other)
 {
     m_attribute_manager = std::move(other.m_attribute_manager);
+#if defined(WMTK_ENABLE_MULTIMESH)
     m_multi_mesh_manager = std::move(other.m_multi_mesh_manager);
+#endif
     m_flag_handles = std::move(other.m_flag_handles);
     m_top_cell_dimension = other.m_top_cell_dimension;
     m_cell_hash_handle = std::move(other.m_cell_hash_handle);
@@ -36,7 +40,9 @@ Mesh::Mesh(const int64_t& dimension)
 
 Mesh::Mesh(const int64_t& dimension, const int64_t& max_primitive_type_id, PrimitiveType hash_type)
     : m_attribute_manager(max_primitive_type_id + 1)
+#if defined(WMTK_ENABLE_MULTIMESH)
     , m_multi_mesh_manager(max_primitive_type_id + 1)
+#endif
     , m_top_cell_dimension(dimension)
     , m_cell_hash_handle(register_attribute_typed<int64_t>("hash", hash_type, 1, false, 0))
 {

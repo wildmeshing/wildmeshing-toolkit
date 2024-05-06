@@ -106,8 +106,7 @@ auto DEBUG_TriMesh::face_tuple_from_vids(const int64_t v1, const int64_t v2, con
 {
     const attribute::Accessor<int64_t> fv = create_const_accessor<int64_t>(m_fv_handle);
     auto fv_base = create_base_accessor<int64_t>(m_fv_handle);
-    for (int64_t fid = 0; fid < capacity(PrimitiveType::Triangle); ++fid) {
-        Tuple face = face_tuple_from_id(fid);
+    for (const Tuple face : get_all(PrimitiveType::Triangle)) {
         auto fv0 = fv.const_vector_attribute(face);
         bool find_v1 = false, find_v2 = false, find_v3 = false;
         for (int64_t i = 0; i < fv0.size(); ++i) {
