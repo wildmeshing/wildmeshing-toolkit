@@ -34,6 +34,7 @@
 #include <wmtk/function/simplex/AMIPS.hpp>
 
 #include <wmtk/function/utils/amips.hpp>
+#include <wmtk/invariants/CollapseEnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/EdgeValenceInvariant.hpp>
 #include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/FunctionInvariant.hpp>
@@ -537,7 +538,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         collapse->add_invariant(invariant_separate_substructures);
         collapse->add_invariant(link_condition);
         collapse->add_invariant(inversion_invariant);
-        collapse->add_invariant(function_invariant);
+        // collapse->add_invariant(function_invariant);
 
 
         collapse->set_new_attribute_strategy(
@@ -560,10 +561,20 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     };
 
     auto collapse1 = std::make_shared<EdgeCollapse>(*mesh);
+    collapse1->add_invariant(std::make_shared<CollapseEnergyBeforeInvariant>(
+        *mesh,
+        pt_attribute.as<Rational>(),
+        amips_attribute.as<double>(),
+        1));
     collapse1->set_new_attribute_strategy(pt_attribute, clps_strat1);
     setup_collapse(collapse1);
 
     auto collapse2 = std::make_shared<EdgeCollapse>(*mesh);
+    collapse2->add_invariant(std::make_shared<CollapseEnergyBeforeInvariant>(
+        *mesh,
+        pt_attribute.as<Rational>(),
+        amips_attribute.as<double>(),
+        0));
     collapse2->set_new_attribute_strategy(pt_attribute, clps_strat2);
     setup_collapse(collapse2);
 
@@ -945,7 +956,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     smoothing->add_invariant(
         std::make_shared<RoundedInvariant>(*mesh, pt_attribute.as<Rational>()));
     smoothing->add_invariant(inversion_invariant);
-    for (auto& s : update_child_positon) smoothing->add_transfer_strategy(s);
+    for (auto& s : update_child_positon) {
+        smoothing->add_transfer_strategy(s);
+    }
 
     auto proj_smoothing = std::make_shared<ProjectOperation>(smoothing, mesh_constraint_pairs);
     proj_smoothing->use_random_priority() = true;
@@ -1140,6 +1153,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         logger().info("Mesh has {} unrounded vertices", unrounded);
         logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
+
+        logger().info("updating target edge length ...");
+        target_edge_length_update->run_on_all();
+        logger().info("updated target edge length");
 
         // stop at good quality
         if (max_energy <= target_max_amips && is_double) break;
