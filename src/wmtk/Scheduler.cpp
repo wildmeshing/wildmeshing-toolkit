@@ -33,7 +33,7 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
             wmtk::simplex::utils::tuple_vector_to_homogeneous_simplex_vector(op.mesh(), tups, type);
     }
 
-    // logger().debug("Executing on {} simplices", simplices.size());
+    logger().debug("Executing on {} simplices", simplices.size());
     std::vector<std::pair<int64_t, double>> order;
 
     {
@@ -53,6 +53,7 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
             });
         }
     }
+
 
     {
         POLYSOLVE_SCOPED_STOPWATCH("Executing operation", res.executing_time, logger());
