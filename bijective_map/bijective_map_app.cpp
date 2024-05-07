@@ -189,6 +189,93 @@ void back_track_map(path dirPath, std::vector<query_point>& query_points, bool d
     }
 }
 
+void back_track_lines(path dirPath, query_curve& curve, bool do_forward = false)
+{
+    namespace fs = std::filesystem;
+    int maxIndex = -1;
+
+    for (const auto& entry : fs::directory_iterator(dirPath)) {
+        if (entry.path().filename().string().find("operation_log_") != std::string::npos) {
+            ++maxIndex;
+        }
+    }
+
+    for (int i = maxIndex; i >= 0; --i) {
+        int file_id = i;
+        if (do_forward) {
+            file_id = maxIndex - i;
+        }
+        fs::path filePath = dirPath / ("operation_log_" + std::to_string(file_id) + ".json");
+        std::ifstream file(filePath);
+        if (!file.is_open()) {
+            std::cerr << "Failed to open file: " << filePath << std::endl;
+            continue;
+        }
+        json operation_log;
+        file >> operation_log;
+
+        std::cout << "Trace Operations number: " << file_id << std::endl;
+        std::string operation_name;
+        operation_name = operation_log["operation_name"];
+
+        if (operation_name == "MeshConsolidate") {
+            std::cout << "This Operations is Consolidate" << std::endl;
+            std::vector<int64_t> face_ids_maps;
+            std::vector<int64_t> vertex_ids_maps;
+            parse_consolidate_file(operation_log, face_ids_maps, vertex_ids_maps);
+
+            handle_consolidate(face_ids_maps, vertex_ids_maps, curve);
+        } else if (operation_name == "TriEdgeSwap") {
+            std::cout << "This Operations is TriEdgeSwap" << std::endl;
+            // TODO:
+        } else if (operation_name == "EdgeSplit") {
+            std::cout << "This Operations is EdgeSplit" << std::endl;
+            Eigen::MatrixXi F_after, F_before;
+            Eigen::MatrixXd V_after, V_before;
+            std::vector<int64_t> id_map_after, id_map_before;
+            std::vector<int64_t> v_id_map_after, v_id_map_before;
+            parse_edge_split_file(
+                operation_log,
+                V_before,
+                F_before,
+                id_map_before,
+                v_id_map_before,
+                V_after,
+                F_after,
+                id_map_after,
+                v_id_map_after);
+            // TODO:
+        } else if (operation_name == "EdgeCollapse") {
+            std::cout << "This Operations is EdgeCollapse" << std::endl;
+            Eigen::MatrixXi F_after, F_before;
+            Eigen::MatrixXd UV_joint;
+            std::vector<int64_t> v_id_map_joint;
+            std::vector<int64_t> id_map_after, id_map_before;
+            parse_edge_collapse_file(
+                operation_log,
+                UV_joint,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after);
+
+            handle_collapse_edge(
+                UV_joint,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after,
+                curve);
+        } else {
+            // std::cout << "This Operations is not implemented" << std::endl;
+        }
+
+        file.close();
+    }
+}
+
 void forward_track_app(
     const Eigen::MatrixXd& V_in,
     const Eigen::MatrixXi& F_in,
@@ -406,6 +493,127 @@ void render_app(
     writePNG("iso_out", 1280, 800, camera);
 }
 
+#include <igl/triangle_triangle_adjacency.h>
+query_curve generate_curve(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const int curve_length,
+    const int start_face_id)
+{
+    Eigen::MatrixXi TT, TTi;
+    igl::triangle_triangle_adjacency(F, TT, TTi);
+    std::vector<int> visited_faces(F.rows(), 0);
+
+    int current_face_id = start_face_id;
+    int current_edge_id = 0;
+
+    query_curve curve;
+
+    Eigen::Matrix3d bary_coord_ref;
+    bary_coord_ref << 0.5, 0.5, 0, 0, 0.5, 0.5, 0.5, 0, 0.5;
+
+    while (curve.segments.size() < curve_length) {
+        visited_faces[current_face_id] = 1;
+        int next_edge_id = (current_edge_id + 1) % 3;
+        if (TT(current_face_id, next_edge_id) == -1 ||
+            visited_faces[TT(current_face_id, next_edge_id)] == 1) {
+            next_edge_id = (current_edge_id + 2) % 3;
+        }
+
+        if (TT(current_face_id, next_edge_id) == -1 ||
+            visited_faces[TT(current_face_id, next_edge_id)] == 1) {
+            break;
+        }
+
+        std::cout << "current_face_id: " << current_face_id << std::endl;
+        std::cout << "current_edge_id: " << current_edge_id << std::endl;
+        std::cout << "next_edge_id: " << next_edge_id << std::endl;
+        std::cout << "TT.row(current_face_id): " << TT.row(current_face_id) << std::endl;
+        std::cout << "TTi.row(current_face_id): " << TTi.row(current_face_id) << std::endl;
+
+
+        query_segment seg;
+        seg.f_id = current_face_id;
+        seg.bcs[0] = bary_coord_ref.row(current_edge_id);
+        seg.bcs[1] = bary_coord_ref.row(next_edge_id);
+        seg.fv_ids = F.row(current_face_id);
+
+        curve.segments.push_back(seg);
+
+        current_edge_id = TTi(current_face_id, next_edge_id);
+        current_face_id = TT(current_face_id, next_edge_id);
+    }
+
+    curve.next_segment_ids.resize(curve.segments.size());
+    for (int i = 0; i < curve.segments.size() - 1; i++) {
+        curve.next_segment_ids[i] = i + 1;
+    }
+    curve.next_segment_ids[curve.segments.size() - 1] = -1;
+
+    return curve;
+}
+
+void back_track_line_app(
+    const Eigen::MatrixXd& V_in,
+    const Eigen::MatrixXi& F_in,
+    const Eigen::MatrixXd& V_out,
+    const Eigen::MatrixXi& F_out,
+    const path& operation_logs_dir)
+{
+    query_curve curve = generate_curve(V_out, F_out, 10, 0);
+    for (const auto& seg : curve.segments) {
+        std::cout << "f_id: " << seg.f_id << std::endl;
+        std::cout << "bcs: " << seg.bcs[0] << ", " << seg.bcs[1] << std::endl;
+    }
+
+    query_curve curve_origin = curve;
+
+    back_track_lines(operation_logs_dir, curve);
+    {
+        igl::opengl::glfw::Viewer viewer;
+        viewer.data().set_mesh(V_out, F_out);
+        viewer.data().point_size /= 3;
+        for (const auto& seg : curve_origin.segments) {
+            Eigen::MatrixXd pts(2, 3);
+            for (int i = 0; i < 2; i++) {
+                Eigen::Vector3d p(0, 0, 0);
+                for (int j = 0; j < 3; j++) {
+                    p += V_out.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                }
+                pts.row(i) = p;
+            }
+            std::cout << "pts: \n" << pts << std::endl;
+            viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+            viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+            viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+        }
+
+        viewer.launch();
+    }
+    {
+        igl::opengl::glfw::Viewer viewer;
+        viewer.data().set_mesh(V_in, F_in);
+        viewer.data().point_size /= 3;
+        for (const auto& seg : curve.segments) {
+            Eigen::MatrixXd pts(2, 3);
+            for (int i = 0; i < 2; i++) {
+                Eigen::Vector3d p(0, 0, 0);
+                for (int j = 0; j < 3; j++) {
+                    p += V_in.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                }
+                pts.row(i) = p;
+            }
+            viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+            viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+            viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+        }
+
+
+        viewer.launch();
+    }
+}
+
+
 int main(int argc, char** argv)
 {
     CLI::App app{"bijective_map_app"};
@@ -448,6 +656,8 @@ int main(int argc, char** argv)
         back_track_app(V_in, F_in, V_out, F_out, operation_logs_dir);
     } else if (application_name == "render") {
         render_app(V_in, F_in, V_out, F_out, operation_logs_dir);
+    } else if (application_name == "back_lines") {
+        back_track_line_app(V_in, F_in, V_out, F_out, operation_logs_dir);
     }
     return 0;
 }
