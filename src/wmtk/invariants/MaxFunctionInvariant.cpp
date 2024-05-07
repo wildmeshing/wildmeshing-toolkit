@@ -62,6 +62,6 @@ bool MaxFunctionInvariant::after(
     //               << ", after tet size: " << top_dimension_tuples_after.size() << std::endl;
     // }
 
-    return after < before;
+    return after <= before;
 }
 } // namespace wmtk::invariants
