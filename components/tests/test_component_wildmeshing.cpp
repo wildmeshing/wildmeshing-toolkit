@@ -468,7 +468,7 @@ void run_tetwild_test(
         mesh->get_all(PrimitiveType::Tetrahedron).size());
 
     logger().info(
-        "Reference performance of original TetWild: split: 0.08s, collapse: <1s, swap: 0.24s");
+        "Reference performance of original TetWild: split: 0.08s, collapse: 1.81525s, swap: 0.24s");
 }
 
 
@@ -904,7 +904,7 @@ TEST_CASE("tetwild-collapse-simulated", "[components][wildmeshing][.]")
             auto setup_collapse = [&](std::shared_ptr<EdgeCollapse>& collapse) {
                 collapse->add_invariant(invariant_separate_substructures);
                 collapse->add_invariant(link_condition);
-                // collapse->add_invariant(inversion_invariant);
+                collapse->add_invariant(inversion_invariant);
                 // collapse->add_invariant(function_invariant);
 
 
