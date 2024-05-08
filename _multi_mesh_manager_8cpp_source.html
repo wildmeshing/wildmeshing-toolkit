@@ -626,7 +626,7 @@ $(document).ready(function(){initNavTree('_multi_mesh_manager_8cpp_source.html',
 <div class="line"><a name="l00509"></a><span class="lineno">  509</span>&#160;    int64_t depth = my_id.size();</div>
 <div class="line"><a name="l00510"></a><span class="lineno">  510</span>&#160; </div>
 <div class="line"><a name="l00511"></a><span class="lineno">  511</span>&#160;    <span class="keyword">auto</span> [root_ref, tuple] = <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#aefe5179057c978e227c3349d13578c4a">map_up_to_tuples</a>(my_mesh, my_simplex, depth);</div>
-<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> simplex(my_mesh, my_simplex.<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163">primitive_type</a>(), tuple);</div>
+<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> simplex(root_ref, my_simplex.<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163">primitive_type</a>(), tuple);</div>
 <div class="line"><a name="l00513"></a><span class="lineno">  513</span>&#160; </div>
 <div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160;    <span class="keywordflow">return</span> root_ref.m_multi_mesh_manager.map_down_relative_tuples(root_ref, simplex, other_id);</div>
 <div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160;}</div>
@@ -645,7 +645,7 @@ $(document).ready(function(){initNavTree('_multi_mesh_manager_8cpp_source.html',
 <div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;    <span class="keyword">auto</span> [local_root_ref, tuple] = <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#aefe5179057c978e227c3349d13578c4a">map_up_to_tuples</a>(my_mesh, my_simplex, depth);</div>
 <div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;    assert(other_mesh.<a class="code" href="classwmtk_1_1_mesh.html#a74dc5eaa8112266a82dd9f5126d305ea">m_multi_mesh_manager</a>.<a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a4f99281b52dfca1c9baff535917d58a7">is_child</a>(other_mesh, local_root_ref));</div>
 <div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160; </div>
-<div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> simplex(other_mesh, my_simplex.<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163">primitive_type</a>(), tuple);</div>
+<div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> simplex(local_root_ref, my_simplex.<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163">primitive_type</a>(), tuple);</div>
 <div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160; </div>
 <div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;    <span class="keyword">auto</span> other_relative_id = <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ab29db13e4be68177d7ae3c188d7b275e">relative_id</a>(lub_id, other_id);</div>
 <div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;    <span class="keywordflow">return</span> local_root_ref.m_multi_mesh_manager.map_down_relative_tuples(</div>
@@ -659,7 +659,7 @@ $(document).ready(function(){initNavTree('_multi_mesh_manager_8cpp_source.html',
 <div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; my_simplex)<span class="keyword"> const</span></div>
 <div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;<span class="keyword"></span>{</div>
 <div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>(</div>
-<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;        my_mesh,</div>
+<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;        <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a434e74f6b295055a45914d41a784124a">get_root_mesh</a>(my_mesh),</div>
 <div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;        my_simplex.<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163">primitive_type</a>(),</div>
 <div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;        <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a04ea5ec1326046461d38b0dd74ded250">map_to_root_tuple</a>(my_mesh, my_simplex));</div>
 <div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;}</div>
@@ -1446,7 +1446,7 @@ $(document).ready(function(){initNavTree('_multi_mesh_manager_8cpp_source.html',
 <div class="line"><a name="l01329"></a><span class="lineno"> 1329</span>&#160;    int64_t depth = my_id.size();</div>
 <div class="line"><a name="l01330"></a><span class="lineno"> 1330</span>&#160; </div>
 <div class="line"><a name="l01331"></a><span class="lineno"> 1331</span>&#160;    <span class="keyword">auto</span> [root_ref, tuple] = <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#aefe5179057c978e227c3349d13578c4a">map_up_to_tuples</a>(my_mesh, my_simplex, depth);</div>
-<div class="line"><a name="l01332"></a><span class="lineno"> 1332</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> simplex(my_mesh, my_simplex.<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163">primitive_type</a>(), tuple);</div>
+<div class="line"><a name="l01332"></a><span class="lineno"> 1332</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> simplex(root_ref, my_simplex.<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163">primitive_type</a>(), tuple);</div>
 <div class="line"><a name="l01333"></a><span class="lineno"> 1333</span>&#160; </div>
 <div class="line"><a name="l01334"></a><span class="lineno"> 1334</span>&#160;    <span class="keywordflow">return</span> !root_ref.m_multi_mesh_manager.map_down_relative_tuples(root_ref, simplex, other_id)</div>
 <div class="line"><a name="l01335"></a><span class="lineno"> 1335</span>&#160;                .empty();</div>
