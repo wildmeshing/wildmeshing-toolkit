@@ -138,7 +138,7 @@ if(WMTK_ENABLE_TRANSACTION_STACK)
     target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_TRANSACTION_STACK)
 endif()
 
-option(WMTK_ENABLE_HASH_UPDATE "Enable hash update" OFF)
+option(WMTK_ENABLE_HASH_UPDATE "Enable hash update" ON)
 if(WMTK_ENABLE_HASH_UPDATE)
     target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_ENABLE_HASH_UPDATE)
 endif()
