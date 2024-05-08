@@ -120,16 +120,21 @@ $(document).ready(function(){initNavTree('tuple__vector__to__homogeneous__simple
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_tuple_8hpp.html">wmtk/Tuple.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_simplex_8hpp.html">wmtk/simplex/Simplex.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1simplex_1_1utils.html">wmtk::simplex::utils</a> {</div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;std::vector&lt;Simplex&gt; <a class="code" href="namespacewmtk_1_1simplex_1_1utils.html#abc97acf22bd5eb87df2b16ad3b372cfb">tuple_vector_to_homogeneous_simplex_vector</a>(</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp;,</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;    <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> primitive);</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;}</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk.html">wmtk</a> {</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">class </span>Mesh;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;}</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1simplex_1_1utils.html">wmtk::simplex::utils</a> {</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;std::vector&lt;Simplex&gt; <a class="code" href="namespacewmtk_1_1simplex_1_1utils.html#a358c30268c189fc8f00538b520aab4f8">tuple_vector_to_homogeneous_simplex_vector</a>(</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    <span class="keyword">const</span> Mesh&amp; m,</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp;,</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> primitive);</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;}</div>
 <div class="ttc" id="a_simplex_8hpp_html"><div class="ttname"><a href="_simplex_8hpp.html">Simplex.hpp</a></div></div>
 <div class="ttc" id="a_tuple_8hpp_html"><div class="ttname"><a href="_tuple_8hpp.html">Tuple.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1simplex_1_1utils_html"><div class="ttname"><a href="namespacewmtk_1_1simplex_1_1utils.html">wmtk::simplex::utils</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00060">Mesh.hpp:60</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1simplex_1_1utils_html_abc97acf22bd5eb87df2b16ad3b372cfb"><div class="ttname"><a href="namespacewmtk_1_1simplex_1_1utils.html#abc97acf22bd5eb87df2b16ad3b372cfb">wmtk::simplex::utils::tuple_vector_to_homogeneous_simplex_vector</a></div><div class="ttdeci">std::vector&lt; Simplex &gt; tuple_vector_to_homogeneous_simplex_vector(const std::vector&lt; Tuple &gt; &amp;tups, PrimitiveType primitive)</div><div class="ttdef"><b>Definition:</b> <a href="tuple__vector__to__homogeneous__simplex__vector_8cpp_source.html#l00007">tuple_vector_to_homogeneous_simplex_vector.cpp:7</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1simplex_1_1utils_html_a358c30268c189fc8f00538b520aab4f8"><div class="ttname"><a href="namespacewmtk_1_1simplex_1_1utils.html#a358c30268c189fc8f00538b520aab4f8">wmtk::simplex::utils::tuple_vector_to_homogeneous_simplex_vector</a></div><div class="ttdeci">std::vector&lt; Simplex &gt; tuple_vector_to_homogeneous_simplex_vector(const Mesh &amp;m, const std::vector&lt; Tuple &gt; &amp;tups, PrimitiveType primitive)</div><div class="ttdef"><b>Definition:</b> <a href="tuple__vector__to__homogeneous__simplex__vector_8cpp_source.html#l00010">tuple_vector_to_homogeneous_simplex_vector.cpp:10</a></div></div>
+<div class="ttc" id="anamespacewmtk_html"><div class="ttname"><a href="namespacewmtk.html">wmtk</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8hpp_source.html#l00005">Accessor.hpp:5</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">wmtk::PrimitiveType</a></div><div class="ttdeci">PrimitiveType</div><div class="ttdef"><b>Definition:</b> <a href="_primitive_type_8hpp_source.html#l00009">PrimitiveType.hpp:9</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

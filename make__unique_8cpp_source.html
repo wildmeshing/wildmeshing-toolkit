@@ -137,7 +137,7 @@ $(document).ready(function(){initNavTree('make__unique_8cpp_source.html',''); in
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    std::vector&lt;Simplex&gt; simps;</div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    simps.reserve(ts.size());</div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    std::transform(ts.begin(), ts.end(), std::back_inserter(simps), [&amp;](<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; t) {</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        return Simplex(primitive, t);</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        return Simplex(m, primitive, t);</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    });</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    simps = <a class="code" href="namespacewmtk_1_1simplex_1_1utils.html#accca10e19c43ac50ef093dceba76e556">make_unique</a>(m, simps);</div>

@@ -154,6 +154,7 @@ $(document).ready(function(){initNavTree('functions_s.html',''); initResizable()
 , <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a54a0f1a318e8ee28844c041daf3357ad">wmtk::attribute::Attribute&lt; T &gt;</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#aa3ec264b910f81761e79b90912fb9360">wmtk::attribute::AttributeScopeStack&lt; T &gt;</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#a95b2d6571f44ef3b323e8b7255eed627">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#aed3434f482b78ff644d3a94367fac8e6">wmtk::attribute::internal::AttributeTransactionStack&lt; T &gt;</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#aa918e413e1d1d46699d12fab44504705">wmtk::attribute::TupleAccessor&lt; MeshType, Dim &gt;</a>
 </li>
 <li>Scheduler()
@@ -227,7 +228,7 @@ $(document).ready(function(){initNavTree('functions_s.html',''); initResizable()
 : <a class="el" href="classwmtk_1_1operations_1_1_operation.html#a42a8a0517f52e496690401a56f1d2224">wmtk::operations::Operation</a>
 </li>
 <li>set_rib_strategy()
-: <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#af72084a0af62c320bbaa2e4387b68b26">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>
+: <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a736dff31e721f6af81a578fd5ad41eab">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>
 </li>
 <li>set_seed()
 : <a class="el" href="classwmtk_1_1utils_1_1_random_seed_singleton.html#ae4ccdf9daa8caab99d352e0cbad64052">wmtk::utils::RandomSeedSingleton</a>
@@ -275,6 +276,9 @@ $(document).ready(function(){initNavTree('functions_s.html',''); initResizable()
 </li>
 <li>simplex::RawSimplex
 : <a class="el" href="classwmtk_1_1_mesh.html#a07e92d16749ee808899eedf5e90ce32e">wmtk::Mesh</a>
+</li>
+<li>simplex::Simplex
+: <a class="el" href="classwmtk_1_1_mesh.html#ad56a1fc249b93c48ee7154848b837f57">wmtk::Mesh</a>
 </li>
 <li>simplex::SimplexCollection
 : <a class="el" href="classwmtk_1_1_mesh.html#aa13464adeda3c854d81ee8db54e5d7ca">wmtk::Mesh</a>
@@ -329,9 +333,11 @@ $(document).ready(function(){initNavTree('functions_s.html',''); initResizable()
 : <a class="el" href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#a7e31f2d5f0bfe0f8cf08358f084a9062">wmtk::operations::SingleAttributeTransferStrategy&lt; MyType, ParentType &gt;</a>
 </li>
 <li>size()
-: <a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache.html#a350fb871b2911bc4d45e280cc82dbf44">wmtk::attribute::AttributeCache&lt; T &gt;</a>
-, <a class="el" href="classwmtk_1_1attribute_1_1_attribute_manager.html#a87216c73c02b436c7f965faa52553f56">wmtk::attribute::AttributeManager</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_attribute_manager.html#a87216c73c02b436c7f965faa52553f56">wmtk::attribute::AttributeManager</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a11a4f479495b545590bb5942ad42c42c">wmtk::attribute::AttributeScopeStack&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html#a6d265527d429fd378b8a942b699b50bb">wmtk::attribute::internal::AttributeFlatCache&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_attribute_map_cache.html#a1f80a61a6cdc5936fa81302f2e4a2ef2">wmtk::attribute::internal::AttributeMapCache&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a2f6183956a3f7d8ace50bcf1c7fda7ea">wmtk::attribute::internal::AttributeTransactionStack&lt; T &gt;</a>
 , <a class="el" href="classwmtk_1_1components_1_1internal_1_1_disk_options.html#acb420f10498a7eea41c4d13c79333a3a">wmtk::components::internal::DiskOptions</a>
 , <a class="el" href="classwmtk_1_1components_1_1internal_1_1_triangle_fan_options.html#aa443c623c0e2bae162054ea421dffd63">wmtk::components::internal::TriangleFanOptions</a>
 , <a class="el" href="classwmtk_1_1invariants_1_1_invariant_collection.html#ad170522939dad1903745e7217f280fb8">wmtk::invariants::InvariantCollection</a>
@@ -443,7 +449,7 @@ $(document).ready(function(){initNavTree('functions_s.html',''); initResizable()
 : <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a80a933245cf5f9f7f79e28b51d848418">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>
 </li>
 <li>standard_split_strategy()
-: <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a82f4cc71d4768b0454a27c287a4a5e69">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>
+: <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a1202351174a166f8af7a63edf5ebfeb7">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>
 </li>
 <li>stats()
 : <a class="el" href="classwmtk_1_1_scheduler.html#a8f6696d2721e020eb8fd9afac9b1ac6f">wmtk::Scheduler</a>

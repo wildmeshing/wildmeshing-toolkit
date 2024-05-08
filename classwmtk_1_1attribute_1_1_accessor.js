@@ -42,7 +42,7 @@ var classwmtk_1_1attribute_1_1_accessor =
     [ "vector_attribute", "classwmtk_1_1attribute_1_1_accessor.html#ada02f7b5b2b246e74bcc19c53967b7c8", null ],
     [ "vector_attribute", "classwmtk_1_1attribute_1_1_accessor.html#a3d892570a7adb851051afe1da9dba682", null ],
     [ "vector_attribute", "classwmtk_1_1attribute_1_1_accessor.html#aec680196869b41508f8b17654ae5c1f0", null ],
-    [ "AttributeCache< T >", "classwmtk_1_1attribute_1_1_accessor.html#aa64f80146e88c4d60aa0e3ff360c4ebb", null ],
+    [ "internal::AttributeMapCache< T >", "classwmtk_1_1attribute_1_1_accessor.html#a7f4a91e84ce03a36e9d9c498e8bae316", null ],
     [ "wmtk::EdgeMesh", "classwmtk_1_1attribute_1_1_accessor.html#ac01c6d0499277ecd011b8d51961bdb7a", null ],
     [ "wmtk::Mesh", "classwmtk_1_1attribute_1_1_accessor.html#a40e16ebf947f9980244ad9e954e38aa3", null ],
     [ "wmtk::PointMesh", "classwmtk_1_1attribute_1_1_accessor.html#a0ddd82e4a1d90ccd127098d9d595d5c8", null ],

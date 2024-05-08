@@ -150,10 +150,6 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">AttributeScopeStack</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A stack of changes applied to an <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html" title="This class stores data of type T in a vector.">Attribute</a>.  <a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache.html">AttributeCache</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache_data.html">AttributeCacheData</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handle that represents attributes for some mesh.  <a href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -177,6 +173,9 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
+<tr class="memitem:a4ca9acf6e5e8cc431e42433aaf3dd481"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a4ca9acf6e5e8cc431e42433aaf3dd481"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute.html#a4ca9acf6e5e8cc431e42433aaf3dd481">AttributeCache</a> = <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html">internal::AttributeFlatCache</a>&lt; T &gt;</td></tr>
+<tr class="separator:a4ca9acf6e5e8cc431e42433aaf3dd481"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae5dc99973daa4be9ea733f616e61a853"><td class="memTemplParams" colspan="2">template&lt;typename T , int R = Eigen::Dynamic&gt; </td></tr>
 <tr class="memitem:ae5dc99973daa4be9ea733f616e61a853"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute.html#ae5dc99973daa4be9ea733f616e61a853">MapResult</a> = typename <a class="el" href="namespacewmtk_1_1attribute_1_1internal.html#aac8278f58adccaf282751aeb7ef536f7">internal::VectorResult</a>&lt; T, R &gt;::MapType</td></tr>
 <tr class="memdesc:ae5dc99973daa4be9ea733f616e61a853"><td class="mdescLeft">&#160;</td><td class="mdescRight">the default map type used by attributes is a map of our vector type.  <a href="namespacewmtk_1_1attribute.html#ae5dc99973daa4be9ea733f616e61a853">More...</a><br /></td></tr>
@@ -195,6 +194,24 @@ Functions</h2></td></tr>
 <tr class="separator:a8a30951a7eb28a699c6f07292abf3362"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Typedef Documentation</h2>
+<a id="a4ca9acf6e5e8cc431e42433aaf3dd481"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ca9acf6e5e8cc431e42433aaf3dd481">&#9670;&nbsp;</a></span>AttributeCache</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="namespacewmtk_1_1attribute.html#a4ca9acf6e5e8cc431e42433aaf3dd481">wmtk::attribute::AttributeCache</a> = typedef <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html">internal::AttributeFlatCache</a>&lt;T&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_cache_8hpp_source.html#l00016">16</a> of file <a class="el" href="_attribute_cache_8hpp_source.html">AttributeCache.hpp</a>.</p>
+
+</div>
+</div>
 <a id="a262370e4d1050b1b3fa22ff20702430f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a262370e4d1050b1b3fa22ff20702430f">&#9670;&nbsp;</a></span>ConstMapResult</h2>
 

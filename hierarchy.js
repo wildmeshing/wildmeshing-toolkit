@@ -20,14 +20,16 @@ var hierarchy =
     [ "wmtk::utils::metaprogramming::detail::as_variant_impl< BaseVariantTraitsType, IsConst, std::tuple< DerivedTypes... >, Index >", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html", null ],
     [ "wmtk::utils::metaprogramming::tuple::detail::as_variant_type< T >", "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1as__variant__type.html", null ],
     [ "wmtk::utils::metaprogramming::tuple::detail::as_variant_type< std::tuple< Ts... > >", "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1as__variant__type_3_01std_1_1tuple_3_01_ts_8_8_8_01_4_01_4.html", null ],
-    [ "wmtk::attribute::AttributeCache< T >", "classwmtk_1_1attribute_1_1_attribute_cache.html", [
+    [ "wmtk::attribute::internal::AttributeCacheData< T >", "classwmtk_1_1attribute_1_1internal_1_1_attribute_cache_data.html", null ],
+    [ "wmtk::attribute::internal::AttributeFlatCache< T >", "classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html", [
       [ "wmtk::attribute::AttributeScope< T >", "classwmtk_1_1attribute_1_1_attribute_scope.html", null ]
     ] ],
-    [ "wmtk::attribute::AttributeCacheData< T >", "classwmtk_1_1attribute_1_1_attribute_cache_data.html", null ],
     [ "wmtk::attribute::AttributeHandle", "classwmtk_1_1attribute_1_1_attribute_handle.html", null ],
+    [ "wmtk::attribute::internal::AttributeMapCache< T >", "classwmtk_1_1attribute_1_1internal_1_1_attribute_map_cache.html", null ],
     [ "wmtk::attribute::AttributeScopeHandle", "classwmtk_1_1attribute_1_1_attribute_scope_handle.html", null ],
     [ "wmtk::multimesh::attribute::AttributeScopeHandle", "classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle.html", null ],
     [ "wmtk::attribute::AttributeScopeStack< T >", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html", null ],
+    [ "wmtk::attribute::internal::AttributeTransactionStack< T >", "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html", null ],
     [ "wmtk::operations::AttributeTransferStrategyBase", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html", [
       [ "wmtk::operations::AttributeTransferStrategy< MyType >", "classwmtk_1_1operations_1_1_attribute_transfer_strategy.html", [
         [ "wmtk::operations::SingleAttributeTransferStrategy< MyType, ParentType >", "classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html", null ]
@@ -185,6 +187,7 @@ var hierarchy =
       [ "wmtk::TodoInvariant", "classwmtk_1_1_todo_invariant.html", null ],
       [ "wmtk::TodoLargerInvariant", "classwmtk_1_1_todo_larger_invariant.html", null ],
       [ "wmtk::TodoSmallerInvariant", "classwmtk_1_1_todo_smaller_invariant.html", null ],
+      [ "wmtk::invariants::CollapseEnergyBeforeInvariant", "classwmtk_1_1invariants_1_1_collapse_energy_before_invariant.html", null ],
       [ "wmtk::invariants::EdgeValenceInvariant", "classwmtk_1_1invariants_1_1_edge_valence_invariant.html", null ],
       [ "wmtk::invariants::EnvelopeInvariant", "classwmtk_1_1invariants_1_1_envelope_invariant.html", null ],
       [ "wmtk::invariants::FunctionInvariant", "classwmtk_1_1invariants_1_1_function_invariant.html", null ],
@@ -197,6 +200,7 @@ var hierarchy =
       [ "wmtk::invariants::MaxFunctionInvariant", "classwmtk_1_1invariants_1_1_max_function_invariant.html", null ],
       [ "wmtk::invariants::MinIncidentValenceInvariant", "classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html", null ],
       [ "wmtk::invariants::NoBoundaryCollapseToInteriorInvariant", "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant.html", null ],
+      [ "wmtk::invariants::NoChildMeshAttachingInvariant", "classwmtk_1_1invariants_1_1_no_child_mesh_attaching_invariant.html", null ],
       [ "wmtk::invariants::SeparateSubstructuresInvariant", "classwmtk_1_1invariants_1_1_separate_substructures_invariant.html", null ],
       [ "wmtk::invariants::TetMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html", null ],
       [ "wmtk::invariants::TriMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html", null ],

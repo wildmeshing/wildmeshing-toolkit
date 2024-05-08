@@ -1,6 +1,10 @@
 var dir_5421ed8c8fde3f7a08a046a47d931eae =
 [
     [ "internal", "dir_af25b58b4991ea2b2d7f34ae17b9e50b.html", "dir_af25b58b4991ea2b2d7f34ae17b9e50b" ],
+    [ "CollapseEnergyBeforeInvariant.cpp", "_collapse_energy_before_invariant_8cpp.html", null ],
+    [ "CollapseEnergyBeforeInvariant.hpp", "_collapse_energy_before_invariant_8hpp.html", [
+      [ "CollapseEnergyBeforeInvariant", "classwmtk_1_1invariants_1_1_collapse_energy_before_invariant.html", "classwmtk_1_1invariants_1_1_collapse_energy_before_invariant" ]
+    ] ],
     [ "EdgeValenceInvariant.cpp", "_edge_valence_invariant_8cpp.html", null ],
     [ "EdgeValenceInvariant.hpp", "_edge_valence_invariant_8hpp.html", [
       [ "EdgeValenceInvariant", "classwmtk_1_1invariants_1_1_edge_valence_invariant.html", "classwmtk_1_1invariants_1_1_edge_valence_invariant" ]
@@ -63,6 +67,10 @@ var dir_5421ed8c8fde3f7a08a046a47d931eae =
     [ "NoBoundaryCollapseToInteriorInvariant.cpp", "_no_boundary_collapse_to_interior_invariant_8cpp.html", null ],
     [ "NoBoundaryCollapseToInteriorInvariant.hpp", "_no_boundary_collapse_to_interior_invariant_8hpp.html", [
       [ "NoBoundaryCollapseToInteriorInvariant", "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant.html", "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant" ]
+    ] ],
+    [ "NoChildMeshAttachingInvariant.cpp", "_no_child_mesh_attaching_invariant_8cpp.html", null ],
+    [ "NoChildMeshAttachingInvariant.hpp", "_no_child_mesh_attaching_invariant_8hpp.html", [
+      [ "NoChildMeshAttachingInvariant", "classwmtk_1_1invariants_1_1_no_child_mesh_attaching_invariant.html", "classwmtk_1_1invariants_1_1_no_child_mesh_attaching_invariant" ]
     ] ],
     [ "RoundedInvariant.cpp", "_rounded_invariant_8cpp.html", null ],
     [ "RoundedInvariant.hpp", "_rounded_invariant_8hpp.html", [

@@ -21,8 +21,10 @@ var namespacewmtk_1_1simplex =
     [ "cofaces_single_dimension_simplices", "namespacewmtk_1_1simplex.html#a996a48358d73e378978c6d5827cb3212", null ],
     [ "cofaces_single_dimension_tuples", "namespacewmtk_1_1simplex.html#abee08ace6632fab4e958282840e65e43", null ],
     [ "edges", "namespacewmtk_1_1simplex.html#a71a3f68cd8c07a8b71f16701238253f1", null ],
+    [ "edges", "namespacewmtk_1_1simplex.html#aa1d3e147980cb48d6365c208e0222260", null ],
     [ "faces", "namespacewmtk_1_1simplex.html#a1e05d4988ed483121e2f5b6101c6abbf", null ],
     [ "faces", "namespacewmtk_1_1simplex.html#aee89641a0de7b5ddf8d15bf376f9d33b", null ],
+    [ "faces", "namespacewmtk_1_1simplex.html#a793578e5e9dff2e4d191660e26207043", null ],
     [ "faces", "namespacewmtk_1_1simplex.html#a5b44b1fc3810a566c737c94d1f3d4af1", null ],
     [ "faces_iterable", "namespacewmtk_1_1simplex.html#af44e0c53c21cdc0128ade6abf9898a42", null ],
     [ "faces_single_dimension", "namespacewmtk_1_1simplex.html#a9dec91b832501228f5b8b05646d0b89d", null ],
@@ -69,5 +71,6 @@ var namespacewmtk_1_1simplex =
     [ "top_dimension_cofaces_tuples", "namespacewmtk_1_1simplex.html#a3237af21f58786654704f23829790837", null ],
     [ "top_dimension_cofaces_tuples", "namespacewmtk_1_1simplex.html#ad8cdec5c614527e3718f3d3bcf5ea004", null ],
     [ "tuples_preserving_primitive_types", "namespacewmtk_1_1simplex.html#a9596b1dd0c3bbd8fc2dc1faac7321034", null ],
-    [ "vertices", "namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455", null ]
+    [ "vertices", "namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455", null ],
+    [ "vertices", "namespacewmtk_1_1simplex.html#a12321953775070ec4332fb2e216cb605", null ]
 ];

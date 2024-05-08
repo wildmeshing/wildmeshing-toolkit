@@ -1,7 +1,6 @@
 var classwmtk_1_1attribute_1_1_attribute_scope =
 [
     [ "ConstMapResult", "classwmtk_1_1attribute_1_1_attribute_scope.html#a87032b0c7366c5963c2c131537d65b3f", null ],
-    [ "DataStorage", "classwmtk_1_1attribute_1_1_attribute_scope.html#ad9e446564974ade5e3db630d922cfd05", null ],
     [ "MapResult", "classwmtk_1_1attribute_1_1_attribute_scope.html#a7c95510e23c0a304267cbdf0b222f2b7", null ],
     [ "AttributeScope", "classwmtk_1_1attribute_1_1_attribute_scope.html#ac0a9002fd07f3fed2a184879e6a505af", null ],
     [ "AttributeScope", "classwmtk_1_1attribute_1_1_attribute_scope.html#a925d6895a0c304c5bf552e89afb6c80e", null ],

@@ -1,7 +1,7 @@
 var classwmtk_1_1attribute_1_1_attribute_scope_stack =
 [
-    [ "ConstMapResult", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#af38396f483edbc4d3f9959b87c2daa9f", null ],
-    [ "MapResult", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ab6895e7604a9117d603ede8074fb8b1e", null ],
+    [ "ConstMapResult", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a6e460aef22c7478e045c98237ea1af61", null ],
+    [ "MapResult", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a4a5159f07435899d326a03d9e372de25", null ],
     [ "AttributeScopeStack", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ab5f7821839d803e79951251242bf3157", null ],
     [ "~AttributeScopeStack", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ac5986ed2e3bac508e313e91aaba5ec14", null ],
     [ "AttributeScopeStack", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a744e58c17e62b8bb026f07a78edd5f14", null ],
@@ -32,5 +32,6 @@ var classwmtk_1_1attribute_1_1_attribute_scope_stack =
     [ "vector_attribute", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ab61eb7772ee1e0ca75a537b3e70fd1b0", null ],
     [ "writing_enabled", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a3a158d2405c4b872d3ba0083debdf345", null ],
     [ "m_active", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a5b294d808846d8cd12e82bbe0e7c8285", null ],
+    [ "m_at_current_scope", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a430e6c744cf78764a530bc8193cf5422", null ],
     [ "m_scopes", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#af499ea60bb67f48f500358987101dd75", null ]
 ];
