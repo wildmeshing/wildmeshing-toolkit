@@ -24,15 +24,19 @@ bool MultiMeshEdgeTopologyInvariant::before(const simplex::Simplex& t) const
 
     // if the edge is in the child mesh, return true
     if (mesh()
-            .map_to_child_tuples(m_child_mesh, simplex::Simplex(PrimitiveType::Edge, v1))
+            .map_to_child_tuples(m_child_mesh, simplex::Simplex(mesh(), PrimitiveType::Edge, v1))
             .size() != 0)
         return true;
 
     // now the edge is not in the childmesh, then if both vertices are in the child mesh, return
     // false
-    if (mesh().map_to_child_tuples(m_child_mesh, simplex::Simplex(PrimitiveType::Vertex, v1))
+    if (mesh().map_to_child_tuples(
+                  m_child_mesh,
+                  simplex::Simplex(mesh(), PrimitiveType::Vertex, v1))
                 .size() != 0 &&
-        mesh().map_to_child_tuples(m_child_mesh, simplex::Simplex(PrimitiveType::Vertex, v2))
+        mesh().map_to_child_tuples(
+                  m_child_mesh,
+                  simplex::Simplex(mesh(), PrimitiveType::Vertex, v2))
                 .size() != 0) {
         return false;
     }

@@ -84,7 +84,7 @@ TEST_CASE("test_hybrid_laplacian_smoothing", "[scheduler][2D]")
 
         // can use this tuple on both cuz of aforemention checking on tuples
         const wmtk::Tuple first_vertex_tuple = disk->get_all(wmtk::PrimitiveType::Vertex)[0];
-        const auto first_vertex = wmtk::simplex::Simplex::vertex(first_vertex_tuple);
+        const auto first_vertex = wmtk::simplex::Simplex::vertex(*disk, first_vertex_tuple);
 
         double_vsmooth(*disk_double, first_vertex);
         hybrid_vsmooth(*disk, first_vertex);

@@ -112,6 +112,7 @@ public:
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::RawSimplex;
+    friend class simplex::Simplex;
     friend class simplex::SimplexCollection;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;

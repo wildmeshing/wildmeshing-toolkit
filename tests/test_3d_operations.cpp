@@ -247,7 +247,7 @@ TEST_CASE("tet_split_edge_single_tet", "[operations][split][3d]")
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
     EdgeSplit op(m);
-    op(Simplex::edge(edge));
+    op(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 }
 TEST_CASE("tet_split_edge_one_ear", "[operations][split][3d]")
@@ -257,7 +257,7 @@ TEST_CASE("tet_split_edge_one_ear", "[operations][split][3d]")
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
     EdgeSplit op(m);
-    op(Simplex::edge(edge));
+    op(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 }
 TEST_CASE("tet_split_edge_two_ears", "[operations][split][3d]")
@@ -267,7 +267,7 @@ TEST_CASE("tet_split_edge_two_ears", "[operations][split][3d]")
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
     EdgeSplit op(m);
-    op(Simplex::edge(edge));
+    op(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 }
 TEST_CASE("tet_split_edge_three_incident_tets", "[operations][split][3d]")
@@ -277,7 +277,7 @@ TEST_CASE("tet_split_edge_three_incident_tets", "[operations][split][3d]")
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 1);
     EdgeSplit op(m);
-    op(Simplex::edge(edge));
+    op(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 }
 TEST_CASE("tet_split_edge_six_cycle_tets", "[operations][split][3d]")
@@ -287,7 +287,7 @@ TEST_CASE("tet_split_edge_six_cycle_tets", "[operations][split][3d]")
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
     EdgeSplit op(m);
-    op(Simplex::edge(edge));
+    op(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 }
 
@@ -301,7 +301,7 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
         EdgeCollapse op(m);
-        op(Simplex::edge(edge));
+        op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 1);
     }
@@ -313,7 +313,7 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
         EdgeCollapse op(m);
-        op(Simplex::edge(edge));
+        op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 2);
     }
@@ -325,7 +325,7 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 2, 1);
         EdgeCollapse op(m);
-        op(Simplex::edge(edge));
+        op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 2);
     }
@@ -337,7 +337,7 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
         EdgeCollapse op(m);
-        op(Simplex::edge(edge));
+        op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 2);
     }
@@ -349,7 +349,7 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
         EdgeCollapse op(m);
-        op(Simplex::edge(edge));
+        op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 4);
     }
@@ -361,7 +361,7 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 2, 1);
         EdgeCollapse op(m);
-        op(Simplex::edge(edge));
+        op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 5);
     }
@@ -385,7 +385,7 @@ TEST_CASE("tet_edge_split", "[operations][split][3d]")
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(1, 2, 0))),
                 PrimitiveType::Vertex) == 3);
-        auto res = op(Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0)));
+        auto res = op(Simplex::edge(m, m.edge_tuple_between_v1_v2(1, 2, 0)));
         CHECK(!res.empty());
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
         CHECK(m.get_all(PrimitiveType::Edge).size() == 9);
@@ -426,7 +426,7 @@ TEST_CASE("tet_edge_split", "[operations][split][3d]")
         //
         DEBUG_TetMesh m = two_ears();
         EdgeSplit op(m);
-        auto res = op(Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0)));
+        auto res = op(Simplex::edge(m, m.edge_tuple_between_v1_v2(1, 2, 0)));
         CHECK(!res.empty());
         auto res_tuple = res.front().tuple();
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 7);
@@ -470,7 +470,7 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(1, 2, 0))),
                 PrimitiveType::Vertex) == 3);
-        auto res = op(Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0)));
+        auto res = op(Simplex::edge(m, m.edge_tuple_between_v1_v2(1, 2, 0)));
         CHECK(!res.empty());
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
         CHECK(m.get_all(PrimitiveType::Edge).size() == 9);
@@ -500,7 +500,7 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(2, 4, 1))),
                 PrimitiveType::Vertex) == 0);
-        auto res = op(Simplex::edge(m.edge_tuple_between_v1_v2(2, 4, 1)));
+        auto res = op(Simplex::edge(m, m.edge_tuple_between_v1_v2(2, 4, 1)));
         CHECK(!res.empty());
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
         CHECK(m.get_all(PrimitiveType::Edge).size() == 9);
@@ -534,7 +534,7 @@ TEST_CASE("tet_tet_split", "[operations][split][collapse][3d]")
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(1, 2, 0))),
                 PrimitiveType::Vertex) == 3);
-        auto s = Simplex::tetrahedron(m.edge_tuple_between_v1_v2(1, 2, 0));
+        auto s = Simplex::tetrahedron(m, m.edge_tuple_between_v1_v2(1, 2, 0));
 
         auto res = op(s);
         CHECK(!res.empty());
@@ -564,7 +564,7 @@ TEST_CASE("tet_tet_split", "[operations][split][collapse][3d]")
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(2, 3, 0))),
                 PrimitiveType::Vertex) == 1);
-        auto res = op(Simplex::tetrahedron(m.edge_tuple_between_v1_v2(2, 3, 0)));
+        auto res = op(Simplex::tetrahedron(m, m.edge_tuple_between_v1_v2(2, 3, 0)));
         CHECK(!res.empty());
         auto res_tuple = res.front().tuple();
         CHECK(m.id(res_tuple, PrimitiveType::Vertex) == 2);
@@ -694,7 +694,7 @@ TEST_CASE("tet_split_with_tags", "[operations][split][3d]")
         op.split().set_new_attribute_strategy(vertex_tag_handle);
         op.split().set_new_attribute_strategy(pos_handle);
 
-        auto res = op(Simplex::tetrahedron(m.edge_tuple_between_v1_v2(1, 2, 0)));
+        auto res = op(Simplex::tetrahedron(m, m.edge_tuple_between_v1_v2(1, 2, 0)));
 
         CHECK(!res.empty());
         auto return_tuple = res.front().tuple();
@@ -768,9 +768,9 @@ TEST_CASE("tet_split_with_tags", "[operations][split][3d]")
         op.split().set_new_attribute_strategy(vertex_tag_handle);
         op.split().set_new_attribute_strategy(pos_handle);
 
-        CHECK(op(Simplex::tetrahedron(m.edge_tuple_between_v1_v2(7, 2, 5))).empty());
+        CHECK(op(Simplex::tetrahedron(m, m.edge_tuple_between_v1_v2(7, 2, 5))).empty());
 
-        auto res = op(Simplex::tetrahedron(m.edge_tuple_between_v1_v2(1, 2, 0)));
+        auto res = op(Simplex::tetrahedron(m, m.edge_tuple_between_v1_v2(1, 2, 0)));
 
         CHECK(!res.empty());
         auto return_tuple = res.front().tuple();
@@ -803,7 +803,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 0);
-        auto ret_faces = op(Simplex::edge(edge));
+        auto ret_faces = op(Simplex::edge(m, edge));
         CHECK(ret_faces.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
@@ -818,7 +818,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 0);
-        auto ret_faces = op(Simplex::edge(edge));
+        auto ret_faces = op(Simplex::edge(m, edge));
         CHECK(ret_faces.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
@@ -833,7 +833,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 0);
-        auto ret_faces = op(Simplex::edge(edge));
+        auto ret_faces = op(Simplex::edge(m, edge));
         CHECK(ret_faces.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
@@ -848,7 +848,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 3);
-        auto ret_edges = op(Simplex::edge(edge));
+        auto ret_edges = op(Simplex::edge(m, edge));
         CHECK(ret_edges.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
@@ -863,7 +863,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 3);
-        auto ret_edges = op(Simplex::edge(edge));
+        auto ret_edges = op(Simplex::edge(m, edge));
         CHECK(ret_edges.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
@@ -884,7 +884,7 @@ TEST_CASE("tetmesh_face_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple face = m.edge_tuple_between_v1_v2(0, 2, 3, 0);
-        auto ret_edges = op(Simplex::face(face));
+        auto ret_edges = op(Simplex::face(m, face));
         CHECK(ret_edges.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 3);
@@ -900,7 +900,7 @@ TEST_CASE("tetmesh_face_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple face = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
-        auto ret_edges = op(Simplex::face(face));
+        auto ret_edges = op(Simplex::face(m, face));
         CHECK(ret_edges.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 7);

@@ -1,13 +1,14 @@
 #pragma once
-#include "SimplexComparisons.hpp"
 #include <wmtk/Mesh.hpp>
+#include "SimplexComparisons.hpp"
 
 namespace wmtk::simplex::utils {
 
 
 inline bool SimplexComparisons::equal(const Mesh& m, const Simplex& s0, const Simplex& s1)
 {
-    return equal(m, s0.tuple(), s0.primitive_type(), s1.tuple(), s1.primitive_type());
+    return s0 == s1;
+    //    return equal(m, s0.tuple(), s0.primitive_type(), s1.tuple(), s1.primitive_type());
 }
 inline bool SimplexComparisons::equal(
     const Mesh& m,
@@ -29,7 +30,8 @@ inline bool SimplexComparisons::equal(
 
 inline bool SimplexComparisons::less(const Mesh& m, const Simplex& s0, const Simplex& s1)
 {
-    return less(m, s0.tuple(), s0.primitive_type(), s1.tuple(), s1.primitive_type());
+    return s0 < s1;
+    //    return less(m, s0.tuple(), s0.primitive_type(), s1.tuple(), s1.primitive_type());
 }
 inline bool SimplexComparisons::less(
     const Mesh& m,

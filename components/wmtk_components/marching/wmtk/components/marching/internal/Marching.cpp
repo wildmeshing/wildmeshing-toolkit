@@ -246,7 +246,7 @@ void Marching::process()
         Tuple v1;
         auto incident_edges = simplex::cofaces_single_dimension_tuples(
             m_mesh,
-            simplex::Simplex::vertex(v),
+            simplex::Simplex::vertex(m_mesh, v),
             PrimitiveType::Edge);
         for (Tuple e : incident_edges) {
             if (acc_splitted_edges.const_scalar_attribute(e) == 0) {

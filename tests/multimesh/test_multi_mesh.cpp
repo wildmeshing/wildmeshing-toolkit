@@ -230,7 +230,7 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
 
             for (int64_t parent_index = 0; parent_index < 3; ++parent_index) {
                 auto ptuple = parent.tuple_from_id(PF, parent_index);
-                Simplex psimplex = Simplex(PF, ptuple);
+                Simplex psimplex = Simplex(parent, PF, ptuple);
 
                 Tuple c0_expected = p_to_c0_map[parent_index];
                 if (!c0_expected.is_null()) {
@@ -254,7 +254,7 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
             }
             for (size_t child0_index = 0; child0_index < c0_to_p_map.size(); ++child0_index) {
                 auto tuple = child0.tuple_from_id(PF, child0_index);
-                Simplex csimplex = Simplex(PF, tuple);
+                Simplex csimplex = Simplex(child0, PF, tuple);
                 auto ptuple = child0.map_to_parent_tuple(csimplex);
                 CHECK(ptuple == c0_to_p_map[child0_index]);
 
@@ -265,7 +265,7 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
             }
             for (size_t child1_index = 0; child1_index < c1_to_p_map.size(); ++child1_index) {
                 auto tuple = child1.tuple_from_id(PF, child1_index);
-                Simplex csimplex = Simplex(PF, tuple);
+                Simplex csimplex = Simplex(child1, PF, tuple);
                 auto ptuple = child1.map_to_parent_tuple(csimplex);
                 CHECK(ptuple == c1_to_p_map[child1_index]);
 
@@ -280,19 +280,21 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
     {
         // try the tuples that should succeed
         for (const auto& [ct, pt] : child0_map) {
-            auto ncts = parent.map_to_child_tuples(child0, Simplex(PrimitiveType::Triangle, pt));
+            auto ncts =
+                parent.map_to_child_tuples(child0, Simplex(parent, PrimitiveType::Triangle, pt));
             REQUIRE(ncts.size() == 1);
             auto nct = ncts[0];
-            auto npt = child0.map_to_parent_tuple(Simplex(PrimitiveType::Triangle, ct));
+            auto npt = child0.map_to_parent_tuple(Simplex(child0, PrimitiveType::Triangle, ct));
 
             CHECK(nct == ct);
             CHECK(npt == pt);
         }
         for (const auto& [ct, pt] : child1_map) {
-            auto ncts = parent.map_to_child_tuples(child1, Simplex(PrimitiveType::Triangle, pt));
+            auto ncts =
+                parent.map_to_child_tuples(child1, Simplex(parent, PrimitiveType::Triangle, pt));
             REQUIRE(ncts.size() == 1);
             auto nct = ncts[0];
-            auto npt = child1.map_to_parent_tuple(Simplex(PrimitiveType::Triangle, ct));
+            auto npt = child1.map_to_parent_tuple(Simplex(child1, PrimitiveType::Triangle, ct));
 
             CHECK(nct == ct);
             CHECK(npt == pt);
@@ -302,12 +304,12 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
         // go through simplex indices that aren't available in the map
         for (int64_t index = 0; index < 2; ++index) {
             auto pt = parent.tuple_from_id(PF, index);
-            auto ncts = parent.map_to_child(child0, Simplex(PrimitiveType::Triangle, pt));
+            auto ncts = parent.map_to_child(child0, Simplex(parent, PrimitiveType::Triangle, pt));
             CHECK(ncts.size() == 0);
         }
         for (int64_t index = 2; index < 3; ++index) {
             auto pt = parent.tuple_from_id(PF, index);
-            auto ncts = parent.map_to_child(child1, Simplex(PrimitiveType::Triangle, pt));
+            auto ncts = parent.map_to_child(child1, Simplex(parent, PrimitiveType::Triangle, pt));
             CHECK(ncts.size() == 0);
         }
     }
@@ -326,7 +328,7 @@ TEST_CASE("test_map_failures", "[multimesh][2D]")
     auto& child0 = *child0_ptr;
     auto& child1 = *child1_ptr;
 
-    Simplex s(PrimitiveType::Vertex, parent.tuple_from_id(PrimitiveType::Vertex, 0));
+    Simplex s(parent, PrimitiveType::Vertex, parent.tuple_from_id(PrimitiveType::Vertex, 0));
     CHECK_THROWS(parent.map_to_parent_tuple(s));
     CHECK_THROWS(parent.map_to_child_tuples(child0, s));
     CHECK_THROWS(parent.map_to_parent(s));
@@ -364,7 +366,7 @@ TEST_CASE("test_multi_mesh_navigation", "[multimesh][2D]")
 
 
     auto get_single_child_tuple = [&](const auto& mesh, const auto& tuple) -> Tuple {
-        auto tups = parent.map_to_child_tuples(mesh, Simplex(PF, tuple));
+        auto tups = parent.map_to_child_tuples(mesh, Simplex(parent, PF, tuple));
         REQUIRE(tups.size() == 1);
         return tups[0];
     };
@@ -523,7 +525,7 @@ TEST_CASE("multi_mesh_register_2D_and_1D_single_triangle", "[multimesh][1D][2D]"
 
             for (int64_t parent_index = 0; parent_index < 3; ++parent_index) {
                 auto ptuple = parent.tuple_from_id(PE, parent_index);
-                Simplex psimplex = Simplex(PE, ptuple);
+                Simplex psimplex = Simplex(parent, PE, ptuple);
 
                 Tuple c0_expected = p_to_c0_map[parent_index];
                 if (!c0_expected.is_null()) {
@@ -541,13 +543,13 @@ TEST_CASE("multi_mesh_register_2D_and_1D_single_triangle", "[multimesh][1D][2D]"
             }
             for (size_t child0_index = 0; child0_index < c0_to_p_map.size(); ++child0_index) {
                 auto tuple = child0.tuple_from_id(PE, child0_index);
-                Simplex csimplex = Simplex(PE, tuple);
+                Simplex csimplex = Simplex(child0, PE, tuple);
                 auto ptuple = child0.map_to_parent_tuple(csimplex);
                 CHECK(ptuple == c0_to_p_map[child0_index]);
             }
             for (size_t child1_index = 0; child1_index < c1_to_p_map.size(); ++child1_index) {
                 auto tuple = child1.tuple_from_id(PE, child1_index);
-                Simplex csimplex = Simplex(PE, tuple);
+                Simplex csimplex = Simplex(child0, PE, tuple);
                 auto ptuple = child1.map_to_parent_tuple(csimplex);
                 CHECK(ptuple == c1_to_p_map[child1_index]);
             }
@@ -558,19 +560,19 @@ TEST_CASE("multi_mesh_register_2D_and_1D_single_triangle", "[multimesh][1D][2D]"
     {
         // try the tuples that should succeed
         for (const auto& [ct, pt] : child0_map) {
-            auto ncts = parent.map_to_child_tuples(child0, Simplex(PE, pt));
+            auto ncts = parent.map_to_child_tuples(child0, Simplex(parent, PE, pt));
             REQUIRE(ncts.size() == 1);
             auto nct = ncts[0];
-            auto npt = child0.map_to_parent_tuple(Simplex(PE, ct));
+            auto npt = child0.map_to_parent_tuple(Simplex(child0, PE, ct));
 
             CHECK(nct == ct);
             CHECK(npt == pt);
         }
         for (const auto& [ct, pt] : child1_map) {
-            auto ncts = parent.map_to_child_tuples(child1, Simplex(PE, pt));
+            auto ncts = parent.map_to_child_tuples(child1, Simplex(parent, PE, pt));
             REQUIRE(ncts.size() == 1);
             auto nct = ncts[0];
-            auto npt = child1.map_to_parent_tuple(Simplex(PE, ct));
+            auto npt = child1.map_to_parent_tuple(Simplex(child1, PE, ct));
 
             CHECK(nct == ct);
             CHECK(npt == pt);
@@ -578,12 +580,12 @@ TEST_CASE("multi_mesh_register_2D_and_1D_single_triangle", "[multimesh][1D][2D]"
         // go through simplex indices that aren't available in the map
         for (int64_t index = 1; index < 3; ++index) {
             auto pt = parent.tuple_from_id(PE, index);
-            auto ncts = parent.map_to_child(child0, Simplex(PE, pt));
+            auto ncts = parent.map_to_child(child0, Simplex(parent, PE, pt));
             CHECK(ncts.size() == 0);
         }
         for (int64_t index = 1; index < 2; ++index) {
             auto pt = parent.tuple_from_id(PE, index);
-            auto ncts = parent.map_to_child(child1, Simplex(PE, pt));
+            auto ncts = parent.map_to_child(child1, Simplex(parent, PE, pt));
             CHECK(ncts.size() == 0);
         }
     }
@@ -731,7 +733,7 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]"
 
             for (int64_t parent_index = 0; parent_index < 3; ++parent_index) {
                 auto ptuple = parent.tuple_from_id(PE, parent_index);
-                Simplex psimplex = Simplex(PE, ptuple);
+                Simplex psimplex = Simplex(parent, PE, ptuple);
 
                 Tuple c0_expected = p_to_c0_map[parent_index];
                 if (!c0_expected.is_null()) {
@@ -749,13 +751,13 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]"
             }
             for (size_t child0_index = 0; child0_index < c0_to_p_map.size(); ++child0_index) {
                 auto tuple = child0.tuple_from_id(PE, child0_index);
-                Simplex csimplex = Simplex(PE, tuple);
+                Simplex csimplex = Simplex(child0, PE, tuple);
                 auto ptuple = child0.map_to_parent_tuple(csimplex);
                 CHECK(ptuple == c0_to_p_map[child0_index]);
             }
             for (size_t child1_index = 0; child1_index < c1_to_p_map.size(); ++child1_index) {
                 auto tuple = child1.tuple_from_id(PE, child1_index);
-                Simplex csimplex = Simplex(PE, tuple);
+                Simplex csimplex = Simplex(child1, PE, tuple);
                 auto ptuple = child1.map_to_parent_tuple(csimplex);
                 CHECK(ptuple == c1_to_p_map[child1_index]);
             }
@@ -766,19 +768,19 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]"
     {
         // try the tuples that should succeed
         for (const auto& [ct, pt] : child0_map) {
-            auto ncts = parent.map_to_child_tuples(child0, Simplex(PE, pt));
+            auto ncts = parent.map_to_child_tuples(child0, Simplex(parent, PE, pt));
             REQUIRE(ncts.size() == 1);
             auto nct = ncts[0];
-            auto npt = child0.map_to_parent_tuple(Simplex(PE, ct));
+            auto npt = child0.map_to_parent_tuple(Simplex(child0, PE, ct));
 
             CHECK(nct == ct);
             CHECK(npt == pt);
         }
         for (const auto& [ct, pt] : child1_map) {
-            auto ncts = parent.map_to_child_tuples(child1, Simplex(PE, pt));
+            auto ncts = parent.map_to_child_tuples(child1, Simplex(parent, PE, pt));
             REQUIRE(ncts.size() == 1);
             auto nct = ncts[0];
-            auto npt = child1.map_to_parent_tuple(Simplex(PE, ct));
+            auto npt = child1.map_to_parent_tuple(Simplex(child1, PE, ct));
 
             CHECK(nct == ct);
             CHECK(npt == pt);
@@ -786,17 +788,17 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]"
         // go through simplex indices that aren't available in the map
         for (int64_t index = 1; index < 5; ++index) {
             auto pt = parent.tuple_from_id(PE, index);
-            auto ncts = parent.map_to_child(child0, Simplex(PE, pt));
+            auto ncts = parent.map_to_child(child0, Simplex(parent, PE, pt));
             CHECK(ncts.size() == 0);
         }
         for (int64_t index = 1; index < 3; ++index) {
             auto pt = parent.tuple_from_id(PE, index);
-            auto ncts = parent.map_to_child(child1, Simplex(PE, pt));
+            auto ncts = parent.map_to_child(child1, Simplex(parent, PE, pt));
             CHECK(ncts.size() == 0);
         }
         for (int64_t index = 4; index < 5; ++index) {
             auto pt = parent.tuple_from_id(PE, index);
-            auto ncts = parent.map_to_child(child1, Simplex(PE, pt));
+            auto ncts = parent.map_to_child(child1, Simplex(parent, PE, pt));
             CHECK(ncts.size() == 0);
         }
     }
@@ -830,7 +832,7 @@ TEST_CASE("test_split_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     {
         Tuple edge = parent.edge_tuple_between_v1_v2(0, 1, 0);
         operations::EdgeSplit op(parent);
-        REQUIRE(!op(Simplex::edge(edge)).empty());
+        REQUIRE(!op(Simplex::edge(parent, edge)).empty());
     }
 
     logger().debug("parent.capacity(PF) = {}", parent.capacity(PF));
@@ -848,7 +850,7 @@ TEST_CASE("test_split_multi_mesh_1D_2D", "[multimesh][1D][2D]")
         Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 3);
         REQUIRE(parent.is_valid_slow(edge));
         operations::EdgeSplit op(parent);
-        REQUIRE(!op(Simplex::edge(edge)).empty());
+        REQUIRE(!op(Simplex::edge(parent, edge)).empty());
     }
     logger().debug("parent.capacity(PF) = {}", parent.capacity(PF));
     logger().debug("child0.capacity(PE) = {}", child0.capacity(PE));
@@ -898,7 +900,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
             operations::EdgeCollapse collapse(parent);
             collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
 
-            REQUIRE(!collapse(Simplex::edge(edge)).empty());
+            REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
         }
         print_tuple_map(parent, p_mul_manager);
 
@@ -911,7 +913,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
             Tuple edge = parent.edge_tuple_between_v1_v2(2, 4, 2);
             operations::EdgeCollapse collapse(parent);
             collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
-            REQUIRE(!collapse(Simplex::edge(edge)).empty());
+            REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
         }
 
         p_mul_manager.check_map_valid(parent);
@@ -966,10 +968,10 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
         // (XXXX indicates the edge)
         //
         Tuple edge = parent.edge_tuple_between_v1_v2(1, 0, 1);
-        simplex::Simplex edge_simplex = simplex::Simplex(PrimitiveType::Edge, edge);
+        simplex::Simplex edge_simplex = simplex::Simplex(parent, PrimitiveType::Edge, edge);
 
         Tuple edge_f0 = parent.edge_tuple_between_v1_v2(1, 0, 0);
-        simplex::Simplex edge_f0_simplex = simplex::Simplex(PrimitiveType::Edge, edge_f0);
+        simplex::Simplex edge_f0_simplex = simplex::Simplex(parent, PrimitiveType::Edge, edge_f0);
 
         // CHILD0:
         //         0
@@ -1030,11 +1032,12 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             REQUIRE(child2.is_valid_slow(cs0.tuple()));
             REQUIRE(cs0 == edge_f0_simplex);
             REQUIRE(child2.is_valid_slow(cs1.tuple()));
-            REQUIRE(cs1 == edge_simplex);
+            REQUIRE(cs1.tuple() == edge_simplex.tuple());
+            REQUIRE(cs1.primitive_type() == edge_simplex.primitive_type());
         }
 
         operations::EdgeSplit split(parent);
-        REQUIRE(!split(Simplex::edge(edge)).empty());
+        REQUIRE(!split(Simplex::edge(parent, edge)).empty());
     }
 
     REQUIRE(parent.is_connectivity_valid());
@@ -1065,7 +1068,7 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
     {
         Tuple edge = parent.edge_tuple_between_v1_v2(0, 5, 4);
         operations::EdgeSplit split(parent);
-        REQUIRE(!split(Simplex::edge(edge)).empty());
+        REQUIRE(!split(Simplex::edge(parent, edge)).empty());
     }
 
     REQUIRE(parent.is_connectivity_valid());
@@ -1131,7 +1134,7 @@ TEST_CASE("test_collapse_multi_mesh", "[multimesh][2D]")
         Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
         operations::EdgeCollapse collapse(parent);
         collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
-        REQUIRE(!collapse(Simplex::edge(edge)).empty());
+        REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
     }
 
 
@@ -1201,7 +1204,7 @@ TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
             Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
             operations::EdgeCollapse collapse(parent);
             collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
-            REQUIRE(!collapse(Simplex::edge(edge)).empty());
+            REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
         }
 
 
@@ -1222,7 +1225,7 @@ TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
             Tuple edge = parent.edge_tuple_between_v1_v2(0, 2, 0);
             operations::EdgeCollapse collapse(parent);
             collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
-            bool is_collapse_fail = collapse(Simplex::edge(edge)).empty();
+            bool is_collapse_fail = collapse(Simplex::edge(parent, edge)).empty();
             REQUIRE(is_collapse_fail);
         }
 
@@ -1255,7 +1258,7 @@ TEST_CASE("test_split_multi_mesh_1D_2D_single_triangle", "[multimesh][1D][2D]")
     {
         Tuple edge = parent.edge_tuple_between_v1_v2(0, 2, 0);
         operations::EdgeSplit split(parent);
-        REQUIRE(!split(Simplex::edge(edge)).empty());
+        REQUIRE(!split(Simplex::edge(parent, edge)).empty());
     }
 
     logger().debug("parent.capacity(PF) = {}", parent.capacity(PF));

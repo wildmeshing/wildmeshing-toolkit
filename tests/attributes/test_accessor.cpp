@@ -106,7 +106,7 @@ TEST_CASE("test_accessor_basic", "[accessor]")
 
     // test default initialization to 0
     for (const wmtk::Tuple& tup : vertices) {
-        const wmtk::simplex::Simplex s(wmtk::PrimitiveType::Vertex, tup);
+        const wmtk::simplex::Simplex s(m, wmtk::PrimitiveType::Vertex, tup);
         CHECK(char_acc.const_scalar_attribute(tup) == 0);
         CHECK(int64_t_acc.const_scalar_attribute(tup) == 0);
         CHECK((double_acc.const_vector_attribute(tup).array() == 0).all());
@@ -257,7 +257,7 @@ TEST_CASE("test_accessor_caching", "[accessor]")
     }
 }
 
-TEST_CASE("test_accessor_caching_scope_fails", "[accessor]")
+TEST_CASE("test_accessor_caching_scope_fails", "[accessor][caching]")
 {
     int64_t size = 20;
     DEBUG_PointMesh m(size);
@@ -317,7 +317,7 @@ TEST_CASE("test_accessor_caching_scope_success_fails", "[accessor]")
     check(m, int64_t_acc, false);
     check(m, double_acc, false);
 }
-TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor]")
+TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor][caching]")
 {
     int64_t size = 20;
     DEBUG_PointMesh m(size);

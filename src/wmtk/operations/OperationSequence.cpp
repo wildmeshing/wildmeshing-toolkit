@@ -22,9 +22,12 @@ std::vector<simplex::Simplex> OperationSequence::operator()(const simplex::Simpl
         return {};
     }
 
-    return execute_operations(simplex);
-
+    auto mods = execute_operations(simplex);
+    if (!mods.empty()) { // success should be marked here
+        apply_attribute_transfer(mods);
+    }
     // TODO after?
+    return mods;
 }
 
 

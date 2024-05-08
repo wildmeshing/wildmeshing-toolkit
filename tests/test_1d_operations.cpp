@@ -1,8 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <numeric>
-#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/EdgeMeshOperationExecutor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
@@ -127,7 +127,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         const int64_t vertex_id = m.id(edge, PV);
 
         EdgeCollapse collapse(m);
-        auto res = collapse(Simplex::edge(edge));
+        auto res = collapse(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret_tuple = res.front().tuple();
 
@@ -165,7 +165,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         EdgeCollapse collapse(m);
         collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
-        auto res = collapse(Simplex::edge(edge));
+        auto res = collapse(Simplex::edge(m, edge));
         REQUIRE(res.empty());
         CHECK(m.is_connectivity_valid());
     }
@@ -183,7 +183,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
 
         EdgeCollapse collapse(m);
         collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-        auto res = collapse(Simplex::edge(edge));
+        auto res = collapse(Simplex::edge(m, edge));
         REQUIRE(res.empty());
 
         CHECK(m.is_connectivity_valid());
@@ -201,7 +201,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         REQUIRE(m.is_valid(edge, hash_accessor));
 
         EdgeCollapse collapse(m);
-        auto res = collapse(Simplex::edge(edge));
+        auto res = collapse(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret_tuple = res.front().tuple();
 
@@ -238,7 +238,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         REQUIRE(m.is_valid(edge, hash_accessor));
 
         EdgeCollapse collapse(m);
-        auto res = collapse(Simplex::edge(edge));
+        auto res = collapse(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret_tuple = res.front().tuple();
 
@@ -279,7 +279,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         const int64_t vertex_id = m.id(edge, PV);
 
         EdgeSplit split(m);
-        auto res = split(Simplex::edge(edge));
+        auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret_tuple = res.front().tuple();
 
@@ -324,7 +324,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         REQUIRE(m.is_valid(edge, hash_accessor));
 
         EdgeSplit split(m);
-        auto res = split(Simplex::edge(edge));
+        auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret_tuple = res.front().tuple();
 
@@ -367,7 +367,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         REQUIRE(m.is_valid(edge, hash_accessor));
 
         EdgeSplit split(m);
-        auto res = split(Simplex::edge(edge));
+        auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret_tuple = res.front().tuple();
 
@@ -409,7 +409,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         REQUIRE(m.is_valid(edge, hash_accessor));
 
         EdgeSplit split(m);
-        auto res = split(Simplex::edge(edge));
+        auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret_tuple = res.front().tuple();
 
@@ -454,7 +454,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         REQUIRE(m.is_valid(edge, hash_accessor));
 
         EdgeSplit split(m);
-        auto res = split(Simplex::edge(edge));
+        auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret_tuple = res.front().tuple();
 

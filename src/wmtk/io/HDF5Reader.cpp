@@ -9,6 +9,15 @@
 #pragma GCC diagnostic pop
 #endif
 
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+#include <string>
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
 #include "HDF5Reader.hpp"
 
 #include <wmtk/Mesh.hpp>

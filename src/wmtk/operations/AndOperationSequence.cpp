@@ -23,7 +23,8 @@ std::vector<simplex::Simplex> AndOperationSequence::execute_operations(
         auto& o = m_operations[i];
         // assert(queue.size() == 1);
 
-        const auto new_queue = (*o)(simplex::Simplex(o->primitive_type(), queue.front().tuple()));
+        const auto new_queue =
+            (*o)(simplex::Simplex(mesh(), o->primitive_type(), queue.front().tuple()));
         if (new_queue.empty()) return i == 0 ? std::vector<simplex::Simplex>() : queue;
 
         queue = new_queue;

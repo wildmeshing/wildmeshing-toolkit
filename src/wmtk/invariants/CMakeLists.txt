@@ -72,5 +72,13 @@ set(SRC_FILES
 
     RoundedInvariant.hpp
     RoundedInvariant.cpp
+
+    CollapseEnergyBeforeInvariant.hpp
+    CollapseEnergyBeforeInvariant.cpp
+
+    NoChildMeshAttachingInvariant.hpp
+    NoChildMeshAttachingInvariant.cpp
+
+    
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

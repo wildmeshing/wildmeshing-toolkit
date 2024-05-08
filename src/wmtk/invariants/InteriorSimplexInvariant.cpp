@@ -11,8 +11,9 @@ InteriorSimplexInvariant::InteriorSimplexInvariant(const Mesh& m, PrimitiveType 
 
 bool InteriorSimplexInvariant::before(const simplex::Simplex& t) const
 {
-    const bool result =
-        !m_boundary_checker.is_boundary(mesh(), simplex::Simplex(m_primitive_type, t.tuple()));
+    const bool result = !m_boundary_checker.is_boundary(
+        mesh(),
+        simplex::Simplex(mesh(), m_primitive_type, t.tuple()));
     return result;
 }
 

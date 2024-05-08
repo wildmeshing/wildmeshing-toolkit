@@ -29,10 +29,11 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
         POLYSOLVE_SCOPED_STOPWATCH("Collecting primitives", res.collecting_time, logger());
 
         const auto tups = op.mesh().get_all(type);
-        simplices = wmtk::simplex::utils::tuple_vector_to_homogeneous_simplex_vector(tups, type);
+        simplices =
+            wmtk::simplex::utils::tuple_vector_to_homogeneous_simplex_vector(op.mesh(), tups, type);
     }
 
-    // logger().debug("Executing on {} simplices", simplices.size());
+    logger().debug("Executing on {} simplices", simplices.size());
     std::vector<std::pair<int64_t, double>> order;
 
     {
@@ -52,6 +53,7 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
             });
         }
     }
+
 
     {
         POLYSOLVE_SCOPED_STOPWATCH("Executing operation", res.executing_time, logger());
@@ -126,8 +128,10 @@ SchedulerStats Scheduler::run_operation_on_all(
 
             logger().debug("Processing {}/{}", tups.size(), n_primitives);
 
-            simplices =
-                wmtk::simplex::utils::tuple_vector_to_homogeneous_simplex_vector(tups, type);
+            simplices = wmtk::simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+                op.mesh(),
+                tups,
+                type);
         }
 
         {

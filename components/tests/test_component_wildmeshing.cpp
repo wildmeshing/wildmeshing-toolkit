@@ -38,6 +38,7 @@
 #include <wmtk/function/simplex/AMIPS.hpp>
 #include <wmtk/function/utils/amips.hpp>
 
+#include <wmtk/invariants/CollapseEnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/EdgeValenceInvariant.hpp>
 #include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/FunctionInvariant.hpp>
@@ -467,7 +468,7 @@ void run_tetwild_test(
         mesh->get_all(PrimitiveType::Tetrahedron).size());
 
     logger().info(
-        "Reference performance of original TetWild: split: 0.08s, collapse: <1s, swap: 0.24s");
+        "Reference performance of original TetWild: split: 0.08s, collapse: 1.81525s, swap: 0.24s");
 }
 
 
@@ -587,7 +588,7 @@ TEST_CASE("tetwild-collapse", "[components][wildmeshing][.]")
 {
     // logger().set_level(spdlog::level::trace);
     run_tetwild_test(
-        "collapse_initial_state_141017.obj",
+        "collapse_initial_state_104985.obj",
         "Collapse",
         [](Mesh& mesh,
            std::shared_ptr<Rounding>& rounding,
@@ -691,7 +692,7 @@ TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
 {
     logger().set_level(spdlog::level::debug);
     run_tetwild_test(
-        "collapse_initial_state_141017.obj",
+        "collapse_initial_state_104985.obj",
         "Collapse-Two",
         [](Mesh& mesh,
            std::shared_ptr<Rounding>& rounding,
@@ -816,6 +817,149 @@ TEST_CASE("tetwild-collapse-twoway", "[components][wildmeshing][.]")
             return collapse_then_round;
         });
 }
+
+TEST_CASE("tetwild-collapse-simulated", "[components][wildmeshing][.]")
+{
+    logger().set_level(spdlog::level::debug);
+    run_tetwild_test(
+        "collapse_initial_state_104985.obj",
+        "Collapse-Two",
+        [](Mesh& mesh,
+           std::shared_ptr<Rounding>& rounding,
+           MeshAttributeHandle& pt_attribute,
+           MeshAttributeHandle& visited_edge_flag,
+           std::vector<attribute::MeshAttributeHandle>& pass_through_attributes,
+           std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&
+               amips_update,
+           std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>&
+               edge_length_update,
+           std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<char, Rational>>&
+               tag_update) {
+            const double target_edge_length = 1.04;
+            const double target_max_amips = 10;
+            const double min_edge_length = 0.001;
+
+            auto target_edge_length_attribute = mesh.register_attribute<double>(
+                "wildmeshing_target_edge_length",
+                PrimitiveType::Edge,
+                1,
+                false,
+                target_edge_length); // defaults to target edge length
+
+            pass_through_attributes.push_back(target_edge_length_attribute);
+
+            auto edge_length_attribute =
+                mesh.get_attribute_handle<double>("edge_length", PrimitiveType::Edge);
+
+            auto edge_length_accessor = mesh.create_accessor(edge_length_attribute.as<double>());
+
+
+            auto clps_strat =
+                std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
+            clps_strat->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+            // clps_strat->set_strategy(CollapseBasicStrategy::Default);
+            clps_strat->set_strategy(CollapseBasicStrategy::CopyOther);
+
+            auto inversion_invariant = std::make_shared<SimplexInversionInvariant<Rational>>(
+                mesh,
+                pt_attribute.as<Rational>());
+            auto link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(mesh);
+            auto invariant_separate_substructures =
+                std::make_shared<invariants::SeparateSubstructuresInvariant>(mesh);
+
+            auto short_edges_first = [&](const simplex::Simplex& s) {
+                assert(s.primitive_type() == PrimitiveType::Edge);
+                return edge_length_accessor.scalar_attribute(s);
+            };
+
+            auto todo_smaller = std::make_shared<TodoSmallerInvariant>(
+                mesh,
+                edge_length_attribute.as<double>(),
+                target_edge_length_attribute.as<double>(),
+                4.0 / 5.0);
+
+            std::shared_ptr<function::PerSimplexFunction> amips =
+                std::make_shared<AMIPS>(mesh, pt_attribute);
+
+            auto function_invariant = std::make_shared<MaxFunctionInvariant>(
+                mesh.top_simplex_type(),
+                amips,
+                pt_attribute.as<Rational>());
+
+            //////////////////////////////////
+            // 2) EdgeCollapse
+            //////////////////////////////////
+            auto clps_strat1 =
+                std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
+            clps_strat1->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+            // clps_strat1->set_strategy(CollapseBasicStrategy::Default);
+            clps_strat1->set_strategy(CollapseBasicStrategy::CopyOther);
+
+            auto clps_strat2 =
+                std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
+            clps_strat2->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+            // clps_strat2->set_strategy(CollapseBasicStrategy::Default);
+            clps_strat2->set_strategy(CollapseBasicStrategy::CopyTuple);
+
+            auto setup_collapse = [&](std::shared_ptr<EdgeCollapse>& collapse) {
+                collapse->add_invariant(invariant_separate_substructures);
+                collapse->add_invariant(link_condition);
+                collapse->add_invariant(inversion_invariant);
+                // collapse->add_invariant(function_invariant);
+
+
+                collapse->set_new_attribute_strategy(
+                    visited_edge_flag,
+                    wmtk::operations::CollapseBasicStrategy::None);
+
+                collapse->add_transfer_strategy(tag_update);
+                for (const auto& attr : pass_through_attributes) {
+                    collapse->set_new_attribute_strategy(attr);
+                }
+                // THis triggers a segfault in release
+                collapse->set_priority(short_edges_first);
+
+                // collapse->add_invariant(envelope_invariant);
+
+                collapse->add_transfer_strategy(amips_update);
+                collapse->add_transfer_strategy(edge_length_update);
+                // proj_collapse->add_transfer_strategy(target_edge_length_update);
+            };
+
+            auto amips_attribute =
+                mesh.get_attribute_handle<double>("wildmeshing_amips", PrimitiveType::Tetrahedron);
+
+            auto collapse1 = std::make_shared<EdgeCollapse>(mesh);
+            collapse1->add_invariant(std::make_shared<CollapseEnergyBeforeInvariant>(
+                mesh,
+                pt_attribute.as<Rational>(),
+                amips_attribute.as<double>(),
+                1));
+            collapse1->set_new_attribute_strategy(pt_attribute, clps_strat1);
+            setup_collapse(collapse1);
+
+            auto collapse2 = std::make_shared<EdgeCollapse>(mesh);
+            collapse2->add_invariant(std::make_shared<CollapseEnergyBeforeInvariant>(
+                mesh,
+                pt_attribute.as<Rational>(),
+                amips_attribute.as<double>(),
+                0));
+            collapse2->set_new_attribute_strategy(pt_attribute, clps_strat2);
+            setup_collapse(collapse2);
+
+            auto collapse = std::make_shared<OrOperationSequence>(mesh);
+            collapse->add_operation(collapse1);
+            collapse->add_operation(collapse2);
+            collapse->add_invariant(todo_smaller);
+
+            auto collapse_then_round = std::make_shared<AndOperationSequence>(mesh);
+            collapse_then_round->add_operation(collapse);
+            collapse_then_round->add_operation(rounding);
+
+            return collapse_then_round;
+        });
+}
+
 
 TEST_CASE("tetwild-swap", "[components][wildmeshing][.]")
 {

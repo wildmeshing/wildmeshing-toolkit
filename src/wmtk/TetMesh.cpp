@@ -371,7 +371,7 @@ bool TetMesh::is_boundary_edge(const Tuple& edge) const
 {
     for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
              *this,
-             simplex::Simplex::edge(edge),
+             simplex::Simplex::edge(*this, edge),
              PrimitiveType::Triangle)) {
         if (is_boundary_face(f)) {
             return true;
@@ -383,7 +383,7 @@ bool TetMesh::is_boundary_vertex(const Tuple& vertex) const
 {
     // go through all faces and check if they are boundary
     const simplex::SimplexCollection neigh =
-        wmtk::simplex::open_star(*this, simplex::Simplex::vertex(vertex));
+        wmtk::simplex::open_star(*this, simplex::Simplex::vertex(*this, vertex));
     for (const simplex::Simplex& s : neigh.simplex_vector(PrimitiveType::Triangle)) {
         if (is_boundary(s)) {
             return true;

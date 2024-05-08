@@ -60,7 +60,7 @@ void RawSimplexCollection::add(
     m_simplices.reserve(m_simplices.size() + tuple_vec.size());
 
     for (const Tuple& t : tuple_vec) {
-        m_simplices.emplace_back(RawSimplex(mesh, Simplex(ptype, t)));
+        m_simplices.emplace_back(RawSimplex(mesh, Simplex(mesh, ptype, t)));
     }
 }
 

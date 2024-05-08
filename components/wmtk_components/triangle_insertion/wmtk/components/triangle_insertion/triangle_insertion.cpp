@@ -148,7 +148,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
     bool has_nonmanifold_edge = false;
 
     for (const auto& e : surface_mesh->get_all(PrimitiveType::Edge)) {
-        const auto surface_edge = simplex::Simplex::edge(e);
+        const auto surface_edge = simplex::Simplex::edge(*surface_mesh, e);
         if (!surface_mesh->is_boundary(surface_edge)) continue;
 
         const auto& parent_e = surface_mesh->map_to_parent(surface_edge);
@@ -218,11 +218,13 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
 
         if (has_openboundary) {
             on_open_boundary_cnt =
-                tetmesh->map_to_child(*open_boundary_mesh, simplex::Simplex::vertex(v)).size();
+                tetmesh->map_to_child(*open_boundary_mesh, simplex::Simplex::vertex(*tetmesh, v))
+                    .size();
         }
         if (has_nonmanifold_edge) {
             on_nonmanifold_edge_cnt =
-                tetmesh->map_to_child(*nonmanifold_edge_mesh, simplex::Simplex::vertex(v)).size();
+                tetmesh->map_to_child(*nonmanifold_edge_mesh, simplex::Simplex::vertex(*tetmesh, v))
+                    .size();
         }
 
         if (on_open_boundary_cnt + on_open_boundary_cnt > 1) {
@@ -231,7 +233,8 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
         } else if (
             // not on the edgemeshes and more than 1 copy on the surface mesh
             on_open_boundary_cnt + on_nonmanifold_edge_cnt == 0 &&
-            tetmesh->map_to_child(*surface_mesh, simplex::Simplex::vertex(v)).size() > 1) {
+            tetmesh->map_to_child(*surface_mesh, simplex::Simplex::vertex(*tetmesh, v)).size() >
+                1) {
             nonmanifold_vertex_accessor.scalar_attribute(v) = 1;
         }
     }
