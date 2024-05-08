@@ -509,7 +509,7 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
     int64_t depth = my_id.size();
 
     auto [root_ref, tuple] = map_up_to_tuples(my_mesh, my_simplex, depth);
-    const simplex::Simplex simplex(my_mesh, my_simplex.primitive_type(), tuple);
+    const simplex::Simplex simplex(root_ref, my_simplex.primitive_type(), tuple);
 
     return root_ref.m_multi_mesh_manager.map_down_relative_tuples(root_ref, simplex, other_id);
 }
@@ -528,7 +528,7 @@ std::vector<Tuple> MultiMeshManager::lub_map_tuples(
     auto [local_root_ref, tuple] = map_up_to_tuples(my_mesh, my_simplex, depth);
     assert(other_mesh.m_multi_mesh_manager.is_child(other_mesh, local_root_ref));
 
-    const simplex::Simplex simplex(other_mesh, my_simplex.primitive_type(), tuple);
+    const simplex::Simplex simplex(local_root_ref, my_simplex.primitive_type(), tuple);
 
     auto other_relative_id = relative_id(lub_id, other_id);
     return local_root_ref.m_multi_mesh_manager.map_down_relative_tuples(
@@ -542,7 +542,7 @@ simplex::Simplex MultiMeshManager::map_to_root(
     const simplex::Simplex& my_simplex) const
 {
     return simplex::Simplex(
-        my_mesh,
+        get_root_mesh(my_mesh),
         my_simplex.primitive_type(),
         map_to_root_tuple(my_mesh, my_simplex));
 }
@@ -1329,7 +1329,7 @@ bool MultiMeshManager::can_map_child(
     int64_t depth = my_id.size();
 
     auto [root_ref, tuple] = map_up_to_tuples(my_mesh, my_simplex, depth);
-    const simplex::Simplex simplex(my_mesh, my_simplex.primitive_type(), tuple);
+    const simplex::Simplex simplex(root_ref, my_simplex.primitive_type(), tuple);
 
     return !root_ref.m_multi_mesh_manager.map_down_relative_tuples(root_ref, simplex, other_id)
                 .empty();
