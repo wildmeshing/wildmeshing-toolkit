@@ -24,6 +24,7 @@ class Simplex
     PrimitiveType m_primitive_type;
     Tuple m_tuple;
     // the mesh class can use this index value to cache/accelerate operations
+public:
     mutable int64_t m_index = -1;
 
     // private constructor mesh might want to use if it knows the ids beforehand

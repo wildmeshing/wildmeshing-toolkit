@@ -24,7 +24,11 @@ bool NoChildMeshAttachingInvariant::before(const simplex::Simplex& t) const
                          mesh(),
                          mesh().switch_tuple(t.tuple(), PrimitiveType::Vertex)))
                  .empty()) {
+            // if (mesh()
+            //         .map_to_child(*child_mesh, simplex::Simplex::edge(mesh(), t.tuple()))
+            //         .empty()) {
             return false;
+            // }
         }
     }
 

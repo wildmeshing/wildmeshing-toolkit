@@ -75,6 +75,8 @@ set(SRC_FILES
 
     CollapseEnergyBeforeInvariant.hpp
     CollapseEnergyBeforeInvariant.cpp
+    CollapseSoftEnergyBeforeInvariant.hpp
+    CollapseSoftEnergyBeforeInvariant.cpp
 
     NoChildMeshAttachingInvariant.hpp
     NoChildMeshAttachingInvariant.cpp

@@ -285,6 +285,8 @@ public:
     void assert_capacity_valid() const;
     virtual bool is_connectivity_valid() const = 0;
 
+    virtual std::vector<Tuple> orient_vertices(const Tuple& t) const = 0;
+
 protected: // member functions
     attribute::Accessor<char> get_flag_accessor(PrimitiveType type);
     attribute::Accessor<int64_t> get_cell_hash_accessor();
@@ -348,7 +350,8 @@ protected: // member functions
     Tuple resurrect_tuple_slow(const Tuple& tuple);
 
 
-protected:
+    // protected:
+public:
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
      * cid

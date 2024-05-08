@@ -35,6 +35,7 @@
 
 #include <wmtk/function/utils/amips.hpp>
 #include <wmtk/invariants/CollapseEnergyBeforeInvariant.hpp>
+#include <wmtk/invariants/CollapseSoftEnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/EdgeValenceInvariant.hpp>
 #include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/FunctionInvariant.hpp>
@@ -515,7 +516,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     }
 
     ops.emplace_back(split_then_round);
-    ops_name.emplace_back("split");
+    ops_name.emplace_back("SPLIT");
 
     ops.emplace_back(rounding);
     ops_name.emplace_back("rounding");
@@ -525,12 +526,12 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // collapse transfer
     //////////////////////////////////
     auto clps_strat1 = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
-    clps_strat1->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+    // clps_strat1->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
     // clps_strat1->set_strategy(CollapseBasicStrategy::Default);
     clps_strat1->set_strategy(CollapseBasicStrategy::CopyOther);
 
     auto clps_strat2 = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
-    clps_strat2->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+    // clps_strat2->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
     // clps_strat2->set_strategy(CollapseBasicStrategy::Default);
     clps_strat2->set_strategy(CollapseBasicStrategy::CopyTuple);
 
@@ -555,7 +556,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         }
         // THis triggers a segfault in release
         // solved somehow
-        collapse->set_priority(short_edges_first);
+        // collapse->set_priority(short_edges_first);
 
         collapse->add_transfer_strategy(amips_update);
         collapse->add_transfer_strategy(edge_length_update);
@@ -572,6 +573,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         pt_attribute.as<Rational>(),
         amips_attribute.as<double>(),
         1));
+
     collapse1->set_new_attribute_strategy(pt_attribute, clps_strat1);
     setup_collapse(collapse1);
 
@@ -581,6 +583,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         pt_attribute.as<Rational>(),
         amips_attribute.as<double>(),
         0));
+
     collapse2->set_new_attribute_strategy(pt_attribute, clps_strat2);
     setup_collapse(collapse2);
 
@@ -593,13 +596,15 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     collapse_then_round->add_operation(collapse);
     collapse_then_round->add_operation(rounding);
 
+    collapse_then_round->set_priority(short_edges_first);
+
 
     for (auto& s : update_child_positon) {
         collapse_then_round->add_transfer_strategy(s);
     }
 
     ops.emplace_back(collapse_then_round);
-    ops_name.emplace_back("collapse");
+    ops_name.emplace_back("COLLAPSE");
 
     ops.emplace_back(rounding);
     ops_name.emplace_back("rounding");
@@ -949,12 +954,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap_then_round->add_operation(rounding);
         swap_then_round->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
         swap_then_round->add_invariant(std::make_shared<NoChildMeshAttachingInvariant>(*mesh));
+        swap_then_round->add_invariant(inversion_invariant);
         for (auto& s : update_child_positon) {
             swap_then_round->add_transfer_strategy(s);
         }
 
         ops.push_back(swap_then_round);
-        ops_name.push_back("edge swap");
+        ops_name.push_back("EDGE SWAP");
         ops.emplace_back(rounding);
         ops_name.emplace_back("rounding");
     }
@@ -970,6 +976,16 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     for (auto& s : update_child_positon) {
         smoothing->add_transfer_strategy(s);
     }
+
+    // test code
+    // smoothing->add_invariant(envelope_invariant);
+    // smoothing->add_transfer_strategy(amips_update);
+    // smoothing->add_transfer_strategy(edge_length_update);
+    // ops.push_back(smoothing);
+    // ops_name.push_back("SMOOTHING");
+    // ops.emplace_back(rounding);
+    // ops_name.emplace_back("rounding");
+    //--------
 
     auto proj_smoothing = std::make_shared<ProjectOperation>(smoothing, mesh_constraint_pairs);
     proj_smoothing->use_random_priority() = true;
@@ -989,7 +1005,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // proj_smoothing->add_transfer_strategy(target_edge_length_update);
 
     ops.push_back(proj_smoothing);
-    ops_name.push_back("smoothing");
+    ops_name.push_back("SMOOTHING");
     ops.emplace_back(rounding);
     ops_name.emplace_back("rounding");
 
@@ -1046,14 +1062,20 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // compute max energy
     double max_energy = std::numeric_limits<double>::lowest();
     double min_energy = std::numeric_limits<double>::max();
+    double avg_energy = 0;
     for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
         // double e = amips->get_value(simplex::Simplex(mesh->top_simplex_type(), t));
         double e = amips_accessor.scalar_attribute(t);
         max_energy = std::max(max_energy, e);
         min_energy = std::min(min_energy, e);
+        avg_energy += e;
     }
 
-    logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
+    logger().info(
+        "Max AMIPS Energy: {}, Min AMIPS Energy: {}, Avg AMIPS Energy: {}",
+        max_energy,
+        min_energy,
+        avg_energy / mesh->get_all(mesh->top_simplex_type()).size());
 
     double old_max_energy = max_energy;
     int iii = 0;
@@ -1098,6 +1120,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
             logger().info("Mesh has {} unrounded vertices", unrounded);
 
+            avg_energy = 0;
+
             // compute max energy
             max_energy = std::numeric_limits<double>::lowest();
             min_energy = std::numeric_limits<double>::max();
@@ -1106,9 +1130,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 double e = amips_accessor.scalar_attribute(t);
                 max_energy = std::max(max_energy, e);
                 min_energy = std::min(min_energy, e);
+                avg_energy += e;
             }
 
-            logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
+            logger().info(
+                "Max AMIPS Energy: {}, Min AMIPS Energy: {}, Avg AMIPS Energy: {}",
+                max_energy,
+                min_energy,
+                avg_energy / mesh->get_all(mesh->top_simplex_type()).size());
 
 
             ++jj;
@@ -1138,11 +1167,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         // compute max energy
         max_energy = std::numeric_limits<double>::lowest();
         min_energy = std::numeric_limits<double>::max();
+        avg_energy = 0;
         for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
             // double e = amips->get_value(simplex::Simplex(mesh->top_simplex_type(), t));
             double e = amips_accessor.scalar_attribute(t);
             max_energy = std::max(max_energy, e);
             min_energy = std::min(min_energy, e);
+            avg_energy += e;
         }
 
         int64_t unrounded = 0;
@@ -1163,7 +1194,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         }
 
         logger().info("Mesh has {} unrounded vertices", unrounded);
-        logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
+        logger().info(
+            "Max AMIPS Energy: {}, Min AMIPS Energy: {}, Avg AMIPS Energy: {}",
+            max_energy,
+            min_energy,
+            avg_energy / mesh->get_all(mesh->top_simplex_type()).size());
 
 
         // if (max_energy >= old_max_energy) {
@@ -1177,6 +1212,22 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         // stop at good quality
         if (max_energy <= target_max_amips && is_double) break;
     }
+
+    /*------------ test code ------------*/
+    spdlog::set_level(spdlog::level::debug);
+    // logger().set_level(spdlog::level::debug);
+
+    std::vector<int64_t> problem_vids = {3334, 1476, 1097, 1272};
+
+    for (int i = 0; i < problem_vids.size(); ++i) {
+        auto mod = (*proj_smoothing)(simplex::Simplex::vertex(
+            *mesh,
+            mesh->tuple_from_id(PrimitiveType::Vertex, problem_vids[i])));
+        if (mod.empty()) {
+            wmtk::logger().info("Cannot smooth vertex {}", problem_vids[i]);
+        }
+    }
+    /*-----------------------------------*/
 
     // output
     cache.write_mesh(*mesh, options.output);

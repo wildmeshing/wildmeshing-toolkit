@@ -41,6 +41,8 @@ public:
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const override;
 
+    std::vector<Tuple> orient_vertices(const Tuple& tuple) const;
+
 protected:
     using MeshCRTP<PointMesh>::id; // getting the (simplex) prototype
     int64_t id(const Tuple& tuple, PrimitiveType type) const;

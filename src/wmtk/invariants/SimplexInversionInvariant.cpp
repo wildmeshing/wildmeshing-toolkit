@@ -4,6 +4,7 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/orient.hpp>
 #include <wmtk/utils/triangle_areas.hpp>
 
@@ -28,20 +29,34 @@ bool SimplexInversionInvariant<T>::after(
         assert(accessor.dimension() == 3);
 
         for (const auto& t : top_dimension_tuples_after) {
-            const Eigen::Vector3<T> p0 = accessor.const_vector_attribute(t);
-            const Eigen::Vector3<T> p1 =
-                accessor.const_vector_attribute(mymesh.switch_tuple(t, PrimitiveType::Vertex));
-            const Eigen::Vector3<T> p2 = accessor.const_vector_attribute(
-                mymesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Vertex}));
-            const Eigen::Vector3<T> p3 = accessor.const_vector_attribute(mymesh.switch_tuples(
-                t,
-                {PrimitiveType::Triangle, PrimitiveType::Edge, PrimitiveType::Vertex}));
+            const auto tet_vertices = mymesh.orient_vertices(t);
+            assert(tet_vertices.size() == 4);
+            const Eigen::Vector3<T> p0 = accessor.const_vector_attribute(tet_vertices[0]);
+            const Eigen::Vector3<T> p1 = accessor.const_vector_attribute(tet_vertices[1]);
+            const Eigen::Vector3<T> p2 = accessor.const_vector_attribute(tet_vertices[2]);
+            const Eigen::Vector3<T> p3 = accessor.const_vector_attribute(tet_vertices[3]);
 
-            if (mymesh.is_ccw(t)) {
-                if (utils::wmtk_orient3d<T>(p3, p0, p1, p2) <= 0) return false;
-            } else {
-                if (utils::wmtk_orient3d<T>(p3, p0, p2, p1) <= 0) return false;
+            if (utils::wmtk_orient3d<T>(p0, p1, p2, p3) <= 0) {
+                wmtk::logger().debug(
+                    "fail inversion check, volume = {}",
+                    utils::wmtk_orient3d<T>(p0, p1, p2, p3));
+                return false;
             }
+
+            // const Eigen::Vector3<T> p0 = accessor.const_vector_attribute(t);
+            // const Eigen::Vector3<T> p1 =
+            //     accessor.const_vector_attribute(mymesh.switch_tuple(t, PrimitiveType::Vertex));
+            // const Eigen::Vector3<T> p2 = accessor.const_vector_attribute(
+            //     mymesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Vertex}));
+            // const Eigen::Vector3<T> p3 = accessor.const_vector_attribute(mymesh.switch_tuples(
+            //     t,
+            //     {PrimitiveType::Triangle, PrimitiveType::Edge, PrimitiveType::Vertex}));
+
+            // if (mymesh.is_ccw(t)) {
+            //     if (utils::wmtk_orient3d<T>(p3, p0, p1, p2) <= 0) return false;
+            // } else {
+            //     if (utils::wmtk_orient3d<T>(p3, p0, p2, p1) <= 0) return false;
+            // }
         }
 
         return true;

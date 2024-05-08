@@ -550,5 +550,13 @@ std::vector<std::vector<TypedAttributeHandle<int64_t>>> TriMesh::connectivity_at
     return handles;
 }
 
+std::vector<Tuple> TriMesh::orient_vertices(const Tuple& tuple) const
+{
+    int64_t cid = tuple.m_global_cid;
+    auto hash = get_cell_hash_slow(cid);
+
+    return {Tuple(0, 2, -1, cid, hash), Tuple(1, 0, -1, cid, hash), Tuple(2, 1, -1, cid, hash)};
+}
+
 
 } // namespace wmtk
