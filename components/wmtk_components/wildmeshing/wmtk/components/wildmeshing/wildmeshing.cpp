@@ -44,6 +44,7 @@
 #include <wmtk/invariants/MaxFunctionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
+#include <wmtk/invariants/NoChildMeshAttachingInvariant.hpp>
 #include <wmtk/invariants/RoundedInvariant.hpp>
 #include <wmtk/invariants/SeparateSubstructuresInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
@@ -361,6 +362,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         if (envelope == nullptr) {
             wmtk::logger().info("TetWild: no {} mesh for this mesh", v.geometry.mesh);
             continue;
+        } else {
+            wmtk::logger().info("TetWild: registered {} mesh", v.geometry.mesh);
         }
         envelopes.emplace_back(envelope);
 
@@ -502,13 +505,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     split->add_transfer_strategy(edge_length_update);
     split->add_transfer_strategy(tag_update); // for renew the queue
     // split->add_transfer_strategy(target_edge_length_update);
-    for (auto& s : update_child_positon) {
-        split->add_transfer_strategy(s);
-    }
 
     auto split_then_round = std::make_shared<AndOperationSequence>(*mesh);
     split_then_round->add_operation(split);
     split_then_round->add_operation(rounding);
+
+    for (auto& s : update_child_positon) {
+        split_then_round->add_transfer_strategy(s);
+    }
 
     ops.emplace_back(split_then_round);
     ops_name.emplace_back("split");
@@ -539,7 +543,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         collapse->add_invariant(link_condition);
         collapse->add_invariant(inversion_invariant);
         // collapse->add_invariant(function_invariant);
-
+        collapse->add_invariant(envelope_invariant);
 
         collapse->set_new_attribute_strategy(
             visited_edge_flag,
@@ -553,11 +557,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         // solved somehow
         collapse->set_priority(short_edges_first);
 
-        collapse->add_invariant(envelope_invariant);
-
         collapse->add_transfer_strategy(amips_update);
         collapse->add_transfer_strategy(edge_length_update);
         // collapse->add_transfer_strategy(target_edge_length_update);
+
+        for (auto& s : update_child_positon) {
+            collapse->add_transfer_strategy(s);
+        }
     };
 
     auto collapse1 = std::make_shared<EdgeCollapse>(*mesh);
@@ -583,13 +589,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     collapse->add_operation(collapse2);
     collapse->add_invariant(todo_smaller);
 
-    for (auto& s : update_child_positon) {
-        collapse->add_transfer_strategy(s);
-    }
-
     auto collapse_then_round = std::make_shared<AndOperationSequence>(*mesh);
     collapse_then_round->add_operation(collapse);
     collapse_then_round->add_operation(rounding);
+
+
+    for (auto& s : update_child_positon) {
+        collapse_then_round->add_transfer_strategy(s);
+    }
 
     ops.emplace_back(collapse_then_round);
     ops_name.emplace_back("collapse");
@@ -615,9 +622,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         op.add_transfer_strategy(amips_update);
         op.add_transfer_strategy(edge_length_update);
         // op.add_transfer_strategy(target_edge_length_update);
-        for (auto& s : update_child_positon) {
-            op.add_transfer_strategy(s);
-        }
+        // for (auto& s : update_child_positon) {
+        //     op.add_transfer_strategy(s);
+        // }
 
         collapse.add_invariant(invariant_separate_substructures);
         collapse.add_invariant(link_condition);
@@ -627,10 +634,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         split.set_new_attribute_strategy(pt_attribute);
 
         // this might not be necessary
-        for (auto& s : update_child_positon) {
-            collapse.add_transfer_strategy(s);
-            split.add_transfer_strategy(s);
-        }
+        // for (auto& s : update_child_positon) {
+        //     collapse.add_transfer_strategy(s);
+        //     split.add_transfer_strategy(s);
+        // }
 
 
         for (const auto& attr : pass_through_attributes) {
@@ -939,8 +946,12 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         auto swap_then_round = std::make_shared<AndOperationSequence>(*mesh);
         swap_then_round->add_operation(swap_all);
-        swap_then_round->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
         swap_then_round->add_operation(rounding);
+        swap_then_round->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+        swap_then_round->add_invariant(std::make_shared<NoChildMeshAttachingInvariant>(*mesh));
+        for (auto& s : update_child_positon) {
+            swap_then_round->add_transfer_strategy(s);
+        }
 
         ops.push_back(swap_then_round);
         ops_name.push_back("edge swap");
@@ -1044,7 +1055,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
 
-
+    double old_max_energy = max_energy;
     int iii = 0;
     bool is_double = false;
     for (int64_t i = 0; i < options.passes; ++i) {
@@ -1154,9 +1165,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         logger().info("Mesh has {} unrounded vertices", unrounded);
         logger().info("Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_energy, min_energy);
 
-        logger().info("updating target edge length ...");
-        target_edge_length_update->run_on_all();
-        logger().info("updated target edge length");
+
+        // if (max_energy >= old_max_energy) {
+        //     logger().info("updating target edge length ...");
+        //     target_edge_length_update->run_on_all();
+        //     logger().info("updated target edge length");
+        // }
+
+        old_max_energy = max_energy;
 
         // stop at good quality
         if (max_energy <= target_max_amips && is_double) break;

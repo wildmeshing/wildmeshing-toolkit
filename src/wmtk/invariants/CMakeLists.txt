@@ -75,5 +75,10 @@ set(SRC_FILES
 
     CollapseEnergyBeforeInvariant.hpp
     CollapseEnergyBeforeInvariant.cpp
+
+    NoChildMeshAttachingInvariant.hpp
+    NoChildMeshAttachingInvariant.cpp
+
+    
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
