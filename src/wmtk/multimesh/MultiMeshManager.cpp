@@ -528,7 +528,7 @@ std::vector<Tuple> MultiMeshManager::lub_map_tuples(
     auto [local_root_ref, tuple] = map_up_to_tuples(my_mesh, my_simplex, depth);
     assert(other_mesh.m_multi_mesh_manager.is_child(other_mesh, local_root_ref));
 
-    const simplex::Simplex simplex(my_mesh, my_simplex.primitive_type(), tuple);
+    const simplex::Simplex simplex(other_mesh, my_simplex.primitive_type(), tuple);
 
     auto other_relative_id = relative_id(lub_id, other_id);
     return local_root_ref.m_multi_mesh_manager.map_down_relative_tuples(
