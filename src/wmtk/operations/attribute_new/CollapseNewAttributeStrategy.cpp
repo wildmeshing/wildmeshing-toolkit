@@ -130,6 +130,10 @@ void CollapseNewAttributeStrategy<T>::update(
     const ReturnData& data,
     const OperationTupleData& op_datas)
 {
+    if (!bool(m_collapse_op)) {
+        return;
+    }
+
     if (op_datas.find(&mesh()) == op_datas.end()) return;
     const std::vector<std::array<Tuple, 2>>& tuple_pairs = op_datas.at(&mesh());
 
