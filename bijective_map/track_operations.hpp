@@ -31,6 +31,7 @@ struct query_curve
     std::vector<int> next_segment_ids;
 };
 
+// Rational version of the above
 struct query_point_r
 {
     int64_t f_id; // face id
@@ -120,7 +121,9 @@ void handle_consolidate_forward(
     });
 }
 
-// TODO: get a more acurate version of this
+// TODO: curve version of the handle consolidate_forward
+
+// TODO: Rational Version of this code
 Eigen::Vector3d ComputeBarycentricCoordinates3D(
     const Eigen::Vector3d& p,
     const Eigen::Vector3d& a,
@@ -167,7 +170,7 @@ Eigen::Vector3d ComputeBarycentricCoordinates2D(
     return Eigen::Vector3d(u, v, w);
 }
 
-// Rational version
+// Rational version of ComputeBarycentricCoordinates2D
 Eigen::Vector3<wmtk::Rational> ComputeBarycentricCoordinates2D_r(
     const Eigen::Vector2<wmtk::Rational>& p,
     const Eigen::Vector2<wmtk::Rational>& a,
@@ -280,6 +283,7 @@ void handle_collapse_edge(
     }
 }
 
+// Rational version of handle_collapse_edge
 void handle_collapse_edge_r(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
@@ -287,11 +291,20 @@ void handle_collapse_edge_r(
     const std::vector<int64_t>& v_id_map_joint,
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& id_map_after,
-    std::vector<query_point>& query_points)
+    std::vector<query_point_r>& query_points)
 {
-    std::cout << "Handling EdgeCollapse" << std::endl;
+    std::cout << "Handling EdgeCollapse Rational" << std::endl;
+    // first convert the UV_joint to Rational
+    Eigen::MatrixX<wmtk::Rational> UV_joint_r(UV_joint.rows(), UV_joint.cols());
+    for (int i = 0; i < UV_joint.rows(); i++) {
+        for (int j = 0; j < UV_joint.cols(); j++) {
+            UV_joint_r(i, j) = wmtk::Rational(UV_joint(i, j));
+        }
+    }
+
+
     for (int id = 0; id < query_points.size(); id++) {
-        query_point& qp = query_points[id];
+        query_point_r& qp = query_points[id];
         if (qp.f_id < 0) continue;
 
         // find if qp is in the id_map_after
@@ -320,29 +333,33 @@ void handle_collapse_edge_r(
             }
 
             // compute the location of the qp
-            Eigen::Vector2d p(0, 0);
+            Eigen::Vector2<wmtk::Rational> p(0, 0);
             for (int i = 0; i < 3; i++) {
-                p += UV_joint.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3)) *
-                     qp.bc(i);
+                p = p + UV_joint_r.row(F_after(local_index_in_f_after, (i + offset_in_f_after) % 3))
+                                .transpose() *
+                            qp.bc(i);
             }
 
 
             // compute bc of the p in (V, F)_before
             int local_index_in_f_before = -1;
-            double bc_min_coef = 1;
+
+            // if computation is exact we don't need this anymore
+            // double bc_min_coef = 1;
             bool bc_updated = false;
             for (int i = 0; i < F_before.rows(); i++) {
-                Eigen::Vector3d bc;
+                Eigen::Vector3<wmtk::Rational> bc;
 
-                bc = ComputeBarycentricCoordinates2D(
+                bc = ComputeBarycentricCoordinates2D_r(
                     p,
-                    UV_joint.row(F_before(i, 0)),
-                    UV_joint.row(F_before(i, 1)),
-                    UV_joint.row(F_before(i, 2)));
+                    UV_joint_r.row(F_before(i, 0)),
+                    UV_joint_r.row(F_before(i, 1)),
+                    UV_joint_r.row(F_before(i, 2)));
 
 
-                if (-bc.minCoeff() < bc_min_coef) {
-                    bc_min_coef = -bc.minCoeff();
+                // if (-bc.minCoeff() < bc_min_coef) {
+                if (bc.minCoeff() >= 0 && bc.maxCoeff() <= 1) {
+                    // bc_min_coef = -bc.minCoeff();
                     local_index_in_f_before = i;
                     qp.bc = bc;
                     bc_updated = true;
@@ -350,7 +367,7 @@ void handle_collapse_edge_r(
             }
 
             if (!bc_updated) {
-                std::cout << "bc not updated\n" << std::endl;
+                std::cout << "bc not updated in rational\n" << std::endl;
                 continue;
                 // return;
             }
@@ -360,11 +377,6 @@ void handle_collapse_edge_r(
             for (int i = 0; i < 3; i++) {
                 qp.fv_ids[i] = v_id_map_joint[F_before(local_index_in_f_before, i)];
             }
-            // avoid numerical issue
-            qp.bc[0] = std::max(0.0, std::min(1.0, qp.bc[0]));
-            qp.bc[1] = std::max(0.0, std::min(1.0, qp.bc[1]));
-            qp.bc[2] = std::max(0.0, std::min(1.0, qp.bc[2]));
-            qp.bc /= qp.bc.sum();
         }
     }
 }
@@ -396,7 +408,35 @@ bool intersectSegmentEdge(
     return false;
 }
 
+bool intersectSegmentEdge_r(
+    const Eigen::Vector2<wmtk::Rational>& a,
+    const Eigen::Vector2<wmtk::Rational>& b,
+    const Eigen::Vector2<wmtk::Rational>& c,
+    const Eigen::Vector2<wmtk::Rational>& d,
+    Eigen::Vector2<wmtk::Rational>& barycentric)
+{
+    Eigen::Vector2<wmtk::Rational> ab = b - a;
+    Eigen::Vector2<wmtk::Rational> cd = d - c;
+    Eigen::Vector2<wmtk::Rational> ac = c - a;
+
+    wmtk::Rational denominator = (ab.x() * cd.y() - ab.y() * cd.x());
+    if (denominator == wmtk::Rational(0)) return false; // parallel
+
+    wmtk::Rational t = (ac.x() * cd.y() - ac.y() * cd.x()) / denominator;
+    wmtk::Rational u = -(ab.x() * ac.y() - ab.y() * ac.x()) / denominator;
+
+    if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+        // Calculate barycentric coordinates for intersection
+        wmtk::Rational alpha = 1 - u;
+        wmtk::Rational beta = u;
+        barycentric = Eigen::Vector2<wmtk::Rational>(alpha, beta);
+        return true;
+    }
+    return false;
+}
+
 #include <igl/triangle_triangle_adjacency.h>
+// curve version of the handle_collapse_edge
 void handle_collapse_edge(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
@@ -406,17 +446,17 @@ void handle_collapse_edge(
     const std::vector<int64_t>& id_map_after,
     query_curve& curve)
 {
-    std::cout << "Handling EdgeCollapse" << std::endl;
+    std::cout << "Handling EdgeCollapse curve" << std::endl;
     int curve_length = curve.segments.size();
     for (int id = 0; id < curve_length; id++) {
         query_segment& qs = curve.segments[id];
         query_point qp0 = {qs.f_id, qs.bcs[0], qs.fv_ids};
         query_point qp1 = {qs.f_id, qs.bcs[1], qs.fv_ids};
         std::vector<query_point> query_points = {qp0, qp1};
-        std::cout << "qp0.f_id: " << qp0.f_id << std::endl;
-        std::cout << "qp0.bc:\n" << qp0.bc << std::endl;
-        std::cout << "qp1.f_id: " << qp1.f_id << std::endl;
-        std::cout << "qp1.bc:\n" << qp1.bc << std::endl;
+        // std::cout << "qp0.f_id: " << qp0.f_id << std::endl;
+        // std::cout << "qp0.bc:\n" << qp0.bc << std::endl;
+        // std::cout << "qp1.f_id: " << qp1.f_id << std::endl;
+        // std::cout << "qp1.bc:\n" << qp1.bc << std::endl;
         handle_collapse_edge(
             UV_joint,
             F_before,
@@ -426,10 +466,10 @@ void handle_collapse_edge(
             id_map_after,
             query_points);
 
-        std::cout << "query_points[0].f_id: " << query_points[0].f_id << std::endl;
-        std::cout << "query_points[0].bc:\n" << query_points[0].bc << std::endl;
-        std::cout << "query_points[1].f_id: " << query_points[1].f_id << std::endl;
-        std::cout << "query_points[1].bc:\n" << query_points[1].bc << std::endl;
+        // std::cout << "query_points[0].f_id: " << query_points[0].f_id << std::endl;
+        // std::cout << "query_points[0].bc:\n" << query_points[0].bc << std::endl;
+        // std::cout << "query_points[1].f_id: " << query_points[1].f_id << std::endl;
+        // std::cout << "query_points[1].bc:\n" << query_points[1].bc << std::endl;
 
         if (query_points[0].f_id == query_points[1].f_id) {
             std::cout << "no intersections" << std::endl;
@@ -469,10 +509,10 @@ void handle_collapse_edge(
                 p1 += UV_joint.row(F_before(target_fid, i)) * query_points[1].bc(i);
             }
 
-            std::cout << "current fid: " << current_fid << std::endl;
-            std::cout << "target fid: " << target_fid << std::endl;
-            std::cout << "TT(current_fid): " << TT.row(current_fid) << std::endl;
-            std::cout << "TTi(current_fid): " << TTi.row(current_fid) << std::endl;
+            // std::cout << "current fid: " << current_fid << std::endl;
+            // std::cout << "target fid: " << target_fid << std::endl;
+            // std::cout << "TT(current_fid): " << TT.row(current_fid) << std::endl;
+            // std::cout << "TTi(current_fid): " << TTi.row(current_fid) << std::endl;
             int current_edge_id = -1;
             Eigen::Vector2d last_edge_bc;
             {
@@ -502,18 +542,18 @@ void handle_collapse_edge(
                     throw std::runtime_error("no intersection found");
                     continue;
                 } else {
-                    std::cout << "next_edge_id0: " << next_edge_id0 << std::endl;
+                    // std::cout << "next_edge_id0: " << next_edge_id0 << std::endl;
                 }
                 current_edge_id = TTi(current_fid, next_edge_id0);
                 current_fid = TT(current_fid, next_edge_id0);
-                std::cout << "last_edge_bc:\n" << last_edge_bc << std::endl;
+                // std::cout << "last_edge_bc:\n" << last_edge_bc << std::endl;
             }
             // find the rest intersections
             while (current_fid != target_fid) {
-                std::cout << "current fid: " << current_fid << std::endl;
-                std::cout << "target fid: " << target_fid << std::endl;
-                std::cout << "current edge id: " << current_edge_id << std::endl;
-                std::cout << "last_edge_bc: " << last_edge_bc << std::endl;
+                // std::cout << "current fid: " << current_fid << std::endl;
+                // std::cout << "target fid: " << target_fid << std::endl;
+                // std::cout << "current edge id: " << current_edge_id << std::endl;
+                // std::cout << "last_edge_bc: " << last_edge_bc << std::endl;
 
                 int next_edge_id = -1;
                 for (int edge_id = 0; edge_id < 3; edge_id++) {
@@ -552,10 +592,10 @@ void handle_collapse_edge(
                     throw std::runtime_error("no intersection found");
                     continue;
                 } else {
-                    std::cout << "next_edge_id: " << next_edge_id << std::endl;
-                    std::cout << "TT(current_fid): " << TT.row(current_fid) << std::endl;
-                    std::cout << "TTi(current_fid): " << TTi.row(current_fid) << std::endl;
-                    std::cout << std::endl;
+                    // std::cout << "next_edge_id: " << next_edge_id << std::endl;
+                    // std::cout << "TT(current_fid): " << TT.row(current_fid) << std::endl;
+                    // std::cout << "TTi(current_fid): " << TTi.row(current_fid) << std::endl;
+                    // std::cout << std::endl;
                 }
                 current_edge_id = TTi(current_fid, next_edge_id);
                 current_fid = TT(current_fid, next_edge_id);
@@ -566,6 +606,172 @@ void handle_collapse_edge(
                 query_segment qs_new;
                 qs_new.f_id = query_points[1].f_id;
                 qs_new.bcs[0] = Eigen::Vector3d(0, 0, 0);
+                qs_new.bcs[1] = query_points[1].bc;
+                qs_new.bcs[0](current_edge_id) = last_edge_bc(1);
+                qs_new.bcs[0]((current_edge_id + 1) % 3) = last_edge_bc(0);
+                qs_new.fv_ids = query_points[1].fv_ids;
+
+                // push the new segment
+                curve.segments.push_back(qs_new);
+                curve.next_segment_ids.push_back(old_next_seg);
+            }
+        }
+    }
+}
+
+void handle_collapse_edge_r(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    query_curve_r& curve)
+{
+    std::cout << "Handling EdgeCollapse curve rational" << std::endl;
+
+    // first convert the UV_joint to Rational
+    Eigen::MatrixX<wmtk::Rational> UV_joint_r(UV_joint.rows(), UV_joint.cols());
+    for (int i = 0; i < UV_joint.rows(); i++) {
+        for (int j = 0; j < UV_joint.cols(); j++) {
+            UV_joint_r(i, j) = wmtk::Rational(UV_joint(i, j));
+        }
+    }
+
+    int curve_length = curve.segments.size();
+    for (int id = 0; id < curve_length; id++) {
+        query_segment_r& qs = curve.segments[id];
+        query_point_r qp0 = {qs.f_id, qs.bcs[0], qs.fv_ids};
+        query_point_r qp1 = {qs.f_id, qs.bcs[1], qs.fv_ids};
+        std::vector<query_point_r> query_points = {qp0, qp1};
+
+        handle_collapse_edge_r(
+            UV_joint,
+            F_before,
+            F_after,
+            v_id_map_joint,
+            id_map_before,
+            id_map_after,
+            query_points);
+
+        if (query_points[0].f_id == query_points[1].f_id) {
+            std::cout << "no intersections" << std::endl;
+            // no intersections
+            qs.f_id = query_points[0].f_id;
+            qs.bcs[0] = query_points[0].bc;
+            qs.bcs[1] = query_points[1].bc;
+            qs.fv_ids = query_points[0].fv_ids;
+        } else {
+            std::cout << "need compute intersections" << std::endl;
+            // compute intersections
+            int old_next_seg = curve.next_segment_ids[id];
+
+            Eigen::MatrixXi TT, TTi;
+            igl::triangle_triangle_adjacency(F_before, TT, TTi);
+
+            // compute the two end points
+            auto it = std::find(id_map_before.begin(), id_map_before.end(), query_points[0].f_id);
+            int current_fid = std::distance(id_map_before.begin(), it);
+            Eigen::Vector2<wmtk::Rational> p0(0, 0);
+            for (int i = 0; i < 3; i++) {
+                p0 = p0 +
+                     UV_joint_r.row(F_before(current_fid, i)).transpose() * query_points[0].bc(i);
+            }
+            it = std::find(id_map_before.begin(), id_map_before.end(), query_points[1].f_id);
+            int target_fid = std::distance(id_map_before.begin(), it);
+            Eigen::Vector2<wmtk::Rational> p1(0, 0);
+            for (int i = 0; i < 3; i++) {
+                p1 = p1 +
+                     UV_joint_r.row(F_before(target_fid, i)).transpose() * query_points[1].bc(i);
+            }
+
+            int current_edge_id = -1;
+            Eigen::Vector2<wmtk::Rational> last_edge_bc;
+            {
+                int next_edge_id0 = -1;
+                // find the first intersection
+                for (int edge_id = 0; edge_id < 3; edge_id++) {
+                    Eigen::Vector2<wmtk::Rational> a =
+                        UV_joint_r.row(F_before(current_fid, edge_id)).transpose();
+                    Eigen::Vector2<wmtk::Rational> b =
+                        UV_joint_r.row(F_before(current_fid, (edge_id + 1) % 3)).transpose();
+                    Eigen::Vector2<wmtk::Rational> edge_bc;
+                    if (intersectSegmentEdge_r(p0, p1, a, b, edge_bc)) {
+                        next_edge_id0 = edge_id;
+                        qs.f_id = query_points[0].f_id;
+                        qs.bcs[0] = query_points[0].bc;
+                        qs.bcs[1] << 0, 0, 0;
+                        qs.bcs[1](edge_id) = edge_bc(0);
+                        qs.bcs[1]((edge_id + 1) % 3) = edge_bc(1);
+                        qs.fv_ids = query_points[0].fv_ids;
+                        last_edge_bc = edge_bc;
+                        curve.next_segment_ids[id] =
+                            curve.segments.size(); // next segment will add to the end
+                        break;
+                    }
+                }
+
+                if (next_edge_id0 == -1) {
+                    std::cout << "no intersection found" << std::endl;
+                    throw std::runtime_error("no intersection found");
+                    continue;
+                } else {
+                    std::cout << "next_edge_id0: " << next_edge_id0 << std::endl;
+                }
+                current_edge_id = TTi(current_fid, next_edge_id0);
+                current_fid = TT(current_fid, next_edge_id0);
+            }
+            // find the rest intersections
+            while (current_fid != target_fid) {
+                int next_edge_id = -1;
+                for (int edge_id = 0; edge_id < 3; edge_id++) {
+                    if (edge_id == current_edge_id) continue;
+                    Eigen::Vector2<wmtk::Rational> a =
+                        UV_joint_r.row(F_before(current_fid, edge_id)).transpose();
+                    Eigen::Vector2<wmtk::Rational> b =
+                        UV_joint_r.row(F_before(current_fid, (edge_id + 1) % 3)).transpose();
+
+                    Eigen::Vector2<wmtk::Rational> edge_bc;
+                    query_segment_r qs_new;
+                    if (intersectSegmentEdge_r(p0, p1, a, b, edge_bc)) {
+                        next_edge_id = edge_id;
+                        qs_new.f_id = id_map_before[current_fid];
+                        qs_new.bcs[0] = Eigen::Vector3<wmtk::Rational>(0, 0, 0);
+                        qs_new.bcs[1] = Eigen::Vector3<wmtk::Rational>(0, 0, 0);
+
+                        qs_new.bcs[0](current_edge_id) = last_edge_bc(1);
+                        qs_new.bcs[0]((current_edge_id + 1) % 3) = last_edge_bc(0);
+                        qs_new.bcs[1](next_edge_id) = edge_bc(0);
+                        qs_new.bcs[1]((next_edge_id + 1) % 3) = edge_bc(1);
+
+                        qs_new.fv_ids << v_id_map_joint[F_before(current_fid, 0)],
+                            v_id_map_joint[F_before(current_fid, 1)],
+                            v_id_map_joint[F_before(current_fid, 2)];
+
+                        // push the new segment
+                        curve.segments.push_back(qs_new);
+                        curve.next_segment_ids.push_back(curve.next_segment_ids.size());
+
+                        // record the last edge
+                        last_edge_bc = edge_bc;
+                        break;
+                    }
+                }
+
+                if (next_edge_id == -1) {
+                    std::cout << "no intersection found" << std::endl;
+                    throw std::runtime_error("no intersection found");
+                    continue;
+                }
+                current_edge_id = TTi(current_fid, next_edge_id);
+                current_fid = TT(current_fid, next_edge_id);
+            }
+
+            // TODO: last segment
+            {
+                query_segment_r qs_new;
+                qs_new.f_id = query_points[1].f_id;
+                qs_new.bcs[0] = Eigen::Vector3<wmtk::Rational>(0, 0, 0);
                 qs_new.bcs[1] = query_points[1].bc;
                 qs_new.bcs[0](current_edge_id) = last_edge_bc(1);
                 qs_new.bcs[0]((current_edge_id + 1) % 3) = last_edge_bc(0);

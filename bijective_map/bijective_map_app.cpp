@@ -189,6 +189,71 @@ void back_track_map(path dirPath, std::vector<query_point>& query_points, bool d
     }
 }
 
+void back_track_map_rational(path dirPath, std::vector<query_point_r>& query_points)
+{
+    namespace fs = std::filesystem;
+    int maxIndex = -1;
+
+    for (const auto& entry : fs::directory_iterator(dirPath)) {
+        if (entry.path().filename().string().find("operation_log_") != std::string::npos) {
+            ++maxIndex;
+        }
+    }
+
+    for (int i = maxIndex; i >= 0; --i) {
+        int file_id = i;
+
+        fs::path filePath = dirPath / ("operation_log_" + std::to_string(file_id) + ".json");
+        std::ifstream file(filePath);
+        if (!file.is_open()) {
+            std::cerr << "Failed to open file: " << filePath << std::endl;
+            continue;
+        }
+        json operation_log;
+        file >> operation_log;
+
+        std::cout << "Trace Operations number: " << file_id << std::endl;
+        std::string operation_name;
+        operation_name = operation_log["operation_name"];
+
+        if (operation_name == "MeshConsolidate") {
+            std::cout << "This Operations is Consolidate" << std::endl;
+            std::vector<int64_t> face_ids_maps;
+            std::vector<int64_t> vertex_ids_maps;
+            parse_consolidate_file(operation_log, face_ids_maps, vertex_ids_maps);
+            handle_consolidate(face_ids_maps, vertex_ids_maps, query_points);
+        } else if (operation_name == "EdgeCollapse") {
+            std::cout << "This Operations is EdgeCollapse" << std::endl;
+            Eigen::MatrixXi F_after, F_before;
+            Eigen::MatrixXd UV_joint;
+            std::vector<int64_t> v_id_map_joint;
+            std::vector<int64_t> id_map_after, id_map_before;
+            parse_edge_collapse_file(
+                operation_log,
+                UV_joint,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after);
+
+            handle_collapse_edge_r(
+                UV_joint,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after,
+                query_points);
+
+        } else {
+            std::cout << "This Operations is not implemented" << std::endl;
+        }
+
+        file.close();
+    }
+}
+
 void back_track_lines(path dirPath, query_curve& curve, bool do_forward = false)
 {
     namespace fs = std::filesystem;
@@ -276,6 +341,69 @@ void back_track_lines(path dirPath, query_curve& curve, bool do_forward = false)
     }
 }
 
+void back_track_lines_rational(path dirPath, query_curve_r& curve)
+{
+    namespace fs = std::filesystem;
+    int maxIndex = -1;
+
+    for (const auto& entry : fs::directory_iterator(dirPath)) {
+        if (entry.path().filename().string().find("operation_log_") != std::string::npos) {
+            ++maxIndex;
+        }
+    }
+
+    for (int i = maxIndex; i >= 0; --i) {
+        int file_id = i;
+
+        fs::path filePath = dirPath / ("operation_log_" + std::to_string(file_id) + ".json");
+        std::ifstream file(filePath);
+        if (!file.is_open()) {
+            std::cerr << "Failed to open file: " << filePath << std::endl;
+            continue;
+        }
+        json operation_log;
+        file >> operation_log;
+
+        std::cout << "Trace Operations number: " << file_id << std::endl;
+        std::string operation_name;
+        operation_name = operation_log["operation_name"];
+
+        if (operation_name == "MeshConsolidate") {
+            std::cout << "This Operations is Consolidate" << std::endl;
+            std::vector<int64_t> face_ids_maps;
+            std::vector<int64_t> vertex_ids_maps;
+            parse_consolidate_file(operation_log, face_ids_maps, vertex_ids_maps);
+            handle_consolidate(face_ids_maps, vertex_ids_maps, curve);
+        } else if (operation_name == "EdgeCollapse") {
+            std::cout << "This Operations is EdgeCollapse" << std::endl;
+            Eigen::MatrixXi F_after, F_before;
+            Eigen::MatrixXd UV_joint;
+            std::vector<int64_t> v_id_map_joint;
+            std::vector<int64_t> id_map_after, id_map_before;
+            parse_edge_collapse_file(
+                operation_log,
+                UV_joint,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after);
+            handle_collapse_edge_r(
+                UV_joint,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after,
+                curve);
+        } else {
+            std::cout << "This Operations is not implemented" << std::endl;
+        }
+
+        file.close();
+    }
+}
+
 void forward_track_app(
     const Eigen::MatrixXd& V_in,
     const Eigen::MatrixXi& F_in,
@@ -304,7 +432,6 @@ void forward_track_app(
         }
         pts_on_surface_before.row(ii) = p;
     }
-
 
     // do back track
     back_track_map(operation_logs_dir, query_points, true);
@@ -389,6 +516,84 @@ void back_track_app(
         Eigen::Vector3d p(0, 0, 0);
         for (int i = 0; i < 3; i++) {
             p += V_in.row(qp.fv_ids[i]) * qp.bc(i);
+        }
+        pts_on_surface_before.row(ii) = p;
+    }
+
+    // viewer
+
+    igl::opengl::glfw::Viewer viewer;
+    Eigen::Vector4f backColor;
+    backColor << 208 / 255., 237 / 255., 227 / 255., 1.;
+    const Eigen::RowVector3d blue(149.0 / 255, 217.0 / 255, 244.0 / 255);
+    viewer.core().background_color = backColor;
+    viewer.data().set_mesh(V_in, F_in);
+    viewer.data().set_colors(blue);
+    viewer.data().add_points(pts_on_surface_before, Eigen::RowVector3d(0, 0, 0));
+    viewer.data().point_size = 10;
+
+    viewer.callback_key_down =
+        [&](igl::opengl::glfw::Viewer& viewer, unsigned char key, int mod) -> bool {
+        switch (key) {
+        case '0':
+            viewer.data().clear();
+            viewer.data().set_mesh(V_in, F_in);
+            viewer.data().set_colors(blue);
+            viewer.data().add_points(pts_on_surface_before, Eigen::RowVector3d(0, 0, 0));
+            viewer.data().point_size = 10;
+            break;
+        case '1':
+            viewer.data().clear();
+            viewer.data().set_mesh(V_out, F_out);
+            viewer.data().set_colors(blue);
+            viewer.data().add_points(pts_on_surface_after, Eigen::RowVector3d(0, 0, 0));
+            viewer.data().point_size = 10;
+            break;
+        default: return false;
+        }
+        return true;
+    };
+    viewer.launch();
+}
+
+void back_track_app_rational(
+    const Eigen::MatrixXd& V_in,
+    const Eigen::MatrixXi& F_in,
+    const Eigen::MatrixXd& V_out,
+    const Eigen::MatrixXi& F_out,
+    const path& operation_logs_dir)
+{
+    std::vector<query_point_r> query_points;
+    for (int i = 0; i < F_out.rows(); i++) {
+        query_point_r qp;
+        qp.f_id = i;
+        qp.bc = Eigen::Vector3<wmtk::Rational>(
+            wmtk::Rational(1.0 / 3),
+            wmtk::Rational(1.0 / 3),
+            wmtk::Rational(1.0 / 3));
+        qp.fv_ids = F_out.row(i);
+        query_points.push_back(qp);
+    }
+
+    std::vector<query_point_r> query_points_origin = query_points;
+    Eigen::MatrixXd pts_on_surface_after(query_points.size(), 3);
+    for (int ii = 0; ii < query_points_origin.size(); ii++) {
+        const query_point_r& qp = query_points_origin[ii];
+        Eigen::Vector3d p(0, 0, 0);
+        for (int i = 0; i < 3; i++) {
+            p += V_out.row(qp.fv_ids[i]) * qp.bc(i).to_double();
+        }
+        pts_on_surface_after.row(ii) = p;
+    }
+    // do back track
+    back_track_map_rational(operation_logs_dir, query_points);
+
+    Eigen::MatrixXd pts_on_surface_before(query_points.size(), 3);
+    for (int ii = 0; ii < query_points.size(); ii++) {
+        const query_point_r& qp = query_points[ii];
+        Eigen::Vector3d p(0, 0, 0);
+        for (int i = 0; i < 3; i++) {
+            p += V_in.row(qp.fv_ids[i]) * qp.bc(i).to_double();
         }
         pts_on_surface_before.row(ii) = p;
     }
@@ -558,58 +763,122 @@ void back_track_line_app(
     const Eigen::MatrixXi& F_in,
     const Eigen::MatrixXd& V_out,
     const Eigen::MatrixXi& F_out,
-    const path& operation_logs_dir)
+    const path& operation_logs_dir,
+    bool use_rational = false)
 {
-    query_curve curve = generate_curve(V_out, F_out, 10, 0);
-    for (const auto& seg : curve.segments) {
+    query_curve curve_in = generate_curve(V_out, F_out, 10, 0);
+    for (const auto& seg : curve_in.segments) {
         std::cout << "f_id: " << seg.f_id << std::endl;
         std::cout << "bcs: " << seg.bcs[0] << ", " << seg.bcs[1] << std::endl;
     }
-
-    query_curve curve_origin = curve;
-
-    back_track_lines(operation_logs_dir, curve);
-    {
-        igl::opengl::glfw::Viewer viewer;
-        viewer.data().set_mesh(V_out, F_out);
-        viewer.data().point_size /= 3;
-        for (const auto& seg : curve_origin.segments) {
-            Eigen::MatrixXd pts(2, 3);
-            for (int i = 0; i < 2; i++) {
-                Eigen::Vector3d p(0, 0, 0);
-                for (int j = 0; j < 3; j++) {
-                    p += V_out.row(seg.fv_ids[j]) * seg.bcs[i](j);
+    if (!use_rational) {
+        query_curve curve = curve_in;
+        query_curve curve_origin = curve;
+        back_track_lines(operation_logs_dir, curve);
+        {
+            igl::opengl::glfw::Viewer viewer;
+            viewer.data().set_mesh(V_out, F_out);
+            viewer.data().point_size /= 3;
+            for (const auto& seg : curve_origin.segments) {
+                Eigen::MatrixXd pts(2, 3);
+                for (int i = 0; i < 2; i++) {
+                    Eigen::Vector3d p(0, 0, 0);
+                    for (int j = 0; j < 3; j++) {
+                        p += V_out.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                    }
+                    pts.row(i) = p;
                 }
-                pts.row(i) = p;
+                std::cout << "pts: \n" << pts << std::endl;
+                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
             }
-            std::cout << "pts: \n" << pts << std::endl;
-            viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
-            viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
-            viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+
+            viewer.launch();
+        }
+        {
+            igl::opengl::glfw::Viewer viewer;
+            viewer.data().set_mesh(V_in, F_in);
+            viewer.data().point_size /= 3;
+            for (const auto& seg : curve.segments) {
+                Eigen::MatrixXd pts(2, 3);
+                for (int i = 0; i < 2; i++) {
+                    Eigen::Vector3d p(0, 0, 0);
+                    for (int j = 0; j < 3; j++) {
+                        p += V_in.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                    }
+                    pts.row(i) = p;
+                }
+                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+            }
+
+
+            viewer.launch();
+        }
+    } else {
+        query_curve_r curve;
+        // convert to rational
+        for (const auto& seg : curve_in.segments) {
+            query_segment_r seg_r;
+            seg_r.f_id = seg.f_id;
+            seg_r.bcs[0] = Eigen::Vector3<wmtk::Rational>(
+                wmtk::Rational(seg.bcs[0](0)),
+                wmtk::Rational(seg.bcs[0](1)),
+                wmtk::Rational(seg.bcs[0](2)));
+            seg_r.bcs[1] = Eigen::Vector3<wmtk::Rational>(
+                wmtk::Rational(seg.bcs[1](0)),
+                wmtk::Rational(seg.bcs[1](1)),
+                wmtk::Rational(seg.bcs[1](2)));
+            seg_r.fv_ids = seg.fv_ids;
+            curve.segments.push_back(seg_r);
         }
 
-        viewer.launch();
-    }
-    {
-        igl::opengl::glfw::Viewer viewer;
-        viewer.data().set_mesh(V_in, F_in);
-        viewer.data().point_size /= 3;
-        for (const auto& seg : curve.segments) {
-            Eigen::MatrixXd pts(2, 3);
-            for (int i = 0; i < 2; i++) {
-                Eigen::Vector3d p(0, 0, 0);
-                for (int j = 0; j < 3; j++) {
-                    p += V_in.row(seg.fv_ids[j]) * seg.bcs[i](j);
+        query_curve_r curve_origin = curve;
+        back_track_lines_rational(operation_logs_dir, curve);
+        {
+            igl::opengl::glfw::Viewer viewer;
+            viewer.data().set_mesh(V_out, F_out);
+            viewer.data().point_size /= 3;
+            for (const auto& seg : curve_origin.segments) {
+                Eigen::MatrixXd pts(2, 3);
+                for (int i = 0; i < 2; i++) {
+                    Eigen::Vector3d p(0, 0, 0);
+                    for (int j = 0; j < 3; j++) {
+                        p += V_out.row(seg.fv_ids[j]) * seg.bcs[i](j).to_double();
+                    }
+                    pts.row(i) = p;
                 }
-                pts.row(i) = p;
+                std::cout << "pts: \n" << pts << std::endl;
+                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
             }
-            viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
-            viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
-            viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+
+            viewer.launch();
         }
+        {
+            igl::opengl::glfw::Viewer viewer;
+            viewer.data().set_mesh(V_in, F_in);
+            viewer.data().point_size /= 3;
+            for (const auto& seg : curve.segments) {
+                Eigen::MatrixXd pts(2, 3);
+                for (int i = 0; i < 2; i++) {
+                    Eigen::Vector3d p(0, 0, 0);
+                    for (int j = 0; j < 3; j++) {
+                        p += V_in.row(seg.fv_ids[j]) * seg.bcs[i](j).to_double();
+                    }
+                    pts.row(i) = p;
+                }
+                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+            }
 
 
-        viewer.launch();
+            viewer.launch();
+        }
     }
 }
 
@@ -658,6 +927,10 @@ int main(int argc, char** argv)
         render_app(V_in, F_in, V_out, F_out, operation_logs_dir);
     } else if (application_name == "back_lines") {
         back_track_line_app(V_in, F_in, V_out, F_out, operation_logs_dir);
+    } else if (application_name == "back_r") {
+        back_track_app_rational(V_in, F_in, V_out, F_out, operation_logs_dir);
+    } else if (application_name == "back_lines_r") {
+        back_track_line_app(V_in, F_in, V_out, F_out, operation_logs_dir, true);
     }
     return 0;
 }
