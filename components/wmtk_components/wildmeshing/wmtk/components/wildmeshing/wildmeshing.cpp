@@ -492,6 +492,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     split->set_priority(long_edges_first);
 
     split->add_invariant(todo_larger);
+    split->add_invariant(inversion_invariant);
 
     split->set_new_attribute_strategy(pt_attribute);
     split->set_new_attribute_strategy(
@@ -515,8 +516,72 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         split_then_round->add_transfer_strategy(s);
     }
 
-    ops.emplace_back(split_then_round);
+    // split unrounded
+    auto split_unrounded = std::make_shared<EdgeSplit>(*mesh);
+    split_unrounded->set_priority(long_edges_first);
+
+    split_unrounded->add_invariant(todo_larger);
+
+    // auto unrounded_mean = [](const Eigen::MatrixX<Rational>& P) -> Eigen::Matrix<Rational> {
+    //     assert(P.cols() == 2);
+    //     Eigen::Matrix<Rational> p0(p.rows(), 1);
+    //     Eigen::Matrix<Rational> p1(p.rows(), 1);
+    //     for (int i = 0; i < p.rows(); ++i) {
+    //         p0 = Rational(P(i, 0), false);
+    //         p1 = Rational(P(i, 1), false);
+    //     }
+    //     return (p0 + p1) / 2;
+    // };
+
+    auto split_unrounded_transfer_strategy =
+        std::make_shared<SplitNewAttributeStrategy<Rational>>(pt_attribute);
+    split_unrounded_transfer_strategy->set_strategy(
+        [](const Eigen::VectorX<Rational>& a, const std::bitset<2>&) {
+            return std::array<Eigen::VectorX<Rational>, 2>{{a, a}};
+        });
+    split_unrounded_transfer_strategy->set_rib_strategy(
+        [](const Eigen::VectorX<Rational>& p0_d,
+           const Eigen::VectorX<Rational>& p1_d,
+           const std::bitset<2>& bs) -> Eigen::VectorX<Rational> {
+            Eigen::VectorX<Rational> p0(p0_d.size());
+            Eigen::VectorX<Rational> p1(p1_d.size());
+            for (int i = 0; i < p0_d.size(); ++i) {
+                p0[i] = Rational(p0_d[i], false);
+                p1[i] = Rational(p1_d[i], false);
+            }
+            if (bs[0] == bs[1]) {
+                return (p0 + p1) / Rational(2, false);
+            } else if (bs[0]) {
+                return p0;
+
+            } else {
+                return p1;
+            }
+        });
+
+    split_unrounded->set_new_attribute_strategy(pt_attribute, split_unrounded_transfer_strategy);
+    split_unrounded->set_new_attribute_strategy(
+        visited_edge_flag,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    for (const auto& attr : pass_through_attributes) {
+        split_unrounded->set_new_attribute_strategy(attr);
+    }
+
+    split_unrounded->add_transfer_strategy(amips_update);
+    split_unrounded->add_transfer_strategy(edge_length_update);
+    split_unrounded->add_transfer_strategy(tag_update); // for renew the queue
+    // split->add_transfer_strategy(target_edge_length_update);
+
+    auto split_sequence = std::make_shared<OrOperationSequence>(*mesh);
+    split_sequence->add_operation(split_then_round);
+    split_sequence->add_operation(split_unrounded);
+
+    ops.emplace_back(split_sequence);
     ops_name.emplace_back("SPLIT");
+
+    //     ops.emplace_back(split_then_round);
+    // ops_name.emplace_back("SPLIT");
 
     ops.emplace_back(rounding);
     ops_name.emplace_back("rounding");
@@ -685,6 +750,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 pt_attribute.as<Rational>(),
                 i));
 
+            swap->add_invariant(inversion_invariant);
+
             for (const auto& attr : pass_through_attributes) {
                 swap->split().set_new_attribute_strategy(attr);
                 swap->collapse().set_new_attribute_strategy(attr);
@@ -817,6 +884,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 pt_attribute.as<Rational>(),
                 i));
 
+            swap->add_invariant(inversion_invariant);
+
             for (const auto& attr : pass_through_attributes) {
                 swap->split().set_new_attribute_strategy(attr);
                 swap->collapse().set_new_attribute_strategy(attr);
@@ -927,6 +996,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap32->collapse().set_new_attribute_strategy(
             pt_attribute,
             CollapseBasicStrategy::CopyOther);
+        swap32->add_invariant(inversion_invariant);
         swap32->split().set_new_attribute_strategy(pt_attribute);
         swap32->split().set_new_attribute_strategy(
             visited_edge_flag,
@@ -954,7 +1024,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap_then_round->add_operation(rounding);
         swap_then_round->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
         swap_then_round->add_invariant(std::make_shared<NoChildMeshAttachingInvariant>(*mesh));
-        swap_then_round->add_invariant(inversion_invariant);
+        // swap_then_round->add_invariant(inversion_invariant);
         for (auto& s : update_child_positon) {
             swap_then_round->add_transfer_strategy(s);
         }
@@ -1029,6 +1099,16 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     SchedulerStats pre_stats;
 
     logger().info("----------------------- Preprocess Collapse -----------------------");
+    for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
+        const auto vertices = mesh->orient_vertices(t);
+        std::vector<Vector3r> pos;
+        for (int i = 0; i < vertices.size(); ++i) {
+            pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
+        }
+        if (wmtk::utils::wmtk_orient3d(pos[0], pos[1], pos[2], pos[3]) <= 0) {
+            wmtk::logger().error("Flipped tet!");
+        }
+    }
     logger().info("Executing collapse ...");
 
     pre_stats = scheduler.run_operation_on_all(*collapse_then_round, visited_edge_flag.as<char>());
@@ -1082,9 +1162,20 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     bool is_double = false;
     for (int64_t i = 0; i < options.passes; ++i) {
         logger().info("--------------------------- Pass {} ---------------------------", i);
+
         SchedulerStats pass_stats;
         int jj = 0;
         for (auto& op : ops) {
+            for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
+                const auto vertices = mesh->orient_vertices(t);
+                std::vector<Vector3r> pos;
+                for (int i = 0; i < vertices.size(); ++i) {
+                    pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
+                }
+                if (wmtk::utils::wmtk_orient3d(pos[0], pos[1], pos[2], pos[3]) <= 0) {
+                    wmtk::logger().error("Flipped tet!");
+                }
+            }
             logger().info("Executing {} ...", ops_name[jj]);
             SchedulerStats stats;
             if (op->primitive_type() == PrimitiveType::Edge) {
@@ -1201,11 +1292,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             avg_energy / mesh->get_all(mesh->top_simplex_type()).size());
 
 
-        // if (max_energy >= old_max_energy) {
-        //     logger().info("updating target edge length ...");
-        //     target_edge_length_update->run_on_all();
-        //     logger().info("updated target edge length");
-        // }
+        if (max_energy >= old_max_energy) {
+            logger().info("updating target edge length ...");
+            target_edge_length_update->run_on_all();
+            logger().info("updated target edge length");
+        }
 
         old_max_energy = max_energy;
 
@@ -1213,21 +1304,21 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         if (max_energy <= target_max_amips && is_double) break;
     }
 
-    /*------------ test code ------------*/
-    spdlog::set_level(spdlog::level::debug);
-    // logger().set_level(spdlog::level::debug);
+    // /*------------ test code ------------*/
+    // spdlog::set_level(spdlog::level::debug);
+    // // logger().set_level(spdlog::level::debug);
 
-    std::vector<int64_t> problem_vids = {3334, 1476, 1097, 1272};
+    // std::vector<int64_t> problem_vids = {3334, 1476, 1097, 1272};
 
-    for (int i = 0; i < problem_vids.size(); ++i) {
-        auto mod = (*proj_smoothing)(simplex::Simplex::vertex(
-            *mesh,
-            mesh->tuple_from_id(PrimitiveType::Vertex, problem_vids[i])));
-        if (mod.empty()) {
-            wmtk::logger().info("Cannot smooth vertex {}", problem_vids[i]);
-        }
-    }
-    /*-----------------------------------*/
+    // for (int i = 0; i < problem_vids.size(); ++i) {
+    //     auto mod = (*proj_smoothing)(simplex::Simplex::vertex(
+    //         *mesh,
+    //         mesh->tuple_from_id(PrimitiveType::Vertex, problem_vids[i])));
+    //     if (mod.empty()) {
+    //         wmtk::logger().info("Cannot smooth vertex {}", problem_vids[i]);
+    //     }
+    // }
+    // /*-----------------------------------*/
 
     // output
     cache.write_mesh(*mesh, options.output);
