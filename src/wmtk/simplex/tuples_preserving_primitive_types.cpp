@@ -37,6 +37,11 @@ void simplices_preserving_primitive_types(
     const PrimitiveType face_ptype,
     const PrimitiveType pt_return)
 {
+    if (simplex_ptype == pt_return) {
+        collection.add(pt_return, t);
+        return;
+    }
+
     const Mesh& mesh = collection.mesh();
 
     const int8_t pt0_id = get_primitive_type_id(face_ptype);
