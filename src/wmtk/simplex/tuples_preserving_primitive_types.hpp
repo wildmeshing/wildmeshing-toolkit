@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/simplex/SimplexCollection.hpp>
 
 
 namespace wmtk::simplex {
@@ -19,4 +20,11 @@ std::vector<Tuple> tuples_preserving_primitive_types(
     const Tuple& t,
     const PrimitiveType ptype1,
     const PrimitiveType ptype2);
+
+void simplices_preserving_primitive_types(
+    SimplexCollection& collection,
+    const Tuple& t,
+    const PrimitiveType ptype1,
+    const PrimitiveType ptype2,
+    const PrimitiveType pt_return);
 } // namespace wmtk::simplex

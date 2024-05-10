@@ -4,6 +4,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/simplex/tuples_preserving_primitive_types.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -50,22 +51,9 @@ std::vector<Tuple> cofaces_single_dimension_tuples(
     const Simplex& my_simplex,
     PrimitiveType cofaces_type)
 {
-    std::vector<Tuple> tuples;
-    if (my_simplex.primitive_type() == cofaces_type) {
-        tuples = {my_simplex.tuple()};
-        return tuples;
-    }
+    SimplexCollection cof = cofaces_single_dimension(mesh, my_simplex, cofaces_type);
 
-    tuples = top_dimension_cofaces_tuples(mesh, my_simplex);
-
-
-    assert(my_simplex.primitive_type() < cofaces_type);
-    auto range = wmtk::utils::primitive_range(mesh.top_simplex_type(), cofaces_type);
-    range.pop_back();
-    for (const auto& pt : range) {
-        tuples = boundary_with_preserved_face_tuples(mesh, tuples, pt, my_simplex.primitive_type());
-    }
-    return tuples;
+    return cof.simplex_vector_tuples(cofaces_type);
 }
 
 
@@ -74,10 +62,9 @@ std::vector<Simplex> cofaces_single_dimension_simplices(
     const Simplex& simplex,
     PrimitiveType cofaces_type)
 {
-    return utils::tuple_vector_to_homogeneous_simplex_vector(
-        mesh,
-        cofaces_single_dimension_tuples(mesh, simplex, cofaces_type),
-        cofaces_type);
+    SimplexCollection cof = cofaces_single_dimension(mesh, simplex, cofaces_type);
+
+    return cof.simplex_vector();
 }
 
 SimplexCollection cofaces_single_dimension(
@@ -86,14 +73,31 @@ SimplexCollection cofaces_single_dimension(
     PrimitiveType cofaces_type,
     bool sort_and_clean)
 {
-    SimplexCollection collection(
-        mesh,
-        cofaces_single_dimension_simplices(mesh, my_simplex, cofaces_type));
-    if (sort_and_clean) {
-        collection.sort_and_clean();
+    simplex::SimplexCollection cofaces(mesh);
+
+    if (my_simplex.primitive_type() == cofaces_type) {
+        cofaces.add(my_simplex);
+        return cofaces;
     }
 
-    return collection;
+    std::vector<Tuple> tuples = top_dimension_cofaces_tuples(mesh, my_simplex);
+
+    assert(my_simplex.primitive_type() < cofaces_type);
+
+    for (const Tuple& t : tuples) {
+        simplices_preserving_primitive_types(
+            cofaces,
+            t,
+            mesh.top_simplex_type(),
+            my_simplex.primitive_type(),
+            cofaces_type);
+    }
+
+    if (sort_and_clean) {
+        cofaces.sort_and_clean();
+    }
+
+    return cofaces;
 }
 
 } // namespace wmtk::simplex
