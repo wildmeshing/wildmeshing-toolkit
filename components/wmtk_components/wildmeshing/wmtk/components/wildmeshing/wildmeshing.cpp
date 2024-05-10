@@ -675,7 +675,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         pass_through_attributes.emplace_back(constrained.front());
 
         auto envelope_position_handle =
-            envelope->get_attribute_handle<Rational>(v.geometry.position, PrimitiveType::Vertex);
+            v.geometry.mesh == "input"
+                ? envelope->get_attribute_handle<double>(v.geometry.position, PrimitiveType::Vertex)
+                : envelope->get_attribute_handle<Rational>(
+                      v.geometry.position,
+                      PrimitiveType::Vertex);
+        // envelope->get_attribute_handle<Rational>(v.geometry.position, PrimitiveType::Vertex);
+
 
         mesh_constraint_pairs.emplace_back(envelope_position_handle, constrained.front());
 
