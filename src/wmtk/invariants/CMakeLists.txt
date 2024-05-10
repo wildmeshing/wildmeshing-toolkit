@@ -81,6 +81,8 @@ set(SRC_FILES
     NoChildMeshAttachingInvariant.hpp
     NoChildMeshAttachingInvariant.cpp
 
+    EnergyFilterInvariant.hpp
+    EnergyFilterInvariant.cpp
     
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

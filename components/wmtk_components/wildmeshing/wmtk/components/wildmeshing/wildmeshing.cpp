@@ -37,6 +37,7 @@
 #include <wmtk/invariants/CollapseEnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/CollapseSoftEnergyBeforeInvariant.hpp>
 #include <wmtk/invariants/EdgeValenceInvariant.hpp>
+#include <wmtk/invariants/EnergyFilterInvariant.hpp>
 #include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/FunctionInvariant.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
@@ -64,9 +65,10 @@
 #include <wmtk/io/ParaviewWriter.hpp>
 
 #include <queue>
+#include <wmtk/simplex/k_ring.hpp>
 #include <wmtk/simplex/link.hpp>
 
-
+#include <fstream>
 namespace wmtk::components {
 
 using namespace simplex;
@@ -267,6 +269,138 @@ void adjust_sizing_field(
     }
 }
 
+void set_operation_energy_filter(
+    Mesh& m,
+    const TypedAttributeHandle<Rational>& coordinate_handle,
+    const TypedAttributeHandle<double>& energy_handle,
+    const TypedAttributeHandle<char>& energy_filter_handle,
+    const TypedAttributeHandle<char>& visited_handle,
+    const double stop_energy,
+    const double current_max_energy,
+    const double initial_target_edge_length)
+{
+    // two ring version
+    if (m.top_simplex_type() != PrimitiveType::Tetrahedron) return;
+
+    const auto coordinate_accessor = m.create_const_accessor<Rational>(coordinate_handle);
+    const auto energy_accessor = m.create_const_accessor<double>(energy_handle);
+
+    auto energy_filter_accessor = m.create_accessor<char>(energy_filter_handle);
+    auto visited_accessor = m.create_accessor<char>(visited_handle);
+
+    const double stop_filter_energy = stop_energy * 0.8;
+    double filter_energy = std::max(current_max_energy / 100, stop_filter_energy);
+    filter_energy = std::min(filter_energy, 100.0);
+
+    auto vertices_all = m.get_all(PrimitiveType::Vertex);
+
+    for (const auto& v : vertices_all) { // reset visited flag
+        visited_accessor.scalar_attribute(v) = char(0);
+        energy_filter_accessor.scalar_attribute(v) = char(0);
+    }
+
+    // get centroids and initial v_queue
+    for (const auto& t : m.get_all(PrimitiveType::Tetrahedron)) {
+        if (energy_accessor.const_scalar_attribute(t) < filter_energy) {
+            // skip good tets
+            continue;
+        }
+        auto vertices = m.orient_vertices(t);
+        for (const auto& v : vertices) {
+            energy_filter_accessor.scalar_attribute(v) = char(1);
+            for (const auto& vv : simplex::k_ring(m, simplex::Simplex::vertex(m, v), 2)
+                                      .simplex_vector(PrimitiveType::Vertex)) {
+                energy_filter_accessor.scalar_attribute(vv) = char(1);
+            }
+        }
+    }
+}
+
+void set_operation_energy_filter_after_sizing_field(
+    Mesh& m,
+    const TypedAttributeHandle<Rational>& coordinate_handle,
+    const TypedAttributeHandle<double>& energy_handle,
+    const TypedAttributeHandle<char>& energy_filter_handle,
+    const TypedAttributeHandle<char>& visited_handle,
+    const double stop_energy,
+    const double current_max_energy,
+    const double initial_target_edge_length)
+{
+    if (m.top_simplex_type() != PrimitiveType::Tetrahedron) return;
+
+    const auto coordinate_accessor = m.create_const_accessor<Rational>(coordinate_handle);
+    const auto energy_accessor = m.create_const_accessor<double>(energy_handle);
+
+    auto energy_filter_accessor = m.create_accessor<char>(energy_filter_handle);
+    auto visited_accessor = m.create_accessor<char>(visited_handle);
+
+    const double stop_filter_energy = stop_energy * 0.8;
+    double filter_energy = std::max(current_max_energy / 100, stop_filter_energy);
+    filter_energy = std::min(filter_energy, 100.0);
+
+    auto vertices_all = m.get_all(PrimitiveType::Vertex);
+    std::vector<Vector3d> centroids;
+    std::queue<Tuple> v_queue;
+
+    // get centroids and initial v_queue
+    for (const auto& t : m.get_all(PrimitiveType::Tetrahedron)) {
+        if (energy_accessor.const_scalar_attribute(t) < filter_energy) {
+            // skip good tets
+            continue;
+        }
+        auto vertices = m.orient_vertices(t);
+        Vector3d c(0, 0, 0);
+        for (int i = 0; i < 4; ++i) {
+            c += coordinate_accessor.const_vector_attribute(vertices[i]).cast<double>();
+            v_queue.emplace(vertices[i]);
+        }
+        centroids.emplace_back(c / 4.0);
+    }
+
+    const double R = initial_target_edge_length * 1.8;
+
+    for (const auto& v : vertices_all) { // reset visited flag
+        visited_accessor.scalar_attribute(v) = char(0);
+        energy_filter_accessor.scalar_attribute(v) = char(0);
+    }
+
+    // TODO: use efficient data structure
+    auto get_nearest_dist = [&](const Tuple& v) -> double {
+        Tuple nearest_tuple;
+        double min_dist = std::numeric_limits<double>::max();
+        const Vector3d v_pos = coordinate_accessor.const_vector_attribute(v).cast<double>();
+        for (const auto& c_pos : centroids) {
+            double dist = (c_pos - v_pos).norm();
+            min_dist = std::min(min_dist, dist);
+        }
+        return min_dist;
+    };
+
+    while (!v_queue.empty()) {
+        auto v = v_queue.front();
+        v_queue.pop();
+
+        if (visited_accessor.scalar_attribute(v) == char(1)) continue;
+        visited_accessor.scalar_attribute(v) = char(1);
+
+        double dist = std::max(0., get_nearest_dist(v));
+
+        if (dist > R) {
+            visited_accessor.scalar_attribute(v) = char(0);
+            continue;
+        }
+
+        energy_filter_accessor.scalar_attribute(v) = char(1);
+
+        // push one ring vertices into the queue
+        for (const auto& v_one_ring : simplex::link(m, simplex::Simplex::vertex(m, v))
+                                          .simplex_vector(PrimitiveType::Vertex)) {
+            if (visited_accessor.scalar_attribute(v_one_ring) == char(1)) continue;
+            v_queue.push(v_one_ring.tuple());
+        }
+    }
+}
+
 void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     //////////////////////////////////
@@ -412,7 +546,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //      target_max_amips,
     //      min_edge_length,
     //      target_edge_length_attribute,
-    //      &mesh](const Eigen::MatrixXd& P, const std::vector<Tuple>& neighs) -> Eigen::VectorXd {
+    //      &mesh](const Eigen::MatrixXd& P, const std::vector<Tuple>& neighs) ->
+    //      Eigen::VectorXd {
     //     auto target_edge_length_accessor =
     //         mesh->create_accessor(target_edge_length_attribute.as<double>());
 
@@ -443,7 +578,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
 
     //// Example for some other target edge length
-    // auto compute_target_edge_length = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorXd {
+    // auto compute_target_edge_length = [](const Eigen::MatrixX<Rational>& P) ->
+    // Eigen::VectorXd {
     //    assert(P.cols() == 2); // cols --> number of neighbors
     //    assert(P.rows() == 2 || P.rows() == 3); // rows --> attribute dimension
     //    const double x_avg = 0.5 * (P(0, 0) + P(0, 1)).to_double();
@@ -639,6 +775,27 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     pass_through_attributes.push_back(visited_vertex_flag);
 
     //////////////////////////////////
+    // energy filter flag
+    //////////////////////////////////
+    auto energy_filter_attribute =
+        mesh->register_attribute<char>("energy_filter", PrimitiveType::Vertex, 1, false, char(1));
+
+    auto energy_filter_accessor = mesh->create_accessor<char>(energy_filter_attribute);
+
+    auto update_energy_filter_func = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<char> {
+        assert(P.cols() == 2);
+        assert(P.rows() == 2 || P.rows() == 3);
+        return Eigen::VectorX<char>::Constant(1, char(1));
+    };
+    auto energy_filter_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<char, Rational>>(
+            energy_filter_attribute,
+            pt_attribute,
+            update_energy_filter_func);
+
+    pass_through_attributes.push_back(energy_filter_attribute);
+
+    //////////////////////////////////
     // Creation of the 4 ops
     //////////////////////////////////
     std::vector<std::shared_ptr<Operation>> ops;
@@ -678,6 +835,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     split->add_transfer_strategy(amips_update);
     split->add_transfer_strategy(edge_length_update);
     split->add_transfer_strategy(tag_update); // for renew the queue
+    split->add_transfer_strategy(energy_filter_update);
 
     // split->add_transfer_strategy(target_edge_length_update);
 
@@ -734,12 +892,15 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     split_unrounded->add_transfer_strategy(amips_update);
     split_unrounded->add_transfer_strategy(edge_length_update);
     split_unrounded->add_transfer_strategy(tag_update); // for renew the queue
+    split_unrounded->add_transfer_strategy(energy_filter_update);
 
     // split->add_transfer_strategy(target_edge_length_update);
 
     auto split_sequence = std::make_shared<OrOperationSequence>(*mesh);
     split_sequence->add_operation(split_then_round);
     split_sequence->add_operation(split_unrounded);
+    split_sequence->add_invariant(
+        std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
 
     ops.emplace_back(split_sequence);
     ops_name.emplace_back("SPLIT");
@@ -780,6 +941,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             wmtk::operations::CollapseBasicStrategy::None);
 
         collapse->add_transfer_strategy(tag_update);
+        collapse->add_transfer_strategy(energy_filter_update);
         for (const auto& attr : pass_through_attributes) {
             collapse->set_new_attribute_strategy(attr);
         }
@@ -828,6 +990,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     collapse_then_round->add_operation(rounding);
 
     collapse_then_round->set_priority(short_edges_first);
+    collapse_then_round->add_invariant(
+        std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
 
 
     for (auto& s : update_child_positon) {
@@ -1196,12 +1360,17 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap_all->add_operation(swap44);
         swap_all->add_operation(swap56);
         swap_all->add_transfer_strategy(tag_update);
+        swap_all->add_transfer_strategy(energy_filter_update);
 
         auto swap_then_round = std::make_shared<AndOperationSequence>(*mesh);
         swap_then_round->add_operation(swap_all);
         swap_then_round->add_operation(rounding);
+        swap_then_round->add_invariant(
+            std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
         swap_then_round->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
         swap_then_round->add_invariant(std::make_shared<NoChildMeshAttachingInvariant>(*mesh));
+
+
         // swap_then_round->add_invariant(inversion_invariant);
         for (auto& s : update_child_positon) {
             swap_then_round->add_transfer_strategy(s);
@@ -1240,6 +1409,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     proj_smoothing->add_invariant(envelope_invariant);
     proj_smoothing->add_invariant(inversion_invariant);
+    proj_smoothing->add_invariant(
+        std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
 
     proj_smoothing->add_transfer_strategy(amips_update);
     proj_smoothing->add_transfer_strategy(edge_length_update);
@@ -1336,6 +1507,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         max_energy,
         min_energy,
         avg_energy);
+
+    std::ofstream file0("quality_plot_pre.csv");
+    file0 << "tid, quality" << std::endl;
+    int64_t t_cnt = 0;
+    for (const auto& t : mesh->get_all(PrimitiveType::Tetrahedron)) {
+        t_cnt++;
+        file0 << t_cnt << ", " << amips_accessor.scalar_attribute(t) << std::endl;
+    }
 
 
     double old_max_energy = max_energy;
@@ -1497,6 +1676,69 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 min_edge_length);
 
             wmtk::logger().info("adjusting sizing field finished");
+
+            // wmtk::logger().info("setting energy filter ...");
+            // set_operation_energy_filter_after_sizing_field(
+            //     *mesh,
+            //     pt_attribute.as<Rational>(),
+            //     amips_attribute.as<double>(),
+            //     energy_filter_attribute.as<char>(),
+            //     visited_vertex_flag.as<char>(),
+            //     target_max_amips,
+            //     max_energy,
+            //     target_edge_length);
+            // wmtk::logger().info("setting energy filter finished");
+
+            // int64_t e_cnt = 0;
+            // for (const auto& e : mesh->get_all(PrimitiveType::Edge)) {
+            //     if (energy_filter_accessor.scalar_attribute(e) == char(1) ||
+            //         energy_filter_accessor.scalar_attribute(
+            //             mesh->switch_tuple(e, PrimitiveType::Vertex)) == char(1)) {
+            //         e_cnt++;
+            //     }
+            // }
+            // wmtk::logger().info(
+            //     "{} edges are going to be executed out of {}",
+            //     e_cnt,
+            //     mesh->get_all(PrimitiveType::Edge).size());
+
+            for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
+                energy_filter_accessor.scalar_attribute(v) = char(1);
+            }
+            wmtk::logger().info("reset energy filter");
+        } else {
+            wmtk::logger().info("setting energy filter ...");
+            set_operation_energy_filter(
+                *mesh,
+                pt_attribute.as<Rational>(),
+                amips_attribute.as<double>(),
+                energy_filter_attribute.as<char>(),
+                visited_vertex_flag.as<char>(),
+                target_max_amips,
+                max_energy,
+                target_edge_length);
+            wmtk::logger().info("setting energy filter finished");
+
+            int64_t e_cnt = 0;
+            for (const auto& e : mesh->get_all(PrimitiveType::Edge)) {
+                if (energy_filter_accessor.scalar_attribute(e) == char(1) ||
+                    energy_filter_accessor.scalar_attribute(
+                        mesh->switch_tuple(e, PrimitiveType::Vertex)) == char(1)) {
+                    e_cnt++;
+                }
+            }
+            wmtk::logger().info(
+                "{} edges are going to be executed out of {}",
+                e_cnt,
+                mesh->get_all(PrimitiveType::Edge).size());
+        }
+
+        std::ofstream file("quality_plot_" + std::to_string(i) + ".csv");
+        file << "tid, quality" << std::endl;
+        int64_t t_cnt = 0;
+        for (const auto& t : mesh->get_all(PrimitiveType::Tetrahedron)) {
+            t_cnt++;
+            file << t_cnt << ", " << amips_accessor.scalar_attribute(t) << std::endl;
         }
 
         old_max_energy = max_energy;
