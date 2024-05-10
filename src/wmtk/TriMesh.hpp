@@ -64,7 +64,7 @@ public:
     Tuple switch_edge(const Tuple& tuple) const;
     Tuple switch_face(const Tuple& tuple) const;
 
-    std::vector<Tuple> orient_vertices(const Tuple& t) const;
+    std::vector<Tuple> orient_vertices(const Tuple& t) const override;
 
 protected:
     int64_t id(const Tuple& tuple, PrimitiveType type) const;
