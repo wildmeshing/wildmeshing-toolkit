@@ -90,14 +90,6 @@ bool CollapseEnergyBeforeInvariant::before(const simplex::Simplex& s) const
                         lv_pos[1],
                         lv_pos[2],
                         lv_pos[3]) <= 0) {
-                    // debug output
-                    /*-----------------------*/
-                    std::array<int64_t, 3> problem_eids = {{1485, 4502, 4500}};
-                    if (std::find(problem_eids.begin(), problem_eids.end(), s.m_index) !=
-                        problem_eids.end()) {
-                        wmtk::logger().error("Edge {} rejected by inversion check 1!", s.m_index);
-                    }
-                    /*-----------------------*/
                     return false;
                 }
 
@@ -203,14 +195,6 @@ bool CollapseEnergyBeforeInvariant::before(const simplex::Simplex& s) const
                         lv_pos[1],
                         lv_pos[2],
                         lv_pos[3]) <= 0) {
-                    // debug output
-                    /*-----------------------*/
-                    std::array<int64_t, 3> problem_eids = {{1485, 4502, 4500}};
-                    if (std::find(problem_eids.begin(), problem_eids.end(), s.m_index) !=
-                        problem_eids.end()) {
-                        wmtk::logger().error("Edge {} rejected by inversion check 1!", s.m_index);
-                    }
-                    /*-----------------------*/
                     return false;
                 }
 
@@ -268,16 +252,7 @@ bool CollapseEnergyBeforeInvariant::before(const simplex::Simplex& s) const
         default: throw std::runtime_error("Invalid collapse type");
         }
 
-        // debug output
-        if (new_energy_max > old_energy_max) {
-            /*-----------------------*/
-            std::array<int64_t, 3> problem_eids = {{1485, 4502, 4500}};
-            if (std::find(problem_eids.begin(), problem_eids.end(), s.m_index) !=
-                problem_eids.end()) {
-                wmtk::logger().error("Edge {} rejected by energy check 1!", s.m_index);
-            }
-            /*-----------------------*/
-        }
+
         return new_energy_max <= old_energy_max;
 
     } else if (mesh().top_simplex_type() == PF) {
