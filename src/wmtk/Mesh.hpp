@@ -350,8 +350,7 @@ protected: // member functions
     Tuple resurrect_tuple_slow(const Tuple& tuple);
 
 
-    // protected:
-public:
+protected:
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
      * cid
