@@ -63,6 +63,9 @@
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 
+#include <queue>
+#include <wmtk/simplex/link.hpp>
+
 
 namespace wmtk::components {
 
@@ -125,6 +128,144 @@ void write(
 }
 
 } // namespace
+
+void adjust_sizing_field(
+    Mesh& m,
+    const TypedAttributeHandle<Rational>& coordinate_handle,
+    const TypedAttributeHandle<double>& edge_length_handle,
+    const TypedAttributeHandle<double>& sizing_field_scalar_handle,
+    const TypedAttributeHandle<double>& energy_handle,
+    const TypedAttributeHandle<double>& target_edge_length_handle,
+    const TypedAttributeHandle<char>& visited_handle,
+    const double stop_energy,
+    const double current_max_energy,
+    const double initial_target_edge_length,
+    const double min_target_edge_length)
+{
+    if (m.top_simplex_type() != PrimitiveType::Tetrahedron) return;
+
+    std::cout << "in here" << std::endl;
+
+    const auto coordinate_accessor = m.create_const_accessor<Rational>(coordinate_handle);
+    const auto edge_length_accessor = m.create_const_accessor<double>(edge_length_handle);
+    const auto energy_accessor = m.create_const_accessor<double>(energy_handle);
+
+    auto sizing_field_scalar_accessor = m.create_accessor<double>(sizing_field_scalar_handle);
+    auto target_edge_length_accessor = m.create_accessor<double>(target_edge_length_handle);
+    auto visited_accessor = m.create_accessor<char>(visited_handle);
+
+    const double stop_filter_energy = stop_energy * 0.8;
+    double filter_energy = std::max(current_max_energy / 100, stop_filter_energy);
+    filter_energy = std::min(filter_energy, 100.0);
+
+    const double recover_scalar = 1.5;
+    const double refine_scalar = 0.5;
+    const double min_refine_scalar = min_target_edge_length / initial_target_edge_length;
+
+    auto vertices_all = m.get_all(PrimitiveType::Vertex);
+    int64_t v_cnt = vertices_all.size();
+
+    std::vector<Vector3d> centroids;
+    std::queue<Tuple> v_queue;
+    // std::vector<double> scale_multipliers(v_cnt, recover_scalar);
+
+    // get centroids and initial v_queue
+    for (const auto& t : m.get_all(PrimitiveType::Tetrahedron)) {
+        // if (std::cbrt(energy_accessor.const_scalar_attribute(t)) < filter_energy) {
+        if (energy_accessor.const_scalar_attribute(t) < filter_energy) {
+            // skip good tets
+            continue;
+        }
+        auto vertices = m.orient_vertices(t);
+        Vector3d c(0, 0, 0);
+        for (int i = 0; i < 4; ++i) {
+            c += coordinate_accessor.const_vector_attribute(vertices[i]).cast<double>();
+            v_queue.emplace(vertices[i]);
+        }
+        centroids.emplace_back(c / 4.0);
+    }
+
+    wmtk::logger().info(
+        "filter energy: {}, low quality tets num: {}",
+        filter_energy,
+        centroids.size());
+
+    const double R = initial_target_edge_length * 1.8; // update field radius
+
+    for (const auto& v : vertices_all) { // reset visited flag
+        visited_accessor.scalar_attribute(v) = char(0);
+    }
+
+    // TODO: use efficient data structure
+    auto get_nearest_dist = [&](const Tuple& v) -> double {
+        Tuple nearest_tuple;
+        double min_dist = std::numeric_limits<double>::max();
+        const Vector3d v_pos = coordinate_accessor.const_vector_attribute(v).cast<double>();
+        for (const auto& c_pos : centroids) {
+            double dist = (c_pos - v_pos).norm();
+            min_dist = std::min(min_dist, dist);
+        }
+        return min_dist;
+    };
+
+    while (!v_queue.empty()) {
+        auto v = v_queue.front();
+        v_queue.pop();
+
+        if (visited_accessor.scalar_attribute(v) == char(1)) continue;
+        visited_accessor.scalar_attribute(v) = char(1);
+
+        double dist = std::max(0., get_nearest_dist(v));
+
+        if (dist > R) {
+            visited_accessor.scalar_attribute(v) = char(0);
+            continue;
+        }
+
+        double scale_multiplier = std::min(
+            recover_scalar,
+            dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
+
+        auto new_scale = sizing_field_scalar_accessor.scalar_attribute(v) * scale_multiplier;
+        if (new_scale > 1) {
+            sizing_field_scalar_accessor.scalar_attribute(v) = 1;
+        } else if (new_scale < min_refine_scalar) {
+            sizing_field_scalar_accessor.scalar_attribute(v) = min_refine_scalar;
+        } else {
+            sizing_field_scalar_accessor.scalar_attribute(v) = new_scale;
+        }
+
+        // push one ring vertices into the queue
+        for (const auto& v_one_ring : simplex::link(m, simplex::Simplex::vertex(m, v))
+                                          .simplex_vector(PrimitiveType::Vertex)) {
+            if (visited_accessor.scalar_attribute(v_one_ring) == char(1)) continue;
+            v_queue.push(v_one_ring.tuple());
+        }
+    }
+
+    // update the rest
+    for (const auto& v : vertices_all) {
+        if (visited_accessor.scalar_attribute(v) = char(1)) continue;
+        auto new_scale = sizing_field_scalar_accessor.scalar_attribute(v) * 1.5;
+        if (new_scale > 1) {
+            sizing_field_scalar_accessor.scalar_attribute(v) = 1;
+        } else if (new_scale < min_refine_scalar) {
+            sizing_field_scalar_accessor.scalar_attribute(v) = min_refine_scalar;
+        } else {
+            sizing_field_scalar_accessor.scalar_attribute(v) = new_scale;
+        }
+    }
+
+    // update target edge length
+    for (const auto& e : m.get_all(PrimitiveType::Edge)) {
+        target_edge_length_accessor.scalar_attribute(e) =
+            initial_target_edge_length *
+            (sizing_field_scalar_accessor.scalar_attribute(e) +
+             sizing_field_scalar_accessor.scalar_attribute(
+                 m.switch_tuple(e, PrimitiveType::Vertex))) /
+            2;
+    }
+}
 
 void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
@@ -229,6 +370,18 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     logger().info("Initial Max AMIPS Energy: {}, Min AMIPS Energy: {}", max_amips, min_amips);
 
     //////////////////////////////////
+    // sizing field scalar
+    //////////////////////////////////
+
+    auto sizing_field_scalar_attribute = mesh->register_attribute<double>(
+        "sizing_field_scalar",
+        PrimitiveType::Vertex,
+        1,
+        false,
+        1); // defaults to 1
+
+
+    //////////////////////////////////
     // Storing target edge length
     auto target_edge_length_attribute = mesh->register_attribute<double>(
         "wildmeshing_target_edge_length",
@@ -244,39 +397,50 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             : options.envelopes[0].thickness; // use envelope thickness if available
     const double target_max_amips = options.target_max_amips;
 
-    auto compute_target_edge_length =
-        [target_edge_length,
-         target_max_amips,
-         min_edge_length,
-         target_edge_length_attribute,
-         &mesh](const Eigen::MatrixXd& P, const std::vector<Tuple>& neighs) -> Eigen::VectorXd {
-        auto target_edge_length_accessor =
-            mesh->create_accessor(target_edge_length_attribute.as<double>());
+    // Target Edge length update
+    // auto compute_target_edge_length = [&](const Eigen::Vector2d& P) -> double {
+    //     return (P[0] + P[1]) / 2 * target_edge_length;
+    // };
+    // auto target_edge_length_update =
+    //     std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+    //         target_edge_length_attribute,
+    //         sizing_field_scalar_attribute,
+    //         compute_target_edge_length);
 
-        assert(P.rows() == 1); // rows --> attribute dimension
-        assert(!neighs.empty());
-        assert(P.cols() == neighs.size());
-        const double current_target_edge_length =
-            target_edge_length_accessor.const_scalar_attribute(neighs[0]);
-        const double max_amips = P.maxCoeff();
+    // auto compute_target_edge_length =
+    //     [target_edge_length,
+    //      target_max_amips,
+    //      min_edge_length,
+    //      target_edge_length_attribute,
+    //      &mesh](const Eigen::MatrixXd& P, const std::vector<Tuple>& neighs) -> Eigen::VectorXd {
+    //     auto target_edge_length_accessor =
+    //         mesh->create_accessor(target_edge_length_attribute.as<double>());
 
-        double new_target_edge_length = current_target_edge_length;
-        if (max_amips > target_max_amips) {
-            new_target_edge_length *= 0.5;
-        } else {
-            new_target_edge_length *= 1.5;
-        }
-        new_target_edge_length =
-            std::min(new_target_edge_length, target_edge_length); // upper bound
-        new_target_edge_length = std::max(new_target_edge_length, min_edge_length); // lower bound
+    //     assert(P.rows() == 1); // rows --> attribute dimension
+    //     assert(!neighs.empty());
+    //     assert(P.cols() == neighs.size());
+    //     const double current_target_edge_length =
+    //         target_edge_length_accessor.const_scalar_attribute(neighs[0]);
+    //     const double max_amips = P.maxCoeff();
 
-        return Eigen::VectorXd::Constant(1, new_target_edge_length);
-    };
-    auto target_edge_length_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-            target_edge_length_attribute,
-            amips_attribute,
-            compute_target_edge_length);
+    //     double new_target_edge_length = current_target_edge_length;
+    //     if (max_amips > target_max_amips) {
+    //         new_target_edge_length *= 0.5;
+    //     } else {
+    //         new_target_edge_length *= 1.5;
+    //     }
+    //     new_target_edge_length =
+    //         std::min(new_target_edge_length, target_edge_length); // upper bound
+    //     new_target_edge_length = std::max(new_target_edge_length, min_edge_length); // lower bound
+
+    //     return Eigen::VectorXd::Constant(1, new_target_edge_length);
+    // };
+    // auto target_edge_length_update =
+    //     std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+    //         target_edge_length_attribute,
+    //         amips_attribute,
+    //         compute_target_edge_length);
+
 
     //// Example for some other target edge length
     // auto compute_target_edge_length = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorXd {
@@ -318,6 +482,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     pass_through_attributes.push_back(edge_length_attribute);
     pass_through_attributes.push_back(amips_attribute);
     pass_through_attributes.push_back(target_edge_length_attribute);
+
 
     //////////////////////////////////
     // Lambdas for priority
@@ -466,6 +631,12 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             pt_attribute,
             update_flag_func);
 
+    //////////////////////////////////
+    // sizing field update flags
+    //////////////////////////////////
+    auto visited_vertex_flag =
+        mesh->register_attribute<char>("visited_vertex", PrimitiveType::Vertex, 1, false, char(1));
+    pass_through_attributes.push_back(visited_vertex_flag);
 
     //////////////////////////////////
     // Creation of the 4 ops
@@ -495,6 +666,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     split->add_invariant(inversion_invariant);
 
     split->set_new_attribute_strategy(pt_attribute);
+    split->set_new_attribute_strategy(sizing_field_scalar_attribute);
     split->set_new_attribute_strategy(
         visited_edge_flag,
         wmtk::operations::SplitBasicStrategy::None,
@@ -506,6 +678,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     split->add_transfer_strategy(amips_update);
     split->add_transfer_strategy(edge_length_update);
     split->add_transfer_strategy(tag_update); // for renew the queue
+
     // split->add_transfer_strategy(target_edge_length_update);
 
     auto split_then_round = std::make_shared<AndOperationSequence>(*mesh);
@@ -521,17 +694,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     split_unrounded->set_priority(long_edges_first);
 
     split_unrounded->add_invariant(todo_larger);
-
-    // auto unrounded_mean = [](const Eigen::MatrixX<Rational>& P) -> Eigen::Matrix<Rational> {
-    //     assert(P.cols() == 2);
-    //     Eigen::Matrix<Rational> p0(p.rows(), 1);
-    //     Eigen::Matrix<Rational> p1(p.rows(), 1);
-    //     for (int i = 0; i < p.rows(); ++i) {
-    //         p0 = Rational(P(i, 0), false);
-    //         p1 = Rational(P(i, 1), false);
-    //     }
-    //     return (p0 + p1) / 2;
-    // };
 
     auto split_unrounded_transfer_strategy =
         std::make_shared<SplitNewAttributeStrategy<Rational>>(pt_attribute);
@@ -560,6 +722,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         });
 
     split_unrounded->set_new_attribute_strategy(pt_attribute, split_unrounded_transfer_strategy);
+    split_unrounded->set_new_attribute_strategy(sizing_field_scalar_attribute);
     split_unrounded->set_new_attribute_strategy(
         visited_edge_flag,
         wmtk::operations::SplitBasicStrategy::None,
@@ -571,6 +734,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     split_unrounded->add_transfer_strategy(amips_update);
     split_unrounded->add_transfer_strategy(edge_length_update);
     split_unrounded->add_transfer_strategy(tag_update); // for renew the queue
+
     // split->add_transfer_strategy(target_edge_length_update);
 
     auto split_sequence = std::make_shared<OrOperationSequence>(*mesh);
@@ -640,6 +804,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         1));
 
     collapse1->set_new_attribute_strategy(pt_attribute, clps_strat1);
+    collapse1->set_new_attribute_strategy(sizing_field_scalar_attribute, clps_strat1);
     setup_collapse(collapse1);
 
     auto collapse2 = std::make_shared<EdgeCollapse>(*mesh);
@@ -650,6 +815,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         0));
 
     collapse2->set_new_attribute_strategy(pt_attribute, clps_strat2);
+    collapse2->set_new_attribute_strategy(sizing_field_scalar_attribute, clps_strat2);
     setup_collapse(collapse2);
 
     auto collapse = std::make_shared<OrOperationSequence>(*mesh);
@@ -736,7 +902,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             swap->collapse().set_new_attribute_strategy(
                 pt_attribute,
                 CollapseBasicStrategy::CopyOther);
+            swap->collapse().set_new_attribute_strategy(
+                sizing_field_scalar_attribute,
+                CollapseBasicStrategy::CopyOther);
             swap->split().set_new_attribute_strategy(pt_attribute);
+            swap->split().set_new_attribute_strategy(sizing_field_scalar_attribute);
             swap->split().set_new_attribute_strategy(
                 visited_edge_flag,
                 wmtk::operations::SplitBasicStrategy::None,
@@ -870,7 +1040,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             swap->collapse().set_new_attribute_strategy(
                 pt_attribute,
                 CollapseBasicStrategy::CopyOther);
+            swap->collapse().set_new_attribute_strategy(
+                sizing_field_scalar_attribute,
+                CollapseBasicStrategy::CopyOther);
             swap->split().set_new_attribute_strategy(pt_attribute);
+            swap->split().set_new_attribute_strategy(sizing_field_scalar_attribute);
             swap->split().set_new_attribute_strategy(
                 visited_edge_flag,
                 wmtk::operations::SplitBasicStrategy::None,
@@ -996,8 +1170,12 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap32->collapse().set_new_attribute_strategy(
             pt_attribute,
             CollapseBasicStrategy::CopyOther);
+        swap32->collapse().set_new_attribute_strategy(
+            sizing_field_scalar_attribute,
+            CollapseBasicStrategy::CopyOther);
         swap32->add_invariant(inversion_invariant);
         swap32->split().set_new_attribute_strategy(pt_attribute);
+        swap32->split().set_new_attribute_strategy(sizing_field_scalar_attribute);
         swap32->split().set_new_attribute_strategy(
             visited_edge_flag,
             wmtk::operations::SplitBasicStrategy::None,
@@ -1151,13 +1329,17 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         avg_energy += e;
     }
 
+    avg_energy = avg_energy / mesh->get_all(mesh->top_simplex_type()).size();
+
     logger().info(
         "Max AMIPS Energy: {}, Min AMIPS Energy: {}, Avg AMIPS Energy: {}",
         max_energy,
         min_energy,
-        avg_energy / mesh->get_all(mesh->top_simplex_type()).size());
+        avg_energy);
+
 
     double old_max_energy = max_energy;
+    double old_avg_energy = avg_energy;
     int iii = 0;
     bool is_double = false;
     for (int64_t i = 0; i < options.passes; ++i) {
@@ -1224,11 +1406,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 avg_energy += e;
             }
 
+            avg_energy = avg_energy / mesh->get_all(mesh->top_simplex_type()).size();
+
             logger().info(
                 "Max AMIPS Energy: {}, Min AMIPS Energy: {}, Avg AMIPS Energy: {}",
                 max_energy,
                 min_energy,
-                avg_energy / mesh->get_all(mesh->top_simplex_type()).size());
+                avg_energy);
 
 
             ++jj;
@@ -1267,6 +1451,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             avg_energy += e;
         }
 
+        avg_energy = avg_energy / mesh->get_all(mesh->top_simplex_type()).size();
+
         int64_t unrounded = 0;
         if (!is_double) {
             bool rational = false;
@@ -1289,36 +1475,36 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             "Max AMIPS Energy: {}, Min AMIPS Energy: {}, Avg AMIPS Energy: {}",
             max_energy,
             min_energy,
-            avg_energy / mesh->get_all(mesh->top_simplex_type()).size());
+            avg_energy);
 
 
-        if (max_energy >= old_max_energy) {
-            logger().info("updating target edge length ...");
-            target_edge_length_update->run_on_all();
-            logger().info("updated target edge length");
+        // adjust sizing field
+        if (i > 0 && old_max_energy - max_energy < 5e-1 &&
+            (old_avg_energy - avg_energy) / avg_energy < 0.1) {
+            wmtk::logger().info("adjusting sizing field ...");
+
+            adjust_sizing_field(
+                *mesh,
+                pt_attribute.as<Rational>(),
+                edge_length_attribute.as<double>(),
+                sizing_field_scalar_attribute.as<double>(),
+                amips_attribute.as<double>(),
+                target_edge_length_attribute.as<double>(),
+                visited_vertex_flag.as<char>(),
+                target_max_amips,
+                max_energy,
+                target_edge_length,
+                min_edge_length);
+
+            wmtk::logger().info("adjusting sizing field finished");
         }
 
         old_max_energy = max_energy;
+        old_avg_energy = avg_energy;
 
         // stop at good quality
         if (max_energy <= target_max_amips && is_double) break;
     }
-
-    // /*------------ test code ------------*/
-    // spdlog::set_level(spdlog::level::debug);
-    // // logger().set_level(spdlog::level::debug);
-
-    // std::vector<int64_t> problem_vids = {3334, 1476, 1097, 1272};
-
-    // for (int i = 0; i < problem_vids.size(); ++i) {
-    //     auto mod = (*proj_smoothing)(simplex::Simplex::vertex(
-    //         *mesh,
-    //         mesh->tuple_from_id(PrimitiveType::Vertex, problem_vids[i])));
-    //     if (mod.empty()) {
-    //         wmtk::logger().info("Cannot smooth vertex {}", problem_vids[i]);
-    //     }
-    // }
-    // /*-----------------------------------*/
 
     // output
     cache.write_mesh(*mesh, options.output);
