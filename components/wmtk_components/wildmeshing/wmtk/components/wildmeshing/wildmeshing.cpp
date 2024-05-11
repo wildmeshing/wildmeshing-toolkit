@@ -722,17 +722,29 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     auto link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(*mesh);
 
+    // auto todo_larger = std::make_shared<TodoLargerInvariant>(
+    //     *mesh,
+    //     edge_length_attribute.as<double>(),
+    //     target_edge_length_attribute.as<double>(),
+    //     4.0 / 3.0);
+
+    // auto todo_smaller = std::make_shared<TodoSmallerInvariant>(
+    //     *mesh,
+    //     edge_length_attribute.as<double>(),
+    //     target_edge_length_attribute.as<double>(),
+    //     4.0 / 5.0);
+
     auto todo_larger = std::make_shared<TodoLargerInvariant>(
         *mesh,
         edge_length_attribute.as<double>(),
         target_edge_length_attribute.as<double>(),
-        4.0 / 3.0);
+        2.);
 
     auto todo_smaller = std::make_shared<TodoSmallerInvariant>(
         *mesh,
         edge_length_attribute.as<double>(),
         target_edge_length_attribute.as<double>(),
-        4.0 / 5.0);
+        0.5);
 
     auto interior_edge = std::make_shared<InteriorEdgeInvariant>(*mesh);
     auto interior_face = std::make_shared<InteriorSimplexInvariant>(*mesh, PrimitiveType::Triangle);
@@ -1133,7 +1145,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 pt_attribute.as<Rational>(),
                 i));
 
-            swap->add_invariant(inversion_invariant);
+            // swap->add_invariant(inversion_invariant);
+            swap->collapse().add_invariant(inversion_invariant);
+
+            swap->collapse().add_invariant(envelope_invariant);
 
             for (const auto& attr : pass_through_attributes) {
                 swap->split().set_new_attribute_strategy(
@@ -1284,7 +1299,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 pt_attribute.as<Rational>(),
                 i));
 
-            swap->add_invariant(inversion_invariant);
+            // swap->add_invariant(inversion_invariant);
+            swap->collapse().add_invariant(inversion_invariant);
+
+            swap->collapse().add_invariant(envelope_invariant);
 
             for (const auto& attr : pass_through_attributes) {
                 swap->split().set_new_attribute_strategy(
@@ -1404,7 +1422,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap32->collapse().set_new_attribute_strategy(
             sizing_field_scalar_attribute,
             CollapseBasicStrategy::CopyOther);
-        swap32->add_invariant(inversion_invariant);
+        // swap32->add_invariant(inversion_invariant);
         swap32->split().set_new_attribute_strategy(pt_attribute);
         swap32->split().set_new_attribute_strategy(sizing_field_scalar_attribute);
         swap32->split().set_new_attribute_strategy(
@@ -1422,6 +1440,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap32->collapse().set_new_attribute_strategy(
             target_edge_length_attribute,
             wmtk::operations::CollapseBasicStrategy::None);
+
+        // hack
+        swap32->collapse().add_invariant(inversion_invariant);
+        swap32->collapse().add_invariant(envelope_invariant);
 
         for (const auto& attr : pass_through_attributes) {
             swap32->split().set_new_attribute_strategy(

@@ -296,9 +296,9 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
                 single_cell[3 * i + 1] = p[1].to_double();
                 single_cell[3 * i + 2] = p[2].to_double();
             }
-            if (wmtk::utils::wmtk_orient3d(ps[3], ps[0], ps[1], ps[2]) <= 0) {
-                std::cout << "this is wrong" << std::endl;
-            }
+            // if (wmtk::utils::wmtk_orient3d(ps[3], ps[0], ps[1], ps[2]) <= 0) {
+            //     std::cout << "this is wrong" << std::endl;
+            // }
 
             cells.emplace_back(single_cell);
 
