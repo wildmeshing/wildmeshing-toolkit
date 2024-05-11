@@ -16,7 +16,7 @@ bool TodoInvariant::before(const simplex::Simplex& t) const
     assert(t.primitive_type() == m_todo_handle.primitive_type());
     const attribute::Accessor<int64_t> split_todo_accessor =
         mesh().create_const_accessor<int64_t>(m_todo_handle);
-    return split_todo_accessor.const_scalar_attribute(t.tuple()) == m_val;
+    return split_todo_accessor.const_scalar_attribute(t) == m_val;
 }
 
 TodoLargerInvariant::TodoLargerInvariant(
@@ -48,10 +48,10 @@ bool TodoLargerInvariant::before(const simplex::Simplex& t) const
     if (m_comparison_handle.has_value()) {
         const attribute::Accessor<double> comp_accessor =
             mesh().create_const_accessor<double>(m_comparison_handle.value());
-        return split_todo_accessor.const_scalar_attribute(t.tuple()) >
-               m_val * comp_accessor.const_scalar_attribute(t.tuple());
+        return split_todo_accessor.const_scalar_attribute(t) >
+               m_val * comp_accessor.const_scalar_attribute(t);
     } else {
-        return split_todo_accessor.const_scalar_attribute(t.tuple()) > m_val;
+        return split_todo_accessor.const_scalar_attribute(t) > m_val;
     }
 }
 
@@ -84,10 +84,10 @@ bool TodoSmallerInvariant::before(const simplex::Simplex& t) const
     if (m_comparison_handle.has_value()) {
         const attribute::Accessor<double> comp_accessor =
             mesh().create_const_accessor<double>(m_comparison_handle.value());
-        return split_todo_accessor.const_scalar_attribute(t.tuple()) <
-               m_val * comp_accessor.const_scalar_attribute(t.tuple());
+        return split_todo_accessor.const_scalar_attribute(t) <
+               m_val * comp_accessor.const_scalar_attribute(t);
     } else {
-        return split_todo_accessor.const_scalar_attribute(t.tuple()) < m_val;
+        return split_todo_accessor.const_scalar_attribute(t) < m_val;
     }
 }
 } // namespace wmtk

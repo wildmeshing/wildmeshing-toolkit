@@ -212,7 +212,7 @@ void run_tetwild_test(
     RowVectors4l t(tets.size(), 4);
     for (int64_t i = 0; i < tets.size(); ++i) {
         t.row(i) = tets[i];
-        const auto ori = wmtk::utils::wmtk_orient3d<Rational>(
+        const auto ori = wmtk::utils::wmtk_orient3d(
             v.row(t(i, 0)),
             v.row(t(i, 1)),
             v.row(t(i, 2)),
