@@ -617,7 +617,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto pass_through_attributes = base::get_attributes(cache, *mesh, options.pass_through);
     pass_through_attributes.push_back(edge_length_attribute);
     pass_through_attributes.push_back(amips_attribute);
-    pass_through_attributes.push_back(target_edge_length_attribute);
+    // pass_through_attributes.push_back(target_edge_length_attribute);
 
 
     //////////////////////////////////
@@ -834,6 +834,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         visited_edge_flag,
         wmtk::operations::SplitBasicStrategy::None,
         wmtk::operations::SplitRibBasicStrategy::None);
+    split->set_new_attribute_strategy(
+        target_edge_length_attribute,
+        wmtk::operations::SplitBasicStrategy::Copy,
+        wmtk::operations::SplitRibBasicStrategy::Mean);
+
     for (const auto& attr : pass_through_attributes) {
         split->set_new_attribute_strategy(
             attr,
@@ -900,6 +905,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             wmtk::operations::SplitBasicStrategy::None,
             wmtk::operations::SplitRibBasicStrategy::None);
     }
+    split_unrounded->set_new_attribute_strategy(
+        target_edge_length_attribute,
+        wmtk::operations::SplitBasicStrategy::Copy,
+        wmtk::operations::SplitRibBasicStrategy::Mean);
 
     split_unrounded->add_transfer_strategy(amips_update);
     split_unrounded->add_transfer_strategy(edge_length_update);
@@ -961,6 +970,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 attr,
                 wmtk::operations::CollapseBasicStrategy::None);
         }
+        collapse->set_new_attribute_strategy(
+            target_edge_length_attribute,
+            wmtk::operations::CollapseBasicStrategy::None);
         // THis triggers a segfault in release
         // solved somehow
         // collapse->set_priority(short_edges_first);
@@ -1049,6 +1061,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         collapse.set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::CopyOther);
         split.set_new_attribute_strategy(pt_attribute);
 
+        split.set_new_attribute_strategy(
+            target_edge_length_attribute,
+            wmtk::operations::SplitBasicStrategy::Copy,
+            wmtk::operations::SplitRibBasicStrategy::Mean);
+        collapse.set_new_attribute_strategy(
+            target_edge_length_attribute,
+            wmtk::operations::CollapseBasicStrategy::None);
+
         // this might not be necessary
         // for (auto& s : update_child_positon) {
         //     collapse.add_transfer_strategy(s);
@@ -1098,6 +1118,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 wmtk::operations::SplitRibBasicStrategy::None);
             swap->collapse().set_new_attribute_strategy(
                 visited_edge_flag,
+                wmtk::operations::CollapseBasicStrategy::None);
+
+            swap->split().set_new_attribute_strategy(
+                target_edge_length_attribute,
+                wmtk::operations::SplitBasicStrategy::Copy,
+                wmtk::operations::SplitRibBasicStrategy::Mean);
+            swap->collapse().set_new_attribute_strategy(
+                target_edge_length_attribute,
                 wmtk::operations::CollapseBasicStrategy::None);
 
             swap->add_invariant(std::make_shared<Swap56EnergyBeforeInvariant>(
@@ -1243,6 +1271,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 visited_edge_flag,
                 wmtk::operations::CollapseBasicStrategy::None);
 
+            swap->split().set_new_attribute_strategy(
+                target_edge_length_attribute,
+                wmtk::operations::SplitBasicStrategy::Copy,
+                wmtk::operations::SplitRibBasicStrategy::Mean);
+            swap->collapse().set_new_attribute_strategy(
+                target_edge_length_attribute,
+                wmtk::operations::CollapseBasicStrategy::None);
+
             swap->add_invariant(std::make_shared<Swap44EnergyBeforeInvariant>(
                 *mesh,
                 pt_attribute.as<Rational>(),
@@ -1377,6 +1413,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             wmtk::operations::SplitRibBasicStrategy::None);
         swap32->collapse().set_new_attribute_strategy(
             visited_edge_flag,
+            wmtk::operations::CollapseBasicStrategy::None);
+
+        swap32->split().set_new_attribute_strategy(
+            target_edge_length_attribute,
+            wmtk::operations::SplitBasicStrategy::Copy,
+            wmtk::operations::SplitRibBasicStrategy::Mean);
+        swap32->collapse().set_new_attribute_strategy(
+            target_edge_length_attribute,
             wmtk::operations::CollapseBasicStrategy::None);
 
         for (const auto& attr : pass_through_attributes) {
