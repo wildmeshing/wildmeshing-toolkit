@@ -193,7 +193,7 @@ AMIPSOptimizationSmoothing::AMIPSOptimizationSmoothing(
     assert(m_coordinate_handle.holds<Rational>());
 
     m_linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
-    m_nonlinear_solver_params = R"({"solver": "DenseNewton", "max_iterations": 10})"_json;
+    m_nonlinear_solver_params = R"({"solver": "DenseNewton", "max_iterations": 1})"_json;
 
     create_solver();
 }
@@ -295,6 +295,11 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
                 single_cell[3 * i + 0] = p[0].to_double();
                 single_cell[3 * i + 1] = p[1].to_double();
                 single_cell[3 * i + 2] = p[2].to_double();
+
+                if (!p[0].is_rounded() || !p[1].is_rounded() || !p[2].is_rounded())
+                    return {};
+
+
             }
             // if (wmtk::utils::wmtk_orient3d(ps[3], ps[0], ps[1], ps[2]) <= 0) {
             //     std::cout << "this is wrong" << std::endl;
@@ -314,15 +319,18 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
         }
 
         auto x = problem.initial_value();
+        auto x0 = problem.initial_value();
         try {
             m_solver->minimize(problem, x);
 
-            for (int64_t d = 0; d < m_coordinate_handle.dimension(); ++d) {
-                accessor.vector_attribute(simplex.tuple())[d] = Rational(x[d], true);
-            }
         } catch (const std::exception&) {
-            return {};
         }
+
+        for (int64_t d = 0; d < m_coordinate_handle.dimension(); ++d) {
+            // accessor.vector_attribute(simplex.tuple())[d] = Rational(x[d], true);
+            accessor.vector_attribute(simplex.tuple())[d] = Rational(0.99*x0[d] + 0.01*x[d], true);
+        }
+
     }
 
     // assert(attribute_handle() == m_function.attribute_handle());

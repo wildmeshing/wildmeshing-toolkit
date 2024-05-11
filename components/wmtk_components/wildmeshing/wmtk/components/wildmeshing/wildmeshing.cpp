@@ -403,6 +403,8 @@ void set_operation_energy_filter_after_sizing_field(
 
 void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
+    // opt_logger().set_level(spdlog::level::info);
+
     //////////////////////////////////
     // Load mesh from settings
     WildmeshingOptions options = j.get<WildmeshingOptions>();
@@ -722,29 +724,18 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     auto link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(*mesh);
 
-    // auto todo_larger = std::make_shared<TodoLargerInvariant>(
-    //     *mesh,
-    //     edge_length_attribute.as<double>(),
-    //     target_edge_length_attribute.as<double>(),
-    //     4.0 / 3.0);
-
-    // auto todo_smaller = std::make_shared<TodoSmallerInvariant>(
-    //     *mesh,
-    //     edge_length_attribute.as<double>(),
-    //     target_edge_length_attribute.as<double>(),
-    //     4.0 / 5.0);
-
     auto todo_larger = std::make_shared<TodoLargerInvariant>(
         *mesh,
         edge_length_attribute.as<double>(),
         target_edge_length_attribute.as<double>(),
-        2.);
+        4.0 / 3.0);
 
     auto todo_smaller = std::make_shared<TodoSmallerInvariant>(
         *mesh,
         edge_length_attribute.as<double>(),
         target_edge_length_attribute.as<double>(),
-        0.5);
+        4.0 / 5.0);
+
 
     auto interior_edge = std::make_shared<InteriorEdgeInvariant>(*mesh);
     auto interior_face = std::make_shared<InteriorSimplexInvariant>(*mesh, PrimitiveType::Triangle);
@@ -1527,8 +1518,12 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     }
     // proj_smoothing->add_transfer_strategy(target_edge_length_update);
 
-    ops.push_back(proj_smoothing);
-    ops_name.push_back("SMOOTHING");
+    for (int i=0; i<5; ++i)
+    {
+        ops.push_back(proj_smoothing);
+        ops_name.push_back("SMOOTHING");
+    }
+
     ops.emplace_back(rounding);
     ops_name.emplace_back("rounding");
 
