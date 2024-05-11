@@ -902,6 +902,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     split_sequence->add_invariant(
         std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
 
+    split_sequence->set_priority(long_edges_first);
+
     ops.emplace_back(split_sequence);
     ops_name.emplace_back("SPLIT");
 
@@ -1369,6 +1371,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
         swap_then_round->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
         swap_then_round->add_invariant(std::make_shared<NoChildMeshAttachingInvariant>(*mesh));
+
+        swap_then_round->set_priority(long_edges_first);
 
 
         // swap_then_round->add_invariant(inversion_invariant);
