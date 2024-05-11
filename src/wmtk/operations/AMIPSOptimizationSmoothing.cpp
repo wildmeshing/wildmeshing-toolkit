@@ -41,6 +41,7 @@ public:
 
 private:
     std::vector<std::array<double, S>> m_cells;
+    const int p = 6;
 };
 
 template <int S>
@@ -72,13 +73,13 @@ double AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::value(const TVector& x)
             c[0] = x[0];
             c[1] = x[1];
 
-            res += wmtk::function::Tri_AMIPS_energy(c);
+            res += std::pow(wmtk::function::Tri_AMIPS_energy(c),p);
         } else {
             assert(x.size() == 3);
             c[0] = x[0];
             c[1] = x[1];
             c[2] = x[2];
-            res += wmtk::function::Tet_AMIPS_energy(c);
+            res += std::pow(wmtk::function::Tet_AMIPS_energy(c),p);
         }
     }
 
@@ -93,7 +94,7 @@ void AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::gradient(const TVector& x,
     gradv.resize(size);
     gradv.setZero();
     Eigen::Matrix<double, size, 1> tmp(size);
-
+    double tmp2 = 0;
 
     for (auto c : m_cells) {
         if constexpr (S == 6) {
@@ -101,14 +102,16 @@ void AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::gradient(const TVector& x,
             c[0] = x[0];
             c[1] = x[1];
             wmtk::function::Tri_AMIPS_jacobian(c, tmp);
+            tmp2 = wmtk::function::Tri_AMIPS_energy(c);
         } else {
             assert(x.size() == 3);
             c[0] = x[0];
             c[1] = x[1];
             c[2] = x[2];
             wmtk::function::Tet_AMIPS_jacobian(c, tmp);
+            tmp2 = wmtk::function::Tet_AMIPS_energy(c);
         }
-        gradv += tmp;
+        gradv += double(p) * pow(tmp2,p-1) * tmp;
     }
 }
 
@@ -117,10 +120,13 @@ void AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::hessian(
     const TVector& x,
     Eigen::MatrixXd& hessian)
 {
+    //std::cout << "error here !!! Hessian used" << std::endl;
     constexpr int64_t size = S == 6 ? 2 : 3;
     hessian.resize(size, size);
     hessian.setZero();
     Eigen::Matrix<double, size, size> tmp;
+    double tmp2 = 0;
+    Eigen::Matrix<double, size, 1> tmpj(size);
 
 
     for (auto c : m_cells) {
@@ -129,14 +135,19 @@ void AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::hessian(
             c[0] = x[0];
             c[1] = x[1];
             wmtk::function::Tri_AMIPS_hessian(c, tmp);
+            wmtk::function::Tri_AMIPS_jacobian(c, tmpj);
+            tmp2 = wmtk::function::Tri_AMIPS_energy(c);
         } else {
             assert(x.size() == 3);
             c[0] = x[0];
             c[1] = x[1];
             c[2] = x[2];
             wmtk::function::Tet_AMIPS_hessian(c, tmp);
+            wmtk::function::Tet_AMIPS_jacobian(c, tmpj);
+            tmp2 = wmtk::function::Tet_AMIPS_energy(c);
         }
-        hessian += tmp;
+        hessian += (p)*(p-1) * std::pow(tmp2,p-2) * tmpj*tmpj.transpose() + p * std::pow(tmp2,p-1) * tmp;
+        // 12 f(x)^2 * f(x)'*f^T'(x) + 4 f(x)^3 * H
     }
 }
 
@@ -194,6 +205,11 @@ AMIPSOptimizationSmoothing::AMIPSOptimizationSmoothing(
 
     m_linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
     m_nonlinear_solver_params = R"({"solver": "DenseNewton", "max_iterations": 10})"_json;
+    //m_nonlinear_solver_params = R"({"solver": "L-BFGS", "max_iterations": 100, "advanced":{"apply_gradient_fd": "FullFiniteDiff"}})"_json;
+    // m_nonlinear_solver_params = R"({"solver": "GradientDescent", "max_iterations": 100})"_json;
+
+
+    
 
     create_solver();
 }
