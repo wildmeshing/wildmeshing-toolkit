@@ -193,7 +193,7 @@ AMIPSOptimizationSmoothing::AMIPSOptimizationSmoothing(
     assert(m_coordinate_handle.holds<Rational>());
 
     m_linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
-    m_nonlinear_solver_params = R"({"solver": "DenseNewton", "max_iterations": 1})"_json;
+    m_nonlinear_solver_params = R"({"solver": "DenseNewton", "max_iterations": 10})"_json;
 
     create_solver();
 }
@@ -320,15 +320,30 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
 
         auto x = problem.initial_value();
         auto x0 = problem.initial_value();
+
         try {
             m_solver->minimize(problem, x);
 
         } catch (const std::exception&) {
         }
 
+        // Hack for surface only
+
+        auto child_meshes = mesh().get_child_meshes();
+
+        double alpha = 1.00;
+        for (auto child_mesh : child_meshes) {
+            if (!mesh().map_to_child(*child_mesh, simplex).empty()) 
+            {
+                alpha = 0.01;
+                break;
+            }
+        }
+
+
         for (int64_t d = 0; d < m_coordinate_handle.dimension(); ++d) {
             // accessor.vector_attribute(simplex.tuple())[d] = Rational(x[d], true);
-            accessor.vector_attribute(simplex.tuple())[d] = Rational(0.99*x0[d] + 0.01*x[d], true);
+            accessor.vector_attribute(simplex.tuple())[d] = Rational((1-alpha)*x0[d] + alpha*x[d], true);
         }
 
     }
