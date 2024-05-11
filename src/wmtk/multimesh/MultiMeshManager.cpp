@@ -426,6 +426,9 @@ std::vector<simplex::Simplex> MultiMeshManager::lub_map(
     const Mesh& other_mesh,
     const simplex::Simplex& my_simplex) const
 {
+    if(&my_mesh == &other_mesh) {
+        return {my_simplex};
+    }
     const auto ret_tups = lub_map_tuples(my_mesh, other_mesh, my_simplex);
     return simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
         other_mesh,
@@ -519,6 +522,9 @@ std::vector<Tuple> MultiMeshManager::lub_map_tuples(
     const Mesh& other_mesh,
     const simplex::Simplex& my_simplex) const
 {
+    if(&my_mesh == &other_mesh) {
+        return {my_simplex.tuple()};
+    }
     const auto my_id = absolute_id();
     const auto other_id = other_mesh.absolute_multi_mesh_id();
     const auto lub_id = least_upper_bound_id(my_id, other_id);
