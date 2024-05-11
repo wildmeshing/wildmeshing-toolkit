@@ -789,8 +789,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto energy_filter_accessor = mesh->create_accessor<char>(energy_filter_attribute);
 
     auto update_energy_filter_func = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<char> {
-        assert(P.cols() == 2);
-        assert(P.rows() == 2 || P.rows() == 3);
+        // assert(P.cols() == 2);
+        // assert(P.rows() == 2 || P.rows() == 3);
         return Eigen::VectorX<char>::Constant(1, char(1));
     };
     auto energy_filter_update =
@@ -835,7 +835,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         wmtk::operations::SplitBasicStrategy::None,
         wmtk::operations::SplitRibBasicStrategy::None);
     for (const auto& attr : pass_through_attributes) {
-        split->set_new_attribute_strategy(attr);
+        split->set_new_attribute_strategy(
+            attr,
+            wmtk::operations::SplitBasicStrategy::None,
+            wmtk::operations::SplitRibBasicStrategy::None);
     }
 
     split->add_transfer_strategy(amips_update);
@@ -892,7 +895,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         wmtk::operations::SplitBasicStrategy::None,
         wmtk::operations::SplitRibBasicStrategy::None);
     for (const auto& attr : pass_through_attributes) {
-        split_unrounded->set_new_attribute_strategy(attr);
+        split_unrounded->set_new_attribute_strategy(
+            attr,
+            wmtk::operations::SplitBasicStrategy::None,
+            wmtk::operations::SplitRibBasicStrategy::None);
     }
 
     split_unrounded->add_transfer_strategy(amips_update);
@@ -949,7 +955,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         collapse->add_transfer_strategy(tag_update);
         collapse->add_transfer_strategy(energy_filter_update);
         for (const auto& attr : pass_through_attributes) {
-            collapse->set_new_attribute_strategy(attr);
+            collapse->set_new_attribute_strategy(
+                attr,
+                wmtk::operations::CollapseBasicStrategy::None);
         }
         // THis triggers a segfault in release
         // solved somehow
@@ -1047,8 +1055,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
 
         for (const auto& attr : pass_through_attributes) {
-            split.set_new_attribute_strategy(attr);
-            collapse.set_new_attribute_strategy(attr);
+            split.set_new_attribute_strategy(
+                attr,
+                wmtk::operations::SplitBasicStrategy::None,
+                wmtk::operations::SplitRibBasicStrategy::None);
+            collapse.set_new_attribute_strategy(
+                attr,
+                wmtk::operations::CollapseBasicStrategy::None);
         }
     };
 
@@ -1093,8 +1106,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             swap->add_invariant(inversion_invariant);
 
             for (const auto& attr : pass_through_attributes) {
-                swap->split().set_new_attribute_strategy(attr);
-                swap->collapse().set_new_attribute_strategy(attr);
+                swap->split().set_new_attribute_strategy(
+                    attr,
+                    wmtk::operations::SplitBasicStrategy::None,
+                    wmtk::operations::SplitRibBasicStrategy::None);
+                swap->collapse().set_new_attribute_strategy(
+                    attr,
+                    wmtk::operations::CollapseBasicStrategy::None);
             }
 
             swap56->add_operation(swap);
@@ -1231,8 +1249,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             swap->add_invariant(inversion_invariant);
 
             for (const auto& attr : pass_through_attributes) {
-                swap->split().set_new_attribute_strategy(attr);
-                swap->collapse().set_new_attribute_strategy(attr);
+                swap->split().set_new_attribute_strategy(
+                    attr,
+                    wmtk::operations::SplitBasicStrategy::None,
+                    wmtk::operations::SplitRibBasicStrategy::None);
+                swap->collapse().set_new_attribute_strategy(
+                    attr,
+                    wmtk::operations::CollapseBasicStrategy::None);
             }
 
             swap44->add_operation(swap);
@@ -1355,8 +1378,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             wmtk::operations::CollapseBasicStrategy::None);
 
         for (const auto& attr : pass_through_attributes) {
-            swap32->split().set_new_attribute_strategy(attr);
-            swap32->collapse().set_new_attribute_strategy(attr);
+            swap32->split().set_new_attribute_strategy(
+                attr,
+                wmtk::operations::SplitBasicStrategy::None,
+                wmtk::operations::SplitRibBasicStrategy::None);
+            swap32->collapse().set_new_attribute_strategy(
+                attr,
+                wmtk::operations::CollapseBasicStrategy::None);
         }
 
         // all swaps
