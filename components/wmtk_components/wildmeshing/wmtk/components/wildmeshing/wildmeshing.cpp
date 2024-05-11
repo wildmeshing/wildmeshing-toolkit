@@ -722,29 +722,29 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     auto link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(*mesh);
 
-    // auto todo_larger = std::make_shared<TodoLargerInvariant>(
-    //     *mesh,
-    //     edge_length_attribute.as<double>(),
-    //     target_edge_length_attribute.as<double>(),
-    //     4.0 / 3.0);
-
-    // auto todo_smaller = std::make_shared<TodoSmallerInvariant>(
-    //     *mesh,
-    //     edge_length_attribute.as<double>(),
-    //     target_edge_length_attribute.as<double>(),
-    //     4.0 / 5.0);
-
     auto todo_larger = std::make_shared<TodoLargerInvariant>(
         *mesh,
         edge_length_attribute.as<double>(),
         target_edge_length_attribute.as<double>(),
-        2.);
+        4.0 / 3.0);
 
     auto todo_smaller = std::make_shared<TodoSmallerInvariant>(
         *mesh,
         edge_length_attribute.as<double>(),
         target_edge_length_attribute.as<double>(),
-        0.5);
+        4.0 / 5.0);
+
+    // auto todo_larger = std::make_shared<TodoLargerInvariant>(
+    //     *mesh,
+    //     edge_length_attribute.as<double>(),
+    //     target_edge_length_attribute.as<double>(),
+    //     2.);
+
+    // auto todo_smaller = std::make_shared<TodoSmallerInvariant>(
+    //     *mesh,
+    //     edge_length_attribute.as<double>(),
+    //     target_edge_length_attribute.as<double>(),
+    //     0.5);
 
     auto interior_edge = std::make_shared<InteriorEdgeInvariant>(*mesh);
     auto interior_face = std::make_shared<InteriorSimplexInvariant>(*mesh, PrimitiveType::Triangle);
@@ -1124,6 +1124,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 CollapseBasicStrategy::CopyOther);
             swap->split().set_new_attribute_strategy(pt_attribute);
             swap->split().set_new_attribute_strategy(sizing_field_scalar_attribute);
+            // swap->split().add_transfer_strategy(amips_update);
+            // swap->collapse().add_transfer_strategy(amips_update);
             swap->split().set_new_attribute_strategy(
                 visited_edge_flag,
                 wmtk::operations::SplitBasicStrategy::None,
@@ -1144,6 +1146,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 *mesh,
                 pt_attribute.as<Rational>(),
                 i));
+
+            swap->add_transfer_strategy(amips_update);
 
             // swap->add_invariant(inversion_invariant);
             swap->collapse().add_invariant(inversion_invariant);
@@ -1286,6 +1290,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 visited_edge_flag,
                 wmtk::operations::CollapseBasicStrategy::None);
 
+            // swap->split().add_transfer_strategy(amips_update);
+            // swap->collapse().add_transfer_strategy(amips_update);
+
             swap->split().set_new_attribute_strategy(
                 target_edge_length_attribute,
                 wmtk::operations::SplitBasicStrategy::Copy,
@@ -1293,6 +1300,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             swap->collapse().set_new_attribute_strategy(
                 target_edge_length_attribute,
                 wmtk::operations::CollapseBasicStrategy::None);
+
+            swap->add_transfer_strategy(amips_update);
 
             swap->add_invariant(std::make_shared<Swap44EnergyBeforeInvariant>(
                 *mesh,
@@ -1433,6 +1442,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             visited_edge_flag,
             wmtk::operations::CollapseBasicStrategy::None);
 
+        // swap32->split().add_transfer_strategy(amips_update);
+        // swap32->collapse().add_transfer_strategy(amips_update);
+
         swap32->split().set_new_attribute_strategy(
             target_edge_length_attribute,
             wmtk::operations::SplitBasicStrategy::Copy,
@@ -1440,6 +1452,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap32->collapse().set_new_attribute_strategy(
             target_edge_length_attribute,
             wmtk::operations::CollapseBasicStrategy::None);
+
+        swap32->add_transfer_strategy(amips_update);
 
         // hack
         swap32->collapse().add_invariant(inversion_invariant);
