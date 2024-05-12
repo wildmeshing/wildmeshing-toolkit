@@ -9,6 +9,7 @@
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
+#include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/invariants/uvEdgeInvariant.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/multimesh/consolidate.hpp>
@@ -121,15 +122,14 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
         return edge_length_accessor.const_scalar_attribute(s.tuple());
     };
     pass_through_attributes.push_back(edge_length_attribute);
+    auto todo_smaller = std::make_shared<TodoSmallerInvariant>(
+        mesh,
+        edge_length_attribute.as<double>(),
+        options.length_abs);
 
     //////////////////////////invariants
 
     auto invariant_link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(mesh);
-
-    auto invariant_max_edge_length = std::make_shared<MaxEdgeLengthInvariant>(
-        mesh,
-        pos_handle.as<double>(),
-        options.length_abs * options.length_abs);
 
     auto invariant_interior_edge = std::make_shared<invariants::InvariantCollection>(mesh);
     auto invariant_interior_vertex = std::make_shared<invariants::InvariantCollection>(mesh);
@@ -181,7 +181,7 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
     collapse->set_priority(short_edges_first_priority);
     collapse->add_transfer_strategy(edge_length_update);
 
-    collapse->add_invariant(invariant_max_edge_length);
+    collapse->add_invariant(todo_smaller);
     collapse->add_invariant(invariant_mm_map);
 
     // hack for uv
