@@ -5,8 +5,7 @@
     "required": [
       "input",
       "output",
-      "attributes",
-      "iterations"
+      "attributes"
     ],
     "optional": [
       "pass_through",
@@ -73,11 +72,6 @@
     "pointer": "/pass_through/*",
     "type": "include",
     "spec_file": "attribute_spec.json"
-  },
-  {
-    "pointer": "/iterations",
-    "type": "int",
-    "doc": "number of iterations that should be performed"
   },
   {
     "pointer": "/length_abs",

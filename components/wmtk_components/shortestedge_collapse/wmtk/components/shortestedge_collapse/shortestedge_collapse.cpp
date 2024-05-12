@@ -84,8 +84,45 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
 
     TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
 
-    std::vector<attribute::MeshAttributeHandle> positions = other_positions;
-    positions.push_back(pos_handle);
+    auto visited_edge_flag =
+        mesh.register_attribute<char>("visited_edge", PrimitiveType::Edge, 1, false, char(1));
+
+    auto update_flag_func = [](Eigen::Ref<const Eigen::MatrixXd> P) -> Eigen::VectorX<char> {
+        assert(P.cols() == 2);
+        assert(P.rows() == 2 || P.rows() == 3);
+        return Eigen::VectorX<char>::Constant(1, char(1));
+    };
+    auto tag_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<char, double>>(
+            visited_edge_flag,
+            pos_handle,
+            update_flag_func);
+
+    //////////////////////////////////
+    // Storing edge lengths
+    auto edge_length_attribute =
+        mesh.register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
+    auto edge_length_accessor = mesh.create_accessor(edge_length_attribute.as<double>());
+    // Edge length update
+    auto compute_edge_length = [](Eigen::Ref<const Eigen::MatrixXd> P) -> Eigen::VectorXd {
+        assert(P.cols() == 2);
+        assert(P.rows() == 2 || P.rows() == 3);
+        return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
+    };
+    auto edge_length_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            edge_length_attribute,
+            pos_handle,
+            compute_edge_length);
+    edge_length_update->run_on_all();
+
+    auto short_edges_first_priority = [&](const simplex::Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        return edge_length_accessor.const_scalar_attribute(s.tuple());
+    };
+    pass_through_attributes.push_back(edge_length_attribute);
+
+    //////////////////////////invariants
 
     auto invariant_link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(mesh);
 
@@ -108,6 +145,10 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
 
     auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(mesh);
 
+    ////////////// positions
+    std::vector<attribute::MeshAttributeHandle> positions = other_positions;
+    positions.push_back(pos_handle);
+
     auto update_position_func = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
         return P.col(0);
     };
@@ -125,72 +166,73 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
 
     //////////////////////////////////////////
     // collapse
-    auto op_collapse = std::make_shared<wmtk::operations::EdgeCollapse>(mesh);
-    op_collapse->add_invariant(invariant_link_condition);
+    auto collapse = std::make_shared<wmtk::operations::EdgeCollapse>(mesh);
+    collapse->add_invariant(invariant_link_condition);
     if (position_for_inversion) {
-        op_collapse->add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
+        collapse->add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
             position_for_inversion.value().mesh(),
             position_for_inversion.value().as<double>()));
     }
+    collapse->set_new_attribute_strategy(
+        visited_edge_flag,
+        wmtk::operations::CollapseBasicStrategy::None);
+    collapse->add_transfer_strategy(tag_update);
 
-    op_collapse->add_invariant(invariant_max_edge_length);
-    op_collapse->add_invariant(invariant_mm_map);
+    collapse->set_priority(short_edges_first_priority);
+    collapse->add_transfer_strategy(edge_length_update);
+
+    collapse->add_invariant(invariant_max_edge_length);
+    collapse->add_invariant(invariant_mm_map);
 
     // hack for uv
     if (options.fix_uv_seam) {
-        op_collapse->add_invariant(
+        collapse->add_invariant(
             std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
     }
 
     if (options.lock_boundary && !options.use_for_periodic) {
-        op_collapse->add_invariant(invariant_interior_edge);
+        collapse->add_invariant(invariant_interior_edge);
         // set collapse towards boundary
         for (auto& p : positions) {
             auto tmp = std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(p);
             tmp->set_strategy(wmtk::operations::CollapseBasicStrategy::Mean);
             tmp->set_simplex_predicate(wmtk::operations::BasicSimplexPredicate::IsInterior);
-            op_collapse->set_new_attribute_strategy(p, tmp);
+            collapse->set_new_attribute_strategy(p, tmp);
         }
     } else if (options.use_for_periodic) {
-        op_collapse->add_invariant(
+        collapse->add_invariant(
             std::make_shared<invariants::FusionEdgeInvariant>(mesh, mesh.get_multi_mesh_root()));
         for (auto& p : positions) {
-            op_collapse->set_new_attribute_strategy(
-                p,
-                wmtk::operations::CollapseBasicStrategy::Mean);
+            collapse->set_new_attribute_strategy(p, wmtk::operations::CollapseBasicStrategy::Mean);
         }
     } else {
         for (auto& p : positions) {
-            op_collapse->set_new_attribute_strategy(
-                p,
-                wmtk::operations::CollapseBasicStrategy::Mean);
+            collapse->set_new_attribute_strategy(p, wmtk::operations::CollapseBasicStrategy::Mean);
         }
     }
 
 
     for (const auto& attr : pass_through_attributes) {
-        op_collapse->set_new_attribute_strategy(attr);
+        collapse->set_new_attribute_strategy(attr);
     }
 
 
     //////////////////////////////////////////
     Scheduler scheduler;
-    for (long i = 0; i < options.iterations; ++i) {
-        wmtk::logger().info("Iteration {}", i);
+    SchedulerStats pass_stats =
+        scheduler.run_operation_on_all(*collapse, visited_edge_flag.as<char>());
 
-        SchedulerStats pass_stats = scheduler.run_operation_on_all(*op_collapse);
+    multimesh::consolidate(mesh);
 
-        multimesh::consolidate(mesh);
+    logger().info(
+        "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
+        pass_stats.number_of_performed_operations(),
+        pass_stats.number_of_successful_operations(),
+        pass_stats.number_of_failed_operations(),
+        pass_stats.collecting_time,
+        pass_stats.sorting_time,
+        pass_stats.executing_time);
 
-        logger().info(
-            "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
-            pass_stats.number_of_performed_operations(),
-            pass_stats.number_of_successful_operations(),
-            pass_stats.number_of_failed_operations(),
-            pass_stats.collecting_time,
-            pass_stats.sorting_time,
-            pass_stats.executing_time);
-    }
 
     // output
     cache.write_mesh(*mesh_in, options.output);

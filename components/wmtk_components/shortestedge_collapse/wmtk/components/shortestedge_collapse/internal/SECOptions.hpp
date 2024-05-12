@@ -25,7 +25,6 @@ struct SECOptions
     std::string output;
     SECAttributes attributes;
     nlohmann::json pass_through;
-    int64_t iterations;
     double length_abs;
     double length_rel;
     bool lock_boundary;
@@ -41,7 +40,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     pass_through,
     length_abs,
     length_rel,
-    iterations,
     lock_boundary,
     use_for_periodic);
 
