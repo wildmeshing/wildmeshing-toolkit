@@ -41,7 +41,7 @@ public:
 
 private:
     std::vector<std::array<double, S>> m_cells;
-    const int p = 6;
+    const int p = 4;
 };
 
 template <int S>

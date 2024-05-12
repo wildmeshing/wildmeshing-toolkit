@@ -308,7 +308,7 @@ void set_operation_energy_filter(
         auto vertices = m.orient_vertices(t);
         for (const auto& v : vertices) {
             energy_filter_accessor.scalar_attribute(v) = char(1);
-            for (const auto& vv : simplex::k_ring(m, simplex::Simplex::vertex(m, v), 2)
+            for (const auto& vv : simplex::k_ring(m, simplex::Simplex::vertex(m, v), 1)
                                       .simplex_vector(PrimitiveType::Vertex)) {
                 energy_filter_accessor.scalar_attribute(vv) = char(1);
             }
@@ -1519,7 +1519,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     proj_smoothing->add_invariant(envelope_invariant);
     proj_smoothing->add_invariant(inversion_invariant);
     proj_smoothing->add_invariant(
-        std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
+    std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
 
     proj_smoothing->add_transfer_strategy(amips_update);
     proj_smoothing->add_transfer_strategy(edge_length_update);
