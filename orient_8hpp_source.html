@@ -121,63 +121,57 @@ $(document).ready(function(){initNavTree('orient_8hpp_source.html',''); initResi
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1utils.html">wmtk::utils</a> {</div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00008"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1utils.html#a8b0d39847476855fd919fef505658858">    8</a></span>&#160;<span class="keywordtype">int</span> <a class="code" href="namespacewmtk_1_1utils.html#a91478b1d9b2b612a04454739dd289e73">wmtk_orient3d</a>(</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    <span class="keyword">const</span> Eigen::Vector3&lt;T&gt;&amp; p0,</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;    <span class="keyword">const</span> Eigen::Vector3&lt;T&gt;&amp; p1,</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    <span class="keyword">const</span> Eigen::Vector3&lt;T&gt;&amp; p2,</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    <span class="keyword">const</span> Eigen::Vector3&lt;T&gt;&amp; p3)</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;{</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;unsupported type&quot;</span>);</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;}</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">// template &lt;typename T&gt;</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment">// int wmtk_orient3d(</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">//     const Eigen::Ref&lt;const Eigen::Vector3&lt;T&gt;&gt;&amp; p0,</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment">//     const Eigen::Ref&lt;const Eigen::Vector3&lt;T&gt;&gt;&amp; p1,</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment">//     const Eigen::Ref&lt;const Eigen::Vector3&lt;T&gt;&gt;&amp; p2,</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="comment">//     const Eigen::Ref&lt;const Eigen::Vector3&lt;T&gt;&gt;&amp; p3)</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="comment">//{</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment">//     throw std::runtime_error(&quot;unsupported type&quot;);</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment">// }</span></div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="keywordtype">int</span> <a class="code" href="namespacewmtk_1_1utils.html#a91478b1d9b2b612a04454739dd289e73">wmtk_orient3d</a>(</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">const</span> Eigen::Vector3&lt;Rational&gt;&amp; p0,</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keyword">const</span> Eigen::Vector3&lt;Rational&gt;&amp; p1,</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keyword">const</span> Eigen::Vector3&lt;Rational&gt;&amp; p2,</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keyword">const</span> Eigen::Vector3&lt;Rational&gt;&amp; p3);</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keywordtype">int</span> <a class="code" href="namespacewmtk_1_1utils.html#a91478b1d9b2b612a04454739dd289e73">wmtk_orient3d</a>(</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keyword">const</span> Eigen::Vector3&lt;double&gt;&amp; p0,</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keyword">const</span> Eigen::Vector3&lt;double&gt;&amp; p1,</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keyword">const</span> Eigen::Vector3&lt;double&gt;&amp; p2,</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="keyword">const</span> Eigen::Vector3&lt;double&gt;&amp; p3);</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1utils.html#a0cb19465e2461093c45f16bac27bce3c">   33</a></span>&#160;<span class="keywordtype">int</span> <a class="code" href="namespacewmtk_1_1utils.html#ab2ad1870c97d30a03b43658624067b7e">wmtk_orient2d</a>(</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">const</span> Eigen::Vector2&lt;T&gt;&amp; p0,</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">const</span> Eigen::Vector2&lt;T&gt;&amp; p1,</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">const</span> Eigen::Vector2&lt;T&gt;&amp; p2)</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;{</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;unsupported type&quot;</span>);</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;}</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="keywordtype">int</span> <a class="code" href="namespacewmtk_1_1utils.html#ab2ad1870c97d30a03b43658624067b7e">wmtk_orient2d</a>(</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keyword">const</span> Eigen::Vector2&lt;Rational&gt;&amp; p0,</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keyword">const</span> Eigen::Vector2&lt;Rational&gt;&amp; p1,</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keyword">const</span> Eigen::Vector2&lt;Rational&gt;&amp; p2);</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keywordtype">int</span> <a class="code" href="namespacewmtk_1_1utils.html#ab2ad1870c97d30a03b43658624067b7e">wmtk_orient2d</a>(</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keyword">const</span> Eigen::Vector2&lt;double&gt;&amp; p0,</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">const</span> Eigen::Vector2&lt;double&gt;&amp; p1,</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">const</span> Eigen::Vector2&lt;double&gt;&amp; p2);</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keywordtype">int</span> <a class="code" href="namespacewmtk_1_1utils.html#a6ac13755b6465d9ea3095d42f0ef4672">wmtk_orient1d</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_rational.html">Rational</a>&amp; p0, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_rational.html">Rational</a>&amp; p1);</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="keywordtype">int</span> <a class="code" href="namespacewmtk_1_1utils.html#a6ac13755b6465d9ea3095d42f0ef4672">wmtk_orient1d</a>(<span class="keywordtype">double</span> p0, <span class="keywordtype">double</span> p1);</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;} <span class="comment">// namespace wmtk::utils</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keywordtype">int</span> <a class="code" href="namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce">wmtk_orient3d</a>(</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">const</span> Eigen::Ref&lt;<span class="keyword">const</span> Eigen::Vector3&lt;Rational&gt;&gt;&amp; p0,</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">const</span> Eigen::Ref&lt;<span class="keyword">const</span> Eigen::Vector3&lt;Rational&gt;&gt;&amp; p1,</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keyword">const</span> Eigen::Ref&lt;<span class="keyword">const</span> Eigen::Vector3&lt;Rational&gt;&gt;&amp; p2,</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keyword">const</span> Eigen::Ref&lt;<span class="keyword">const</span> Eigen::Vector3&lt;Rational&gt;&gt;&amp; p3);</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keywordtype">int</span> <a class="code" href="namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce">wmtk_orient3d</a>(</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">const</span> Eigen::Ref&lt;<span class="keyword">const</span> Eigen::Vector3&lt;double&gt;&gt;&amp; p0,</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <span class="keyword">const</span> Eigen::Ref&lt;<span class="keyword">const</span> Eigen::Vector3&lt;double&gt;&gt;&amp; p1,</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keyword">const</span> Eigen::Ref&lt;<span class="keyword">const</span> Eigen::Vector3&lt;double&gt;&gt;&amp; p2,</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keyword">const</span> Eigen::Ref&lt;<span class="keyword">const</span> Eigen::Vector3&lt;double&gt;&gt;&amp; p3);</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="comment">// int wmtk_orient2d(</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="comment">//     Eigen::Ref&lt;const Eigen::Vector2&lt;T&gt;&gt; p0,</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="comment">//     Eigen::Ref&lt;const Eigen::Vector2&lt;T&gt;&gt; p1,</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="comment">//     Eigen::Ref&lt;const Eigen::Vector2&lt;T&gt;&gt; p2)</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="comment">//{</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="comment">//     throw std::runtime_error(&quot;unsupported type&quot;);</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="comment">// }</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keywordtype">int</span> <a class="code" href="namespacewmtk_1_1utils.html#a6310fa1d5aca1db566ef5eb4508ec956">wmtk_orient2d</a>(</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keyword">const</span> Eigen::Ref&lt;<span class="keyword">const</span> Eigen::Vector2&lt;Rational&gt;&gt;&amp; p0,</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keyword">const</span> Eigen::Ref&lt;<span class="keyword">const</span> Eigen::Vector2&lt;Rational&gt;&gt;&amp; p1,</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keyword">const</span> Eigen::Ref&lt;<span class="keyword">const</span> Eigen::Vector2&lt;Rational&gt;&gt;&amp; p2);</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keywordtype">int</span> <a class="code" href="namespacewmtk_1_1utils.html#a6310fa1d5aca1db566ef5eb4508ec956">wmtk_orient2d</a>(</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keyword">const</span> Eigen::Ref&lt;<span class="keyword">const</span> Eigen::Vector2&lt;double&gt;&gt;&amp; p0,</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keyword">const</span> Eigen::Ref&lt;<span class="keyword">const</span> Eigen::Vector2&lt;double&gt;&gt;&amp; p1,</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keyword">const</span> Eigen::Ref&lt;<span class="keyword">const</span> Eigen::Vector2&lt;double&gt;&gt;&amp; p2);</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keywordtype">int</span> <a class="code" href="namespacewmtk_1_1utils.html#a6ac13755b6465d9ea3095d42f0ef4672">wmtk_orient1d</a>(<span class="keyword">const</span> Rational&amp; p0, <span class="keyword">const</span> Rational&amp; p1);</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keywordtype">int</span> <a class="code" href="namespacewmtk_1_1utils.html#a6ac13755b6465d9ea3095d42f0ef4672">wmtk_orient1d</a>(<span class="keywordtype">double</span> p0, <span class="keywordtype">double</span> p1);</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;} <span class="comment">// namespace wmtk::utils</span></div>
 <div class="ttc" id="a_types_8hpp_html"><div class="ttname"><a href="_types_8hpp.html">Types.hpp</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_rational_html"><div class="ttname"><a href="classwmtk_1_1_rational.html">wmtk::Rational</a></div><div class="ttdef"><b>Definition:</b> <a href="_rational_8hpp_source.html#l00012">Rational.hpp:13</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1utils_html"><div class="ttname"><a href="namespacewmtk_1_1utils.html">wmtk::utils</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00022">Tuple.hpp:22</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1utils_html_a6ac13755b6465d9ea3095d42f0ef4672"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a6ac13755b6465d9ea3095d42f0ef4672">wmtk::utils::wmtk_orient1d</a></div><div class="ttdeci">int wmtk_orient1d(const Rational &amp;p0, const Rational &amp;p1)</div><div class="ttdef"><b>Definition:</b> <a href="orient_8cpp_source.html#l00168">orient.cpp:168</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1utils_html_a91478b1d9b2b612a04454739dd289e73"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a91478b1d9b2b612a04454739dd289e73">wmtk::utils::wmtk_orient3d</a></div><div class="ttdeci">int wmtk_orient3d(const Eigen::Vector3&lt; Rational &gt; &amp;p0, const Eigen::Vector3&lt; Rational &gt; &amp;p1, const Eigen::Vector3&lt; Rational &gt; &amp;p2, const Eigen::Vector3&lt; Rational &gt; &amp;p3)</div><div class="ttdef"><b>Definition:</b> <a href="orient_8cpp_source.html#l00053">orient.cpp:53</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1utils_html_ab2ad1870c97d30a03b43658624067b7e"><div class="ttname"><a href="namespacewmtk_1_1utils.html#ab2ad1870c97d30a03b43658624067b7e">wmtk::utils::wmtk_orient2d</a></div><div class="ttdeci">int wmtk_orient2d(const Eigen::Vector2&lt; Rational &gt; &amp;p0, const Eigen::Vector2&lt; Rational &gt; &amp;p1, const Eigen::Vector2&lt; Rational &gt; &amp;p2)</div><div class="ttdef"><b>Definition:</b> <a href="orient_8cpp_source.html#l00121">orient.cpp:121</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1utils_html_a34133dc338089a5141f8e84feecb81ce"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce">wmtk::utils::wmtk_orient3d</a></div><div class="ttdeci">int wmtk_orient3d(const Eigen::Ref&lt; const Eigen::Vector3&lt; Rational &gt;&gt; &amp;p0, const Eigen::Ref&lt; const Eigen::Vector3&lt; Rational &gt;&gt; &amp;p1, const Eigen::Ref&lt; const Eigen::Vector3&lt; Rational &gt;&gt; &amp;p2, const Eigen::Ref&lt; const Eigen::Vector3&lt; Rational &gt;&gt; &amp;p3)</div><div class="ttdef"><b>Definition:</b> <a href="orient_8cpp_source.html#l00052">orient.cpp:52</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1utils_html_a6310fa1d5aca1db566ef5eb4508ec956"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a6310fa1d5aca1db566ef5eb4508ec956">wmtk::utils::wmtk_orient2d</a></div><div class="ttdeci">int wmtk_orient2d(const Eigen::Ref&lt; const Eigen::Vector2&lt; Rational &gt;&gt; &amp;p0, const Eigen::Ref&lt; const Eigen::Vector2&lt; Rational &gt;&gt; &amp;p1, const Eigen::Ref&lt; const Eigen::Vector2&lt; Rational &gt;&gt; &amp;p2)</div><div class="ttdef"><b>Definition:</b> <a href="orient_8cpp_source.html#l00118">orient.cpp:118</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1utils_html_a6ac13755b6465d9ea3095d42f0ef4672"><div class="ttname"><a href="namespacewmtk_1_1utils.html#a6ac13755b6465d9ea3095d42f0ef4672">wmtk::utils::wmtk_orient1d</a></div><div class="ttdeci">int wmtk_orient1d(const Rational &amp;p0, const Rational &amp;p1)</div><div class="ttdef"><b>Definition:</b> <a href="orient_8cpp_source.html#l00164">orient.cpp:164</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

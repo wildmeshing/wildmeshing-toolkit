@@ -38,10 +38,8 @@ var namespacewmtk_1_1utils =
     [ "vector_unique", "namespacewmtk_1_1utils.html#ae2c7b3137347cfeaffd619c0f6511b85", null ],
     [ "wmtk_orient1d", "namespacewmtk_1_1utils.html#a6ac13755b6465d9ea3095d42f0ef4672", null ],
     [ "wmtk_orient1d", "namespacewmtk_1_1utils.html#a1c5198487b4421eb17ef97f5b8d410a3", null ],
-    [ "wmtk_orient2d", "namespacewmtk_1_1utils.html#ad691a0e7385782bb392820d1188e26b0", null ],
-    [ "wmtk_orient2d", "namespacewmtk_1_1utils.html#ab2ad1870c97d30a03b43658624067b7e", null ],
-    [ "wmtk_orient2d", "namespacewmtk_1_1utils.html#a0cb19465e2461093c45f16bac27bce3c", null ],
-    [ "wmtk_orient3d", "namespacewmtk_1_1utils.html#a3957cc0910b1bcc4925f2baa0a1155a6", null ],
-    [ "wmtk_orient3d", "namespacewmtk_1_1utils.html#a91478b1d9b2b612a04454739dd289e73", null ],
-    [ "wmtk_orient3d", "namespacewmtk_1_1utils.html#a8b0d39847476855fd919fef505658858", null ]
+    [ "wmtk_orient2d", "namespacewmtk_1_1utils.html#a262780be4273f42d2840b444247dfb54", null ],
+    [ "wmtk_orient2d", "namespacewmtk_1_1utils.html#a6310fa1d5aca1db566ef5eb4508ec956", null ],
+    [ "wmtk_orient3d", "namespacewmtk_1_1utils.html#a30615d6bfe6a3e2098e965dc7a29d527", null ],
+    [ "wmtk_orient3d", "namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce", null ]
 ];
