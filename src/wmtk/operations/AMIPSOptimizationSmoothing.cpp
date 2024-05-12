@@ -41,7 +41,11 @@ public:
 
 private:
     std::vector<std::array<double, S>> m_cells;
+// Enables the use of power of p to approximate minimizing max energy 
+// #define WMTK_ENABLE_P 
+#ifdef WMTK_ENABLE_P
     const int p = 4;
+#endif
 };
 
 template <int S>
@@ -72,14 +76,21 @@ double AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::value(const TVector& x)
             assert(x.size() == 2);
             c[0] = x[0];
             c[1] = x[1];
-
+            #ifdef WMTK_ENABLE_P
             res += std::pow(wmtk::function::Tri_AMIPS_energy(c),p);
+            #else
+            res += wmtk::function::Tri_AMIPS_energy(c);
+            #endif
         } else {
             assert(x.size() == 3);
             c[0] = x[0];
             c[1] = x[1];
             c[2] = x[2];
+            #ifdef WMTK_ENABLE_P
             res += std::pow(wmtk::function::Tet_AMIPS_energy(c),p);
+            #else
+            res += wmtk::function::Tet_AMIPS_energy(c);
+            #endif
         }
     }
 
@@ -94,7 +105,9 @@ void AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::gradient(const TVector& x,
     gradv.resize(size);
     gradv.setZero();
     Eigen::Matrix<double, size, 1> tmp(size);
+    #ifdef WMTK_ENABLE_P
     double tmp2 = 0;
+    #endif
 
     for (auto c : m_cells) {
         if constexpr (S == 6) {
@@ -102,16 +115,24 @@ void AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::gradient(const TVector& x,
             c[0] = x[0];
             c[1] = x[1];
             wmtk::function::Tri_AMIPS_jacobian(c, tmp);
+            #ifdef WMTK_ENABLE_P
             tmp2 = wmtk::function::Tri_AMIPS_energy(c);
+            #endif
         } else {
             assert(x.size() == 3);
             c[0] = x[0];
             c[1] = x[1];
             c[2] = x[2];
             wmtk::function::Tet_AMIPS_jacobian(c, tmp);
+            #ifdef WMTK_ENABLE_P
             tmp2 = wmtk::function::Tet_AMIPS_energy(c);
+            #endif
         }
+        #ifdef WMTK_ENABLE_P
         gradv += double(p) * pow(tmp2,p-1) * tmp;
+        #else
+        gradv += tmp;
+        #endif
     }
 }
 
@@ -125,9 +146,10 @@ void AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::hessian(
     hessian.resize(size, size);
     hessian.setZero();
     Eigen::Matrix<double, size, size> tmp;
+    #ifdef WMTK_ENABLE_P
     double tmp2 = 0;
     Eigen::Matrix<double, size, 1> tmpj(size);
-
+    #endif
 
     for (auto c : m_cells) {
         if constexpr (S == 6) {
@@ -135,18 +157,26 @@ void AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::hessian(
             c[0] = x[0];
             c[1] = x[1];
             wmtk::function::Tri_AMIPS_hessian(c, tmp);
+            #ifdef WMTK_ENABLE_P
             wmtk::function::Tri_AMIPS_jacobian(c, tmpj);
             tmp2 = wmtk::function::Tri_AMIPS_energy(c);
+            #endif
         } else {
             assert(x.size() == 3);
             c[0] = x[0];
             c[1] = x[1];
             c[2] = x[2];
             wmtk::function::Tet_AMIPS_hessian(c, tmp);
+            #ifdef WMTK_ENABLE_P
             wmtk::function::Tet_AMIPS_jacobian(c, tmpj);
             tmp2 = wmtk::function::Tet_AMIPS_energy(c);
+            #endif
         }
+        #ifdef WMTK_ENABLE_P
         hessian += (p)*(p-1) * std::pow(tmp2,p-2) * tmpj*tmpj.transpose() + p * std::pow(tmp2,p-1) * tmp;
+        #else
+        hessian += tmp;
+        #endif
         // 12 f(x)^2 * f(x)'*f^T'(x) + 4 f(x)^3 * H
     }
 }
