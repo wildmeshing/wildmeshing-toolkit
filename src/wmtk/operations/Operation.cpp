@@ -109,13 +109,19 @@ bool Operation::before(const simplex::Simplex& simplex) const
     // map simplex to the invariant mesh
     const Mesh& invariant_mesh = m_invariants.mesh();
 
-    // TODO check if this is correct
-    const std::vector<simplex::Simplex> invariant_simplices =
-        m_mesh.map(invariant_mesh, simplex_resurrect);
-
-    for (const simplex::Simplex& s : invariant_simplices) {
-        if (!m_invariants.before(s)) {
+    if (&invariant_mesh == &mesh()) {
+        if (!m_invariants.before(simplex_resurrect)) {
             return false;
+        }
+    } else {
+        // TODO check if this is correct
+        const std::vector<simplex::Simplex> invariant_simplices =
+            m_mesh.map(invariant_mesh, simplex_resurrect);
+
+        for (const simplex::Simplex& s : invariant_simplices) {
+            if (!m_invariants.before(s)) {
+                return false;
+            }
         }
     }
 
