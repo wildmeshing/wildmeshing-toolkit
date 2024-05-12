@@ -37,6 +37,9 @@ set(SRC_FILES
 
     Rounding.hpp
     Rounding.cpp
+
+    TetWildTangentialLaplacianSmoothing.hpp
+    TetWildTangentialLaplacianSmoothing.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
