@@ -23,6 +23,7 @@
 #include <wmtk/operations/OptimizationSmoothing.hpp>
 #include <wmtk/operations/OrOperationSequence.hpp>
 #include <wmtk/operations/Rounding.hpp>
+#include <wmtk/operations/TetWildTangentialLaplacianSmoothing.hpp>
 #include <wmtk/operations/composite/ProjectOperation.hpp>
 #include <wmtk/operations/composite/TetEdgeSwap.hpp>
 #include <wmtk/operations/composite/TetFaceSwap.hpp>
@@ -805,6 +806,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     pass_through_attributes.push_back(energy_filter_attribute);
 
     //////////////////////////////////
+    // coloring flag for smoothing
+    //////////////////////////////////
+
+    // auto coloring_attribute =
+    //     mesh->register_attribute<int64_t>("coloring", PrimitiveType::Vertex, 1, false, -1);
+    // pass_through_attributes.push_back(coloring_attribute);
+
+    //////////////////////////////////
     // Creation of the 4 ops
     //////////////////////////////////
     std::vector<std::shared_ptr<Operation>> ops;
@@ -930,9 +939,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     ops.emplace_back(split_sequence);
     ops_name.emplace_back("SPLIT");
-
-    //     ops.emplace_back(split_then_round);
-    // ops_name.emplace_back("SPLIT");
 
     ops.emplace_back(rounding);
     ops_name.emplace_back("rounding");
@@ -1492,6 +1498,49 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     }
 
     // 4) Smoothing
+    // //////////////////////////////////////
+    // // special smoothing on surface
+    // //////////////////////////////////////
+
+    // if (mesh->top_simplex_type() == PrimitiveType::Tetrahedron) {
+    //     for (auto& pair : mesh_constraint_pairs) {
+    //         if (pair.second.mesh().top_simplex_type() != PrimitiveType::Triangle) continue;
+
+    //         auto& child_mesh = pair.second.mesh();
+    //         auto& child_position_handle = pair.second;
+
+    //         auto lap_smoothing = std::make_shared<TetWildTangentialLaplacianSmoothing>(
+    //             child_mesh,
+    //             child_position_handle.as<Rational>());
+    //         lap_smoothing->add_invariant(std::make_shared<RoundedInvariant>(
+    //             child_mesh,
+    //             child_position_handle.as<Rational>()));
+    //         lap_smoothing->add_invariant(inversion_invariant);
+
+    //         auto proj_lap_smoothing =
+    //             std::make_shared<ProjectOperation>(lap_smoothing, mesh_constraint_pairs);
+    //         proj_lap_smoothing->use_random_priority() = true;
+
+    //         proj_lap_smoothing->add_invariant(envelope_invariant);
+    //         proj_lap_smoothing->add_invariant(inversion_invariant);
+    //         proj_lap_smoothing->add_invariant(
+    //             std::make_shared<EnergyFilterInvariant>(*mesh,
+    //             energy_filter_attribute.as<char>()));
+
+    //         proj_lap_smoothing->add_transfer_strategy(amips_update);
+    //         proj_lap_smoothing->add_transfer_strategy(edge_length_update);
+    //         for (auto& s : update_parent_positon) { // TODO::this should from only one child
+    //             proj_lap_smoothing->add_transfer_strategy(s);
+    //         }
+    //         for (auto& s : update_child_positon) {
+    //             proj_lap_smoothing->add_transfer_strategy(s);
+    //         }
+
+    //         ops.push_back(proj_lap_smoothing);
+    //         ops_name.push_back("LAPLACIAN SMOOTHING");
+    //     }
+    // }
+
     // auto energy =
     //     std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
     // auto smoothing = std::make_shared<OptimizationSmoothing>(energy);
@@ -1519,7 +1568,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     proj_smoothing->add_invariant(envelope_invariant);
     proj_smoothing->add_invariant(inversion_invariant);
     proj_smoothing->add_invariant(
-    std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
+        std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
 
     proj_smoothing->add_transfer_strategy(amips_update);
     proj_smoothing->add_transfer_strategy(edge_length_update);
@@ -1532,8 +1581,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     }
     // proj_smoothing->add_transfer_strategy(target_edge_length_update);
 
-    for (int i=0; i<5; ++i)
-    {
+    for (int i = 0; i < 1; ++i) {
         ops.push_back(proj_smoothing);
         ops_name.push_back("SMOOTHING");
     }
@@ -1654,6 +1702,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             SchedulerStats stats;
             if (op->primitive_type() == PrimitiveType::Edge) {
                 stats = scheduler.run_operation_on_all(*op, visited_edge_flag.as<char>());
+                // } else if (ops_name[jj] == "SMOOTHING") {
+                //     // stats = scheduler.run_operation_on_all(*op);
+                //     stats =
+                //         scheduler.run_operation_on_all_coloring(*op,
+                //         coloring_attribute.as<int64_t>());
             } else {
                 stats = scheduler.run_operation_on_all(*op);
             }

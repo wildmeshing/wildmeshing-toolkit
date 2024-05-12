@@ -41,8 +41,8 @@ public:
 
 private:
     std::vector<std::array<double, S>> m_cells;
-// Enables the use of power of p to approximate minimizing max energy 
-// #define WMTK_ENABLE_P 
+// Enables the use of power of p to approximate minimizing max energy
+// #define WMTK_ENABLE_P
 #ifdef WMTK_ENABLE_P
     const int p = 4;
 #endif
@@ -76,21 +76,21 @@ double AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::value(const TVector& x)
             assert(x.size() == 2);
             c[0] = x[0];
             c[1] = x[1];
-            #ifdef WMTK_ENABLE_P
-            res += std::pow(wmtk::function::Tri_AMIPS_energy(c),p);
-            #else
+#ifdef WMTK_ENABLE_P
+            res += std::pow(wmtk::function::Tri_AMIPS_energy(c), p);
+#else
             res += wmtk::function::Tri_AMIPS_energy(c);
-            #endif
+#endif
         } else {
             assert(x.size() == 3);
             c[0] = x[0];
             c[1] = x[1];
             c[2] = x[2];
-            #ifdef WMTK_ENABLE_P
-            res += std::pow(wmtk::function::Tet_AMIPS_energy(c),p);
-            #else
+#ifdef WMTK_ENABLE_P
+            res += std::pow(wmtk::function::Tet_AMIPS_energy(c), p);
+#else
             res += wmtk::function::Tet_AMIPS_energy(c);
-            #endif
+#endif
         }
     }
 
@@ -105,9 +105,9 @@ void AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::gradient(const TVector& x,
     gradv.resize(size);
     gradv.setZero();
     Eigen::Matrix<double, size, 1> tmp(size);
-    #ifdef WMTK_ENABLE_P
+#ifdef WMTK_ENABLE_P
     double tmp2 = 0;
-    #endif
+#endif
 
     for (auto c : m_cells) {
         if constexpr (S == 6) {
@@ -115,24 +115,24 @@ void AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::gradient(const TVector& x,
             c[0] = x[0];
             c[1] = x[1];
             wmtk::function::Tri_AMIPS_jacobian(c, tmp);
-            #ifdef WMTK_ENABLE_P
+#ifdef WMTK_ENABLE_P
             tmp2 = wmtk::function::Tri_AMIPS_energy(c);
-            #endif
+#endif
         } else {
             assert(x.size() == 3);
             c[0] = x[0];
             c[1] = x[1];
             c[2] = x[2];
             wmtk::function::Tet_AMIPS_jacobian(c, tmp);
-            #ifdef WMTK_ENABLE_P
+#ifdef WMTK_ENABLE_P
             tmp2 = wmtk::function::Tet_AMIPS_energy(c);
-            #endif
+#endif
         }
-        #ifdef WMTK_ENABLE_P
-        gradv += double(p) * pow(tmp2,p-1) * tmp;
-        #else
+#ifdef WMTK_ENABLE_P
+        gradv += double(p) * pow(tmp2, p - 1) * tmp;
+#else
         gradv += tmp;
-        #endif
+#endif
     }
 }
 
@@ -141,15 +141,15 @@ void AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::hessian(
     const TVector& x,
     Eigen::MatrixXd& hessian)
 {
-    //std::cout << "error here !!! Hessian used" << std::endl;
+    // std::cout << "error here !!! Hessian used" << std::endl;
     constexpr int64_t size = S == 6 ? 2 : 3;
     hessian.resize(size, size);
     hessian.setZero();
     Eigen::Matrix<double, size, size> tmp;
-    #ifdef WMTK_ENABLE_P
+#ifdef WMTK_ENABLE_P
     double tmp2 = 0;
     Eigen::Matrix<double, size, 1> tmpj(size);
-    #endif
+#endif
 
     for (auto c : m_cells) {
         if constexpr (S == 6) {
@@ -157,26 +157,27 @@ void AMIPSOptimizationSmoothing::WMTKAMIPSProblem<S>::hessian(
             c[0] = x[0];
             c[1] = x[1];
             wmtk::function::Tri_AMIPS_hessian(c, tmp);
-            #ifdef WMTK_ENABLE_P
+#ifdef WMTK_ENABLE_P
             wmtk::function::Tri_AMIPS_jacobian(c, tmpj);
             tmp2 = wmtk::function::Tri_AMIPS_energy(c);
-            #endif
+#endif
         } else {
             assert(x.size() == 3);
             c[0] = x[0];
             c[1] = x[1];
             c[2] = x[2];
             wmtk::function::Tet_AMIPS_hessian(c, tmp);
-            #ifdef WMTK_ENABLE_P
+#ifdef WMTK_ENABLE_P
             wmtk::function::Tet_AMIPS_jacobian(c, tmpj);
             tmp2 = wmtk::function::Tet_AMIPS_energy(c);
-            #endif
+#endif
         }
-        #ifdef WMTK_ENABLE_P
-        hessian += (p)*(p-1) * std::pow(tmp2,p-2) * tmpj*tmpj.transpose() + p * std::pow(tmp2,p-1) * tmp;
-        #else
+#ifdef WMTK_ENABLE_P
+        hessian += (p) * (p - 1) * std::pow(tmp2, p - 2) * tmpj * tmpj.transpose() +
+                   p * std::pow(tmp2, p - 1) * tmp;
+#else
         hessian += tmp;
-        #endif
+#endif
         // 12 f(x)^2 * f(x)'*f^T'(x) + 4 f(x)^3 * H
     }
 }
@@ -235,11 +236,10 @@ AMIPSOptimizationSmoothing::AMIPSOptimizationSmoothing(
 
     m_linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
     m_nonlinear_solver_params = R"({"solver": "DenseNewton", "max_iterations": 10})"_json;
-    //m_nonlinear_solver_params = R"({"solver": "L-BFGS", "max_iterations": 100, "advanced":{"apply_gradient_fd": "FullFiniteDiff"}})"_json;
-    // m_nonlinear_solver_params = R"({"solver": "GradientDescent", "max_iterations": 100})"_json;
+    // m_nonlinear_solver_params = R"({"solver": "L-BFGS", "max_iterations": 100,
+    // "advanced":{"apply_gradient_fd": "FullFiniteDiff"}})"_json;
+    //  m_nonlinear_solver_params = R"({"solver": "GradientDescent", "max_iterations": 100})"_json;
 
-
-    
 
     create_solver();
 }
@@ -342,10 +342,7 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
                 single_cell[3 * i + 1] = p[1].to_double();
                 single_cell[3 * i + 2] = p[2].to_double();
 
-                if (!p[0].is_rounded() || !p[1].is_rounded() || !p[2].is_rounded())
-                    return {};
-
-
+                if (!p[0].is_rounded() || !p[1].is_rounded() || !p[2].is_rounded()) return {};
             }
             // if (wmtk::utils::wmtk_orient3d(ps[3], ps[0], ps[1], ps[2]) <= 0) {
             //     std::cout << "this is wrong" << std::endl;
@@ -377,10 +374,10 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
 
         auto child_meshes = mesh().get_child_meshes();
 
+
         double alpha = 1.00;
         for (auto child_mesh : child_meshes) {
-            if (!mesh().map_to_child(*child_mesh, simplex).empty()) 
-            {
+            if (!mesh().map_to_child(*child_mesh, simplex).empty()) {
                 alpha = 0.01;
                 break;
             }
@@ -389,9 +386,9 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex:
 
         for (int64_t d = 0; d < m_coordinate_handle.dimension(); ++d) {
             // accessor.vector_attribute(simplex.tuple())[d] = Rational(x[d], true);
-            accessor.vector_attribute(simplex.tuple())[d] = Rational((1-alpha)*x0[d] + alpha*x[d], true);
+            accessor.vector_attribute(simplex.tuple())[d] =
+                Rational((1 - alpha) * x0[d] + alpha * x[d], true);
         }
-
     }
 
     // assert(attribute_handle() == m_function.attribute_handle());
