@@ -108,7 +108,7 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
         return edge_length_accessor.const_scalar_attribute(s.tuple());
     };
     pass_through_attributes.push_back(edge_length_attribute);
-    auto todo_larger = std::make_shared<TodoLargerInvariant>(
+    auto todo = std::make_shared<TodoSmallerInvariant>(
         mesh,
         edge_length_attribute.as<double>(),
         options.length_abs);
@@ -153,7 +153,7 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
     //////////////////////////////////////////
     // collapse
     auto collapse = std::make_shared<wmtk::operations::EdgeCollapse>(mesh);
-    collapse->add_invariant(todo_larger);
+    collapse->add_invariant(todo);
     collapse->add_invariant(invariant_link_condition);
     collapse->add_invariant(invariant_mm_map);
 
