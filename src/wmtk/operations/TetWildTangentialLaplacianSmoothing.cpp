@@ -19,7 +19,7 @@ TetWildTangentialLaplacianSmoothing::TetWildTangentialLaplacianSmoothing(
     , m_coordinate_handle(coordinate)
     , m_damping_factor(damping_factor)
 {
-    assert(mesh().top_simplex_type() == PrimitiveType::Surface);
+    assert(mesh().top_simplex_type() == PrimitiveType::Triangle);
 }
 
 std::vector<simplex::Simplex> TetWildTangentialLaplacianSmoothing::execute(
