@@ -1,0 +1,64 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+          "periodic_mesh",
+          "position_mesh",
+          "output",
+        ],
+        "optional": [
+          "envelope_size",
+          "target_max_amips",
+          "target_edge_length",
+          "passes",
+          "intermediate_output"
+        ]
+      },
+      {
+        "pointer": "/periodic_mesh",
+        "type": "string",
+        "doc": "input periodic topology mesh"
+      },
+      {
+        "pointer": "/position_mesh",
+        "type": "string",
+        "doc": "input position mesh"
+      },
+      {
+        "pointer": "/output",
+        "type": "string",
+        "doc": "output mesh name"
+      },
+      {
+        "pointer": "/envelope_size",
+        "type": "float",
+        "default": 0.001,
+        "doc": "envelope size"
+      },
+      {
+        "pointer": "/target_max_amips",
+        "type": "float",
+        "default": 10,
+        "doc": "max amips"
+      },
+      {
+        "pointer": "/target_edge_length",
+        "type": "float",
+        "default": 0.05,
+        "doc": "target_edge_length"
+      },
+      {
+        "pointer": "/passes",
+        "type": "int",
+        "default": 20,
+        "doc": "number of passes"
+      },
+      {
+        "pointer": "/intermediate_output",
+        "type": "bool",
+        "default": false,
+        "doc": "output intermediate state"
+      }
+
+  ]
