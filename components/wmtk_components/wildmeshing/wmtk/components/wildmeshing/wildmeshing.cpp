@@ -1149,7 +1149,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             // swap->add_invariant(inversion_invariant);
             swap->collapse().add_invariant(inversion_invariant);
 
-            swap->collapse().add_invariant(envelope_invariant);
+            // swap->collapse().add_invariant(envelope_invariant);
 
             for (const auto& attr : pass_through_attributes) {
                 swap->split().set_new_attribute_strategy(
@@ -1308,7 +1308,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             // swap->add_invariant(inversion_invariant);
             swap->collapse().add_invariant(inversion_invariant);
 
-            swap->collapse().add_invariant(envelope_invariant);
+            // swap->collapse().add_invariant(envelope_invariant);
 
             for (const auto& attr : pass_through_attributes) {
                 swap->split().set_new_attribute_strategy(
@@ -1454,7 +1454,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         // hack
         swap32->collapse().add_invariant(inversion_invariant);
-        swap32->collapse().add_invariant(envelope_invariant);
+        // swap32->collapse().add_invariant(envelope_invariant);
 
         for (const auto& attr : pass_through_attributes) {
             swap32->split().set_new_attribute_strategy(
@@ -1669,13 +1669,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         min_energy,
         avg_energy);
 
-    std::ofstream file0("quality_plot_pre.csv");
-    file0 << "tid, quality" << std::endl;
-    int64_t t_cnt = 0;
-    for (const auto& t : mesh->get_all(PrimitiveType::Tetrahedron)) {
-        t_cnt++;
-        file0 << t_cnt << ", " << amips_accessor.scalar_attribute(t) << std::endl;
-    }
+    // std::ofstream file0("quality_plot_pre.csv");
+    // file0 << "tid, quality" << std::endl;
+    // int64_t t_cnt = 0;
+    // for (const auto& t : mesh->get_all(PrimitiveType::Tetrahedron)) {
+    //     t_cnt++;
+    //     file0 << t_cnt << ", " << amips_accessor.scalar_attribute(t) << std::endl;
+    // }
 
 
     double old_max_energy = max_energy;
