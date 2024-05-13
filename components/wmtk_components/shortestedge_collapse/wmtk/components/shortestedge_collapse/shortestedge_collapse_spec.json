@@ -81,7 +81,8 @@
   {
     "pointer": "/length_rel",
     "type": "float",
-    "default": -1
+    "default": -1,
+    "doc": "relative length with respect to the average edge length of the input mesh."
   },
   {
     "pointer": "/lock_boundary",

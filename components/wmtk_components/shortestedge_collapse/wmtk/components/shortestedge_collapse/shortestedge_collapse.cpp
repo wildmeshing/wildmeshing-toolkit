@@ -20,31 +20,9 @@
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-#include <Eigen/Geometry>
 #include "internal/SECOptions.hpp"
 
 namespace wmtk::components {
-// compute the length relative to the bounding box diagonal
-namespace {
-double relative_to_absolute_length(
-    const attribute::MeshAttributeHandle& pos_handle,
-    const double length_rel)
-{
-    auto pos = pos_handle.mesh().create_const_accessor<double>(pos_handle);
-    const auto vertices = pos_handle.mesh().get_all(PrimitiveType::Vertex);
-    Eigen::AlignedBox<double, Eigen::Dynamic> bbox(pos.dimension());
-
-
-    for (const auto& v : vertices) {
-        bbox.extend(pos.const_vector_attribute(v));
-    }
-
-    const double diag_length = bbox.sizes().norm();
-
-    return length_rel * diag_length;
-}
-} // namespace
-
 void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
@@ -75,12 +53,6 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
         position_for_inversion = tmp.front();
     }
 
-    if (options.length_abs < 0) {
-        if (options.length_rel < 0) {
-            throw std::runtime_error("Either absolute or relative length must be set!");
-        }
-        options.length_abs = relative_to_absolute_length(pos_handle, options.length_rel);
-    }
     /////////////////////////////////////////////
 
     TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
@@ -117,12 +89,26 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
             compute_edge_length);
     edge_length_update->run_on_all();
 
+    double avg_length = 0;
+    const auto edges = mesh.get_all(PrimitiveType::Edge);
+    for (const auto& e : edges) {
+        avg_length += edge_length_accessor.const_scalar_attribute(e);
+    }
+    avg_length /= edges.size();
+    if (options.length_abs < 0) {
+        if (options.length_rel < 0) {
+            throw std::runtime_error("Either absolute or relative length must be set!");
+        }
+        options.length_abs = avg_length * options.length_rel;
+    }
+    logger().info("Average edge length: {}, target {}", avg_length, options.length_abs);
+
     auto short_edges_first_priority = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         return edge_length_accessor.const_scalar_attribute(s.tuple());
     };
     pass_through_attributes.push_back(edge_length_attribute);
-    auto todo_smaller = std::make_shared<TodoSmallerInvariant>(
+    auto todo_larger = std::make_shared<TodoLargerInvariant>(
         mesh,
         edge_length_attribute.as<double>(),
         options.length_abs);
@@ -167,7 +153,10 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
     //////////////////////////////////////////
     // collapse
     auto collapse = std::make_shared<wmtk::operations::EdgeCollapse>(mesh);
+    collapse->add_invariant(todo_larger);
     collapse->add_invariant(invariant_link_condition);
+    collapse->add_invariant(invariant_mm_map);
+
     if (position_for_inversion) {
         collapse->add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
             position_for_inversion.value().mesh(),
@@ -181,8 +170,6 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
     collapse->set_priority(short_edges_first_priority);
     collapse->add_transfer_strategy(edge_length_update);
 
-    collapse->add_invariant(todo_smaller);
-    collapse->add_invariant(invariant_mm_map);
 
     // hack for uv
     if (options.fix_uv_seam) {
