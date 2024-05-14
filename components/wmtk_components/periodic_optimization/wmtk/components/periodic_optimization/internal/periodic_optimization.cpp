@@ -14,6 +14,7 @@
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 
 #include <wmtk/operations/AMIPSOptimizationSmoothing.hpp>
+#include <wmtk/operations/AMIPSOptimizationSmoothingPeriodic.hpp>
 #include <wmtk/operations/AndOperationSequence.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
@@ -126,6 +127,30 @@ void periodic_optimization(
     auto surface_position_handle =
         surface_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
+    auto position_accessor = position_mesh.create_const_accessor(position_handle.as<double>());
+
+
+    Eigen::Vector3d bmin, bmax;
+    bmin.setConstant(std::numeric_limits<double>::max());
+    bmax.setConstant(std::numeric_limits<double>::lowest());
+
+    const auto vertices = position_mesh.get_all(PrimitiveType::Vertex);
+    for (const auto& v : vertices) {
+        const auto p = position_accessor.vector_attribute(v);
+        for (int64_t d = 0; d < bmax.size(); ++d) {
+            bmin[d] = std::min(bmin[d], p[d]);
+            bmax[d] = std::max(bmax[d], p[d]);
+        }
+    }
+
+    const double bbdiag = (bmax - bmin).norm();
+    const double target_edge_length_abs = bbdiag * target_edge_length;
+
+    const double period_x = bmax[0] - bmin[0];
+    const double period_y = bmax[1] - bmin[1];
+    const double period_z = bmax[2] - bmin[2];
+
+
     /////////////////////////////
     // envelope
     /////////////////////////////
@@ -200,7 +225,7 @@ void periodic_optimization(
         PrimitiveType::Edge,
         1,
         false,
-        target_edge_length); // defaults to target edge length
+        target_edge_length_abs); // defaults to target edge length
 
     /////////////////////////////
     // edge length
@@ -211,7 +236,7 @@ void periodic_optimization(
     auto edge_length_accessor = position_mesh.create_accessor(edge_length_handle.as<double>());
     // Edge length update
     auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-        return Eigen::Vector3d::Constant(1, sqrt((P.col(0) - P.col(1)).squaredNorm()));
+        return Eigen::VectorXd::Constant(1, sqrt((P.col(0) - P.col(1)).squaredNorm()));
     };
     auto edge_length_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
@@ -279,6 +304,7 @@ void periodic_optimization(
     pass_through_attributes.push_back(amips_handle);
     pass_through_attributes.push_back(visited_vertex_flag_handle);
     pass_through_attributes.push_back(energy_filter_handle);
+    pass_through_attributes.push_back(surface_position_handle);
 
     //////////////////////////////////
     // invariants
@@ -364,6 +390,7 @@ void periodic_optimization(
     split->add_transfer_strategy(edge_length_update);
     split->add_transfer_strategy(tag_update); // for renew the queue
     split->add_transfer_strategy(energy_filter_update);
+    split->add_transfer_strategy(update_child_position);
 
     ops.emplace_back(split);
     ops_name.emplace_back("SPLIT");
@@ -623,9 +650,6 @@ void periodic_optimization(
             visited_edge_flag_handle,
             wmtk::operations::CollapseBasicStrategy::None);
 
-        // swap->split().add_transfer_strategy(amips_update);
-        // swap->collapse().add_transfer_strategy(amips_update);
-
         swap->split().set_new_attribute_strategy(
             target_edge_length_handle,
             wmtk::operations::SplitBasicStrategy::Copy,
@@ -821,22 +845,24 @@ void periodic_optimization(
     std::vector<MeshConstrainPair> mesh_constraint_pairs;
     mesh_constraint_pairs.emplace_back(surface_position_handle, surface_position_handle);
 
-    auto smoothing = std::make_shared<AMIPSOptimizationSmoothing>(position_mesh, position_handle);
+    auto smoothing = std::make_shared<AMIPSOptimizationSmoothingPeriodic>(
+        periodic_mesh,
+        position_mesh,
+        position_handle);
     smoothing->add_invariant(inversion_invariant);
     smoothing->add_transfer_strategy(update_child_position);
-    auto proj_smoothing = std::make_shared<ProjectOperation>(smoothing, mesh_constraint_pairs);
-    proj_smoothing->use_random_priority() = true;
+    smoothing->use_random_priority() = true;
 
-    proj_smoothing->add_invariant(envelope_invariant);
-    proj_smoothing->add_invariant(inversion_invariant);
-    proj_smoothing->add_invariant(
+    smoothing->add_invariant(envelope_invariant);
+    smoothing->add_invariant(
         std::make_shared<EnergyFilterInvariant>(position_mesh, energy_filter_handle.as<char>()));
 
-    proj_smoothing->add_transfer_strategy(amips_update);
-    proj_smoothing->add_transfer_strategy(edge_length_update);
-    proj_smoothing->add_transfer_strategy(update_parent_position);
+    smoothing->add_transfer_strategy(amips_update);
+    smoothing->add_transfer_strategy(edge_length_update);
+    smoothing->add_transfer_strategy(update_child_position);
 
-    proj_smoothing->add_transfer_strategy(update_child_position);
+    ops.push_back(smoothing);
+    ops_name.push_back("SMOOTHING");
 
     //////////////////////////////////
     // Scheduler
@@ -855,6 +881,17 @@ void periodic_optimization(
         int jj = 0;
 
         for (auto& op : ops) {
+            for (const auto& t : position_mesh.get_all(position_mesh.top_simplex_type())) {
+                const auto vertices = position_mesh.orient_vertices(t);
+                std::vector<Vector3d> pos;
+                for (int i = 0; i < vertices.size(); ++i) {
+                    pos.push_back(position_accessor.const_vector_attribute(vertices[i]));
+                }
+                if (wmtk::utils::wmtk_orient3d(pos[0], pos[1], pos[2], pos[3]) <= 0) {
+                    wmtk::logger().error("Flipped tet!");
+                }
+            }
+            logger().info("Executing {} ...", ops_name[jj]);
             SchedulerStats stats;
             if (op->primitive_type() == PrimitiveType::Edge) {
                 stats = scheduler.run_operation_on_all(*op, visited_edge_flag_handle.as<char>());
@@ -1113,7 +1150,7 @@ void adjust_sizing_field(
 
     // update the rest
     for (const auto& v : vertices_all) {
-        if (visited_accessor.scalar_attribute(v) = char(1)) continue;
+        if (visited_accessor.scalar_attribute(v) == char(1)) continue;
         auto new_scale = sizing_field_scalar_accessor.scalar_attribute(v) * 1.5;
         if (new_scale > 1) {
             sizing_field_scalar_accessor.scalar_attribute(v) = 1;

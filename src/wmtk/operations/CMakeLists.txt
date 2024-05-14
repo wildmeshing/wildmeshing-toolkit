@@ -2,6 +2,9 @@ set(SRC_FILES
     AMIPSOptimizationSmoothing.hpp
     AMIPSOptimizationSmoothing.cpp
 
+    AMIPSOptimizationSmoothingPeriodic.hpp
+    AMIPSOptimizationSmoothingPeriodic.cpp
+
     AttributesUpdate.hpp
     AttributesUpdate.cpp
 

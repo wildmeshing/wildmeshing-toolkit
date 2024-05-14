@@ -72,6 +72,8 @@ void periodic_optimization(const base::Paths& paths, const nlohmann::json& j, io
     std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
     pass_through_attributes.push_back(surface_handle);
 
+    wmtk::logger().info("start optimization");
+
     periodic_optimization(
         *periodic_mesh,
         *position_mesh,
@@ -84,6 +86,8 @@ void periodic_optimization(const base::Paths& paths, const nlohmann::json& j, io
         pass_through_attributes,
         paths.output_dir,
         options.output);
+
+    wmtk::logger().info("finished optimization");
 
     cache.write_mesh(*periodic_mesh, options.output);
 }

@@ -232,7 +232,7 @@ AMIPSOptimizationSmoothing::AMIPSOptimizationSmoothing(
     , m_coordinate_handle(coords)
     , m_amips(mesh, coords)
 {
-    assert(m_coordinate_handle.holds<Rational>());
+    // assert(m_coordinate_handle.holds<Rational>());
 
     m_linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
     m_nonlinear_solver_params = R"({"solver": "DenseNewton", "max_iterations": 10})"_json;
@@ -256,144 +256,261 @@ void AMIPSOptimizationSmoothing::create_solver()
 
 std::vector<simplex::Simplex> AMIPSOptimizationSmoothing::execute(const simplex::Simplex& simplex)
 {
-    auto accessor = mesh().create_accessor(m_coordinate_handle.as<Rational>());
-    const auto neighs = wmtk::simplex::cofaces_single_dimension_simplices(
-        mesh(),
-        simplex,
-        mesh().top_simplex_type());
+    if (m_coordinate_handle.holds<Rational>()) {
+        auto accessor = mesh().create_accessor(m_coordinate_handle.as<Rational>());
 
-    if (mesh().top_simplex_type() == PrimitiveType::Triangle) {
-        std::vector<std::array<double, 6>> cells;
+        const auto neighs = wmtk::simplex::cofaces_single_dimension_simplices(
+            mesh(),
+            simplex,
+            mesh().top_simplex_type());
 
-        for (const simplex::Simplex& cell : neighs) {
-            cells.emplace_back(m_amips.get_raw_coordinates<3, 2>(cell, simplex));
-        }
-        WMTKAMIPSProblem<6> problem(cells);
+        if (mesh().top_simplex_type() == PrimitiveType::Triangle) {
+            std::vector<std::array<double, 6>> cells;
 
-        auto x = problem.initial_value();
-        try {
-            m_solver->minimize(problem, x);
-
-            for (int64_t d = 0; d < m_coordinate_handle.dimension(); ++d) {
-                accessor.vector_attribute(simplex.tuple())[d] = Rational(x[d], true);
+            for (const simplex::Simplex& cell : neighs) {
+                cells.emplace_back(m_amips.get_raw_coordinates<3, 2>(cell, simplex));
             }
-        } catch (const std::exception&) {
-            return {};
-        }
-    } else {
-        assert(mesh().top_simplex_type() == PrimitiveType::Tetrahedron);
+            WMTKAMIPSProblem<6> problem(cells);
 
-        std::vector<std::array<double, 12>> cells;
+            auto x = problem.initial_value();
+            try {
+                m_solver->minimize(problem, x);
 
-        for (simplex::Simplex cell : neighs) {
-            // auto vertices = mesh().orient_vertices(cell.tuple());
-            // int idx = -1;
-            // for (int i = 0; i < 4; ++i) {
-            //     if (simplex::Simplex::vertex(mesh(), vertices[i]) == simplex) {
-            //         idx = i;
+                for (int64_t d = 0; d < m_coordinate_handle.dimension(); ++d) {
+                    accessor.vector_attribute(simplex.tuple())[d] = Rational(x[d], true);
+                }
+            } catch (const std::exception&) {
+                return {};
+            }
+        } else {
+            assert(mesh().top_simplex_type() == PrimitiveType::Tetrahedron);
+
+            std::vector<std::array<double, 12>> cells;
+
+            for (simplex::Simplex cell : neighs) {
+                // auto vertices = mesh().orient_vertices(cell.tuple());
+                // int idx = -1;
+                // for (int i = 0; i < 4; ++i) {
+                //     if (simplex::Simplex::vertex(mesh(), vertices[i]) == simplex) {
+                //         idx = i;
+                //         break;
+                //     }
+                // }
+                // if (idx == -1) {
+                //     std::cout << "idx not found" << std::endl;
+                // }
+
+                // std::rotate(vertices.begin(), vertices.begin() + idx, vertices.end());
+
+
+                // assert(vertices.size() == 4);
+                // if (!simplex::utils::SimplexComparisons::equal(
+                //         mesh(),
+                //         simplex::Simplex::vertex(mesh(), vertices[0]),
+                //         simplex)) {
+                //     std::cout << "error here" << std::endl;
+                // }
+
+                if (!mesh().is_ccw(cell.tuple())) {
+                    // switch any local id but NOT the vertex
+                    cell = simplex::Simplex(
+                        mesh(),
+                        cell.primitive_type(),
+                        mesh().switch_tuple(cell.tuple(), PrimitiveType::Edge));
+                }
+                assert(mesh().is_ccw(cell.tuple()));
+
+                const auto vertices =
+                    simplex::faces_single_dimension(mesh(), cell, PrimitiveType::Vertex);
+
+
+                assert(vertices.size() == 4);
+                if (!simplex::utils::SimplexComparisons::equal(
+                        mesh(),
+                        vertices.simplex_vector()[0],
+                        simplex)) {
+                    std::cout << "error here" << std::endl;
+                }
+
+
+                std::array<double, 12> single_cell;
+                std::vector<Vector3r> ps;
+                for (size_t i = 0; i < 4; ++i) {
+                    const simplex::Simplex& v = vertices.simplex_vector()[i];
+                    // const auto p = accessor.const_vector_attribute(vertices[i]);
+                    const auto p = accessor.const_vector_attribute(v);
+                    ps.push_back(p);
+                    single_cell[3 * i + 0] = p[0].to_double();
+                    single_cell[3 * i + 1] = p[1].to_double();
+                    single_cell[3 * i + 2] = p[2].to_double();
+
+                    if (!p[0].is_rounded() || !p[1].is_rounded() || !p[2].is_rounded()) return {};
+                }
+                // if (wmtk::utils::wmtk_orient3d(ps[3], ps[0], ps[1], ps[2]) <= 0) {
+                //     std::cout << "this is wrong" << std::endl;
+                // }
+
+                cells.emplace_back(single_cell);
+
+                // cells.emplace_back(m_amips.get_raw_coordinates<4, 3>(cell, simplex));
+            }
+            WMTKAMIPSProblem<12> problem(cells);
+
+            {
+                Eigen::Vector3d x1(cells[0][0], cells[0][1], cells[0][2]);
+                if (!problem.is_step_valid(x1, x1)) {
+                    std::cout << "step is not valid!!!!!!!!!!!!!!!!" << std::endl;
+                }
+            }
+
+            auto x = problem.initial_value();
+            auto x0 = problem.initial_value();
+
+            try {
+                m_solver->minimize(problem, x);
+
+            } catch (const std::exception&) {
+            }
+
+            // Hack for surface only
+
+            auto child_meshes = mesh().get_child_meshes();
+
+
+            double alpha = 1.00;
+            // for (auto child_mesh : child_meshes) {
+            //     if (!mesh().map_to_child(*child_mesh, simplex).empty()) {
+            //         alpha = 0.01;
             //         break;
             //     }
             // }
-            // if (idx == -1) {
-            //     std::cout << "idx not found" << std::endl;
+
+
+            for (int64_t d = 0; d < m_coordinate_handle.dimension(); ++d) {
+                // accessor.vector_attribute(simplex.tuple())[d] = Rational(x[d], true);
+                accessor.vector_attribute(simplex.tuple())[d] =
+                    Rational((1 - alpha) * x0[d] + alpha * x[d], true);
+            }
+        }
+
+        // assert(attribute_handle() == m_function.attribute_handle());
+
+        double res = 0;
+    } else {
+        auto accessor = mesh().create_accessor(m_coordinate_handle.as<double>());
+
+        const auto neighs = wmtk::simplex::cofaces_single_dimension_simplices(
+            mesh(),
+            simplex,
+            mesh().top_simplex_type());
+
+        if (mesh().top_simplex_type() == PrimitiveType::Triangle) {
+            std::vector<std::array<double, 6>> cells;
+
+            for (const simplex::Simplex& cell : neighs) {
+                cells.emplace_back(m_amips.get_raw_coordinates<3, 2>(cell, simplex));
+            }
+            WMTKAMIPSProblem<6> problem(cells);
+
+            auto x = problem.initial_value();
+            try {
+                m_solver->minimize(problem, x);
+
+                for (int64_t d = 0; d < m_coordinate_handle.dimension(); ++d) {
+                    accessor.vector_attribute(simplex.tuple())[d] = x[d];
+                }
+            } catch (const std::exception&) {
+                return {};
+            }
+        } else {
+            assert(mesh().top_simplex_type() == PrimitiveType::Tetrahedron);
+
+            std::vector<std::array<double, 12>> cells;
+
+            for (simplex::Simplex cell : neighs) {
+                if (!mesh().is_ccw(cell.tuple())) {
+                    // switch any local id but NOT the vertex
+                    cell = simplex::Simplex(
+                        mesh(),
+                        cell.primitive_type(),
+                        mesh().switch_tuple(cell.tuple(), PrimitiveType::Edge));
+                }
+                assert(mesh().is_ccw(cell.tuple()));
+
+                const auto vertices =
+                    simplex::faces_single_dimension(mesh(), cell, PrimitiveType::Vertex);
+
+
+                assert(vertices.size() == 4);
+                if (!simplex::utils::SimplexComparisons::equal(
+                        mesh(),
+                        vertices.simplex_vector()[0],
+                        simplex)) {
+                    std::cout << "error here" << std::endl;
+                }
+
+
+                std::array<double, 12> single_cell;
+                std::vector<Vector3d> ps;
+                for (size_t i = 0; i < 4; ++i) {
+                    const simplex::Simplex& v = vertices.simplex_vector()[i];
+                    // const auto p = accessor.const_vector_attribute(vertices[i]);
+                    const auto p = accessor.const_vector_attribute(v);
+                    ps.push_back(p);
+                    single_cell[3 * i + 0] = p[0];
+                    single_cell[3 * i + 1] = p[1];
+                    single_cell[3 * i + 2] = p[2];
+                }
+                // if (wmtk::utils::wmtk_orient3d(ps[3], ps[0], ps[1], ps[2]) <= 0) {
+                //     std::cout << "this is wrong" << std::endl;
+                // }
+
+                cells.emplace_back(single_cell);
+
+                // cells.emplace_back(m_amips.get_raw_coordinates<4, 3>(cell, simplex));
+            }
+            WMTKAMIPSProblem<12> problem(cells);
+
+            {
+                Eigen::Vector3d x1(cells[0][0], cells[0][1], cells[0][2]);
+                if (!problem.is_step_valid(x1, x1)) {
+                    std::cout << "step is not valid!!!!!!!!!!!!!!!!" << std::endl;
+                }
+            }
+
+            auto x = problem.initial_value();
+            auto x0 = problem.initial_value();
+
+            try {
+                m_solver->minimize(problem, x);
+
+            } catch (const std::exception&) {
+            }
+
+            // Hack for surface only
+
+            auto child_meshes = mesh().get_child_meshes();
+
+
+            double alpha = 1.00;
+            // for (auto child_mesh : child_meshes) {
+            //     if (!mesh().map_to_child(*child_mesh, simplex).empty()) {
+            //         alpha = 0.01;
+            //         break;
+            //     }
             // }
 
-            // std::rotate(vertices.begin(), vertices.begin() + idx, vertices.end());
 
-
-            // assert(vertices.size() == 4);
-            // if (!simplex::utils::SimplexComparisons::equal(
-            //         mesh(),
-            //         simplex::Simplex::vertex(mesh(), vertices[0]),
-            //         simplex)) {
-            //     std::cout << "error here" << std::endl;
-            // }
-
-            if (!mesh().is_ccw(cell.tuple())) {
-                // switch any local id but NOT the vertex
-                cell = simplex::Simplex(
-                    mesh(),
-                    cell.primitive_type(),
-                    mesh().switch_tuple(cell.tuple(), PrimitiveType::Edge));
-            }
-            assert(mesh().is_ccw(cell.tuple()));
-
-            const auto vertices =
-                simplex::faces_single_dimension(mesh(), cell, PrimitiveType::Vertex);
-
-
-            assert(vertices.size() == 4);
-            if (!simplex::utils::SimplexComparisons::equal(
-                    mesh(),
-                    vertices.simplex_vector()[0],
-                    simplex)) {
-                std::cout << "error here" << std::endl;
-            }
-
-
-            std::array<double, 12> single_cell;
-            std::vector<Vector3r> ps;
-            for (size_t i = 0; i < 4; ++i) {
-                const simplex::Simplex& v = vertices.simplex_vector()[i];
-                // const auto p = accessor.const_vector_attribute(vertices[i]);
-                const auto p = accessor.const_vector_attribute(v);
-                ps.push_back(p);
-                single_cell[3 * i + 0] = p[0].to_double();
-                single_cell[3 * i + 1] = p[1].to_double();
-                single_cell[3 * i + 2] = p[2].to_double();
-
-                if (!p[0].is_rounded() || !p[1].is_rounded() || !p[2].is_rounded()) return {};
-            }
-            // if (wmtk::utils::wmtk_orient3d(ps[3], ps[0], ps[1], ps[2]) <= 0) {
-            //     std::cout << "this is wrong" << std::endl;
-            // }
-
-            cells.emplace_back(single_cell);
-
-            // cells.emplace_back(m_amips.get_raw_coordinates<4, 3>(cell, simplex));
-        }
-        WMTKAMIPSProblem<12> problem(cells);
-
-        {
-            Eigen::Vector3d x1(cells[0][0], cells[0][1], cells[0][2]);
-            if (!problem.is_step_valid(x1, x1)) {
-                std::cout << "step is not valid!!!!!!!!!!!!!!!!" << std::endl;
+            for (int64_t d = 0; d < m_coordinate_handle.dimension(); ++d) {
+                // accessor.vector_attribute(simplex.tuple())[d] = Rational(x[d], true);
+                accessor.vector_attribute(simplex.tuple())[d] = (1 - alpha) * x0[d] + alpha * x[d];
             }
         }
 
-        auto x = problem.initial_value();
-        auto x0 = problem.initial_value();
+        // assert(attribute_handle() == m_function.attribute_handle());
 
-        try {
-            m_solver->minimize(problem, x);
-
-        } catch (const std::exception&) {
-        }
-
-        // Hack for surface only
-
-        auto child_meshes = mesh().get_child_meshes();
-
-
-        double alpha = 1.00;
-        // for (auto child_mesh : child_meshes) {
-        //     if (!mesh().map_to_child(*child_mesh, simplex).empty()) {
-        //         alpha = 0.01;
-        //         break;
-        //     }
-        // }
-
-
-        for (int64_t d = 0; d < m_coordinate_handle.dimension(); ++d) {
-            // accessor.vector_attribute(simplex.tuple())[d] = Rational(x[d], true);
-            accessor.vector_attribute(simplex.tuple())[d] =
-                Rational((1 - alpha) * x0[d] + alpha * x[d], true);
-        }
+        double res = 0;
     }
-
-    // assert(attribute_handle() == m_function.attribute_handle());
-
-    double res = 0;
 
 
     return AttributesUpdate::execute(simplex);

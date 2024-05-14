@@ -385,14 +385,15 @@ void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
             position_mesh);
 
         std::shared_ptr<TetMesh> child_ptr = std::make_shared<TetMesh>(std::move(position_mesh));
+        std::shared_ptr<TetMesh> parent_ptr = std::make_shared<TetMesh>(std::move(fusion_mesh));
 
-        auto child_map = multimesh::same_simplex_dimension_bijection(fusion_mesh, *child_ptr);
-        fusion_mesh.register_child_mesh(child_ptr, child_map);
+        auto child_map = multimesh::same_simplex_dimension_bijection(*parent_ptr, *child_ptr);
+        parent_ptr->register_child_mesh(child_ptr, child_map);
 
-        names["periodic"] = fusion_mesh.absolute_multi_mesh_id();
+        names["periodic"] = parent_ptr->absolute_multi_mesh_id();
         names["position"] = child_ptr->absolute_multi_mesh_id();
 
-        cache.write_mesh(fusion_mesh, options.name, names);
+        cache.write_mesh(*parent_ptr, options.name, names);
 
         break;
     }
