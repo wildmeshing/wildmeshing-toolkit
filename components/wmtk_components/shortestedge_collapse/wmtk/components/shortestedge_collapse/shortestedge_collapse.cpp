@@ -135,20 +135,6 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
     std::vector<attribute::MeshAttributeHandle> positions = other_positions;
     positions.push_back(pos_handle);
 
-    auto update_position_func = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-        return P.col(0);
-    };
-    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
-        update_position;
-
-    if (options.attributes.update_other_positions) {
-        update_position =
-            std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-                other_positions.front(),
-                pos_handle,
-                update_position_func);
-    }
-
 
     //////////////////////////////////////////
     // collapse
