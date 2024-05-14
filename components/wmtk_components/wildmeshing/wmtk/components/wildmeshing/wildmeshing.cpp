@@ -248,7 +248,7 @@ void adjust_sizing_field(
 
     // update the rest
     for (const auto& v : vertices_all) {
-        if (visited_accessor.scalar_attribute(v) = char(1)) continue;
+        if (visited_accessor.scalar_attribute(v) == char(1)) continue;
         auto new_scale = sizing_field_scalar_accessor.scalar_attribute(v) * 1.5;
         if (new_scale > 1) {
             sizing_field_scalar_accessor.scalar_attribute(v) = 1;
@@ -1897,14 +1897,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 "{} edges are going to be executed out of {}",
                 e_cnt,
                 mesh->get_all(PrimitiveType::Edge).size());
-        }
-
-        std::ofstream file("quality_plot_" + std::to_string(i) + ".csv");
-        file << "tid, quality" << std::endl;
-        int64_t t_cnt = 0;
-        for (const auto& t : mesh->get_all(PrimitiveType::Tetrahedron)) {
-            t_cnt++;
-            file << t_cnt << ", " << amips_accessor.scalar_attribute(t) << std::endl;
         }
 
         old_max_energy = max_energy;
