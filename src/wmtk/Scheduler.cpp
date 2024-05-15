@@ -172,7 +172,10 @@ SchedulerStats Scheduler::run_operation_on_all(
             if (op.use_random_priority()) {
                 for (const auto& s : simplices) {
                     auto mods = op(s);
-		    //assert(wmtk::multimesh::utils::check_child_maps_valid(op.mesh()));
+                    if(!wmtk::multimesh::utils::check_child_maps_valid(op.mesh())) {
+                        spdlog::error("Failed on item");
+                        assert(false);
+                    }
                     if (mods.empty()) {
                         res.fail();
 		    } else {
@@ -182,7 +185,10 @@ SchedulerStats Scheduler::run_operation_on_all(
             } else {
                 for (const auto& o : order) {
                     auto mods = op(simplices[o.first]);
-		    //assert(wmtk::multimesh::utils::check_child_maps_valid(op.mesh()));
+                    if(!wmtk::multimesh::utils::check_child_maps_valid(op.mesh())) {
+                        spdlog::error("Failed on item {}", o.first);
+                        assert(false);
+                    }
                     if (mods.empty()) {
                         internal_stats.fail();
 		    } else {

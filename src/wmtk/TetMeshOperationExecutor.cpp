@@ -165,11 +165,6 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
             wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
     }
 
-    global_simplex_ids_with_potentially_modified_hashes.at(3).emplace_back(
-        m_mesh.id(simplex::Simplex(m, PrimitiveType::Tetrahedron, operating_tuple)),
-        wmtk::simplex::top_dimension_cofaces_tuples(
-            m_mesh,
-            simplex::Simplex(m, PrimitiveType::Tetrahedron, operating_tuple)));
 }
 
 void TetMesh::TetMeshOperationExecutor::delete_simplices()

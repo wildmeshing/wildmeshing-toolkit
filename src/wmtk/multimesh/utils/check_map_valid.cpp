@@ -23,6 +23,24 @@ bool check_child_maps_valid(const Mesh& m)
                 for (const auto& source_tuple : tups) {
                     const auto [source_mesh_base_tuple, target_mesh_base_tuple] =
                         multimesh::utils::read_tuple_map_attribute(map_accessor, source_tuple);
+                    if(source_mesh_base_tuple.is_null() != target_mesh_base_tuple.is_null()) {
+                        wmtk::logger().error(
+                            "Map from parent {} to child {} on tuple {} (dim {}) fails on inconsistent null {} -> "
+                            "{}",
+                            fmt::join(m.absolute_multi_mesh_id(), ","),
+                            fmt::join(child.absolute_multi_mesh_id(), ","),
+                            j,
+                            wmtk::utils::TupleInspector::as_string(pt),
+                            wmtk::utils::TupleInspector::as_string(source_mesh_base_tuple),
+                            wmtk::utils::TupleInspector::as_string(target_mesh_base_tuple)
+
+                        );
+                        ok = false;
+                    }
+                    if(source_mesh_base_tuple.is_null() &&  target_mesh_base_tuple.is_null()) {
+
+                        continue;
+                    } else 
                     if (!child.is_valid_slow(target_mesh_base_tuple)) {
                         wmtk::logger().error(
                             "Map from parent {} to child {} on tuple {} (dim {}) fails on  {} -> "

@@ -822,6 +822,7 @@ void MultiMeshManager::update_map_tuple_hashes(
             parent_tuple = my_mesh.resurrect_tuple(parent_tuple, parent_hash_accessor);
             child_tuple = child_mesh.resurrect_tuple(child_tuple, child_hash_accessor);
 
+            //spdlog::info("{}", int(child_hash_accessor.const_scalar_attribute(child_tuple)));
             // check if the map is handled in the ear case
             auto child_to_parent_data =
                 child_to_parent_accessor.const_vector_attribute(child_tuple);
