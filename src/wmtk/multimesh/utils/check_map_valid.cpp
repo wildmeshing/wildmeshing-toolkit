@@ -23,7 +23,23 @@ bool check_child_maps_valid(const Mesh& m)
                 for (const auto& source_tuple : tups) {
                     const auto [source_mesh_base_tuple, target_mesh_base_tuple] =
                         multimesh::utils::read_tuple_map_attribute(map_accessor, source_tuple);
-                    if (!child.is_valid_slow(target_mesh_base_tuple)) {
+                    if (source_mesh_base_tuple.is_null() || target_mesh_base_tuple.is_null()) {
+                        if (source_mesh_base_tuple.is_null() && target_mesh_base_tuple.is_null()) {
+                            ok = false;
+                            wmtk::logger().error(
+                                "Map from parent {} to child {} on tuple {} (dim {}) fails on  {} "
+                                "or "
+                                "{} null",
+                                fmt::join(m.absolute_multi_mesh_id(), ","),
+                                fmt::join(child.absolute_multi_mesh_id(), ","),
+                                j,
+                                wmtk::utils::TupleInspector::as_string(pt),
+                                wmtk::utils::TupleInspector::as_string(source_mesh_base_tuple),
+                                wmtk::utils::TupleInspector::as_string(target_mesh_base_tuple)
+
+                            );
+                        }
+                    } else if (!child.is_valid_slow(target_mesh_base_tuple)) {
                         wmtk::logger().error(
                             "Map from parent {} to child {} on tuple {} (dim {}) fails on  {} -> "
                             "{}",
@@ -60,7 +76,20 @@ bool check_parent_map_valid(const Mesh& m)
     for (const auto& source_tuple : m.get_all(prim_type)) {
         const auto [source_mesh_base_tuple, target_mesh_base_tuple] =
             multimesh::utils::read_tuple_map_attribute(map_accessor, source_tuple);
-        if (!parent.is_valid_slow(target_mesh_base_tuple)) {
+        if (source_mesh_base_tuple.is_null() || target_mesh_base_tuple.is_null()) {
+            wmtk::logger().error(
+                "Map from child {} to parent {} on tuple {} (dim {}) has null entry {} -> "
+                "{}",
+                fmt::join(m.absolute_multi_mesh_id(), ","),
+                fmt::join(parent.absolute_multi_mesh_id(), ","),
+                m.top_cell_dimension(),
+                wmtk::utils::TupleInspector::as_string(source_tuple),
+                wmtk::utils::TupleInspector::as_string(source_mesh_base_tuple),
+                wmtk::utils::TupleInspector::as_string(target_mesh_base_tuple)
+
+            );
+            ok = false;
+        } else if (!parent.is_valid_slow(target_mesh_base_tuple)) {
             wmtk::logger().error(
                 "Map from child {} to parent {} on tuple {} (dim {}) fails on  {} -> "
                 "{}",
