@@ -183,7 +183,7 @@ Tuple Mesh::resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_
 #endif
 }
 
-Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple)
+Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple) const
 {
 #if defined(WMTK_ENABLE_HASH_UPDATE)
     attribute::Accessor<int64_t> hash_accessor = get_cell_hash_accessor();

@@ -4,6 +4,7 @@
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
+#include <wmtk/multimesh/utils/check_map_valid.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include "../tools/DEBUG_EdgeMesh.hpp"
@@ -71,6 +72,9 @@ TEST_CASE("test_register_child_mesh_bijection", "[multimesh][2D]")
     REQUIRE(child0_map == child1_map);
 
 
+    REQUIRE(wmtk::multimesh::utils::check_child_maps_valid(parent));
+    REQUIRE(wmtk::multimesh::utils::check_child_maps_valid(child0));
+    REQUIRE(wmtk::multimesh::utils::check_child_maps_valid(child1));
     // some debug mode only checks
 #if !defined(NDEBUG)
     // chekc that it fails when the # simplices is wrong

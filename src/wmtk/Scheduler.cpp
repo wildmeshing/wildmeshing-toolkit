@@ -1,6 +1,7 @@
 #include "Scheduler.hpp"
 
 #include "Mesh.hpp"
+#include <cassert>
 
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
 #include <wmtk/simplex/k_ring.hpp>
@@ -8,6 +9,7 @@
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/random_seed.hpp>
+#include <wmtk/multimesh/utils/check_map_valid.hpp>
 
 #include <polysolve/Utils.hpp>
 
@@ -170,18 +172,22 @@ SchedulerStats Scheduler::run_operation_on_all(
             if (op.use_random_priority()) {
                 for (const auto& s : simplices) {
                     auto mods = op(s);
-                    if (mods.empty())
+		    //assert(wmtk::multimesh::utils::check_child_maps_valid(op.mesh()));
+                    if (mods.empty()) {
                         res.fail();
-                    else
-                        res.succeed();
+		    } else {
+                        res.succeed(); 
+		    }
                 }
             } else {
                 for (const auto& o : order) {
                     auto mods = op(simplices[o.first]);
-                    if (mods.empty())
+		    //assert(wmtk::multimesh::utils::check_child_maps_valid(op.mesh()));
+                    if (mods.empty()) {
                         internal_stats.fail();
-                    else
+		    } else {
                         internal_stats.succeed();
+		    }
                 }
             }
         }
