@@ -12,6 +12,7 @@
 #include "../tools/DEBUG_Tuple.hpp"
 #include "../tools/EdgeMesh_examples.hpp"
 #include "../tools/TriMesh_examples.hpp"
+#include <wmtk/multimesh/utils/MapValidator.hpp>
 
 using namespace wmtk;
 using namespace wmtk::tests;
@@ -75,6 +76,7 @@ TEST_CASE("test_register_child_mesh_bijection", "[multimesh][2D]")
     REQUIRE(wmtk::multimesh::utils::check_child_maps_valid(parent));
     REQUIRE(wmtk::multimesh::utils::check_child_maps_valid(child0));
     REQUIRE(wmtk::multimesh::utils::check_child_maps_valid(child1));
+    REQUIRE(wmtk::multimesh::utils::MapValidator(parent).check_all());
     // some debug mode only checks
 #if !defined(NDEBUG)
     // chekc that it fails when the # simplices is wrong

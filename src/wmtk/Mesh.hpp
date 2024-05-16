@@ -76,6 +76,7 @@ template <typename Visitor>
 class MultiMeshVisitorExecutor;
 
 namespace utils {
+    class MapValidator;
 namespace internal {
 class TupleTag;
 }
@@ -106,8 +107,7 @@ public:
     friend class multimesh::MultiMeshSimplexVisitorExecutor;
     template <typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
-    friend bool multimesh::utils::check_child_maps_valid(const Mesh& m);
-    friend bool multimesh::utils::check_parent_map_valid(const Mesh& m);
+    friend class multimesh::utils::MapValidator;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class multimesh::attribute::AttributeScopeHandle;
