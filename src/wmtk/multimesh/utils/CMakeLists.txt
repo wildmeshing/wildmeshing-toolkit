@@ -16,5 +16,12 @@ set(SRC_FILES
     create_tag.cpp
     extract_child_mesh_from_tag.hpp
     extract_child_mesh_from_tag.cpp
+
+
+    check_map_valid.cpp
+    check_map_valid.hpp
+
+    MapValidator.hpp
+    MapValidator.cpp
     )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

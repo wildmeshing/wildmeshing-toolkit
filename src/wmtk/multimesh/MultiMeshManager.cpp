@@ -853,7 +853,9 @@ void MultiMeshManager::update_map_tuple_hashes(
                 my_mesh.top_simplex_type(),
                 equivalent_parent_tuples_good_hash,
                 parent_tuple.m_global_cid);
-            assert(old_tuple_opt.has_value());
+            if(!old_tuple_opt.has_value()) {
+                continue;
+            }
             simplex::Simplex old_simplex(my_mesh, primitive_type, old_tuple_opt.value());
 
             std::optional<Tuple> new_parent_shared_opt = find_valid_tuple(
@@ -867,7 +869,6 @@ void MultiMeshManager::update_map_tuple_hashes(
                 std::cout << "get skipped, someting is wrong?" << std::endl;
                 continue;
             }
-            assert(new_parent_shared_opt.has_value());
 
             Tuple new_parent_tuple_shared = new_parent_shared_opt.value();
             // logger().trace(
@@ -959,7 +960,9 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_split(
 
         auto old_tuple_opt =
             find_tuple_from_gid(my_mesh, my_mesh.top_simplex_type(), tuple_alternatives, old_cid);
-        assert(old_tuple_opt.has_value());
+        if(!(old_tuple_opt.has_value())) {
+            return std::optional<Tuple>{};
+        }
 
         const Tuple& old_cid_tuple = old_tuple_opt.value();
         for (const int64_t new_cid : new_cids) {
