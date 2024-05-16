@@ -1597,6 +1597,16 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         0,
         options.intermediate_output);
 
+    auto surface_mesh = mesh->get_child_meshes().front();
+
+    write(
+        surface_mesh,
+        paths.output_dir,
+        options.output + "_intermediate_surface",
+        options.attributes.position,
+        0,
+        options.intermediate_output);
+
     //////////////////////////////////
     // Running all ops in order n times
     Scheduler scheduler;
@@ -1778,6 +1788,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             mesh,
             paths.output_dir,
             options.output,
+            options.attributes.position,
+            i + 1,
+            options.intermediate_output);
+
+        write(
+            surface_mesh,
+            paths.output_dir,
+            options.output + "_intermediate_surface",
             options.attributes.position,
             i + 1,
             options.intermediate_output);
