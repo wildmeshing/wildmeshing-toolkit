@@ -266,7 +266,7 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothingPeriodic::execute(
     auto accessor = m_position_mesh.create_accessor(m_coordinate_handle.as<double>());
 
     auto parent_simplex = m_position_mesh.map_to_parent(simplex);
-    auto child_simplices = m_periodic_mesh.map_to_child(m_position_mesh, simplex);
+    auto child_simplices = m_periodic_mesh.map_to_child(m_position_mesh, parent_simplex);
 
     assert(child_simplices.size() > 0);
     if (child_simplices.size() == 1) {

@@ -41,10 +41,10 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
         return Tuple(); // return null tuple
     }
 
-    source_mesh_base_tuple= source_mesh.resurrect_tuple_slow(source_mesh_base_tuple);
-    target_mesh_base_tuple= target_mesh.resurrect_tuple_slow(target_mesh_base_tuple);
-    //assert(source_mesh.is_valid_slow(source_mesh_base_tuple));
-    //assert(target_mesh.is_valid_slow(target_mesh_base_tuple));
+    source_mesh_base_tuple = source_mesh.resurrect_tuple_slow(source_mesh_base_tuple);
+    target_mesh_base_tuple = target_mesh.resurrect_tuple_slow(target_mesh_base_tuple);
+    // assert(source_mesh.is_valid_slow(source_mesh_base_tuple));
+    // assert(target_mesh.is_valid_slow(target_mesh_base_tuple));
 
 
     if (source_mesh_base_tuple.m_global_cid != source_mesh_target_tuple.m_global_cid) {
@@ -658,6 +658,7 @@ std::vector<simplex::Simplex> MultiMeshManager::map_to_child(
     const simplex::Simplex& my_simplex) const
 {
     auto tuples = map_to_child_tuples(my_mesh, child_mesh, my_simplex);
+
     return simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
         child_mesh,
         tuples,

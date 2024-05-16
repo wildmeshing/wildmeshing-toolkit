@@ -129,6 +129,12 @@ void periodic_optimization(
 
     auto position_accessor = position_mesh.create_const_accessor(position_handle.as<double>());
 
+    wmtk::logger().info(
+        "periodic mesh #v: {}",
+        periodic_mesh.get_all(PrimitiveType::Vertex).size());
+    wmtk::logger().info(
+        "position mesh #v: {}",
+        position_mesh.get_all(PrimitiveType::Vertex).size());
 
     Eigen::Vector3d bmin, bmax;
     bmin.setConstant(std::numeric_limits<double>::max());
@@ -864,9 +870,85 @@ void periodic_optimization(
     ops.push_back(smoothing);
     ops_name.push_back("SMOOTHING");
 
+    ///////////////////////////////
+    // debug code
+    ///////////////////////////////
+
+    // int kkk = 0;
+
+    // for (const auto& t : periodic_mesh.get_all(PrimitiveType::Edge)) {
+    //     auto edges = periodic_mesh.map_to_child(
+    //         position_mesh,
+    //         simplex::Simplex(periodic_mesh, PrimitiveType::Edge, t));
+    //     auto cnt = edges.size();
+    //     if (cnt == 0) {
+    //         wmtk::logger().error(
+    //             "Edge {} cannot map to any tet in child mesh",
+    //             periodic_mesh.id(t, PrimitiveType::Edge));
+    //     } else if (cnt > 2) {
+    //         wmtk::logger().error(
+    //             "Edge {} can map to {} edges in child mesh, {} {} {}",
+    //             periodic_mesh.id(t, PrimitiveType::Edge),
+    //             cnt,
+    //             position_mesh.id(edges[0].tuple(), PrimitiveType::Edge),
+    //             position_mesh.id(edges[1].tuple(), PrimitiveType::Edge),
+    //             position_mesh.id(edges[2].tuple(), PrimitiveType::Edge));
+    //     } else if (cnt == 2) {
+    //         wmtk::logger().error(
+    //             "Edge {} can map to {} edges in child mesh, {} {}",
+    //             periodic_mesh.id(t, PrimitiveType::Edge),
+    //             cnt,
+    //             position_mesh.id(edges[0].tuple(), PrimitiveType::Edge),
+    //             position_mesh.id(edges[1].tuple(), PrimitiveType::Edge));
+    //     }
+
+    //     kkk++;
+    // }
+
+    // wmtk::logger().info("#Periodic Edges: {}",
+    // periodic_mesh.get_all(PrimitiveType::Edge).size()); wmtk::logger().info("#Edges: {}",
+    // position_mesh.get_all(PrimitiveType::Edge).size());
+
+    // write(position_mesh, output_dir, "position_befire_split", "vertices", 0, true);
+
+    // auto mods = (*split)(simplex::Simplex(
+    //     periodic_mesh,
+    //     PrimitiveType::Edge,
+    //     periodic_mesh.tuple_from_id(PrimitiveType::Edge, 251)));
+
+    // kkk = 0;
+
+    // for (const auto& t : periodic_mesh.get_all(PrimitiveType::Edge)) {
+    //     auto edges = periodic_mesh.map_to_child(
+    //         position_mesh,
+    //         simplex::Simplex(periodic_mesh, PrimitiveType::Edge, t));
+    //     auto cnt = edges.size();
+    //     if (cnt == 0) {
+    //         wmtk::logger().error(
+    //             "Edge {} cannot map to any tet in child mesh",
+    //             periodic_mesh.id(t, PrimitiveType::Edge));
+    //     } else if (cnt > 2) {
+    //         wmtk::logger().error(
+    //             "Edge {} can map to {} edges in child mesh, {} {} {}",
+    //             periodic_mesh.id(t, PrimitiveType::Edge),
+    //             cnt,
+    //             position_mesh.id(edges[0].tuple(), PrimitiveType::Edge),
+    //             position_mesh.id(edges[1].tuple(), PrimitiveType::Edge),
+    //             position_mesh.id(edges[2].tuple(), PrimitiveType::Edge));
+    //     }
+    //     kkk++;
+    // }
+
+    // write(position_mesh, output_dir, "psition_after_split", "vertices", 0, true);
+
+    // exit(0);
+
+
     //////////////////////////////////
     // Scheduler
     //////////////////////////////////
+    write(position_mesh, output_dir, output + "_initial", "vertices", 0, intermediate_output);
+
     Scheduler scheduler;
 
     int success = 0;
@@ -909,6 +991,72 @@ void periodic_optimization(
                 stats.collecting_time,
                 stats.sorting_time,
                 stats.executing_time);
+
+            // // debug code
+            // auto pos_size = position_mesh.get_all(PrimitiveType::Tetrahedron).size();
+            // auto peri_size = periodic_mesh.get_all(PrimitiveType::Tetrahedron).size();
+
+            // if (pos_size != peri_size) {
+            //     wmtk::logger().error(
+            //         "Unmatch tet count, periodic: {}, position: {}",
+            //         peri_size,
+            //         pos_size);
+            // }
+
+            // int kkkk = 0;
+            // for (const auto& t : periodic_mesh.get_all(PrimitiveType::Tetrahedron)) {
+            //     auto cnt = periodic_mesh
+            //                    .map_to_child(
+            //                        position_mesh,
+            //                        simplex::Simplex(periodic_mesh, PrimitiveType::Tetrahedron,
+            //                        t))
+            //                    .size();
+            //     if (cnt == 0) {
+            //         wmtk::logger().error("Tet {} cannot map to any tet in child mesh", kkkk);
+            //     } else if (cnt > 1) {
+            //         wmtk::logger().error("Tet {} can map to {}} tets in child mesh", kkkk, cnt);
+            //     }
+            //     kkkk++;
+            // }
+
+            // int kkk = 0;
+
+            // for (const auto& t : periodic_mesh.get_all(PrimitiveType::Edge)) {
+            //     auto edges = periodic_mesh.map_to_child(
+            //         position_mesh,
+            //         simplex::Simplex(periodic_mesh, PrimitiveType::Edge, t));
+            //     auto cnt = edges.size();
+            //     if (cnt == 0) {
+            //         wmtk::logger().error(
+            //             "Edge {} cannot map to any tet in child mesh",
+            //             periodic_mesh.id(t, PrimitiveType::Edge));
+            //     } else if (cnt > 2) {
+            //         wmtk::logger().error(
+            //             "Edge {} can map to {} edges in child mesh, {} {} {}",
+            //             periodic_mesh.id(t, PrimitiveType::Edge),
+            //             cnt,
+            //             position_mesh.id(edges[0].tuple(), PrimitiveType::Edge),
+            //             position_mesh.id(edges[1].tuple(), PrimitiveType::Edge),
+            //             position_mesh.id(edges[2].tuple(), PrimitiveType::Edge));
+            //         // } else if (cnt == 2) {
+            //         //     wmtk::logger().info(
+            //         //         "Edge {} can map to {} edges in child mesh, {} {}",
+            //         //         periodic_mesh.id(t, PrimitiveType::Edge),
+            //         //         cnt,
+            //         //         position_mesh.id(edges[0].tuple(), PrimitiveType::Edge),
+            //         //         position_mesh.id(edges[1].tuple(), PrimitiveType::Edge));
+            //     }
+
+            //     kkk++;
+            // }
+
+            // write(position_mesh, output_dir, "psition_after_split", "vertices", 0, true);
+
+            // if (i > 1) exit(0);
+
+
+            // debug code end
+
 
             success = stats.number_of_successful_operations();
 
@@ -989,24 +1137,24 @@ void periodic_optimization(
             }
             wmtk::logger().info("reset energy filter");
         } else {
-            wmtk::logger().info("setting energy filter ...");
-            set_operation_energy_filter(
-                position_mesh,
-                position_handle.as<double>(),
-                amips_handle.as<double>(),
-                energy_filter_handle.as<char>(),
-                visited_vertex_flag_handle.as<char>(),
-                max_amips_energy,
-                max_energy,
-                target_edge_length);
-            wmtk::logger().info("setting energy filter finished");
+            // wmtk::logger().info("setting energy filter ...");
+            // set_operation_energy_filter(
+            //     position_mesh,
+            //     position_handle.as<double>(),
+            //     amips_handle.as<double>(),
+            //     energy_filter_handle.as<char>(),
+            //     visited_vertex_flag_handle.as<char>(),
+            //     max_amips_energy,
+            //     max_energy,
+            //     target_edge_length);
+            // wmtk::logger().info("setting energy filter finished");
         }
 
         old_max_energy = max_energy;
         old_avg_energy = avg_energy;
 
         // stop at good quality
-        if (max_energy <= max_amips_energy) break;
+        // if (max_energy <= max_amips_energy) break;
     }
 }
 
