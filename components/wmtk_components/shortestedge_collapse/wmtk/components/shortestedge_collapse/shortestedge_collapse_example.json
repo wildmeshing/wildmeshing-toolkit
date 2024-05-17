@@ -1,0 +1,14 @@
+{
+  "components": [
+    {
+      "shortestedge_collapse": {
+        "input": "input_mesh",
+        "output": "output_mesh",
+        "attributes": {
+          "position": "vertices"
+        },
+        "lock_boundary": false
+      }
+    }
+  ]
+}
