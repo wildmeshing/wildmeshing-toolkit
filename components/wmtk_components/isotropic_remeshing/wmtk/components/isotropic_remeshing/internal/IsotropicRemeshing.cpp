@@ -238,7 +238,7 @@ void isotropic_remeshing(
         }
 
         auto op_consolidate = MeshConsolidate(mesh);
-        op_consolidate(simplex::Simplex(PrimitiveType::Vertex, Tuple()));
+        op_consolidate(simplex::Simplex(mesh, PrimitiveType::Vertex, Tuple()));
         // multimesh::consolidate(mesh);
 
         logger().info(

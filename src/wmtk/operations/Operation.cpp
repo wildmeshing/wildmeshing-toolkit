@@ -148,9 +148,11 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             auto [is_bd_v0, is_bd_v1] = mesh().parent_scope(
                                 [&](const simplex::Simplex& s) {
                                     return std::make_tuple(
-                                        mesh().is_boundary(simplex::Simplex::vertex(s.tuple())),
                                         mesh().is_boundary(
-                                            simplex::Simplex::vertex(mesh().switch_tuple(
+                                            simplex::Simplex::vertex(mesh(), s.tuple())),
+                                        mesh().is_boundary(simplex::Simplex::vertex(
+                                            mesh(),
+                                            mesh().switch_tuple(
                                                 s.tuple(),
                                                 PrimitiveType::Vertex))));
                                 },

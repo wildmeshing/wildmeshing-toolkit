@@ -20,7 +20,7 @@ get_local_trimesh(const wmtk::TriMesh& mesh, const wmtk::simplex::Simplex& simpl
     std::vector<int64_t> f_local_to_global(cofaces.size());
 
     int vertex_count = 1;
-    global_to_local_map[mesh.id(simplex::Simplex::vertex(simplex.tuple()))] = 0;
+    global_to_local_map[mesh.id(simplex::Simplex::vertex(mesh, simplex.tuple()))] = 0;
     int face_count = 0;
     for (const auto& f_tuple : cofaces) {
         // get 3 vertices
@@ -30,7 +30,7 @@ get_local_trimesh(const wmtk::TriMesh& mesh, const wmtk::simplex::Simplex& simpl
         }
 
         for (int i = 0; i < 3; i++) {
-            int64_t global_vid = mesh.id(wmtk::simplex::Simplex::vertex(cur_v));
+            int64_t global_vid = mesh.id(wmtk::simplex::Simplex::vertex(mesh, cur_v));
             if (global_to_local_map.count(global_vid) == 0) {
                 global_to_local_map[global_vid] = vertex_count;
                 vertex_count++;
@@ -60,8 +60,8 @@ std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<i
 get_local_trimesh_before_collapse(const wmtk::TriMesh& mesh, const wmtk::simplex::Simplex& simplex)
 {
     assert(simplex.primitive_type() == PrimitiveType::Edge);
-    auto v0 = simplex::Simplex::vertex(simplex.tuple());
-    auto v1 = simplex::Simplex::vertex(mesh.switch_vertex(simplex.tuple()));
+    auto v0 = simplex::Simplex::vertex(mesh, simplex.tuple());
+    auto v1 = simplex::Simplex::vertex(mesh, mesh.switch_vertex(simplex.tuple()));
 
 
     auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
@@ -88,7 +88,7 @@ get_local_trimesh_before_collapse(const wmtk::TriMesh& mesh, const wmtk::simplex
             cur_v = mesh.switch_edge(cur_v);
         }
         for (int i = 0; i < 3; i++) {
-            int64_t global_vid = mesh.id(wmtk::simplex::Simplex::vertex(cur_v));
+            int64_t global_vid = mesh.id(wmtk::simplex::Simplex::vertex(mesh, cur_v));
             if (global_to_local_map.count(global_vid) == 0) {
                 global_to_local_map[global_vid] = vertex_count;
                 vertex_count++;
