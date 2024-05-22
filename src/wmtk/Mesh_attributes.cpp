@@ -1,10 +1,17 @@
 #include <numeric>
 #include "Mesh.hpp"
 
+#ifdef WMTK_RECORD_OPERATIONS
+#include <wmtk/Record_Operations.hpp>
+#endif
+
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include "Primitive.hpp"
+
+// TODO: for now we need this
+#include <nlohmann/json.hpp>
 
 namespace wmtk {
 template <typename T>
@@ -292,7 +299,28 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
             }
         }
     }
+#ifdef WMTK_RECORD_OPERATIONS
 
+    // TODO: Write the new_2_old id map to file
+    // std::cout << "Record Consolidate\n";
+    // std::cout << "succ operations count: " << succ_operations_count << "\n";
+    std::string filename =
+        OperationLogPath + OperationLogPrefix + std::to_string(succ_operations_count) + ".json";
+    std::ofstream operation_log_file(filename);
+    nlohmann::json operation_log;
+    if (operation_log_file.is_open()) {
+        operation_log["operation_name"] = "MeshConsolidate";
+
+        for (int64_t d = 0; d < tcp; d++) {
+            operation_log["new2old"].push_back(new2old[d]);
+        }
+        operation_log_file << operation_log.dump(4);
+        operation_log_file.close();
+        succ_operations_count++;
+    } else {
+        std::cerr << "unable to open file " << filename << " for writing\n";
+    }
+#endif
     // Return both maps for custom attribute remapping
     return {new2old, old2new};
 }

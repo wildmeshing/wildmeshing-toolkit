@@ -1,17 +1,26 @@
 #include "Operation.hpp"
 
+#ifdef WMTK_RECORD_OPERATIONS
+#include <wmtk/Record_Operations.hpp>
+#endif
+
+#include <nlohmann/json.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
+#include <wmtk/operations/utils/local_joint_flatten.hpp>
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
-
+#include <wmtk/utils/TupleInspector.hpp>
 
 // it's ugly but for teh visitor we need these included
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+using json = nlohmann::json;
 
+// for Debugging output
+#include <igl/writeOBJ.h>
 namespace wmtk::operations {
 
 
@@ -76,8 +85,159 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
     auto unmods = unmodified_primitives(simplex_resurrect);
     auto mods = execute(simplex_resurrect);
     if (!mods.empty()) { // success should be marked here
-        apply_attribute_transfer(mods);
+        if (operation_name != "MeshConsolidate") apply_attribute_transfer(mods);
         if (after(unmods, mods)) {
+            // store local atlas for retrieval
+#ifdef WMTK_RECORD_OPERATIONS
+            if (m_record && operation_name != "MeshConsolidate") {
+                // create a local atlas file
+                // std::cout << "operation " << operation_name << " is successful\n";
+                std::string filename = OperationLogPath + OperationLogPrefix +
+                                       std::to_string(succ_operations_count) + ".json";
+                std::ofstream operation_log_file(filename);
+                json operation_log;
+
+                if (operation_log_file.is_open()) {
+                    // save operation_name
+                    operation_log["operation_name"] = operation_name;
+
+                    // helper function to convert matrix to json
+                    auto matrix_to_json = [](const auto& matrix) {
+                        json result = json::array();
+                        for (int i = 0; i < matrix.rows(); ++i) {
+                            json row = json::array();
+                            for (int j = 0; j < matrix.cols(); ++j) {
+                                row.push_back(matrix(i, j));
+                            }
+                            result.push_back(row);
+                        }
+                        return result;
+                    };
+
+                    ////////////////////////////
+                    // handle triangle mesh
+                    ////////////////////////////
+                    if (mesh().top_simplex_type() == PrimitiveType::Triangle) {
+                        // get local mesh before and after the operation
+                        auto [F_after, V_after, id_map_after, v_id_map_after] =
+                            utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), mods[0]);
+                        auto get_mesh = [&](const simplex::Simplex& s) {
+                            if (operation_name == "EdgeCollapse")
+                                return utils::get_local_trimesh_before_collapse(
+                                    static_cast<const TriMesh&>(mesh()),
+                                    s);
+                            return utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), s);
+                        };
+                        auto [F_before, V_before, id_map_before, v_id_map_before] =
+                            mesh().parent_scope(get_mesh, simplex);
+
+
+                        if (operation_name == "EdgeCollapse") {
+                            // TODO: debug use to save obj files
+                            auto to_three_cols = [](const Eigen::MatrixXd& V) {
+                                if (V.cols() == 2) {
+                                    Eigen::MatrixXd V_temp(V.rows(), 3);
+                                    V_temp << V, Eigen::VectorXd::Zero(V.rows());
+                                    return V_temp;
+                                } else {
+                                    return V;
+                                }
+                            };
+
+                            // add different cases for different boundary conditions
+                            auto [is_bd_v0, is_bd_v1] = mesh().parent_scope(
+                                [&](const simplex::Simplex& s) {
+                                    return std::make_tuple(
+                                        mesh().is_boundary(simplex::Simplex::vertex(s.tuple())),
+                                        mesh().is_boundary(
+                                            simplex::Simplex::vertex(mesh().switch_tuple(
+                                                s.tuple(),
+                                                PrimitiveType::Vertex))));
+                                },
+                                simplex);
+
+                            if (is_bd_v0 && is_bd_v1) {
+                                igl::writeOBJ(
+                                    OperationLogPath + "/VF_before_" +
+                                        std::to_string(succ_operations_count) + ".obj",
+                                    to_three_cols(V_before),
+                                    F_before);
+                                igl::writeOBJ(
+                                    OperationLogPath + "/VF_after_" +
+                                        std::to_string(succ_operations_count) + ".obj",
+                                    to_three_cols(V_after),
+                                    F_after);
+                            }
+
+
+                            Eigen::MatrixXd UV_joint;
+                            std::vector<int64_t> v_id_map_joint;
+
+                            utils::local_joint_flatten(
+                                F_before,
+                                V_before,
+                                v_id_map_before,
+                                F_after,
+                                V_after,
+                                v_id_map_after,
+                                UV_joint,
+                                v_id_map_joint,
+                                is_bd_v0,
+                                is_bd_v1);
+
+                            operation_log["UV_joint"]["rows"] = UV_joint.rows();
+                            operation_log["UV_joint"]["values"] = matrix_to_json(UV_joint);
+                            operation_log["v_id_map_joint"] = v_id_map_joint;
+                            operation_log["F_after"]["rows"] = F_after.rows();
+                            operation_log["F_after"]["values"] = matrix_to_json(F_after);
+                            operation_log["F_before"]["rows"] = F_before.rows();
+                            operation_log["F_before"]["values"] = matrix_to_json(F_before);
+                            operation_log["F_id_map_after"] = id_map_after;
+                            operation_log["F_id_map_before"] = id_map_before;
+
+                            if (is_bd_v0 && is_bd_v1) {
+                                igl::writeOBJ(
+                                    OperationLogPath + "/UV_after_" +
+                                        std::to_string(succ_operations_count) + ".obj",
+                                    to_three_cols(UV_joint),
+                                    F_after);
+                                igl::writeOBJ(
+                                    OperationLogPath + "/UV_before_" +
+                                        std::to_string(succ_operations_count) + ".obj",
+                                    to_three_cols(UV_joint),
+                                    F_before);
+                            }
+                        } else { // for split operation
+                            // log the mesh before and after the operation
+                            operation_log["F_after"]["rows"] = F_after.rows();
+                            operation_log["F_after"]["values"] = matrix_to_json(F_after);
+                            operation_log["V_after"]["rows"] = V_after.rows();
+                            operation_log["V_after"]["values"] = matrix_to_json(V_after);
+                            operation_log["F_id_map_after"] = id_map_after;
+                            operation_log["V_id_map_after"] = v_id_map_after;
+
+                            operation_log["F_before"]["rows"] = F_before.rows();
+                            operation_log["F_before"]["values"] = matrix_to_json(F_before);
+                            operation_log["V_before"]["rows"] = V_before.rows();
+                            operation_log["V_before"]["values"] = matrix_to_json(V_before);
+                            operation_log["F_id_map_before"] = id_map_before;
+                            operation_log["V_id_map_before"] = v_id_map_before;
+                        }
+                    }
+
+                    // TODO: get a larger json file to do this:
+                    // op_logs_js["op_log"].push_back(operation_log);
+
+                    operation_log_file << operation_log.dump(4);
+                    operation_log_file.close();
+                } else {
+                    std::cerr << "unable to open file " << filename << " for writing\n";
+                }
+                succ_operations_count++;
+                // std::cout << "total successful operations: " << succ_operations_count << "\n";
+
+            } // end if (m_record)
+#endif
             return mods; // scope destructor is called
         }
     }

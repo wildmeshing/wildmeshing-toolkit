@@ -13,6 +13,7 @@
 #include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
+#include <wmtk/operations/MeshConsolidate.hpp>
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
@@ -111,7 +112,7 @@ void isotropic_remeshing(
     for (const auto& attr : pass_through_attributes) {
         op_split->set_new_attribute_strategy(attr);
     }
-    ops.push_back(op_split);
+    // ops.push_back(op_split);
 
 
     //////////////////////////////////////////
@@ -193,7 +194,7 @@ void isotropic_remeshing(
         op_swap->split().set_new_attribute_strategy(attr);
         op_swap->collapse().set_new_attribute_strategy(attr);
     }
-    ops.push_back(op_swap);
+    // ops.push_back(op_swap);
 
 
     //////////////////////////////////////////
@@ -222,7 +223,7 @@ void isotropic_remeshing(
     }
 
     if (update_position) op_smooth->add_transfer_strategy(update_position);
-    ops.push_back(op_smooth);
+    // ops.push_back(op_smooth);
 
 
     //////////////////////////////////////////
@@ -236,7 +237,9 @@ void isotropic_remeshing(
             pass_stats += scheduler.run_operation_on_all(*op);
         }
 
-        multimesh::consolidate(mesh);
+        auto op_consolidate = MeshConsolidate(mesh);
+        op_consolidate(simplex::Simplex(PrimitiveType::Vertex, Tuple()));
+        // multimesh::consolidate(mesh);
 
         logger().info(
             "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
@@ -247,7 +250,7 @@ void isotropic_remeshing(
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
-        multimesh::consolidate(mesh);
+        // multimesh::consolidate(mesh);
     }
 }
 

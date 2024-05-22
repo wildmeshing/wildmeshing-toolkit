@@ -8,11 +8,17 @@ TriEdgeSwap::TriEdgeSwap(Mesh& m)
     : Operation(m)
     , m_split(m)
     , m_collapse(m)
-{}
+{
+    operation_name = "TriEdgeSwap";
+}
 
 
 std::vector<simplex::Simplex> TriEdgeSwap::execute(const simplex::Simplex& simplex)
 {
+    // TODO: set it not to record for now
+    m_split.set_not_record();
+    m_collapse.set_not_record();
+
     // input
     //    / \.
     //   /   \ .

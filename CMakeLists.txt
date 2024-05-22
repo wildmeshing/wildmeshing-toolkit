@@ -23,16 +23,19 @@ cmake_policy(SET CMP0135 NEW)
 
 # Enable ccache if available
 find_program(CCACHE_PROGRAM ccache)
+
 if(CCACHE_PROGRAM)
     option(WMTK_WITH_CCACHE "Enable ccache when building WMTK" ${WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT})
 else()
     option(WMTK_WITH_CCACHE "Enable ccache when building WMTK" OFF)
 endif()
+
 if(WMTK_WITH_CCACHE AND CCACHE_PROGRAM)
     set(ccacheEnv
         CCACHE_BASEDIR=${CMAKE_BINARY_DIR}
         CCACHE_SLOPPINESS=clang_index_store,include_file_ctime,include_file_mtime,locale,pch_defines,time_macros
     )
+
     foreach(lang IN ITEMS C CXX)
         set(CMAKE_${lang}_COMPILER_LAUNCHER
             ${CMAKE_COMMAND} -E env ${ccacheEnv} ${CCACHE_PROGRAM}
@@ -45,18 +48,19 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit" LANGUAGES C
 
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
-option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
+option(BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
 
 option(WMTK_CODE_COVERAGE "Enable coverage reporting" OFF)
 
 add_library(wmtk_coverage_config INTERFACE)
+
 if(WMTK_CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  # Add required flags (GCC & LLVM/Clang)
-  target_compile_options(wmtk_coverage_config INTERFACE
-    -g         # generate debug info
-    --coverage # sets all required flags
-  )
-  target_link_options(wmtk_coverage_config INTERFACE --coverage)
+    # Add required flags (GCC & LLVM/Clang)
+    target_compile_options(wmtk_coverage_config INTERFACE
+        -g # generate debug info
+        --coverage # sets all required flags
+    )
+    target_link_options(wmtk_coverage_config INTERFACE --coverage)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
@@ -89,12 +93,13 @@ include(fast_envelope)
 include(bvh)
 include(volume_mesher)
 
+include(libigl)
+
 # Core library
 add_library(wildmeshing_toolkit)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 target_link_libraries(wildmeshing_toolkit PUBLIC wmtk_coverage_config)
-set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR  ON)
-
+set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR ON)
 
 add_subdirectory(src)
 
@@ -102,29 +107,30 @@ add_subdirectory(src)
 file(GLOB_RECURSE WMTK_FILES_FOR_SOURCE_GROUP "src/wmtk/*.cpp" "src/wmtk/*.h" "src/wmtk/*.hpp")
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src/wmtk" PREFIX "wmtk" FILES ${WMTK_FILES_FOR_SOURCE_GROUP})
 
-
 # Compile definitions
 target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
 target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
 
+# To Record Operations
+target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_RECORD_OPERATIONS)
+
 # C++ standard
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 
-#target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
+# target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
 # the max dimension an attribute can be - default is to be any size (a dynamic size), but this can be set to a number like 6
 set(WMTK_MAX_ATTRIBUTE_DIMENSION Eigen::Dynamic CACHE STRING "Set the largest size a vector can be in an attribute")
 target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_MAX_ATTRIBUTE_DIMENSION=${WMTK_MAX_ATTRIBUTE_DIMENSION})
 
-
-
 option(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE "Use monotonic allocator to store the cache buffer" OFF)
+
 if(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
     target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
 endif()
 
-
 option(WMTK_ENABLE_GENERIC_CHECKPOINTS "Enable checkpoint selection" OFF)
+
 if(WMTK_ENABLE_GENERIC_CHECKPOINTS)
     target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_ENABLE_GENERIC_CHECKPOINTS)
 endif()
@@ -155,9 +161,8 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     FastEnvelope::FastEnvelope
     simple_bvh::simple_bvh
     VolumeRemesher::VolumeRemesher
-
+    igl::core
 )
-
 
 if(MSVC)
     target_compile_options(wildmeshing_toolkit PUBLIC /MP)
@@ -174,14 +179,11 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     enable_testing()
 endif()
 
-
 add_subdirectory(components)
-
 
 # ###############################################################################
 # Subdirectories
 # ###############################################################################
-
 if(WMTK_BUILD_DOCS)
     # check if Doxygen is installed
     find_package(Doxygen)
@@ -206,11 +208,9 @@ if(WMTK_BUILD_DOCS)
     endif(DOXYGEN_FOUND)
 endif()
 
-
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     add_subdirectory(tests)
-
 
     add_executable(wmtk_app main.cpp)
     target_compile_features(wmtk_app PUBLIC cxx_std_17)
@@ -223,7 +223,6 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
         wmtk::components
         CLI11::CLI11
     )
-
 
     if(MSVC)
         target_compile_options(wmtk_app PUBLIC /MP)
@@ -238,4 +237,17 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
         target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELEASE>:/INCREMENTAL:NO>)
     endif()
 
+    add_subdirectory(bijective_map)
+
+    # add_executable(bijective_map_app bijective_map_app.cpp track_operations.hpp)
+
+    # # target_compile_options(bijective_map_app PRIVATE "-rdynamic")
+    # target_link_libraries(bijective_map_app PUBLIC
+    # wmtk::toolkit
+    # wmtk::data
+    # wmtk::components
+    # CLI11::CLI11
+    # jse::jse
+    # igl::core igl::opengl igl::glfw
+    # )
 endif()

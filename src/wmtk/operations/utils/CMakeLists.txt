@@ -12,6 +12,10 @@ set(SRC_FILES
     UpdateVertexMultiMeshMapHash.hpp
     UpdateVertexMultiMeshMapHash.cpp
 
+    get_local_trimesh.cpp
+
+    local_joint_flatten.hpp
+    local_joint_flatten.cpp
 
     VertexLaplacianSmooth.hpp
     VertexLaplacianSmooth.cpp
@@ -24,4 +28,3 @@ set(SRC_FILES
     RoundRationalToDouble.cpp
     )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
-

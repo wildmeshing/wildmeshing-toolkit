@@ -130,7 +130,6 @@ public:
         const Tuple& vertex,
         attribute::Accessor<int64_t>& hash_accessor);
 
-
     int64_t top_cell_dimension() const;
     PrimitiveType top_simplex_type() const;
 

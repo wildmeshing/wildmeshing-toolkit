@@ -6,7 +6,9 @@ TetFaceSwap::TetFaceSwap(Mesh& m)
     : Operation(m)
     , m_split(m)
     , m_collapse(m)
-{}
+{
+    operation_name = "TetFaceSwap";
+}
 
 std::vector<simplex::Simplex> TetFaceSwap::execute(const simplex::Simplex& simplex)
 {

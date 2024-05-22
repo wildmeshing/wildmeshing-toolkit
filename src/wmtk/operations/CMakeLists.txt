@@ -20,9 +20,8 @@ set(SRC_FILES
     MinOperationSequence.hpp
     MinOperationSequence.cpp
 
-    #MeshOperation.hpp
-    #MeshOperation.cpp
-
+    # MeshOperation.hpp
+    # MeshOperation.cpp
     EdgeCollapse.hpp
     EdgeCollapse.cpp
 
@@ -37,18 +36,26 @@ set(SRC_FILES
 
     Rounding.hpp
     Rounding.cpp
+
+    MeshConsolidate.hpp
+    MeshConsolidate.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
 add_subdirectory(attribute_new)
 add_subdirectory(attribute_update)
+
 #
 add_subdirectory(edge_mesh)
 add_subdirectory(tri_mesh)
-##TODODIscuss
+
+# #TODODIscuss
 add_subdirectory(tet_mesh)
+
 #
 add_subdirectory(composite)
+
 #
 add_subdirectory(utils)
+
 #
