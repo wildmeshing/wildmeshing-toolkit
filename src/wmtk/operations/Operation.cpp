@@ -82,10 +82,17 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
 
+
     auto unmods = unmodified_primitives(simplex_resurrect);
+
+
     auto mods = execute(simplex_resurrect);
+
+
     if (!mods.empty()) { // success should be marked here
+
         if (operation_name != "MeshConsolidate") apply_attribute_transfer(mods);
+
         if (after(unmods, mods)) {
             // store local atlas for retrieval
 #ifdef WMTK_RECORD_OPERATIONS
@@ -121,15 +128,28 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         // get local mesh before and after the operation
                         auto [F_after, V_after, id_map_after, v_id_map_after] =
                             utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), mods[0]);
-                        auto get_mesh = [&](const simplex::Simplex& s) {
-                            if (operation_name == "EdgeCollapse")
-                                return utils::get_local_trimesh_before_collapse(
-                                    static_cast<const TriMesh&>(mesh()),
-                                    s);
-                            return utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), s);
-                        };
+
+                        // auto get_mesh = [&](const simplex::Simplex& s) {
+                        //     if (operation_name == "EdgeCollapse")
+                        //         return utils::get_local_trimesh_before_collapse(
+                        //             static_cast<const TriMesh&>(mesh()),
+                        //             s);
+                        //     return utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()),
+                        //     s);
+                        // };
+
                         auto [F_before, V_before, id_map_before, v_id_map_before] =
-                            mesh().parent_scope(get_mesh, simplex);
+                            mesh().parent_scope(
+                                [&](const simplex::Simplex& s) {
+                                    if (operation_name == "EdgeCollapse")
+                                        return utils::get_local_trimesh_before_collapse(
+                                            static_cast<const TriMesh&>(mesh()),
+                                            s);
+                                    return utils::get_local_trimesh(
+                                        static_cast<const TriMesh&>(mesh()),
+                                        s);
+                                },
+                                simplex);
 
 
                         if (operation_name == "EdgeCollapse") {
@@ -249,17 +269,20 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
 bool Operation::before(const simplex::Simplex& simplex) const
 {
-    // const attribute::Accessor<int64_t> accessor = hash_accessor();
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+    const attribute::Accessor<int64_t> accessor = hash_accessor();
 
-    // if (!mesh().is_valid(
-    //         simplex.tuple(),
-    //         accessor)) { // TODO: chang to is_removed and resurrect later
-    //     return false;
-    // }
+    if (!mesh().is_valid(
+            simplex.tuple(),
+            accessor)) { // TODO: chang to is_removed and resurrect later
+        return false;
+    }
+#else
 
     if (mesh().is_removed(simplex.tuple())) {
         return false;
     }
+#endif
 
 #if defined(WMTK_ENABLE_HASH_UPDATE)
     const auto simplex_resurrect =
