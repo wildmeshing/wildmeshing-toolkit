@@ -42,6 +42,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     length_abs,
     length_rel,
     lock_boundary,
+    use_for_periodic);
     use_for_periodic,
     envelope_size);
 

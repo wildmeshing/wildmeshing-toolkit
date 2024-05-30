@@ -58,6 +58,7 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
 
     TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
 
+
     // // debug code
     // for (const auto& e : mesh.get_all(PrimitiveType::Edge)) {
     //     if (mesh.is_boundary(PrimitiveType::Edge, e)) {
@@ -97,20 +98,21 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
             compute_edge_length);
     edge_length_update->run_on_all();
 
-    // double avg_length = 0;
-    // const auto edges = mesh.get_all(PrimitiveType::Edge);
-    // for (const auto& e : edges) {
-    //     avg_length += edge_length_accessor.const_scalar_attribute(e);
-    // }
-    // avg_length /= edges.size();
-    // if (options.length_abs < 0) {
-    //     if (options.length_rel < 0) {
-    //         throw std::runtime_error("Either absolute or relative length must be set!");
-    //     }
-    //     options.length_abs = avg_length * options.length_rel;
-    // }
-    // logger().info("Average edge length: {}, target {}", avg_length, options.length_abs);
-
+  #if false // old implementation from teseo/sec branch
+    double avg_length = 0;
+    const auto edges = mesh.get_all(PrimitiveType::Edge);
+    for (const auto& e : edges) {
+        avg_length += edge_length_accessor.const_scalar_attribute(e);
+    }
+    avg_length /= edges.size();
+    if (options.length_abs < 0) {
+        if (options.length_rel < 0) {
+            throw std::runtime_error("Either absolute or relative length must be set!");
+        }
+        options.length_abs = avg_length * options.length_rel;
+    }
+    logger().info("Average edge length: {}, target {}", avg_length, options.length_abs);
+#else
     //////////////////////////////////
     // computing bbox diagonal
     Eigen::VectorXd bmin(mesh.top_cell_dimension());
@@ -140,7 +142,7 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
         bbdiag,
         options.length_abs);
 
-
+#endif
     auto short_edges_first_priority = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         return edge_length_accessor.const_scalar_attribute(s.tuple());
@@ -149,7 +151,7 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
     auto todo = std::make_shared<TodoSmallerInvariant>(
         mesh,
         edge_length_attribute.as<double>(),
-        4. / 5. * options.length_abs);
+        4. / 5. * options.length_abs); // MTAO: why is this 4/5?
 
     //////////////////////////invariants
 
@@ -181,12 +183,14 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
     collapse->add_invariant(invariant_link_condition);
     collapse->add_invariant(invariant_mm_map);
 
+
     if (options.envelope_size > 0) {
         collapse->add_invariant(std::make_shared<wmtk::invariants::EnvelopeInvariant>(
             pos_handle,
             bbdiag * options.envelope_size,
             pos_handle));
     }
+
 
     if (position_for_inversion) {
         collapse->add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
@@ -221,6 +225,7 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
         collapse->add_invariant(
             std::make_shared<invariants::FusionEdgeInvariant>(mesh, mesh.get_multi_mesh_root()));
         for (auto& p : positions) {
+
             collapse->set_new_attribute_strategy(
                 p,
                 wmtk::operations::CollapseBasicStrategy::CopyOther);
@@ -243,6 +248,7 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
     Scheduler scheduler;
     SchedulerStats pass_stats =
         scheduler.run_operation_on_all(*collapse, visited_edge_flag.as<char>());
+
 
     // // debug code
     // for (const auto& e : mesh.get_all(PrimitiveType::Edge)) {
