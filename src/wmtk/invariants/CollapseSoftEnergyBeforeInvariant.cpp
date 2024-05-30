@@ -89,19 +89,13 @@ bool CollapseSoftEnergyBeforeInvariant::before(const simplex::Simplex& s) const
                 // check inversion, any new tet inverted return false
                 bool is_ccw_tuple = mesh().is_ccw(lv[0]);
                 if (is_ccw_tuple) {
-                    if (wmtk::utils::wmtk_orient3d<Rational>(
-                            lv_pos[3],
-                            lv_pos[0],
-                            lv_pos[1],
-                            lv_pos[2]) <= 0) {
+                    if (wmtk::utils::wmtk_orient3d(lv_pos[3], lv_pos[0], lv_pos[1], lv_pos[2]) <=
+                        0) {
                         return false;
                     }
                 } else {
-                    if (wmtk::utils::wmtk_orient3d<Rational>(
-                            lv_pos[3],
-                            lv_pos[0],
-                            lv_pos[2],
-                            lv_pos[1]) <= 0) {
+                    if (wmtk::utils::wmtk_orient3d(lv_pos[3], lv_pos[0], lv_pos[2], lv_pos[1]) <=
+                        0) {
                         return false;
                     }
                 }
@@ -219,19 +213,13 @@ bool CollapseSoftEnergyBeforeInvariant::before(const simplex::Simplex& s) const
                 // check inversion, any new tet inverted return false
                 bool is_ccw_tuple = mesh().is_ccw(lv[0]);
                 if (is_ccw_tuple) {
-                    if (wmtk::utils::wmtk_orient3d<Rational>(
-                            lv_pos[3],
-                            lv_pos[0],
-                            lv_pos[1],
-                            lv_pos[2]) <= 0) {
+                    if (wmtk::utils::wmtk_orient3d(lv_pos[3], lv_pos[0], lv_pos[1], lv_pos[2]) <=
+                        0) {
                         return false;
                     }
                 } else {
-                    if (wmtk::utils::wmtk_orient3d<Rational>(
-                            lv_pos[3],
-                            lv_pos[0],
-                            lv_pos[2],
-                            lv_pos[1]) <= 0) {
+                    if (wmtk::utils::wmtk_orient3d(lv_pos[3], lv_pos[0], lv_pos[2], lv_pos[1]) <=
+                        0) {
                         return false;
                     }
                 }

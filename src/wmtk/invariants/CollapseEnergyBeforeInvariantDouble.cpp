@@ -85,11 +85,7 @@ bool CollapseEnergyBeforeInvariantDouble::before(const simplex::Simplex& s) cons
                 }
 
                 // check inversion, any new tet inverted return false
-                if (wmtk::utils::wmtk_orient3d<double>(
-                        lv_pos[0],
-                        lv_pos[1],
-                        lv_pos[2],
-                        lv_pos[3]) <= 0) {
+                if (wmtk::utils::wmtk_orient3d(lv_pos[0], lv_pos[1], lv_pos[2], lv_pos[3]) <= 0) {
                     return false;
                 }
 
@@ -184,11 +180,7 @@ bool CollapseEnergyBeforeInvariantDouble::before(const simplex::Simplex& s) cons
                 }
 
                 // check inversion, any new tet inverted return false
-                if (wmtk::utils::wmtk_orient3d<double>(
-                        lv_pos[0],
-                        lv_pos[1],
-                        lv_pos[2],
-                        lv_pos[3]) <= 0) {
+                if (wmtk::utils::wmtk_orient3d(lv_pos[0], lv_pos[1], lv_pos[2], lv_pos[3]) <= 0) {
                     return false;
                 }
 
