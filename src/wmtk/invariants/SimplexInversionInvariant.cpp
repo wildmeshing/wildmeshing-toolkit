@@ -36,10 +36,10 @@ bool SimplexInversionInvariant<T>::after(
             const Eigen::Vector3<T> p2 = accessor.const_vector_attribute(tet_vertices[2]);
             const Eigen::Vector3<T> p3 = accessor.const_vector_attribute(tet_vertices[3]);
 
-            if (utils::wmtk_orient3d<T>(p0, p1, p2, p3) <= 0) {
+            if (utils::wmtk_orient3d(p0, p1, p2, p3) <= 0) {
                 wmtk::logger().debug(
                     "fail inversion check, volume = {}",
-                    utils::wmtk_orient3d<T>(p0, p1, p2, p3));
+                    utils::wmtk_orient3d(p0, p1, p2, p3));
                 return false;
             }
 
@@ -53,9 +53,9 @@ bool SimplexInversionInvariant<T>::after(
             //     {PrimitiveType::Triangle, PrimitiveType::Edge, PrimitiveType::Vertex}));
 
             // if (mymesh.is_ccw(t)) {
-            //     if (utils::wmtk_orient3d<T>(p3, p0, p1, p2) <= 0) return false;
+            //     if (utils::wmtk_orient3d(p3, p0, p1, p2) <= 0) return false;
             // } else {
-            //     if (utils::wmtk_orient3d<T>(p3, p0, p2, p1) <= 0) return false;
+            //     if (utils::wmtk_orient3d(p3, p0, p2, p1) <= 0) return false;
             // }
         }
 
@@ -77,7 +77,7 @@ bool SimplexInversionInvariant<T>::after(
             const Eigen::Vector2<T> p2 = accessor.const_vector_attribute(
                 mymesh.switch_tuples(ccw_tuple, {PrimitiveType::Edge, PrimitiveType::Vertex}));
 
-            if (utils::wmtk_orient2d<T>(p0, p1, p2) <= 0) return false;
+            if (utils::wmtk_orient2d(p0, p1, p2) <= 0) return false;
         }
 
         return true;

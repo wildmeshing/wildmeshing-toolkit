@@ -26,7 +26,7 @@ private:
 class TodoLargerInvariant : public Invariant
 {
     /**
-     * Invariant for todo-list in scheduler. Recording which simplicity still need to be operated.
+     * Invariant for todo-list in scheduler. Recording which simplices still need to be operated.
      * If the todo_tag tagged as 1 then return true, otherwise return false
      */
 public:
@@ -52,7 +52,7 @@ private:
 class TodoSmallerInvariant : public Invariant
 {
     /**
-     * Invariant for todo-list in scheduler. Recording which simplicity still need to be operated.
+     * Invariant for todo-list in scheduler. Recording which simplices still need to be operated.
      * If the todo_tag tagged as 1 then return true, otherwise return false
      */
 public:

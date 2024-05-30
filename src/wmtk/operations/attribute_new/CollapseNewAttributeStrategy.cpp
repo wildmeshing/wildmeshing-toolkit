@@ -146,7 +146,9 @@ void CollapseNewAttributeStrategy<T>::update(
 
         const auto& return_data_variant = data.get_variant(mesh(), input_simplex);
 
-        for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type())) {
+        PrimitiveType pt = primitive_type();
+        //for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type()))
+        {
             auto merged_simps = m_topo_info->merged_simplices(return_data_variant, input_tuple, pt);
             auto new_simps = m_topo_info->new_simplices(return_data_variant, output_tuple, pt);
 
