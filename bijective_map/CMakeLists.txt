@@ -7,7 +7,7 @@ igl_include(glfw)
 igl_include(opengl)
 igl_include(stb)
 
-add_executable(bijective_map_app bijective_map_app.cpp track_operations.hpp render_utils.hpp)
+add_executable(bijective_map_app bijective_map_app.cpp track_operations.hpp track_operations.cpp render_utils.hpp)
 
 target_link_libraries(bijective_map_app
     wmtk::toolkit
