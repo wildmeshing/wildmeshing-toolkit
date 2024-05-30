@@ -11,6 +11,7 @@
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/simplex/closed_star.hpp>
+#include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
@@ -528,6 +529,38 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
         }
         logger().info("sum = {}", counter);
     }
+
+    // cofaces tests
+    counter = 0;
+    if (false) {
+        POLYSOLVE_SCOPED_STOPWATCH("coface edges (sort)", logger());
+        for (size_t i = 0; i < n_repetitions; ++i) {
+            for (const Tuple& t : vertices) {
+                const auto neighs = simplex::cofaces_single_dimension(
+                    m,
+                    simplex::Simplex::vertex(m, t),
+                    PrimitiveType::Edge);
+                counter += neighs.size();
+            }
+        }
+        logger().info("sum = {}", counter);
+    }
+
+    counter = 0;
+    if (false) {
+        POLYSOLVE_SCOPED_STOPWATCH("coface edges (no sort)", logger());
+        for (size_t i = 0; i < n_repetitions; ++i) {
+            for (const Tuple& t : vertices) {
+                const auto neighs = simplex::cofaces_single_dimension(
+                    m,
+                    simplex::Simplex::vertex(m, t),
+                    PrimitiveType::Edge,
+                    false);
+                counter += neighs.size();
+            }
+        }
+        logger().info("sum = {}", counter);
+    }
 }
 
 TEST_CASE("navigation_performance_tet", "[simplex][performance][.]")
@@ -602,5 +635,25 @@ TEST_CASE("navigation_performance_tet", "[simplex][performance][.]")
             }
         }
         logger().info("sum = {}", counter);
+    }
+
+    // cofaces
+    {
+        const auto edges = m.get_all(PrimitiveType::Edge);
+
+        counter = 0;
+        if (false) {
+            POLYSOLVE_SCOPED_STOPWATCH("coface triangles of edges (sort)", logger());
+            for (size_t i = 0; i < n_repetitions; ++i) {
+                for (const Tuple& t : edges) {
+                    const auto neighs = simplex::cofaces_single_dimension(
+                        m,
+                        simplex::Simplex::edge(m, t),
+                        PrimitiveType::Triangle);
+                    counter += neighs.size();
+                }
+            }
+            logger().info("sum = {}", counter);
+        }
     }
 }

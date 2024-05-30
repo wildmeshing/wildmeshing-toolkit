@@ -26,6 +26,12 @@ SimplexCollection cofaces_single_dimension(
     PrimitiveType cofaces_type,
     bool sort_and_clean = true);
 
+void cofaces_single_dimension(
+    SimplexCollection& collection,
+    const Simplex& my_simplex,
+    PrimitiveType cofaces_type,
+    bool sort_and_clean = true);
+
 std::vector<Tuple> cofaces_single_dimension_tuples(
     const Mesh& mesh,
     const Simplex& my_simplex,
