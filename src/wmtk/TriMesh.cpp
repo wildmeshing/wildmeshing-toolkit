@@ -19,11 +19,11 @@ TriMesh::TriMesh()
 
 void TriMesh::make_cached_accessors()
 {
-    m_vf_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_vf_handle);
-    m_ef_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_ef_handle);
-    m_fv_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_fv_handle);
-    m_fe_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_fe_handle);
-    m_ff_accessor = std::make_unique<attribute::Accessor<int64_t,TriMesh>>(*this, m_ff_handle);
+    m_vf_accessor = std::make_unique<attribute::Accessor<int64_t, TriMesh>>(*this, m_vf_handle);
+    m_ef_accessor = std::make_unique<attribute::Accessor<int64_t, TriMesh>>(*this, m_ef_handle);
+    m_fv_accessor = std::make_unique<attribute::Accessor<int64_t, TriMesh>>(*this, m_fv_handle);
+    m_fe_accessor = std::make_unique<attribute::Accessor<int64_t, TriMesh>>(*this, m_fe_handle);
+    m_ff_accessor = std::make_unique<attribute::Accessor<int64_t, TriMesh>>(*this, m_ff_handle);
 }
 
 TriMesh::TriMesh(TriMesh&& o)
@@ -372,8 +372,12 @@ bool TriMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& h
 #endif
         return false;
     }
-
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     return Mesh::is_hash_valid(tuple, hash_accessor);
+#else
+    const auto& flag_accessor = get_const_flag_accessor(PrimitiveType::Triangle);
+    return flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1;
+#endif
 }
 
 bool TriMesh::is_connectivity_valid() const

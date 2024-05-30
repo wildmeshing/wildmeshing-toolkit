@@ -65,11 +65,18 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
         return {};
     }
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+    const auto simplex_resurrect =
+        simplex::Simplex(simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
+#else
+    const auto simplex_resurrect = simplex;
+#endif
+
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
 
-    auto unmods = unmodified_primitives(simplex);
-    auto mods = execute(simplex);
+    auto unmods = unmodified_primitives(simplex_resurrect);
+    auto mods = execute(simplex_resurrect);
     if (!mods.empty()) { // success should be marked here
         apply_attribute_transfer(mods);
         if (after(unmods, mods)) {
@@ -82,18 +89,32 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
 bool Operation::before(const simplex::Simplex& simplex) const
 {
-    const attribute::Accessor<int64_t> accessor = hash_accessor();
+    // const attribute::Accessor<int64_t> accessor = hash_accessor();
 
-    if (!mesh().is_valid(simplex.tuple(), accessor)) {
+    // if (!mesh().is_valid(
+    //         simplex.tuple(),
+    //         accessor)) { // TODO: chang to is_removed and resurrect later
+    //     return false;
+    // }
+
+    if (mesh().is_removed(simplex.tuple())) {
         return false;
     }
 
 #if defined(WMTK_ENABLE_MULTIMESH)
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+    const auto simplex_resurrect =
+        simplex::Simplex(simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
+#else
+    const auto simplex_resurrect = simplex;
+#endif
+
     // map simplex to the invariant mesh
     const Mesh& invariant_mesh = m_invariants.mesh();
 
     // TODO check if this is correct
-    const std::vector<simplex::Simplex> invariant_simplices = m_mesh.map(invariant_mesh, simplex);
+    const std::vector<simplex::Simplex> invariant_simplices =
+        m_mesh.map(invariant_mesh, simplex_resurrect);
 
     for (const simplex::Simplex& s : invariant_simplices) {
         if (!m_invariants.before(s)) {
