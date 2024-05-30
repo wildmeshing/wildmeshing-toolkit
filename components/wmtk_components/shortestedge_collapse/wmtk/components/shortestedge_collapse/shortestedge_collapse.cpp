@@ -58,6 +58,13 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
 
     TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
 
+    // // debug code
+    // for (const auto& e : mesh.get_all(PrimitiveType::Edge)) {
+    //     if (mesh.is_boundary(PrimitiveType::Edge, e)) {
+    //         logger().error("before sec mesh has nonmanifold edges");
+    //     }
+    // }
+
     auto visited_edge_flag =
         mesh.register_attribute<char>("visited_edge", PrimitiveType::Edge, 1, false, char(1));
 
@@ -206,7 +213,7 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
         // set collapse towards boundary
         for (auto& p : positions) {
             auto tmp = std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(p);
-            tmp->set_strategy(wmtk::operations::CollapseBasicStrategy::Mean);
+            tmp->set_strategy(wmtk::operations::CollapseBasicStrategy::CopyOther);
             tmp->set_simplex_predicate(wmtk::operations::BasicSimplexPredicate::IsInterior);
             collapse->set_new_attribute_strategy(p, tmp);
         }
@@ -214,11 +221,15 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
         collapse->add_invariant(
             std::make_shared<invariants::FusionEdgeInvariant>(mesh, mesh.get_multi_mesh_root()));
         for (auto& p : positions) {
-            collapse->set_new_attribute_strategy(p, wmtk::operations::CollapseBasicStrategy::Mean);
+            collapse->set_new_attribute_strategy(
+                p,
+                wmtk::operations::CollapseBasicStrategy::CopyOther);
         }
     } else {
         for (auto& p : positions) {
-            collapse->set_new_attribute_strategy(p, wmtk::operations::CollapseBasicStrategy::Mean);
+            collapse->set_new_attribute_strategy(
+                p,
+                wmtk::operations::CollapseBasicStrategy::CopyOther);
         }
     }
 
@@ -232,6 +243,13 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
     Scheduler scheduler;
     SchedulerStats pass_stats =
         scheduler.run_operation_on_all(*collapse, visited_edge_flag.as<char>());
+
+    // // debug code
+    // for (const auto& e : mesh.get_all(PrimitiveType::Edge)) {
+    //     if (mesh.is_boundary(PrimitiveType::Edge, e)) {
+    //         logger().error("after sec mesh has nonmanifold edges");
+    //     }
+    // }
 
     multimesh::consolidate(mesh);
 
