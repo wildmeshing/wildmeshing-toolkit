@@ -175,8 +175,9 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
 void TriMesh::TriMeshOperationExecutor::delete_simplices()
 {
     for (size_t d = 0; d < simplex_ids_to_delete.size(); ++d) {
+        auto& acc = flag_accessors[d].index_access();
         for (const int64_t id : simplex_ids_to_delete[d]) {
-            flag_accessors[d].index_access().scalar_attribute(id) = 0;
+            acc. scalar_attribute(id) = 0;
         }
     }
 }

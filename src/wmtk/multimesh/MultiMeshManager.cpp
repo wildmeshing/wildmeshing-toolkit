@@ -755,6 +755,26 @@ void MultiMeshManager::update_map_tuple_hashes(
     //     if(acc.index_access().
     // };
 
+    /*
+    // collect children by dimension
+    std::vector<std::vector<ChildData*>> children_by_dimension(my_mesh.top_cell_dimension());
+
+
+    for (auto& child_data : children()) {
+        const auto& child_mesh = *child_data.mesh;
+        size_t dim = child_mesh.top_cell_dimension();
+        assert(dim <= my_mesh.top_cell_dimension());
+        children_by_dimension[dim].emplace_back(&child_data);
+    }
+
+    for(size_t j = 0; j < children_by_dimension.size(); ++j) {
+        auto& children = children_by_dimension[j];
+        if(children.empty()) {
+            continue;
+        }
+
+    }
+    */
 
     // go over every child mesh and try to update their hashes
     for (auto& child_data : children()) {
