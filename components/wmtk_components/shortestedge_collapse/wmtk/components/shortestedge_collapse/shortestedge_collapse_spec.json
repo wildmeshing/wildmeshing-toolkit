@@ -12,7 +12,8 @@
       "length_abs",
       "length_rel",
       "lock_boundary",
-      "use_for_periodic"
+      "use_for_periodic",
+      "envelope_size"
     ]
   },
   {
@@ -98,5 +99,10 @@
     "pointer": "/fix_uv_seam",
     "type": "bool",
     "default": false
+  },
+  {
+    "pointer": "/envelope_size",
+    "type": "float",
+    "default": -1
   }
 ]

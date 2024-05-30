@@ -3,6 +3,7 @@
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/components/base/get_attributes.hpp>
+#include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
@@ -57,6 +58,14 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
 
     TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
 
+
+    // // debug code
+    // for (const auto& e : mesh.get_all(PrimitiveType::Edge)) {
+    //     if (mesh.is_boundary(PrimitiveType::Edge, e)) {
+    //         logger().error("before sec mesh has nonmanifold edges");
+    //     }
+    // }
+
     auto visited_edge_flag =
         mesh.register_attribute<char>("visited_edge", PrimitiveType::Edge, 1, false, char(1));
 
@@ -89,6 +98,7 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
             compute_edge_length);
     edge_length_update->run_on_all();
 
+  #if false // old implementation from teseo/sec branch
     double avg_length = 0;
     const auto edges = mesh.get_all(PrimitiveType::Edge);
     for (const auto& e : edges) {
@@ -102,7 +112,37 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
         options.length_abs = avg_length * options.length_rel;
     }
     logger().info("Average edge length: {}, target {}", avg_length, options.length_abs);
+#else
+    //////////////////////////////////
+    // computing bbox diagonal
+    Eigen::VectorXd bmin(mesh.top_cell_dimension());
+    bmin.setConstant(std::numeric_limits<double>::max());
+    Eigen::VectorXd bmax(mesh.top_cell_dimension());
+    bmax.setConstant(std::numeric_limits<double>::lowest());
 
+    auto pt_accessor = mesh.create_const_accessor<double>(pos_handle);
+
+    const auto vertices = mesh.get_all(PrimitiveType::Vertex);
+    for (const auto& v : vertices) {
+        const auto p = pt_accessor.vector_attribute(v);
+        for (int64_t d = 0; d < bmax.size(); ++d) {
+            bmin[d] = std::min(bmin[d], p[d]);
+            bmax[d] = std::max(bmax[d], p[d]);
+        }
+    }
+
+    const double bbdiag = (bmax - bmin).norm();
+
+    options.length_abs = bbdiag * options.length_rel;
+
+    wmtk::logger().info(
+        "bbox max {}, bbox min {}, diag {}, target edge length {}",
+        bmax,
+        bmin,
+        bbdiag,
+        options.length_abs);
+
+#endif
     auto short_edges_first_priority = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         return edge_length_accessor.const_scalar_attribute(s.tuple());
@@ -111,7 +151,7 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
     auto todo = std::make_shared<TodoSmallerInvariant>(
         mesh,
         edge_length_attribute.as<double>(),
-        options.length_abs);
+        4. / 5. * options.length_abs); // MTAO: why is this 4/5?
 
     //////////////////////////invariants
 
@@ -143,6 +183,15 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
     collapse->add_invariant(invariant_link_condition);
     collapse->add_invariant(invariant_mm_map);
 
+
+    if (options.envelope_size > 0) {
+        collapse->add_invariant(std::make_shared<wmtk::invariants::EnvelopeInvariant>(
+            pos_handle,
+            bbdiag * options.envelope_size,
+            pos_handle));
+    }
+
+
     if (position_for_inversion) {
         collapse->add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
             position_for_inversion.value().mesh(),
@@ -168,7 +217,7 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
         // set collapse towards boundary
         for (auto& p : positions) {
             auto tmp = std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(p);
-            tmp->set_strategy(wmtk::operations::CollapseBasicStrategy::Mean);
+            tmp->set_strategy(wmtk::operations::CollapseBasicStrategy::CopyOther);
             tmp->set_simplex_predicate(wmtk::operations::BasicSimplexPredicate::IsInterior);
             collapse->set_new_attribute_strategy(p, tmp);
         }
@@ -176,11 +225,16 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
         collapse->add_invariant(
             std::make_shared<invariants::FusionEdgeInvariant>(mesh, mesh.get_multi_mesh_root()));
         for (auto& p : positions) {
-            collapse->set_new_attribute_strategy(p, wmtk::operations::CollapseBasicStrategy::Mean);
+
+            collapse->set_new_attribute_strategy(
+                p,
+                wmtk::operations::CollapseBasicStrategy::CopyOther);
         }
     } else {
         for (auto& p : positions) {
-            collapse->set_new_attribute_strategy(p, wmtk::operations::CollapseBasicStrategy::Mean);
+            collapse->set_new_attribute_strategy(
+                p,
+                wmtk::operations::CollapseBasicStrategy::CopyOther);
         }
     }
 
@@ -194,6 +248,14 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
     Scheduler scheduler;
     SchedulerStats pass_stats =
         scheduler.run_operation_on_all(*collapse, visited_edge_flag.as<char>());
+
+
+    // // debug code
+    // for (const auto& e : mesh.get_all(PrimitiveType::Edge)) {
+    //     if (mesh.is_boundary(PrimitiveType::Edge, e)) {
+    //         logger().error("after sec mesh has nonmanifold edges");
+    //     }
+    // }
 
     multimesh::consolidate(mesh);
 

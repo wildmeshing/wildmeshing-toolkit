@@ -181,21 +181,38 @@ void top_dimension_cofaces_tuples_edge(
         return;
     }
 
-    t = mesh.switch_face(input);
+    t = input;
 
-    if (mesh.is_boundary_face(t)) {
+    if (mesh.is_boundary_face(mesh.switch_face(t))) {
         return;
     }
-    t = mesh.switch_tuples(t, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle});
+
+    t = mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Tetrahedron});
 
     do {
         collection.emplace_back(t);
 
-        if (mesh.is_boundary_face(t)) {
+        if (mesh.is_boundary_face(mesh.switch_face(t))) {
             break;
         }
-        t = mesh.switch_tuples(t, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle});
+        t = mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Tetrahedron});
     } while (true);
+
+    // t = mesh.switch_face(input);
+
+    // if (mesh.is_boundary_face(t)) {
+    //     return;
+    // }
+    // t = mesh.switch_tuples(t, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle});
+
+    // do {
+    //     collection.emplace_back(t);
+
+    //     if (mesh.is_boundary_face(t)) {
+    //         break;
+    //     }
+    //     t = mesh.switch_tuples(t, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle});
+    // } while (true);
 }
 
 void top_dimension_cofaces_tuples_face(

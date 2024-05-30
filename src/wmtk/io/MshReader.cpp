@@ -62,7 +62,29 @@ std::shared_ptr<Mesh> MshReader::read(
                 auto orient = wmtk::utils::wmtk_orient3d(p0, p1, p2, p3);
 
                 if (orient < 0) {
-                    log_and_throw_error("Input tet orientation is inconsistent.");
+                    auto tmp = S(i, 1);
+                    S(i, 1) = S(i, 0);
+                    S(i, 0) = tmp;
+                    // log_and_throw_error("Input tet orientation is inconsistent.");
+                } else if (orient == 0) {
+                    log_and_throw_error("Input tet is degenerated.");
+                }
+            }
+        }
+
+        {
+            // check consistency
+            for (int64_t i = 0; i < S.rows(); i++) {
+                Eigen::Vector3d p0 = V.row(S(i, 0));
+                Eigen::Vector3d p1 = V.row(S(i, 1));
+                Eigen::Vector3d p2 = V.row(S(i, 2));
+                Eigen::Vector3d p3 = V.row(S(i, 3));
+                auto orient = wmtk::utils::wmtk_orient3d(p0, p1, p2, p3);
+
+                if (orient < 0) {
+                    V.row(S(i, 0)) = p1;
+                    V.row(S(i, 1)) = p0;
+                    // log_and_throw_error("Input tet orientation is inconsistent.");
                 } else if (orient == 0) {
                     log_and_throw_error("Input tet is degenerated.");
                 }

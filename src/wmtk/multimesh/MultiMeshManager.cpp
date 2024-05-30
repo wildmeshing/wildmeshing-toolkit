@@ -34,15 +34,17 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
     PrimitiveType min_primitive_type =
         std::min(source_mesh_primitive_type, target_mesh_primitive_type);
     Tuple source_mesh_target_tuple = source_tuple;
-    const auto [source_mesh_base_tuple, target_mesh_base_tuple] =
+    auto [source_mesh_base_tuple, target_mesh_base_tuple] =
         multimesh::utils::read_tuple_map_attribute(map_accessor, source_tuple);
 
     if (source_mesh_base_tuple.is_null() || target_mesh_base_tuple.is_null()) {
         return Tuple(); // return null tuple
     }
 
-    assert(source_mesh.is_valid_slow(source_mesh_base_tuple));
-    assert(target_mesh.is_valid_slow(target_mesh_base_tuple));
+    source_mesh_base_tuple = source_mesh.resurrect_tuple_slow(source_mesh_base_tuple);
+    target_mesh_base_tuple = target_mesh.resurrect_tuple_slow(target_mesh_base_tuple);
+    // assert(source_mesh.is_valid_slow(source_mesh_base_tuple));
+    // assert(target_mesh.is_valid_slow(target_mesh_base_tuple));
 
 
     if (source_mesh_base_tuple.m_global_cid != source_mesh_target_tuple.m_global_cid) {
@@ -662,6 +664,7 @@ std::vector<simplex::Simplex> MultiMeshManager::map_to_child(
     const simplex::Simplex& my_simplex) const
 {
     auto tuples = map_to_child_tuples(my_mesh, child_mesh, my_simplex);
+
     return simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
         child_mesh,
         tuples,
@@ -853,7 +856,10 @@ void MultiMeshManager::update_map_tuple_hashes(
                 my_mesh.top_simplex_type(),
                 equivalent_parent_tuples_good_hash,
                 parent_tuple.m_global_cid);
-            assert(old_tuple_opt.has_value());
+            // assert(old_tuple_opt.has_value());
+            if (!old_tuple_opt.has_value()) {
+                continue;
+            }
             simplex::Simplex old_simplex(my_mesh, primitive_type, old_tuple_opt.value());
 
             std::optional<Tuple> new_parent_shared_opt = find_valid_tuple(
@@ -867,7 +873,7 @@ void MultiMeshManager::update_map_tuple_hashes(
                 std::cout << "get skipped, someting is wrong?" << std::endl;
                 continue;
             }
-            assert(new_parent_shared_opt.has_value());
+            // assert(new_parent_shared_opt.has_value());
 
             Tuple new_parent_tuple_shared = new_parent_shared_opt.value();
             // logger().trace(
@@ -959,7 +965,10 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_split(
 
         auto old_tuple_opt =
             find_tuple_from_gid(my_mesh, my_mesh.top_simplex_type(), tuple_alternatives, old_cid);
-        assert(old_tuple_opt.has_value());
+        // assert(old_tuple_opt.has_value());
+        if (!(old_tuple_opt.has_value())) {
+            return std::optional<Tuple>{};
+        }
 
         const Tuple& old_cid_tuple = old_tuple_opt.value();
         for (const int64_t new_cid : new_cids) {

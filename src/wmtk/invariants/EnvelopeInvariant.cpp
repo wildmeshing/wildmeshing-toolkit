@@ -189,7 +189,10 @@ bool EnvelopeInvariant::after(
                     triangle[1] = accessor.const_vector_attribute(faces[1]).cast<double>();
                     triangle[2] = accessor.const_vector_attribute(faces[2]).cast<double>();
 
-                    if (m_envelope->is_outside(triangle)) return false;
+                    if (m_envelope->is_outside(triangle)) {
+                        wmtk::logger().debug("fail envelope check 1");
+                        return false;
+                    }
                 }
 
                 return true;
@@ -203,7 +206,10 @@ bool EnvelopeInvariant::after(
                     Eigen::Vector3d p0 = accessor.const_vector_attribute(faces[0]).cast<double>();
                     Eigen::Vector3d p1 = accessor.const_vector_attribute(faces[1]).cast<double>();
 
-                    if (m_envelope->is_outside(p0, p1)) return false;
+                    if (m_envelope->is_outside(p0, p1)) {
+                        wmtk::logger().debug("fail envelope check 2");
+                        return false;
+                    }
                 }
 
                 return true;
@@ -211,7 +217,10 @@ bool EnvelopeInvariant::after(
                 for (const Tuple& tuple : top_dimension_tuples_after) {
                     Eigen::Vector3d p = accessor.const_vector_attribute(tuple).cast<double>();
 
-                    if (m_envelope->is_outside(p)) return false;
+                    if (m_envelope->is_outside(p)) {
+                        wmtk::logger().debug("fail envelope check 3");
+                        return false;
+                    }
                 }
 
                 return true;
@@ -250,12 +259,18 @@ bool EnvelopeInvariant::after(
                 auto current_point = pts[0];
 
                 int prev_facet = m_bvh->nearest_facet(current_point, nearest_point, sq_dist);
-                if (sq_dist > real_envelope_2) return false;
+                if (sq_dist > real_envelope_2) {
+                    wmtk::logger().debug("fail envelope check 4");
+                    return false;
+                }
 
                 for (const auto& v : pts) {
                     sq_dist = (v - nearest_point).squaredNorm();
                     m_bvh->nearest_facet_with_hint(v, prev_facet, nearest_point, sq_dist);
-                    if (sq_dist > real_envelope_2) return false;
+                    if (sq_dist > real_envelope_2) {
+                        wmtk::logger().debug("fail envelope check 5");
+                        return false;
+                    }
                 }
 
                 return true;
@@ -263,7 +278,10 @@ bool EnvelopeInvariant::after(
                 for (const Tuple& tuple : top_dimension_tuples_after) {
                     Eigen::Vector3d p = accessor.const_vector_attribute(tuple).cast<double>();
                     m_bvh->nearest_facet(p, nearest_point, sq_dist);
-                    if (sq_dist > m_envelope_size * m_envelope_size) return false;
+                    if (sq_dist > m_envelope_size * m_envelope_size) {
+                        wmtk::logger().debug("fail envelope check 6");
+                        return false;
+                    }
                 }
 
                 return true;
@@ -295,7 +313,10 @@ bool EnvelopeInvariant::after(
                     triangle[1] = accessor.const_vector_attribute(faces[1]);
                     triangle[2] = accessor.const_vector_attribute(faces[2]);
 
-                    if (m_envelope->is_outside(triangle)) return false;
+                    if (m_envelope->is_outside(triangle)) {
+                        wmtk::logger().debug("fail envelope check 7");
+                        return false;
+                    }
                 }
 
                 return true;
@@ -309,7 +330,10 @@ bool EnvelopeInvariant::after(
                     Eigen::Vector3d p0 = accessor.const_vector_attribute(faces[0]);
                     Eigen::Vector3d p1 = accessor.const_vector_attribute(faces[1]);
 
-                    if (m_envelope->is_outside(p0, p1)) return false;
+                    if (m_envelope->is_outside(p0, p1)) {
+                        wmtk::logger().debug("fail envelope check 8");
+                        return false;
+                    }
                 }
 
                 return true;
@@ -317,7 +341,10 @@ bool EnvelopeInvariant::after(
                 for (const Tuple& tuple : top_dimension_tuples_after) {
                     Eigen::Vector3d p = accessor.const_vector_attribute(tuple);
 
-                    if (m_envelope->is_outside(p)) return false;
+                    if (m_envelope->is_outside(p)) {
+                        wmtk::logger().debug("fail envelope check 9");
+                        return false;
+                    }
                 }
 
                 return true;
@@ -357,12 +384,18 @@ bool EnvelopeInvariant::after(
                 auto current_point = pts[0];
 
                 int prev_facet = m_bvh->nearest_facet(current_point, nearest_point, sq_dist);
-                if (sq_dist > real_envelope_2) return false;
+                if (sq_dist > real_envelope_2) {
+                    wmtk::logger().debug("fail envelope check 10");
+                    return false;
+                }
 
                 for (const auto& v : pts) {
                     sq_dist = (v - nearest_point).squaredNorm();
                     m_bvh->nearest_facet_with_hint(v, prev_facet, nearest_point, sq_dist);
-                    if (sq_dist > real_envelope_2) return false;
+                    if (sq_dist > real_envelope_2) {
+                        wmtk::logger().debug("fail envelope check 11");
+                        return false;
+                    }
                 }
 
                 return true;
@@ -370,7 +403,10 @@ bool EnvelopeInvariant::after(
                 for (const Tuple& tuple : top_dimension_tuples_after) {
                     Eigen::Vector3d p = accessor.const_vector_attribute(tuple).cast<double>();
                     m_bvh->nearest_facet(p, nearest_point, sq_dist);
-                    if (sq_dist > m_envelope_size * m_envelope_size) return false;
+                    if (sq_dist > m_envelope_size * m_envelope_size) {
+                        wmtk::logger().debug("fail envelope check 12");
+                        return false;
+                    }
                 }
 
                 return true;

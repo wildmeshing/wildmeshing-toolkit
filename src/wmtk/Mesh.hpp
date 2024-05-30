@@ -106,6 +106,8 @@ public:
     friend class multimesh::MultiMeshSimplexVisitorExecutor;
     template <typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
+    friend bool multimesh::utils::check_child_maps_valid(const Mesh& m);
+    friend bool multimesh::utils::check_parent_map_valid(const Mesh& m);
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class multimesh::attribute::AttributeScopeHandle;
@@ -285,6 +287,8 @@ public:
     void assert_capacity_valid() const;
     virtual bool is_connectivity_valid() const = 0;
 
+    virtual std::vector<Tuple> orient_vertices(const Tuple& t) const = 0;
+
 protected: // member functions
     attribute::Accessor<char> get_flag_accessor(PrimitiveType type);
     attribute::Accessor<int64_t> get_cell_hash_accessor();
@@ -345,7 +349,7 @@ protected: // member functions
     /**
      * @brief same as `resurrect_tuple` but slow because it creates a new accessor
      */
-    Tuple resurrect_tuple_slow(const Tuple& tuple);
+    Tuple resurrect_tuple_slow(const Tuple& tuple) const;
 
 
 protected:

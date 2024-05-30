@@ -30,6 +30,7 @@ struct SECOptions
     bool lock_boundary;
     bool use_for_periodic;
     bool fix_uv_seam;
+    double envelope_size;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
@@ -42,5 +43,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     length_rel,
     lock_boundary,
     use_for_periodic);
+    use_for_periodic,
+    envelope_size);
 
 } // namespace wmtk::components::internal
