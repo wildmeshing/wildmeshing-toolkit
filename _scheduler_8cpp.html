@@ -112,18 +112,25 @@ $(document).ready(function(){initNavTree('_scheduler_8cpp.html',''); initResizab
 
 <div class="header">
   <div class="summary">
-<a href="#namespaces">Namespaces</a>  </div>
+<a href="#namespaces">Namespaces</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">Scheduler.cpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &quot;<a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_mesh_8hpp_source.html">Mesh.hpp</a>&quot;</code><br />
+<code>#include &lt;cassert&gt;</code><br />
 <code>#include &lt;<a class="el" href="_typed_attribute_handle_8hpp_source.html">wmtk/attribute/TypedAttributeHandle.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="k__ring_8hpp_source.html">wmtk/simplex/k_ring.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="link_8hpp_source.html">wmtk/simplex/link.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="tuple__vector__to__homogeneous__simplex__vector_8hpp_source.html">wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_logger_8hpp_source.html">wmtk/utils/Logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="random__seed_8hpp_source.html">wmtk/utils/random_seed.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="check__map__valid_8hpp_source.html">wmtk/multimesh/utils/check_map_valid.hpp</a>&gt;</code><br />
 <code>#include &lt;polysolve/Utils.hpp&gt;</code><br />
+<code>#include &lt;tbb/parallel_for.h&gt;</code><br />
+<code>#include &lt;atomic&gt;</code><br />
 <code>#include &lt;algorithm&gt;</code><br />
 <code>#include &lt;random&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
@@ -139,6 +146,11 @@ Include dependency graph for Scheduler.cpp:</div>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespacewmtk"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html">wmtk</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:a74159b2980a810f63934969e068e93fe"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a74159b2980a810f63934969e068e93fe">wmtk::first_available_color</a> (std::vector&lt; int64_t &gt; &amp;used_neighbor_coloring)</td></tr>
+<tr class="separator:a74159b2980a810f63934969e068e93fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

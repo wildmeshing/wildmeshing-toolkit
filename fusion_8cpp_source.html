@@ -343,182 +343,196 @@ $(document).ready(function(){initNavTree('fusion_8cpp_source.html',''); initResi
 <div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;            <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>,</div>
 <div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;            position_mesh);</div>
 <div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160; </div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        std::shared_ptr&lt;TriMesh&gt; child_ptr = std::make_shared&lt;TriMesh&gt;(std::move(position_mesh));</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        <span class="comment">// std::shared_ptr&lt;TriMesh&gt; child_ptr = std::make_shared&lt;TriMesh&gt;(std::move(position_mesh));</span></div>
 <div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160; </div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;        <span class="keyword">auto</span> child_map = <a class="code" href="namespacewmtk_1_1multimesh.html#ae9d6749c097baf5c55d25e598ecec6e1">multimesh::same_simplex_dimension_bijection</a>(fusion_mesh, *child_ptr);</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;        <span class="comment">// auto child_map = multimesh::same_simplex_dimension_bijection(fusion_mesh, *child_ptr);</span></div>
 <div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160; </div>
 <div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160; </div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;        fusion_mesh.<a class="code" href="classwmtk_1_1_mesh.html#abde493ad70eef5e38834fdf647a56c0b">register_child_mesh</a>(child_ptr, child_map);</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;        <span class="comment">// fusion_mesh.register_child_mesh(child_ptr, child_map);</span></div>
 <div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160; </div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;        names[<span class="stringliteral">&quot;periodic&quot;</span>] = fusion_mesh.<a class="code" href="classwmtk_1_1_mesh.html#a2102fdea06a0c543437e67d77aeb2013">absolute_multi_mesh_id</a>();</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        names[<span class="stringliteral">&quot;position&quot;</span>] = child_ptr-&gt;absolute_multi_mesh_id();</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;        <span class="comment">// names[&quot;periodic&quot;] = fusion_mesh.absolute_multi_mesh_id();</span></div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        <span class="comment">// names[&quot;position&quot;] = child_ptr-&gt;absolute_multi_mesh_id();</span></div>
 <div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160; </div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a512b2d7adaeb163afee61b194eb802fd">write_mesh</a>(fusion_mesh, options.<a class="code" href="structwmtk_1_1components_1_1_fusion_options.html#a3d8f8e4b67c540c4db131258100ce6e0">name</a>, names);</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        <span class="comment">// cache.write_mesh(fusion_mesh, options.name, names);</span></div>
 <div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160; </div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;    }</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    <span class="keywordflow">case</span> (3): {</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;        <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;double&gt;</a> V;</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;        <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;int64_t&gt;</a> TV;</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160; </div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        <a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html">wmtk::utils::EigenMatrixWriter</a> writer;</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;        mesh-&gt;serialize(writer);</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160; </div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a3907d601b0f4f64c662e4c32da9ca52c">get_position_matrix</a>(V);</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a7d76c607fec79828f387677795e990ab">get_TV_matrix</a>(TV);</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160; </div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;        assert(V.rows() == mesh-&gt;get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>).size());</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        assert(TV.rows() == mesh-&gt;get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>).size());</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160; </div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;        <span class="comment">// rescale to [0, 1]</span></div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> V_rescale(V.rows(), 3);</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160; </div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;        <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> min_pos = V.colwise().minCoeff();</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160; </div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; V_rescale.rows(); ++i) {</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;            V_rescale.row(i) = V.row(i) - min_pos.transpose();</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        }</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160; </div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;        <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> max_pos = V_rescale.colwise().maxCoeff();</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; V_rescale.rows(); ++i) {</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;            V_rescale(i, 0) /= max_pos[0];</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;            V_rescale(i, 1) /= max_pos[1];</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;            V_rescale(i, 2) /= max_pos[2];</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        }</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;        <span class="comment">// break;</span></div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160; </div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        std::shared_ptr&lt;TriMesh&gt; child_ptr = std::make_shared&lt;TriMesh&gt;(std::move(position_mesh));</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;        std::shared_ptr&lt;TriMesh&gt; parent_ptr = std::make_shared&lt;TriMesh&gt;(std::move(fusion_mesh));</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        <span class="keyword">auto</span> child_map = <a class="code" href="namespacewmtk_1_1multimesh.html#ae9d6749c097baf5c55d25e598ecec6e1">multimesh::same_simplex_dimension_bijection</a>(*parent_ptr, *child_ptr);</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        parent_ptr-&gt;register_child_mesh(child_ptr, child_map);</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160; </div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;        names[<span class="stringliteral">&quot;periodic&quot;</span>] = parent_ptr-&gt;absolute_multi_mesh_id();</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        names[<span class="stringliteral">&quot;position&quot;</span>] = child_ptr-&gt;absolute_multi_mesh_id();</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160; </div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a512b2d7adaeb163afee61b194eb802fd">write_mesh</a>(*parent_ptr, options.<a class="code" href="structwmtk_1_1components_1_1_fusion_options.html#a3d8f8e4b67c540c4db131258100ce6e0">name</a>, names);</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    }</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    <span class="keywordflow">case</span> (3): {</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;double&gt;</a> V;</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;        <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;int64_t&gt;</a> TV;</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160; </div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        <a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html">wmtk::utils::EigenMatrixWriter</a> writer;</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;        mesh-&gt;serialize(writer);</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160; </div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a3907d601b0f4f64c662e4c32da9ca52c">get_position_matrix</a>(V);</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;        writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a7d76c607fec79828f387677795e990ab">get_TV_matrix</a>(TV);</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160; </div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;        assert(V.rows() == mesh-&gt;get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>).size());</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;        assert(TV.rows() == mesh-&gt;get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>).size());</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160; </div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;        <span class="comment">// rescale to [0, 1]</span></div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> V_rescale(V.rows(), 3);</div>
 <div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160; </div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;        std::map&lt;int64_t, int64_t&gt; vertex_map;</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;        <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> min_pos = V.colwise().minCoeff();</div>
 <div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160; </div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;        std::array&lt;std::vector&lt;std::pair&lt;int64_t, Eigen::VectorXd&gt;&gt;, 3&gt; vertices_on_zero;</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;        std::array&lt;std::vector&lt;std::pair&lt;int64_t, Eigen::VectorXd&gt;&gt;, 3&gt; vertices_on_one;</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160; </div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; V_rescale.rows(); ++i) {</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;            <span class="keyword">const</span> <span class="keyword">auto</span>&amp; pos = V_rescale.row(i);</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160; </div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> k = 0; k &lt; 3; ++k) {</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="namespacewmtk.html#a415d7a83177f8770f317416478c57cae">abs</a>(pos[k] - 0.0) &lt; eps) {</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;                    vertices_on_zero[k].push_back(std::make_pair(i, pos));</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;                }</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="namespacewmtk.html#a415d7a83177f8770f317416478c57cae">abs</a>(pos[k] - 1.0) &lt; eps) {</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;                    vertices_on_one[k].push_back(std::make_pair(i, pos));</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;                }</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;            }</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;        }</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; V_rescale.rows(); ++i) {</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;            V_rescale.row(i) = V.row(i) - min_pos.transpose();</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;        }</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160; </div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;        <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> max_pos = V_rescale.colwise().maxCoeff();</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; V_rescale.rows(); ++i) {</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;            V_rescale(i, 0) /= max_pos[0];</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;            V_rescale(i, 1) /= max_pos[1];</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;            V_rescale(i, 2) /= max_pos[2];</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;        }</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160; </div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;        std::map&lt;int64_t, int64_t&gt; vertex_map;</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160; </div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;        std::array&lt;std::vector&lt;std::pair&lt;int64_t, Eigen::VectorXd&gt;&gt;, 3&gt; vertices_on_zero;</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;        std::array&lt;std::vector&lt;std::pair&lt;int64_t, Eigen::VectorXd&gt;&gt;, 3&gt; vertices_on_one;</div>
 <div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160; </div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;        <span class="comment">// merge vertices</span></div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> axis = 0; axis &lt; 3; ++axis) {</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;            <span class="keywordflow">if</span> (!operating_axis[axis]) <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160; </div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;            <span class="keywordflow">if</span> (vertices_on_zero[axis].size() != vertices_on_one[axis].size()) {</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;                <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;vertices size on the fusion axis does not match!&quot;</span>);</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;            }</div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160; </div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;            <span class="keyword">auto</span> <a class="code" href="namespacewmtk.html#a2f35ead9c86e0fd722118c11a8cbcf08">cmp</a> = [&amp;](<span class="keyword">const</span> std::pair&lt;int64_t, Eigen::VectorXd&gt;&amp; a,</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;                           <span class="keyword">const</span> std::pair&lt;int64_t, Eigen::VectorXd&gt;&amp; b) {</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="namespacewmtk.html#a415d7a83177f8770f317416478c57cae">abs</a>(a.second[(axis + 2) % 3] - b.second[(axis + 2) % 3]) &lt; eps) {</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;                    <span class="keywordflow">return</span> a.second[(axis + 1) % 3] &lt; b.second[(axis + 1) % 3];</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;                } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;                    <span class="keywordflow">return</span> a.second[(axis + 2) % 3] &lt; b.second[(axis + 2) % 3];</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;                }</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;            };</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; V_rescale.rows(); ++i) {</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;            <span class="keyword">const</span> <span class="keyword">auto</span>&amp; pos = V_rescale.row(i);</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160; </div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> k = 0; k &lt; 3; ++k) {</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="namespacewmtk.html#a415d7a83177f8770f317416478c57cae">abs</a>(pos[k] - 0.0) &lt; eps) {</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;                    vertices_on_zero[k].push_back(std::make_pair(i, pos));</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;                }</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="namespacewmtk.html#a415d7a83177f8770f317416478c57cae">abs</a>(pos[k] - 1.0) &lt; eps) {</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;                    vertices_on_one[k].push_back(std::make_pair(i, pos));</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;                }</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;            }</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;        }</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160; </div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;        <span class="comment">// merge vertices</span></div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> axis = 0; axis &lt; 3; ++axis) {</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;            <span class="keywordflow">if</span> (!operating_axis[axis]) <span class="keywordflow">continue</span>;</div>
 <div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160; </div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;            std::sort(vertices_on_zero[axis].begin(), vertices_on_zero[axis].end(), <a class="code" href="namespacewmtk.html#a2f35ead9c86e0fd722118c11a8cbcf08">cmp</a>);</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;            std::sort(vertices_on_one[axis].begin(), vertices_on_one[axis].end(), <a class="code" href="namespacewmtk.html#a2f35ead9c86e0fd722118c11a8cbcf08">cmp</a>);</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160; </div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;            <span class="keywordflow">for</span> (int64_t i = 0; i &lt; vertices_on_zero[axis].size(); ++i) {</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;                assert(</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;                    <a class="code" href="namespacewmtk.html#a415d7a83177f8770f317416478c57cae">abs</a>(vertices_on_zero[axis][i].second[(axis + 1) % 3] -</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;                        vertices_on_one[axis][i].second[(axis + 1) % 3]) &lt; eps &amp;&amp;</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                    <a class="code" href="namespacewmtk.html#a415d7a83177f8770f317416478c57cae">abs</a>(vertices_on_zero[axis][i].second[(axis + 2) % 3] -</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;                        vertices_on_one[axis][i].second[(axis + 2) % 3]) &lt; eps);</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160; </div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;                vertex_map[vertices_on_one[axis][i].first] = vertices_on_zero[axis][i].first;</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;            }</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        }</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160; </div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        <span class="comment">// // create periodic mesh</span></div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;        <a class="code" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> TV_new(TV.rows(), 4);</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160; </div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; TV.rows(); ++i) {</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;            <span class="keywordflow">for</span> (int64_t k = 0; k &lt; 4; ++k) {</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;                <span class="keywordflow">if</span> (vertex_map.find(TV(i, k)) != vertex_map.end()) {</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;                    int64_t v_root = vertex_map[TV(i, k)];</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;                    <span class="keywordflow">while</span> (vertex_map.find(v_root) != vertex_map.end() &amp;&amp;</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;                           vertex_map[v_root] != v_root) {</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                        v_root = vertex_map[v_root];</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;                    }</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;                    TV_new(i, k) = v_root;</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                    TV_new(i, k) = TV(i, k);</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;                }</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            }</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;        }</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160; </div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;        <span class="comment">// std::cout &lt;&lt; TV_new &lt;&lt; std::endl &lt;&lt; std::endl;</span></div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160; </div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160; </div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;        <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> V_new_tmp(V.rows(), 3);</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160; </div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;        <span class="comment">// remove unused vertices</span></div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;        std::map&lt;int64_t, int64_t&gt; v_consolidate_map;</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160; </div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;        int64_t v_valid_cnt = 0;</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; V.rows(); ++i) {</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;            <span class="keywordflow">if</span> (vertex_map.find(i) == vertex_map.end() || vertex_map[i] == i) {</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;                V_new_tmp(v_valid_cnt, 0) = V(i, 0);</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;                V_new_tmp(v_valid_cnt, 1) = V(i, 1);</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;                V_new_tmp(v_valid_cnt, 2) = V(i, 2);</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;                v_consolidate_map[i] = v_valid_cnt++;</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;            <span class="keywordflow">if</span> (vertices_on_zero[axis].size() != vertices_on_one[axis].size()) {</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;vertices size on the fusion axis does not match!&quot;</span>);</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;            }</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160; </div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;            <span class="keyword">auto</span> <a class="code" href="namespacewmtk.html#a2f35ead9c86e0fd722118c11a8cbcf08">cmp</a> = [&amp;](<span class="keyword">const</span> std::pair&lt;int64_t, Eigen::VectorXd&gt;&amp; a,</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;                           <span class="keyword">const</span> std::pair&lt;int64_t, Eigen::VectorXd&gt;&amp; b) {</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;                <span class="keywordflow">if</span> (<a class="code" href="namespacewmtk.html#a415d7a83177f8770f317416478c57cae">abs</a>(a.second[(axis + 2) % 3] - b.second[(axis + 2) % 3]) &lt; eps) {</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                    <span class="keywordflow">return</span> a.second[(axis + 1) % 3] &lt; b.second[(axis + 1) % 3];</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;                } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;                    <span class="keywordflow">return</span> a.second[(axis + 2) % 3] &lt; b.second[(axis + 2) % 3];</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;                }</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;            };</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160; </div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;            std::sort(vertices_on_zero[axis].begin(), vertices_on_zero[axis].end(), <a class="code" href="namespacewmtk.html#a2f35ead9c86e0fd722118c11a8cbcf08">cmp</a>);</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;            std::sort(vertices_on_one[axis].begin(), vertices_on_one[axis].end(), <a class="code" href="namespacewmtk.html#a2f35ead9c86e0fd722118c11a8cbcf08">cmp</a>);</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160; </div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;            <span class="keywordflow">for</span> (int64_t i = 0; i &lt; vertices_on_zero[axis].size(); ++i) {</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                assert(</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;                    <a class="code" href="namespacewmtk.html#a415d7a83177f8770f317416478c57cae">abs</a>(vertices_on_zero[axis][i].second[(axis + 1) % 3] -</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;                        vertices_on_one[axis][i].second[(axis + 1) % 3]) &lt; eps &amp;&amp;</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;                    <a class="code" href="namespacewmtk.html#a415d7a83177f8770f317416478c57cae">abs</a>(vertices_on_zero[axis][i].second[(axis + 2) % 3] -</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;                        vertices_on_one[axis][i].second[(axis + 2) % 3]) &lt; eps);</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160; </div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                vertex_map[vertices_on_one[axis][i].first] = vertices_on_zero[axis][i].first;</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;            }</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;        }</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160; </div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;        <span class="comment">// // create periodic mesh</span></div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;        <a class="code" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> TV_new(TV.rows(), 4);</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160; </div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; TV.rows(); ++i) {</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;            <span class="keywordflow">for</span> (int64_t k = 0; k &lt; 4; ++k) {</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;                <span class="keywordflow">if</span> (vertex_map.find(TV(i, k)) != vertex_map.end()) {</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                    int64_t v_root = vertex_map[TV(i, k)];</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;                    <span class="keywordflow">while</span> (vertex_map.find(v_root) != vertex_map.end() &amp;&amp;</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;                           vertex_map[v_root] != v_root) {</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;                        v_root = vertex_map[v_root];</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;                    }</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;                    TV_new(i, k) = v_root;</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;                } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;                    TV_new(i, k) = TV(i, k);</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;                }</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;            }</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;        }</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160; </div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;        <span class="comment">// std::cout &lt;&lt; TV_new &lt;&lt; std::endl &lt;&lt; std::endl;</span></div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160; </div>
 <div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160; </div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;                <span class="comment">// std::cout &lt;&lt; V_new_tmp &lt;&lt; std::endl &lt;&lt; std::endl;</span></div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;            }</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;        }</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160; </div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;        <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> V_new(v_valid_cnt, 3);</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;        V_new = V_new_tmp.block(0, 0, v_valid_cnt, 3);</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160; </div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;        <span class="comment">// std::cout &lt;&lt; V_new &lt;&lt; std::endl &lt;&lt; std::endl;</span></div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160; </div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160; </div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;        <span class="comment">// update TV_new</span></div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; TV_new.rows(); ++i) {</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;            <span class="keywordflow">for</span> (int64_t k = 0; k &lt; TV_new.cols(); ++k) {</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;                TV_new(i, k) = v_consolidate_map[TV_new(i, k)];</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;        <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> V_new_tmp(V.rows(), 3);</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160; </div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;        <span class="comment">// remove unused vertices</span></div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;        std::map&lt;int64_t, int64_t&gt; v_consolidate_map;</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160; </div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;        int64_t v_valid_cnt = 0;</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; V.rows(); ++i) {</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;            <span class="keywordflow">if</span> (vertex_map.find(i) == vertex_map.end() || vertex_map[i] == i) {</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;                V_new_tmp(v_valid_cnt, 0) = V(i, 0);</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;                V_new_tmp(v_valid_cnt, 1) = V(i, 1);</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;                V_new_tmp(v_valid_cnt, 2) = V(i, 2);</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;                v_consolidate_map[i] = v_valid_cnt++;</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160; </div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;                <span class="comment">// std::cout &lt;&lt; V_new_tmp &lt;&lt; std::endl &lt;&lt; std::endl;</span></div>
 <div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;            }</div>
 <div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;        }</div>
 <div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160; </div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;        <span class="comment">// std::cout &lt;&lt; TV_new &lt;&lt; std::endl &lt;&lt; std::endl;</span></div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160; </div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;        <a class="code" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> V_new(v_valid_cnt, 3);</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;        V_new = V_new_tmp.block(0, 0, v_valid_cnt, 3);</div>
 <div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160; </div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;        <a class="code" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> fusion_mesh;</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;        fusion_mesh.<a class="code" href="classwmtk_1_1_tet_mesh.html#ab8b4b3182fb3778fa8da52ea4fa156b6">initialize</a>(TV_new);</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;        <span class="comment">// mesh_utils::set_matrix_attribute(V_new, &quot;vertices&quot;, PrimitiveType::Vertex, fusion_mesh);</span></div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160; </div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;        <a class="code" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> position_mesh;</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        position_mesh.<a class="code" href="classwmtk_1_1_tet_mesh.html#ab8b4b3182fb3778fa8da52ea4fa156b6">initialize</a>(TV);</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;        <a class="code" href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">mesh_utils::set_matrix_attribute</a>(</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;            V_rescale,</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;            <span class="stringliteral">&quot;vertices&quot;</span>,</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;            <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>,</div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            position_mesh);</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;        <span class="comment">// std::cout &lt;&lt; V_new &lt;&lt; std::endl &lt;&lt; std::endl;</span></div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160; </div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160; </div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;        <span class="comment">// update TV_new</span></div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; TV_new.rows(); ++i) {</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;            <span class="keywordflow">for</span> (int64_t k = 0; k &lt; TV_new.cols(); ++k) {</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;                TV_new(i, k) = v_consolidate_map[TV_new(i, k)];</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;            }</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;        }</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160; </div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;        <span class="comment">// std::cout &lt;&lt; TV_new &lt;&lt; std::endl &lt;&lt; std::endl;</span></div>
 <div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160; </div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;        std::shared_ptr&lt;TetMesh&gt; child_ptr = std::make_shared&lt;TetMesh&gt;(std::move(position_mesh));</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160; </div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;        <span class="keyword">auto</span> child_map = <a class="code" href="namespacewmtk_1_1multimesh.html#ae9d6749c097baf5c55d25e598ecec6e1">multimesh::same_simplex_dimension_bijection</a>(fusion_mesh, *child_ptr);</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;        fusion_mesh.<a class="code" href="classwmtk_1_1_mesh.html#abde493ad70eef5e38834fdf647a56c0b">register_child_mesh</a>(child_ptr, child_map);</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160; </div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;        <a class="code" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> fusion_mesh;</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;        fusion_mesh.<a class="code" href="classwmtk_1_1_tet_mesh.html#ab8b4b3182fb3778fa8da52ea4fa156b6">initialize</a>(TV_new);</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;        <span class="comment">// mesh_utils::set_matrix_attribute(V_new, &quot;vertices&quot;, PrimitiveType::Vertex, fusion_mesh);</span></div>
 <div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160; </div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;        names[<span class="stringliteral">&quot;periodic&quot;</span>] = fusion_mesh.<a class="code" href="classwmtk_1_1_mesh.html#a2102fdea06a0c543437e67d77aeb2013">absolute_multi_mesh_id</a>();</div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;        names[<span class="stringliteral">&quot;position&quot;</span>] = child_ptr-&gt;absolute_multi_mesh_id();</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160; </div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;        cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a512b2d7adaeb163afee61b194eb802fd">write_mesh</a>(fusion_mesh, options.<a class="code" href="structwmtk_1_1components_1_1_fusion_options.html#a3d8f8e4b67c540c4db131258100ce6e0">name</a>, names);</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160; </div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;    }</div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;    <span class="keywordflow">default</span>: {</div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;        <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;mesh dimension not supported&quot;</span>);</div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;    }</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;    }</div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;}</div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;        <a class="code" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> position_mesh;</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;        position_mesh.<a class="code" href="classwmtk_1_1_tet_mesh.html#ab8b4b3182fb3778fa8da52ea4fa156b6">initialize</a>(TV);</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;        <a class="code" href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">mesh_utils::set_matrix_attribute</a>(</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;            V_rescale,</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;            <span class="stringliteral">&quot;vertices&quot;</span>,</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;            <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>,</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;            position_mesh);</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160; </div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;        std::shared_ptr&lt;TetMesh&gt; child_ptr = std::make_shared&lt;TetMesh&gt;(std::move(position_mesh));</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;        std::shared_ptr&lt;TetMesh&gt; parent_ptr = std::make_shared&lt;TetMesh&gt;(std::move(fusion_mesh));</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160; </div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;        <span class="keyword">auto</span> child_map = <a class="code" href="namespacewmtk_1_1multimesh.html#ae9d6749c097baf5c55d25e598ecec6e1">multimesh::same_simplex_dimension_bijection</a>(*parent_ptr, *child_ptr);</div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;        parent_ptr-&gt;register_child_mesh(child_ptr, child_map);</div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160; </div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;        names[<span class="stringliteral">&quot;periodic&quot;</span>] = parent_ptr-&gt;absolute_multi_mesh_id();</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;        names[<span class="stringliteral">&quot;position&quot;</span>] = child_ptr-&gt;absolute_multi_mesh_id();</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160; </div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;        cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a512b2d7adaeb163afee61b194eb802fd">write_mesh</a>(*parent_ptr, options.<a class="code" href="structwmtk_1_1components_1_1_fusion_options.html#a3d8f8e4b67c540c4db131258100ce6e0">name</a>, names);</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160; </div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;    }</div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;    <span class="keywordflow">default</span>: {</div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;        <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;mesh dimension not supported&quot;</span>);</div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;    }</div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;    }</div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;}</div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
 <div class="ttc" id="a_eigen_matrix_writer_8hpp_html"><div class="ttname"><a href="_eigen_matrix_writer_8hpp.html">EigenMatrixWriter.hpp</a></div></div>
 <div class="ttc" id="a_fusion_options_8hpp_html"><div class="ttname"><a href="_fusion_options_8hpp.html">FusionOptions.hpp</a></div></div>
 <div class="ttc" id="a_logger_8hpp_html"><div class="ttname"><a href="_logger_8hpp.html">Logger.hpp</a></div></div>
@@ -526,8 +540,6 @@ $(document).ready(function(){initNavTree('fusion_8cpp_source.html',''); initResi
 <div class="ttc" id="a_tet_mesh_8hpp_html"><div class="ttname"><a href="_tet_mesh_8hpp.html">TetMesh.hpp</a></div></div>
 <div class="ttc" id="a_tri_mesh_8hpp_html"><div class="ttname"><a href="_tri_mesh_8hpp.html">TriMesh.hpp</a></div></div>
 <div class="ttc" id="a_types_8hpp_html"><div class="ttname"><a href="_types_8hpp.html">Types.hpp</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html_a2102fdea06a0c543437e67d77aeb2013"><div class="ttname"><a href="classwmtk_1_1_mesh.html#a2102fdea06a0c543437e67d77aeb2013">wmtk::Mesh::absolute_multi_mesh_id</a></div><div class="ttdeci">std::vector&lt; int64_t &gt; absolute_multi_mesh_id() const</div><div class="ttdoc">returns a unique identifier for this mesh within a single multimesh structure</div><div class="ttdef"><b>Definition:</b> <a href="_mesh__multimesh_8cpp_source.html#l00011">Mesh_multimesh.cpp:11</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html_abde493ad70eef5e38834fdf647a56c0b"><div class="ttname"><a href="classwmtk_1_1_mesh.html#abde493ad70eef5e38834fdf647a56c0b">wmtk::Mesh::register_child_mesh</a></div><div class="ttdeci">void register_child_mesh(const std::shared_ptr&lt; Mesh &gt; &amp;child_mesh_ptr, const std::vector&lt; std::array&lt; Tuple, 2 &gt;&gt; &amp;map_tuples)</div><div class="ttdoc">register a mesh as the child of this mesh</div><div class="ttdef"><b>Definition:</b> <a href="_mesh__multimesh_8cpp_source.html#l00015">Mesh_multimesh.cpp:15</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tet_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_tet_mesh_8hpp_source.html#l00013">TetMesh.hpp:14</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_ab8b4b3182fb3778fa8da52ea4fa156b6"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#ab8b4b3182fb3778fa8da52ea4fa156b6">wmtk::TetMesh::initialize</a></div><div class="ttdeci">void initialize(Eigen::Ref&lt; const RowVectors4l &gt; TV, Eigen::Ref&lt; const RowVectors6l &gt; TE, Eigen::Ref&lt; const RowVectors4l &gt; TF, Eigen::Ref&lt; const RowVectors4l &gt; TT, Eigen::Ref&lt; const VectorXl &gt; VT, Eigen::Ref&lt; const VectorXl &gt; ET, Eigen::Ref&lt; const VectorXl &gt; FT)</div><div class="ttdef"><b>Definition:</b> <a href="_tet_mesh_8cpp_source.html#l00076">TetMesh.cpp:76</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_8hpp_source.html#l00018">TriMesh.hpp:19</a></div></div>

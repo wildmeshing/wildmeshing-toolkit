@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 1152;
+var viewWidth = 1319;
 var viewHeight = 128;
 var sectionId = 'dynsection-1';
 </script>
@@ -58,10 +58,10 @@ var sectionId = 'dynsection-1';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="509.5,-78.5 509.5,-119.5 652.5,-119.5 652.5,-78.5 509.5,-78.5"/>
-<text text-anchor="start" x="517.5" y="-107.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/multimesh</text>
-<text text-anchor="start" x="517.5" y="-96.5" font-family="Helvetica,sans-Serif" font-size="10.00">/utils/tuple_map_attribute</text>
-<text text-anchor="middle" x="581" y="-85.5" font-family="Helvetica,sans-Serif" font-size="10.00">_io.hpp</text>
+<polygon fill="#bfbfbf" stroke="black" points="594.5,-78.5 594.5,-119.5 737.5,-119.5 737.5,-78.5 594.5,-78.5"/>
+<text text-anchor="start" x="602.5" y="-107.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/multimesh</text>
+<text text-anchor="start" x="602.5" y="-96.5" font-family="Helvetica,sans-Serif" font-size="10.00">/utils/tuple_map_attribute</text>
+<text text-anchor="middle" x="666" y="-85.5" font-family="Helvetica,sans-Serif" font-size="10.00">_io.hpp</text>
 </a>
 </g>
 </g>
@@ -77,8 +77,8 @@ var sectionId = 'dynsection-1';
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M499.31,-89.13C415.56,-79.52 281.71,-62.75 167,-42 149.27,-38.79 129.71,-34.43 113.54,-30.6"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="498.93,-92.61 509.27,-90.26 499.73,-85.65 498.93,-92.61"/>
+<path fill="none" stroke="midnightblue" d="M583.91,-91.62C484.7,-83.26 312.9,-66.69 167,-42 148.93,-38.94 128.99,-34.5 112.67,-30.58"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="583.91,-95.13 594.17,-92.48 584.5,-88.16 583.91,-95.13"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
@@ -92,8 +92,8 @@ var sectionId = 'dynsection-1';
 <!-- Node1&#45;&gt;Node3 -->
 <g id="edge2" class="edge">
 <title>Node1&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M499.36,-78.79C433.48,-63.29 343.88,-42.21 294.47,-30.58"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="498.78,-82.25 509.32,-81.13 500.38,-75.44 498.78,-82.25"/>
+<path fill="none" stroke="midnightblue" d="M584.34,-84.53C520.22,-73.73 428.75,-57.8 349,-42 331.23,-38.48 311.59,-34.21 295.12,-30.52"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="583.95,-88.02 594.39,-86.22 585.11,-81.11 583.95,-88.02"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
@@ -108,76 +108,92 @@ var sectionId = 'dynsection-1';
 <!-- Node1&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
 <title>Node1&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M531.68,-73.97C506.19,-61.55 475.96,-46.83 454.2,-36.23"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="530.3,-77.19 540.83,-78.43 533.37,-70.9 530.3,-77.19"/>
+<path fill="none" stroke="midnightblue" d="M594.4,-75.42C553.96,-62.67 504.69,-47.13 469.73,-36.11"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="593.35,-78.76 603.94,-78.43 595.45,-72.08 593.35,-78.76"/>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
-<g id="a_node5"><a xlink:href="tuple__map__attribute__io_8cpp.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="509.5,-0.5 509.5,-41.5 652.5,-41.5 652.5,-0.5 509.5,-0.5"/>
-<text text-anchor="start" x="517.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/multimesh</text>
-<text text-anchor="start" x="517.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">/utils/tuple_map_attribute</text>
-<text text-anchor="middle" x="581" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_io.cpp</text>
+<g id="a_node5"><a xlink:href="check__map__valid_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="509.5,-6 509.5,-36 658.5,-36 658.5,-6 509.5,-6"/>
+<text text-anchor="start" x="517.5" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/multimesh</text>
+<text text-anchor="middle" x="584" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">/utils/check_map_valid.cpp</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node5 -->
 <g id="edge4" class="edge">
 <title>Node1&#45;&gt;Node5</title>
-<path fill="none" stroke="midnightblue" d="M581,-68.3C581,-59.3 581,-49.65 581,-41.51"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="577.5,-68.43 581,-78.43 584.5,-68.43 577.5,-68.43"/>
+<path fill="none" stroke="midnightblue" d="M637.22,-71.32C624.47,-59.51 609.98,-46.08 599.35,-36.23"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="635.17,-74.2 644.88,-78.43 639.93,-69.06 635.17,-74.2"/>
 </g>
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
-<g id="a_node6"><a xlink:href="_update_edge_operation_multi_mesh_map_functor_8cpp.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="670.5,-0.5 670.5,-41.5 821.5,-41.5 821.5,-0.5 670.5,-0.5"/>
-<text text-anchor="start" x="678.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/operations</text>
-<text text-anchor="start" x="678.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">/utils/UpdateEdgeOperation</text>
-<text text-anchor="middle" x="746" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">MultiMeshMapFunctor.cpp</text>
+<g id="a_node6"><a xlink:href="tuple__map__attribute__io_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="676.5,-0.5 676.5,-41.5 819.5,-41.5 819.5,-0.5 676.5,-0.5"/>
+<text text-anchor="start" x="684.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/multimesh</text>
+<text text-anchor="start" x="684.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">/utils/tuple_map_attribute</text>
+<text text-anchor="middle" x="748" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_io.cpp</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node6 -->
 <g id="edge5" class="edge">
 <title>Node1&#45;&gt;Node6</title>
-<path fill="none" stroke="midnightblue" d="M632.69,-74.19C655.52,-63.67 682.02,-51.47 703.65,-41.51"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="631.11,-71.07 623.49,-78.43 634.04,-77.42 631.11,-71.07"/>
+<path fill="none" stroke="midnightblue" d="M694.6,-71.49C705.24,-61.63 717.11,-50.63 726.95,-41.51"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="692.07,-69.06 687.12,-78.43 696.83,-74.2 692.07,-69.06"/>
 </g>
 <!-- Node7 -->
 <g id="node7" class="node">
 <title>Node7</title>
-<g id="a_node7"><a xlink:href="_update_vertex_multi_mesh_map_hash_8cpp.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="839.5,-0.5 839.5,-41.5 1000.5,-41.5 1000.5,-0.5 839.5,-0.5"/>
-<text text-anchor="start" x="847.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/operations</text>
-<text text-anchor="start" x="847.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">/utils/UpdateVertexMultiMesh</text>
-<text text-anchor="middle" x="920" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">MapHash.cpp</text>
+<g id="a_node7"><a xlink:href="_update_edge_operation_multi_mesh_map_functor_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="837.5,-0.5 837.5,-41.5 988.5,-41.5 988.5,-0.5 837.5,-0.5"/>
+<text text-anchor="start" x="845.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/operations</text>
+<text text-anchor="start" x="845.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">/utils/UpdateEdgeOperation</text>
+<text text-anchor="middle" x="913" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">MultiMeshMapFunctor.cpp</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node7 -->
 <g id="edge6" class="edge">
 <title>Node1&#45;&gt;Node7</title>
-<path fill="none" stroke="midnightblue" d="M662.55,-79.75C711.41,-68.81 774.77,-54.62 831,-42 833.78,-41.38 836.61,-40.74 839.47,-40.1"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="661.66,-76.36 652.67,-81.96 663.19,-83.19 661.66,-76.36"/>
+<path fill="none" stroke="midnightblue" d="M739.31,-75.44C774.37,-64.66 815.93,-51.87 849.61,-41.51"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="738.14,-72.14 729.61,-78.43 740.2,-78.83 738.14,-72.14"/>
 </g>
 <!-- Node8 -->
 <g id="node8" class="node">
 <title>Node8</title>
-<g id="a_node8"><a xlink:href="test__component__isotropic__remeshing_8cpp.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="1018.5,-0.5 1018.5,-41.5 1143.5,-41.5 1143.5,-0.5 1018.5,-0.5"/>
-<text text-anchor="start" x="1026.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">components/tests/test</text>
-<text text-anchor="start" x="1026.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">_component_isotropic</text>
-<text text-anchor="middle" x="1081" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_remeshing.cpp</text>
+<g id="a_node8"><a xlink:href="_update_vertex_multi_mesh_map_hash_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="1006.5,-0.5 1006.5,-41.5 1167.5,-41.5 1167.5,-0.5 1006.5,-0.5"/>
+<text text-anchor="start" x="1014.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/operations</text>
+<text text-anchor="start" x="1014.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">/utils/UpdateVertexMultiMesh</text>
+<text text-anchor="middle" x="1087" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">MapHash.cpp</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node8 -->
 <g id="edge7" class="edge">
 <title>Node1&#45;&gt;Node8</title>
-<path fill="none" stroke="midnightblue" d="M662.93,-90.86C749.69,-82.48 890.38,-66.52 1010,-42 1012.76,-41.43 1015.57,-40.82 1018.4,-40.16"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="662.5,-87.39 652.88,-91.83 663.17,-94.36 662.5,-87.39"/>
+<path fill="none" stroke="midnightblue" d="M747.89,-85.45C815.22,-74.83 913.03,-58.7 998,-42 1000.64,-41.48 1003.33,-40.94 1006.03,-40.39"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="747.1,-82.03 737.77,-87.04 748.19,-88.94 747.1,-82.03"/>
+</g>
+<!-- Node9 -->
+<g id="node9" class="node">
+<title>Node9</title>
+<g id="a_node9"><a xlink:href="test__component__isotropic__remeshing_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="1185.5,-0.5 1185.5,-41.5 1310.5,-41.5 1310.5,-0.5 1185.5,-0.5"/>
+<text text-anchor="start" x="1193.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">components/tests/test</text>
+<text text-anchor="start" x="1193.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">_component_isotropic</text>
+<text text-anchor="middle" x="1248" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_remeshing.cpp</text>
+</a>
+</g>
+</g>
+<!-- Node1&#45;&gt;Node9 -->
+<g id="edge8" class="edge">
+<title>Node1&#45;&gt;Node9</title>
+<path fill="none" stroke="midnightblue" d="M747.83,-93.22C849.26,-86.33 1027.08,-71.12 1177,-42 1179.77,-41.46 1182.58,-40.87 1185.42,-40.24"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="747.4,-89.74 737.65,-93.9 747.86,-96.72 747.4,-89.74"/>
 </g>
 </g>
 </svg>

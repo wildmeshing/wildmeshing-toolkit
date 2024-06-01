@@ -20,6 +20,7 @@ var classwmtk_1_1_edge_mesh =
     [ "is_valid", "classwmtk_1_1_edge_mesh.html#a566cd5b0f3adad310bd9818f14c99127", null ],
     [ "operator=", "classwmtk_1_1_edge_mesh.html#ac9bfcfafdf681af977bb9e65dbd9df72", null ],
     [ "operator=", "classwmtk_1_1_edge_mesh.html#a4343b21145559b1f9ce3e3c6606a599d", null ],
+    [ "orient_vertices", "classwmtk_1_1_edge_mesh.html#a7736ba2bb588d8aa81511cc42502bf68", null ],
     [ "switch_edge", "classwmtk_1_1_edge_mesh.html#a04f6595fe85e52dc6bf1e02512120100", null ],
     [ "switch_tuple", "classwmtk_1_1_edge_mesh.html#a46725851b572b51a356450adc30c14ed", null ],
     [ "switch_vertex", "classwmtk_1_1_edge_mesh.html#a20b926a28b5f5e906085c2ac84e706f5", null ],

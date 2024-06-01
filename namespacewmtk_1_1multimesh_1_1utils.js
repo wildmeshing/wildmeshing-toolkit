@@ -3,6 +3,8 @@ var namespacewmtk_1_1multimesh_1_1utils =
     [ "internal", "namespacewmtk_1_1multimesh_1_1utils_1_1internal.html", "namespacewmtk_1_1multimesh_1_1utils_1_1internal" ],
     [ "TupleVector", "namespacewmtk_1_1multimesh_1_1utils.html#abe1bb2be3cf7cec23a07aa160ff41f82", null ],
     [ "TwoTupleVector", "namespacewmtk_1_1multimesh_1_1utils.html#acff53209923ca86be1f06d03944ee942", null ],
+    [ "check_child_maps_valid", "namespacewmtk_1_1multimesh_1_1utils.html#a317686a1574920c114f02dac79146d5b", null ],
+    [ "check_parent_map_valid", "namespacewmtk_1_1multimesh_1_1utils.html#a72d2a49b74701d0d60edfe4408f4b5a0", null ],
     [ "create_tags", "namespacewmtk_1_1multimesh_1_1utils.html#a3eeab2c4a43e5e6d5fb50d399a88d0a3", null ],
     [ "extract_and_register_child_mesh_from_tag", "namespacewmtk_1_1multimesh_1_1utils.html#a9349b24597b61459c9d98753ae5234f1", null ],
     [ "extract_and_register_child_mesh_from_tag", "namespacewmtk_1_1multimesh_1_1utils.html#a197be9245149c7042613aeacf231ec1d", null ],

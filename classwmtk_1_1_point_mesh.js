@@ -16,6 +16,7 @@ var classwmtk_1_1_point_mesh =
     [ "is_valid", "classwmtk_1_1_point_mesh.html#a0980f13437ffde9fb6b7d4e471cd7c43", null ],
     [ "operator=", "classwmtk_1_1_point_mesh.html#a2f74a68f9d805cf6b51c26582d691d59", null ],
     [ "operator=", "classwmtk_1_1_point_mesh.html#ae6c9962d2287bdc133bd6bdb3bef859c", null ],
+    [ "orient_vertices", "classwmtk_1_1_point_mesh.html#a2779f3028ad41e801782870882899f09", null ],
     [ "switch_tuple", "classwmtk_1_1_point_mesh.html#a66bcea03adca55331c31f915260f6174", null ],
     [ "tuple_from_id", "classwmtk_1_1_point_mesh.html#a4abbd043be4c328d48bcdd1428e1cb55", null ],
     [ "vertex_tuple_from_id", "classwmtk_1_1_point_mesh.html#a328c437cf1ce08e7ecd16555840e16c4", null ],

@@ -5,8 +5,8 @@ var namespacewmtk_1_1operations =
     [ "tet_mesh", "namespacewmtk_1_1operations_1_1tet__mesh.html", "namespacewmtk_1_1operations_1_1tet__mesh" ],
     [ "tri_mesh", "namespacewmtk_1_1operations_1_1tri__mesh.html", "namespacewmtk_1_1operations_1_1tri__mesh" ],
     [ "utils", "namespacewmtk_1_1operations_1_1utils.html", "namespacewmtk_1_1operations_1_1utils" ],
-    [ "AdjustSizingField", "classwmtk_1_1operations_1_1_adjust_sizing_field.html", "classwmtk_1_1operations_1_1_adjust_sizing_field" ],
     [ "AMIPSOptimizationSmoothing", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing.html", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing" ],
+    [ "AMIPSOptimizationSmoothingPeriodic", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing_periodic.html", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing_periodic" ],
     [ "AndOperationSequence", "classwmtk_1_1operations_1_1_and_operation_sequence.html", "classwmtk_1_1operations_1_1_and_operation_sequence" ],
     [ "BaseCollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy" ],
     [ "CollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy" ],
@@ -29,6 +29,7 @@ var namespacewmtk_1_1operations =
     [ "OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", "classwmtk_1_1operations_1_1_optimization_smoothing" ],
     [ "OrOperationSequence", "classwmtk_1_1operations_1_1_or_operation_sequence.html", "classwmtk_1_1operations_1_1_or_operation_sequence" ],
     [ "Rounding", "classwmtk_1_1operations_1_1_rounding.html", "classwmtk_1_1operations_1_1_rounding" ],
+    [ "TetWildTangentialLaplacianSmoothing", "classwmtk_1_1operations_1_1_tet_wild_tangential_laplacian_smoothing.html", "classwmtk_1_1operations_1_1_tet_wild_tangential_laplacian_smoothing" ],
     [ "VertexLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth" ],
     [ "VertexTangentialLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth" ],
     [ "BasicSimplexPredicate", "namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cd", [
