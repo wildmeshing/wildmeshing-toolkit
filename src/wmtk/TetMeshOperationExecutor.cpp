@@ -150,15 +150,26 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
         faces.add(t);
     }
 
+    // faces.add(simplex::Simplex(PrimitiveType::Tetrahedron, operating_tuple));
+
     faces.sort_and_clean();
 
     for (const auto& s : faces) {
+        // hack
+        if (s.primitive_type() == PrimitiveType::Tetrahedron) continue;
+
         const int64_t index = static_cast<int64_t>(s.primitive_type());
         if (!m.has_child_mesh_in_dimension(index)) continue;
         global_simplex_ids_with_potentially_modified_hashes.at(index).emplace_back(
             m_mesh.id(s),
             wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
     }
+
+    global_simplex_ids_with_potentially_modified_hashes.at(3).emplace_back(
+        m_mesh.id(simplex::Simplex(m, PrimitiveType::Tetrahedron, operating_tuple)),
+        wmtk::simplex::top_dimension_cofaces_tuples(
+            m_mesh,
+            simplex::Simplex(m, PrimitiveType::Tetrahedron, operating_tuple)));
 }
 
 void TetMesh::TetMeshOperationExecutor::delete_simplices()

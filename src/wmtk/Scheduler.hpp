@@ -77,7 +77,7 @@ public:
         return res / sub_stats.size();
     }
 
-private:
+    // private:
     int64_t m_num_op_success = 0;
     int64_t m_num_op_fail = 0;
 };
@@ -92,6 +92,9 @@ public:
     SchedulerStats run_operation_on_all(
         operations::Operation& op,
         const TypedAttributeHandle<char>& flag_handle);
+    SchedulerStats run_operation_on_all_coloring(
+        operations::Operation& op,
+        const TypedAttributeHandle<int64_t>& color_handle);
 
     const SchedulerStats& stats() const { return m_stats; }
 

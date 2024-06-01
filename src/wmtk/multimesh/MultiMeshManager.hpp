@@ -9,6 +9,9 @@
 #include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 
+// debug function that reads into this structure
+#include "utils/check_map_valid.hpp"
+
 
 namespace wmtk {
 
@@ -68,6 +71,9 @@ public:
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class wmtk::HDF5Reader;
+
+    friend bool utils::check_child_maps_valid(const Mesh& m);
+    friend bool utils::check_parent_map_valid(const Mesh& m);
 
 
     // @param the max dimension of the mesh we will get passed

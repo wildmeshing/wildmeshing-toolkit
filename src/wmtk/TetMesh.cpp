@@ -554,5 +554,17 @@ Tuple TetMesh::tuple_from_global_ids(int64_t tid, int64_t fid, int64_t eid, int6
     return Tuple(lvid, leid, lfid, tid, get_cell_hash_slow(tid));
 }
 
+std::vector<Tuple> TetMesh::orient_vertices(const Tuple& tuple) const
+{
+    int64_t cid = tuple.m_global_cid;
+    auto hash = get_cell_hash_slow(cid);
+
+    return {
+        Tuple(0, 0, 2, cid, hash),
+        Tuple(1, 0, 3, cid, hash),
+        Tuple(2, 1, 1, cid, hash),
+        Tuple(3, 2, 2, cid, hash)};
+}
+
 
 } // namespace wmtk

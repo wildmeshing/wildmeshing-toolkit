@@ -84,4 +84,9 @@ std::vector<std::vector<TypedAttributeHandle<int64_t>>> PointMesh::connectivity_
     return handles;
 }
 
+std::vector<Tuple> PointMesh::orient_vertices(const Tuple& tuple) const
+{
+    return {tuple};
+}
+
 } // namespace wmtk
