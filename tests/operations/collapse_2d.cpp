@@ -165,7 +165,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
 
-        REQUIRE(m.is_valid_slow(ret));
+        REQUIRE(m.is_valid_with_hash(ret));
         REQUIRE(m.is_connectivity_valid());
         // CHECK(op.is_return_tuple_from_left_ear() == false);
 

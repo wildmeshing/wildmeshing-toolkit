@@ -64,7 +64,7 @@ bool Mesh::is_boundary(const simplex::Simplex& s) const
 bool Mesh::is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
     const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
     const int64_t cid = tuple.m_global_cid;
 
     const int64_t desired_hash = get_cell_hash(cid, hash_accessor);
@@ -76,15 +76,39 @@ bool Mesh::is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>&
     return true;
 }
 
-bool Mesh::is_valid_slow(const Tuple& tuple) const
+bool Mesh::is_hash_valid(const Tuple& tuple)
+    const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
-    return is_valid(tuple, hash_accessor);
-#else
-    const auto& flag_accessor = get_const_flag_accessor(top_simplex_type());
-    return flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1;
+    auto ha = get_const_cell_hash_accessor();
+    return is_hash_valid(tuple, ha);
+}
+
+
+bool Mesh::is_valid_with_hash(const Tuple& tuple) const
+{
+    auto ha = get_const_cell_hash_accessor();
+    return is_valid_with_hash(tuple,ha);
+}
+bool Mesh::is_valid_with_hash(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const
+{
+    if(!is_valid(tuple)) {
+        return false;
+    }
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+    if(!is_hash_valid(tuple, hash_accessor)) {
+        return false;
+    }
 #endif
+//#else
+//    const auto& flag_accessor = get_const_flag_accessor(top_simplex_type());
+//    return flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1;
+//#endif
+    return true;
+}
+
+bool Mesh::is_valid(const Tuple& tuple) const
+{
+    return !tuple.is_null();// && !is_removed(tuple);
 }
 
 bool Mesh::is_removed(const Tuple& tuple) const
@@ -123,14 +147,14 @@ attribute::Accessor<int64_t> Mesh::get_cell_hash_accessor()
 
 void Mesh::update_cell_hash(const Tuple& cell, attribute::Accessor<int64_t>& hash_accessor)
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
     const int64_t cid = cell.m_global_cid;
     update_cell_hash(cid, hash_accessor);
 #endif
 }
 void Mesh::update_cell_hash(const int64_t cid, attribute::Accessor<int64_t>& hash_accessor)
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
 
     auto& h = hash_accessor.index_access().scalar_attribute(cid);
     h = (h + 1) % (1 << 6);
@@ -141,7 +165,7 @@ void Mesh::update_cell_hashes(
     const std::vector<Tuple>& cells,
     attribute::Accessor<int64_t>& hash_accessor)
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
 
     for (const Tuple& t : cells) {
         update_cell_hash(t, hash_accessor);
@@ -152,7 +176,7 @@ void Mesh::update_cell_hashes(
     const std::vector<int64_t>& cells,
     attribute::Accessor<int64_t>& hash_accessor)
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
 
     for (const int64_t t : cells) {
         update_cell_hash(t, hash_accessor);
@@ -162,7 +186,7 @@ void Mesh::update_cell_hashes(
 
 void Mesh::update_cell_hashes_slow(const std::vector<Tuple>& cells)
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
 
     attribute::Accessor<int64_t> hash_accessor = get_cell_hash_accessor();
     update_cell_hashes(cells, hash_accessor);
@@ -173,7 +197,7 @@ void Mesh::update_cell_hashes_slow(const std::vector<Tuple>& cells)
 Tuple Mesh::resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
     const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
 
     Tuple t = tuple;
     t.m_hash = get_cell_hash(tuple.m_global_cid, hash_accessor);
@@ -185,7 +209,7 @@ Tuple Mesh::resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_
 
 Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple) const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
     attribute::Accessor<int64_t> hash_accessor = get_cell_hash_accessor();
     return resurrect_tuple(tuple, hash_accessor);
 #else

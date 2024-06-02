@@ -473,6 +473,7 @@ public:
 
 
     bool is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const;
+    bool is_hash_valid(const Tuple& tuple) const;
 
     /**
      * @brief check validity of tuple including its hash
@@ -483,9 +484,9 @@ public:
      * @return true if is valid
      * @return false
      */
-    virtual bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
-        const = 0;
-    bool is_valid_slow(const Tuple& tuple) const;
+    virtual bool is_valid(const Tuple& tuple) const;
+    bool is_valid_with_hash(const Tuple& tuple) const;
+    bool is_valid_with_hash(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const;
 
     virtual bool is_removed(const Tuple& tuple) const;
 

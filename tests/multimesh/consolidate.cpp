@@ -39,7 +39,7 @@ TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid(edge, hash_accessor));
+        REQUIRE(m.is_valid_with_hash(edge, hash_accessor));
 
         auto executor = m.get_emoe(edge, hash_accessor);
 

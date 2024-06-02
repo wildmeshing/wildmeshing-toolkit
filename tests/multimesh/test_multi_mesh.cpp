@@ -852,7 +852,7 @@ TEST_CASE("test_split_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     // Do another edge_split
     {
         Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 3);
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
         operations::EdgeSplit op(parent);
         REQUIRE(!op(Simplex::edge(parent, edge)).empty());
     }
@@ -988,7 +988,7 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             std::vector<simplex::Simplex> children = parent.map_to_child(child0, edge_simplex);
             REQUIRE(children.size() == 1);
             const Simplex& cs = children[0];
-            REQUIRE(child0.is_valid_slow(cs.tuple()));
+            REQUIRE(child0.is_valid_with_hash(cs.tuple()));
             REQUIRE(cs == edge_f0_simplex);
         }
 
@@ -1004,7 +1004,7 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             std::vector<simplex::Simplex> children = parent.map_to_child(child1, edge_simplex);
             REQUIRE(children.size() == 1);
             const Simplex& cs = children[0];
-            REQUIRE(child1.is_valid_slow(cs.tuple()));
+            REQUIRE(child1.is_valid_with_hash(cs.tuple()));
             REQUIRE(cs == edge_simplex);
         }
 
@@ -1033,9 +1033,9 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             std::cout << std::string(DEBUG_Tuple(edge_f0_simplex.tuple())) << " "
                       << std::string(DEBUG_Tuple(edge_simplex.tuple())) << std::endl;
 
-            REQUIRE(child2.is_valid_slow(cs0.tuple()));
+            REQUIRE(child2.is_valid_with_hash(cs0.tuple()));
             REQUIRE(cs0 == edge_f0_simplex);
-            REQUIRE(child2.is_valid_slow(cs1.tuple()));
+            REQUIRE(child2.is_valid_with_hash(cs1.tuple()));
             REQUIRE(cs1.tuple() == edge_simplex.tuple());
             REQUIRE(cs1.primitive_type() == edge_simplex.primitive_type());
         }

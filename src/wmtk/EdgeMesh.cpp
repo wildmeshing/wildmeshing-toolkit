@@ -28,14 +28,14 @@ bool EdgeMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 
 bool EdgeMesh::is_boundary_vertex(const Tuple& tuple) const
 {
-    assert(is_valid_slow(tuple));
+    assert(is_valid_with_hash(tuple));
     const attribute::Accessor<int64_t> ee_accessor = create_const_accessor<int64_t>(m_ee_handle);
     return ee_accessor.const_vector_attribute<2>(tuple)(tuple.m_local_vid) < 0;
 }
 
 Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
-    assert(is_valid_slow(tuple));
+    assert(is_valid_with_hash(tuple));
     bool ccw = is_ccw(tuple);
 
     switch (type) {
@@ -83,7 +83,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
             tuple.m_local_fid,
             gcid_new,
             get_cell_hash(gcid_new, hash_accessor));
-        assert(is_valid(res, hash_accessor));
+        assert(is_valid_with_hash(res, hash_accessor));
         return res;
     }
     case PrimitiveType::Triangle:
@@ -96,7 +96,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 
 bool EdgeMesh::is_ccw(const Tuple& tuple) const
 {
-    assert(is_valid_slow(tuple));
+    assert(is_valid_with_hash(tuple));
     return tuple.m_local_vid == 0;
 }
 
@@ -184,7 +184,11 @@ Tuple EdgeMesh::edge_tuple_from_id(int64_t id) const
 {
     Tuple e_tuple = Tuple(0, -1, -1, id, get_cell_hash_slow(id));
 
-    assert(is_valid_slow(e_tuple));
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+    assert(is_valid_with_hash(e_tuple));
+#else
+    assert(is_valid(e_tuple));
+#endif
     return e_tuple;
 }
 
@@ -211,18 +215,14 @@ Tuple EdgeMesh::tuple_from_global_ids(int64_t eid, int64_t vid) const
 }
 
 
-bool EdgeMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const
+bool EdgeMesh::is_valid(const Tuple& tuple) const
 {
-    if (tuple.is_null()) return false;
+    if (!Mesh::is_valid(tuple)) {
+        return false;
+    }
 
     if (tuple.m_local_vid < 0 || tuple.m_global_cid < 0) return false;
-
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    return Mesh::is_hash_valid(tuple, hash_accessor);
-#else
-    const auto& flag_accessor = get_const_flag_accessor(PrimitiveType::Edge);
-    return flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1;
-#endif
+    return true;
 }
 
 bool EdgeMesh::is_connectivity_valid() const

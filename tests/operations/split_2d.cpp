@@ -341,7 +341,7 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     REQUIRE(ff_accessor_after.vector_attribute(1)(2) == 3);
 }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
 TEST_CASE("hash_update", "[operations][2D]")
 {
     SECTION("single_triangle")
@@ -747,7 +747,7 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
-    REQUIRE(m.is_valid_slow(edge3));
+    REQUIRE(m.is_valid_with_hash(edge3));
     split(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 
@@ -804,7 +804,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid(ret, hash_accessor));
+        REQUIRE(m.is_valid_with_hash(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 3);
         CHECK(m.id(m.switch_vertex(ret), PV) == 2);
         CHECK(m.id(ret, PF) == 2);
@@ -821,7 +821,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid(ret, hash_accessor));
+        REQUIRE(m.is_valid_with_hash(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 3);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(ret, PF) == 2);
@@ -838,7 +838,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid(ret, hash_accessor));
+        REQUIRE(m.is_valid_with_hash(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 6);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 0);
@@ -856,7 +856,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid(ret, hash_accessor));
+        REQUIRE(m.is_valid_with_hash(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 6);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 5);
@@ -889,7 +889,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
     for (size_t i = 0; i < 10; ++i) {
         const std::vector<wmtk::Tuple> edges = mesh.get_all(PE);
         for (const wmtk::Tuple& e : edges) {
-            if (!mesh.is_valid_slow(e)) {
+            if (!mesh.is_valid_with_hash(e)) {
                 continue;
             }
 

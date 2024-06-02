@@ -77,7 +77,7 @@ TEST_CASE("1D_initialize", "[mesh_creation],[tuple_1d]")
 
     auto const_hash_accessor = m.get_const_cell_hash_accessor();
     for (size_t i = 0; i < edges.size(); ++i) {
-        REQUIRE(m.is_valid(edges[i], const_hash_accessor));
+        REQUIRE(m.is_valid_with_hash(edges[i], const_hash_accessor));
     }
 }
 
@@ -184,7 +184,7 @@ TEST_CASE("1D_random_switches", "[tuple_operation],[tuple_1d]")
                     break;
                 default: break;
                 }
-                CHECK(m.is_valid(t, hash_accessor));
+                CHECK(m.is_valid_with_hash(t, hash_accessor));
             }
         }
     }
@@ -204,7 +204,7 @@ TEST_CASE("1D_random_switches", "[tuple_operation],[tuple_1d]")
                     break;
                 default: break;
                 }
-                CHECK(m.is_valid(t, hash_accessor));
+                CHECK(m.is_valid_with_hash(t, hash_accessor));
             }
         }
     }

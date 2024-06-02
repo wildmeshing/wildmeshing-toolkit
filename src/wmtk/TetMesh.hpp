@@ -33,7 +33,7 @@ public:
     bool is_boundary_edge(const Tuple& tuple) const;
     bool is_boundary_face(const Tuple& tuple) const;
 
-    bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+    bool is_valid(const Tuple& tuple)
         const final override;
 
     void initialize(

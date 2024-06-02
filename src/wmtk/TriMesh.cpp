@@ -67,7 +67,12 @@ bool TriMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 
 bool TriMesh::is_boundary_edge(const Tuple& tuple) const
 {
-    assert(is_valid_slow(tuple));
+
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+    assert(is_valid_with_hash(tuple));
+#else
+    assert(is_valid(tuple));
+#endif
     return m_ff_accessor->const_vector_attribute<3>(tuple)(tuple.m_local_eid) < 0;
 }
 
@@ -94,7 +99,11 @@ bool TriMesh::is_boundary_vertex(const Tuple& vertex) const
 
 Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
-    assert(is_valid_slow(tuple));
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+    assert(is_valid_with_hash(tuple) );
+#else
+    assert(is_valid(tuple));
+#endif
     bool ccw = is_ccw(tuple);
 
     switch (type) {
@@ -157,7 +166,11 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
             tuple.m_local_fid,
             gcid_new,
             get_cell_hash(gcid_new, hash_accessor));
-        assert(is_valid(res, hash_accessor));
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+    assert(is_valid_with_hash(res, hash_accessor));
+#else
+    assert(is_valid(res));
+#endif
         return res;
     }
     case PrimitiveType::Vertex:
@@ -172,7 +185,11 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 
 bool TriMesh::is_ccw(const Tuple& tuple) const
 {
-    assert(is_valid_slow(tuple));
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+    assert(is_valid_with_hash(tuple) );
+#else
+    assert(is_valid(tuple));
+#endif
     return autogen::tri_mesh::is_ccw(tuple);
 }
 
@@ -318,7 +335,11 @@ Tuple TriMesh::edge_tuple_from_id(int64_t id) const
 
             Tuple e_tuple = Tuple(lvid, i, -1, f, get_cell_hash(f, hash_accessor));
             assert(is_ccw(e_tuple));
-            assert(is_valid(e_tuple, hash_accessor));
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+    assert(is_valid_with_hash(e_tuple) );
+#else
+    assert(is_valid(e_tuple));
+#endif
             return e_tuple;
         }
     }
@@ -339,17 +360,20 @@ Tuple TriMesh::face_tuple_from_id(int64_t id) const
 
     );
     assert(is_ccw(f_tuple));
-    assert(is_valid_slow(f_tuple));
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+    assert(is_valid_with_hash(f_tuple));
+#else
+    assert(is_valid(f_tuple));
+#endif
     return f_tuple;
 }
 
-bool TriMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const
+bool TriMesh::is_valid(const Tuple& tuple) const
 {
-    if (tuple.is_null()) {
+    if(!Mesh::is_valid(tuple)) {
         logger().debug("Tuple was null and therefore not valid");
         return false;
     }
-
     const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
                                        tuple.m_global_cid >= 0 &&
                                        autogen::tri_mesh::tuple_is_valid_for_ccw(tuple);
@@ -372,12 +396,7 @@ bool TriMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& h
 #endif
         return false;
     }
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    return Mesh::is_hash_valid(tuple, hash_accessor);
-#else
-    const auto& flag_accessor = get_const_flag_accessor(PrimitiveType::Triangle);
-    return flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1;
-#endif
+    return true;
 }
 
 bool TriMesh::is_connectivity_valid() const

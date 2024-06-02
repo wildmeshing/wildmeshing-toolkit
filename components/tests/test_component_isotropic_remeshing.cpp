@@ -404,7 +404,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 
         // CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
         const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
-        REQUIRE(mesh.is_valid_slow(v5));
+        REQUIRE(mesh.is_valid_with_hash(v5));
 
         auto pos = mesh.create_accessor<double>(pos_attribute);
         Eigen::Vector3d p5 = pos.vector_attribute(v5);
@@ -449,7 +449,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         REQUIRE(n_vertices == 9);
 
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
-        REQUIRE(mesh.is_valid_slow(v0));
+        REQUIRE(mesh.is_valid_with_hash(v0));
 
         auto pos = mesh.create_accessor<double>(pos_attribute);
         Eigen::Vector3d p0 = pos.vector_attribute(v0);
@@ -488,7 +488,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         REQUIRE(n_vertices == 9);
 
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
-        REQUIRE(mesh.is_valid_slow(v0));
+        REQUIRE(mesh.is_valid_with_hash(v0));
 
         auto pos = mesh.create_accessor<double>(pos_attribute);
         Eigen::Vector3d p0 = pos.vector_attribute(v0);
@@ -513,7 +513,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         REQUIRE(mesh.get_all(PrimitiveType::Vertex).size() == 9);
 
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
-        REQUIRE(mesh.is_valid_slow(v0));
+        REQUIRE(mesh.is_valid_with_hash(v0));
 
         auto pos = mesh.create_accessor<double>(pos_attribute);
         Eigen::Vector3d p0 = pos.vector_attribute(v0);

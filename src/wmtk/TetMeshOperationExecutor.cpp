@@ -142,7 +142,7 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     faces.reserve(hash_update_region.simplex_vector().size() * 15);
 
     for (const simplex::Simplex& t : hash_update_region.simplex_vector()) {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
         cell_ids_to_update_hash.push_back(m_mesh.id(t));
 #endif
 
@@ -183,7 +183,7 @@ void TetMesh::TetMeshOperationExecutor::delete_simplices()
 
 void TetMesh::TetMeshOperationExecutor::update_cell_hash()
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
 
     m_mesh.update_cell_hashes(cell_ids_to_update_hash, hash_accessor);
 #endif

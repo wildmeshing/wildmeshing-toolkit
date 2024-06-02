@@ -68,7 +68,7 @@ TEST_CASE("test_split_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
         REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 12);
@@ -99,7 +99,7 @@ TEST_CASE("test_split_multi_mesh_2D_3D", "[multimesh][2D][3D]")
         }
 
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
         REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 7);
@@ -131,7 +131,7 @@ TEST_CASE("test_split_multi_mesh_2D_3D", "[multimesh][2D][3D]")
         }
 
         Tuple edge = parent.edge_tuple_from_vids(0, 2);
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
         REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 8);
@@ -194,7 +194,7 @@ TEST_CASE("test_split_multi_mesh_1D_3D", "[multimesh][1D][3D]")
                 parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
         REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 12);
@@ -224,7 +224,7 @@ TEST_CASE("test_split_multi_mesh_1D_3D", "[multimesh][1D][3D]")
                 parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
         REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 7);
@@ -255,7 +255,7 @@ TEST_CASE("test_split_multi_mesh_1D_3D", "[multimesh][1D][3D]")
                 parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 2);
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
         REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 8);
@@ -377,7 +377,7 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 parent.id(child1.map_to_parent_tuple(Simplex::face(child1, child1_f)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
         REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 5);
@@ -433,7 +433,7 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 parent.id(child1.map_to_parent_tuple(Simplex::face(child1, child1_f)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 2);
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
         REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 4);
@@ -489,7 +489,7 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 parent.id(child1.map_to_parent_tuple(Simplex::face(child1, child1_f)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 3);
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
         REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 4);
@@ -534,14 +534,14 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
     SECTION("collapse_middle_edge")
     {
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
         REQUIRE(collapse(Simplex::edge(parent, edge)).empty()); // should fail
     }
 
     SECTION("collapse_degenerate_face_edge")
     {
         Tuple edge = parent.edge_tuple_from_vids(2, 7);
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
         REQUIRE(collapse(Simplex::edge(parent, edge)).empty()); // should fail
     }
 }
@@ -606,7 +606,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_3D", "[multimesh][2D][3D]")
 
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
 
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
         REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 5);
@@ -640,7 +640,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_3D", "[multimesh][2D][3D]")
 
         Tuple edge = parent.edge_tuple_from_vids(0, 2);
 
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
         REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 4);
@@ -674,7 +674,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_3D", "[multimesh][2D][3D]")
 
         Tuple edge = parent.edge_tuple_from_vids(2, 7);
 
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
         REQUIRE(collapse(Simplex::edge(parent, edge)).empty());
 
         // CHECK(parent.get_all(PT).size() == 4);
@@ -792,7 +792,7 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
         }
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
 
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
 
         auto child_simplices = parent.map_to_child(child0, Simplex::edge(parent, edge));
 
@@ -828,7 +828,7 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
 
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
 
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
 
         auto child_simplices = parent.map_to_child(child0, Simplex::edge(parent, edge));
 
@@ -863,7 +863,7 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
 
         Tuple edge = parent.edge_tuple_from_vids(0, 2);
 
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
 
         auto child_simplices = parent.map_to_child(child0, Simplex::edge(parent, edge));
 
@@ -892,7 +892,7 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
     {
         Tuple edge = parent.edge_tuple_from_vids(2, 6);
 
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
 
         auto child_simplices = parent.map_to_child(child0, Simplex::edge(parent, edge));
 
@@ -958,7 +958,7 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
 
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
 
         auto child_simplices = parent.map_to_child(child0, Simplex::edge(parent, edge));
 
@@ -994,7 +994,7 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
         }
         Tuple edge = parent.edge_tuple_from_vids(1, 2);
 
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
 
         auto child_simplices = parent.map_to_child(child0, Simplex::edge(parent, edge));
 
@@ -1025,7 +1025,7 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
     {
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
 
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
 
         REQUIRE(collapse(Simplex::edge(parent, edge)).empty());
     }
@@ -1034,7 +1034,7 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
     {
         Tuple edge = parent.edge_tuple_from_vids(0, 4);
 
-        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(parent.is_valid_with_hash(edge));
 
         REQUIRE(collapse(Simplex::edge(parent, edge)).empty());
     }

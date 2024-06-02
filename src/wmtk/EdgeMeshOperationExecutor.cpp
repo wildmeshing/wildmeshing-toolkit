@@ -22,18 +22,18 @@ EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
     m_spine_vids[1] = m_mesh.id_vertex(operating_tuple_switch_vertex);
 
     // update hash on neighborhood
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
     cell_ids_to_update_hash.emplace_back(m_mesh.id_edge(m_operating_tuple));
 #endif
     if (!m_mesh.is_boundary_vertex(m_operating_tuple)) {
         m_neighbor_eids[0] = m_mesh.id_edge(m_mesh.switch_edge(m_operating_tuple));
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
         cell_ids_to_update_hash.emplace_back(m_neighbor_eids[0]);
 #endif
     }
     if (!m_mesh.is_boundary_vertex(operating_tuple_switch_vertex)) {
         m_neighbor_eids[1] = m_mesh.id_edge(m_mesh.switch_edge(operating_tuple_switch_vertex));
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
         cell_ids_to_update_hash.emplace_back(m_neighbor_eids[1]);
 #endif
     }
@@ -55,7 +55,7 @@ void EdgeMesh::EdgeMeshOperationExecutor::delete_simplices()
 
 void EdgeMesh::EdgeMeshOperationExecutor::update_cell_hash()
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
 
     m_mesh.update_cell_hashes(cell_ids_to_update_hash, hash_accessor);
 #endif

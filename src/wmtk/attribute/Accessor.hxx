@@ -84,7 +84,7 @@ T Accessor<T, MeshType, Dim>::const_scalar_attribute(const simplex::Simplex& t) 
 template <typename T, typename MeshType, int Dim>
 int64_t Accessor<T, MeshType, Dim>::index(const Tuple& t) const
 {
-    assert(mesh().is_valid_slow(t));
+    assert(mesh().is_valid_with_hash(t));
     return static_cast<const MeshType&>(mesh()).id(t, BaseType::typed_handle().primitive_type());
 }
 
@@ -94,7 +94,7 @@ int64_t Accessor<T, MeshType, Dim>::index(const simplex::Simplex& t) const
     assert(t.primitive_type() == primitive_type());
     int64_t i = t.m_index;
     if (i == -1) {
-        assert(mesh().is_valid_slow(t.tuple()));
+        assert(mesh().is_valid_with_hash(t.tuple()));
         i = static_cast<const MeshType&>(mesh()).id(
             t.tuple(),
             BaseType::typed_handle().primitive_type());
