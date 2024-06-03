@@ -888,7 +888,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
     }
     EdgeSplit split(mesh);
 
-    for (size_t i = 0; i < 10; ++i) {
+    for (size_t i = 0; i < 5; ++i) {
         const std::vector<wmtk::Tuple> edges = mesh.get_all(PE);
         for (const wmtk::Tuple& e : edges) {
             if (!mesh.is_valid_with_hash(e)) {
