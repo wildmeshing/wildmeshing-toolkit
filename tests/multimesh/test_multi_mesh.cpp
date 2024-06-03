@@ -3,8 +3,8 @@
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
-#include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/multimesh/utils/check_map_valid.hpp>
+#include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include "../tools/DEBUG_EdgeMesh.hpp"
@@ -38,8 +38,8 @@ void print_tuple_map(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManager& 
         PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
         auto parent_to_child_accessor = parent.create_const_accessor(child_data.map_handle);
         for (int64_t parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
-            auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
-                parent.tuple_from_id(map_ptype, parent_gid));
+            auto parent_to_child_data =
+                parent_to_child_accessor.index_access().const_vector_attribute(parent_gid);
             auto [parent_tuple, child_tuple] =
                 wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
             std::cout << "parent gid = " << parent_gid << std::endl;

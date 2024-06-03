@@ -271,8 +271,9 @@ public:
 
 
     const attribute::Accessor<char> get_flag_accessor(PrimitiveType type) const;
-    const attribute::Accessor<int64_t> get_cell_hash_accessor() const;
     const attribute::Accessor<char> get_const_flag_accessor(PrimitiveType type) const;
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+    const attribute::Accessor<int64_t> get_cell_hash_accessor() const;
     const attribute::Accessor<int64_t> get_const_cell_hash_accessor() const;
 
 
@@ -280,6 +281,7 @@ public:
         const;
     // utility function for getting a cell's hash - slow because it creates a new accessor
     int64_t get_cell_hash_slow(int64_t cell_index) const;
+#endif
 
 
     bool operator==(const Mesh& other) const;
@@ -291,6 +293,7 @@ public:
 
 protected: // member functions
     attribute::Accessor<char> get_flag_accessor(PrimitiveType type);
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
     attribute::Accessor<int64_t> get_cell_hash_accessor();
 
     /**
@@ -332,6 +335,7 @@ protected: // member functions
         attribute::Accessor<int64_t>& hash_accessor);
 
     void update_cell_hashes_slow(const std::vector<Tuple>& cells);
+#endif
 
     /**
      * @brief return the same tuple but with updated hash

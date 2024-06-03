@@ -23,7 +23,7 @@ bool check_child_maps_valid(const Mesh& m)
                 for (const auto& source_tuple : tups) {
                     const auto [source_mesh_base_tuple, target_mesh_base_tuple] =
                         multimesh::utils::read_tuple_map_attribute(map_accessor, source_tuple);
-                    if (!child.is_valid_with_hash(target_mesh_base_tuple)) {
+                    if (!child.is_valid(target_mesh_base_tuple)) {
                         wmtk::logger().error(
                             "Map from parent {} to child {} on tuple {} (dim {}) fails on  {} -> "
                             "{}",
@@ -60,7 +60,7 @@ bool check_parent_map_valid(const Mesh& m)
     for (const auto& source_tuple : m.get_all(prim_type)) {
         const auto [source_mesh_base_tuple, target_mesh_base_tuple] =
             multimesh::utils::read_tuple_map_attribute(map_accessor, source_tuple);
-        if (!parent.is_valid_with_hash(target_mesh_base_tuple)) {
+        if (!parent.is_valid(target_mesh_base_tuple)) {
             wmtk::logger().error(
                 "Map from child {} to parent {} on tuple {} (dim {}) fails on  {} -> "
                 "{}",

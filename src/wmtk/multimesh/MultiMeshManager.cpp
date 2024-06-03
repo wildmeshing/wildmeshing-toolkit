@@ -27,7 +27,7 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
     const wmtk::attribute::Accessor<int64_t>& map_accessor,
     const Tuple& source_tuple)
 {
-    assert(source_mesh.is_valid_with_hash(source_tuple));
+    assert(source_mesh.is_valid(source_tuple));
 
     PrimitiveType source_mesh_primitive_type = source_mesh.top_simplex_type();
     PrimitiveType target_mesh_primitive_type = target_mesh.top_simplex_type();
@@ -43,8 +43,8 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
 
     source_mesh_base_tuple = source_mesh.resurrect_tuple_slow(source_mesh_base_tuple);
     target_mesh_base_tuple = target_mesh.resurrect_tuple_slow(target_mesh_base_tuple);
-    // assert(source_mesh.is_valid_with_hash(source_mesh_base_tuple));
-    // assert(target_mesh.is_valid_with_hash(target_mesh_base_tuple));
+    // assert(source_mesh.is_valid(source_mesh_base_tuple));
+    // assert(target_mesh.is_valid(target_mesh_base_tuple));
 
 
     if (source_mesh_base_tuple.m_global_cid != source_mesh_target_tuple.m_global_cid) {
@@ -243,8 +243,8 @@ void MultiMeshManager::register_child_mesh(
 
     // register maps
     for (const auto& [child_tuple, my_tuple] : child_tuple_my_tuple_map) {
-        assert(my_mesh.is_valid_with_hash(my_tuple));
-        assert(child_mesh_ptr->is_valid_with_hash(child_tuple));
+        assert(my_mesh.is_valid(my_tuple));
+        assert(child_mesh_ptr->is_valid(child_tuple));
         wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
             parent_to_child_accessor,
             child_to_parent_accessor,
@@ -428,7 +428,7 @@ std::vector<simplex::Simplex> MultiMeshManager::lub_map(
     const Mesh& other_mesh,
     const simplex::Simplex& my_simplex) const
 {
-    if(&my_mesh == &other_mesh) {
+    if (&my_mesh == &other_mesh) {
         return {my_simplex};
     }
     const auto ret_tups = lub_map_tuples(my_mesh, other_mesh, my_simplex);
@@ -524,7 +524,7 @@ std::vector<Tuple> MultiMeshManager::lub_map_tuples(
     const Mesh& other_mesh,
     const simplex::Simplex& my_simplex) const
 {
-    if(&my_mesh == &other_mesh) {
+    if (&my_mesh == &other_mesh) {
         return {my_simplex.tuple()};
     }
     const auto my_id = absolute_id();
@@ -816,9 +816,11 @@ void MultiMeshManager::update_map_tuple_hashes(
 
             // If the parent tuple is valid, it means this parent-child pair has already been
             // handled, so we can skip it
+#if defined(WMTK_ENABLE_HASH_UPDATE) // optimization if hash is available
             if (my_mesh.is_valid_with_hash(parent_tuple)) {
                 continue;
             }
+#endif
             // If the parent tuple is invalid then there was no map so we can try the next cell
             if (parent_tuple.is_null()) {
                 continue;
@@ -830,16 +832,18 @@ void MultiMeshManager::update_map_tuple_hashes(
             child_tuple = child_mesh.resurrect_tuple(child_tuple, child_hash_accessor);
 
             // check if the map is handled in the ear case
+#if defined(WMTK_ENABLE_HASH_UPDATE) // optimization if hash is available
             auto child_to_parent_data =
                 child_to_parent_accessor.const_vector_attribute(child_tuple);
             Tuple parent_tuple_from_child_map = wmtk::multimesh::utils::vector_to_tuple(
                 child_to_parent_data.tail<wmtk::multimesh::utils::TUPLE_SIZE>());
-            if (my_mesh.is_valid_with_hash(parent_tuple_from_child_map)) {
+            if (my_mesh.is_valid_with_hash(
+                    parent_tuple_from_child_map)) { // optimization if hash is available
                 continue;
             }
+#endif
             // if the child simplex is deleted then we can skip it
-            const char child_flag = child_flag_accessor.const_scalar_attribute(child_tuple);
-            bool child_exists = 1 == (child_flag & 1);
+            const bool child_exists = !child_mesh.is_removed(child_tuple);
             if (!child_exists) {
                 logger().debug("child doesnt exist, skip!");
                 continue;
@@ -860,7 +864,8 @@ void MultiMeshManager::update_map_tuple_hashes(
             if (!old_tuple_opt.has_value()) {
                 continue;
             }
-            simplex::Simplex old_simplex(my_mesh, primitive_type, old_tuple_opt.value());
+            simplex::Simplex old_simplex = my_mesh.parent_scope(
+                [&] { return simplex::Simplex(my_mesh, primitive_type, old_tuple_opt.value()); });
 
             std::optional<Tuple> new_parent_shared_opt = find_valid_tuple(
                 my_mesh,
@@ -889,8 +894,8 @@ void MultiMeshManager::update_map_tuple_hashes(
                 new_parent_tuple_shared,
                 my_mesh.top_simplex_type());
             parent_tuple = my_mesh.resurrect_tuple(parent_tuple, parent_hash_accessor);
-            assert(my_mesh.is_valid_with_hash(parent_tuple));
-            assert(child_mesh.is_valid_with_hash(child_tuple));
+            assert(my_mesh.is_valid(parent_tuple));
+            assert(child_mesh.is_valid(child_tuple));
 
 
             wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
@@ -938,9 +943,7 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_alternatives(
     auto it = std::find_if(
         tuple_alternatives.begin(),
         tuple_alternatives.end(),
-        [&](const Tuple& t) -> bool {
-            return 1 == (parent_flag_accessor.const_scalar_attribute(t) & 1);
-        });
+        [&](const Tuple& t) -> bool { return !my_mesh.is_removed(t); });
     if (it != tuple_alternatives.end()) {
         return *it;
     } else {
@@ -981,7 +984,7 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_split(
                 my_mesh.get_cell_hash_slow(new_cid));
 
 
-            if (my_mesh.is_valid_with_hash(tuple) &&
+            if (my_mesh.is_valid(tuple) && !my_mesh.is_removed(tuple) &&
                 old_simplex_gid == my_mesh.id(tuple, primitive_type)) {
                 return tuple;
             }
@@ -1190,9 +1193,9 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
                 wmtk::utils::TupleInspector::as_string(child_tuple_from_child),
                 wmtk::utils::TupleInspector::as_string(child_tuple_from_child),
                 wmtk::utils::TupleInspector::as_string(child_tuple));
-            assert(child_mesh.is_valid_with_hash(child_tuple_from_child));
-            assert(child_mesh.is_valid_with_hash(child_tuple_from_child));
-            assert(my_mesh.is_valid_with_hash(parent_tuple_from_child));
+            assert(child_mesh.is_valid(child_tuple_from_child));
+            assert(child_mesh.is_valid(child_tuple_from_child));
+            assert(my_mesh.is_valid(parent_tuple_from_child));
         }
 
         // 3. test if map is symmetric

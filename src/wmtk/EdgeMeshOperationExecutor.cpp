@@ -55,7 +55,7 @@ void EdgeMesh::EdgeMeshOperationExecutor::delete_simplices()
 
 void EdgeMesh::EdgeMeshOperationExecutor::update_cell_hash()
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE)//  || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
 
     m_mesh.update_cell_hashes(cell_ids_to_update_hash, hash_accessor);
 #endif

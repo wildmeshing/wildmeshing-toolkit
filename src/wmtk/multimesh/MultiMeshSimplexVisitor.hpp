@@ -117,7 +117,7 @@ public:
         Mesh& root_base_mesh = mesh.get_multi_mesh_root();
         auto mesh_root_variant = wmtk::utils::metaprogramming::as_mesh_variant(root_base_mesh);
         const simplex::Simplex root_simplex = mesh.map_to_root(simplex);
-        assert(root_base_mesh.is_valid_with_hash(root_simplex.tuple()));
+        assert(root_base_mesh.is_valid(root_simplex.tuple()));
         Executor exec(*this);
         std::visit([&](auto&& root) { execute_mesh(root.get(), root_simplex); }, mesh_root_variant);
     }
@@ -195,7 +195,7 @@ private:
     template <typename MeshType_>
     void run(MeshType_&& current_mesh, const simplex::Simplex& simplex)
     {
-        assert(current_mesh.is_valid_with_hash(simplex.tuple()));
+        assert(current_mesh.is_valid(simplex.tuple()));
         using MeshType = std::decay_t<MeshType_>;
 
 
@@ -233,7 +233,7 @@ private:
                 auto r = current_mesh.map_to_child(child_mesh, simplex);
 #if !defined(NDEBUG)
                 for (const auto& s : r) {
-                    assert(child_mesh.is_valid_with_hash(s.tuple()));
+                    assert(child_mesh.is_valid(s.tuple()));
                 }
 #endif
 
@@ -250,7 +250,7 @@ private:
 
 #if !defined(NDEBUG)
             for (const auto& s : simplices) {
-                assert(child_mesh_base.is_valid_with_hash(s.tuple()));
+                assert(child_mesh_base.is_valid(s.tuple()));
             }
 #endif
 
@@ -281,7 +281,7 @@ private:
 
                     if constexpr (MeshDim >= ChildDim) {
                         for (const simplex::Simplex& child_simplex : simplices) {
-                            assert(child_mesh.is_valid_with_hash(child_simplex.tuple()));
+                            assert(child_mesh.is_valid(child_simplex.tuple()));
 
                             run(child_mesh, child_simplex);
 

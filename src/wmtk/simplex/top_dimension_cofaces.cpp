@@ -23,7 +23,7 @@ void top_dimension_cofaces_tuples_vertex(
     const Tuple& t_in,
     std::vector<Tuple>& collection)
 {
-    assert(mesh.is_valid_with_hash(t_in));
+    assert(mesh.is_valid(t_in));
     Tuple t = t_in;
     do {
         collection.emplace_back(t);
@@ -166,7 +166,7 @@ void top_dimension_cofaces_tuples_edge(
     //}
 
 
-    assert(mesh.is_valid_with_hash(input));
+    assert(mesh.is_valid(input));
     Tuple t = input;
     do {
         collection.emplace_back(t);
@@ -288,7 +288,7 @@ void top_dimension_cofaces_tuples_vertex(
     const Tuple& t_in,
     SimplexCollection& collection)
 {
-    assert(mesh.is_valid_with_hash(t_in));
+    assert(mesh.is_valid(t_in));
     std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
     std::queue<Tuple> q;
     q.push(t_in);

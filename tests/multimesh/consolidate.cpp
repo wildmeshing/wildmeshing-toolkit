@@ -71,8 +71,8 @@ TEST_CASE("consolidate_multimesh", "[mesh][consolidate_multimesh]")
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 4));
 
-        REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(2)) == 0);
-        REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(7)) == 0);
+        REQUIRE(executor.flag_accessors[2].index_access().const_scalar_attribute(2) == 0);
+        REQUIRE(executor.flag_accessors[2].index_access().const_scalar_attribute(7) == 0);
         CHECK(fv_accessor.vector_attribute(0)[1] == 5);
         CHECK(fv_accessor.vector_attribute(1)[0] == 5);
         CHECK(fv_accessor.vector_attribute(3)[0] == 5);

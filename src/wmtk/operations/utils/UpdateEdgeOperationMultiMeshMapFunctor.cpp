@@ -453,10 +453,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
         const Tuple parent_tuple = parent_mesh.tuple_from_global_ids(f_parent, e_parent, v_parent);
         const Tuple child_tuple = child_mesh.tuple_from_global_ids(e_child, v_child);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-        assert(parent_mesh.is_valid_with_hash(parent_tuple));
-        assert(child_mesh.is_valid_with_hash(child_tuple));
-#endif
+        assert(parent_mesh.is_valid(parent_tuple));
+        assert(child_mesh.is_valid(child_tuple));
 
         wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
             parent_to_child_accessor,
@@ -560,8 +558,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
                     //  wmtk::utils::TupleInspector::as_string(child_tuple));
 
 
-                    assert(parent_mesh.is_valid_with_hash(parent_tuple));
-                    assert(child_mesh.is_valid_with_hash(child_tuple));
+                    assert(parent_mesh.is_valid(parent_tuple));
+                    assert(child_mesh.is_valid(child_tuple));
 
                     wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
                         parent_to_child_accessor,
@@ -655,8 +653,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
                 parent_mesh.tuple_from_global_ids(t_parent, f_parent, e_parent, v_parent);
             const Tuple child_tuple = child_mesh.tuple_from_global_ids(e_child, v_child);
 
-            assert(parent_mesh.is_valid_with_hash(parent_tuple));
-            assert(child_mesh.is_valid_with_hash(child_tuple));
+            assert(parent_mesh.is_valid(parent_tuple));
+            assert(child_mesh.is_valid(child_tuple));
 
             wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
                 parent_to_child_accessor,
@@ -739,8 +737,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
                 const Tuple child_tuple =
                     child_mesh.tuple_from_global_ids(f_child, e_child, v_child);
 
-                assert(parent_mesh.is_valid_with_hash(parent_tuple));
-                assert(child_mesh.is_valid_with_hash(child_tuple));
+                assert(parent_mesh.is_valid(parent_tuple));
+                assert(child_mesh.is_valid(child_tuple));
 
                 wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
                     parent_to_child_accessor,
@@ -813,8 +811,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
                 const Tuple child_tuple =
                     child_mesh.tuple_from_global_ids(t_child, f_child, e_child, v_child);
 
-                assert(parent_mesh.is_valid_with_hash(parent_tuple));
-                assert(child_mesh.is_valid_with_hash(child_tuple));
+                assert(parent_mesh.is_valid(parent_tuple));
+                assert(child_mesh.is_valid(child_tuple));
 
                 wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
                     parent_to_child_accessor,

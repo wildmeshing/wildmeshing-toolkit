@@ -159,11 +159,7 @@ Tuple TetMesh::vertex_tuple_from_id(int64_t id) const
 
     Tuple v_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
     assert(is_ccw(v_tuple));
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
-    assert(is_valid_with_hash(v_tuple));
-#else
     assert(is_valid(v_tuple));
-#endif
     return v_tuple;
 }
 
@@ -190,11 +186,7 @@ Tuple TetMesh::edge_tuple_from_id(int64_t id) const
 
     Tuple e_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
     assert(is_ccw(e_tuple));
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
-    assert(is_valid_with_hash(e_tuple, hash_accessor));
-#else
-    assert(is_valid(e_tuple, hash_accessor));
-#endif
+    assert(is_valid(e_tuple));
     return e_tuple;
 }
 
@@ -221,11 +213,7 @@ Tuple TetMesh::face_tuple_from_id(int64_t id) const
 
     Tuple f_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
     assert(is_ccw(f_tuple));
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
-    assert(is_valid_with_hash(f_tuple, hash_accessor));
-#else
-    assert(is_valid(f_tuple, hash_accessor));
-#endif
+    assert(is_valid(f_tuple));
     return f_tuple;
 }
 
@@ -239,11 +227,7 @@ Tuple TetMesh::tet_tuple_from_id(int64_t id) const
 
     Tuple t_tuple = Tuple(lvid, leid, lfid, id, get_cell_hash(id, hash_accessor));
     assert(is_ccw(t_tuple));
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
-    assert(is_valid_with_hash(t_tuple, hash_accessor));
-#else
     assert(is_valid(t_tuple));
-#endif
     return t_tuple;
 }
 
@@ -275,11 +259,7 @@ Tuple TetMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
 
 Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
-    assert(is_valid_with_hash(tuple));
-#else
     assert(is_valid(tuple));
-#endif
     switch (type) {
     // bool ccw = is_ccw(tuple);
     case PrimitiveType::Tetrahedron: {
@@ -331,7 +311,7 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         assert(lfid_new != -1);
 
         const Tuple res(lvid_new, leid_new, lfid_new, gcid_new, get_cell_hash_slow(gcid_new));
-        assert(is_valid_with_hash(res));
+        assert(is_valid(res));
         return res;
     }
     case PrimitiveType::Vertex:

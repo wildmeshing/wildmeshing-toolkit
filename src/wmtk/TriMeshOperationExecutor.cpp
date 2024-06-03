@@ -182,7 +182,7 @@ void TriMesh::TriMeshOperationExecutor::delete_simplices()
 
 void TriMesh::TriMeshOperationExecutor::update_cell_hash()
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE)// || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
     m_mesh.update_cell_hashes(cell_ids_to_update_hash, hash_accessor);
 #endif
 }
@@ -485,7 +485,7 @@ void TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
         m_mesh.tuple_from_global_ids(new_tuple_fid, split_spine_eids[1], split_new_vid);
     assert(m_mesh.id_vertex(m_output_tuple) == split_new_vid);
     assert(m_mesh.id_face(m_output_tuple) == new_tuple_fid);
-    assert(m_mesh.is_valid_with_hash(m_output_tuple, hash_accessor));
+    assert(m_mesh.is_valid(m_output_tuple));
 }
 
 
@@ -555,7 +555,7 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
         m_output_tuple = m_mesh.switch_face(m_output_tuple);
     }
     assert(m_mesh.id_face(m_output_tuple) == new_tuple_fid);
-    assert(m_mesh.is_valid_with_hash(m_output_tuple, hash_accessor));
+    assert(m_mesh.is_valid(m_output_tuple));
 
 
     // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear

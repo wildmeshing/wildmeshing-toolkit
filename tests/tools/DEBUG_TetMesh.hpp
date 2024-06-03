@@ -82,7 +82,9 @@ public:
 
     using TetMesh::tuple_from_id;
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
     attribute::Accessor<int64_t> get_cell_hash_accessor();
+#endif
 
     TetMeshOperationExecutor get_tmoe(const Tuple& t, attribute::Accessor<int64_t>& hash_accessor);
 

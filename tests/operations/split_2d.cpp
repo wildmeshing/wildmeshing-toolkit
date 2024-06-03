@@ -211,8 +211,10 @@ TEST_CASE("delete_simplices", "[operations][2D]")
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
     std::vector<std::vector<int64_t>> simplices_to_delete(3);
-    simplices_to_delete[1].emplace_back(m.id(edge, PE));
-    simplices_to_delete[2].emplace_back(m.id(edge, PF));
+    const int64_t edge_index = m.id(edge, PE);
+    const int64_t face_index = m.id(edge, PF);
+    simplices_to_delete[1].emplace_back(edge_index);
+    simplices_to_delete[2].emplace_back(face_index);
 
     wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
     auto executor = m.get_tmoe(edge, hash_accessor);
@@ -221,12 +223,12 @@ TEST_CASE("delete_simplices", "[operations][2D]")
     executor.simplex_ids_to_delete = TMOE::get_split_simplices_to_delete(edge, m);
 
     executor.delete_simplices();
-    REQUIRE(executor.flag_accessors[1].scalar_attribute(edge) == 0);
-    REQUIRE(executor.flag_accessors[2].scalar_attribute(edge) == 0);
-    REQUIRE(executor.ff_accessor.vector_attribute(edge)[0] == -1);
-    REQUIRE(executor.ff_accessor.vector_attribute(edge)[1] == 2);
-    REQUIRE(executor.ff_accessor.vector_attribute(edge)[2] == 1);
-    REQUIRE(executor.ef_accessor.scalar_attribute(edge) == 0);
+    REQUIRE(executor.flag_accessors[1].index_access().const_scalar_attribute(edge_index) == 0);
+    REQUIRE(executor.flag_accessors[2].index_access().const_scalar_attribute(face_index) == 0);
+    REQUIRE(executor.ff_accessor.index_access().const_vector_attribute(face_index)[0] == -1);
+    REQUIRE(executor.ff_accessor.index_access().const_vector_attribute(face_index)[1] == 2);
+    REQUIRE(executor.ff_accessor.index_access().const_vector_attribute(face_index)[2] == 1);
+    REQUIRE(executor.ef_accessor.index_access().const_scalar_attribute(edge_index) == 0);
 }
 
 TEST_CASE("operation_state", "[operations][2D]")
@@ -341,7 +343,7 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     REQUIRE(ff_accessor_after.vector_attribute(1)(2) == 3);
 }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 TEST_CASE("hash_update", "[operations][2D]")
 {
     SECTION("single_triangle")
