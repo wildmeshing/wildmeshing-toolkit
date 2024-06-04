@@ -61,7 +61,7 @@ bool Mesh::is_boundary(const simplex::Simplex& s) const
 }
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 bool Mesh::is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
     const
 {
@@ -129,7 +129,7 @@ attribute::Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
     return create_accessor(m_flag_handles.at(get_primitive_type_id(type)));
 }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 const attribute::Accessor<int64_t> Mesh::get_const_cell_hash_accessor() const
 {
     return create_const_accessor(m_cell_hash_handle);
@@ -187,7 +187,7 @@ void Mesh::update_cell_hashes_slow(const std::vector<Tuple>& cells)
 Tuple Mesh::resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
     const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 
     Tuple t = tuple;
     t.m_hash = get_cell_hash(tuple.m_global_cid, hash_accessor);
@@ -199,7 +199,7 @@ Tuple Mesh::resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_
 
 Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple) const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     attribute::Accessor<int64_t> hash_accessor = get_cell_hash_accessor();
     return resurrect_tuple(tuple, hash_accessor);
 #else
@@ -207,7 +207,7 @@ Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple) const
 #endif
 }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 int64_t Mesh::get_cell_hash(int64_t cell_index, const attribute::Accessor<int64_t>& hash_accessor)
     const
 {

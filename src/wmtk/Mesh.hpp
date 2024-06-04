@@ -272,7 +272,7 @@ public:
 
     const attribute::Accessor<char> get_flag_accessor(PrimitiveType type) const;
     const attribute::Accessor<char> get_const_flag_accessor(PrimitiveType type) const;
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     const attribute::Accessor<int64_t> get_cell_hash_accessor() const;
     const attribute::Accessor<int64_t> get_const_cell_hash_accessor() const;
 
@@ -293,7 +293,7 @@ public:
 
 protected: // member functions
     attribute::Accessor<char> get_flag_accessor(PrimitiveType type);
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     attribute::Accessor<int64_t> get_cell_hash_accessor();
 
     /**

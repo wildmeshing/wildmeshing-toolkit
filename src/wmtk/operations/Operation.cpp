@@ -63,7 +63,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
         return {};
     }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) ||  defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     const auto simplex_resurrect =
         simplex::Simplex(mesh(), simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
 #else
@@ -99,7 +99,7 @@ bool Operation::before(const simplex::Simplex& simplex) const
         return false;
     }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) ||  defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     const auto simplex_resurrect =
         simplex::Simplex(mesh(), simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
 #else

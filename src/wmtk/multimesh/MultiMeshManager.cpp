@@ -765,7 +765,9 @@ void MultiMeshManager::update_map_tuple_hashes(
 
     const PrimitiveType parent_primitive_type = my_mesh.top_simplex_type();
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     auto parent_hash_accessor = my_mesh.get_const_cell_hash_accessor();
+#endif
     auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
     // auto& update_tuple = [&](const auto& flag_accessor, Tuple& t) -> bool {
     //     if(acc.index_access().
@@ -788,7 +790,9 @@ void MultiMeshManager::update_map_tuple_hashes(
         auto& [parent_to_child_accessor, child_to_parent_accessor] = maps;
 
         auto child_flag_accessor = child_mesh.get_const_flag_accessor(primitive_type);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         auto child_hash_accessor = child_mesh.get_const_cell_hash_accessor();
+#endif
 
 
         std::vector<bool> is_gid_visited(my_mesh.capacity(primitive_type), false);
@@ -826,10 +830,12 @@ void MultiMeshManager::update_map_tuple_hashes(
                 continue;
             }
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
             // navigate parent_original_sharer -> parent_tuple
             // then take parent_new_sharer -> parent_tuple
             parent_tuple = my_mesh.resurrect_tuple(parent_tuple, parent_hash_accessor);
             child_tuple = child_mesh.resurrect_tuple(child_tuple, child_hash_accessor);
+#endif
 
             // check if the map is handled in the ear case
 #if defined(WMTK_ENABLE_HASH_UPDATE) // optimization if hash is available
@@ -849,9 +855,11 @@ void MultiMeshManager::update_map_tuple_hashes(
                 continue;
             }
             std::vector<Tuple> equivalent_parent_tuples_good_hash = equivalent_parent_tuples;
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
             for (Tuple& t : equivalent_parent_tuples_good_hash) {
                 t = my_mesh.resurrect_tuple(t, parent_hash_accessor);
             }
+#endif
 
             // Find a valid representation of this simplex representation of the original tupl
             Tuple old_tuple;

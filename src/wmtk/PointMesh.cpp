@@ -3,7 +3,11 @@
 namespace wmtk {
 Tuple PointMesh::vertex_tuple_from_id(int64_t id) const
 {
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     return Tuple(-1, -1, -1, id, get_cell_hash_slow(id));
+#else
+    return Tuple(-1, -1, -1, id);
+#endif
 }
 
 PointMesh::PointMesh()
