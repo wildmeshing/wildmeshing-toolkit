@@ -3,15 +3,23 @@
 
 namespace wmtk {
 // constructor
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
     EdgeMesh& m,
     const Tuple& operating_tuple,
     attribute::Accessor<int64_t>& hash_acc)
+#else
+EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
+    EdgeMesh& m,
+    const Tuple& operating_tuple)
+#endif
     : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge)}}
     , ee_accessor(m.create_accessor<int64_t>(m.m_ee_handle))
     , ev_accessor(m.create_accessor<int64_t>(m.m_ev_handle))
     , ve_accessor(m.create_accessor<int64_t>(m.m_ve_handle))
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     , hash_accessor(hash_acc)
+#endif
     , m_mesh(m)
 {
     m_operating_tuple = operating_tuple;

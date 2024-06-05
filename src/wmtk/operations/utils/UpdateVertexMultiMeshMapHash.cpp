@@ -9,6 +9,7 @@
 #include <wmtk/simplex/closed_star.hpp>
 
 namespace wmtk::operations::utils {
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 void update_vertex_operation_hashes(
     Mesh& m,
     const Tuple& vertex,
@@ -98,4 +99,5 @@ void update_vertex_operation_multimesh_map_hash(
     }
 }
 
+#endif
 } // namespace wmtk::operations::utils

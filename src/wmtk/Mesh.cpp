@@ -266,12 +266,14 @@ Tuple Mesh::switch_tuples_unsafe(
 }
 
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 void Mesh::update_vertex_operation_hashes(
     const Tuple& vertex,
     attribute::Accessor<int64_t>& hash_accessor)
 {
     MultiMeshManager::update_vertex_operation_hashes_internal(*this, vertex, hash_accessor);
 }
+#endif
 
 void Mesh::assert_capacity_valid() const
 {

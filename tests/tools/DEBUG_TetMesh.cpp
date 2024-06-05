@@ -272,18 +272,25 @@ void DEBUG_TetMesh::reserve_attributes(PrimitiveType type, int64_t size)
 }
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) || defined(WMTK_ENABLE_MTAO_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 attribute::Accessor<int64_t> DEBUG_TetMesh::get_cell_hash_accessor()
 {
     return TetMesh::get_cell_hash_accessor();
 }
-#endif
 
 auto DEBUG_TetMesh::get_tmoe(const Tuple& t, wmtk::attribute::Accessor<int64_t>& hash_accessor)
     -> TetMeshOperationExecutor
 {
     return TetMeshOperationExecutor(*this, t, hash_accessor);
 }
+#else
+
+auto DEBUG_TetMesh::get_tmoe(const Tuple& t)
+    -> TetMeshOperationExecutor
+{
+    return TetMeshOperationExecutor(*this, t);
+}
+#endif
 
 int64_t DEBUG_TetMesh::valid_primitive_count(PrimitiveType type) const
 {

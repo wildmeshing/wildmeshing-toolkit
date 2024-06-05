@@ -25,12 +25,15 @@ constexpr PrimitiveType PE = PrimitiveType::Edge;
 void test_split(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
 {
     using namespace operations;
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     auto old_hash = m.hash();
+#endif
 
 
     EdgeSplit op(m);
     bool result = !op(Simplex::edge(m, e)).empty(); // should run the split
     REQUIRE(should_succeed == result);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     auto updated_hash = m.hash();
     if (should_succeed) { // try to run again to make sure we cant do an op twice
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
@@ -41,6 +44,7 @@ void test_split(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
     } else {
         CHECK(old_hash == m.hash()); // check that a failed op returns to original state
     }
+#endif
 }
 void test_split(DEBUG_TriMesh& mesh, int64_t edge_index, bool should_succeed)
 {
@@ -55,15 +59,20 @@ void test_collapse(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
 {
     using namespace operations;
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     auto old_hash = m.hash();
+#endif
     EdgeCollapse op(m);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+#endif
 
 
     bool result = !op(Simplex::edge(m, e)).empty(); // should run the split
     REQUIRE(m.is_connectivity_valid());
     REQUIRE(should_succeed == result);
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     auto updated_hash = m.hash();
     if (should_succeed) { // try to run again to make sure we cant do an op twice
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
@@ -74,6 +83,7 @@ void test_collapse(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
     } else {
         CHECK(old_hash == m.hash()); // check that a failed op returns to original state
     }
+#endif
 }
 void test_collapse(DEBUG_TriMesh& mesh, int64_t edge_index, bool should_succeed)
 {

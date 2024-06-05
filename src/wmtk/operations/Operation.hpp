@@ -84,6 +84,7 @@ protected:
         const std::vector<simplex::Simplex>& unmods,
         const std::vector<simplex::Simplex>& mods) const;
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     /// @brief utility for subclasses
     /// @param tuple
     Tuple resurrect_tuple(const Tuple& tuple) const;
@@ -92,6 +93,7 @@ protected:
     attribute::Accessor<int64_t> hash_accessor();
     /// @brief utility for subclasses
     const attribute::Accessor<int64_t> hash_accessor() const;
+#endif
 
 
     void apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods);

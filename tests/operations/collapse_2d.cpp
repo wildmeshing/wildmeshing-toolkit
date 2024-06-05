@@ -29,9 +29,6 @@ using namespace operations;
 
 using TM = TriMesh;
 using MapResult = typename Eigen::Matrix<int64_t, Eigen::Dynamic, 1>::MapType;
-using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
-    wmtk::Tuple(),
-    std::declval<attribute::Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -51,7 +48,6 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     SECTION("interior_edge")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeCollapse collapse(m);
         collapse(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
@@ -72,7 +68,6 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     SECTION("edge_to_boundary")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 0, 0);
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeCollapse collapse(m);
         collapse(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
@@ -113,7 +108,6 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     SECTION("boundary_edge")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         op(Simplex::edge(m, edge));
@@ -153,7 +147,6 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
 {
     DEBUG_TriMesh m = edge_region();
-    wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
     SECTION("interior")
     {
         REQUIRE(m.is_connectivity_valid());
@@ -165,7 +158,11 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         REQUIRE(m.is_valid_with_hash(ret));
+#else
+        REQUIRE(m.is_valid(ret));
+#endif
         REQUIRE(m.is_connectivity_valid());
         // CHECK(op.is_return_tuple_from_left_ear() == false);
 

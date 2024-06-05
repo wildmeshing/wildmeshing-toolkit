@@ -90,17 +90,25 @@ auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> Incid
 }
 
 // constructor
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     TriMesh& m,
     const Tuple& operating_tuple,
     attribute::Accessor<int64_t>& hash_acc)
+#else
+TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
+    TriMesh& m,
+    const Tuple& operating_tuple)
+#endif
     : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Triangle)}}
     , ff_accessor(m.create_accessor<int64_t>(m.m_ff_handle))
     , fe_accessor(m.create_accessor<int64_t>(m.m_fe_handle))
     , fv_accessor(m.create_accessor<int64_t>(m.m_fv_handle))
     , vf_accessor(m.create_accessor<int64_t>(m.m_vf_handle))
     , ef_accessor(m.create_accessor<int64_t>(m.m_ef_handle))
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     , hash_accessor(hash_acc)
+#endif
     , m_mesh(m)
 
 {

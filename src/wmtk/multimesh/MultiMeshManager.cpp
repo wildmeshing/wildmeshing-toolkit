@@ -901,7 +901,9 @@ void MultiMeshManager::update_map_tuple_hashes(
                 my_mesh.top_simplex_type(),
                 new_parent_tuple_shared,
                 my_mesh.top_simplex_type());
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
             parent_tuple = my_mesh.resurrect_tuple(parent_tuple, parent_hash_accessor);
+#endif
             assert(my_mesh.is_valid(parent_tuple));
             assert(child_mesh.is_valid(child_tuple));
 
@@ -983,6 +985,7 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_split(
 
         const Tuple& old_cid_tuple = old_tuple_opt.value();
         for (const int64_t new_cid : new_cids) {
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
             // try seeing if we get the right gid by shoving in the new face id
             Tuple tuple(
                 old_cid_tuple.m_local_vid,
@@ -990,6 +993,13 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_split(
                 old_cid_tuple.m_local_fid,
                 new_cid,
                 my_mesh.get_cell_hash_slow(new_cid));
+#else
+            Tuple tuple(
+                old_cid_tuple.m_local_vid,
+                old_cid_tuple.m_local_eid,
+                old_cid_tuple.m_local_fid,
+                new_cid);
+#endif
 
 
             if (my_mesh.is_valid(tuple) && !my_mesh.is_removed(tuple) &&
@@ -1064,6 +1074,7 @@ int64_t MultiMeshManager::parent_local_fid(
 }
 
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 void MultiMeshManager::update_vertex_operation_hashes_internal(
     Mesh& m,
     const Tuple& vertex,
@@ -1110,6 +1121,7 @@ void MultiMeshManager::update_vertex_operation_hashes_internal(
     }
 
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     m.update_cell_hashes(tuples_to_update, hash_accessor);
 
     // need to get a star with new hash, otherwise cannot get_simplices()
@@ -1117,8 +1129,11 @@ void MultiMeshManager::update_vertex_operation_hashes_internal(
     const simplex::SimplexCollection star_new_hash =
         simplex::closed_star(m, simplex::Simplex::vertex(m, vertex_new_hash));
     update_vertex_operation_multimesh_map_hash_internal(m, star_new_hash, hash_accessor);
+#endif
 }
+#endif
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 void MultiMeshManager::update_vertex_operation_multimesh_map_hash_internal(
     Mesh& m,
     const simplex::SimplexCollection& vertex_closed_star,
@@ -1152,6 +1167,7 @@ void MultiMeshManager::update_vertex_operation_multimesh_map_hash_internal(
         }
     }
 }
+#endif
 
 // remove after bug fix
 void MultiMeshManager::check_map_valid(const Mesh& my_mesh) const

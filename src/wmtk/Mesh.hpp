@@ -122,6 +122,7 @@ public:
     friend class operations::EdgeSplit;
     friend class operations::EdgeOperationData;
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
         const simplex::SimplexCollection& vertex_closed_star,
@@ -131,6 +132,7 @@ public:
         Mesh& m,
         const Tuple& vertex,
         attribute::Accessor<int64_t>& hash_accessor);
+#endif
 
 
     int64_t top_cell_dimension() const;
