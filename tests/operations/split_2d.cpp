@@ -802,7 +802,11 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     REQUIRE(m.is_valid_with_hash(edge3));
+#else
+    REQUIRE(m.is_valid(edge3));
+#endif
     split(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 

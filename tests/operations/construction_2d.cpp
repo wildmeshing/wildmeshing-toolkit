@@ -63,9 +63,7 @@ void test_collapse(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
     auto old_hash = m.hash();
 #endif
     EdgeCollapse op(m);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
     op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-#endif
 
 
     bool result = !op(Simplex::edge(m, e)).empty(); // should run the split

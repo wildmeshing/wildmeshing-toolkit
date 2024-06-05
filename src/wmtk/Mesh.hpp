@@ -491,10 +491,12 @@ public:
      * @return false
      */
     virtual bool is_valid(const Tuple& tuple) const;
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     bool is_valid_with_hash(const Tuple& tuple) const;
     bool is_valid_with_hash(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const;
+#endif
 
-    virtual bool is_removed(const Tuple& tuple) const;
+    bool is_removed(const Tuple& tuple) const;
 
 
     //============================

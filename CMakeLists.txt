@@ -144,10 +144,6 @@ if(WMTK_ENABLE_HASH_UPDATE)
     target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_HASH_UPDATE)
 endif()
 
-option(WMTK_ENABLE_MTAO_HASH_UPDATE "Enable hash update" ON)
-if(WMTK_ENABLE_MTAO_HASH_UPDATE)
-    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_MTAO_HASH_UPDATE)
-endif()
 
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC

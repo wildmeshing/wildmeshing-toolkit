@@ -37,7 +37,11 @@ TEST_CASE("2D_initialize", "[mesh_creation],[tuple_2d]")
     REQUIRE(m.is_connectivity_valid());
 
     const Tuple t = m.get_all(PrimitiveType::Triangle)[0];
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     REQUIRE(m.is_valid_with_hash(t));
+#else
+    REQUIRE(m.is_valid(t));
+#endif
 }
 
 TEST_CASE("2D_1_triangle", "[tuple_generation],[tuple_2d]")
@@ -133,7 +137,11 @@ TEST_CASE("2D_random_switches", "[tuple_operation],[tuple_2d]")
                     break;
                 default: break;
                 }
+#if defined(WMTK_ENABLE_HASH_UPDATE)
                 CHECK(m.is_valid_with_hash(t));
+#else
+                CHECK(m.is_valid(t));
+#endif
             }
         }
     }
@@ -154,7 +162,11 @@ TEST_CASE("2D_random_switches", "[tuple_operation],[tuple_2d]")
                     break;
                 default: break;
                 }
+#if defined(WMTK_ENABLE_HASH_UPDATE)
                 CHECK(m.is_valid_with_hash(t));
+#else
+                CHECK(m.is_valid(t));
+#endif
             }
         }
     }
@@ -175,7 +187,11 @@ TEST_CASE("2D_random_switches", "[tuple_operation],[tuple_2d]")
                     break;
                 default: break;
                 }
+#if defined(WMTK_ENABLE_HASH_UPDATE)
                 CHECK(m.is_valid_with_hash(t));
+#else
+                CHECK(m.is_valid(t));
+#endif
             }
         }
     }
