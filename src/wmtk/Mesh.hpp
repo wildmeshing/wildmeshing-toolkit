@@ -477,6 +477,40 @@ public:
      */
     virtual bool is_boundary(PrimitiveType, const Tuple& tuple) const = 0;
 
+    /**
+     * @brief check if a simplex lies on a boundary or not
+     *
+     * @param simplex
+     * @return true if this simplex lies on the boundary of the mesh
+     * @return false otherwise
+     */
+    bool is_nonmanifold(const simplex::Simplex& tuple) const;
+    /**
+     * @brief check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not
+     *
+     * @param simplex
+     * @return true if this simplex lies on the boundary of the mesh
+     * @return false otherwise
+     */
+    virtual bool is_nonmanifold(PrimitiveType, const Tuple& tuple) const = 0;
+
+    /**
+     * @brief check if a simplex lies on a boundary or not
+     *
+     * @param simplex
+     * @return true if this simplex lies on the boundary of the mesh
+     * @return false otherwise
+     */
+    bool is_navigatable(const simplex::Simplex& tuple) const;
+    /**
+     * @brief check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not
+     *
+     * @param simplex
+     * @return true if this simplex lies on the boundary of the mesh
+     * @return false otherwise
+     */
+    bool is_navigatable(PrimitiveType, const Tuple& tuple) const;
+
 
     bool is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const;
     bool is_hash_valid(const Tuple& tuple) const;
