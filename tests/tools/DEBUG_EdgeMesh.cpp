@@ -65,7 +65,11 @@ auto DEBUG_EdgeMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) co
             }
         }
         if (local_vid1 != -1 && local_vid2 != -1) {
+#if defined(WMTK_ENABLE_HASH_UPDATE)
             return Tuple(local_vid1, -1, -1, eid, get_cell_hash_slow(eid));
+#else
+            return Tuple(local_vid1, -1, -1, eid);
+#endif
         }
     }
     return Tuple();
@@ -104,6 +108,7 @@ void DEBUG_EdgeMesh::reserve_attributes(PrimitiveType type, int64_t size)
 }
 
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 attribute::Accessor<int64_t> DEBUG_EdgeMesh::get_cell_hash_accessor()
 {
     return EdgeMesh::get_cell_hash_accessor();
@@ -116,6 +121,13 @@ auto DEBUG_EdgeMesh::get_emoe(const Tuple& t, wmtk::attribute::Accessor<int64_t>
 {
     return EdgeMeshOperationExecutor(*this, t, hash_accessor);
 }
+#else
+auto DEBUG_EdgeMesh::get_emoe(const Tuple& t)
+    -> EdgeMeshOperationExecutor
+{
+    return EdgeMeshOperationExecutor(*this, t);
+}
+#endif
 
 bool DEBUG_EdgeMesh::is_simplex_deleted(PrimitiveType type, const int64_t id) const
 {

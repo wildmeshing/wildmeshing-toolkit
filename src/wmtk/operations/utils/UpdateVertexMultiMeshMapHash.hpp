@@ -22,11 +22,13 @@ class SimplexCollection;
 
 namespace wmtk::operations::utils {
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 void update_vertex_operation_hashes(Mesh& m, const Tuple& vertex, attribute::Accessor<int64_t>& hash_accessor);
 
 void update_vertex_operation_multimesh_map_hash(
     Mesh& m,
     const simplex::SimplexCollection& vertex_closed_star,
     attribute::Accessor<int64_t>& parent_hash_accessor);
+#endif
 
 } // namespace wmtk::operations::utils

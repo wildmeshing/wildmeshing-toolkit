@@ -139,10 +139,11 @@ if(WMTK_ENABLE_TRANSACTION_STACK)
     target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_TRANSACTION_STACK)
 endif()
 
-option(WMTK_ENABLE_HASH_UPDATE "Enable hash update" ON)
+option(WMTK_ENABLE_HASH_UPDATE "Enable hash update" OFF)
 if(WMTK_ENABLE_HASH_UPDATE)
-    target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_ENABLE_HASH_UPDATE)
+    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_HASH_UPDATE)
 endif()
+
 
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC

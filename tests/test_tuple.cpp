@@ -59,7 +59,11 @@ TEST_CASE("tuple_comparison", "[tuple]")
 {
     Tuple a(0, 0, 0, 0, 1);
     Tuple b(0, 0, 0, 0, 0);
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     CHECK(a != b);
+#else
+    CHECK(a == b);
+#endif
     CHECK(a.same_ids(b));
 }
 }

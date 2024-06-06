@@ -23,7 +23,7 @@ bool VertexTangentialLaplacianSmooth::operator()(Mesh& mesh, const simplex::Simp
     const Tuple tup = simplex.tuple();
 
 
-    assert(mesh.is_valid_slow(tup));
+    assert(mesh.is_valid(tup));
     const Eigen::Vector3d g = accessor.vector_attribute(tup); // center of gravity
 
     if (mesh.is_boundary(PrimitiveType::Vertex, tup)) {

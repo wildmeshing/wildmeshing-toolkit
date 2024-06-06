@@ -28,9 +28,6 @@ using namespace operations;
 
 using TM = TriMesh;
 using MapResult = typename Eigen::Matrix<int64_t, Eigen::Dynamic, 1>::MapType;
-using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
-    wmtk::Tuple(),
-    std::declval<attribute::Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;

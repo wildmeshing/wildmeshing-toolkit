@@ -208,7 +208,7 @@ TEST_CASE("3D_tuple_iterator", "[tuple_3d][.]")
     //             for (auto ei = e + 1; ei < mesh.tet_capacity() * 6; ei++) {
     //                auto t = ei / 6, j = ei % 6;
     //                auto tup = mesh.tuple_from_edge(t, j);
-    //                if (tup.is_valid(mesh) && tup.eid(mesh) == ei) {
+    //                if (tup.is_valid_with_hash(mesh) && tup.eid(mesh) == ei) {
     //                    m_tuple = tup;
     //                    return *this;
     //                };
@@ -232,7 +232,7 @@ TEST_CASE("3D_tuple_iterator", "[tuple_3d][.]")
     //    {
     //        for (auto i = 0; i < vert_capacity(); i++) {
     //            auto tup = tuple_from_vertex(i);
-    //            if (tup.is_valid(*this)) return EdgeIterator(*this, tup);
+    //            if (tup.is_valid_with_hash(*this)) return EdgeIterator(*this, tup);
     //        }
     //        return EdgeIterator(*this, Tuple());
     //    };

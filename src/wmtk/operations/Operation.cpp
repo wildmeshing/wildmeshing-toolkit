@@ -63,7 +63,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
         return {};
     }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     const auto simplex_resurrect =
         simplex::Simplex(mesh(), simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
 #else
@@ -99,7 +99,7 @@ bool Operation::before(const simplex::Simplex& simplex) const
         return false;
     }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     const auto simplex_resurrect =
         simplex::Simplex(mesh(), simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
 #else
@@ -169,6 +169,7 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
     }
 }
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 Tuple Operation::resurrect_tuple(const Tuple& tuple) const
 {
     return mesh().resurrect_tuple(tuple, hash_accessor());
@@ -183,6 +184,7 @@ const attribute::Accessor<int64_t> Operation::hash_accessor() const
 {
     return m_mesh.get_const_cell_hash_accessor();
 }
+#endif
 
 
 void Operation::reserve_enough_simplices()

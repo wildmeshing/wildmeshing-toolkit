@@ -3,7 +3,11 @@
 namespace wmtk {
 Tuple PointMesh::vertex_tuple_from_id(int64_t id) const
 {
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     return Tuple(-1, -1, -1, id, get_cell_hash_slow(id));
+#else
+    return Tuple(-1, -1, -1, id);
+#endif
 }
 
 PointMesh::PointMesh()
@@ -58,16 +62,12 @@ void PointMesh::initialize(int64_t count)
 }
 
 
-bool PointMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
-    const
+bool PointMesh::is_valid(const Tuple& tuple) const
 {
-    if (tuple.is_null()) return false;
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    return Mesh::is_hash_valid(tuple, hash_accessor);
-#else
-    const auto& flag_accessor = get_const_flag_accessor(PrimitiveType::Vertex);
-    return flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1;
-#endif
+    if (!Mesh::is_valid(tuple)) {
+        return false;
+    }
+    return true;
 }
 
 

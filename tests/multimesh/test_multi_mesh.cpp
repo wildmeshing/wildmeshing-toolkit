@@ -3,8 +3,8 @@
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
-#include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/multimesh/utils/check_map_valid.hpp>
+#include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include "../tools/DEBUG_EdgeMesh.hpp"
@@ -18,9 +18,7 @@ using namespace wmtk::tests;
 using namespace wmtk::simplex;
 
 using TM = TriMesh;
-using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
-    wmtk::Tuple(),
-    std::declval<wmtk::attribute::Accessor<int64_t>&>()));
+
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -38,8 +36,8 @@ void print_tuple_map(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManager& 
         PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
         auto parent_to_child_accessor = parent.create_const_accessor(child_data.map_handle);
         for (int64_t parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
-            auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
-                parent.tuple_from_id(map_ptype, parent_gid));
+            auto parent_to_child_data =
+                parent_to_child_accessor.index_access().const_vector_attribute(parent_gid);
             auto [parent_tuple, child_tuple] =
                 wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
             std::cout << "parent gid = " << parent_gid << std::endl;
@@ -852,7 +850,11 @@ TEST_CASE("test_split_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     // Do another edge_split
     {
         Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 3);
-        REQUIRE(parent.is_valid_slow(edge));
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
         operations::EdgeSplit op(parent);
         REQUIRE(!op(Simplex::edge(parent, edge)).empty());
     }
@@ -988,7 +990,11 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             std::vector<simplex::Simplex> children = parent.map_to_child(child0, edge_simplex);
             REQUIRE(children.size() == 1);
             const Simplex& cs = children[0];
-            REQUIRE(child0.is_valid_slow(cs.tuple()));
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+            REQUIRE(child0.is_valid_with_hash(cs.tuple()));
+#else
+            REQUIRE(child0.is_valid(cs.tuple()));
+#endif
             REQUIRE(cs == edge_f0_simplex);
         }
 
@@ -1004,7 +1010,11 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             std::vector<simplex::Simplex> children = parent.map_to_child(child1, edge_simplex);
             REQUIRE(children.size() == 1);
             const Simplex& cs = children[0];
-            REQUIRE(child1.is_valid_slow(cs.tuple()));
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+            REQUIRE(child1.is_valid_with_hash(cs.tuple()));
+#else
+            REQUIRE(child1.is_valid(cs.tuple()));
+#endif
             REQUIRE(cs == edge_simplex);
         }
 
@@ -1033,9 +1043,14 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             std::cout << std::string(DEBUG_Tuple(edge_f0_simplex.tuple())) << " "
                       << std::string(DEBUG_Tuple(edge_simplex.tuple())) << std::endl;
 
-            REQUIRE(child2.is_valid_slow(cs0.tuple()));
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+            REQUIRE(child2.is_valid_with_hash(cs0.tuple()));
+            REQUIRE(child2.is_valid_with_hash(cs1.tuple()));
+#else
+            REQUIRE(child2.is_valid(cs0.tuple()));
+            REQUIRE(child2.is_valid(cs1.tuple()));
+#endif
             REQUIRE(cs0 == edge_f0_simplex);
-            REQUIRE(child2.is_valid_slow(cs1.tuple()));
             REQUIRE(cs1.tuple() == edge_simplex.tuple());
             REQUIRE(cs1.primitive_type() == edge_simplex.primitive_type());
         }

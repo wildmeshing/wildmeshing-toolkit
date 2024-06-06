@@ -19,9 +19,6 @@ using namespace wmtk::operations;
 
 using EM = EdgeMesh;
 using MapResult = typename Eigen::Matrix<int64_t, Eigen::Dynamic, 1>::MapType;
-using EMOE = decltype(std::declval<DEBUG_EdgeMesh>().get_emoe(
-    wmtk::Tuple(),
-    std::declval<wmtk::attribute::Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -35,10 +32,15 @@ TEST_CASE("simplices_to_delete_for_split_1D", "[operations][1D]")
 
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid(edge, hash_accessor));
+        REQUIRE(m.is_valid(edge));
 
+
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_emoe(edge, hash_accessor);
+#else
+        auto executor = m.get_emoe(edge);
+#endif
 
         executor.split_edge();
         REQUIRE(m.is_connectivity_valid());
@@ -55,10 +57,14 @@ TEST_CASE("simplices_to_delete_for_split_1D", "[operations][1D]")
 
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid(edge, hash_accessor));
+        REQUIRE(m.is_valid(edge));
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_emoe(edge, hash_accessor);
+#else
+        auto executor = m.get_emoe(edge);
+#endif
 
         executor.split_edge();
         REQUIRE(m.is_connectivity_valid());
@@ -78,9 +84,13 @@ TEST_CASE("simplices_to_delete_for_collapse_1D", "[operations][1D]")
 
         const int64_t edge_id = 2;
         Tuple edge = m.tuple_from_edge_id(edge_id);
+        REQUIRE(m.is_valid(edge));
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid(edge, hash_accessor));
         auto executor = m.get_emoe(edge, hash_accessor);
+#else
+        auto executor = m.get_emoe(edge);
+#endif
 
         executor.collapse_edge();
         // REQUIRE(m.is_connectivity_valid());
@@ -98,9 +108,13 @@ TEST_CASE("simplices_to_delete_for_collapse_1D", "[operations][1D]")
 
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
+        REQUIRE(m.is_valid(edge));
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid(edge, hash_accessor));
         auto executor = m.get_emoe(edge, hash_accessor);
+#else
+        auto executor = m.get_emoe(edge);
+#endif
 
         executor.collapse_edge();
         const auto& ids_to_delete = executor.simplex_ids_to_delete;
@@ -122,8 +136,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         const int64_t edge_id = 2;
         Tuple edge = m.tuple_from_edge_id(edge_id);
 
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid(edge, hash_accessor));
+        REQUIRE(m.is_valid(edge));
         const int64_t vertex_id = m.id(edge, PV);
 
         EdgeCollapse collapse(m);
@@ -158,8 +171,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
 
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid(edge, hash_accessor));
+        REQUIRE(m.is_valid(edge));
 
 
         EdgeCollapse collapse(m);
@@ -177,8 +189,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
 
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid(edge, hash_accessor));
+        REQUIRE(m.is_valid(edge));
 
 
         EdgeCollapse collapse(m);
@@ -197,8 +208,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
         const int64_t vertex_id = m.id(edge, PV);
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid(edge, hash_accessor));
+        REQUIRE(m.is_valid(edge));
 
         EdgeCollapse collapse(m);
         auto res = collapse(Simplex::edge(m, edge));
@@ -234,8 +244,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         Tuple edge = m.tuple_from_edge_id(edge_id);
         const int64_t vertex_id = m.id(edge, PV);
 
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid(edge, hash_accessor));
+        REQUIRE(m.is_valid(edge));
 
         EdgeCollapse collapse(m);
         auto res = collapse(Simplex::edge(m, edge));
@@ -274,8 +283,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         const int64_t edge_id = 2;
         Tuple edge = m.tuple_from_edge_id(edge_id);
 
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid(edge, hash_accessor));
+        REQUIRE(m.is_valid(edge));
         const int64_t vertex_id = m.id(edge, PV);
 
         EdgeSplit split(m);
@@ -320,8 +328,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
         const int64_t vertex_id = m.id(edge, PV);
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid(edge, hash_accessor));
+        REQUIRE(m.is_valid(edge));
 
         EdgeSplit split(m);
         auto res = split(Simplex::edge(m, edge));
@@ -363,8 +370,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
         const int64_t vertex_id = m.id(edge, PV);
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid(edge, hash_accessor));
+        REQUIRE(m.is_valid(edge));
 
         EdgeSplit split(m);
         auto res = split(Simplex::edge(m, edge));
@@ -405,8 +411,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
         const int64_t vertex_id = m.id(edge, PV);
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid(edge, hash_accessor));
+        REQUIRE(m.is_valid(edge));
 
         EdgeSplit split(m);
         auto res = split(Simplex::edge(m, edge));
@@ -450,8 +455,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
         const int64_t vertex_id = m.id(edge, PV);
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        REQUIRE(m.is_valid(edge, hash_accessor));
+        REQUIRE(m.is_valid(edge));
 
         EdgeSplit split(m);
         auto res = split(Simplex::edge(m, edge));
