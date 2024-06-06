@@ -139,18 +139,18 @@ $(document).ready(function(){initNavTree('_update_vertex_multi_mesh_map_hash_8hp
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1operations_1_1utils.html">wmtk::operations::utils</a> {</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1operations_1_1utils.html#a62fab811bf86bb7a2702f63304574002">update_vertex_operation_hashes</a>(Mesh&amp; m, <span class="keyword">const</span> Tuple&amp; vertex, attribute::Accessor&lt;int64_t&gt;&amp; hash_accessor);</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1operations_1_1utils.html#a45a56d2f7cd5b33c464cfe0779be372a">update_vertex_operation_multimesh_map_hash</a>(</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    Mesh&amp; m,</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="keyword">const</span> simplex::SimplexCollection&amp; vertex_closed_star,</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    attribute::Accessor&lt;int64_t&gt;&amp; parent_hash_accessor);</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;} <span class="comment">// namespace wmtk::operations::utils</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLE_HASH_UPDATE) </span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keywordtype">void</span> update_vertex_operation_hashes(Mesh&amp; m, <span class="keyword">const</span> Tuple&amp; vertex, attribute::Accessor&lt;int64_t&gt;&amp; hash_accessor);</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keywordtype">void</span> update_vertex_operation_multimesh_map_hash(</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    Mesh&amp; m,</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keyword">const</span> simplex::SimplexCollection&amp; vertex_closed_star,</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    attribute::Accessor&lt;int64_t&gt;&amp; parent_hash_accessor);</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;} <span class="comment">// namespace wmtk::operations::utils</span></div>
 <div class="ttc" id="a_accessor_8hpp_html"><div class="ttname"><a href="_accessor_8hpp.html">Accessor.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1operations_1_1utils_html"><div class="ttname"><a href="namespacewmtk_1_1operations_1_1utils.html">wmtk::operations::utils</a></div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_8hpp_source.html#l00010">EdgeMesh.hpp:10</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1operations_1_1utils_html_a45a56d2f7cd5b33c464cfe0779be372a"><div class="ttname"><a href="namespacewmtk_1_1operations_1_1utils.html#a45a56d2f7cd5b33c464cfe0779be372a">wmtk::operations::utils::update_vertex_operation_multimesh_map_hash</a></div><div class="ttdeci">void update_vertex_operation_multimesh_map_hash(Mesh &amp;m, const simplex::SimplexCollection &amp;vertex_closed_star, attribute::Accessor&lt; int64_t &gt; &amp;parent_hash_accessor)</div><div class="ttdef"><b>Definition:</b> <a href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00067">UpdateVertexMultiMeshMapHash.cpp:67</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1operations_1_1utils_html_a62fab811bf86bb7a2702f63304574002"><div class="ttname"><a href="namespacewmtk_1_1operations_1_1utils.html#a62fab811bf86bb7a2702f63304574002">wmtk::operations::utils::update_vertex_operation_hashes</a></div><div class="ttdeci">void update_vertex_operation_hashes(Mesh &amp;m, const Tuple &amp;vertex, attribute::Accessor&lt; int64_t &gt; &amp;hash_accessor)</div><div class="ttdef"><b>Definition:</b> <a href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00012">UpdateVertexMultiMeshMapHash.cpp:12</a></div></div>
 <div class="ttc" id="anamespacewmtk_html"><div class="ttname"><a href="namespacewmtk.html">wmtk</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8hpp_source.html#l00005">Accessor.hpp:5</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

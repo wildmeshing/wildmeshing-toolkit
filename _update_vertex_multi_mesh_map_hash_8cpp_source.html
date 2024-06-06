@@ -126,96 +126,98 @@ $(document).ready(function(){initNavTree('_update_vertex_multi_mesh_map_hash_8cp
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="closed__star_8hpp.html">wmtk/simplex/closed_star.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1operations_1_1utils.html">wmtk::operations::utils</a> {</div>
-<div class="line"><a name="l00012"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1operations_1_1utils.html#a62fab811bf86bb7a2702f63304574002">   12</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1operations_1_1utils.html#a62fab811bf86bb7a2702f63304574002">update_vertex_operation_hashes</a>(</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; m,</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; vertex,</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor&lt;int64_t&gt;</a>&amp; hash_accessor)</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;{</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> pt = m.<a class="code" href="classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9">top_simplex_type</a>();</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex_collection.html">simplex::SimplexCollection</a> star =</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;        <a class="code" href="namespacewmtk_1_1simplex.html#a2ed8f83fbda4dc05306bfe8d2ce7ab94">simplex::closed_star</a>(m, <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a7de67a391b9f48b57f4ecb4c412ccaee">simplex::Simplex::vertex</a>(m, vertex));</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    std::vector&lt;Tuple&gt; tuples_to_update;</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keywordflow">switch</span> (pt) {</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>: {</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> star_vertices = star.<a class="code" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128">simplex_vector</a>(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        tuples_to_update.reserve(star_vertices.size());</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; s : star_vertices) {</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;            tuples_to_update.emplace_back(s.tuple());</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        }</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    }</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>: {</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> star_edges = star.<a class="code" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128">simplex_vector</a>(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>);</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        tuples_to_update.reserve(star_edges.size());</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; s : star_edges) {</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;            tuples_to_update.emplace_back(s.tuple());</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        }</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    }</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>: {</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> star_faces = star.<a class="code" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128">simplex_vector</a>(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>);</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        tuples_to_update.reserve(star_faces.size());</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; s : star_faces) {</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            tuples_to_update.emplace_back(s.tuple());</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        }</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    }</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>: {</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> star_tets = star.<a class="code" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128">simplex_vector</a>(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>);</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        tuples_to_update.reserve(star_tets.size());</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; s : star_tets) {</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            tuples_to_update.emplace_back(s.tuple());</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        }</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    }</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordflow">default</span>: assert(<span class="keyword">false</span>); <span class="comment">// &quot;invalid input&quot;</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    }</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLE_HASH_UPDATE) </span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keywordtype">void</span> update_vertex_operation_hashes(</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    Mesh&amp; m,</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">const</span> Tuple&amp; vertex,</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    attribute::Accessor&lt;int64_t&gt;&amp; hash_accessor)</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;{</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> pt = m.top_simplex_type();</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">const</span> simplex::SimplexCollection star =</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;        <a class="code" href="namespacewmtk_1_1simplex.html#a2ed8f83fbda4dc05306bfe8d2ce7ab94">simplex::closed_star</a>(m, <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a7de67a391b9f48b57f4ecb4c412ccaee">simplex::Simplex::vertex</a>(m, vertex));</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    std::vector&lt;Tuple&gt; tuples_to_update;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keywordflow">switch</span> (pt) {</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>: {</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> star_vertices = star.simplex_vector(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        tuples_to_update.reserve(star_vertices.size());</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> simplex::Simplex&amp; s : star_vertices) {</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;            tuples_to_update.emplace_back(s.tuple());</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        }</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    }</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>: {</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> star_edges = star.simplex_vector(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>);</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        tuples_to_update.reserve(star_edges.size());</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> simplex::Simplex&amp; s : star_edges) {</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;            tuples_to_update.emplace_back(s.tuple());</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        }</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    }</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>: {</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> star_faces = star.simplex_vector(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>);</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        tuples_to_update.reserve(star_faces.size());</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> simplex::Simplex&amp; s : star_faces) {</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            tuples_to_update.emplace_back(s.tuple());</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        }</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    }</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>: {</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> star_tets = star.simplex_vector(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>);</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        tuples_to_update.reserve(star_tets.size());</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> simplex::Simplex&amp; s : star_tets) {</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;            tuples_to_update.emplace_back(s.tuple());</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        }</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    }</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordflow">default</span>: assert(<span class="keyword">false</span>); <span class="comment">// &quot;invalid input&quot;</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    }</div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    m.<a class="code" href="classwmtk_1_1_mesh.html#a848e5ad847a749a4c7a150e5c74945a5">update_cell_hashes</a>(tuples_to_update, hash_accessor);</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="comment">// need to get a star with new hash, otherwise cannot get_simplices()</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">auto</span> vertex_new_hash = m.<a class="code" href="classwmtk_1_1_mesh.html#aa3a98de06167de2fa84a88cb4ced06fe">resurrect_tuple</a>(vertex, hash_accessor);</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex_collection.html">simplex::SimplexCollection</a> star_new_hash =</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <a class="code" href="namespacewmtk_1_1simplex.html#a2ed8f83fbda4dc05306bfe8d2ce7ab94">simplex::closed_star</a>(m, <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a7de67a391b9f48b57f4ecb4c412ccaee">simplex::Simplex::vertex</a>(m, vertex_new_hash));</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="code" href="namespacewmtk_1_1operations_1_1utils.html#a45a56d2f7cd5b33c464cfe0779be372a">update_vertex_operation_multimesh_map_hash</a>(m, star_new_hash, hash_accessor);</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;}</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1operations_1_1utils.html#a45a56d2f7cd5b33c464cfe0779be372a">   67</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1operations_1_1utils.html#a45a56d2f7cd5b33c464cfe0779be372a">update_vertex_operation_multimesh_map_hash</a>(</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; m,</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex_collection.html">simplex::SimplexCollection</a>&amp; vertex_closed_star,</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor&lt;int64_t&gt;</a>&amp; parent_hash_accessor)</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;{</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keyword">auto</span>&amp; mm_manager = m.<a class="code" href="classwmtk_1_1_mesh.html#a74dc5eaa8112266a82dd9f5126d305ea">m_multi_mesh_manager</a>;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; child_data : mm_manager.children()) {</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keyword">auto</span>&amp; child_mesh = *child_data.mesh;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <span class="keyword">auto</span> child_mesh_pt = child_mesh.top_simplex_type();</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <span class="keyword">auto</span> maps = mm_manager.<a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#abae2bb307bfdca11bda9ac62df54e025">get_map_accessors</a>(m, child_data);</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="keyword">auto</span>&amp; [parent_to_child_accessor, child_to_parent_accessor] = maps;</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> parent_simplices_to_update = vertex_closed_star.<a class="code" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128">simplex_vector</a>(child_mesh_pt);</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : parent_simplices_to_update) {</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            <span class="keyword">auto</span> s_tuple = s.tuple();</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            <span class="keyword">auto</span> [parent_tuple, child_tuple] =</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                <a class="code" href="namespacewmtk_1_1multimesh_1_1utils.html#a7d748ef4839b09a5460e8af97b9fa678">wmtk::multimesh::utils::read_tuple_map_attribute</a>(parent_to_child_accessor, s_tuple);</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            <span class="keywordflow">if</span> (parent_tuple.is_null()) <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            <span class="comment">// resurrect the parent tuple</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            parent_tuple = m.<a class="code" href="classwmtk_1_1_mesh.html#aa3a98de06167de2fa84a88cb4ced06fe">resurrect_tuple</a>(parent_tuple, parent_hash_accessor);</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            <span class="comment">// write back to map</span></div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            <a class="code" href="namespacewmtk_1_1multimesh_1_1utils.html#ab19d57f46b80f20b1b4685ed83e305d5">wmtk::multimesh::utils::symmetric_write_tuple_map_attributes</a>(</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;                parent_to_child_accessor,</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                child_to_parent_accessor,</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                parent_tuple,</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                child_tuple);</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        }</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    }</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;}</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;} <span class="comment">// namespace wmtk::operations::utils</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    m.update_cell_hashes(tuples_to_update, hash_accessor);</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="comment">// need to get a star with new hash, otherwise cannot get_simplices()</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">auto</span> vertex_new_hash = m.resurrect_tuple(vertex, hash_accessor);</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keyword">const</span> simplex::SimplexCollection star_new_hash =</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <a class="code" href="namespacewmtk_1_1simplex.html#a2ed8f83fbda4dc05306bfe8d2ce7ab94">simplex::closed_star</a>(m, <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a7de67a391b9f48b57f4ecb4c412ccaee">simplex::Simplex::vertex</a>(m, vertex_new_hash));</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    update_vertex_operation_multimesh_map_hash(m, star_new_hash, hash_accessor);</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;}</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="keywordtype">void</span> update_vertex_operation_multimesh_map_hash(</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    Mesh&amp; m,</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keyword">const</span> simplex::SimplexCollection&amp; vertex_closed_star,</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    attribute::Accessor&lt;int64_t&gt;&amp; parent_hash_accessor)</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;{</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keyword">auto</span>&amp; mm_manager = m.m_multi_mesh_manager;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; child_data : mm_manager.children()) {</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <span class="keyword">auto</span>&amp; child_mesh = *child_data.mesh;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <span class="keyword">auto</span> child_mesh_pt = child_mesh.top_simplex_type();</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="keyword">auto</span> maps = mm_manager.get_map_accessors(m, child_data);</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keyword">auto</span>&amp; [parent_to_child_accessor, child_to_parent_accessor] = maps;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> parent_simplices_to_update = vertex_closed_star.simplex_vector(child_mesh_pt);</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : parent_simplices_to_update) {</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            <span class="keyword">auto</span> s_tuple = s.tuple();</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            <span class="keyword">auto</span> [parent_tuple, child_tuple] =</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;                <a class="code" href="namespacewmtk_1_1multimesh_1_1utils.html#a7d748ef4839b09a5460e8af97b9fa678">wmtk::multimesh::utils::read_tuple_map_attribute</a>(parent_to_child_accessor, s_tuple);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            <span class="keywordflow">if</span> (parent_tuple.is_null()) <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            <span class="comment">// resurrect the parent tuple</span></div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            <span class="comment">// write back to map</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            <a class="code" href="namespacewmtk_1_1multimesh_1_1utils.html#ab19d57f46b80f20b1b4685ed83e305d5">wmtk::multimesh::utils::symmetric_write_tuple_map_attributes</a>(</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                parent_to_child_accessor,</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                child_to_parent_accessor,</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                parent_tuple,</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;                child_tuple);</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        }</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    }</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;}</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;} <span class="comment">// namespace wmtk::operations::utils</span></div>
 <div class="ttc" id="a_edge_mesh_8hpp_html"><div class="ttname"><a href="_edge_mesh_8hpp.html">EdgeMesh.hpp</a></div></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="a_point_mesh_8hpp_html"><div class="ttname"><a href="_point_mesh_8hpp.html">PointMesh.hpp</a></div></div>
@@ -223,24 +225,11 @@ $(document).ready(function(){initNavTree('_update_vertex_multi_mesh_map_hash_8cp
 <div class="ttc" id="a_tet_mesh_8hpp_html"><div class="ttname"><a href="_tet_mesh_8hpp.html">TetMesh.hpp</a></div></div>
 <div class="ttc" id="a_tri_mesh_8hpp_html"><div class="ttname"><a href="_tri_mesh_8hpp.html">TriMesh.hpp</a></div></div>
 <div class="ttc" id="a_update_vertex_multi_mesh_map_hash_8hpp_html"><div class="ttname"><a href="_update_vertex_multi_mesh_map_hash_8hpp.html">UpdateVertexMultiMeshMapHash.hpp</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00091">Mesh.hpp:92</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html_a74dc5eaa8112266a82dd9f5126d305ea"><div class="ttname"><a href="classwmtk_1_1_mesh.html#a74dc5eaa8112266a82dd9f5126d305ea">wmtk::Mesh::m_multi_mesh_manager</a></div><div class="ttdeci">multimesh::MultiMeshManager m_multi_mesh_manager</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00857">Mesh.hpp:857</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html_a848e5ad847a749a4c7a150e5c74945a5"><div class="ttname"><a href="classwmtk_1_1_mesh.html#a848e5ad847a749a4c7a150e5c74945a5">wmtk::Mesh::update_cell_hashes</a></div><div class="ttdeci">void update_cell_hashes(const std::vector&lt; Tuple &gt; &amp;cells, attribute::Accessor&lt; int64_t &gt; &amp;hash_accessor)</div><div class="ttdoc">update hashes in given cells</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8cpp_source.html#l00140">Mesh.cpp:140</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html_aa3a98de06167de2fa84a88cb4ced06fe"><div class="ttname"><a href="classwmtk_1_1_mesh.html#aa3a98de06167de2fa84a88cb4ced06fe">wmtk::Mesh::resurrect_tuple</a></div><div class="ttdeci">Tuple resurrect_tuple(const Tuple &amp;tuple, const attribute::Accessor&lt; int64_t &gt; &amp;hash_accessor) const</div><div class="ttdoc">return the same tuple but with updated hash</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8cpp_source.html#l00173">Mesh.cpp:173</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html_abaf00438d0700358b160e310d69725c9"><div class="ttname"><a href="classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9">wmtk::Mesh::top_simplex_type</a></div><div class="ttdeci">PrimitiveType top_simplex_type() const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l01002">Mesh.hpp:1002</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00036">Tuple.hpp:37</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_accessor_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor&lt; int64_t &gt;</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1multimesh_1_1_multi_mesh_manager_html_abae2bb307bfdca11bda9ac62df54e025"><div class="ttname"><a href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#abae2bb307bfdca11bda9ac62df54e025">wmtk::multimesh::MultiMeshManager::get_map_accessors</a></div><div class="ttdeci">std::array&lt; wmtk::attribute::Accessor&lt; int64_t &gt;, 2 &gt; get_map_accessors(Mesh &amp;my_mesh, ChildData &amp;c)</div><div class="ttdef"><b>Definition:</b> <a href="_multi_mesh_manager_8cpp_source.html#l00715">MultiMeshManager.cpp:715</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_collection_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex_collection.html">wmtk::simplex::SimplexCollection</a></div><div class="ttdef"><b>Definition:</b> <a href="_simplex_collection_8hpp_source.html#l00010">SimplexCollection.hpp:11</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_collection_html_a50c54839e34c7b0df73b509fb1199128"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128">wmtk::simplex::SimplexCollection::simplex_vector</a></div><div class="ttdeci">const std::vector&lt; Simplex &gt; &amp; simplex_vector() const</div><div class="ttdoc">Return const reference to the simplex vector.</div><div class="ttdef"><b>Definition:</b> <a href="_simplex_collection_8hpp_source.html#l00025">SimplexCollection.hpp:25</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> <a href="_simplex_8hpp_source.html#l00017">Simplex.hpp:18</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html_a7de67a391b9f48b57f4ecb4c412ccaee"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html#a7de67a391b9f48b57f4ecb4c412ccaee">wmtk::simplex::Simplex::vertex</a></div><div class="ttdeci">static Simplex vertex(const Mesh &amp;m, const Tuple &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="_simplex_8hpp_source.html#l00048">Simplex.hpp:48</a></div></div>
 <div class="ttc" id="aclosed__star_8hpp_html"><div class="ttname"><a href="closed__star_8hpp.html">closed_star.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1multimesh_1_1utils_html_a7d748ef4839b09a5460e8af97b9fa678"><div class="ttname"><a href="namespacewmtk_1_1multimesh_1_1utils.html#a7d748ef4839b09a5460e8af97b9fa678">wmtk::multimesh::utils::read_tuple_map_attribute</a></div><div class="ttdeci">std::tuple&lt; Tuple, Tuple &gt; read_tuple_map_attribute(const wmtk::attribute::Accessor&lt; int64_t, MeshType &gt; &amp;accessor, const Tuple &amp;source_tuple)</div><div class="ttdef"><b>Definition:</b> <a href="tuple__map__attribute__io_8cpp_source.html#l00079">tuple_map_attribute_io.cpp:79</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1multimesh_1_1utils_html_ab19d57f46b80f20b1b4685ed83e305d5"><div class="ttname"><a href="namespacewmtk_1_1multimesh_1_1utils.html#ab19d57f46b80f20b1b4685ed83e305d5">wmtk::multimesh::utils::symmetric_write_tuple_map_attributes</a></div><div class="ttdeci">void symmetric_write_tuple_map_attributes(wmtk::attribute::Accessor&lt; int64_t, MeshA &gt; &amp;a_to_b, wmtk::attribute::Accessor&lt; int64_t, MeshB &gt; &amp;b_to_a, const Tuple &amp;a_tuple, const Tuple &amp;b_tuple)</div><div class="ttdef"><b>Definition:</b> <a href="tuple__map__attribute__io_8hpp_source.html#l00039">tuple_map_attribute_io.hpp:39</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1operations_1_1utils_html"><div class="ttname"><a href="namespacewmtk_1_1operations_1_1utils.html">wmtk::operations::utils</a></div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_8hpp_source.html#l00010">EdgeMesh.hpp:10</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1operations_1_1utils_html_a45a56d2f7cd5b33c464cfe0779be372a"><div class="ttname"><a href="namespacewmtk_1_1operations_1_1utils.html#a45a56d2f7cd5b33c464cfe0779be372a">wmtk::operations::utils::update_vertex_operation_multimesh_map_hash</a></div><div class="ttdeci">void update_vertex_operation_multimesh_map_hash(Mesh &amp;m, const simplex::SimplexCollection &amp;vertex_closed_star, attribute::Accessor&lt; int64_t &gt; &amp;parent_hash_accessor)</div><div class="ttdef"><b>Definition:</b> <a href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00067">UpdateVertexMultiMeshMapHash.cpp:67</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1operations_1_1utils_html_a62fab811bf86bb7a2702f63304574002"><div class="ttname"><a href="namespacewmtk_1_1operations_1_1utils.html#a62fab811bf86bb7a2702f63304574002">wmtk::operations::utils::update_vertex_operation_hashes</a></div><div class="ttdeci">void update_vertex_operation_hashes(Mesh &amp;m, const Tuple &amp;vertex, attribute::Accessor&lt; int64_t &gt; &amp;hash_accessor)</div><div class="ttdef"><b>Definition:</b> <a href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00012">UpdateVertexMultiMeshMapHash.cpp:12</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1simplex_html_a2ed8f83fbda4dc05306bfe8d2ce7ab94"><div class="ttname"><a href="namespacewmtk_1_1simplex.html#a2ed8f83fbda4dc05306bfe8d2ce7ab94">wmtk::simplex::closed_star</a></div><div class="ttdeci">SimplexCollection closed_star(const Mesh &amp;mesh, const Simplex &amp;simplex, const bool sort_and_clean)</div><div class="ttdoc">The closed star contains the input simplex, all its top dimension cofaces, and their faces.</div><div class="ttdef"><b>Definition:</b> <a href="closed__star_8cpp_source.html#l00012">closed_star.cpp:12</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">wmtk::PrimitiveType</a></div><div class="ttdeci">PrimitiveType</div><div class="ttdef"><b>Definition:</b> <a href="_primitive_type_8hpp_source.html#l00009">PrimitiveType.hpp:9</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::PrimitiveType::Triangle</a></div><div class="ttdeci">@ Triangle</div></div>

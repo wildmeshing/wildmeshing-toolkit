@@ -120,274 +120,284 @@ $(document).ready(function(){initNavTree('_edge_mesh_operation_executor_8cpp_sou
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160; </div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk.html">wmtk</a> {</div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">// constructor</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#af7400e7ead01534e22f978f478109631">    6</a></span>&#160;<a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#af7400e7ead01534e22f978f478109631">EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor</a>(</div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;    <a class="code" href="classwmtk_1_1_edge_mesh.html">EdgeMesh</a>&amp; m,</div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; operating_tuple,</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor&lt;int64_t&gt;</a>&amp; hash_acc)</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;    : flag_accessors{{m.<a class="code" href="classwmtk_1_1_mesh.html#ae0e8f71e9e17a90be9423117efcc4c81">get_flag_accessor</a>(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>), m.<a class="code" href="classwmtk_1_1_mesh.html#ae0e8f71e9e17a90be9423117efcc4c81">get_flag_accessor</a>(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>)}}</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    , ee_accessor(m.create_accessor&lt;int64_t&gt;(m.m_ee_handle))</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    , ev_accessor(m.create_accessor&lt;int64_t&gt;(m.m_ev_handle))</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    , ve_accessor(m.create_accessor&lt;int64_t&gt;(m.m_ve_handle))</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    , hash_accessor(hash_acc)</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    , m_mesh(m)</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;{</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    m_operating_tuple = operating_tuple;</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> operating_tuple_switch_vertex = m_mesh.switch_vertex(operating_tuple);</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="comment">// store ids of incident vertices</span></div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    m_operating_edge_id = m_mesh.id_edge(m_operating_tuple);</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    m_spine_vids[0] = m_mesh.id_vertex(m_operating_tuple);</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    m_spine_vids[1] = m_mesh.id_vertex(operating_tuple_switch_vertex);</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="comment">// update hash on neighborhood</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLE_HASH_UPDATE)</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    cell_ids_to_update_hash.emplace_back(m_mesh.id_edge(m_operating_tuple));</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keywordflow">if</span> (!m_mesh.is_boundary_vertex(m_operating_tuple)) {</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        m_neighbor_eids[0] = m_mesh.id_edge(m_mesh.switch_edge(m_operating_tuple));</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLE_HASH_UPDATE)</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        cell_ids_to_update_hash.emplace_back(m_neighbor_eids[0]);</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    }</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keywordflow">if</span> (!m_mesh.is_boundary_vertex(operating_tuple_switch_vertex)) {</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        m_neighbor_eids[1] = m_mesh.id_edge(m_mesh.switch_edge(operating_tuple_switch_vertex));</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLE_HASH_UPDATE)</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        cell_ids_to_update_hash.emplace_back(m_neighbor_eids[1]);</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    }</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keywordflow">if</span> (m_neighbor_eids[0] == m_neighbor_eids[1] &amp;&amp; m_neighbor_eids[0] == m_operating_edge_id) {</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        m_is_self_loop = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    }</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;}</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#ae757030d0b82b51c8b16760155c9f96a">   47</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#ae757030d0b82b51c8b16760155c9f96a">EdgeMesh::EdgeMeshOperationExecutor::delete_simplices</a>()</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;{</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> d = 0; d &lt; <a class="code" href="classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#aefcd47eb53b5ed113d483dfdd5cd73f4">simplex_ids_to_delete</a>.size(); ++d) {</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> int64_t <span class="keywordtype">id</span> : <a class="code" href="classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#aefcd47eb53b5ed113d483dfdd5cd73f4">simplex_ids_to_delete</a>[d]) {</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;            <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a9f68862c3a64ce2cc352f308fa0a3b4a">flag_accessors</a>[d].index_access().scalar_attribute(<span class="keywordtype">id</span>) = 0;</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        }</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    }</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;}</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6ad543bba903587765029481d2e22551">   56</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6ad543bba903587765029481d2e22551">EdgeMesh::EdgeMeshOperationExecutor::update_cell_hash</a>()</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;{</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLE_HASH_UPDATE)</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    m_mesh.update_cell_hashes(cell_ids_to_update_hash, hash_accessor);</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLE_HASH_UPDATE)</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a4d67a0864de3401b710f5f98f950707f">EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor</a>(</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;    EdgeMesh&amp; m,</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    <span class="keyword">const</span> Tuple&amp; operating_tuple,</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;    attribute::Accessor&lt;int64_t&gt;&amp; hash_acc)</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#else</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a4d67a0864de3401b710f5f98f950707f">   12</a></span>&#160;<a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a4d67a0864de3401b710f5f98f950707f">EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor</a>(</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <a class="code" href="classwmtk_1_1_edge_mesh.html">EdgeMesh</a>&amp; m,</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; operating_tuple)</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    : flag_accessors{{m.<a class="code" href="classwmtk_1_1_mesh.html#ae0e8f71e9e17a90be9423117efcc4c81">get_flag_accessor</a>(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>), m.<a class="code" href="classwmtk_1_1_mesh.html#ae0e8f71e9e17a90be9423117efcc4c81">get_flag_accessor</a>(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>)}}</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    , ee_accessor(m.<a class="code" href="classwmtk_1_1_mesh_c_r_t_p.html#a34b7bb082177fb0c563d846ac8e18f2b">create_accessor</a>&lt;int64_t&gt;(m.<a class="code" href="classwmtk_1_1_edge_mesh.html#a07b759fafee886dc6e149f11ee70173a">m_ee_handle</a>))</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    , ev_accessor(m.<a class="code" href="classwmtk_1_1_mesh_c_r_t_p.html#a34b7bb082177fb0c563d846ac8e18f2b">create_accessor</a>&lt;int64_t&gt;(m.<a class="code" href="classwmtk_1_1_edge_mesh.html#a7b8a8315153163fff07fd644c887c394">m_ev_handle</a>))</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    , ve_accessor(m.<a class="code" href="classwmtk_1_1_mesh_c_r_t_p.html#a34b7bb082177fb0c563d846ac8e18f2b">create_accessor</a>&lt;int64_t&gt;(m.<a class="code" href="classwmtk_1_1_edge_mesh.html#a9a95eb5094a314293961b68f6656efcc">m_ve_handle</a>))</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLE_HASH_UPDATE)</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    , hash_accessor(hash_acc)</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    , m_mesh(m)</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;{</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    m_operating_tuple = operating_tuple;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> operating_tuple_switch_vertex = m_mesh.switch_vertex(operating_tuple);</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="comment">// store ids of incident vertices</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    m_operating_edge_id = m_mesh.id_edge(m_operating_tuple);</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    m_spine_vids[0] = m_mesh.id_vertex(m_operating_tuple);</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    m_spine_vids[1] = m_mesh.id_vertex(operating_tuple_switch_vertex);</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="comment">// update hash on neighborhood</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLE_HASH_UPDATE) </span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    cell_ids_to_update_hash.emplace_back(m_mesh.id_edge(m_operating_tuple));</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keywordflow">if</span> (!m_mesh.is_boundary_vertex(m_operating_tuple)) {</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        m_neighbor_eids[0] = m_mesh.id_edge(m_mesh.switch_edge(m_operating_tuple));</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLE_HASH_UPDATE) </span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        cell_ids_to_update_hash.emplace_back(m_neighbor_eids[0]);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    }</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keywordflow">if</span> (!m_mesh.is_boundary_vertex(operating_tuple_switch_vertex)) {</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        m_neighbor_eids[1] = m_mesh.id_edge(m_mesh.switch_edge(operating_tuple_switch_vertex));</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLE_HASH_UPDATE) </span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        cell_ids_to_update_hash.emplace_back(m_neighbor_eids[1]);</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    }</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keywordflow">if</span> (m_neighbor_eids[0] == m_neighbor_eids[1] &amp;&amp; m_neighbor_eids[0] == m_operating_edge_id) {</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        m_is_self_loop = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    }</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;}</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#ae757030d0b82b51c8b16760155c9f96a">   55</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#ae757030d0b82b51c8b16760155c9f96a">EdgeMesh::EdgeMeshOperationExecutor::delete_simplices</a>()</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;{</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> d = 0; d &lt; <a class="code" href="classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#aefcd47eb53b5ed113d483dfdd5cd73f4">simplex_ids_to_delete</a>.size(); ++d) {</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> int64_t <span class="keywordtype">id</span> : <a class="code" href="classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#aefcd47eb53b5ed113d483dfdd5cd73f4">simplex_ids_to_delete</a>[d]) {</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a9f68862c3a64ce2cc352f308fa0a3b4a">flag_accessors</a>[d].index_access().scalar_attribute(<span class="keywordtype">id</span>) = 0;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        }</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    }</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;}</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="keyword">const</span> std::array&lt;std::vector&lt;int64_t&gt;, 2&gt;</div>
-<div class="line"><a name="l00065"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a8257fd21c81468784498229162810af3">   65</a></span>&#160;<a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a8257fd21c81468784498229162810af3">EdgeMesh::EdgeMeshOperationExecutor::get_split_simplices_to_delete</a>(</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; tuple,</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_edge_mesh.html">EdgeMesh</a>&amp; m)</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;{</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    std::array&lt;std::vector&lt;int64_t&gt;, 2&gt; ids;</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    ids[1].emplace_back(m.<a class="code" href="classwmtk_1_1_edge_mesh.html#a2a37ed6f60cad4f5b841670470f01660">id_edge</a>(tuple));</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keywordflow">return</span> ids;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;}</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="keyword">const</span> std::array&lt;std::vector&lt;int64_t&gt;, 2&gt;</div>
-<div class="line"><a name="l00075"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#ae365a598aaead39c4d9fa3a01d486fa6">   75</a></span>&#160;<a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#ae365a598aaead39c4d9fa3a01d486fa6">EdgeMesh::EdgeMeshOperationExecutor::get_collapse_simplices_to_delete</a>(</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; tuple,</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_edge_mesh.html">EdgeMesh</a>&amp; m)</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;{</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    std::array&lt;std::vector&lt;int64_t&gt;, 2&gt; ids;</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    ids[0].emplace_back(m.<a class="code" href="classwmtk_1_1_edge_mesh.html#a90181e4a8ae3981f82ac6620fe978fc5">id_vertex</a>(tuple));</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    ids[1].emplace_back(m.<a class="code" href="classwmtk_1_1_edge_mesh.html#a2a37ed6f60cad4f5b841670470f01660">id_edge</a>(tuple));</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordflow">return</span> ids;</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;}</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
-<div class="line"><a name="l00086"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#af15baefa5f355f410a386fcb93001141">   86</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#af15baefa5f355f410a386fcb93001141">EdgeMesh::EdgeMeshOperationExecutor::split_edge</a>()</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;{</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    m_output_tuple = split_edge_single_mesh();</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="comment">// TODO: Implement for multi_mesh in the future</span></div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;}</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
-<div class="line"><a name="l00092"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#acb42aca716850f7017290140eef6d94e">   92</a></span>&#160;<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#acb42aca716850f7017290140eef6d94e">EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh</a>()</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;{</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="comment">// create new vertex</span></div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keyword">const</span> std::vector&lt;int64_t&gt; new_vids = this-&gt;<a class="code" href="classwmtk_1_1_mesh.html#ac205d6addf4e76f000c70547253735f0">request_simplex_indices</a>(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>, 1);</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    assert(new_vids.size() == 1);</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keyword">const</span> int64_t v_new = new_vids[0];</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    m_split_v = v_new;</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="comment">// create new edges</span></div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="comment">// new_eids[i] is connect to m_neighbor_eids[i] and m_spine_vids[i]</span></div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <span class="keyword">const</span> std::vector&lt;int64_t&gt; new_eids = this-&gt;<a class="code" href="classwmtk_1_1_mesh.html#ac205d6addf4e76f000c70547253735f0">request_simplex_indices</a>(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>, 2);</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    assert(new_eids.size() == 2);</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    std::copy(new_eids.begin(), new_eids.end(), m_split_e.begin());</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keyword">const</span> int64_t local_vid = m_mesh.is_ccw(m_operating_tuple) ? 0 : 1;</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="comment">// update ee</span></div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    {</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        <span class="comment">// for 2 new edges</span></div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        <span class="keyword">auto</span> ee_new_0 = ee_accessor.index_access().vector_attribute(new_eids[0]);</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        <span class="keyword">auto</span> ee_new_1 = ee_accessor.index_access().vector_attribute(new_eids[1]);</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        ee_new_0[local_vid ^ 1] = new_eids[1];</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        ee_new_1[local_vid] = new_eids[0];</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        <span class="keywordflow">if</span> (m_is_self_loop) {</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            ee_new_0[local_vid] = new_eids[1];</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            ee_new_1[local_vid ^ 1] = new_eids[0];</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            ee_new_0[local_vid] = m_neighbor_eids[0];</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            ee_new_1[local_vid ^ 1] = m_neighbor_eids[1];</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            <span class="comment">// for neighbor edges</span></div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            <span class="keywordflow">for</span> (int64_t i = 0; i &lt; 2; i++) {</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;                <span class="keywordflow">if</span> (m_neighbor_eids[i] != -1) {</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;                    <span class="keyword">auto</span> ee_neighbor =</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;                        ee_accessor.index_access().vector_attribute(m_neighbor_eids[i]);</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;                    <span class="keyword">auto</span> ev_neighbor =</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;                        ev_accessor.index_access().vector_attribute(m_neighbor_eids[i]);</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;                    <span class="keywordflow">for</span> (int64_t j = 0; j &lt; 2; j++) {</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;                        <span class="keywordflow">if</span> (ee_neighbor[j] == m_operating_edge_id &amp;&amp;</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                            ev_neighbor[j] == m_spine_vids[i]) {</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                            ee_neighbor[j] = new_eids[i];</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                        }</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                    }</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                }</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;            }</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        }</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    }</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160; </div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="comment">// update ev</span></div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    {</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;        <span class="comment">// for new edges</span></div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;        <span class="keyword">auto</span> ev_new_0 = ev_accessor.index_access().vector_attribute(new_eids[0]);</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;        <span class="keyword">auto</span> ev_new_1 = ev_accessor.index_access().vector_attribute(new_eids[1]);</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;        ev_new_0[local_vid] = m_spine_vids[0];</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        ev_new_0[local_vid ^ 1] = v_new;</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;        ev_new_1[local_vid] = v_new;</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;        ev_new_1[local_vid ^ 1] = m_spine_vids[1];</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    }</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160; </div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    <span class="comment">// update ve</span></div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    {</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;        <span class="comment">// for new vertex</span></div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        ve_accessor.index_access().scalar_attribute(v_new) = new_eids[0];</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160; </div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <span class="comment">// for spine vertices</span></div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;        ve_accessor.index_access().scalar_attribute(m_spine_vids[0]) = new_eids[0];</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) = new_eids[1];</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    }</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    <a class="code" href="classwmtk_1_1_mesh.html#a140e0e47f2621643006def0d0f93cb1a">update_cell_hash</a>();</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    delete_simplices();</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160; </div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    <span class="comment">// prepare return Tuple</span></div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;    <span class="keyword">auto</span> ret_edge = m_mesh.edge_tuple_from_id(new_eids[1]);</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    <span class="keywordflow">if</span> (m_mesh.id_vertex(ret_edge) != v_new) {</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;        ret_edge = m_mesh.switch_vertex(ret_edge);</div>
+<div class="line"><a name="l00064"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6ad543bba903587765029481d2e22551">   64</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6ad543bba903587765029481d2e22551">EdgeMesh::EdgeMeshOperationExecutor::update_cell_hash</a>()</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;{</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLE_HASH_UPDATE)</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    m_mesh.update_cell_hashes(cell_ids_to_update_hash, hash_accessor);</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;}</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="keyword">const</span> std::array&lt;std::vector&lt;int64_t&gt;, 2&gt;</div>
+<div class="line"><a name="l00073"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a8257fd21c81468784498229162810af3">   73</a></span>&#160;<a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a8257fd21c81468784498229162810af3">EdgeMesh::EdgeMeshOperationExecutor::get_split_simplices_to_delete</a>(</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; tuple,</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_edge_mesh.html">EdgeMesh</a>&amp; m)</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;{</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    std::array&lt;std::vector&lt;int64_t&gt;, 2&gt; ids;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    ids[1].emplace_back(m.<a class="code" href="classwmtk_1_1_edge_mesh.html#a2a37ed6f60cad4f5b841670470f01660">id_edge</a>(tuple));</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keywordflow">return</span> ids;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;}</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="keyword">const</span> std::array&lt;std::vector&lt;int64_t&gt;, 2&gt;</div>
+<div class="line"><a name="l00083"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#ae365a598aaead39c4d9fa3a01d486fa6">   83</a></span>&#160;<a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#ae365a598aaead39c4d9fa3a01d486fa6">EdgeMesh::EdgeMeshOperationExecutor::get_collapse_simplices_to_delete</a>(</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; tuple,</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_edge_mesh.html">EdgeMesh</a>&amp; m)</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;{</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    std::array&lt;std::vector&lt;int64_t&gt;, 2&gt; ids;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    ids[0].emplace_back(m.<a class="code" href="classwmtk_1_1_edge_mesh.html#a90181e4a8ae3981f82ac6620fe978fc5">id_vertex</a>(tuple));</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    ids[1].emplace_back(m.<a class="code" href="classwmtk_1_1_edge_mesh.html#a2a37ed6f60cad4f5b841670470f01660">id_edge</a>(tuple));</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keywordflow">return</span> ids;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;}</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
+<div class="line"><a name="l00094"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#af15baefa5f355f410a386fcb93001141">   94</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#af15baefa5f355f410a386fcb93001141">EdgeMesh::EdgeMeshOperationExecutor::split_edge</a>()</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;{</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    m_output_tuple = split_edge_single_mesh();</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="comment">// TODO: Implement for multi_mesh in the future</span></div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;}</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
+<div class="line"><a name="l00100"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#acb42aca716850f7017290140eef6d94e">  100</a></span>&#160;<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#acb42aca716850f7017290140eef6d94e">EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh</a>()</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;{</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="comment">// create new vertex</span></div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keyword">const</span> std::vector&lt;int64_t&gt; new_vids = this-&gt;<a class="code" href="classwmtk_1_1_mesh.html#ac205d6addf4e76f000c70547253735f0">request_simplex_indices</a>(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>, 1);</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    assert(new_vids.size() == 1);</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keyword">const</span> int64_t v_new = new_vids[0];</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    m_split_v = v_new;</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="comment">// create new edges</span></div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="comment">// new_eids[i] is connect to m_neighbor_eids[i] and m_spine_vids[i]</span></div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <span class="keyword">const</span> std::vector&lt;int64_t&gt; new_eids = this-&gt;<a class="code" href="classwmtk_1_1_mesh.html#ac205d6addf4e76f000c70547253735f0">request_simplex_indices</a>(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>, 2);</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    assert(new_eids.size() == 2);</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    std::copy(new_eids.begin(), new_eids.end(), m_split_e.begin());</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="keyword">const</span> int64_t local_vid = m_mesh.is_ccw(m_operating_tuple) ? 0 : 1;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <span class="comment">// update ee</span></div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    {</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        <span class="comment">// for 2 new edges</span></div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        <span class="keyword">auto</span> ee_new_0 = ee_accessor.index_access().vector_attribute(new_eids[0]);</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        <span class="keyword">auto</span> ee_new_1 = ee_accessor.index_access().vector_attribute(new_eids[1]);</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        ee_new_0[local_vid ^ 1] = new_eids[1];</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        ee_new_1[local_vid] = new_eids[0];</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        <span class="keywordflow">if</span> (m_is_self_loop) {</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            ee_new_0[local_vid] = new_eids[1];</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            ee_new_1[local_vid ^ 1] = new_eids[0];</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            ee_new_0[local_vid] = m_neighbor_eids[0];</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            ee_new_1[local_vid ^ 1] = m_neighbor_eids[1];</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;            <span class="comment">// for neighbor edges</span></div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            <span class="keywordflow">for</span> (int64_t i = 0; i &lt; 2; i++) {</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                <span class="keywordflow">if</span> (m_neighbor_eids[i] != -1) {</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                    <span class="keyword">auto</span> ee_neighbor =</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                        ee_accessor.index_access().vector_attribute(m_neighbor_eids[i]);</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                    <span class="keyword">auto</span> ev_neighbor =</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                        ev_accessor.index_access().vector_attribute(m_neighbor_eids[i]);</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                    <span class="keywordflow">for</span> (int64_t j = 0; j &lt; 2; j++) {</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                        <span class="keywordflow">if</span> (ee_neighbor[j] == m_operating_edge_id &amp;&amp;</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                            ev_neighbor[j] == m_spine_vids[i]) {</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                            ee_neighbor[j] = new_eids[i];</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                        }</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                    }</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;                }</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;            }</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;        }</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    }</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160; </div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="comment">// update ev</span></div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    {</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        <span class="comment">// for new edges</span></div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        <span class="keyword">auto</span> ev_new_0 = ev_accessor.index_access().vector_attribute(new_eids[0]);</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        <span class="keyword">auto</span> ev_new_1 = ev_accessor.index_access().vector_attribute(new_eids[1]);</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;        ev_new_0[local_vid] = m_spine_vids[0];</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        ev_new_0[local_vid ^ 1] = v_new;</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;        ev_new_1[local_vid] = v_new;</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        ev_new_1[local_vid ^ 1] = m_spine_vids[1];</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    }</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160; </div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    <span class="comment">// update ve</span></div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    {</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;        <span class="comment">// for new vertex</span></div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        ve_accessor.index_access().scalar_attribute(v_new) = new_eids[0];</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160; </div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        <span class="comment">// for spine vertices</span></div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;        ve_accessor.index_access().scalar_attribute(m_spine_vids[0]) = new_eids[0];</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;        ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) = new_eids[1];</div>
 <div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    }</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160; </div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    assert(m_mesh.id_edge(ret_edge) == new_eids[1]);</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    assert(m_mesh.id_vertex(ret_edge) == v_new);</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    assert(m_mesh.id_vertex(m_mesh.switch_vertex(ret_edge)) == m_spine_vids[1]);</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160; </div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    <span class="keywordflow">return</span> ret_edge;</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;}</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160; </div>
-<div class="line"><a name="l00176"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a397c28d8884e2ad28f26b66271a369c8">  176</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a397c28d8884e2ad28f26b66271a369c8">EdgeMesh::EdgeMeshOperationExecutor::update_hash_in_map</a>(<a class="code" href="classwmtk_1_1_edge_mesh.html">EdgeMesh</a>&amp; child_mesh)</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;{</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    <span class="comment">// TODO: Implement for multi_mesh in the future</span></div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;}</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    update_cell_hash();</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    delete_simplices();</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160; </div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <span class="comment">// prepare return Tuple</span></div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    <span class="keyword">auto</span> ret_edge = m_mesh.edge_tuple_from_id(new_eids[1]);</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    <span class="keywordflow">if</span> (m_mesh.id_vertex(ret_edge) != v_new) {</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;        ret_edge = m_mesh.switch_vertex(ret_edge);</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    }</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160; </div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    assert(m_mesh.id_edge(ret_edge) == new_eids[1]);</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    assert(m_mesh.id_vertex(ret_edge) == v_new);</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    assert(m_mesh.id_vertex(m_mesh.switch_vertex(ret_edge)) == m_spine_vids[1]);</div>
 <div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160; </div>
-<div class="line"><a name="l00181"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6bdc1a1b0f87a7d34095177947029f5c">  181</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6bdc1a1b0f87a7d34095177947029f5c">EdgeMesh::EdgeMeshOperationExecutor::collapse_edge</a>()</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;{</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    m_output_tuple = collapse_edge_single_mesh();</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <span class="comment">// TODO: Implement for multi_mesh in the future</span></div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;}</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160; </div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160; </div>
-<div class="line"><a name="l00188"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a1205a3f179088ad8391dc241f6a579f4">  188</a></span>&#160;<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a1205a3f179088ad8391dc241f6a579f4">EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh</a>()</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;{</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <span class="comment">// check if the collapse is valid</span></div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    <span class="keywordflow">if</span> (m_is_self_loop || (m_mesh.is_boundary_vertex(m_operating_tuple) &amp;&amp;</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;                           m_mesh.is_boundary_vertex(m_mesh.switch_vertex(m_operating_tuple)))) {</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>();</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    }</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;    <span class="keywordflow">return</span> ret_edge;</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;}</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160; </div>
+<div class="line"><a name="l00184"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a397c28d8884e2ad28f26b66271a369c8">  184</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a397c28d8884e2ad28f26b66271a369c8">EdgeMesh::EdgeMeshOperationExecutor::update_hash_in_map</a>(<a class="code" href="classwmtk_1_1_edge_mesh.html">EdgeMesh</a>&amp; child_mesh)</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;{</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <span class="comment">// TODO: Implement for multi_mesh in the future</span></div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;}</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160; </div>
+<div class="line"><a name="l00189"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6bdc1a1b0f87a7d34095177947029f5c">  189</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6bdc1a1b0f87a7d34095177947029f5c">EdgeMesh::EdgeMeshOperationExecutor::collapse_edge</a>()</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;{</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    m_output_tuple = collapse_edge_single_mesh();</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;    <span class="comment">// TODO: Implement for multi_mesh in the future</span></div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;}</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160; </div>
 <div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160; </div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160; </div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    <span class="comment">// update ee</span></div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    {</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;        <span class="comment">// for neighbor edges</span></div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; 2; i++) {</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;            <span class="keywordflow">if</span> (m_neighbor_eids[i] != -1) {</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;                <span class="keyword">auto</span> ee_neighbor = ee_accessor.index_access().vector_attribute(m_neighbor_eids[i]);</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;                <span class="keywordflow">for</span> (int64_t j = 0; j &lt; 2; j++) {</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;                    <span class="keywordflow">if</span> (ee_neighbor[j] == m_operating_edge_id) {</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;                        ee_neighbor[j] = m_neighbor_eids[i ^ 1];</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;                        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;                    }</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;                }</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;            }</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        }</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    }</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160; </div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    <span class="comment">// update ev</span></div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    {</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;        <span class="keywordflow">if</span> (m_neighbor_eids[0] != -1) {</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;            <span class="keyword">auto</span> ev_neighbor = ev_accessor.index_access().vector_attribute(m_neighbor_eids[0]);</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;            <span class="keywordflow">for</span> (int64_t j = 0; j &lt; 2; j++) {</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;                <span class="keywordflow">if</span> (ev_neighbor[j] == m_spine_vids[0]) {</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;                    ev_neighbor[j] = m_spine_vids[1];</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;                }</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;            }</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        }</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;    }</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160; </div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160; </div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <span class="comment">// update ve</span></div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;    {</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) = m_neighbor_eids[1];</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    }</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160; </div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    <a class="code" href="classwmtk_1_1_mesh.html#a140e0e47f2621643006def0d0f93cb1a">update_cell_hash</a>();</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    delete_simplices();</div>
+<div class="line"><a name="l00196"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a1205a3f179088ad8391dc241f6a579f4">  196</a></span>&#160;<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a1205a3f179088ad8391dc241f6a579f4">EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh</a>()</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;{</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    <span class="comment">// check if the collapse is valid</span></div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    <span class="keywordflow">if</span> (m_is_self_loop || (m_mesh.is_boundary_vertex(m_operating_tuple) &amp;&amp;</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;                           m_mesh.is_boundary_vertex(m_mesh.switch_vertex(m_operating_tuple)))) {</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>();</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;    }</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160; </div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160; </div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <span class="comment">// update ee</span></div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    {</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;        <span class="comment">// for neighbor edges</span></div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; 2; i++) {</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;            <span class="keywordflow">if</span> (m_neighbor_eids[i] != -1) {</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;                <span class="keyword">auto</span> ee_neighbor = ee_accessor.index_access().vector_attribute(m_neighbor_eids[i]);</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;                <span class="keywordflow">for</span> (int64_t j = 0; j &lt; 2; j++) {</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;                    <span class="keywordflow">if</span> (ee_neighbor[j] == m_operating_edge_id) {</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;                        ee_neighbor[j] = m_neighbor_eids[i ^ 1];</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;                        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;                    }</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;                }</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;            }</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;        }</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;    }</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160; </div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;    <span class="comment">// update ev</span></div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;    {</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        <span class="keywordflow">if</span> (m_neighbor_eids[0] != -1) {</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;            <span class="keyword">auto</span> ev_neighbor = ev_accessor.index_access().vector_attribute(m_neighbor_eids[0]);</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;            <span class="keywordflow">for</span> (int64_t j = 0; j &lt; 2; j++) {</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;                <span class="keywordflow">if</span> (ev_neighbor[j] == m_spine_vids[0]) {</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;                    ev_neighbor[j] = m_spine_vids[1];</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                }</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;            }</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;        }</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    }</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160; </div>
 <div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160; </div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    <span class="keyword">const</span> int64_t ret_eid = m_neighbor_eids[0] == -1 ? m_neighbor_eids[1] : m_neighbor_eids[0];</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> ret_tuple = m_mesh.edge_tuple_from_id(ret_eid);</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160; </div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    <span class="keywordflow">if</span> (m_mesh.id_vertex(ret_tuple) != m_spine_vids[1]) {</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        ret_tuple = m_mesh.switch_vertex(ret_tuple);</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    }</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;    <span class="keywordflow">return</span> ret_tuple;</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;}</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160; </div>
-<div class="line"><a name="l00244"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6998653a06ffa3f2a1c147adaaa378c4">  244</a></span>&#160;std::vector&lt;int64_t&gt; <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6998653a06ffa3f2a1c147adaaa378c4">EdgeMesh::EdgeMeshOperationExecutor::request_simplex_indices</a>(</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type,</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    int64_t count)</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;{</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    m_mesh.guarantee_more_attributes(type, count);</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    <span class="keywordflow">return</span> m_mesh.request_simplex_indices(type, count);</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    <span class="comment">// update ve</span></div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    {</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) = m_neighbor_eids[1];</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    }</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160; </div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    update_cell_hash();</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;    delete_simplices();</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160; </div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    <span class="keyword">const</span> int64_t ret_eid = m_neighbor_eids[0] == -1 ? m_neighbor_eids[1] : m_neighbor_eids[0];</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> ret_tuple = m_mesh.edge_tuple_from_id(ret_eid);</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    <span class="keywordflow">if</span> (m_mesh.id_vertex(ret_tuple) != m_spine_vids[1]) {</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        ret_tuple = m_mesh.switch_vertex(ret_tuple);</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    }</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    <span class="keywordflow">return</span> ret_tuple;</div>
 <div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;}</div>
 <div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160; </div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a name="l00252"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6998653a06ffa3f2a1c147adaaa378c4">  252</a></span>&#160;std::vector&lt;int64_t&gt; <a class="code" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6998653a06ffa3f2a1c147adaaa378c4">EdgeMesh::EdgeMeshOperationExecutor::request_simplex_indices</a>(</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type,</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    int64_t count)</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;{</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    m_mesh.guarantee_more_attributes(type, count);</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    <span class="keywordflow">return</span> m_mesh.request_simplex_indices(type, count);</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;}</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160; </div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;} <span class="comment">// namespace wmtk</span></div>
 <div class="ttc" id="a_edge_mesh_operation_executor_8hpp_html"><div class="ttname"><a href="_edge_mesh_operation_executor_8hpp.html">EdgeMeshOperationExecutor.hpp</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a1205a3f179088ad8391dc241f6a579f4"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a1205a3f179088ad8391dc241f6a579f4">wmtk::EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh</a></div><div class="ttdeci">Tuple collapse_edge_single_mesh()</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00188">EdgeMeshOperationExecutor.cpp:188</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a397c28d8884e2ad28f26b66271a369c8"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a397c28d8884e2ad28f26b66271a369c8">wmtk::EdgeMesh::EdgeMeshOperationExecutor::update_hash_in_map</a></div><div class="ttdeci">void update_hash_in_map(EdgeMesh &amp;child_mesh)</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00176">EdgeMeshOperationExecutor.cpp:176</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a6998653a06ffa3f2a1c147adaaa378c4"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6998653a06ffa3f2a1c147adaaa378c4">wmtk::EdgeMesh::EdgeMeshOperationExecutor::request_simplex_indices</a></div><div class="ttdeci">std::vector&lt; int64_t &gt; request_simplex_indices(const PrimitiveType type, int64_t count)</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00244">EdgeMeshOperationExecutor.cpp:244</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a6ad543bba903587765029481d2e22551"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6ad543bba903587765029481d2e22551">wmtk::EdgeMesh::EdgeMeshOperationExecutor::update_cell_hash</a></div><div class="ttdeci">void update_cell_hash()</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00056">EdgeMeshOperationExecutor.cpp:56</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a6bdc1a1b0f87a7d34095177947029f5c"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6bdc1a1b0f87a7d34095177947029f5c">wmtk::EdgeMesh::EdgeMeshOperationExecutor::collapse_edge</a></div><div class="ttdeci">void collapse_edge()</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00181">EdgeMeshOperationExecutor.cpp:181</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a8257fd21c81468784498229162810af3"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a8257fd21c81468784498229162810af3">wmtk::EdgeMesh::EdgeMeshOperationExecutor::get_split_simplices_to_delete</a></div><div class="ttdeci">static const std::array&lt; std::vector&lt; int64_t &gt;, 2 &gt; get_split_simplices_to_delete(const Tuple &amp;tuple, const EdgeMesh &amp;m)</div><div class="ttdoc">gather all simplices that are deleted in a split</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00065">EdgeMeshOperationExecutor.cpp:65</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a9f68862c3a64ce2cc352f308fa0a3b4a"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a9f68862c3a64ce2cc352f308fa0a3b4a">wmtk::EdgeMesh::EdgeMeshOperationExecutor::flag_accessors</a></div><div class="ttdeci">std::array&lt; attribute::Accessor&lt; char &gt;, 2 &gt; flag_accessors</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8hpp_source.html#l00017">EdgeMeshOperationExecutor.hpp:17</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_acb42aca716850f7017290140eef6d94e"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#acb42aca716850f7017290140eef6d94e">wmtk::EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh</a></div><div class="ttdeci">Tuple split_edge_single_mesh()</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00092">EdgeMeshOperationExecutor.cpp:92</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_ae365a598aaead39c4d9fa3a01d486fa6"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#ae365a598aaead39c4d9fa3a01d486fa6">wmtk::EdgeMesh::EdgeMeshOperationExecutor::get_collapse_simplices_to_delete</a></div><div class="ttdeci">static const std::array&lt; std::vector&lt; int64_t &gt;, 2 &gt; get_collapse_simplices_to_delete(const Tuple &amp;tuple, const EdgeMesh &amp;m)</div><div class="ttdoc">gather all simplices that are deleted in a collapse</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00075">EdgeMeshOperationExecutor.cpp:75</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_ae757030d0b82b51c8b16760155c9f96a"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#ae757030d0b82b51c8b16760155c9f96a">wmtk::EdgeMesh::EdgeMeshOperationExecutor::delete_simplices</a></div><div class="ttdeci">void delete_simplices()</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00047">EdgeMeshOperationExecutor.cpp:47</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_af15baefa5f355f410a386fcb93001141"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#af15baefa5f355f410a386fcb93001141">wmtk::EdgeMesh::EdgeMeshOperationExecutor::split_edge</a></div><div class="ttdeci">void split_edge()</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00086">EdgeMeshOperationExecutor.cpp:86</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_af7400e7ead01534e22f978f478109631"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#af7400e7ead01534e22f978f478109631">wmtk::EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor</a></div><div class="ttdeci">EdgeMeshOperationExecutor(EdgeMesh &amp;m, const Tuple &amp;operating_tuple, attribute::Accessor&lt; int64_t &gt; &amp;hash_acc)</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00006">EdgeMeshOperationExecutor.cpp:6</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a1205a3f179088ad8391dc241f6a579f4"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a1205a3f179088ad8391dc241f6a579f4">wmtk::EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh</a></div><div class="ttdeci">Tuple collapse_edge_single_mesh()</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00196">EdgeMeshOperationExecutor.cpp:196</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a397c28d8884e2ad28f26b66271a369c8"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a397c28d8884e2ad28f26b66271a369c8">wmtk::EdgeMesh::EdgeMeshOperationExecutor::update_hash_in_map</a></div><div class="ttdeci">void update_hash_in_map(EdgeMesh &amp;child_mesh)</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00184">EdgeMeshOperationExecutor.cpp:184</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a4d67a0864de3401b710f5f98f950707f"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a4d67a0864de3401b710f5f98f950707f">wmtk::EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor</a></div><div class="ttdeci">EdgeMeshOperationExecutor(EdgeMesh &amp;m, const Tuple &amp;operating_tuple)</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00012">EdgeMeshOperationExecutor.cpp:12</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a6998653a06ffa3f2a1c147adaaa378c4"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6998653a06ffa3f2a1c147adaaa378c4">wmtk::EdgeMesh::EdgeMeshOperationExecutor::request_simplex_indices</a></div><div class="ttdeci">std::vector&lt; int64_t &gt; request_simplex_indices(const PrimitiveType type, int64_t count)</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00252">EdgeMeshOperationExecutor.cpp:252</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a6ad543bba903587765029481d2e22551"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6ad543bba903587765029481d2e22551">wmtk::EdgeMesh::EdgeMeshOperationExecutor::update_cell_hash</a></div><div class="ttdeci">void update_cell_hash()</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00064">EdgeMeshOperationExecutor.cpp:64</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a6bdc1a1b0f87a7d34095177947029f5c"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6bdc1a1b0f87a7d34095177947029f5c">wmtk::EdgeMesh::EdgeMeshOperationExecutor::collapse_edge</a></div><div class="ttdeci">void collapse_edge()</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00189">EdgeMeshOperationExecutor.cpp:189</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a8257fd21c81468784498229162810af3"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a8257fd21c81468784498229162810af3">wmtk::EdgeMesh::EdgeMeshOperationExecutor::get_split_simplices_to_delete</a></div><div class="ttdeci">static const std::array&lt; std::vector&lt; int64_t &gt;, 2 &gt; get_split_simplices_to_delete(const Tuple &amp;tuple, const EdgeMesh &amp;m)</div><div class="ttdoc">gather all simplices that are deleted in a split</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00073">EdgeMeshOperationExecutor.cpp:73</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_a9f68862c3a64ce2cc352f308fa0a3b4a"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a9f68862c3a64ce2cc352f308fa0a3b4a">wmtk::EdgeMesh::EdgeMeshOperationExecutor::flag_accessors</a></div><div class="ttdeci">std::array&lt; attribute::Accessor&lt; char &gt;, 2 &gt; flag_accessors</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8hpp_source.html#l00023">EdgeMeshOperationExecutor.hpp:23</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_acb42aca716850f7017290140eef6d94e"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#acb42aca716850f7017290140eef6d94e">wmtk::EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh</a></div><div class="ttdeci">Tuple split_edge_single_mesh()</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00100">EdgeMeshOperationExecutor.cpp:100</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_ae365a598aaead39c4d9fa3a01d486fa6"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#ae365a598aaead39c4d9fa3a01d486fa6">wmtk::EdgeMesh::EdgeMeshOperationExecutor::get_collapse_simplices_to_delete</a></div><div class="ttdeci">static const std::array&lt; std::vector&lt; int64_t &gt;, 2 &gt; get_collapse_simplices_to_delete(const Tuple &amp;tuple, const EdgeMesh &amp;m)</div><div class="ttdoc">gather all simplices that are deleted in a collapse</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00083">EdgeMeshOperationExecutor.cpp:83</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_ae757030d0b82b51c8b16760155c9f96a"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#ae757030d0b82b51c8b16760155c9f96a">wmtk::EdgeMesh::EdgeMeshOperationExecutor::delete_simplices</a></div><div class="ttdeci">void delete_simplices()</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00055">EdgeMeshOperationExecutor.cpp:55</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor_html_af15baefa5f355f410a386fcb93001141"><div class="ttname"><a href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#af15baefa5f355f410a386fcb93001141">wmtk::EdgeMesh::EdgeMeshOperationExecutor::split_edge</a></div><div class="ttdeci">void split_edge()</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_operation_executor_8cpp_source.html#l00094">EdgeMeshOperationExecutor.cpp:94</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_edge_mesh_html"><div class="ttname"><a href="classwmtk_1_1_edge_mesh.html">wmtk::EdgeMesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_8hpp_source.html#l00015">EdgeMesh.hpp:16</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_html_a2a37ed6f60cad4f5b841670470f01660"><div class="ttname"><a href="classwmtk_1_1_edge_mesh.html#a2a37ed6f60cad4f5b841670470f01660">wmtk::EdgeMesh::id_edge</a></div><div class="ttdeci">int64_t id_edge(const Tuple &amp;tuple) const</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_8hpp_source.html#l00063">EdgeMesh.hpp:63</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_html_a90181e4a8ae3981f82ac6620fe978fc5"><div class="ttname"><a href="classwmtk_1_1_edge_mesh.html#a90181e4a8ae3981f82ac6620fe978fc5">wmtk::EdgeMesh::id_vertex</a></div><div class="ttdeci">int64_t id_vertex(const Tuple &amp;tuple) const</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_8hpp_source.html#l00062">EdgeMesh.hpp:62</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html_a140e0e47f2621643006def0d0f93cb1a"><div class="ttname"><a href="classwmtk_1_1_mesh.html#a140e0e47f2621643006def0d0f93cb1a">wmtk::Mesh::update_cell_hash</a></div><div class="ttdeci">void update_cell_hash(const Tuple &amp;cell, attribute::Accessor&lt; int64_t &gt; &amp;hash_accessor)</div><div class="ttdoc">update hash in given cell</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8cpp_source.html#l00124">Mesh.cpp:124</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_html_a07b759fafee886dc6e149f11ee70173a"><div class="ttname"><a href="classwmtk_1_1_edge_mesh.html#a07b759fafee886dc6e149f11ee70173a">wmtk::EdgeMesh::m_ee_handle</a></div><div class="ttdeci">attribute::TypedAttributeHandle&lt; int64_t &gt; m_ee_handle</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_8hpp_source.html#l00079">EdgeMesh.hpp:79</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_html_a2a37ed6f60cad4f5b841670470f01660"><div class="ttname"><a href="classwmtk_1_1_edge_mesh.html#a2a37ed6f60cad4f5b841670470f01660">wmtk::EdgeMesh::id_edge</a></div><div class="ttdeci">int64_t id_edge(const Tuple &amp;tuple) const</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_8hpp_source.html#l00062">EdgeMesh.hpp:62</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_html_a7b8a8315153163fff07fd644c887c394"><div class="ttname"><a href="classwmtk_1_1_edge_mesh.html#a7b8a8315153163fff07fd644c887c394">wmtk::EdgeMesh::m_ev_handle</a></div><div class="ttdeci">attribute::TypedAttributeHandle&lt; int64_t &gt; m_ev_handle</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_8hpp_source.html#l00078">EdgeMesh.hpp:78</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_html_a90181e4a8ae3981f82ac6620fe978fc5"><div class="ttname"><a href="classwmtk_1_1_edge_mesh.html#a90181e4a8ae3981f82ac6620fe978fc5">wmtk::EdgeMesh::id_vertex</a></div><div class="ttdeci">int64_t id_vertex(const Tuple &amp;tuple) const</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_8hpp_source.html#l00061">EdgeMesh.hpp:61</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_html_a9a95eb5094a314293961b68f6656efcc"><div class="ttname"><a href="classwmtk_1_1_edge_mesh.html#a9a95eb5094a314293961b68f6656efcc">wmtk::EdgeMesh::m_ve_handle</a></div><div class="ttdeci">attribute::TypedAttributeHandle&lt; int64_t &gt; m_ve_handle</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_8hpp_source.html#l00076">EdgeMesh.hpp:76</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_c_r_t_p_html_a34b7bb082177fb0c563d846ac8e18f2b"><div class="ttname"><a href="classwmtk_1_1_mesh_c_r_t_p.html#a34b7bb082177fb0c563d846ac8e18f2b">wmtk::MeshCRTP::create_accessor</a></div><div class="ttdeci">attribute::Accessor&lt; T, Derived, Dim &gt; create_accessor(const TypedAttributeHandle&lt; T &gt; &amp;handle)</div><div class="ttdoc">constructs an accessor that is aware of the derived mesh's type</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_c_r_t_p_8hpp_source.html#l00062">MeshCRTP.hpp:62</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html_ac205d6addf4e76f000c70547253735f0"><div class="ttname"><a href="classwmtk_1_1_mesh.html#ac205d6addf4e76f000c70547253735f0">wmtk::Mesh::request_simplex_indices</a></div><div class="ttdeci">std::vector&lt; int64_t &gt; request_simplex_indices(PrimitiveType type, int64_t count)</div><div class="ttdef"><b>Definition:</b> <a href="_mesh__attributes_8cpp_source.html#l00043">Mesh_attributes.cpp:43</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html_ae0e8f71e9e17a90be9423117efcc4c81"><div class="ttname"><a href="classwmtk_1_1_mesh.html#ae0e8f71e9e17a90be9423117efcc4c81">wmtk::Mesh::get_flag_accessor</a></div><div class="ttdeci">const attribute::Accessor&lt; char &gt; get_flag_accessor(PrimitiveType type) const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8cpp_source.html#l00097">Mesh.cpp:97</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html_ae0e8f71e9e17a90be9423117efcc4c81"><div class="ttname"><a href="classwmtk_1_1_mesh.html#ae0e8f71e9e17a90be9423117efcc4c81">wmtk::Mesh::get_flag_accessor</a></div><div class="ttdeci">const attribute::Accessor&lt; char &gt; get_flag_accessor(PrimitiveType type) const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8cpp_source.html#l00119">Mesh.cpp:119</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00036">Tuple.hpp:37</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_accessor_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_accessor.html">wmtk::attribute::Accessor&lt; int64_t &gt;</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data_html_aefcd47eb53b5ed113d483dfdd5cd73f4"><div class="ttname"><a href="classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#aefcd47eb53b5ed113d483dfdd5cd73f4">wmtk::operations::edge_mesh::EdgeOperationData::simplex_ids_to_delete</a></div><div class="ttdeci">std::array&lt; std::vector&lt; int64_t &gt;, 2 &gt; simplex_ids_to_delete</div><div class="ttdef"><b>Definition:</b> <a href="edge__mesh_2_edge_operation_data_8hpp_source.html#l00011">EdgeOperationData.hpp:11</a></div></div>
 <div class="ttc" id="anamespacewmtk_html"><div class="ttname"><a href="namespacewmtk.html">wmtk</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8hpp_source.html#l00005">Accessor.hpp:5</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">wmtk::PrimitiveType</a></div><div class="ttdeci">PrimitiveType</div><div class="ttdef"><b>Definition:</b> <a href="_primitive_type_8hpp_source.html#l00009">PrimitiveType.hpp:9</a></div></div>

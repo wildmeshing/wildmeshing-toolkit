@@ -1,32 +1,38 @@
 <map id="wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()" name="wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()">
-<area shape="rect" id="node1" title=" " alt="" coords="5,265,247,321"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1_mesh_c_r_t_p.html#a34b7bb082177fb0c563d846ac8e18f2b" title="constructs an accessor that is aware of the derived mesh&#39;s type" alt="" coords="323,5,507,47"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#acddf202ad38f22b09eb8eb6af183cc8c" title=" " alt="" coords="315,71,515,127"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a3d1ea8b1bc5a57499a8bfecfa8aa0970" title=" " alt="" coords="315,151,515,207"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a5837c7d6d5828df6a19b93a7a1a5895a" title=" " alt="" coords="315,231,515,287"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1_mesh.html#abbb1c54cfd6ec17f4730317ee5fab78d" title=" " alt="" coords="858,245,1055,271"/>
-<area shape="rect" id="node15" href="$classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#a7b01f9336b09415bcfdd8a75cdce08b9" title=" " alt="" coords="295,429,536,485"/>
-<area shape="rect" id="node20" href="$namespacewmtk_1_1multimesh_1_1utils.html#ab19d57f46b80f20b1b4685ed83e305d5" title=" " alt="" coords="325,534,505,590"/>
-<area shape="rect" id="node26" href="$classwmtk_1_1_tet_mesh.html#a572ea805c8faf84e78915f191a9af9bf" title=" " alt="" coords="334,363,497,404"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1_mesh_c_r_t_p.html#a2b985f921551479be01f5f4afe380c86" title="CRTP utility to extract the derived type of this." alt="" coords="595,13,787,39"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1_mesh.html#adf199d6a3ce6badd8bfa0e2ab3a1c1aa" title=" " alt="" coords="1143,296,1316,337"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1_mesh.html#a6dbab927a2ee85f77a87f075fd5c1d94" title=" " alt="" coords="1143,128,1316,169"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1_mesh.html#a918c509096fc08691924c05c6143b9c3" title="check validity of tuple including its hash" alt="" coords="1149,194,1309,221"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="1116,245,1343,271"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1_mesh.html#a4a20dcdac339e7a4f6f8a6570114cbe6" title=" " alt="" coords="1410,296,1561,337"/>
-<area shape="rect" id="node11" href="$namespacewmtk.html#a5cf45c152e856196bb734c6f48919a24" title="Get a unique integer id corresponding to each primitive type." alt="" coords="1408,128,1563,169"/>
-<area shape="rect" id="node14" href="$classwmtk_1_1_mesh.html#a933f681cf24a63b155c9462280385200" title=" " alt="" coords="1405,231,1566,272"/>
-<area shape="rect" id="node16" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a6a1229bbd409f510c18bacc733079a74" title=" " alt="" coords="584,436,797,477"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1_mesh.html#a6b07cce62863ad5aafb1bf6d43d7032b" title=" " alt="" coords="869,436,1044,477"/>
-<area shape="rect" id="node18" href="$classwmtk_1_1attribute_1_1_accessor.html#a41f40a73a13789707c117bda177dfc83" title=" " alt="" coords="1135,443,1324,484"/>
-<area shape="rect" id="node19" href="$classwmtk_1_1attribute_1_1_accessor.html#a9c7d323f50911892c8ea738f97d041d4" title=" " alt="" coords="1391,443,1580,484"/>
-<area shape="rect" id="node21" href="$namespacewmtk_1_1multimesh_1_1utils.html#aa965e96578f254d53e7ca53d617f5c6a" title=" " alt="" coords="589,567,792,608"/>
-<area shape="rect" id="node22" href="$classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26" title=" " alt="" coords="862,501,1051,543"/>
-<area shape="rect" id="node23" href="$classwmtk_1_1attribute_1_1_accessor.html#abd60539d5779de287d2a0ec31b16c77a" title=" " alt="" coords="862,567,1051,608"/>
-<area shape="rect" id="node24" href="$classwmtk_1_1attribute_1_1_tuple_accessor.html#a8d04c3529eb7adeead49e8faa7a119db" title=" " alt="" coords="845,632,1068,673"/>
-<area shape="rect" id="node25" href="$classwmtk_1_1attribute_1_1_tuple_accessor.html#a52f1474c822d1a3d910b74793830014e" title=" " alt="" coords="845,697,1068,739"/>
-<area shape="rect" id="node27" href="$classwmtk_1_1_mesh.html#a40a0509744659785607c0574d561bcc2" title=" " alt="" coords="610,363,771,404"/>
-<area shape="rect" id="node28" href="$classwmtk_1_1_mesh.html#a4bcf7281ec7f3bdfd506ffc87fc092d3" title=" " alt="" coords="857,377,1056,403"/>
-<area shape="rect" id="node30" href="$classwmtk_1_1_mesh.html#a2435c4340422557f5e61dfbad2d0bee8" title=" " alt="" coords="876,303,1037,344"/>
-<area shape="rect" id="node29" href="$classwmtk_1_1attribute_1_1_caching_accessor.html#a196b6b32e2495b971113d552be7f45d9" title=" " alt="" coords="1138,362,1321,418"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,431,247,487"/>
+<area shape="rect" id="node2" href="$classwmtk_1_1_mesh_c_r_t_p.html#a34b7bb082177fb0c563d846ac8e18f2b" title="constructs an accessor that is aware of the derived mesh&#39;s type" alt="" coords="323,115,507,156"/>
+<area shape="rect" id="node4" href="$classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#acddf202ad38f22b09eb8eb6af183cc8c" title=" " alt="" coords="315,238,515,294"/>
+<area shape="rect" id="node5" href="$classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a3d1ea8b1bc5a57499a8bfecfa8aa0970" title=" " alt="" coords="315,318,515,374"/>
+<area shape="rect" id="node6" href="$classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a5837c7d6d5828df6a19b93a7a1a5895a" title=" " alt="" coords="315,398,515,454"/>
+<area shape="rect" id="node7" href="$classwmtk_1_1_tet_mesh.html#af07828ce32b19a3d5fc8e1cb6f365029" title="check validity of tuple including its hash" alt="" coords="326,478,505,505"/>
+<area shape="rect" id="node27" href="$classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#a7b01f9336b09415bcfdd8a75cdce08b9" title=" " alt="" coords="295,529,536,585"/>
+<area shape="rect" id="node30" href="$namespacewmtk_1_1multimesh_1_1utils.html#ab19d57f46b80f20b1b4685ed83e305d5" title=" " alt="" coords="325,609,505,665"/>
+<area shape="rect" id="node36" href="$classwmtk_1_1_tet_mesh.html#a572ea805c8faf84e78915f191a9af9bf" title=" " alt="" coords="334,689,497,731"/>
+<area shape="rect" id="node3" href="$classwmtk_1_1_mesh_c_r_t_p.html#a2b985f921551479be01f5f4afe380c86" title="CRTP utility to extract the derived type of this." alt="" coords="601,93,793,119"/>
+<area shape="rect" id="node8" href="$classwmtk_1_1_tet_mesh.html#ad4ba72346d616d38086be74705865e55" title=" " alt="" coords="584,275,811,316"/>
+<area shape="rect" id="node20" href="$classwmtk_1_1_mesh.html#a8cc8686f0688613806f43720b6db49e7" title="check validity of tuple including its hash" alt="" coords="617,143,777,170"/>
+<area shape="rect" id="node25" href="$namespacewmtk_1_1autogen_1_1tet__mesh.html#a217b7c5c5312a716ad27c99abcfc0eb1" title=" " alt="" coords="616,478,779,534"/>
+<area shape="rect" id="node9" href="$classwmtk_1_1_mesh.html#a3e8ff83c4a5526a40d18bb9883c6c6c9" title="read in the m_capacities return the upper bound for the number of entities of the given dimension" alt="" coords="1160,181,1325,207"/>
+<area shape="rect" id="node11" href="$classwmtk_1_1attribute_1_1_caching_accessor.html#a196b6b32e2495b971113d552be7f45d9" title=" " alt="" coords="879,333,1061,389"/>
+<area shape="rect" id="node12" href="$classwmtk_1_1attribute_1_1_caching_accessor.html#ab7a79d239fdc3d22fbc0c3a83a5c50bc" title=" " alt="" coords="879,413,1061,469"/>
+<area shape="rect" id="node13" href="$classwmtk_1_1_mesh.html#ae0e8f71e9e17a90be9423117efcc4c81" title=" " alt="" coords="889,115,1051,156"/>
+<area shape="rect" id="node16" href="$classwmtk_1_1attribute_1_1_accessor.html#a41f40a73a13789707c117bda177dfc83" title=" " alt="" coords="1148,428,1337,469"/>
+<area shape="rect" id="node18" href="$namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06" title="Retrieves the current logger." alt="" coords="916,231,1024,258"/>
+<area shape="rect" id="node10" href="$namespacewmtk.html#a5cf45c152e856196bb734c6f48919a24" title="Get a unique integer id corresponding to each primitive type." alt="" coords="1421,173,1576,215"/>
+<area shape="rect" id="node14" href="$classwmtk_1_1_mesh.html#a6dbab927a2ee85f77a87f075fd5c1d94" title=" " alt="" coords="1156,111,1329,152"/>
+<area shape="rect" id="node15" href="$classwmtk_1_1_mesh.html#a4a20dcdac339e7a4f6f8a6570114cbe6" title=" " alt="" coords="1423,108,1574,149"/>
+<area shape="rect" id="node17" href="$classwmtk_1_1attribute_1_1_accessor.html#a9c7d323f50911892c8ea738f97d041d4" title=" " alt="" coords="1404,428,1593,469"/>
+<area shape="rect" id="node19" href="$namespacewmtk.html#a3daa7951a5f8b78cf4600dc047fcc180" title="Setup a logger object to be used by WildmeshToolkit." alt="" coords="1175,231,1310,258"/>
+<area shape="rect" id="node21" href="$classwmtk_1_1_tuple.html#a0023f575be92cd5ceeeaaaa3762ea06d" title="Checks if a tuple is &quot;null&quot;. This merely implies the global index is &#45;1." alt="" coords="895,63,1045,90"/>
+<area shape="rect" id="node22" href="$classwmtk_1_1_mesh.html#ade176d345902d97af8c5da04aa3a095b" title=" " alt="" coords="877,13,1063,39"/>
+<area shape="rect" id="node23" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="1129,13,1356,39"/>
+<area shape="rect" id="node24" href="$classwmtk_1_1_mesh.html#a933f681cf24a63b155c9462280385200" title=" " alt="" coords="1418,5,1579,47"/>
+<area shape="rect" id="node26" href="$namespacewmtk_1_1autogen_1_1tet__mesh.html#ace6b80b1be9aec0d6a5ac5d144b40965" title=" " alt="" coords="889,493,1051,549"/>
+<area shape="rect" id="node28" href="$classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a6a1229bbd409f510c18bacc733079a74" title=" " alt="" coords="591,573,804,615"/>
+<area shape="rect" id="node29" href="$classwmtk_1_1_mesh.html#a6b07cce62863ad5aafb1bf6d43d7032b" title=" " alt="" coords="883,573,1057,615"/>
+<area shape="rect" id="node31" href="$namespacewmtk_1_1multimesh_1_1utils.html#aa965e96578f254d53e7ca53d617f5c6a" title=" " alt="" coords="596,704,799,745"/>
+<area shape="rect" id="node32" href="$classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26" title=" " alt="" coords="875,769,1065,811"/>
+<area shape="rect" id="node33" href="$classwmtk_1_1attribute_1_1_accessor.html#abd60539d5779de287d2a0ec31b16c77a" title=" " alt="" coords="875,835,1065,876"/>
+<area shape="rect" id="node34" href="$classwmtk_1_1attribute_1_1_tuple_accessor.html#a8d04c3529eb7adeead49e8faa7a119db" title=" " alt="" coords="859,639,1081,680"/>
+<area shape="rect" id="node35" href="$classwmtk_1_1attribute_1_1_tuple_accessor.html#a52f1474c822d1a3d910b74793830014e" title=" " alt="" coords="859,704,1081,745"/>
 </map>

@@ -169,9 +169,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5eb060aa0a69f3ce5108fe199decc578"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4002e7a36e20373deb54576caffa682"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#af4002e7a36e20373deb54576caffa682">is_boundary_face</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple) const</td></tr>
 <tr class="separator:af4002e7a36e20373deb54576caffa682"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a822a9388a48abd2d0e577d94581add41"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a822a9388a48abd2d0e577d94581add41">is_valid</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple, const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t &gt; &amp;hash_accessor) const final override</td></tr>
-<tr class="memdesc:a822a9388a48abd2d0e577d94581add41"><td class="mdescLeft">&#160;</td><td class="mdescRight">check validity of tuple including its hash  <a href="classwmtk_1_1_tet_mesh.html#a822a9388a48abd2d0e577d94581add41">More...</a><br /></td></tr>
-<tr class="separator:a822a9388a48abd2d0e577d94581add41"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af07828ce32b19a3d5fc8e1cb6f365029"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#af07828ce32b19a3d5fc8e1cb6f365029">is_valid</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple) const final override</td></tr>
+<tr class="memdesc:af07828ce32b19a3d5fc8e1cb6f365029"><td class="mdescLeft">&#160;</td><td class="mdescRight">check validity of tuple including its hash  <a href="classwmtk_1_1_tet_mesh.html#af07828ce32b19a3d5fc8e1cb6f365029">More...</a><br /></td></tr>
+<tr class="separator:af07828ce32b19a3d5fc8e1cb6f365029"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8b4b3182fb3778fa8da52ea4fa156b6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ab8b4b3182fb3778fa8da52ea4fa156b6">initialize</a> (Eigen::Ref&lt; const <a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> &gt; TV, Eigen::Ref&lt; const <a class="el" href="namespacewmtk.html#a1e76384122a498656da675f93364acf2">RowVectors6l</a> &gt; TE, Eigen::Ref&lt; const <a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> &gt; TF, Eigen::Ref&lt; const <a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> &gt; TT, Eigen::Ref&lt; const <a class="el" href="namespacewmtk.html#a9ffbe91b53ca4eabba746d863aeb9f99">VectorXl</a> &gt; VT, Eigen::Ref&lt; const <a class="el" href="namespacewmtk.html#a9ffbe91b53ca4eabba746d863aeb9f99">VectorXl</a> &gt; ET, Eigen::Ref&lt; const <a class="el" href="namespacewmtk.html#a9ffbe91b53ca4eabba746d863aeb9f99">VectorXl</a> &gt; FT)</td></tr>
 <tr class="separator:ab8b4b3182fb3778fa8da52ea4fa156b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25ff78f32516c14f745a2860477f7114"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a25ff78f32516c14f745a2860477f7114">initialize</a> (Eigen::Ref&lt; const <a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> &gt; T)</td></tr>
@@ -335,16 +335,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac5778c1f8afef3a2b1b1c33a140b3166 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae0e8f71e9e17a90be9423117efcc4c81 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; char &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#ae0e8f71e9e17a90be9423117efcc4c81">get_flag_accessor</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type) const</td></tr>
 <tr class="separator:ae0e8f71e9e17a90be9423117efcc4c81 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2435c4340422557f5e61dfbad2d0bee8 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a2435c4340422557f5e61dfbad2d0bee8">get_cell_hash_accessor</a> () const</td></tr>
-<tr class="separator:a2435c4340422557f5e61dfbad2d0bee8 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6dbab927a2ee85f77a87f075fd5c1d94 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; char &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a6dbab927a2ee85f77a87f075fd5c1d94">get_const_flag_accessor</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type) const</td></tr>
 <tr class="separator:a6dbab927a2ee85f77a87f075fd5c1d94 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf199d6a3ce6badd8bfa0e2ab3a1c1aa inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#adf199d6a3ce6badd8bfa0e2ab3a1c1aa">get_const_cell_hash_accessor</a> () const</td></tr>
-<tr class="separator:adf199d6a3ce6badd8bfa0e2ab3a1c1aa inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4bcf7281ec7f3bdfd506ffc87fc092d3 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a4bcf7281ec7f3bdfd506ffc87fc092d3">get_cell_hash</a> (int64_t cell_index, const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t &gt; &amp;hash_accessor) const</td></tr>
-<tr class="separator:a4bcf7281ec7f3bdfd506ffc87fc092d3 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a40a0509744659785607c0574d561bcc2 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a40a0509744659785607c0574d561bcc2">get_cell_hash_slow</a> (int64_t cell_index) const</td></tr>
-<tr class="separator:a40a0509744659785607c0574d561bcc2 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a956aac44b94a5742b67e721dfe4ee978 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a956aac44b94a5742b67e721dfe4ee978">operator==</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;other) const</td></tr>
 <tr class="separator:a956aac44b94a5742b67e721dfe4ee978 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a61f2bd1d14343c57b62082ae877abde3 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a61f2bd1d14343c57b62082ae877abde3">assert_capacity_valid</a> () const</td></tr>
@@ -369,9 +361,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a58bdbbfa0cd7bd9263241f6501db182a inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad291410ffabfd61e42d0a813a610805 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#aad291410ffabfd61e42d0a813a610805">is_hash_valid</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple, const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t &gt; &amp;hash_accessor) const</td></tr>
 <tr class="separator:aad291410ffabfd61e42d0a813a610805 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abbb1c54cfd6ec17f4730317ee5fab78d inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#abbb1c54cfd6ec17f4730317ee5fab78d">is_valid_slow</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple) const</td></tr>
-<tr class="separator:abbb1c54cfd6ec17f4730317ee5fab78d inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ade176d345902d97af8c5da04aa3a095b inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#ade176d345902d97af8c5da04aa3a095b">is_removed</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple) const</td></tr>
+<tr class="memitem:a8ab75c63c0360c7e07af39a21694622d inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a8ab75c63c0360c7e07af39a21694622d">is_hash_valid</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple) const</td></tr>
+<tr class="separator:a8ab75c63c0360c7e07af39a21694622d inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade176d345902d97af8c5da04aa3a095b inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#ade176d345902d97af8c5da04aa3a095b">is_removed</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple) const</td></tr>
 <tr class="separator:ade176d345902d97af8c5da04aa3a095b inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92d2cdf5a3be21e814e5e6044800f63d inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a92d2cdf5a3be21e814e5e6044800f63d">is_multi_mesh_root</a> () const</td></tr>
 <tr class="memdesc:a92d2cdf5a3be21e814e5e6044800f63d inherit pub_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">return true if this mesh is the root of a multimesh tree  <a href="classwmtk_1_1_mesh.html#a92d2cdf5a3be21e814e5e6044800f63d">More...</a><br /></td></tr>
@@ -519,28 +511,6 @@ Protected Member Functions</h2></td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></td></tr>
 <tr class="memitem:a4f254908d8e8ca966ad4e62c66f33c64 inherit pro_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; char &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a4f254908d8e8ca966ad4e62c66f33c64">get_flag_accessor</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type)</td></tr>
 <tr class="separator:a4f254908d8e8ca966ad4e62c66f33c64 inherit pro_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac38d913f8bd38d8b1fec3d133826854a inherit pro_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#ac38d913f8bd38d8b1fec3d133826854a">get_cell_hash_accessor</a> ()</td></tr>
-<tr class="separator:ac38d913f8bd38d8b1fec3d133826854a inherit pro_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a140e0e47f2621643006def0d0f93cb1a inherit pro_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a140e0e47f2621643006def0d0f93cb1a">update_cell_hash</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;cell, <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t &gt; &amp;hash_accessor)</td></tr>
-<tr class="memdesc:a140e0e47f2621643006def0d0f93cb1a inherit pro_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">update hash in given cell  <a href="classwmtk_1_1_mesh.html#a140e0e47f2621643006def0d0f93cb1a">More...</a><br /></td></tr>
-<tr class="separator:a140e0e47f2621643006def0d0f93cb1a inherit pro_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a848e5ad847a749a4c7a150e5c74945a5 inherit pro_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a848e5ad847a749a4c7a150e5c74945a5">update_cell_hashes</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;cells, <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t &gt; &amp;hash_accessor)</td></tr>
-<tr class="memdesc:a848e5ad847a749a4c7a150e5c74945a5 inherit pro_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">update hashes in given cells  <a href="classwmtk_1_1_mesh.html#a848e5ad847a749a4c7a150e5c74945a5">More...</a><br /></td></tr>
-<tr class="separator:a848e5ad847a749a4c7a150e5c74945a5 inherit pro_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a723f69cb36378e17b6660ca32ac48b14 inherit pro_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a723f69cb36378e17b6660ca32ac48b14">update_cell_hash</a> (const int64_t cell_index, <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t &gt; &amp;hash_accessor)</td></tr>
-<tr class="memdesc:a723f69cb36378e17b6660ca32ac48b14 inherit pro_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">same as <code>update_cell_hashes</code> but slow because it creates a new accessor  <a href="classwmtk_1_1_mesh.html#a723f69cb36378e17b6660ca32ac48b14">More...</a><br /></td></tr>
-<tr class="separator:a723f69cb36378e17b6660ca32ac48b14 inherit pro_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab62c8d9cbc1ca4a654b81380692a6e96 inherit pro_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#ab62c8d9cbc1ca4a654b81380692a6e96">update_cell_hashes</a> (const std::vector&lt; int64_t &gt; &amp;cell_indices, <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t &gt; &amp;hash_accessor)</td></tr>
-<tr class="memdesc:ab62c8d9cbc1ca4a654b81380692a6e96 inherit pro_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">update hashes in given cells  <a href="classwmtk_1_1_mesh.html#ab62c8d9cbc1ca4a654b81380692a6e96">More...</a><br /></td></tr>
-<tr class="separator:ab62c8d9cbc1ca4a654b81380692a6e96 inherit pro_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a10dc60988327a1f0ace86051df4f3e65 inherit pro_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a10dc60988327a1f0ace86051df4f3e65">update_cell_hashes_slow</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;cells)</td></tr>
-<tr class="separator:a10dc60988327a1f0ace86051df4f3e65 inherit pro_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa3a98de06167de2fa84a88cb4ced06fe inherit pro_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#aa3a98de06167de2fa84a88cb4ced06fe">resurrect_tuple</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple, const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t &gt; &amp;hash_accessor) const</td></tr>
-<tr class="memdesc:aa3a98de06167de2fa84a88cb4ced06fe inherit pro_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">return the same tuple but with updated hash  <a href="classwmtk_1_1_mesh.html#aa3a98de06167de2fa84a88cb4ced06fe">More...</a><br /></td></tr>
-<tr class="separator:aa3a98de06167de2fa84a88cb4ced06fe inherit pro_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44b32cd59de3d6888269c66cde2b43e4 inherit pro_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a44b32cd59de3d6888269c66cde2b43e4">resurrect_tuple_slow</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple) const</td></tr>
-<tr class="memdesc:a44b32cd59de3d6888269c66cde2b43e4 inherit pro_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">same as <code>resurrect_tuple</code> but slow because it creates a new accessor  <a href="classwmtk_1_1_mesh.html#a44b32cd59de3d6888269c66cde2b43e4">More...</a><br /></td></tr>
-<tr class="separator:a44b32cd59de3d6888269c66cde2b43e4 inherit pro_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a76fd4d3656d2d3f21257842041ccebcf inherit pro_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::vector&lt; int64_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a76fd4d3656d2d3f21257842041ccebcf">simplices_to_gids</a> (const std::vector&lt; std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt;&gt; &amp;simplices) const</td></tr>
 <tr class="separator:a76fd4d3656d2d3f21257842041ccebcf inherit pro_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9a326d46e931aebe5707255618d4a0b0 inherit pro_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a9a326d46e931aebe5707255618d4a0b0">reserve_attributes_to_fit</a> ()</td></tr>
@@ -748,7 +718,7 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#aae611243b3b57b86a41c2ee673ef81d7">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00510">510</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00527">527</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_tet_mesh_8hpp_source.html#l00088">m_et_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00089">m_ft_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00092">m_te_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00093">m_tf_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00094">m_tt_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00091">m_tv_handle</a>, and <a class="el" href="_tet_mesh_8hpp_source.html#l00086">m_vt_handle</a>.</p>
 
@@ -770,11 +740,11 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00166">166</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00170">170</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tet__mesh_2autogenerated__tables_8cpp_source.html#l00074">wmtk::autogen::tet_mesh::auto_3d_table_complete_edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00196">wmtk::Mesh::get_cell_hash()</a>, <a class="el" href="_mesh_8cpp_source.html#l00110">wmtk::Mesh::get_const_cell_hash_accessor()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00324">is_ccw()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00330">is_valid()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00097">m_et_accessor</a>, and <a class="el" href="_tet_mesh_8hpp_source.html#l00101">m_te_accessor</a>.</p>
+<p class="reference">References <a class="el" href="tet__mesh_2autogenerated__tables_8cpp_source.html#l00074">wmtk::autogen::tet_mesh::auto_3d_table_complete_edge</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00344">is_ccw()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00350">is_valid()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00097">m_et_accessor</a>, and <a class="el" href="_tet_mesh_8hpp_source.html#l00101">m_te_accessor</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00234">tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00250">tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -806,11 +776,11 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00193">193</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00201">201</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tet__mesh_2autogenerated__tables_8cpp_source.html#l00077">wmtk::autogen::tet_mesh::auto_3d_table_complete_face</a>, <a class="el" href="_mesh_8cpp_source.html#l00196">wmtk::Mesh::get_cell_hash()</a>, <a class="el" href="_mesh_8cpp_source.html#l00110">wmtk::Mesh::get_const_cell_hash_accessor()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00324">is_ccw()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00330">is_valid()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00098">m_ft_accessor</a>, and <a class="el" href="_tet_mesh_8hpp_source.html#l00102">m_tf_accessor</a>.</p>
+<p class="reference">References <a class="el" href="tet__mesh_2autogenerated__tables_8cpp_source.html#l00077">wmtk::autogen::tet_mesh::auto_3d_table_complete_face</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00344">is_ccw()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00350">is_valid()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00098">m_ft_accessor</a>, and <a class="el" href="_tet_mesh_8hpp_source.html#l00102">m_tf_accessor</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00234">tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00250">tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -864,7 +834,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_tuple_8hpp_source.html#l00041">wmtk::Tuple::m_global_cid</a>, <a class="el" href="_tuple_8hpp_source.html#l00043">wmtk::Tuple::m_local_eid</a>, <a class="el" href="_tuple_8hpp_source.html#l00044">wmtk::Tuple::m_local_fid</a>, <a class="el" href="_tuple_8hpp_source.html#l00042">wmtk::Tuple::m_local_vid</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00101">m_te_accessor</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00102">m_tf_accessor</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00100">m_tv_accessor</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00166">edge_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00193">face_tuple_from_id()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00207">wmtk::TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00193">wmtk::TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00070">id_edge()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00071">id_face()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00072">id_tet()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00069">id_vertex()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00260">switch_tuple()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00140">vertex_tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00170">edge_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00201">face_tuple_from_id()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00215">wmtk::TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00201">wmtk::TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00070">id_edge()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00071">id_face()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00072">id_tet()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00069">id_vertex()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00276">switch_tuple()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00140">vertex_tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -902,7 +872,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, and <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00196">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00204">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1026,7 +996,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00196">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00204">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1128,7 +1098,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00076">76</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00083">wmtk::Mesh::capacity()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00097">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00088">m_et_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00089">m_ft_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00092">m_te_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00093">m_tf_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00094">m_tt_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00091">m_tv_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00086">m_vt_handle</a>, <a class="el" href="_caching_accessor_8hxx_source.html#l00058">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::scalar_attribute()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00096">wmtk::Mesh::set_capacities()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00083">wmtk::Mesh::capacity()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00119">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00088">m_et_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00089">m_ft_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00092">m_te_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00093">m_tf_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00094">m_tt_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00091">m_tv_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00086">m_vt_handle</a>, <a class="el" href="_caching_accessor_8hxx_source.html#l00058">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::scalar_attribute()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00096">wmtk::Mesh::set_capacities()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00383">wmtk::components::internal::MultiMeshFromTag::compute_substructure_mesh()</a>, <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00321">wmtk::components::internal::MultiMeshFromTag::create_substructure_soup()</a>, <a class="el" href="fusion_8cpp_source.html#l00018">wmtk::components::fusion()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00134">initialize()</a>.</p>
 <div class="dynheader">
@@ -1169,9 +1139,9 @@ Here is the caller graph for this function:</div>
 <dd>
 false otherwise </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_8cpp_source.html#l00464">464</a> of file <a class="el" href="_mesh_8cpp_source.html">Mesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_8cpp_source.html#l00470">470</a> of file <a class="el" href="_mesh_8cpp_source.html">Mesh.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00382">is_boundary_vertex()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00399">is_boundary_vertex()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -1228,9 +1198,9 @@ false otherwise </dd></dl>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a24e1e157ff89e7898a48ce737bb4b23a">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00349">349</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00366">366</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00370">is_boundary_edge()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00364">is_boundary_face()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00382">is_boundary_vertex()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00387">is_boundary_edge()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00381">is_boundary_face()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00399">is_boundary_vertex()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="link__condition_8cpp_source.html#l00119">wmtk::simplex::link_condition()</a>.</p>
 <div class="dynheader">
@@ -1289,11 +1259,11 @@ false otherwise </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00370">370</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00387">387</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="cofaces__single__dimension_8cpp_source.html#l00048">wmtk::simplex::cofaces_single_dimension_tuples()</a>, <a class="el" href="_simplex_8hpp_source.html#l00052">wmtk::simplex::Simplex::edge()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00364">is_boundary_face()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>.</p>
+<p class="reference">References <a class="el" href="cofaces__single__dimension_8cpp_source.html#l00048">wmtk::simplex::cofaces_single_dimension_tuples()</a>, <a class="el" href="_simplex_8hpp_source.html#l00052">wmtk::simplex::Simplex::edge()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00381">is_boundary_face()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00349">is_boundary()</a>, and <a class="el" href="link__condition_8cpp_source.html#l00119">wmtk::simplex::link_condition()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00366">is_boundary()</a>, and <a class="el" href="link__condition_8cpp_source.html#l00119">wmtk::simplex::link_condition()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1325,11 +1295,11 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00364">364</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00381">381</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="_tuple_8hpp_source.html#l00044">wmtk::Tuple::m_local_fid</a>, and <a class="el" href="_tet_mesh_8hpp_source.html#l00094">m_tt_handle</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00021">wmtk::TetMesh::TetMeshOperationExecutor::get_incident_tets_and_faces()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00349">is_boundary()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00370">is_boundary_edge()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00260">switch_tuple()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00021">wmtk::TetMesh::TetMeshOperationExecutor::get_incident_tets_and_faces()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00366">is_boundary()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00387">is_boundary_edge()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00276">switch_tuple()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1361,11 +1331,11 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00382">382</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00399">399</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_mesh_8cpp_source.html#l00058">is_boundary()</a>, <a class="el" href="open__star_8cpp_source.html#l00012">wmtk::simplex::open_star()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00025">wmtk::simplex::SimplexCollection::simplex_vector()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="_simplex_8hpp_source.html#l00048">wmtk::simplex::Simplex::vertex()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00349">is_boundary()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00366">is_boundary()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1418,15 +1388,15 @@ false </dd></dl>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a56d57041196b23cfa33661c9488c9c4b">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00324">324</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00344">344</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tet__mesh_2is__ccw_8hxx_source.html#l00010">wmtk::autogen::tet_mesh::is_ccw()</a>, and <a class="el" href="_mesh_8cpp_source.html#l00079">wmtk::Mesh::is_valid_slow()</a>.</p>
+<p class="reference">References <a class="el" href="tet__mesh_2is__ccw_8hxx_source.html#l00010">wmtk::autogen::tet_mesh::is_ccw()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00350">is_valid()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00166">edge_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00193">face_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00220">tet_tuple_from_id()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00140">vertex_tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00170">edge_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00201">face_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00232">tet_tuple_from_id()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00140">vertex_tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_a9a30d64d4b874e9bb156e6c771e7f08c_cgraph.svg" width="100%" height="555"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_a9a30d64d4b874e9bb156e6c771e7f08c_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
@@ -1463,11 +1433,11 @@ Here is the caller graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#ac0fc5a0ccd8949ea39848ea00c5b925f">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00396">396</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00413">413</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00083">wmtk::Mesh::capacity()</a>, <a class="el" href="_caching_accessor_8hxx_source.html#l00073">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_scalar_attribute()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#ab7a79d239fdc3d22fbc0c3a83a5c50bc">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00097">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00088">m_et_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00089">m_ft_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00092">m_te_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00093">m_tf_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00094">m_tt_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00091">m_tv_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00086">m_vt_handle</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00083">wmtk::Mesh::capacity()</a>, <a class="el" href="_caching_accessor_8hxx_source.html#l00073">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_scalar_attribute()</a>, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#ab7a79d239fdc3d22fbc0c3a83a5c50bc">wmtk::attribute::CachingAccessor&lt; T, Dim &gt;::const_vector_attribute()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00119">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_accessor_8hpp_source.html#l00095">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;::index_access()</a>, <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00088">m_et_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00089">m_ft_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00092">m_te_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00093">m_tf_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00094">m_tt_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00091">m_tv_handle</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00086">m_vt_handle</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00383">wmtk::components::internal::MultiMeshFromTag::compute_substructure_mesh()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00330">is_valid()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00383">wmtk::components::internal::MultiMeshFromTag::compute_substructure_mesh()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00350">is_valid()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1483,8 +1453,8 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
-<a id="a822a9388a48abd2d0e577d94581add41"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a822a9388a48abd2d0e577d94581add41">&#9670;&nbsp;</a></span>is_valid()</h2>
+<a id="af07828ce32b19a3d5fc8e1cb6f365029"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af07828ce32b19a3d5fc8e1cb6f365029">&#9670;&nbsp;</a></span>is_valid()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1496,18 +1466,8 @@ Here is the caller graph for this function:</div>
           <td class="memname">bool wmtk::TetMesh::is_valid </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>tuple</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; int64_t &gt; &amp;&#160;</td>
-          <td class="paramname"><em>hash_accessor</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
+          <td class="paramname"><em>tuple</em></td><td>)</td>
+          <td> const</td>
         </tr>
       </table>
   </td>
@@ -1529,23 +1489,23 @@ Here is the caller graph for this function:</div>
 <dd>
 false </dd></dl>
 
-<p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a918c509096fc08691924c05c6143b9c3">wmtk::Mesh</a>.</p>
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_mesh.html#a8cc8686f0688613806f43720b6db49e7">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00330">330</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00350">350</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8cpp_source.html#l00101">wmtk::Mesh::get_const_flag_accessor()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00396">is_connectivity_valid()</a>, <a class="el" href="_mesh_8cpp_source.html#l00064">wmtk::Mesh::is_hash_valid()</a>, <a class="el" href="_tuple_8hxx_source.html#l00039">wmtk::Tuple::is_null()</a>, <a class="el" href="_tuple_8hpp_source.html#l00041">wmtk::Tuple::m_global_cid</a>, <a class="el" href="_tuple_8hpp_source.html#l00043">wmtk::Tuple::m_local_eid</a>, <a class="el" href="_tuple_8hpp_source.html#l00044">wmtk::Tuple::m_local_fid</a>, <a class="el" href="_tuple_8hpp_source.html#l00042">wmtk::Tuple::m_local_vid</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, and <a class="el" href="tet__mesh_2is__ccw_8hxx_source.html#l00017">wmtk::autogen::tet_mesh::tuple_is_valid_for_ccw()</a>.</p>
+<p class="reference">References <a class="el" href="_tet_mesh_8cpp_source.html#l00413">is_connectivity_valid()</a>, <a class="el" href="_mesh_8cpp_source.html#l00107">wmtk::Mesh::is_valid()</a>, <a class="el" href="_tuple_8hpp_source.html#l00041">wmtk::Tuple::m_global_cid</a>, <a class="el" href="_tuple_8hpp_source.html#l00043">wmtk::Tuple::m_local_eid</a>, <a class="el" href="_tuple_8hpp_source.html#l00044">wmtk::Tuple::m_local_fid</a>, <a class="el" href="_tuple_8hpp_source.html#l00042">wmtk::Tuple::m_local_vid</a>, and <a class="el" href="tet__mesh_2is__ccw_8hxx_source.html#l00017">wmtk::autogen::tet_mesh::tuple_is_valid_for_ccw()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00166">edge_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00193">face_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00220">tet_tuple_from_id()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00140">vertex_tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00170">edge_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00201">face_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00344">is_ccw()</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00620">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00276">switch_tuple()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00232">tet_tuple_from_id()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00140">vertex_tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_a822a9388a48abd2d0e577d94581add41_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_af07828ce32b19a3d5fc8e1cb6f365029_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_a822a9388a48abd2d0e577d94581add41_icgraph.svg" width="619" height="248"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_af07828ce32b19a3d5fc8e1cb6f365029_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -1668,17 +1628,11 @@ Here is the call graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a0f1e2ecf58dcc8a2c86309cb11d1fe95">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00557">557</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00578">578</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8cpp_source.html#l00202">wmtk::Mesh::get_cell_hash_slow()</a>, and <a class="el" href="_tuple_8hpp_source.html#l00041">wmtk::Tuple::m_global_cid</a>.</p>
+<p class="reference">References <a class="el" href="_tuple_8hpp_source.html#l00041">wmtk::Tuple::m_global_cid</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>.</p>
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_afd621933bfdf69868fc7becb36645182_cgraph.svg" width="100%" height="449"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
-</div>
-</div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -1714,13 +1668,13 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00116">116</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00260">switch_tuple()</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00276">switch_tuple()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="link__condition_8cpp_source.html#l00119">wmtk::simplex::link_condition()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_a1ff7ac5989c664b7754dd699fa1e9b1a_cgraph.svg" width="100%" height="595"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_a1ff7ac5989c664b7754dd699fa1e9b1a_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
@@ -1758,13 +1712,13 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00120">120</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tet_mesh_8cpp_source.html#l00260">switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>.</p>
+<p class="reference">References <a class="el" href="_tet_mesh_8cpp_source.html#l00276">switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00021">wmtk::TetMesh::TetMeshOperationExecutor::get_incident_tets_and_faces()</a>, and <a class="el" href="open__star_8cpp_source.html#l00062">wmtk::simplex::open_star()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_a6c405e0d239a6ec627a6b50963c52ea5_cgraph.svg" width="100%" height="595"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_a6c405e0d239a6ec627a6b50963c52ea5_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
@@ -1802,13 +1756,13 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00124">124</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tet_mesh_8cpp_source.html#l00260">switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>.</p>
+<p class="reference">References <a class="el" href="_tet_mesh_8cpp_source.html#l00276">switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00021">wmtk::TetMesh::TetMeshOperationExecutor::get_incident_tets_and_faces()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_ac89db402ec507958c553e5ed0a26c774_cgraph.svg" width="100%" height="595"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_ac89db402ec507958c553e5ed0a26c774_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
@@ -1866,15 +1820,15 @@ Here is the caller graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00260">260</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00276">276</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00202">wmtk::Mesh::get_cell_hash_slow()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00364">is_boundary_face()</a>, <a class="el" href="_mesh_8cpp_source.html#l00079">wmtk::Mesh::is_valid_slow()</a>, <a class="el" href="tet__mesh_2local__switch__tuple_8hxx_source.html#l00010">wmtk::autogen::tet_mesh::local_switch_tuple()</a>, <a class="el" href="_tuple_8hpp_source.html#l00044">wmtk::Tuple::m_local_fid</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00101">m_te_accessor</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00102">m_tf_accessor</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00103">m_tt_accessor</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00100">m_tv_accessor</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00381">is_boundary_face()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00350">is_valid()</a>, <a class="el" href="tet__mesh_2local__switch__tuple_8hxx_source.html#l00010">wmtk::autogen::tet_mesh::local_switch_tuple()</a>, <a class="el" href="_tuple_8hpp_source.html#l00044">wmtk::Tuple::m_local_fid</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00101">m_te_accessor</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00102">m_tf_accessor</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00103">m_tt_accessor</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00100">m_tv_accessor</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00039">wmtk::operations::tet_mesh::EdgeOperationData::input_endpoints()</a>, <a class="el" href="link__condition_8cpp_source.html#l00119">wmtk::simplex::link_condition()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00116">switch_edge()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00120">switch_face()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00124">switch_tetrahedron()</a>, and <a class="el" href="_tet_mesh_8hpp_source.html#l00112">switch_vertex()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_a53d9ec91a1c80da4ae10dea485564f27_cgraph.svg" width="100%" height="595"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_a53d9ec91a1c80da4ae10dea485564f27_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
@@ -1912,13 +1866,13 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00112">112</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tet_mesh_8cpp_source.html#l00260">switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_tet_mesh_8cpp_source.html#l00276">switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="link_8cpp_source.html#l00069">wmtk::simplex::link()</a>, <a class="el" href="link__condition_8cpp_source.html#l00119">wmtk::simplex::link_condition()</a>, <a class="el" href="link__condition_8cpp_source.html#l00103">wmtk::simplex::link_condition_closed_tetmesh()</a>, and <a class="el" href="link__single__dimension_8cpp_source.html#l00092">wmtk::simplex::link_single_dimension()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_a87165a8f0949177c42845b725feac1dd_cgraph.svg" width="100%" height="595"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_a87165a8f0949177c42845b725feac1dd_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
@@ -1946,11 +1900,11 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00220">220</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00232">232</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tet__mesh_2autogenerated__tables_8cpp_source.html#l00072">wmtk::autogen::tet_mesh::auto_3d_table_complete_vertex</a>, <a class="el" href="_mesh_8cpp_source.html#l00196">wmtk::Mesh::get_cell_hash()</a>, <a class="el" href="_mesh_8cpp_source.html#l00110">wmtk::Mesh::get_const_cell_hash_accessor()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00324">is_ccw()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00330">is_valid()</a>.</p>
+<p class="reference">References <a class="el" href="tet__mesh_2autogenerated__tables_8cpp_source.html#l00072">wmtk::autogen::tet_mesh::auto_3d_table_complete_vertex</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00344">is_ccw()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00350">is_valid()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00234">tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00250">tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -2012,17 +1966,11 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00526">526</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00543">543</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8cpp_source.html#l00202">wmtk::Mesh::get_cell_hash_slow()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00101">m_te_accessor</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00102">m_tf_accessor</a>, and <a class="el" href="_tet_mesh_8hpp_source.html#l00100">m_tv_accessor</a>.</p>
+<p class="reference">References <a class="el" href="_tet_mesh_8hpp_source.html#l00101">m_te_accessor</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00102">m_tf_accessor</a>, and <a class="el" href="_tet_mesh_8hpp_source.html#l00100">m_tv_accessor</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00596">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, and <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00196">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>.</p>
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tet_mesh_a572ea805c8faf84e78915f191a9af9bf_cgraph.svg" width="100%" height="449"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
-</div>
-</div>
+<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00620">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, and <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00204">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -2077,9 +2025,9 @@ Here is the caller graph for this function:</div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a60165ceb4c2db2731df90e4ac100637d">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00234">234</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00250">250</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00166">edge_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00193">face_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00220">tet_tuple_from_id()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00140">vertex_tuple_from_id()</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00170">edge_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00201">face_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00232">tet_tuple_from_id()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00140">vertex_tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -2107,9 +2055,9 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8cpp_source.html#l00140">140</a> of file <a class="el" href="_tet_mesh_8cpp_source.html">TetMesh.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tet__mesh_2autogenerated__tables_8cpp_source.html#l00072">wmtk::autogen::tet_mesh::auto_3d_table_complete_vertex</a>, <a class="el" href="_mesh_8cpp_source.html#l00196">wmtk::Mesh::get_cell_hash()</a>, <a class="el" href="_mesh_8cpp_source.html#l00110">wmtk::Mesh::get_const_cell_hash_accessor()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00324">is_ccw()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00330">is_valid()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00100">m_tv_accessor</a>, and <a class="el" href="_tet_mesh_8hpp_source.html#l00096">m_vt_accessor</a>.</p>
+<p class="reference">References <a class="el" href="tet__mesh_2autogenerated__tables_8cpp_source.html#l00072">wmtk::autogen::tet_mesh::auto_3d_table_complete_vertex</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00344">is_ccw()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00350">is_valid()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00100">m_tv_accessor</a>, and <a class="el" href="_tet_mesh_8hpp_source.html#l00096">m_vt_accessor</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00234">tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00250">tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -2271,7 +2219,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00097">97</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00166">edge_tuple_from_id()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00170">edge_tuple_from_id()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>.</p>
 
 </div>
 </div>
@@ -2297,7 +2245,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00088">88</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00510">connectivity_attributes()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00396">is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00047">operator=()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00034">TetMesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00527">connectivity_attributes()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00413">is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00047">operator=()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00034">TetMesh()</a>.</p>
 
 </div>
 </div>
@@ -2323,7 +2271,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00098">98</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00193">face_tuple_from_id()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00201">face_tuple_from_id()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>.</p>
 
 </div>
 </div>
@@ -2349,7 +2297,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00089">89</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00510">connectivity_attributes()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00396">is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00047">operator=()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00034">TetMesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00527">connectivity_attributes()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00413">is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00047">operator=()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00034">TetMesh()</a>.</p>
 
 </div>
 </div>
@@ -2375,7 +2323,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00101">101</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00166">edge_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00260">switch_tuple()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00526">tuple_from_global_ids()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00170">edge_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00276">switch_tuple()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00543">tuple_from_global_ids()</a>.</p>
 
 </div>
 </div>
@@ -2401,7 +2349,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00092">92</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00510">connectivity_attributes()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00396">is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00047">operator=()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00034">TetMesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00527">connectivity_attributes()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00413">is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00047">operator=()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00034">TetMesh()</a>.</p>
 
 </div>
 </div>
@@ -2427,7 +2375,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00102">102</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00193">face_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00260">switch_tuple()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00526">tuple_from_global_ids()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00201">face_tuple_from_id()</a>, <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00276">switch_tuple()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00543">tuple_from_global_ids()</a>.</p>
 
 </div>
 </div>
@@ -2453,7 +2401,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00093">93</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00510">connectivity_attributes()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00396">is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00047">operator=()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00034">TetMesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00527">connectivity_attributes()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00413">is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00047">operator=()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00034">TetMesh()</a>.</p>
 
 </div>
 </div>
@@ -2479,7 +2427,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00103">103</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00260">switch_tuple()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00276">switch_tuple()</a>.</p>
 
 </div>
 </div>
@@ -2505,7 +2453,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00094">94</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00510">connectivity_attributes()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00364">is_boundary_face()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00396">is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00047">operator=()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00034">TetMesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00527">connectivity_attributes()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00381">is_boundary_face()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00413">is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00047">operator=()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00034">TetMesh()</a>.</p>
 
 </div>
 </div>
@@ -2531,7 +2479,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00100">100</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00260">switch_tuple()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00526">tuple_from_global_ids()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00140">vertex_tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8hpp_source.html#l00129">id()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00276">switch_tuple()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00543">tuple_from_global_ids()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00140">vertex_tuple_from_id()</a>.</p>
 
 </div>
 </div>
@@ -2557,7 +2505,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00091">91</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00510">connectivity_attributes()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00396">is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00047">operator=()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00034">TetMesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00527">connectivity_attributes()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00413">is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00047">operator=()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00034">TetMesh()</a>.</p>
 
 </div>
 </div>
@@ -2609,7 +2557,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_tet_mesh_8hpp_source.html#l00087">87</a> of file <a class="el" href="_tet_mesh_8hpp_source.html">TetMesh.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00510">connectivity_attributes()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00396">is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00047">operator=()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00034">TetMesh()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_8cpp_source.html#l00527">connectivity_attributes()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00076">initialize()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00413">is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00063">make_cached_accessors()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00047">operator=()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00034">TetMesh()</a>.</p>
 
 </div>
 </div>

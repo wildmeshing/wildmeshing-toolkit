@@ -140,7 +140,7 @@ $(document).ready(function(){initNavTree('top__dimension__cofaces_8cpp_source.ht
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keyword">const</span> Tuple&amp; t_in,</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    std::vector&lt;Tuple&gt;&amp; collection)</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;{</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    assert(mesh.is_valid_slow(t_in));</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    assert(mesh.is_valid(t_in));</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    Tuple t = t_in;</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keywordflow">do</span> {</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        collection.emplace_back(t);</div>
@@ -283,7 +283,7 @@ $(document).ready(function(){initNavTree('top__dimension__cofaces_8cpp_source.ht
 <div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    <span class="comment">//}</span></div>
 <div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160; </div>
 <div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160; </div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    assert(mesh.is_valid_slow(<a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">input</a>));</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    assert(mesh.is_valid(<a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">input</a>));</div>
 <div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    Tuple t = <a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">input</a>;</div>
 <div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <span class="keywordflow">do</span> {</div>
 <div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;        collection.emplace_back(t);</div>
@@ -405,7 +405,7 @@ $(document).ready(function(){initNavTree('top__dimension__cofaces_8cpp_source.ht
 <div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;    <span class="keyword">const</span> Tuple&amp; t_in,</div>
 <div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;    SimplexCollection&amp; collection)</div>
 <div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;{</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    assert(mesh.is_valid_slow(t_in));</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    assert(mesh.is_valid(t_in));</div>
 <div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    std::set&lt;Tuple, wmtk::utils::TupleCellLessThan&gt; touched_cells;</div>
 <div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;    std::queue&lt;Tuple&gt; q;</div>
 <div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    q.push(t_in);</div>
@@ -840,10 +840,10 @@ $(document).ready(function(){initNavTree('top__dimension__cofaces_8cpp_source.ht
 <div class="ttc" id="a_tuple_cell_less_than_functor_8hpp_html"><div class="ttname"><a href="_tuple_cell_less_than_functor_8hpp.html">TupleCellLessThanFunctor.hpp</a></div></div>
 <div class="ttc" id="a_tuple_inspector_8hpp_html"><div class="ttname"><a href="_tuple_inspector_8hpp.html">TupleInspector.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_edge_mesh_html"><div class="ttname"><a href="classwmtk_1_1_edge_mesh.html">wmtk::EdgeMesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_8hpp_source.html#l00015">EdgeMesh.hpp:16</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_html_a04f6595fe85e52dc6bf1e02512120100"><div class="ttname"><a href="classwmtk_1_1_edge_mesh.html#a04f6595fe85e52dc6bf1e02512120100">wmtk::EdgeMesh::switch_edge</a></div><div class="ttdeci">Tuple switch_edge(const Tuple &amp;tuple) const</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_8hpp_source.html#l00093">EdgeMesh.hpp:93</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_html_a04f6595fe85e52dc6bf1e02512120100"><div class="ttname"><a href="classwmtk_1_1_edge_mesh.html#a04f6595fe85e52dc6bf1e02512120100">wmtk::EdgeMesh::switch_edge</a></div><div class="ttdeci">Tuple switch_edge(const Tuple &amp;tuple) const</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_8hpp_source.html#l00092">EdgeMesh.hpp:92</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_edge_mesh_html_a534952cf2729f1509a380e3e9afb65b7"><div class="ttname"><a href="classwmtk_1_1_edge_mesh.html#a534952cf2729f1509a380e3e9afb65b7">wmtk::EdgeMesh::is_boundary_vertex</a></div><div class="ttdeci">bool is_boundary_vertex(const Tuple &amp;tuple) const</div><div class="ttdef"><b>Definition:</b> <a href="_edge_mesh_8cpp_source.html#l00029">EdgeMesh.cpp:29</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00091">Mesh.hpp:92</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html_abaf00438d0700358b160e310d69725c9"><div class="ttname"><a href="classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9">wmtk::Mesh::top_simplex_type</a></div><div class="ttdeci">PrimitiveType top_simplex_type() const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l01002">Mesh.hpp:1002</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html_abaf00438d0700358b160e310d69725c9"><div class="ttname"><a href="classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9">wmtk::Mesh::top_simplex_type</a></div><div class="ttdeci">PrimitiveType top_simplex_type() const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l01011">Mesh.hpp:1011</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tet_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_tet_mesh_8hpp_source.html#l00013">TetMesh.hpp:14</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_8hpp_source.html#l00018">TriMesh.hpp:19</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_collection_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex_collection.html">wmtk::simplex::SimplexCollection</a></div><div class="ttdef"><b>Definition:</b> <a href="_simplex_collection_8hpp_source.html#l00010">SimplexCollection.hpp:11</a></div></div>
