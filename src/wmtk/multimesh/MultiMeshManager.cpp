@@ -41,8 +41,10 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
         return Tuple(); // return null tuple
     }
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     source_mesh_base_tuple = source_mesh.resurrect_tuple_slow(source_mesh_base_tuple);
     target_mesh_base_tuple = target_mesh.resurrect_tuple_slow(target_mesh_base_tuple);
+#endif
     // assert(source_mesh.is_valid(source_mesh_base_tuple));
     // assert(target_mesh.is_valid(target_mesh_base_tuple));
 

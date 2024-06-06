@@ -184,6 +184,7 @@ void Mesh::update_cell_hashes_slow(const std::vector<Tuple>& cells)
 #endif
 
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 Tuple Mesh::resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
     const
 {
@@ -206,6 +207,7 @@ Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple) const
     return tuple;
 #endif
 }
+#endif
 
 #if defined(WMTK_ENABLE_HASH_UPDATE) 
 int64_t Mesh::get_cell_hash(int64_t cell_index, const attribute::Accessor<int64_t>& hash_accessor)

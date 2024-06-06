@@ -337,7 +337,6 @@ protected: // member functions
         attribute::Accessor<int64_t>& hash_accessor);
 
     void update_cell_hashes_slow(const std::vector<Tuple>& cells);
-#endif
 
     /**
      * @brief return the same tuple but with updated hash
@@ -356,6 +355,7 @@ protected: // member functions
      * @brief same as `resurrect_tuple` but slow because it creates a new accessor
      */
     Tuple resurrect_tuple_slow(const Tuple& tuple) const;
+#endif
 
 
 protected:
