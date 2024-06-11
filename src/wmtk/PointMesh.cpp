@@ -44,8 +44,28 @@ bool PointMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
     // every point is on the interior as it has no boundary simplices
     return false;
 }
-
 bool PointMesh::is_boundary_vertex(const Tuple&) const
+{
+    // every point is on the interior as it has no boundary simplices
+    return false;
+}
+
+bool PointMesh::is_nonmanifold(PrimitiveType pt, const Tuple& tuple) const
+{
+    switch (pt) {
+    case PrimitiveType::Vertex: return is_nonmanifold_vertex(tuple);
+    case PrimitiveType::Edge:
+    case PrimitiveType::Triangle:
+    case PrimitiveType::Tetrahedron:
+    default: break;
+    }
+    assert(
+        false); // "tried to compute the boundary of a point mesh for an invalid simplex dimension"
+    // every point is on the interior as it has no boundary simplices
+    return false;
+}
+
+bool PointMesh::is_nonmanifold_vertex(const Tuple&) const
 {
     // every point is on the interior as it has no boundary simplices
     return false;

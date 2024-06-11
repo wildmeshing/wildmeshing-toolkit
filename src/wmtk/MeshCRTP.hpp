@@ -57,6 +57,11 @@ public:
         return derived().is_boundary(pt, tuple);
     }
 
+    bool is_nonmanifold(PrimitiveType pt, const Tuple& tuple) const override
+    {
+        return derived().is_nonmanifold(pt, tuple);
+    }
+
     /// constructs an accessor that is aware of the derived mesh's type
     template <typename T, int Dim = Eigen::Dynamic>
     inline attribute::Accessor<T, Derived, Dim> create_accessor(

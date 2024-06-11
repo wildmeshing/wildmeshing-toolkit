@@ -26,15 +26,39 @@ bool EdgeMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
     return false;
 }
 
+bool EdgeMesh::is_nonmanifold(PrimitiveType pt, const Tuple& tuple) const
+{
+    switch (pt) {
+    case PrimitiveType::Vertex: return is_nonmanifold_vertex(tuple);
+    case PrimitiveType::Edge:
+    case PrimitiveType::Triangle:
+    case PrimitiveType::Tetrahedron:
+    default: break;
+    }
+    assert(
+        false); // "tried to compute the nonmanifold of an edge mesh for an invalid simplex dimension"
+    return false;
+}
+
 bool EdgeMesh::is_boundary_vertex(const Tuple& tuple) const
 {
     assert(is_valid(tuple));
     const attribute::Accessor<int64_t> ee_accessor = create_const_accessor<int64_t>(m_ee_handle);
     return ee_accessor.const_vector_attribute<2>(tuple)(tuple.m_local_vid) < 0;
+    //return ee_accessor.const_vector_attribute<2>(tuple)(tuple.m_local_vid) == -1;
+}
+
+
+bool EdgeMesh::is_nonmanifold_vertex(const Tuple& tuple) const
+{
+    assert(is_valid(tuple));
+    const attribute::Accessor<int64_t> ee_accessor = create_const_accessor<int64_t>(m_ee_handle);
+    return ee_accessor.const_vector_attribute<2>(tuple)(tuple.m_local_vid) == -2;
 }
 
 Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
+    assert(is_navigatable(type, tuple));
     assert(is_valid(tuple));
     bool ccw = is_ccw(tuple);
 
@@ -54,6 +78,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         auto ee = ee_accessor.const_vector_attribute<2>(tuple);
 
         int64_t gcid_new = ee(tuple.m_local_vid);
+        assert(gcid_new >= 0);
 
         // This is for special case self-loop, just to make sure the local vid of the returned
         // tuple is the same as the input. (When doing double-switch this is needed)
@@ -73,7 +98,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
                 // break;
             }
         }
-        assert(lvid_new != -1);
+        assert(lvid_new >= 0);
 
 
 #if defined(WMTK_ENABLE_HASH_UPDATE) 

@@ -31,9 +31,12 @@ public:
 
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
-    bool is_boundary(PrimitiveType, const Tuple& tuple) const override;
+    bool is_boundary(PrimitiveType, const Tuple& tuple) const final override;
     bool is_boundary_vertex(const Tuple& tuple) const;
 
+    using Mesh::is_nonmanifold;
+    bool is_nonmanifold(PrimitiveType pt, const Tuple& tuple) const final override; // CRTP override
+    bool is_nonmanifold_vertex(const Tuple& tuple) const;
 
     void initialize(Eigen::Ref<const RowVectors2l> E);
 

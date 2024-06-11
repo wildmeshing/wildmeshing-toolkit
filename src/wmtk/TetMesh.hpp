@@ -33,6 +33,12 @@ public:
     bool is_boundary_edge(const Tuple& tuple) const;
     bool is_boundary_face(const Tuple& tuple) const;
 
+    using Mesh::is_nonmanifold;
+    bool is_nonmanifold(PrimitiveType pt, const Tuple& tuple) const final override; // CRTP override
+    bool is_nonmanifold_vertex(const Tuple& tuple) const;
+    bool is_nonmanifold_edge(const Tuple& tuple) const;
+    bool is_nonmanifold_face(const Tuple& tuple) const;
+
     bool is_valid(const Tuple& tuple)
         const final override;
 

@@ -70,6 +70,7 @@ bool TriMesh::is_boundary_edge(const Tuple& tuple) const
 
     assert(is_valid(tuple));
     return m_ff_accessor->const_vector_attribute<3>(tuple)(tuple.m_local_eid) < 0;
+    //return m_ff_accessor->const_vector_attribute<3>(tuple)(tuple.m_local_eid) == -1;
 }
 
 bool TriMesh::is_boundary_vertex(const Tuple& vertex) const
@@ -93,11 +94,57 @@ bool TriMesh::is_boundary_vertex(const Tuple& vertex) const
     return false;
 }
 
+
+bool TriMesh::is_nonmanifold(PrimitiveType pt, const Tuple& tuple) const
+{
+    switch (pt) {
+    case PrimitiveType::Vertex: return is_nonmanifold_vertex(tuple);
+    case PrimitiveType::Edge: return is_nonmanifold_edge(tuple);
+    case PrimitiveType::Triangle:
+                              return false;
+    case PrimitiveType::Tetrahedron:
+    default: break;
+    }
+    assert(
+        false); // "tried to compute the nonmanifold of an tri mesh for an invalid simplex dimension"
+    return false;
+}
+
+bool TriMesh::is_nonmanifold_edge(const Tuple& tuple) const
+{
+
+    assert(is_valid(tuple));
+    return m_ff_accessor->const_vector_attribute<3>(tuple)(tuple.m_local_eid) == -2;
+}
+
+bool TriMesh::is_nonmanifold_vertex(const Tuple& vertex) const
+{
+    // go through all edges and check if they are nonmanifold
+    // const simplex::SimplexCollection neigh = simplex::open_star(*this, Simplex::vertex(vertex));
+    // for (const Simplex& s : neigh.get_edges()) {
+    //    if (is_nonmanifold(s.tuple())) {
+    //        return true;
+    //    }
+    //}
+
+    Tuple t = vertex;
+    do {
+        if (is_nonmanifold_edge(t)) {
+            return true;
+        }
+        t = switch_edge(switch_face(t));
+    } while (t != vertex);
+
+    return false;
+}
+
+
 Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
     assert(is_valid(tuple));
     bool ccw = is_ccw(tuple);
 
+    assert(is_navigatable(type, tuple));
     switch (type) {
     case PrimitiveType::Triangle: {
         const int64_t gvid = id(tuple, PrimitiveType::Vertex);
@@ -147,8 +194,8 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
                 }
             }
         }
-        assert(lvid_new != -1);
-        assert(leid_new != -1);
+        assert(lvid_new >= 0);
+        assert(leid_new >= 0);
 
 #if defined(WMTK_ENABLE_HASH_UPDATE) 
         const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();

@@ -44,6 +44,11 @@ public:
     bool is_boundary_vertex(const Tuple& tuple) const;
     bool is_boundary_edge(const Tuple& tuple) const;
 
+    using Mesh::is_nonmanifold;
+    bool is_nonmanifold(PrimitiveType pt, const Tuple& tuple) const final override; // CRTP override
+    bool is_nonmanifold_vertex(const Tuple& tuple) const;
+    bool is_nonmanifold_edge(const Tuple& tuple) const;
+
     void initialize(
         Eigen::Ref<const RowVectors3l> FV,
         Eigen::Ref<const RowVectors3l> FE,

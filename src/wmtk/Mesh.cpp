@@ -72,11 +72,12 @@ bool Mesh::is_navigatable(const simplex::Simplex& s) const
 
 bool Mesh::is_navigatable(PrimitiveType pt, const Tuple& tuple) const
 {
-    if (pt == top_simplex_type()) {
+    if (pt < top_simplex_type()) {
         return true;
     } else {
         // return neither nonmanifold nor boundary
-        return !(is_nonmanifold(pt, tuple) || is_boundary(pt, tuple));
+        const PrimitiveType pt2 = pt - 1;
+        return !(is_nonmanifold(pt2, tuple) || is_boundary(pt2, tuple));
     }
 }
 

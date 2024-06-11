@@ -276,10 +276,10 @@ Tuple TetMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
 Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
     assert(is_valid(tuple));
+    assert(is_navigatable(type, tuple));
     switch (type) {
     // bool ccw = is_ccw(tuple);
     case PrimitiveType::Tetrahedron: {
-        assert(!is_boundary_face(tuple));
         // need test
         const int64_t gvid = id(tuple, PrimitiveType::Vertex);
         const int64_t geid = id(tuple, PrimitiveType::Edge);
@@ -290,8 +290,8 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         int64_t gcid_new = tt(tuple.m_local_fid);
 
         /*handle exception here*/
-        assert(gcid_new != -1);
-        // check if is_boundary allows removing this exception in 3d cases
+        assert(gcid_new >= 0);
+        // check if is_navigatable allows removing this exception in 3d cases
         // if (gcid_new == -1) {
         //     return Tuple(-1, -1, -1, -1, -1);
         // }
@@ -322,9 +322,9 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         }
 
 
-        assert(lvid_new != -1);
-        assert(leid_new != -1);
-        assert(lfid_new != -1);
+        assert(lvid_new >= 0);
+        assert(leid_new >= 0);
+        assert(lfid_new >= 0);
 
 #if defined(WMTK_ENABLE_HASH_UPDATE) 
         const Tuple res(lvid_new, leid_new, lfid_new, gcid_new, get_cell_hash_slow(gcid_new));
@@ -382,6 +382,7 @@ bool TetMesh::is_boundary_face(const Tuple& tuple) const
 {
     const attribute::Accessor<int64_t> tt_accessor = create_const_accessor<int64_t>(m_tt_handle);
     return tt_accessor.const_vector_attribute<4>(tuple)(tuple.m_local_fid) < 0;
+    //return tt_accessor.const_vector_attribute<4>(tuple)(tuple.m_local_fid) == -1;
 }
 
 bool TetMesh::is_boundary_edge(const Tuple& edge) const
@@ -410,6 +411,53 @@ bool TetMesh::is_boundary_vertex(const Tuple& vertex) const
     return false;
 }
 
+bool TetMesh::is_nonmanifold(PrimitiveType pt, const Tuple& tuple) const
+{
+    switch (pt) {
+    case PrimitiveType::Vertex: return is_nonmanifold_vertex(tuple);
+    case PrimitiveType::Edge: return is_nonmanifold_edge(tuple);
+    case PrimitiveType::Triangle: return is_nonmanifold_face(tuple);
+    case PrimitiveType::Tetrahedron:
+                                  return false;
+    default: break;
+    }
+    assert(
+        false); // "tried to compute the nonmanifold of an tet mesh for an invalid simplex dimension"
+    return false;
+}
+
+
+bool TetMesh::is_nonmanifold_face(const Tuple& tuple) const
+{
+    const attribute::Accessor<int64_t> tt_accessor = create_const_accessor<int64_t>(m_tt_handle);
+    return tt_accessor.const_vector_attribute<4>(tuple)(tuple.m_local_fid) == -2;
+}
+
+bool TetMesh::is_nonmanifold_edge(const Tuple& edge) const
+{
+    for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
+             *this,
+             simplex::Simplex::edge(*this, edge),
+             PrimitiveType::Triangle)) {
+        if (is_nonmanifold_face(f)) {
+            return true;
+        }
+    }
+    return false;
+}
+bool TetMesh::is_nonmanifold_vertex(const Tuple& vertex) const
+{
+    // go through all faces and check if they are nonmanifold
+    const simplex::SimplexCollection neigh =
+        wmtk::simplex::open_star(*this, simplex::Simplex::vertex(*this, vertex));
+    for (const simplex::Simplex& s : neigh.simplex_vector(PrimitiveType::Triangle)) {
+        if (is_nonmanifold(s)) {
+            return true;
+        }
+    }
+
+    return false;
+}
 bool TetMesh::is_connectivity_valid() const
 {
     // get Accessors for topology

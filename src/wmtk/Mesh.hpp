@@ -1023,13 +1023,11 @@ inline Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequen
     Tuple r = tuple;
     const PrimitiveType top_type = top_simplex_type();
 
-    const int64_t boundary_dim = top_cell_dimension() - 1;
-    const PrimitiveType boundary_pt = static_cast<PrimitiveType>(boundary_dim);
 
     for (const PrimitiveType primitive : sequence) {
         // for top level simplices we cannot navigate across boundaries
-        if (primitive == top_type && is_boundary(boundary_pt, r)) {
-            assert(!is_boundary(boundary_pt, r));
+        if (primitive == top_type && is_navigatable(primitive, r)) {
+            assert(is_navigatable(primitive, r));
             r = {};
             return r;
         }
