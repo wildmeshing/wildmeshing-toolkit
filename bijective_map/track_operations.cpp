@@ -323,15 +323,21 @@ bool intersectSegmentEdge_r(
     return false;
 }
 
-void handle_collapse_edge(
+void handle_collapse_edge_curve(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
     const Eigen::MatrixXi& F_after,
     const std::vector<int64_t>& v_id_map_joint,
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& id_map_after,
-    query_curve& curve)
+    query_curve& curve,
+    bool use_rational)
 {
+    if (use_rational)
+    {
+        handle_collapse_edge_curve_r(UV_joint, F_before, F_after, v_id_map_joint, id_map_before, id_map_after, curve);
+        return;
+    }
     std::cout << "Handling EdgeCollapse curve" << std::endl;
     int curve_length = curve.segments.size();
     for (int id = 0; id < curve_length; id++) {
@@ -505,6 +511,16 @@ void handle_collapse_edge(
     }
 }
 
+void handle_collapse_edge_curve_r(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    query_curve& curve)
+{
+}
 
 void handle_split_edge(
     const Eigen::MatrixXd& V_before,

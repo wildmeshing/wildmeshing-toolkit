@@ -24,7 +24,7 @@ using json = nlohmann::json;
 #include "render_utils.hpp"
 #include "track_operations.hpp"
 
-// TODO: for testing purpose
+
 void back_track_map(path dirPath, std::vector<query_point>& query_points, bool do_forward = false, bool use_rational = false)
 {
     namespace fs = std::filesystem;
@@ -262,7 +262,7 @@ void back_track_lines(path dirPath, query_curve& curve, bool do_forward = false)
                 id_map_before,
                 id_map_after);
 
-            handle_collapse_edge(
+            handle_collapse_edge_curve(
                 UV_joint,
                 F_before,
                 F_after,
@@ -360,6 +360,7 @@ void forward_track_app(
     viewer.launch();
 }
 
+// TODO: swap operation
 void back_track_app(
     const Eigen::MatrixXd& V_in,
     const Eigen::MatrixXi& F_in,

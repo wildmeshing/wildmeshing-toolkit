@@ -146,7 +146,18 @@ void handle_collapse_edge_r(
     std::vector<query_point>& query_points);
 
 // curve version of the handle_collapse_edge
-void handle_collapse_edge(
+void handle_collapse_edge_curve(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    query_curve& curve,
+    bool use_rational = false);
+
+// Rational and Curve version of the above
+void handle_collapse_edge_curve_r(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
     const Eigen::MatrixXi& F_after,
@@ -154,16 +165,6 @@ void handle_collapse_edge(
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& id_map_after,
     query_curve& curve);
-
-// // Rational and Curve version of the above
-// void handle_collapse_edge_r(
-//     const Eigen::MatrixXd& UV_joint,
-//     const Eigen::MatrixXi& F_before,
-//     const Eigen::MatrixXi& F_after,
-//     const std::vector<int64_t>& v_id_map_joint,
-//     const std::vector<int64_t>& id_map_before,
-//     const std::vector<int64_t>& id_map_after,
-//     query_curve& curve);
 
 void handle_split_edge(
     const Eigen::MatrixXd& V_before,
