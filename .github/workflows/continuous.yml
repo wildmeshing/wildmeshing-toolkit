@@ -10,7 +10,7 @@ on:
 
 env:
   CTEST_OUTPUT_ON_FAILURE: ON
-  CTEST_PARALLEL_LEVEL: 2
+  CTEST_PARALLEL_LEVEL: 3
 
 jobs:
   ####################
@@ -19,7 +19,7 @@ jobs:
 
   Linux:
     name: ${{ matrix.name }} (${{ matrix.config }})
-    runs-on: [self-hosted,Linux]
+    runs-on: [ubuntu-latest]
     #runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -37,6 +37,9 @@ jobs:
 
       - name: Dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get -o Acquire::Retries=3 install \
+          ccache
           echo 'CACHE_PATH=~/.ccache' >> "$GITHUB_ENV"
 
       - name: Cache Build
@@ -61,28 +64,23 @@ jobs:
             -DCMAKE_BUILD_TYPE=${{ matrix.config }}
 
       - name: Build
-        run: cd build; make -j8; ccache --show-stats
+        run: cd build; make -j4; ccache --show-stats
 
       - name: Tests
-        run: cd build; ctest --verbose --output-on-failure
+        run: cd build; ctest --verbose --output-on-failure -j4
 
   ####################
   # MacOS
   ####################
 
   MacOS:
-    name: ${{ matrix.name }}-${{ matrix.arch }} (${{ matrix.config }})
-    #runs-on: ${{ matrix.os }}
-    runs-on: [self-hosted, MacOS]
+    name: ${{ matrix.os }} (${{ matrix.config }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest]
-        arch: [arm64] # arm64 no arm as GMP is binary
+        os: [macos-latest, macos-14]
         config: [Debug, Release]
-        include:
-          - os: macos-latest
-            name: macOS
 
     steps:
       - name: Checkout repository
@@ -92,15 +90,16 @@ jobs:
 
       - name: Dependencies
         run: |
+          brew install ccache
           echo 'CACHE_PATH=~/Library/Caches/ccache' >> "$GITHUB_ENV"
 
-          #- name: Cache Build
-          #  id: cache-build
-          #  uses: actions/cache@v2
-          #  with:
-          #    path: ${{ env.CACHE_PATH }}
-          #    key: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-cache-${{ github.sha }}
-          #    restore-keys: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-cache
+      - name: Cache Build
+        id: cache-build
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.CACHE_PATH }}
+          key: ${{ runner.os }}-${{ matrix.config }}-cache-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-${{ matrix.config }}-cache
 
       - name: Prepare ccache
         run: |
@@ -113,15 +112,13 @@ jobs:
           cd build
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }}
 
       - name: Build
-        run: cd build; make -j8; ccache --show-stats
+        run: cd build; make -j3; ccache --show-stats
 
       - name: Tests
-        #if: matrix.arch == 'x86_64' # no ARM vm on actions yet
-        run: cd build; ctest --verbose --output-on-failure
+        run: cd build; ctest --verbose --output-on-failure -j3
 
   ####################
   # Windows
@@ -129,11 +126,8 @@ jobs:
 
   Windows:
     name: Windows (${{ matrix.config }})
-    runs-on: [self-hosted, Windows]
-    #runs-on: windows-2022
+    runs-on: [windows-latest]
     env:
-      CC: cl.exe
-      CXX: cl.exe
       SCCACHE_IDLE_TIMEOUT: "12000"
     strategy:
       fail-fast: false
@@ -145,21 +139,44 @@ jobs:
         with:
           fetch-depth: 10
 
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+
+      - name: Dependencies
+        run: |
+          choco install ccache
+          "CACHE_PATH=${env:LOCALAPPDATA}\ccache" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Cache build
+        id: cache-build
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.CACHE_PATH }}
+          key: ${{ runner.os }}-${{ matrix.config }}-cache-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-${{ matrix.config }}-cache
+
+      - name: Prepare ccache
+        run: |
+          ccache --max-size=1.0G
+          ccache -V && ccache --show-stats && ccache --zero-stats
+
       - name: Configure and build
         shell: cmd
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat" -arch=x64
-          cmake --version
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
           cmake -G Ninja ^
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache ^
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} ^
             -B build ^
             -S .
-          cd build
-          ninja -j8
+      - name: Build
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
+          cmake --build build -j4 && ccache --show-stats
 
       - name: Tests
         shell: cmd
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat" -arch=x64
           cd build
-          ctest --verbose --output-on-failure
+          ctest --verbose --output-on-failure -j4
