@@ -29,6 +29,7 @@
 #include "multimesh/attribute/UseParentScopeRAII.hpp"
 
 #include "simplex/Simplex.hpp"
+#include "ValenceType.hpp"
 
 
 // if we have concepts then switch_tuples uses forward_iterator concept
@@ -460,6 +461,8 @@ public:
      */
     virtual bool is_ccw(const Tuple& tuple) const = 0;
 
+
+    virtual ValenceType get_valence_type(PrimitiveType, const Tuple& tuple) const = 0;
     /**
      * @brief check if a simplex lies on a boundary or not
      *

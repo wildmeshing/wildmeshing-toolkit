@@ -3,7 +3,7 @@
 namespace wmtk {
 Tuple PointMesh::vertex_tuple_from_id(int64_t id) const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     return Tuple(-1, -1, -1, id, get_cell_hash_slow(id));
 #else
     return Tuple(-1, -1, -1, id);
@@ -30,45 +30,19 @@ bool PointMesh::is_ccw(const Tuple&) const
     // trivial orientation so nothing can happen
     return true;
 }
-bool PointMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
+ValenceType PointMesh::get_valence_type(PrimitiveType pt, const Tuple& tuple) const
 {
     switch (pt) {
-    case PrimitiveType::Vertex: return is_boundary_vertex(tuple);
     case PrimitiveType::Edge:
     case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:
-    default: break;
+    default:
+        assert(false); // "tried to compute the boundary of a point mesh for an invalid simplex
+                       // dimension"
+        // every point is on the interior as it has no boundary simplices
+    case PrimitiveType::Vertex: break;
     }
-    assert(
-        false); // "tried to compute the boundary of a point mesh for an invalid simplex dimension"
-    // every point is on the interior as it has no boundary simplices
-    return false;
-}
-bool PointMesh::is_boundary_vertex(const Tuple&) const
-{
-    // every point is on the interior as it has no boundary simplices
-    return false;
-}
-
-bool PointMesh::is_nonmanifold(PrimitiveType pt, const Tuple& tuple) const
-{
-    switch (pt) {
-    case PrimitiveType::Vertex: return is_nonmanifold_vertex(tuple);
-    case PrimitiveType::Edge:
-    case PrimitiveType::Triangle:
-    case PrimitiveType::Tetrahedron:
-    default: break;
-    }
-    assert(
-        false); // "tried to compute the boundary of a point mesh for an invalid simplex dimension"
-    // every point is on the interior as it has no boundary simplices
-    return false;
-}
-
-bool PointMesh::is_nonmanifold_vertex(const Tuple&) const
-{
-    // every point is on the interior as it has no boundary simplices
-    return false;
+    return ValenceType::Boundary;
 }
 
 void PointMesh::initialize(int64_t count)

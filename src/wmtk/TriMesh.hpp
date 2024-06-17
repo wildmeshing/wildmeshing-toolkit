@@ -39,6 +39,7 @@ public:
 
 
     bool is_ccw(const Tuple& tuple) const final override; // CRTP override
+    ValenceType get_valence_type(PrimitiveType, const Tuple& tuple) const final override;
     using Mesh::is_boundary;
     bool is_boundary(PrimitiveType pt, const Tuple& tuple) const final override; // CRTP override
     bool is_boundary_vertex(const Tuple& tuple) const;
@@ -57,8 +58,7 @@ public:
         Eigen::Ref<const VectorXl> EF);
     void initialize(Eigen::Ref<const RowVectors3l> F);
 
-    bool is_valid(const Tuple& tuple)
-        const final override;
+    bool is_valid(const Tuple& tuple) const final override;
 
     bool is_connectivity_valid() const final override;
 

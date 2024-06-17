@@ -69,8 +69,7 @@ bool TriMesh::is_boundary_edge(const Tuple& tuple) const
 {
 
     assert(is_valid(tuple));
-    return m_ff_accessor->const_vector_attribute<3>(tuple)(tuple.m_local_eid) < 0;
-    //return m_ff_accessor->const_vector_attribute<3>(tuple)(tuple.m_local_eid) == -1;
+    return m_ff_accessor->const_vector_attribute<3>(tuple)(tuple.m_local_eid) == -1;
 }
 
 bool TriMesh::is_boundary_vertex(const Tuple& vertex) const

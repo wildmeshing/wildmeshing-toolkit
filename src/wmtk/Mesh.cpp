@@ -60,9 +60,19 @@ bool Mesh::is_boundary(const simplex::Simplex& s) const
     return is_boundary(s.primitive_type(), s.tuple());
 }
 
+bool Mesh::is_boundary(const PrimitiveType pt, const Tuple& t) const
+{
+    return get_valence_type(pt, t) == ValenceType::Boundary;
+}
+
 bool Mesh::is_nonmanifold(const simplex::Simplex& s) const
 {
     return is_nonmanifold(s.primitive_type(), s.tuple());
+}
+
+bool Mesh::is_nonmmanifold(const PrimitiveType pt, const Tuple& t) const
+{
+    return get_valence_type(pt, t) == ValenceType::NonManifold;
 }
 
 bool Mesh::is_navigatable(const simplex::Simplex& s) const
@@ -77,7 +87,11 @@ bool Mesh::is_navigatable(PrimitiveType pt, const Tuple& tuple) const
     } else {
         // return neither nonmanifold nor boundary
         const PrimitiveType pt2 = pt - 1;
-        return !(is_nonmanifold(pt2, tuple) || is_boundary(pt2, tuple));
+        switch (get_valence_type(pt, t)) {
+        case ValenceType::Boundary:
+        case ValenceType::NonManifold: return false;
+        case ValenceType::Interior: return true;
+        }
     }
 }
 

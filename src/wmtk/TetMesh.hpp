@@ -27,6 +27,8 @@ public:
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const final override;
     bool is_ccw(const Tuple& tuple) const final override;
+
+    ValenceType get_valence_type(PrimitiveType, const Tuple& tuple) const final override;
     using Mesh::is_boundary;
     bool is_boundary(PrimitiveType pt, const Tuple& tuple) const final override;
     bool is_boundary_vertex(const Tuple& tuple) const;
@@ -39,8 +41,7 @@ public:
     bool is_nonmanifold_edge(const Tuple& tuple) const;
     bool is_nonmanifold_face(const Tuple& tuple) const;
 
-    bool is_valid(const Tuple& tuple)
-        const final override;
+    bool is_valid(const Tuple& tuple) const final override;
 
     void initialize(
         Eigen::Ref<const RowVectors4l> TV,

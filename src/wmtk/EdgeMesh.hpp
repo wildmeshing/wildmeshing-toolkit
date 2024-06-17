@@ -29,7 +29,10 @@ public:
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
+
     bool is_ccw(const Tuple& tuple) const override;
+
+    ValenceType get_valence_type(PrimitiveType, const Tuple& tuple) const final override;
     using Mesh::is_boundary;
     bool is_boundary(PrimitiveType, const Tuple& tuple) const final override;
     bool is_boundary_vertex(const Tuple& tuple) const;

@@ -381,8 +381,7 @@ bool TetMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 bool TetMesh::is_boundary_face(const Tuple& tuple) const
 {
     const attribute::Accessor<int64_t> tt_accessor = create_const_accessor<int64_t>(m_tt_handle);
-    return tt_accessor.const_vector_attribute<4>(tuple)(tuple.m_local_fid) < 0;
-    //return tt_accessor.const_vector_attribute<4>(tuple)(tuple.m_local_fid) == -1;
+    return tt_accessor.const_vector_attribute<4>(tuple)(tuple.m_local_fid) == -1;
 }
 
 bool TetMesh::is_boundary_edge(const Tuple& edge) const
