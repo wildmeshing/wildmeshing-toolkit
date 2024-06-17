@@ -15,12 +15,12 @@ using namespace wmtk;
 #include <igl/boundary_loop.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/parallel_for.h>
+#include <igl/stb/read_image.h>
 #include <igl/stb/write_image.h>
 using path = std::filesystem::path;
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
-#include <igl/stb/write_image.h>
 #include "render_utils.hpp"
 #include "track_operations.hpp"
 
@@ -893,7 +893,13 @@ int main(int argc, char** argv)
     app.add_option("-i, --input", initial_mesh_file, "Initial mesh file")->required(true);
     app.add_option("-o, --output", output_mesh_file, "Output mesh file")->required(true);
     app.add_option("-l, --logs", operation_logs_dir, "Operation logs directory")->required(true);
-    app.add_option("a, --app", application_name, "Application name");
+    app.add_option("-a, --app", application_name, "Application name");
+
+    path input_obj_file;
+    app.add_option("--input_obj", input_obj_file, "Input obj file");
+    path input_texture_file;
+    app.add_option("--input_texture", input_texture_file, "Input texture file");
+
     CLI11_PARSE(app, argc, argv);
 
     if (!std::filesystem::exists(initial_mesh_file)) {
@@ -907,15 +913,136 @@ int main(int argc, char** argv)
 
     auto init_mesh_ptr = wmtk::read_mesh(initial_mesh_file);
     auto [F_in, V_in] = static_cast<TriMesh&>(*init_mesh_ptr).get_FV();
-
     std::cout << "F_in size " << F_in.rows() << ", " << F_in.cols() << std::endl;
     std::cout << "V_in size " << V_in.rows() << ", " << V_in.cols() << std::endl;
 
-    Eigen::MatrixXd V_out;
-    Eigen::MatrixXi F_out;
-    igl::readOBJ(output_mesh_file.string(), V_out, F_out);
+
+    Eigen::MatrixXd V_out, Vt_out, Vn_out;
+    Eigen::MatrixXi F_out, Ft_out, Fn_out;
+    std::cout << "\nloading output obj file..." << std::endl;
+    igl::readOBJ(output_mesh_file.string(), V_out, Vt_out, Vn_out, F_out, Ft_out, Fn_out);
     std::cout << "F_out size" << F_out.rows() << ", " << F_out.cols() << std::endl;
     std::cout << "V_out size" << V_out.rows() << ", " << V_in.cols() << std::endl;
+
+    if (application_name == "texture") {
+        Eigen::MatrixXd V_in_obj, Vt_in_obj, Vn_in_obj;
+        Eigen::MatrixXi F_in_obj, Ft_in_obj, Fn_in_obj;
+
+        std::cout << "\nloading input obj file..." << std::endl;
+        igl::readOBJ(
+            input_obj_file.string(),
+            V_in_obj,
+            Vt_in_obj,
+            Vn_in_obj,
+            F_in_obj,
+            Ft_in_obj,
+            Fn_in_obj);
+
+        std::cout << "F_in_obj size " << F_in_obj.rows() << ", " << F_in_obj.cols() << std::endl;
+        std::cout << "V_in_obj size " << V_in_obj.rows() << ", " << V_in_obj.cols() << std::endl;
+
+        Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R, G, B, A;
+        std::cout << "\nloading texture file..." << std::endl;
+        igl::stb::read_image(input_texture_file.string(), R, G, B, A);
+        int height = R.rows();
+        int width = R.cols();
+        std::cout << "height: " << height << ", width: " << width << std::endl;
+
+        Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R_out, G_out, B_out, A_out;
+        R_out.resize(height, width);
+        G_out.resize(height, width);
+        B_out.resize(height, width);
+        A_out.resize(height, width);
+
+        std::cout << "hello0" << std::endl;
+        // TODO: sampling query points on Ft_out, Vt_out
+        auto isPointInTriangle = [](double px,
+                                    double py,
+                                    double ax,
+                                    double ay,
+                                    double bx,
+                                    double by,
+                                    double cx,
+                                    double cy) {
+            double denominator = ((by - cy) * (ax - cx) + (cx - bx) * (ay - cy));
+            double a = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / denominator;
+            double b = ((cy - ay) * (px - cx) + (ax - cx) * (py - cy)) / denominator;
+            double c = 1.0 - a - b;
+            return std::make_tuple(
+                0 <= a && a <= 1 && 0 <= b && b <= 1 && 0 <= c && c <= 1,
+                a,
+                b,
+                c);
+        };
+        std::cout << "hello1" << std::endl;
+        // for each pixel in the texture image
+        std::vector<query_point> query_points;
+        for (int y = 0; y < height; ++y) {
+            std::cout << "processing row " << y << std::endl;
+            for (int x = 0; x < width; ++x) {
+                double u = double(x) / (width - 1);
+                double v = double(y) / (height - 1);
+
+                bool found_intersect = false;
+                for (int t_id = 0; t_id < Ft_out.rows(); ++t_id) {
+                    auto [inside, a, b, c] = isPointInTriangle(
+                        u,
+                        v,
+                        Vt_out(Ft_out(t_id, 0), 0),
+                        Vt_out(Ft_out(t_id, 0), 1),
+                        Vt_out(Ft_out(t_id, 1), 0),
+                        Vt_out(Ft_out(t_id, 1), 1),
+                        Vt_out(Ft_out(t_id, 2), 0),
+                        Vt_out(Ft_out(t_id, 2), 1));
+
+                    if (inside) {
+                        query_point qp;
+                        qp.f_id = t_id;
+                        qp.fv_ids = F_out.row(t_id);
+                        qp.bc = Eigen::Vector3d(a, b, c);
+                        query_points.push_back(qp);
+                        found_intersect = true;
+                        break;
+                    }
+                }
+
+                if (!found_intersect) {
+                    // add an empty query point
+                    query_point qp;
+                    qp.f_id = -1;
+                    qp.fv_ids = F_out.row(0);
+                    qp.bc = Eigen::Vector3d(1.0 / 3, 1.0 / 3, 1.0 / 3);
+                    query_points.push_back(qp);
+                }
+            }
+        }
+
+        std::cout << "done finding all query points" << std::endl;
+        // print out the query points
+        for (int i = 0; i < query_points.size(); i++) {
+            std::cout << "query point " << i << "'s fid: " << query_points[i].f_id << std::endl;
+        }
+        back_track_map(operation_logs_dir, query_points);
+
+        igl::parallel_for(height * width, [&](int id) {
+            if (query_points[id].f_id != -1) {
+                int f_id = query_points[id].f_id;
+                Eigen::Vector3d p(0, 0, 0);
+                for (int i = 0; i < 3; i++) {
+                    p += Vt_in_obj.row(Ft_in_obj(f_id, i)) * query_points[id].bc(i);
+                }
+                int x = int(p(0) * (width - 1));
+                int y = int(p(1) * (height - 1));
+                R_out(id % height, width - 1 - id / height) = R(y, x);
+                G_out(id % height, width - 1 - id / height) = G(y, x);
+                B_out(id % height, width - 1 - id / height) = B(y, x);
+            } else {
+                A_out(id % height, width - 1 - id / height) = 0;
+            }
+        });
+        // write the output image
+        igl::stb::write_image("output_texture.png", R_out, G_out, B_out, A_out);
+    }
 
 
     // test forward track
