@@ -32,6 +32,8 @@ struct query_curve
     std::vector<int> next_segment_ids;
 };
 
+
+/*
 // Rational version of the above
 struct query_point_r
 {
@@ -52,6 +54,7 @@ struct query_curve_r
     std::vector<query_segment_r> segments;
     std::vector<int> next_segment_ids;
 };
+*/
 
 template <typename qp_type>
 void handle_consolidate(
@@ -122,27 +125,6 @@ void handle_consolidate_forward(
     });
 }
 
-// TODO: Rational Version of this code
-Eigen::Vector3d ComputeBarycentricCoordinates3D(
-    const Eigen::Vector3d& p,
-    const Eigen::Vector3d& a,
-    const Eigen::Vector3d& b,
-    const Eigen::Vector3d& c,
-    double eps = 1e-3);
-
-Eigen::Vector3d ComputeBarycentricCoordinates2D(
-    const Eigen::Vector2d& p,
-    const Eigen::Vector2d& a,
-    const Eigen::Vector2d& b,
-    const Eigen::Vector2d& c);
-
-// Rational version of ComputeBarycentricCoordinates2D
-Eigen::Vector3<wmtk::Rational> ComputeBarycentricCoordinates2D_r(
-    const Eigen::Vector2<wmtk::Rational>& p,
-    const Eigen::Vector2<wmtk::Rational>& a,
-    const Eigen::Vector2<wmtk::Rational>& b,
-    const Eigen::Vector2<wmtk::Rational>& c);
-
 void handle_collapse_edge(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
@@ -150,7 +132,8 @@ void handle_collapse_edge(
     const std::vector<int64_t>& v_id_map_joint,
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& id_map_after,
-    std::vector<query_point>& query_points);
+    std::vector<query_point>& query_points,
+    bool use_rational = false);
 
 // Rational version of handle_collapse_edge
 void handle_collapse_edge_r(
@@ -160,24 +143,21 @@ void handle_collapse_edge_r(
     const std::vector<int64_t>& v_id_map_joint,
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& id_map_after,
-    std::vector<query_point_r>& query_points);
-
-bool intersectSegmentEdge(
-    const Eigen::Vector2d& a,
-    const Eigen::Vector2d& b,
-    const Eigen::Vector2d& c,
-    const Eigen::Vector2d& d,
-    Eigen::Vector2d& barycentric);
-
-bool intersectSegmentEdge_r(
-    const Eigen::Vector2<wmtk::Rational>& a,
-    const Eigen::Vector2<wmtk::Rational>& b,
-    const Eigen::Vector2<wmtk::Rational>& c,
-    const Eigen::Vector2<wmtk::Rational>& d,
-    Eigen::Vector2<wmtk::Rational>& barycentric);
+    std::vector<query_point>& query_points);
 
 // curve version of the handle_collapse_edge
-void handle_collapse_edge(
+void handle_collapse_edge_curve(
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before,
+    const std::vector<int64_t>& id_map_after,
+    query_curve& curve,
+    bool use_rational = false);
+
+// Rational and Curve version of the above
+void handle_collapse_edge_curve_r(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
     const Eigen::MatrixXi& F_after,
@@ -185,15 +165,6 @@ void handle_collapse_edge(
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& id_map_after,
     query_curve& curve);
-
-void handle_collapse_edge_r(
-    const Eigen::MatrixXd& UV_joint,
-    const Eigen::MatrixXi& F_before,
-    const Eigen::MatrixXi& F_after,
-    const std::vector<int64_t>& v_id_map_joint,
-    const std::vector<int64_t>& id_map_before,
-    const std::vector<int64_t>& id_map_after,
-    query_curve_r& curve);
 
 void handle_split_edge(
     const Eigen::MatrixXd& V_before,
@@ -216,6 +187,11 @@ void handle_swap_edge(
     const std::vector<int64_t>& id_map_after,
     const std::vector<int64_t>& v_id_map_after,
     std::vector<query_point>& query_points);
+
+
+/***
+ * Parse the operation log file
+*/
 
 void parse_consolidate_file(
     const json& operation_log,
