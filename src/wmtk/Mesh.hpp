@@ -122,7 +122,7 @@ public:
     friend class operations::EdgeSplit;
     friend class operations::EdgeOperationData;
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
         const simplex::SimplexCollection& vertex_closed_star,
@@ -274,7 +274,7 @@ public:
 
     const attribute::Accessor<char> get_flag_accessor(PrimitiveType type) const;
     const attribute::Accessor<char> get_const_flag_accessor(PrimitiveType type) const;
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     const attribute::Accessor<int64_t> get_cell_hash_accessor() const;
     const attribute::Accessor<int64_t> get_const_cell_hash_accessor() const;
 
@@ -295,7 +295,7 @@ public:
 
 protected: // member functions
     attribute::Accessor<char> get_flag_accessor(PrimitiveType type);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     attribute::Accessor<int64_t> get_cell_hash_accessor();
 
     /**
@@ -491,12 +491,18 @@ public:
      * @return false
      */
     virtual bool is_valid(const Tuple& tuple) const;
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     bool is_valid_with_hash(const Tuple& tuple) const;
-    bool is_valid_with_hash(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const;
+    bool is_valid_with_hash(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+        const;
 #endif
 
     bool is_removed(const Tuple& tuple) const;
+
+    /**
+     * @brief Check if the cached id in a simplex is up-to-date.
+     */
+    bool is_valid(const simplex::Simplex& s) const;
 
 
     //============================
