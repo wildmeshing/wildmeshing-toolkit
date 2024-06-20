@@ -1,5 +1,6 @@
 var NAVTREEINDEX12 =
 {
+"classwmtk_1_1multimesh_1_1attribute_1_1_update_strategy_collection.html#acab93e01141c243c4a2e9571b2e3f892":[5,0,2,5,0,3,0],
 "classwmtk_1_1multimesh_1_1attribute_1_1_use_parent_scope_r_a_i_i.html":[5,0,2,5,0,4],
 "classwmtk_1_1multimesh_1_1attribute_1_1_use_parent_scope_r_a_i_i.html#a6a2deaf9e4b3bc43db8ba58d396b08a3":[5,0,2,5,0,4,1],
 "classwmtk_1_1multimesh_1_1attribute_1_1_use_parent_scope_r_a_i_i.html#ab163498a7e37e8f22abba8021774c02e":[5,0,2,5,0,4,2],
@@ -248,6 +249,5 @@ var NAVTREEINDEX12 =
 "classwmtk_1_1operations_1_1_or_operation_sequence.html#ab57b842522df4407984534af08c3ea3b":[5,0,2,6,27,1],
 "classwmtk_1_1operations_1_1_or_operation_sequence.html#adf0b428b0d3b5719b3cdeaff2bf471bb":[5,0,2,6,27,2],
 "classwmtk_1_1operations_1_1_rounding.html":[5,0,2,6,28],
-"classwmtk_1_1operations_1_1_rounding.html#a00f1503220c55658a0c387d2a1728a2d":[5,0,2,6,28,0],
-"classwmtk_1_1operations_1_1_rounding.html#a207156efabafea7866ac3d6aff5999ee":[5,0,2,6,28,2]
+"classwmtk_1_1operations_1_1_rounding.html#a00f1503220c55658a0c387d2a1728a2d":[5,0,2,6,28,0]
 };

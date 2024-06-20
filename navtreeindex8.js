@@ -1,5 +1,6 @@
 var NAVTREEINDEX8 =
 {
+"classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a78504700a244c9898d53d9924ee42e21":[5,0,2,0,8,7],
 "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a912759d744e1510196453f3980136be6":[5,0,2,0,8,16],
 "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a93f32c7b0682fe609c4b5c047c49c1dc":[5,0,2,0,8,9],
 "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#aa3ec264b910f81761e79b90912fb9360":[5,0,2,0,8,25],
@@ -248,6 +249,5 @@ var NAVTREEINDEX8 =
 "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a2f6183956a3f7d8ace50bcf1c7fda7ea":[5,0,2,0,0,1,37],
 "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a3cef96df9f0defca4bf0605df8d95eb6":[5,0,2,0,0,1,33],
 "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a3e3065e340e68fcff63bb57ab8ef5090":[5,0,2,0,0,1,14],
-"classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a3e881e63ee0c1351f84657549db7fe38":[5,0,2,0,0,1,11],
-"classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a3f7cdf2ff330b84ed389142dc708d118":[5,0,2,0,0,1,47]
+"classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a3e881e63ee0c1351f84657549db7fe38":[5,0,2,0,0,1,11]
 };

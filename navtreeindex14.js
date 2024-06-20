@@ -1,5 +1,6 @@
 var NAVTREEINDEX14 =
 {
+"classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double.html#a22917e28e50f68e39db9dec39e70e220":[5,0,2,6,4,2,0],
 "classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double.html#a25a6c34373d7faadd96afc7b3a2beb00":[5,0,2,6,4,2,3],
 "classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double.html#a937226448404cf5e865488654506f7ce":[5,0,2,6,4,2,2],
 "classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double.html#abdf0afb7a81efab03ae4894f0816df42":[5,0,2,6,4,2,1],
@@ -248,6 +249,5 @@ var NAVTREEINDEX14 =
 "delaunay__2d_8hpp_source.html":[6,0,0,1,2,0,0,0,0,1],
 "delaunay__3d_8cpp.html":[6,0,0,1,2,0,0,0,0,2],
 "delaunay__3d_8cpp.html#a2b8f841c866f2be5ad04a5b453746b6e":[6,0,0,1,2,0,0,0,0,2,0],
-"delaunay__3d_8cpp_source.html":[6,0,0,1,2,0,0,0,0,2],
-"delaunay__3d_8hpp.html":[6,0,0,1,2,0,0,0,0,3]
+"delaunay__3d_8cpp_source.html":[6,0,0,1,2,0,0,0,0,2]
 };

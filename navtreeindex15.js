@@ -1,5 +1,6 @@
 var NAVTREEINDEX15 =
 {
+"delaunay__3d_8hpp.html":[6,0,0,1,2,0,0,0,0,3],
 "delaunay__3d_8hpp.html#a2b8f841c866f2be5ad04a5b453746b6e":[6,0,0,1,2,0,0,0,0,3,0],
 "delaunay__3d_8hpp_source.html":[6,0,0,1,2,0,0,0,0,3],
 "delaunay__geogram_8cpp.html":[6,0,0,1,2,0,0,0,0,4],
@@ -248,6 +249,5 @@ var NAVTREEINDEX15 =
 "find__invariant__in__collection__by__type_8hpp.html":[6,0,2,0,3,13],
 "find__invariant__in__collection__by__type_8hpp.html#a03e738f947e892d769944effbc92963c":[6,0,2,0,3,13,1],
 "find__invariant__in__collection__by__type_8hpp.html#ae975d72ae7f4a759f36108e53d2c144d":[6,0,2,0,3,13,0],
-"find__invariant__in__collection__by__type_8hpp_source.html":[6,0,2,0,3,13],
-"find__local__switch__sequence_8cpp.html":[6,0,2,0,5,2,7]
+"find__invariant__in__collection__by__type_8hpp_source.html":[6,0,2,0,3,13]
 };
