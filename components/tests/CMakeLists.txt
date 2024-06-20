@@ -7,7 +7,6 @@ include(wmtk_data)
 set(WMTK_COMPONENT_TEST_TARGET ${WMTK_COMPONENT_PREFIX}_tests)
 
 file(GLOB WMTKC_TEST_SOURCES test_*.cpp)
-message(STATUS "Components test sources: " ${WMTKC_TEST_SOURCES})
 add_executable(${WMTK_COMPONENT_TEST_TARGET} ${WMTKC_TEST_SOURCES})
 target_sources(${WMTK_COMPONENT_TEST_TARGET} PRIVATE integration_test.cpp)
 
