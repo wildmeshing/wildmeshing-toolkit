@@ -95,10 +95,7 @@ bool Operation::before(const simplex::Simplex& simplex) const
     //     return false;
     // }
 
-    if (!mesh().is_valid(simplex)) {
-        return false;
-    }
-    if (mesh().is_removed(simplex.tuple())) {
+    if (mesh().is_removed(simplex.tuple()) || !mesh().is_valid(simplex)) {
         return false;
     }
 
