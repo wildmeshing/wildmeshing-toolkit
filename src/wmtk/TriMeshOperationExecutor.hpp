@@ -18,11 +18,11 @@ public:
     void update_cell_hash();
 
     std::array<attribute::Accessor<char>, 3> flag_accessors;
-    attribute::Accessor<int64_t,TriMesh> ff_accessor;
-    attribute::Accessor<int64_t,TriMesh> fe_accessor;
-    attribute::Accessor<int64_t,TriMesh> fv_accessor;
-    attribute::Accessor<int64_t,TriMesh> vf_accessor;
-    attribute::Accessor<int64_t,TriMesh> ef_accessor;
+    attribute::Accessor<int64_t,TriMesh>& ff_accessor;
+    attribute::Accessor<int64_t,TriMesh>& fe_accessor;
+    attribute::Accessor<int64_t,TriMesh>& fv_accessor;
+    attribute::Accessor<int64_t,TriMesh>& vf_accessor;
+    attribute::Accessor<int64_t,TriMesh>& ef_accessor;
 #if defined(WMTK_ENABLE_HASH_UPDATE)
     attribute::Accessor<int64_t>& hash_accessor;
 #endif
@@ -61,10 +61,12 @@ public:
 
     void connect_ears();
 
+    // historical precompute tooling
+    void split_edge_precompute();
+    void collapse_edge_precompute();
+
     void split_edge();
     void collapse_edge();
-    void split_edge_single_mesh();
-    void collapse_edge_single_mesh();
 
     /**
      * @brief

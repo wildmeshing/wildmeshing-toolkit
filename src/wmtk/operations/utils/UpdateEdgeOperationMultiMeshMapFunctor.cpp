@@ -104,7 +104,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
 {
     const auto& parent_incident_datas = fmoe.incident_face_datas();
     auto& parent_mmmanager = m.m_multi_mesh_manager;
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     auto parent_hash_accessor = m.get_const_cell_hash_accessor();
 #endif
     const auto& parent_incident_vids = fmoe.incident_vids();
@@ -117,7 +117,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
 
                 const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
                 int64_t child_id = child_mmmanager.child_id();
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
                 auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
 #endif
                 auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
@@ -148,7 +148,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 }
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
                 child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 #endif
 
@@ -160,7 +160,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     continue;
                 }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
                 // parent_tuple need to be ressurected in the parent scope and get id in the parent
                 // scope.
                 // TODO: remove the resurrect cuz parent_tuple should be already valid in the parent
@@ -208,7 +208,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
     const auto& parent_incident_tet_datas = tmoe.incident_tet_datas();
     const auto& parent_incident_face_datas = tmoe.incident_face_datas();
     auto parent_mmmanager = m.m_multi_mesh_manager;
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     auto parent_hash_accessor = m.get_const_cell_hash_accessor();
 #endif
 
@@ -220,7 +220,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     // update merge faces here
                     const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
                     const int64_t child_id = child_mmmanager.child_id();
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
                     auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
 #endif
                     const auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
@@ -254,7 +254,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     }
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
                     // change to index access
                     child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 #endif
@@ -266,7 +266,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         continue;
                     }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
                     parent_tuple = m.parent_scope(
                         [&]() { return m.resurrect_tuple(parent_tuple, parent_hash_accessor); });
 #endif
@@ -325,7 +325,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     // there are three ear edges per side
                     const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
                     int64_t child_id = child_mmmanager.child_id();
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
                     auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
 #endif
                     auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
@@ -371,7 +371,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         }
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
                         child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 #endif
 
@@ -382,7 +382,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                             continue;
                         }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
                         parent_tuple = m.parent_scope([&]() {
                             return m.resurrect_tuple(parent_tuple, parent_hash_accessor);
                         });
@@ -613,7 +613,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     //    fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
 
     // update_all_hashes(child_mesh,
-    // child_tmoe.global_simplex_ids_with_potentially_modified_hashes);
+    // child_tmoe.global_ids_to_potential_tuples);
 }
 
 // tet -> edge
@@ -884,7 +884,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     }
     update_all_hashes(
         parent_mesh,
-        parent_fmoe.global_simplex_ids_with_potentially_modified_hashes,
+        parent_fmoe.global_ids_to_potential_tuples,
         parent_split_cell_maps);
 }
 
@@ -906,7 +906,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     }
     update_all_hashes(
         parent_mesh,
-        parent_tmoe.global_simplex_ids_with_potentially_modified_hashes,
+        parent_tmoe.global_ids_to_potential_tuples,
         parent_split_cell_maps);
 }
 
@@ -928,6 +928,37 @@ int64_t UpdateEdgeOperationMultiMeshMapFunctor::parent_local_fid(
     int64_t child_gid) const
 {
     return MultiMeshManager::parent_local_fid(child_to_parent, child_gid);
+}
+
+
+template <typename T>
+void UpdateEdgeOperationMultiMeshMapFunctor::update_maps(
+    MeshType& mesh,
+    const simplex::Simplex&,
+    const EdgeOperationData&)
+{
+    // on split:
+    // for each dimension
+    //      for each boundary simplex
+    //          update boundary facets using availalbe simplices (in split we have 2 choices,
+    //          collapse we have to look at opposing ears each simplex that refers to an existing
+    //          simplex must be replaced
+    //
+    // on collapse:
+    // for each dimension
+    //      for each boundary simplex
+    //          if the face used an ear simplex
+    //          update boundary facets using availalbe simplices (in split we have 2 choices,
+    //          collapse we have to look at opposing ears each simplex that refers to an existing
+    //          simplex must be replaced
+    //
+    //
+
+
+    for (size_t j = 0; j < simplices_to_update.size(); ++j) {
+        mesh.m_multi_mesh_manager
+            .update_map_tuple_hashes(m, PTs[j], simplices_to_update[j], split_cell_maps);
+    }
 }
 
 } // namespace wmtk::operations::utils

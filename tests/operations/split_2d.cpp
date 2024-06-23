@@ -227,6 +227,7 @@ TEST_CASE("delete_simplices", "[operations][2D]")
 #else
     auto executor = m.get_tmoe(edge);
 #endif
+    executor.split_edge_precompute();
 
     // new way of getting simplices
     executor.simplex_ids_to_delete = TMOE::get_split_simplices_to_delete(edge, m);
@@ -258,6 +259,7 @@ TEST_CASE("operation_state", "[operations][2D]")
         auto executor = m.get_tmoe(edge);
 #endif
 
+    executor.split_edge_precompute();
         REQUIRE(executor.flag_accessors.size() == 3);
         REQUIRE(executor.incident_vids().size() == 2);
         REQUIRE(executor.incident_vids()[0] == 0);
@@ -278,6 +280,7 @@ TEST_CASE("operation_state", "[operations][2D]")
         auto executor = m.get_tmoe(edge);
 #endif
 
+    executor.split_edge_precompute();
         REQUIRE(executor.flag_accessors.size() == 3);
         REQUIRE(executor.incident_vids().size() == 2);
         REQUIRE(executor.incident_vids()[0] == 1);
@@ -311,6 +314,7 @@ TEST_CASE("operation_state", "[operations][2D]")
         auto executor = m.get_tmoe(edge);
 #endif
 
+    executor.split_edge_precompute();
         REQUIRE(executor.flag_accessors.size() == 3);
         REQUIRE(executor.incident_vids().size() == 2);
         REQUIRE(executor.incident_vids()[0] == 1);
@@ -360,6 +364,7 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
 #else
     auto executor = m.get_tmoe(edge);
 #endif
+    executor.split_edge_precompute();
     auto ff_accessor_before = m.create_base_accessor<int64_t>(m.f_handle(PF));
     REQUIRE(ff_accessor_before.vector_attribute(1)(2) == 2);
     TMOE::EarData ear{1, m.id(edge, PE)};
@@ -384,6 +389,7 @@ TEST_CASE("hash_update", "[operations][2D]")
 #else
         auto executor = m.get_tmoe(edge);
 #endif
+    executor.split_edge_precompute();
         // auto& ha = executor.hash_accessor;
 
         CHECK(m.get_cell_hash_slow(0) == 0);
@@ -406,6 +412,7 @@ TEST_CASE("hash_update", "[operations][2D]")
         auto executor = m.get_tmoe(edge);
 #endif
         // auto& ha = executor.hash_accessor;
+    executor.split_edge_precompute();
 
         CHECK(m.get_cell_hash_slow(0) == 0);
         CHECK(m.get_cell_hash_slow(1) == 0);
@@ -447,6 +454,7 @@ TEST_CASE("connect_faces_across_spine", "[operations][split][2D]")
 #else
     auto executor = m.get_tmoe(edge);
 #endif
+    executor.split_edge_precompute();
     auto& incident_face_datas = executor.m_incident_face_datas;
 
     REQUIRE(executor.incident_face_datas().size() == 2);
@@ -487,6 +495,7 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
 #else
         auto executor = m.get_tmoe(edge);
 #endif
+    executor.split_edge_precompute();
         auto& incident_face_datas = executor.m_incident_face_datas;
 
         //  create new vertex
@@ -574,6 +583,7 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
 #else
         auto executor = m.get_tmoe(edge);
 #endif
+    executor.split_edge_precompute();
         auto& incident_face_datas = executor.m_incident_face_datas;
 
         // create new vertex

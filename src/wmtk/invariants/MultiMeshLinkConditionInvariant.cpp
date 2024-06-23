@@ -15,7 +15,11 @@ namespace {
 
 struct MultiMeshLinkConditionFunctor
 {
-    bool operator()(const Mesh& m, const simplex::Simplex& s) const { 
+    //bool operator()(const Mesh& m, const simplex::Simplex& s) const { 
+    //    return simplex::link_condition(m,s.tuple());
+    //}
+    template <typename MeshType>
+    bool operator()(const MeshType& m, const simplex::Simplex& s) const { 
         return simplex::link_condition(m,s.tuple());
     }
 };

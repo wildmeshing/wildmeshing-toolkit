@@ -101,11 +101,11 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     const Tuple& operating_tuple)
 #endif
     : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Triangle)}}
-    , ff_accessor(m.create_accessor<int64_t>(m.m_ff_handle))
-    , fe_accessor(m.create_accessor<int64_t>(m.m_fe_handle))
-    , fv_accessor(m.create_accessor<int64_t>(m.m_fv_handle))
-    , vf_accessor(m.create_accessor<int64_t>(m.m_vf_handle))
-    , ef_accessor(m.create_accessor<int64_t>(m.m_ef_handle))
+    , ff_accessor(*m.m_ff_accessor)
+    , fe_accessor(*m.m_fe_accessor)
+    , fv_accessor(*m.m_fv_accessor)
+    , vf_accessor(*m.m_vf_accessor)
+    , ef_accessor(*m.m_ef_accessor)
 #if defined(WMTK_ENABLE_HASH_UPDATE)
     , hash_accessor(hash_acc)
 #endif
@@ -119,64 +119,6 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     m_spine_vids[0] = m_mesh.id_vertex(m_operating_tuple);
     m_spine_vids[1] = m_mesh.id_vertex(m_mesh.switch_vertex(m_operating_tuple));
 
-    const simplex::SimplexCollection edge_closed_star =
-        simplex::closed_star(m_mesh, simplex::Simplex::edge(m_mesh, operating_tuple));
-
-    // get all faces incident to the edge
-    for (const simplex::Simplex& f : edge_closed_star.simplex_vector(PrimitiveType::Triangle)) {
-        m_incident_face_datas.emplace_back(get_incident_face_data(f.tuple()));
-    }
-
-    assert(m_incident_face_datas.size() <= 2);
-    if (m_incident_face_datas[0].fid != m.id_face(m_operating_tuple)) {
-        assert(m_incident_face_datas.size() == 2);
-        std::swap(m_incident_face_datas[0], m_incident_face_datas[1]);
-    }
-
-    // update hash on all faces in the two-ring neighborhood
-    simplex::SimplexCollection hash_update_region(m);
-    for (const simplex::Simplex& v : edge_closed_star.simplex_vector(PrimitiveType::Vertex)) {
-        const simplex::SimplexCollection v_closed_star = simplex::top_dimension_cofaces(m_mesh, v);
-        hash_update_region.add(v_closed_star);
-    }
-    hash_update_region.sort_and_clean();
-
-    global_simplex_ids_with_potentially_modified_hashes.resize(3);
-    simplex::SimplexCollection faces(m_mesh);
-
-    for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-
-        cell_ids_to_update_hash.push_back(m_mesh.id(f));
-#endif
-
-        faces.add(wmtk::simplex::faces(m, f, false));
-        faces.add(f);
-    }
-
-    faces.sort_and_clean();
-    for (const auto& s : faces) {
-        const int64_t index = static_cast<int64_t>(s.primitive_type());
-        if (!m.has_child_mesh_in_dimension(index)) continue;
-        global_simplex_ids_with_potentially_modified_hashes.at(index).emplace_back(
-            m_mesh.id(s),
-            wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
-    }
-    // auto load = [&](PrimitiveType pt, size_t index) {
-    //     auto simps = faces.simplex_vector(pt);
-    //     std::transform(
-    //         simps.begin(),
-    //         simps.end(),
-    //         std::back_inserter(global_simplex_ids_with_potentially_modified_hashes.at(index)),
-    //         [&](const simplex::Simplex& s) {
-    //             return std::make_tuple(
-    //                 m_mesh.id(s),
-    //                 wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
-    //         });
-    // };
-    // load(PrimitiveType::Vertex, 0);
-    // load(PrimitiveType::Edge, 1);
-    // load(PrimitiveType::Face, 2);
 }
 
 void TriMesh::TriMeshOperationExecutor::delete_simplices()
@@ -443,14 +385,97 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(IncidentFaceData& 
     return;
 }
 
-void TriMesh::TriMeshOperationExecutor::split_edge()
+void TriMesh::TriMeshOperationExecutor::split_edge_precompute()
 {
-    split_edge_single_mesh();
+    // need to write:
+    // * global_ids_to_potential_tuples
+    // * m_incident_face_datas
+    // * simplex_ids_to_delete
+    simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
+
+    std::vector<Tuple> adjacent_facets = wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, simplex::Simplex::edge(m_mesh,m_operating_tuple));
+
+    assert(m_operating_tuple == adjacent_facets[0]);
+
+    assert(m_incident_face_datas.empty());
+
+    std::transform(adjacent_facets.begin(), adjacent_facets.end(), std::back_inserter(m_incident_face_datas),
+            [&](const Tuple& t) {
+            return get_incident_face_data(t);
+            });
+
+    assert(m_incident_face_datas[0].fid == m_mesh.id_face(m_operating_tuple));
+    assert(m_incident_face_datas[0].local_operating_tuple == m_operating_tuple);
+
+    std::vector<std::vector<Tuple>> bsc(2);
+    if(m_mesh.has_child_mesh_in_dimension(0)) {
+        auto& this_bsc = bsc[0];
+        this_bsc.reserve(m_incident_face_datas.size() + 2);
+
+        this_bsc.emplace_back(m_operating_tuple);
+        this_bsc.emplace_back(m_mesh.switch_vertex(m_operating_tuple));
+        for(const auto& data: m_incident_face_datas) {
+            this_bsc.emplace_back(m_mesh.switch_tuples(data.local_operating_tuple,
+                        {PrimitiveType::Edge,PrimitiveType::Vertex}));
+        }
+    }
+    if(m_mesh.has_child_mesh_in_dimension(1)) {
+        auto& this_bsc = bsc[1];
+        /*
+        this_bsc.reserve(3 * m_incident_face_datas.size());
+            for(const auto& facet: m_incident_face_datas) {
+                        auto f = wmtk::simplex::faces(m_mesh, f, false);
+                        std::copy(f.begin(),f.end(), std::back_inserter(this_bsc));
+            }
+            std::sort(this_bsc.begin(),this_bsc.end());
+            this_bsc.erase(std::unique(this_bsc.begin(),this_bsc.end()),this_bsc.end());
+        }
+        */
 }
 
-void TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
+
+
+    const simplex::SimplexCollection edge_closed_star =
+        simplex::closed_star(m_mesh, simplex::Simplex::edge(m_mesh, m_operating_tuple));
+
+
+
+
+    // update hash on all faces in the two-ring neighborhood
+    simplex::SimplexCollection hash_update_region(m_mesh);
+    for (const simplex::Simplex& v : edge_closed_star.simplex_vector(PrimitiveType::Vertex)) {
+        const simplex::SimplexCollection v_closed_star = simplex::top_dimension_cofaces(m_mesh, v);
+        hash_update_region.add(v_closed_star);
+    }
+    hash_update_region.sort_and_clean();
+
+    global_ids_to_potential_tuples.resize(3);
+    simplex::SimplexCollection faces(m_mesh);
+
+    for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+
+        cell_ids_to_update_hash.push_back(m_mesh.id(f));
+#endif
+
+        faces.add(wmtk::simplex::faces(m_mesh, f, false));
+        faces.add(f);
+    }
+
+    faces.sort_and_clean();
+    for (const auto& s : faces) {
+        const int64_t index = static_cast<int64_t>(s.primitive_type());
+        if (!m_mesh.has_child_mesh_in_dimension(index)) continue;
+        global_ids_to_potential_tuples.at(index).emplace_back(
+            m_mesh.id(s),
+            wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
+    }
+
+}
+void TriMesh::TriMeshOperationExecutor::split_edge()
 {
-    simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
+
+    split_edge_precompute();
 
     // create new vertex (center)
     std::vector<int64_t> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
@@ -497,16 +522,60 @@ void TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
 }
 
 
-void TriMesh::TriMeshOperationExecutor::collapse_edge()
+void TriMesh::TriMeshOperationExecutor::collapse_edge_precompute()
 {
     is_collapse = true;
-    collapse_edge_single_mesh();
+
+    const simplex::SimplexCollection edge_closed_star =
+        simplex::closed_star(m_mesh, simplex::Simplex::edge(m_mesh, m_operating_tuple));
+
+    // get all faces incident to the edge
+    for (const simplex::Simplex& f : edge_closed_star.simplex_vector(PrimitiveType::Triangle)) {
+        m_incident_face_datas.emplace_back(get_incident_face_data(f.tuple()));
+    }
+
+    assert(m_incident_face_datas.size() <= 2);
+    if (m_incident_face_datas[0].fid != m_mesh.id_face(m_operating_tuple)) {
+        assert(m_incident_face_datas.size() == 2);
+        std::swap(m_incident_face_datas[0], m_incident_face_datas[1]);
+    }
+
+    // update hash on all faces in the two-ring neighborhood
+    simplex::SimplexCollection hash_update_region(m_mesh);
+    for (const simplex::Simplex& v : edge_closed_star.simplex_vector(PrimitiveType::Vertex)) {
+        const simplex::SimplexCollection v_closed_star = simplex::top_dimension_cofaces(m_mesh, v);
+        hash_update_region.add(v_closed_star);
+    }
+    hash_update_region.sort_and_clean();
+
+    global_ids_to_potential_tuples.resize(3);
+    simplex::SimplexCollection faces(m_mesh);
+
+    for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+
+        cell_ids_to_update_hash.push_back(m_mesh.id(f));
+#endif
+
+        faces.add(wmtk::simplex::faces(m_mesh, f, false));
+        faces.add(f);
+    }
+
+    faces.sort_and_clean();
+    for (const auto& s : faces) {
+        const int64_t index = static_cast<int64_t>(s.primitive_type());
+        if (!m_mesh.has_child_mesh_in_dimension(index)) continue;
+        global_ids_to_potential_tuples.at(index).emplace_back(
+            m_mesh.id(s),
+            wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
+    }
+    simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
 }
 
 
-void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
+void TriMesh::TriMeshOperationExecutor::collapse_edge()
 {
-    simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
+    collapse_edge_precompute();
 
     // must collect star before changing connectivity
     const simplex::SimplexCollection v0_star =

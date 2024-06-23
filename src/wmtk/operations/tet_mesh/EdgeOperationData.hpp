@@ -139,11 +139,6 @@ public:
 
     std::array<int64_t, 2> new_spine_eids() const { return m_split_new_spine_eids; }
 
-    // for multimesh we need to know which global ids are modified to trigger
-    // for every simplex dimension (We have 4 in tetmesh):
-    // a list of [simplex index, {all versions of that simplex}]
-    std::vector<std::vector<std::tuple<int64_t, std::vector<Tuple>>>>
-        global_simplex_ids_with_potentially_modified_hashes;
 
     bool is_collapse = false;
 

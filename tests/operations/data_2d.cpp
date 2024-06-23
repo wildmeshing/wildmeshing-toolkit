@@ -65,6 +65,7 @@ TEST_CASE("incident_face_data", "[operations][2D]")
 #else
         auto executor = m.get_tmoe(edge);
 #endif
+        executor.split_edge_precompute();
 
         const std::vector<TMOE::IncidentFaceData>& face_datas = executor.incident_face_datas();
         REQUIRE(face_datas.size() == 1);
@@ -98,6 +99,7 @@ TEST_CASE("incident_face_data", "[operations][2D]")
 #else
         auto executor = m.get_tmoe(edge);
 #endif
+        executor.split_edge_precompute();
         const std::vector<TMOE::IncidentFaceData>& face_datas = executor.incident_face_datas();
         REQUIRE(face_datas.size() == 1);
         const TMOE::IncidentFaceData& face_data = face_datas[0];
@@ -130,6 +132,7 @@ TEST_CASE("incident_face_data", "[operations][2D]")
 #else
         auto executor = m.get_tmoe(edge);
 #endif
+        executor.split_edge_precompute();
         const std::vector<TMOE::IncidentFaceData>& face_datas = executor.incident_face_datas();
         REQUIRE(face_datas.size() == 1);
         const TMOE::IncidentFaceData& face_data = face_datas[0];
