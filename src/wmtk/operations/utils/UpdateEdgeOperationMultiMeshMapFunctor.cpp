@@ -596,9 +596,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     }
 
     // update_hash on neighboring cells. use only 2 to get the cell types on either case
-    constexpr static PrimitiveType PV = PrimitiveType::Vertex;
-    constexpr static PrimitiveType PE = PrimitiveType::Edge;
-    constexpr static PrimitiveType PF = PrimitiveType::Triangle;
+    // constexpr static PrimitiveType PV = PrimitiveType::Vertex;
+    // constexpr static PrimitiveType PE = PrimitiveType::Edge;
+    // constexpr static PrimitiveType PF = PrimitiveType::Triangle;
 
     // NOTE: this is purpuosely verbose to show a point
     // We have to select with PrimitiveTypes are supported as children for each type of mesh
@@ -931,7 +931,8 @@ int64_t UpdateEdgeOperationMultiMeshMapFunctor::parent_local_fid(
 }
 
 
-template <typename T>
+/*
+template <typename MeshType>
 void UpdateEdgeOperationMultiMeshMapFunctor::update_maps(
     MeshType& mesh,
     const simplex::Simplex&,
@@ -960,5 +961,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_maps(
             .update_map_tuple_hashes(m, PTs[j], simplices_to_update[j], split_cell_maps);
     }
 }
+*/
 
 } // namespace wmtk::operations::utils
