@@ -44,7 +44,7 @@ auto SplitAlternateFacetData::get_alternative_facets(const int64_t& input_cell) 
     return std::get<1>(*it);
 }
 
-void CollapseAlternateFacetData::add(const Mesh& m, const Tuple& input_tuple) const
+void CollapseAlternateFacetData::add(const Mesh& m, const Tuple& input_tuple)
 {
     m_data.emplace_back(m, input_tuple);
     // first tuple is different from the input by switching everything but vertex
@@ -56,12 +56,36 @@ CollapseAlternateFacetData::Data::Data(const Mesh& m, const Tuple& input_tuple)
     , alts({{left_switches(m, input_tuple), right_switches(m, input_tuple)}})
 
 {}
-Tuple CollapseAlternateFacetData::Data::left_switches(const Mesh& m, const Tuple& t) const
+Tuple CollapseAlternateFacetData::Data::left_switches(const Mesh& m, const Tuple& t)
 {
-    const auto switches =
-        wmtk::utils::primitive_range(PrimitiveType::Edge, m.top_simplex_type() - 1);
+    const PrimitiveType boundary_type = m.top_simplex_type() - 1;
+    const auto switches = wmtk::utils::primitive_range(PrimitiveType::Edge, boundary_type);
+    Tuple r = m.switch_tuples_unsafe(t, switches);
+    if (m.is_boundary(boundary_type, r)) {
+        r = Tuple{};
+    } else {
+        r = m.switch_tuple(r, m.top_simplex_type());
+    }
+    return r;
 }
-Tuple CollapseAlternateFacetData::Data::right_switches(const Mesh& m, const Tuple& t) const
+Tuple CollapseAlternateFacetData::Data::right_switches(const Mesh& m, const Tuple& t)
+{
+    const PrimitiveType boundary_type = m.top_simplex_type() - 1;
+    const auto switches = wmtk::utils::primitive_range(PrimitiveType::Vertex, boundary_type);
+    auto r = m.switch_tuples_unsafe(t, switches);
+    if (m.is_boundary(boundary_type, r)) {
+        r = Tuple{};
+    } else {
+        r = m.switch_tuple(r, m.top_simplex_type());
+    }
+    return r;
+}
+
+std::array<Tuple, 2> CollapseAlternateFacetData::get_alternatives(const Tuple& t) const
+{
+    //
+}
+Tuple CollapseAlternateFacetData::get_alternative(const Tuple& t) const
 {
     //
 }

@@ -28,6 +28,7 @@ class CollapseAlternateFacetData
 public:
     class Data
     {
+    public:
         Data(const Mesh& m, const Tuple& input_tuple);
         Tuple input;
         std::array<Tuple, 2> alts;
@@ -37,7 +38,10 @@ public:
         static Tuple right_switches(const Mesh& m, const Tuple& t);
     };
 
-    void add(const Mesh& m, const Tuple& input_tuple) const;
+    void add(const Mesh& m, const Tuple& input_tuple);
+
+    std::array<Tuple, 2> get_alternatives(const Tuple& t) const;
+    Tuple get_alternative(const Tuple& t) const;
 
     using AltData = std::vector<Data>;
     AltData m_data;
@@ -69,7 +73,7 @@ public:
 
     std::vector<std::vector<int64_t>> global_ids_to_update;
 
-    SplitAlternateFacetDAta m_alternate_facetss;
+    SplitAlternateFacetData m_alternate_facetss;
 
 protected:
     static Tuple tuple_from_id(const Mesh& m, const PrimitiveType type, const int64_t gid);

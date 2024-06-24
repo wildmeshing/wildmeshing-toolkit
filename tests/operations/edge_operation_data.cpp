@@ -1,5 +1,9 @@
 
+#include <bitset>
 #include <catch2/catch_test_macros.hpp>
+#include <tools/EdgeMesh_examples.hpp>
+#include <tools/TetMesh_examples.hpp>
+#include <tools/TriMesh_examples.hpp>
 #include <wmtk/operations/EdgeOperationData.hpp>
 
 
@@ -30,4 +34,24 @@ TEST_CASE("split_facet_maps", "[operations][data]")
     CHECK(data.get_alternative_facets_it(1) == scm.cend());
     CHECK(data.get_alternative_facets_it(6) == scm.cend());
     CHECK(data.get_alternative_facets_it(7) == scm.cend());
+}
+
+
+namespace {
+void collapse_facet_maps_impl(
+    wmtk::operations::CollapseAlternateFacetData& data,
+    const wmtk::Mesh& m,
+    const std::vector<std::tuple<wmtk::Tuple, std::bitset<2>>>& tuples_with_boundary_info)
+{
+    for (const auto& [tuple, bits] : tuples_with_boundary_info) {
+        data.add(m, tuple);
+    }
+
+    //
+}
+} // namespace
+
+TEST_CASE("collapse_facet_maps", "[operations][data]")
+{
+    wmtk::operations::CollapseAlternateFacetData data;
 }
