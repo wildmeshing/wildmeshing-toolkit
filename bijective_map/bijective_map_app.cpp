@@ -25,7 +25,11 @@ using json = nlohmann::json;
 #include "track_operations.hpp"
 
 
-void back_track_map(path dirPath, std::vector<query_point>& query_points, bool do_forward = false, bool use_rational = false)
+void back_track_map(
+    path dirPath,
+    std::vector<query_point>& query_points,
+    bool do_forward = false,
+    bool use_rational = false)
 {
     namespace fs = std::filesystem;
     int maxIndex = -1;
@@ -748,9 +752,12 @@ int main(int argc, char** argv)
         Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R, G, B, A;
         std::cout << "\nloading texture file..." << std::endl;
         igl::stb::read_image(input_texture_file.string(), R, G, B, A);
-        int height = R.rows();
-        int width = R.cols();
-        std::cout << "height: " << height << ", width: " << width << std::endl;
+        int height_in = R.rows();
+        int width_in = R.cols();
+        std::cout << "height: " << height_in << ", width: " << width_in << std::endl;
+
+        int height = 800;
+        int width = 800;
 
         Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R_out, G_out, B_out, A_out;
         R_out.resize(height, width);
@@ -758,7 +765,6 @@ int main(int argc, char** argv)
         B_out.resize(height, width);
         A_out.resize(height, width);
 
-        std::cout << "hello0" << std::endl;
         // TODO: sampling query points on Ft_out, Vt_out
         auto isPointInTriangle = [](double px,
                                     double py,
@@ -778,11 +784,10 @@ int main(int argc, char** argv)
                 b,
                 c);
         };
-        std::cout << "hello1" << std::endl;
         // for each pixel in the texture image
         std::vector<query_point> query_points;
         for (int y = 0; y < height; ++y) {
-            std::cout << "processing row " << y << std::endl;
+            if (y % 100 == 0) std::cout << "processing row " << y << std::endl;
             for (int x = 0; x < width; ++x) {
                 double u = double(x) / (width - 1);
                 double v = double(y) / (height - 1);
@@ -822,24 +827,31 @@ int main(int argc, char** argv)
         }
 
         std::cout << "done finding all query points" << std::endl;
-        // print out the query points
-        for (int i = 0; i < query_points.size(); i++) {
-            std::cout << "query point " << i << "'s fid: " << query_points[i].f_id << std::endl;
-        }
+
         back_track_map(operation_logs_dir, query_points);
 
         igl::parallel_for(height * width, [&](int id) {
             if (query_points[id].f_id != -1) {
                 int f_id = query_points[id].f_id;
                 Eigen::Vector3d p(0, 0, 0);
+
+                int offset = 0;
                 for (int i = 0; i < 3; i++) {
-                    p += Vt_in_obj.row(Ft_in_obj(f_id, i)) * query_points[id].bc(i);
+                    if (F_in_obj(f_id, i) == query_points[id].fv_ids[0]) {
+                        offset = i;
+                        break;
+                    }
                 }
-                int x = int(p(0) * (width - 1));
-                int y = int(p(1) * (height - 1));
+
+                for (int i = 0; i < 3; i++) {
+                    p += Vt_in_obj.row(Ft_in_obj(f_id, (i + offset) % 3)) * query_points[id].bc(i);
+                }
+                int x = int(p(0) * (width_in - 1));
+                int y = int(p(1) * (height_in - 1));
                 R_out(id % height, width - 1 - id / height) = R(y, x);
                 G_out(id % height, width - 1 - id / height) = G(y, x);
                 B_out(id % height, width - 1 - id / height) = B(y, x);
+                A_out(id % height, width - 1 - id / height) = A(y, x);
             } else {
                 A_out(id % height, width - 1 - id / height) = 0;
             }

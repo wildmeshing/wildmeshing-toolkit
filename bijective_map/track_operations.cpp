@@ -85,7 +85,13 @@ void handle_collapse_edge(
 {
     if (use_rational) {
         handle_collapse_edge_r(
-            UV_joint, F_before, F_after, v_id_map_joint, id_map_before, id_map_after, query_points);
+            UV_joint,
+            F_before,
+            F_after,
+            v_id_map_joint,
+            id_map_before,
+            id_map_after,
+            query_points);
         return;
     }
     std::cout << "Handling EdgeCollapse" << std::endl;
@@ -165,8 +171,8 @@ void handle_collapse_edge(
             qp.bc[2] = std::max(0.0, std::min(1.0, qp.bc[2]));
             qp.bc /= qp.bc.sum();
 
-            std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
-                      << std::endl;
+            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
+            //           << std::endl;
         }
     }
 }
@@ -333,9 +339,15 @@ void handle_collapse_edge_curve(
     query_curve& curve,
     bool use_rational)
 {
-    if (use_rational)
-    {
-        handle_collapse_edge_curve_r(UV_joint, F_before, F_after, v_id_map_joint, id_map_before, id_map_after, curve);
+    if (use_rational) {
+        handle_collapse_edge_curve_r(
+            UV_joint,
+            F_before,
+            F_after,
+            v_id_map_joint,
+            id_map_before,
+            id_map_after,
+            curve);
         return;
     }
     std::cout << "Handling EdgeCollapse curve" << std::endl;
@@ -519,8 +531,7 @@ void handle_collapse_edge_curve_r(
     const std::vector<int64_t>& id_map_before,
     const std::vector<int64_t>& id_map_after,
     query_curve& curve)
-{
-}
+{}
 
 void handle_split_edge(
     const Eigen::MatrixXd& V_before,
