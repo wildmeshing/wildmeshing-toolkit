@@ -703,10 +703,16 @@ int main(int argc, char** argv)
     app.add_option("-l, --logs", operation_logs_dir, "Operation logs directory")->required(true);
     app.add_option("-a, --app", application_name, "Application name");
 
+    // options for texture transfer application
     path input_obj_file;
-    app.add_option("--input_obj", input_obj_file, "Input obj file");
     path input_texture_file;
+    app.add_option("--input_obj", input_obj_file, "Input obj file");
     app.add_option("--input_texture", input_texture_file, "Input texture file");
+    int height_out = 200;
+    int width_out = 200;
+    app.add_option("--height_out", height_out, "Height of the output image");
+    app.add_option("--width_out", width_out, "Width of the output image");
+
 
     CLI11_PARSE(app, argc, argv);
 
@@ -752,12 +758,12 @@ int main(int argc, char** argv)
         Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R, G, B, A;
         std::cout << "\nloading texture file..." << std::endl;
         igl::stb::read_image(input_texture_file.string(), R, G, B, A);
-        int height_in = R.rows();
-        int width_in = R.cols();
+        int width_in = R.rows();
+        int height_in = R.cols();
         std::cout << "height: " << height_in << ", width: " << width_in << std::endl;
 
-        int height = 800;
-        int width = 800;
+        int height = height_out;
+        int width = width_out;
 
         Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R_out, G_out, B_out, A_out;
         R_out.resize(height, width);
@@ -833,7 +839,7 @@ int main(int argc, char** argv)
         igl::parallel_for(height * width, [&](int id) {
             if (query_points[id].f_id != -1) {
                 int f_id = query_points[id].f_id;
-                Eigen::Vector3d p(0, 0, 0);
+                Eigen::Vector2d p(0, 0);
 
                 int offset = 0;
                 for (int i = 0; i < 3; i++) {
@@ -848,16 +854,16 @@ int main(int argc, char** argv)
                 }
                 int x = int(p(0) * (width_in - 1));
                 int y = int(p(1) * (height_in - 1));
-                R_out(id % height, width - 1 - id / height) = R(y, x);
-                G_out(id % height, width - 1 - id / height) = G(y, x);
-                B_out(id % height, width - 1 - id / height) = B(y, x);
-                A_out(id % height, width - 1 - id / height) = A(y, x);
+                R_out(id / width, id % width) = R(x, y);
+                G_out(id / width, id % width) = G(x, y);
+                B_out(id / width, id % width) = B(x, y);
+                A_out(id / width, id % width) = A(x, y);
             } else {
-                A_out(id % height, width - 1 - id / height) = 0;
+                A_out(id / width, id % width) = 0;
             }
         });
         // write the output image
-        igl::stb::write_image("output_texture.png", R_out, G_out, B_out, A_out);
+        igl::stb::write_image("output_texture.png", R_out.transpose(), G_out.transpose(), B_out.transpose(), A_out.transpose());
     }
 
 
