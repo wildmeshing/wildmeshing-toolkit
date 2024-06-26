@@ -1,0 +1,17 @@
+{
+    "components": [
+        {
+            "mesh_decimation": {
+                "input": "input_mesh",
+                "output": "output_mesh",
+                "target_len": 2.0,
+                "cell_constraint_tag_name": "tag",
+                "attributes": [
+                    "tag",
+                    "vertices"
+                ],
+                "pass_through": []
+            }
+        }
+    ]
+}
