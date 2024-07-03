@@ -137,6 +137,7 @@ public:
 
     int64_t top_cell_dimension() const;
     PrimitiveType top_simplex_type() const;
+    bool is_free() const;
 
     // attribute directly hashes its "children" components so it overrides "child_hashes"
     std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
@@ -873,6 +874,9 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     int64_t m_top_cell_dimension = -1;
 
+    // assumes no adjacency data exists
+    bool m_is_free = false;
+
 private:
     // PImpl'd manager of per-thread update stacks
     // Every time a new access scope is requested the manager creates another level of indirection
@@ -1008,6 +1012,10 @@ inline Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequen
         r = switch_tuple(r, primitive);
     }
     return r;
+}
+inline bool Mesh::is_free() const
+{
+    return m_is_free;
 }
 
 inline int64_t Mesh::top_cell_dimension() const

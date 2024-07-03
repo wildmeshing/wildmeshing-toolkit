@@ -106,6 +106,9 @@ public:
     std::array<int64_t, 2> split_spine_eids = std::array<int64_t, 2>{{-1, -1}};
     int64_t split_new_vid = -1;
 
+    std::array<int64_t, 2> m_free_split_v;
+    std::array<int64_t, 2> m_free_split_e;
+
     bool is_collapse = false;
 };
 } // namespace wmtk::operations::tri_mesh
