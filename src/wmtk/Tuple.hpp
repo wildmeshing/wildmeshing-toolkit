@@ -24,6 +24,9 @@ class TupleInspector;
 }
 namespace operations {
 class Operation;
+class SplitAlternateFacetData;
+class CollapseAlternateFacetData;
+class EdgeOperationData;
 }
 namespace utils {
 // for identifying unique top level simplices between tuples
@@ -54,6 +57,9 @@ public:
     template <typename T, typename MeshType, int Dim>
     friend class attribute::Accessor;
     friend class operations::Operation;
+    friend class operations::SplitAlternateFacetData;
+    friend class operations::CollapseAlternateFacetData;
+    friend class operations::EdgeOperationData;
     friend class utils::TupleCellLessThan;
     friend class utils::TupleInspector;
     friend class components::internal::MultiMeshFromTag;

@@ -40,18 +40,17 @@ public:
 
     void add(const Mesh& m, const Tuple& input_tuple);
 
-    std::array<Tuple, 2> get_alternatives(const Tuple& t) const;
-    Tuple get_alternative(const Tuple& t) const;
+    std::array<Tuple, 2> get_alternatives(const PrimitiveType mesh_pt, const Tuple& t) const;
+    Tuple get_alternative(const PrimitiveType mesh_pt, const Tuple& t) const;
 
     using AltData = std::vector<Data>;
     AltData m_data;
 
     void sort();
 
-    // assumes the split facet map has been sorted
-    const std::array<int64_t, 2>& get_alternative_facets(const int64_t& input_facet) const;
+    const Data& get_alternatives_data(const Tuple& t) const;
 
-    AltData::const_iterator get_alternative_facets_it(const int64_t& input_facet) const;
+    AltData::const_iterator get_alternative_data_it(const int64_t& input_facet) const;
 };
 
 class EdgeOperationData
