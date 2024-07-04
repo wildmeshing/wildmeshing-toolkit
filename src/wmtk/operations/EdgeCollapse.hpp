@@ -30,6 +30,11 @@ public:
     std::vector<simplex::Simplex> unmodified_primitives(
         const simplex::Simplex& simplex) const override;
 
+    // for free meshes after is a no-op because the simplex is just gone
+    bool after(
+        const std::vector<simplex::Simplex>& unmods,
+        const std::vector<simplex::Simplex>& mods) const final override;
+
 private:
     std::vector<std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>>
         m_new_attr_strategies;

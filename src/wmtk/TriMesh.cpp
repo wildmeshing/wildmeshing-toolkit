@@ -253,6 +253,7 @@ Tuple TriMesh::tuple_from_global_ids(int64_t fid, int64_t eid, int64_t vid) cons
     auto fv = m_fv_accessor->index_access().const_vector_attribute<3>(fid);
     auto fe = m_fe_accessor->index_access().const_vector_attribute<3>(fid);
 
+
     int64_t lvid = -1;
     int64_t leid = -1;
 

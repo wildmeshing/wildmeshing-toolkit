@@ -104,6 +104,7 @@ public:
     std::vector<IncidentFaceData> m_incident_face_datas;
 
     std::array<int64_t, 2> split_spine_eids = std::array<int64_t, 2>{{-1, -1}};
+    // in a free mesh this encodes the new vertex added to one of the faces
     int64_t split_new_vid = -1;
 
     std::array<int64_t, 2> m_free_split_v;

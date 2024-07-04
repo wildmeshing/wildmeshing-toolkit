@@ -20,6 +20,7 @@
 #include <wmtk/utils/mesh_utils.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
+#include "../tools/is_free.hpp"
 #include "../tools/redirect_logger_to_cout.hpp"
 
 using namespace wmtk;
@@ -165,7 +166,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(m.is_valid_with_hash(ret));
 #else
         REQUIRE(m.is_valid(ret));
@@ -484,5 +485,24 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
             }
             CHECK(fid_actual.size() == fid_expected.size());
         }
+    }
+}
+
+TEST_CASE("collapse_no_topology", "[operations][collapse]")
+{
+    const int64_t initial_size = 20;
+    DEBUG_TriMesh m = [](int64_t size) {
+        TriMesh m;
+        m.initialize_free(size);
+        return m;
+    }(initial_size);
+    int64_t size = initial_size;
+    for (Tuple edge : m.get_all(PrimitiveType::Triangle)) {
+        EdgeCollapse op(m);
+        REQUIRE(!op(simplex::Simplex(m, PrimitiveType::Edge, edge)).empty());
+        size--;
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(is_free(m));
+        CHECK(m.get_all(PrimitiveType::Triangle).size() == size);
     }
 }

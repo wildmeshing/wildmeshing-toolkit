@@ -174,6 +174,7 @@ SplitNewAttributeStrategy<T>::SplitNewAttributeStrategy(
     set_strategy(SplitBasicStrategy::Throw);
 
     auto& mesh = m_handle.mesh();
+    assert(!mesh.is_free()); // attribute new is not valid on free meshes
 
     if (mesh.top_simplex_type() == PrimitiveType::Edge) {
         m_topo_info =
@@ -211,7 +212,7 @@ void SplitNewAttributeStrategy<T>::update(
         const auto& return_data_variant = data.get_variant(mesh(), input_simplex);
 
         PrimitiveType pt = primitive_type();
-        //for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type()))
+        // for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type()))
         {
             {
                 auto old_simps =

@@ -19,6 +19,7 @@
 #include <wmtk/utils/mesh_utils.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
+#include "../tools/is_free.hpp"
 #include "../tools/redirect_logger_to_cout.hpp"
 
 using namespace wmtk;
@@ -114,7 +115,6 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][2D]")
         }
     }
 }
-
 
 
 TEST_CASE("delete_simplices", "[operations][2D]")
@@ -934,4 +934,24 @@ TEST_CASE("split_modified_primitives", "[operations][split]")
     CHECK(ret.size() == 1);
     CHECK(ret[0].primitive_type() == PrimitiveType::Vertex);
     CHECK(m.id(ret[0]) == 10);
+}
+
+
+TEST_CASE("split_no_topology", "[operations][split]")
+{
+    const int64_t initial_size = 20;
+    DEBUG_TriMesh m = [](int64_t size) {
+        TriMesh m;
+        m.initialize_free(size);
+        return m;
+    }(initial_size);
+    int64_t size = initial_size;
+    for (Tuple edge : m.get_all(PrimitiveType::Triangle)) {
+        EdgeSplit op(m);
+        REQUIRE(!op(simplex::Simplex(m, PrimitiveType::Edge, edge)).empty());
+        size++;
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(is_free(m));
+        CHECK(m.get_all(PrimitiveType::Triangle).size() == size);
+    }
 }

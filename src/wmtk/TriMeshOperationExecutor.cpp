@@ -379,10 +379,12 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(IncidentFaceData& 
 
     std::copy(new_fids.begin(), new_fids.end(), face_data.split_f.begin());
 
+    if(!m_mesh.is_free()) {
     std::vector<int64_t> splitting_edges = this->request_simplex_indices(PrimitiveType::Edge, 1);
     assert(splitting_edges[0] > -1); // TODO: is this assert reasonable at all?
     int64_t& split_edge_eid = face_data.new_edge_id;
     split_edge_eid = splitting_edges[0];
+    }
 
     //  ---------v2--------
     // |        /|\        |
@@ -429,8 +431,9 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(IncidentFaceData& 
             // spline
             if (fe[i] == other_ear.eid) {
                 if(m_mesh.is_free()) {
-                    fe[i] = m_free_split_e[i];
+                    fe[i] = m_free_split_e[j];
                 } else {
+                    const int64_t& split_edge_eid = face_data.new_edge_id;
                     ff[i] = other_f;
                     fe[i] = split_edge_eid;
                 }
@@ -444,9 +447,9 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(IncidentFaceData& 
             // if i find the other vertex then i set it to be the new vertex
             if (fv[i] == other_v) {
                 if(m_mesh.is_free()) {
-                    fv[i] = m_free_split_v[i];
+                    fv[i] = m_free_split_v[j];
                 } else {
-                fv[i] = split_new_vid;
+                    fv[i] = split_new_vid;
                 }
             }
         }
@@ -461,12 +464,24 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(IncidentFaceData& 
 
     if(m_mesh.is_free()) {
         for(size_t j = 0; j < 2; ++j) {
-    ef_accessor.index_access().scalar_attribute(m_free_split_e[j]) = new_fids[j];
-    vf_accessor.index_access().scalar_attribute(m_free_split_v[j]) = new_fids[j];
+            ef_accessor.index_access().scalar_attribute(m_free_split_e[j]) = new_fids[j];
+            vf_accessor.index_access().scalar_attribute(m_free_split_v[j]) = new_fids[j];
         }
+
+        const int64_t f = face_data.split_f[1]; // new face to insert
+        auto fv = fv_accessor.index_access().vector_attribute(f);
+        for(int j = 0; j < 3; ++j) {
+            if(fv(j) == face_data.opposite_vid) {
+                fv(j) = split_new_vid;
+
+                vf_accessor.index_access().scalar_attribute(split_new_vid) = new_fids[1];
+            }
+        }
+
     } else {
-    ef_accessor.index_access().scalar_attribute(split_edge_eid) = new_fids[0];
-    vf_accessor.index_access().scalar_attribute(split_new_vid) = new_fids[0];
+        const int64_t& split_edge_eid = face_data.new_edge_id;
+        ef_accessor.index_access().scalar_attribute(split_edge_eid) = new_fids[0];
+        vf_accessor.index_access().scalar_attribute(split_new_vid) = new_fids[0];
     }
 
     // face neighbors on the other side of the spine are updated separately
@@ -484,31 +499,32 @@ void TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
     simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
 
     if(m_mesh.is_free()) {
-    // create new vertex (center)
-    std::vector<int64_t> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 2);
-    assert(new_vids.size() == 2);
+        // create new vertex (center)
+        std::vector<int64_t> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 3);
+        assert(new_vids.size() == 3);
 
-    std::copy(new_vids.begin(), new_vids.end(), m_free_split_v.begin());
+        std::copy(new_vids.begin()+1, new_vids.end(), m_free_split_v.begin());
+        split_new_vid = new_vids[0];
 
-    // create new edges (spine)
-    std::vector<int64_t> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 4);
-    assert(new_eids.size() == 4);
+        // create new edges (spine)
+        std::vector<int64_t> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 4);
+        assert(new_eids.size() == 4);
 
-    auto midpoint = new_eids.begin() + 2;
-    std::copy(new_eids.begin(), midpoint, split_spine_eids.begin());
-    std::copy(midpoint, new_eids.end(), m_free_split_e.begin());
+        auto midpoint = new_eids.begin() + 2;
+        std::copy(new_eids.begin(), midpoint, split_spine_eids.begin());
+        std::copy(midpoint, new_eids.end(), m_free_split_e.begin());
 
     } else {
-    // create new vertex (center)
-    std::vector<int64_t> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
-    assert(new_vids.size() == 1);
-    split_new_vid = new_vids[0];
+        // create new vertex (center)
+        std::vector<int64_t> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
+        assert(new_vids.size() == 1);
+        split_new_vid = new_vids[0];
 
-    // create new edges (spine)
-    std::vector<int64_t> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
-    assert(new_eids.size() == 2);
+        // create new edges (spine)
+        std::vector<int64_t> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
+        assert(new_eids.size() == 2);
 
-    std::copy(new_eids.begin(), new_eids.end(), split_spine_eids.begin());
+        std::copy(new_eids.begin(), new_eids.end(), split_spine_eids.begin());
     }
 
     for (IncidentFaceData& face_data : m_incident_face_datas) {
@@ -535,10 +551,15 @@ void TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
 
     // return Tuple new_fid, new_vid that points
     const int64_t new_tuple_fid = m_incident_face_datas[0].split_f[1];
-    m_output_tuple = m_mesh.edge_tuple_from_id(split_spine_eids[1]);
+    if(m_mesh.is_free()) {
+    m_output_tuple =
+        m_mesh.tuple_from_global_ids(new_tuple_fid, split_spine_eids[1], m_free_split_v[1]);
+    assert(m_mesh.id_vertex(m_output_tuple) == m_free_split_v[1]);
+    } else {
     m_output_tuple =
         m_mesh.tuple_from_global_ids(new_tuple_fid, split_spine_eids[1], split_new_vid);
     assert(m_mesh.id_vertex(m_output_tuple) == split_new_vid);
+    }
     assert(m_mesh.id_face(m_output_tuple) == new_tuple_fid);
     assert(m_mesh.is_valid(m_output_tuple));
 

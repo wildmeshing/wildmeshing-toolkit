@@ -105,4 +105,14 @@ void EdgeCollapse::set_new_attribute_strategy(
         attribute.handle());
 }
 
+bool EdgeCollapse::after(
+    const std::vector<simplex::Simplex>& unmods,
+    const std::vector<simplex::Simplex>& mods) const
+{
+    if (mesh().is_free()) {
+        return true;
+    } else {
+        return Operation::after(unmods, mods);
+    }
+}
 } // namespace wmtk::operations
