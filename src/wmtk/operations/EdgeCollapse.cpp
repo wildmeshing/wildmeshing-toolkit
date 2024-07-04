@@ -17,6 +17,9 @@ EdgeCollapse::EdgeCollapse(Mesh& m)
     auto collect_attrs = [&](auto&& mesh) {
         // can have const variant values here so gotta filter htose out
         if constexpr (!std::is_const_v<std::remove_reference_t<decltype(mesh)>>) {
+            if (mesh.is_free()) {
+                return;
+            }
             for (const auto& attr : mesh.custom_attributes()) {
                 std::visit(
                     [&](auto&& tah) noexcept {

@@ -1132,19 +1132,47 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
 
 namespace {
 
-std::shared_ptr<Mesh> make_mesh_with_free_children()
+std::pair<std::shared_ptr<Mesh>, std::vector<attribute::MeshAttributeHandle>>
+make_mesh_with_free_children()
 {
     auto mesh = std::make_shared<TetMesh>(six_cycle_tets());
     add_free_child_mesh(*mesh, PE);
     add_free_child_mesh(*mesh, PF);
-    return mesh;
+    add_free_child_mesh(*mesh, PT);
+    auto a = mesh->get_attribute_handle<int64_t>("child_tag", PE);
+    auto b = mesh->get_attribute_handle<int64_t>("child_tag", PF);
+    auto c = mesh->get_attribute_handle<int64_t>("child_tag", PT);
+    return {mesh, {a, b, c}};
 }
 } // namespace
 TEST_CASE("test_collapse_multi_mesh_3D_free", "[multimesh][1D][2D][3D]")
 {
-    auto mesh_ptr = make_mesh_with_free_children();
+    auto [mesh_ptr, handles] = make_mesh_with_free_children();
 
     auto children = mesh_ptr->get_child_meshes();
+    for (const auto& child_ptr : children) {
+        REQUIRE(is_free(*child_ptr));
+        REQUIRE(child_ptr->get_child_meshes().size() == 0);
+    }
+    operations::EdgeCollapse collapse(*mesh_ptr);
+    for (const auto& h : handles) {
+        collapse.set_new_attribute_strategy(h);
+    }
+    collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh_ptr));
+    {
+        Tuple edge = reinterpret_cast<DEBUG_TetMesh&>(*mesh_ptr).edge_tuple_from_vids(0, 1);
+        CHECK(!collapse(Simplex::edge(*mesh_ptr, edge)).empty());
+    }
+    REQUIRE(mesh_ptr->is_connectivity_valid());
+    for (const auto& child_ptr : children) {
+        REQUIRE(is_free(*child_ptr));
+    }
+
+    {
+        Tuple edge = reinterpret_cast<DEBUG_TetMesh&>(*mesh_ptr).edge_tuple_from_vids(2, 7);
+        CHECK(!collapse(Simplex::edge(*mesh_ptr, edge)).empty());
+    }
+    REQUIRE(mesh_ptr->is_connectivity_valid());
     for (const auto& child_ptr : children) {
         REQUIRE(is_free(*child_ptr));
     }

@@ -498,8 +498,18 @@ public:
         const;
 #endif
 
+    // whether the tuple refers to a removed / invalid dart in the mesh
     bool is_removed(const Tuple& tuple) const;
+    // whether the tuple refers to a removed / invalid simplex in the mesh
+    bool is_removed(const Tuple& tuple, PrimitiveType pt) const;
 
+protected:
+    // whether the tuple refers to a removed / invalid facet
+    bool is_removed(int64_t index) const;
+    // whether the tuple refers to a removed / invalid simplex
+    bool is_removed(int64_t index, PrimitiveType pt) const;
+
+public:
     /**
      * @brief Check if the cached id in a simplex is up-to-date.
      */
@@ -576,6 +586,7 @@ public:
      * mesh will be invalidated by deregistration.
      */
     void deregister_child_mesh(const std::shared_ptr<Mesh>& child_mesh_ptr);
+
 
 private:
     /**
