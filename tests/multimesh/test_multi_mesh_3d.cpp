@@ -13,6 +13,8 @@
 #include "../tools/EdgeMesh_examples.hpp"
 #include "../tools/TetMesh_examples.hpp"
 #include "../tools/TriMesh_examples.hpp"
+#include "../tools/add_free_child_mesh.hpp"
+#include "../tools/is_free.hpp"
 
 using namespace wmtk;
 using namespace wmtk::tests;
@@ -68,7 +70,7 @@ TEST_CASE("test_split_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -103,7 +105,7 @@ TEST_CASE("test_split_multi_mesh_2D_3D", "[multimesh][2D][3D]")
         }
 
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -139,7 +141,7 @@ TEST_CASE("test_split_multi_mesh_2D_3D", "[multimesh][2D][3D]")
         }
 
         Tuple edge = parent.edge_tuple_from_vids(0, 2);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -206,7 +208,7 @@ TEST_CASE("test_split_multi_mesh_1D_3D", "[multimesh][1D][3D]")
                 parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -240,7 +242,7 @@ TEST_CASE("test_split_multi_mesh_1D_3D", "[multimesh][1D][3D]")
                 parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -275,7 +277,7 @@ TEST_CASE("test_split_multi_mesh_1D_3D", "[multimesh][1D][3D]")
                 parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 2);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -401,7 +403,7 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 parent.id(child1.map_to_parent_tuple(Simplex::face(child1, child1_f)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -461,7 +463,7 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 parent.id(child1.map_to_parent_tuple(Simplex::face(child1, child1_f)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 2);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -521,7 +523,7 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 parent.id(child1.map_to_parent_tuple(Simplex::face(child1, child1_f)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 3);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -570,7 +572,7 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
     SECTION("collapse_middle_edge")
     {
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -581,7 +583,7 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
     SECTION("collapse_degenerate_face_edge")
     {
         Tuple edge = parent.edge_tuple_from_vids(2, 7);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -650,7 +652,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_3D", "[multimesh][2D][3D]")
 
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -688,7 +690,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_3D", "[multimesh][2D][3D]")
 
         Tuple edge = parent.edge_tuple_from_vids(0, 2);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -726,7 +728,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_3D", "[multimesh][2D][3D]")
 
         Tuple edge = parent.edge_tuple_from_vids(2, 7);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -848,7 +850,7 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
         }
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -888,7 +890,7 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
 
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -927,7 +929,7 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
 
         Tuple edge = parent.edge_tuple_from_vids(0, 2);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -960,7 +962,7 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
     {
         Tuple edge = parent.edge_tuple_from_vids(2, 6);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -1030,7 +1032,7 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -1070,7 +1072,7 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
         }
         Tuple edge = parent.edge_tuple_from_vids(1, 2);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -1105,7 +1107,7 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
     {
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -1118,12 +1120,32 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
     {
         Tuple edge = parent.edge_tuple_from_vids(0, 4);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
 #endif
 
         REQUIRE(collapse(Simplex::edge(parent, edge)).empty());
+    }
+}
+
+namespace {
+
+std::shared_ptr<Mesh> make_mesh_with_free_children()
+{
+    auto mesh = std::make_shared<TetMesh>(six_cycle_tets());
+    add_free_child_mesh(*mesh, PE);
+    add_free_child_mesh(*mesh, PF);
+    return mesh;
+}
+} // namespace
+TEST_CASE("test_collapse_multi_mesh_3D_free", "[multimesh][1D][2D][3D]")
+{
+    auto mesh_ptr = make_mesh_with_free_children();
+
+    auto children = mesh_ptr->get_child_meshes();
+    for (const auto& child_ptr : children) {
+        REQUIRE(is_free(*child_ptr));
     }
 }
