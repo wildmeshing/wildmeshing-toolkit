@@ -937,7 +937,7 @@ TEST_CASE("split_modified_primitives", "[operations][split]")
 }
 
 
-TEST_CASE("split_no_topology", "[operations][split]")
+TEST_CASE("split_no_topology_trimesh", "[operations][split]")
 {
     const int64_t initial_size = 20;
     DEBUG_TriMesh m = [](int64_t size) {

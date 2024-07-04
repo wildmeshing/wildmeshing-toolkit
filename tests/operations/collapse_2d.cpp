@@ -488,7 +488,7 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
     }
 }
 
-TEST_CASE("collapse_no_topology", "[operations][collapse]")
+TEST_CASE("collapse_no_topology_trimesh", "[operations][collapse]")
 {
     const int64_t initial_size = 20;
     DEBUG_TriMesh m = [](int64_t size) {

@@ -227,6 +227,7 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
         simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
         update_cell_hash();
         delete_simplices();
+        return Tuple();;
     }
     // check if the collapse is valid
     if (m_is_self_loop || (m_mesh.is_boundary_vertex(m_operating_tuple) &&
