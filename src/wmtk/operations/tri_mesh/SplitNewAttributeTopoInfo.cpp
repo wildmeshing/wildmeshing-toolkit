@@ -51,6 +51,12 @@ std::vector<Tuple> SplitNewAttributeTopoInfo::input_split_simplices(
     return input_split_simplices(std::get<EdgeOperationData>(ret_data), input_tuple, pt);
 }
 
+std::vector<std::array<int64_t, 2>> SplitNewAttributeTopoInfo::output_duplicated_free_simplices(
+    const ReturnVariant& ret_data,
+    PrimitiveType pt) const
+{
+    return output_duplicated_free_simplices(std::get<EdgeOperationData>(ret_data), pt);
+}
 
 std::vector<std::array<Tuple, 2>> SplitNewAttributeTopoInfo::output_split_simplices(
     const EdgeOperationData& ret_data,
@@ -125,4 +131,24 @@ std::vector<Tuple> SplitNewAttributeTopoInfo::output_rib_simplices(
     default: return {};
     }
 }
+
+std::vector<std::array<int64_t, 2>> SplitNewAttributeTopoInfo::output_duplicated_free_simplices(
+    const EdgeOperationData& ret_data,
+    PrimitiveType pt) const
+{
+    assert(m_mesh.is_free());
+    switch (get_primitive_type_id(pt)) {
+    case 0: {
+        return {
+            ret_data.m_free_split_v,
+            std::array<int64_t, 2>{
+                {ret_data.m_incident_face_datas[0].opposite_vid, ret_data.split_new_vid}}};
+    }
+    case 1: {
+        return {ret_data.m_free_split_e};
+    }
+    default: return {};
+    }
+}
+
 } // namespace wmtk::operations::tri_mesh

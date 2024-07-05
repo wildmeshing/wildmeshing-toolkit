@@ -1136,13 +1136,15 @@ std::pair<std::shared_ptr<Mesh>, std::vector<attribute::MeshAttributeHandle>>
 make_mesh_with_free_children()
 {
     auto mesh = std::make_shared<TetMesh>(six_cycle_tets());
-    add_free_child_mesh(*mesh, PE);
-    add_free_child_mesh(*mesh, PF);
-    add_free_child_mesh(*mesh, PT);
+    auto aptr = add_free_child_mesh(*mesh, PE);
+    auto bptr = add_free_child_mesh(*mesh, PF);
+    auto ah = aptr->register_attribute<double>("pos", PV, 1);
+    auto bh = bptr->register_attribute<double>("pos", PV, 1);
+    // add_free_child_mesh(*mesh, PT);
     auto a = mesh->get_attribute_handle<int64_t>("child_tag", PE);
     auto b = mesh->get_attribute_handle<int64_t>("child_tag", PF);
-    auto c = mesh->get_attribute_handle<int64_t>("child_tag", PT);
-    return {mesh, {a, b, c}};
+    // auto c = mesh->get_attribute_handle<int64_t>("child_tag", PT);
+    return {mesh, {a, b}};
 }
 } // namespace
 TEST_CASE("test_collapse_multi_mesh_3D_free", "[multimesh][1D][2D][3D]")
@@ -1177,3 +1179,35 @@ TEST_CASE("test_collapse_multi_mesh_3D_free", "[multimesh][1D][2D][3D]")
         REQUIRE(is_free(*child_ptr));
     }
 }
+TEST_CASE("test_split_multi_mesh_3D_free", "[multimesh][1D][2D][3D]")
+{
+    auto [mesh_ptr, handles] = make_mesh_with_free_children();
+
+    auto children = mesh_ptr->get_child_meshes();
+    for (const auto& child_ptr : children) {
+        REQUIRE(is_free(*child_ptr));
+        REQUIRE(child_ptr->get_child_meshes().size() == 0);
+    }
+    operations::EdgeSplit split(*mesh_ptr);
+    for (const auto& h : handles) {
+        split.set_new_attribute_strategy(h);
+    }
+    {
+        Tuple edge = reinterpret_cast<DEBUG_TetMesh&>(*mesh_ptr).edge_tuple_from_vids(0, 1);
+        CHECK(!split(Simplex::edge(*mesh_ptr, edge)).empty());
+    }
+    REQUIRE(mesh_ptr->is_connectivity_valid());
+    for (const auto& child_ptr : children) {
+        REQUIRE(is_free(*child_ptr));
+    }
+
+    {
+        Tuple edge = reinterpret_cast<DEBUG_TetMesh&>(*mesh_ptr).edge_tuple_from_vids(2, 3);
+        CHECK(!split(Simplex::edge(*mesh_ptr, edge)).empty());
+    }
+    REQUIRE(mesh_ptr->is_connectivity_valid());
+    for (const auto& child_ptr : children) {
+        REQUIRE(is_free(*child_ptr));
+    }
+}
+
