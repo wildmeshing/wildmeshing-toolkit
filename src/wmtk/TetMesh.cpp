@@ -137,7 +137,6 @@ void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T, bool is_free)
     this->m_is_free = is_free;
     auto [TE, TF, TT, VT, ET, FT] = tetmesh_topology_initialization(T);
     if (is_free) {
-        assert(false); // TODO: tet operations currently dont work yet so this optino isn't allowed
         TT.setConstant(-1);
     }
     initialize(T, TE, TF, TT, VT, ET, FT);

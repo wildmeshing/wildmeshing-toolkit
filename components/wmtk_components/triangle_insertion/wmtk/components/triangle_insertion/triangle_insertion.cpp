@@ -2,6 +2,7 @@
 
 #include "TriInsOptions.hpp"
 
+#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/utils/EigenMatrixWriter.hpp>
 #include <wmtk/utils/VolumeRemesherTriangleInsertion.hpp>
@@ -125,13 +126,23 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
 
 
     // get multimesh from tag
+    std::shared_ptr<Mesh> surface_mesh;
 
-    internal::MultiMeshFromTag SurfaceMeshFromTag(*tetmesh, surface_handle, 1);
-    SurfaceMeshFromTag.compute_substructure_mesh();
+    if (options.make_child_free) {
+        surface_mesh = wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
+            *tetmesh,
+            surface_handle.as<int64_t>(),
+            1,
+            /*free = */ true);
 
-    std::shared_ptr<Mesh> surface_mesh = tetmesh->get_child_meshes().back();
+    } else {
+        internal::MultiMeshFromTag SurfaceMeshFromTag(*tetmesh, surface_handle, 1);
+        SurfaceMeshFromTag.compute_substructure_mesh();
 
-    SurfaceMeshFromTag.remove_soup();
+        surface_mesh = tetmesh->get_child_meshes().back();
+
+        SurfaceMeshFromTag.remove_soup();
+    }
 
     /* -----------open boundary and nonmanifold edges in input surface--------- */
 
@@ -173,14 +184,24 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
     std::shared_ptr<Mesh> open_boundary_mesh, nonmanifold_edge_mesh;
 
     if (has_openboundary) {
-        internal::MultiMeshFromTag OpenBoundaryFromTag(*tetmesh, open_boundary_handle, 1);
-        OpenBoundaryFromTag.compute_substructure_mesh();
+        if (options.make_child_free) {
+            open_boundary_mesh =
+                wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
+                    *tetmesh,
+                    open_boundary_handle.as<int64_t>(),
+                    1,
+                    /*free = */ true);
 
-        open_boundary_mesh = tetmesh->get_child_meshes().back();
-        OpenBoundaryFromTag.remove_soup();
+        } else {
+            internal::MultiMeshFromTag OpenBoundaryFromTag(*tetmesh, open_boundary_handle, 1);
+            OpenBoundaryFromTag.compute_substructure_mesh();
+
+            open_boundary_mesh = tetmesh->get_child_meshes().back();
+            OpenBoundaryFromTag.remove_soup();
+        }
     }
 
-    if (has_nonmanifold_edge) {
+    if (!options.make_child_free && has_nonmanifold_edge) {
         internal::MultiMeshFromTag NonmanifoldEdgeFromTag(*tetmesh, nonmanifold_edge_handle, 1);
         NonmanifoldEdgeFromTag.compute_substructure_mesh();
 
