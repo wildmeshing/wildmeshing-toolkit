@@ -368,6 +368,7 @@ protected:
      * @return Tuple
      */
     virtual Tuple tuple_from_id(const PrimitiveType type, const int64_t gid) const = 0;
+    simplex::Simplex simplex_from_id(const PrimitiveType type, const int64_t gid) const;
     std::vector<std::vector<int64_t>> simplices_to_gids(
         const std::vector<std::vector<simplex::Simplex>>& simplices) const;
     /**

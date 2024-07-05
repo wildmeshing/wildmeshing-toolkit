@@ -85,6 +85,7 @@ public:
     std::array<Tuple, 2> split_output_edges(const TriMesh&) const;
     std::vector<std::array<Tuple, 2>> split_output_faces(const TriMesh&) const;
 
+    std::vector<simplex::Simplex> new_vertices(const Mesh&) const;
 
     std::array<std::vector<int64_t>, 3> simplex_ids_to_delete;
     std::vector<int64_t> cell_ids_to_update_hash;

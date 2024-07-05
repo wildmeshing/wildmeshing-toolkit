@@ -121,6 +121,9 @@ bool Mesh::is_removed(const Tuple& t, PrimitiveType pt) const
         return false;
     }
 }
+simplex::Simplex Mesh::simplex_from_id(const PrimitiveType pt, const int64_t gid) const {
+    return simplex::Simplex(pt, tuple_from_id(pt,gid),gid);
+}
 bool Mesh::is_removed(int64_t index) const
 {
     return is_removed(index, top_simplex_type());

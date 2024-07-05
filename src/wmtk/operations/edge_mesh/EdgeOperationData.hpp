@@ -19,6 +19,7 @@ public:
 
     std::array<Tuple, 2> input_endpoints(const EdgeMesh& m) const;
     std::array<Tuple, 2> split_output_edges(const EdgeMesh&) const;
+    std::vector<simplex::Simplex> new_vertices(const Mesh& m) const;
 
     bool m_is_self_loop = false;
     // common simplicies

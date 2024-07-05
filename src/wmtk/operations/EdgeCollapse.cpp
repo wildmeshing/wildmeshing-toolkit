@@ -1,4 +1,5 @@
 #include "EdgeCollapse.hpp"
+#include <wmtk/utils/Logger.hpp>
 
 #include <cassert>
 #include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
@@ -82,6 +83,10 @@ void EdgeCollapse::set_new_attribute_strategy(
             m_new_attr_strategies[i] = other;
             return;
         }
+    }
+    if(attribute.mesh().is_free()) {
+        logger().debug("Set new collapse attribute strategy on a free mesh, there are no new attributes for free mesh collapses");
+        return;
     }
 
     throw std::runtime_error("unable to find attribute");
