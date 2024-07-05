@@ -1222,6 +1222,7 @@ TEST_CASE("test_split_multi_mesh_3D_free", "[multimesh][1D][2D][3D]")
         }
     }
     auto check = [&]() {
+        spdlog::info("Starting check");
         REQUIRE(mesh_ptr->is_connectivity_valid());
         for (const auto& child_ptr : children) {
             REQUIRE(is_free(*child_ptr));
@@ -1240,8 +1241,8 @@ TEST_CASE("test_split_multi_mesh_3D_free", "[multimesh][1D][2D][3D]")
                     auto child_value = child_pos_acc.const_vector_attribute(child_simplex);
                     auto parent_value = pos_acc.const_vector_attribute(parent_simplex);
 
-                    // std::cout << parent_value.transpose() << " ==== " << child_value.transpose()
-                    //           << std::endl;
+                    std::cout << parent_value.transpose() << " ==== " << child_value.transpose()
+                              << std::endl;
 
                     CHECK(parent_value == child_value);
                 }

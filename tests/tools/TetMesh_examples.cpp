@@ -91,11 +91,12 @@ TetMesh six_cycle_tets()
     m.initialize(tets);
     return m;
 }
-TetMesh six_cycle_tets_with_positions() {
+TetMesh six_cycle_tets_with_positions()
+{
     TetMesh m = six_cycle_tets();
     Eigen::Matrix<double, 8, 3> V;
-    V.row(2) = Eigen::Vector3d(0.,0., -1);
-    V.row(3) = Eigen::Vector3d(0.,0., 1);
+    V.row(2) = Eigen::Vector3d(0., 0., -1);
+    V.row(3) = Eigen::Vector3d(0., 0., 1);
 
     V.row(1) = Eigen::Vector3d(-1., 0., 0);
     V.row(5) = Eigen::Vector3d(1., 0., 0);
@@ -103,12 +104,13 @@ TetMesh six_cycle_tets_with_positions() {
     V.row(0) = Eigen::Vector3d(1., -1, 0);
     V.row(7) = Eigen::Vector3d(-1., 1, 0);
 
-    V.row(4) = Eigen::Vector3d(1., 1,0 );
+    V.row(4) = Eigen::Vector3d(1., 1, 0);
     V.row(6) = Eigen::Vector3d(-1., -1, 0);
+
+    V.array() += 5.0;
 
     mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
     return m;
-
 }
 
 TetMesh three_cycle_tets()
