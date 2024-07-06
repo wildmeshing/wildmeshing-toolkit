@@ -885,7 +885,7 @@ void MultiMeshManager::update_map_tuple_hashes(
                 split_cell_maps);
 
             if (!new_parent_shared_opt.has_value()) {
-                std::cout << "get skipped, someting is wrong?" << std::endl;
+                //std::cout << "get skipped, someting is wrong?" << std::endl;
                 continue;
             }
             // assert(new_parent_shared_opt.has_value());
