@@ -17,9 +17,9 @@ bool are_all_ears_in_child(const TriMesh& parent, const EdgeMesh& child, const T
     const Tuple parent_ear_0 = parent.switch_edge(t);
     const Tuple paretn_ear_1 = parent.switch_edge(parent.switch_vertex(t));
     bool find_ear_0 =
-        !parent.map_to_child(child, simplex::Simplex::edge(parent, parent_ear_0)).empty();
+        !parent.can_map(child, simplex::Simplex::edge(parent, parent_ear_0));
     bool find_ear_1 =
-        !parent.map_to_child(child, simplex::Simplex::edge(parent, paretn_ear_1)).empty();
+        !parent.can_map(child, simplex::Simplex::edge(parent, paretn_ear_1));
     return find_ear_0 && find_ear_1;
 }
 
@@ -28,9 +28,9 @@ bool are_all_ears_in_child(const TetMesh& parent, const TriMesh& child, const Tu
     const Tuple parent_ear_0 = parent.switch_face(parent.switch_edge(t));
     const Tuple parent_ear_1 = parent.switch_face(parent.switch_edge(parent.switch_vertex(t)));
     bool find_ear_0 =
-        !parent.map_to_child(child, simplex::Simplex::face(parent, parent_ear_0)).empty();
+        !parent.can_map(child, simplex::Simplex::face(parent, parent_ear_0));
     bool find_ear_1 =
-        !parent.map_to_child(child, simplex::Simplex::face(parent, parent_ear_1)).empty();
+        !parent.can_map(child, simplex::Simplex::face(parent, parent_ear_1));
     return find_ear_0 && find_ear_1;
 }
 
@@ -39,17 +39,17 @@ bool are_all_ears_in_child(const TetMesh& parent, const EdgeMesh& child, const T
     const Tuple parent_ear_0 = parent.switch_edge(t);
     const Tuple parent_ear_1 = parent.switch_edge(parent.switch_vertex(t));
     bool find_ear_0 =
-        !parent.map_to_child(child, simplex::Simplex::edge(parent, parent_ear_0)).empty();
+        !parent.can_map(child, simplex::Simplex::edge(parent, parent_ear_0));
     bool find_ear_1 =
-        !parent.map_to_child(child, simplex::Simplex::edge(parent, parent_ear_1)).empty();
+        !parent.can_map(child, simplex::Simplex::edge(parent, parent_ear_1));
 
     const Tuple t_switch_face = parent.switch_face(t);
     const Tuple parent_ear_2 = parent.switch_edge(t_switch_face);
     const Tuple parent_ear_3 = parent.switch_edge(parent.switch_vertex(t_switch_face));
     bool find_ear_2 =
-        !parent.map_to_child(child, simplex::Simplex::edge(parent, parent_ear_2)).empty();
+        !parent.can_map(child, simplex::Simplex::edge(parent, parent_ear_2));
     bool find_ear_3 =
-        !parent.map_to_child(child, simplex::Simplex::edge(parent, parent_ear_3)).empty();
+        !parent.can_map(child, simplex::Simplex::edge(parent, parent_ear_3));
 
     return (find_ear_0 && find_ear_1) || (find_ear_2 && find_ear_3);
 }
@@ -68,9 +68,10 @@ struct MultiMeshMapValidFunctor
                 continue;
             }
 
+            assert(child_ptr->top_cell_dimension() == 1);
+            const EdgeMesh& child = reinterpret_cast<const EdgeMesh&>(*child_ptr);
             for (const Tuple& t : equivalent_tuples) {
-                const EdgeMesh& child = dynamic_cast<const EdgeMesh&>(*child_ptr);
-                if (m.map_to_child(child, s).empty() && are_all_ears_in_child(m, child, t)) {
+                if (m.can_map(child, s) && are_all_ears_in_child(m, child, t)) {
                     return false;
                 }
             }
@@ -88,13 +89,13 @@ struct MultiMeshMapValidFunctor
 
             for (const Tuple& t : equivalent_tuples) {
                 if (child_ptr->top_cell_dimension() == 2) {
-                    const TriMesh& child = dynamic_cast<const TriMesh&>(*child_ptr);
-                    if (m.map_to_child(child, s).empty() && are_all_ears_in_child(m, child, t)) {
+                    const TriMesh& child = reinterpret_cast<const TriMesh&>(*child_ptr);
+                    if (m.can_map(child, s) && are_all_ears_in_child(m, child, t)) {
                         return false;
                     }
                 } else {
-                    const EdgeMesh& child = dynamic_cast<const EdgeMesh&>(*child_ptr);
-                    if (m.map_to_child(child, s).empty() && are_all_ears_in_child(m, child, t)) {
+                    const EdgeMesh& child = reinterpret_cast<const EdgeMesh&>(*child_ptr);
+                    if (m.can_map(child, s) && are_all_ears_in_child(m, child, t)) {
                         return false;
                     }
                 }
