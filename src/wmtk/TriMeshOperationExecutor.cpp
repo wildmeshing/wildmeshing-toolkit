@@ -380,10 +380,10 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(IncidentFaceData& 
     std::copy(new_fids.begin(), new_fids.end(), face_data.split_f.begin());
 
     if(!m_mesh.is_free()) {
-    std::vector<int64_t> splitting_edges = this->request_simplex_indices(PrimitiveType::Edge, 1);
-    assert(splitting_edges[0] > -1); // TODO: is this assert reasonable at all?
-    int64_t& split_edge_eid = face_data.new_edge_id;
-    split_edge_eid = splitting_edges[0];
+        std::vector<int64_t> splitting_edges = this->request_simplex_indices(PrimitiveType::Edge, 1);
+        assert(splitting_edges[0] > -1); // TODO: is this assert reasonable at all?
+        int64_t& split_edge_eid = face_data.new_edge_id;
+        split_edge_eid = splitting_edges[0];
     }
 
     //  ---------v2--------
