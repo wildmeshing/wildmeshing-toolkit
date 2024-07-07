@@ -64,6 +64,9 @@ struct MultiMeshMapValidFunctor
         const std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(m, s);
 
         for (auto child_ptr : m.get_child_meshes()) {
+            if(child_ptr->is_free()) {
+                continue;
+            }
             if (child_ptr->top_cell_dimension() != 1) {
                 continue;
             }
@@ -83,6 +86,9 @@ struct MultiMeshMapValidFunctor
         const std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(m, s);
 
         for (auto child_ptr : m.get_child_meshes()) {
+            if(child_ptr->is_free()) {
+                continue;
+            }
             if (child_ptr->top_cell_dimension() != 2 && child_ptr->top_cell_dimension() != 1) {
                 continue;
             }
