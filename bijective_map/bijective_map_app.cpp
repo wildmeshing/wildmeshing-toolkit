@@ -17,6 +17,8 @@ using namespace wmtk;
 #include <igl/parallel_for.h>
 #include <igl/stb/read_image.h>
 #include <igl/stb/write_image.h>
+
+#include <igl/in_element.h>
 using path = std::filesystem::path;
 
 #include <nlohmann/json.hpp>
@@ -771,70 +773,93 @@ int main(int argc, char** argv)
         B_out.resize(height, width);
         A_out.resize(height, width);
 
-        // TODO: sampling query points on Ft_out, Vt_out
-        auto isPointInTriangle = [](double px,
-                                    double py,
-                                    double ax,
-                                    double ay,
-                                    double bx,
-                                    double by,
-                                    double cx,
-                                    double cy) {
-            double denominator = ((by - cy) * (ax - cx) + (cx - bx) * (ay - cy));
-            double a = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / denominator;
-            double b = ((cy - ay) * (px - cx) + (ax - cx) * (py - cy)) / denominator;
-            double c = 1.0 - a - b;
-            return std::make_tuple(
-                0 <= a && a <= 1 && 0 <= b && b <= 1 && 0 <= c && c <= 1,
-                a,
-                b,
-                c);
-        };
-        // for each pixel in the texture image
+        igl::Timer timer;
+        timer.start();
+        // use igl::AABB to make this part faster
+        auto t0 = timer.getElapsedTime();
         std::vector<query_point> query_points;
-        for (int y = 0; y < height; ++y) {
-            if (y % 100 == 0) std::cout << "processing row " << y << std::endl;
-            for (int x = 0; x < width; ++x) {
-                double u = double(x) / (width - 1);
-                double v = double(y) / (height - 1);
+        {
+            igl::AABB<Eigen::MatrixXd, 2> tree;
+            tree.init(Vt_out, Ft_out);
+            Eigen::MatrixXd Q;
+            Q.resize(height * width, 2);
+            for (int y = 0; y < height; ++y) {
+                for (int x = 0; x < width; ++x) {
+                    double u = double(x) / (width - 1);
+                    double v = double(y) / (height - 1);
+                    Q.row(y * width + x) << u, v;
+                }
+            }
+            Eigen::VectorXi I;
+            igl::in_element(Vt_out, Ft_out, Q, tree, I);
 
-                bool found_intersect = false;
-                for (int t_id = 0; t_id < Ft_out.rows(); ++t_id) {
-                    auto [inside, a, b, c] = isPointInTriangle(
-                        u,
-                        v,
-                        Vt_out(Ft_out(t_id, 0), 0),
-                        Vt_out(Ft_out(t_id, 0), 1),
-                        Vt_out(Ft_out(t_id, 1), 0),
-                        Vt_out(Ft_out(t_id, 1), 1),
-                        Vt_out(Ft_out(t_id, 2), 0),
-                        Vt_out(Ft_out(t_id, 2), 1));
+            auto isPointInTriangle = [](double px,
+                                        double py,
+                                        double ax,
+                                        double ay,
+                                        double bx,
+                                        double by,
+                                        double cx,
+                                        double cy) {
+                double denominator = ((by - cy) * (ax - cx) + (cx - bx) * (ay - cy));
+                double a = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / denominator;
+                double b = ((cy - ay) * (px - cx) + (ax - cx) * (py - cy)) / denominator;
+                double c = 1.0 - a - b;
+                return std::make_tuple(
+                    0 <= a && a <= 1 && 0 <= b && b <= 1 && 0 <= c && c <= 1,
+                    a,
+                    b,
+                    c);
+            };
+            // for each pixel in the texture image
+            for (int y = 0; y < height; ++y) {
+                if (y % 100 == 0) std::cout << "processing row " << y << std::endl;
+                for (int x = 0; x < width; ++x) {
+                    double u = double(x) / (width - 1);
+                    double v = double(y) / (height - 1);
 
-                    if (inside) {
+                    bool found_intersect = (I(y * width + x) != -1);
+
+                    if (found_intersect) {
+                        int fid = I(y * width + x);
                         query_point qp;
-                        qp.f_id = t_id;
-                        qp.fv_ids = F_out.row(t_id);
+                        qp.f_id = fid;
+                        qp.fv_ids = F_out.row(fid);
+                        auto [inside, a, b, c] = isPointInTriangle(
+                            u,
+                            v,
+                            Vt_out(Ft_out(fid, 0), 0),
+                            Vt_out(Ft_out(fid, 0), 1),
+                            Vt_out(Ft_out(fid, 1), 0),
+                            Vt_out(Ft_out(fid, 1), 1),
+                            Vt_out(Ft_out(fid, 2), 0),
+                            Vt_out(Ft_out(fid, 2), 1));
+                        if (!inside) {
+                            std::cout << "not inside, computation problem" << std::endl;
+                        }
                         qp.bc = Eigen::Vector3d(a, b, c);
                         query_points.push_back(qp);
-                        found_intersect = true;
-                        break;
                     }
-                }
 
-                if (!found_intersect) {
-                    // add an empty query point
-                    query_point qp;
-                    qp.f_id = -1;
-                    qp.fv_ids = F_out.row(0);
-                    qp.bc = Eigen::Vector3d(1.0 / 3, 1.0 / 3, 1.0 / 3);
-                    query_points.push_back(qp);
+                    if (!found_intersect) {
+                        // add an empty query point
+                        query_point qp;
+                        qp.f_id = -1;
+                        qp.fv_ids = F_out.row(0);
+                        qp.bc = Eigen::Vector3d(1.0 / 3, 1.0 / 3, 1.0 / 3);
+                        query_points.push_back(qp);
+                    }
                 }
             }
         }
-
+        auto t1 = timer.getElapsedTime();
+        std::cout << "find query points time: " << t1 - t0 << " s" << std::endl;
         std::cout << "done finding all query points" << std::endl;
 
         back_track_map(operation_logs_dir, query_points);
+
+        auto t2 = timer.getElapsedTime();
+        std::cout << "back track time: " << t2 - t1 << " s" << std::endl;
 
         igl::parallel_for(height * width, [&](int id) {
             if (query_points[id].f_id != -1) {
@@ -863,7 +888,12 @@ int main(int argc, char** argv)
             }
         });
         // write the output image
-        igl::stb::write_image("output_texture.png", R_out.transpose(), G_out.transpose(), B_out.transpose(), A_out.transpose());
+        igl::stb::write_image(
+            "output_texture.png",
+            R_out.transpose(),
+            G_out.transpose(),
+            B_out.transpose(),
+            A_out.transpose());
     }
 
 
