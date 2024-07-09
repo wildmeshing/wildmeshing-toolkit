@@ -680,7 +680,7 @@ void local_joint_flatten(
     bool is_bd_v1)
 {
     if (!is_bd_v0 && !is_bd_v1) {
-        std::cout << "case 0: interior edge" << std::endl;
+        // std::cout << "case 0: interior edge" << std::endl;
         local_joint_flatten_case0(
             F_before,
             V_before,
