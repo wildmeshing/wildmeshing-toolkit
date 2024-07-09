@@ -718,4 +718,13 @@ void local_joint_flatten(
             is_bd_v1);
     }
 }
+
+void local_joint_flatten_smoothing(
+    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXd& V_after,
+    Eigen::MatrixXd& UV_joint,
+    Eigen::MatrixXi& F_after_output)
+{}
+
 } // namespace wmtk::operations::utils

@@ -70,8 +70,8 @@ void back_track_map(
             } else {
                 handle_consolidate(face_ids_maps, vertex_ids_maps, query_points);
             }
-        } else if (operation_name == "TriEdgeSwap") {
-            std::cout << "This Operations is TriEdgeSwap" << std::endl;
+        } else if (operation_name == "TriEdgeSwap" || operation_name == "AttributesUpdate") {
+            std::cout << "This Operations is" << operation_name << std::endl;
             Eigen::MatrixXi F_after, F_before;
             Eigen::MatrixXd V_after, V_before;
             std::vector<int64_t> id_map_after, id_map_before;
@@ -88,7 +88,7 @@ void back_track_map(
                 v_id_map_after);
 
             if (do_forward) {
-                handle_split_edge(
+                handle_swap_edge(
                     V_after,
                     F_after,
                     id_map_after,

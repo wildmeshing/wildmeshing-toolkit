@@ -10,7 +10,6 @@ void flatten(
     const Eigen::VectorXd& bc_UV,
     Eigen::MatrixXd& UVjoint);
 
-// TODO: add support for boundary cases
 void local_joint_flatten(
     const Eigen::MatrixXi& F_before,
     const Eigen::MatrixXd& V_before,
@@ -22,4 +21,12 @@ void local_joint_flatten(
     std::vector<int64_t>& v_id_map_joint,
     bool is_bd_v0,
     bool is_bd_v1);
+
+void local_joint_flatten_smoothing(
+    const Eigen::MatrixXi& F, // the F will not change during the smoothing
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXd& V_after,
+    Eigen::MatrixXd& UV_joint,
+    Eigen::MatrixXi& F_after_output);
+
 } // namespace wmtk::operations::utils
