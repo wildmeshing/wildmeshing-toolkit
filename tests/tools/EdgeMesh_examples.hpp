@@ -17,7 +17,7 @@ EdgeMesh two_segments();
 /*
    0 -- 1 -- 2 -- 3 -- 4 -- 5
 */
-EdgeMesh multiple_lines();
+EdgeMesh multiple_lines(int64_t n = 5);
 
 /*
    0 -- 1 -- 2 -- 3 -- 4 -- 5 -- 0*

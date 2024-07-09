@@ -5,7 +5,7 @@
 #include "DEBUG_MultiMeshManager.hpp"
 
 namespace wmtk::tests {
-class DEBUG_Mesh : public virtual Mesh
+class DEBUG_Mesh : public Mesh
 {
 public:
     using Mesh::Mesh;
@@ -24,7 +24,8 @@ public:
     }
 
     template <typename T>
-    attribute::AccessorBase<T> create_base_accessor(const attribute::TypedAttributeHandle<T>& handle)
+    attribute::AccessorBase<T> create_base_accessor(
+        const attribute::TypedAttributeHandle<T>& handle)
     {
         return attribute::AccessorBase<T>(*this, handle);
     }
@@ -36,7 +37,8 @@ public:
         return attribute::AccessorBase<T>(const_cast<DEBUG_Mesh&>(*this), handle);
     }
     template <typename T>
-    attribute::AccessorBase<T> create_base_accessor(const attribute::TypedAttributeHandle<T>& handle) const
+    attribute::AccessorBase<T> create_base_accessor(
+        const attribute::TypedAttributeHandle<T>& handle) const
     {
         return create_const_base_accessor(handle);
     }
@@ -44,9 +46,10 @@ public:
     void reserve_attributes(PrimitiveType type, int64_t size);
 
 
+    using Mesh::id;
     using Mesh::tuple_from_id;
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     attribute::Accessor<int64_t> get_cell_hash_accessor();
 #endif
 };

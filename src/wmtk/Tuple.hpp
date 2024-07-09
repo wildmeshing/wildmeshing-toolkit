@@ -24,10 +24,12 @@ class TupleInspector;
 }
 namespace operations {
 class Operation;
+namespace internal {
 class SplitAlternateFacetData;
 class CollapseAlternateFacetData;
+} // namespace internal
 class EdgeOperationData;
-}
+} // namespace operations
 namespace utils {
 // for identifying unique top level simplices between tuples
 class TupleCellLessThan;
@@ -67,14 +69,19 @@ public:
     // friend Mesh::is_ccw(const Tuple& tuple) const;
     // friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
 
-    Tuple(int8_t local_vid, int8_t local_eid, int8_t local_fid, int64_t global_cid, int8_t hash
-#if !defined(WMTK_ENABLE_HASH_UPDATE) 
-             = -1
+    Tuple(
+        int8_t local_vid,
+        int8_t local_eid,
+        int8_t local_fid,
+        int64_t global_cid,
+        int8_t hash
+#if !defined(WMTK_ENABLE_HASH_UPDATE)
+        = -1
 #endif
-            );
-//#if !defined(WMTK_ENABLE_HASH_UPDATE) 
-//    Tuple(int8_t local_vid, int8_t local_eid, int8_t local_fid, int64_t global_cid);
-//#endif
+    );
+    // #if !defined(WMTK_ENABLE_HASH_UPDATE)
+    //     Tuple(int8_t local_vid, int8_t local_eid, int8_t local_fid, int64_t global_cid);
+    // #endif
 
     //         v2
     //       /    \.
@@ -96,7 +103,7 @@ public:
 
     /// Checks if a tuple is "null". This merely implies the global index is -1
     bool is_null() const;
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     Tuple with_updated_hash(int64_t new_hash) const;
 #endif
 
@@ -117,17 +124,17 @@ inline Tuple::Tuple(
     , m_local_fid(local_fid)
     , m_hash(hash)
 {}
-//#if !defined(WMTK_ENABLE_HASH_UPDATE) 
-//inline Tuple::Tuple(
-//    int8_t local_vid,
-//    int8_t local_eid,
-//    int8_t local_fid,
-//    int64_t global_cid)
-//    : m_global_cid(global_cid)
-//    , m_local_vid(local_vid)
-//    , m_local_eid(local_eid)
-//    , m_local_fid(local_fid)
+// #if !defined(WMTK_ENABLE_HASH_UPDATE)
+// inline Tuple::Tuple(
+//     int8_t local_vid,
+//     int8_t local_eid,
+//     int8_t local_fid,
+//     int64_t global_cid)
+//     : m_global_cid(global_cid)
+//     , m_local_vid(local_vid)
+//     , m_local_eid(local_eid)
+//     , m_local_fid(local_fid)
 //{}
-//#endif
+// #endif
 } // namespace wmtk
 #include "Tuple.hxx"

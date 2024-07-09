@@ -50,6 +50,9 @@ class Operation;
 class EdgeCollapse;
 class EdgeSplit;
 class EdgeOperationData;
+namespace internal {
+class CollapseAlternateFacetData;
+}
 namespace utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
@@ -121,6 +124,7 @@ public:
     friend class operations::EdgeCollapse;
     friend class operations::EdgeSplit;
     friend class operations::EdgeOperationData;
+    friend class operations::internal::CollapseAlternateFacetData;
 
 #if defined(WMTK_ENABLE_HASH_UPDATE)
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(

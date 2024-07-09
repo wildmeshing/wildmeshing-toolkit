@@ -27,17 +27,15 @@ EdgeMesh two_segments()
     return m;
 }
 
-EdgeMesh multiple_lines()
+EdgeMesh multiple_lines(int64_t n)
 {
     EdgeMesh m;
     RowVectors2l edges;
-    edges.resize(5, 2);
+    edges.resize(n, 2);
 
-    edges.row(0) << 0, 1;
-    edges.row(1) << 1, 2;
-    edges.row(2) << 2, 3;
-    edges.row(3) << 3, 4;
-    edges.row(4) << 4, 5;
+    for(int j = 0; j < n; ++j) {
+        edges.row(j) = Vector2l(j,j+1);
+    }
 
     m.initialize(edges);
     return m;
