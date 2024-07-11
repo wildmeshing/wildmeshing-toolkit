@@ -59,8 +59,8 @@ public:
     template <typename T, typename MeshType, int Dim>
     friend class attribute::Accessor;
     friend class operations::Operation;
-    friend class operations::SplitAlternateFacetData;
-    friend class operations::CollapseAlternateFacetData;
+    friend class operations::internal::SplitAlternateFacetData;
+    friend class operations::internal::CollapseAlternateFacetData;
     friend class operations::EdgeOperationData;
     friend class utils::TupleCellLessThan;
     friend class utils::TupleInspector;
