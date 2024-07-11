@@ -679,6 +679,7 @@ void local_joint_flatten(
     bool is_bd_v0,
     bool is_bd_v1)
 {
+    auto F_after_in = F_after;
     if (!is_bd_v0 && !is_bd_v1) {
         // std::cout << "case 0: interior edge" << std::endl;
         local_joint_flatten_case0(
@@ -702,6 +703,7 @@ void local_joint_flatten(
             UV_joint,
             v_id_map_joint);
 
+
     } else {
         std::cout << "case 1: edge connect a interior vertex and a boundary vertex" << std::endl;
 
@@ -716,6 +718,30 @@ void local_joint_flatten(
             v_id_map_joint,
             is_bd_v0,
             is_bd_v1);
+    }
+
+    // check if all element in UV_joint is valid number
+    bool check_nan = false;
+    for (int i = 0; i < UV_joint.rows(); i++) {
+        for (int j = 0; j < UV_joint.cols(); j++) {
+            if (std::isnan(UV_joint(i, j))) {
+                std::cout << "F_before:\n" << F_before << std::endl;
+                std::cout << "V_before:\n" << V_before << std::endl;
+                std::cout << "F_after:\n" << F_after_in << std::endl;
+                std::cout << "V_after:\n" << V_after << std::endl;
+
+                std::cout << "UV_joint:\n" << UV_joint << std::endl;
+                check_nan = true;
+                break;
+            }
+        }
+        if (check_nan) {
+            break;
+        }
+    }
+
+    if (check_nan) {
+        std::runtime_error("There is nan in UV_joint!");
     }
 }
 

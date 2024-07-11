@@ -17,6 +17,20 @@ auto triangle_3d_area(
     return typename ADerived::Scalar(.5) * ba.cross(ca).norm();
 }
 
+
+// template get 3d tri area
+template <typename ADerived, typename BDerived, typename CDerived>
+auto triangle_3d_area_sq(
+    const Eigen::MatrixBase<ADerived>& a,
+    const Eigen::MatrixBase<BDerived>& b,
+    const Eigen::MatrixBase<CDerived>& c) -> typename ADerived::Scalar
+{
+    auto ba = b - a;
+    auto ca = c - a;
+    auto crs = ba.cross(ca);
+    return crs.dot(crs);
+}
+
 // template get 3d tri area
 template <typename ADerived, typename BDerived, typename CDerived>
 auto triangle_signed_2d_area(
