@@ -61,10 +61,10 @@ bool Mesh::is_boundary(const simplex::Simplex& s) const
 }
 
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 bool Mesh::is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
     const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
     const int64_t cid = tuple.m_global_cid;
 
     const int64_t desired_hash = get_cell_hash(cid, hash_accessor);
@@ -72,25 +72,53 @@ bool Mesh::is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>&
         // logger().debug("Hash is not valid: {} != {}", tuple.m_hash, desired_hash);
         return false;
     }
-#endif
     return true;
 }
 
-bool Mesh::is_valid_slow(const Tuple& tuple) const
+bool Mesh::is_hash_valid(const Tuple& tuple) const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
-    return is_valid(tuple, hash_accessor);
-#else
-    const auto& flag_accessor = get_const_flag_accessor(top_simplex_type());
-    return flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1;
+    auto ha = get_const_cell_hash_accessor();
+    return is_hash_valid(tuple, ha);
+}
+
+
+bool Mesh::is_valid_with_hash(const Tuple& tuple) const
+{
+    auto ha = get_const_cell_hash_accessor();
+    return is_valid_with_hash(tuple, ha);
+}
+bool Mesh::is_valid_with_hash(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+    const
+{
+    if (!is_valid(tuple)) {
+        return false;
+    }
+    if (!is_hash_valid(tuple, hash_accessor)) {
+        return false;
+    }
+    // #else
+    //     const auto& flag_accessor = get_const_flag_accessor(top_simplex_type());
+    //     return flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1;
+    // #endif
+    return true;
+}
 #endif
+
+bool Mesh::is_valid(const Tuple& tuple) const
+{
+    return !tuple.is_null() && !is_removed(tuple);
 }
 
 bool Mesh::is_removed(const Tuple& tuple) const
 {
     const auto& flag_accessor = get_const_flag_accessor(top_simplex_type());
     return !(flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1);
+}
+
+bool Mesh::is_valid(const simplex::Simplex& s) const
+{
+    const int64_t id_tuple = id(s.tuple(), s.primitive_type());
+    return id_tuple == s.m_index;
 }
 
 
@@ -107,6 +135,7 @@ attribute::Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
     return create_accessor(m_flag_handles.at(get_primitive_type_id(type)));
 }
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 const attribute::Accessor<int64_t> Mesh::get_const_cell_hash_accessor() const
 {
     return create_const_accessor(m_cell_hash_handle);
@@ -123,53 +152,41 @@ attribute::Accessor<int64_t> Mesh::get_cell_hash_accessor()
 
 void Mesh::update_cell_hash(const Tuple& cell, attribute::Accessor<int64_t>& hash_accessor)
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
     const int64_t cid = cell.m_global_cid;
     update_cell_hash(cid, hash_accessor);
-#endif
 }
 void Mesh::update_cell_hash(const int64_t cid, attribute::Accessor<int64_t>& hash_accessor)
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-
     auto& h = hash_accessor.index_access().scalar_attribute(cid);
     h = (h + 1) % (1 << 6);
-#endif
 }
 
 void Mesh::update_cell_hashes(
     const std::vector<Tuple>& cells,
     attribute::Accessor<int64_t>& hash_accessor)
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-
     for (const Tuple& t : cells) {
         update_cell_hash(t, hash_accessor);
     }
-#endif
 }
 void Mesh::update_cell_hashes(
     const std::vector<int64_t>& cells,
     attribute::Accessor<int64_t>& hash_accessor)
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-
     for (const int64_t t : cells) {
         update_cell_hash(t, hash_accessor);
     }
-#endif
 }
 
 void Mesh::update_cell_hashes_slow(const std::vector<Tuple>& cells)
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-
     attribute::Accessor<int64_t> hash_accessor = get_cell_hash_accessor();
     update_cell_hashes(cells, hash_accessor);
-#endif
 }
+#endif
 
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 Tuple Mesh::resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
     const
 {
@@ -183,7 +200,7 @@ Tuple Mesh::resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_
 #endif
 }
 
-Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple)
+Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple) const
 {
 #if defined(WMTK_ENABLE_HASH_UPDATE)
     attribute::Accessor<int64_t> hash_accessor = get_cell_hash_accessor();
@@ -192,7 +209,9 @@ Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple)
     return tuple;
 #endif
 }
+#endif
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 int64_t Mesh::get_cell_hash(int64_t cell_index, const attribute::Accessor<int64_t>& hash_accessor)
     const
 {
@@ -204,6 +223,7 @@ int64_t Mesh::get_cell_hash_slow(int64_t cell_index) const
     const attribute::Accessor<int64_t> hash_accessor = get_cell_hash_accessor();
     return get_cell_hash(cell_index, hash_accessor);
 }
+#endif
 
 void Mesh::set_capacities_from_flags()
 {
@@ -250,12 +270,14 @@ Tuple Mesh::switch_tuples_unsafe(
 }
 
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 void Mesh::update_vertex_operation_hashes(
     const Tuple& vertex,
     attribute::Accessor<int64_t>& hash_accessor)
 {
     MultiMeshManager::update_vertex_operation_hashes_internal(*this, vertex, hash_accessor);
 }
+#endif
 
 void Mesh::assert_capacity_valid() const
 {

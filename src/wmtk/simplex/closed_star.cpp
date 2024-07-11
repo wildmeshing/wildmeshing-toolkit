@@ -11,7 +11,7 @@ namespace wmtk::simplex {
 
 SimplexCollection closed_star(const Mesh& mesh, const Simplex& simplex, const bool sort_and_clean)
 {
-    assert(mesh.is_valid_slow(simplex.tuple()));
+    assert(mesh.is_valid(simplex.tuple()));
     SimplexCollection collection = top_dimension_cofaces(mesh, simplex, false);
 
     const size_t n_top_dimension_cofaces = collection.simplex_vector().size();

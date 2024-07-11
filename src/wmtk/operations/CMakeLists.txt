@@ -2,6 +2,9 @@ set(SRC_FILES
     AMIPSOptimizationSmoothing.hpp
     AMIPSOptimizationSmoothing.cpp
 
+    AMIPSOptimizationSmoothingPeriodic.hpp
+    AMIPSOptimizationSmoothingPeriodic.cpp
+
     AttributesUpdate.hpp
     AttributesUpdate.cpp
 
@@ -39,6 +42,8 @@ set(SRC_FILES
 
     MeshConsolidate.hpp
     MeshConsolidate.cpp
+    TetWildTangentialLaplacianSmoothing.hpp
+    TetWildTangentialLaplacianSmoothing.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

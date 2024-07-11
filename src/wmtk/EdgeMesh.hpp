@@ -42,8 +42,7 @@ public:
         Eigen::Ref<const RowVectors2l> EE,
         Eigen::Ref<const VectorXl> VE);
 
-    bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
-        const override;
+    bool is_valid(const Tuple& tuple) const final override;
 
     bool is_connectivity_valid() const override;
 
@@ -52,6 +51,8 @@ public:
 
     Tuple switch_vertex(const Tuple& tuple) const;
     Tuple switch_edge(const Tuple& tuple) const;
+
+    std::vector<Tuple> orient_vertices(const Tuple& tuple) const override;
 
 protected:
     int64_t id(const Tuple& tuple, PrimitiveType type) const;

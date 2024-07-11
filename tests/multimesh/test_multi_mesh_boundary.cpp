@@ -17,9 +17,6 @@ using namespace wmtk::tests;
 using namespace wmtk::simplex;
 
 using TM = TriMesh;
-using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
-    wmtk::Tuple(),
-    std::declval<wmtk::attribute::Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;

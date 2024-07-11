@@ -65,7 +65,7 @@ public:
         Eigen::Ref<const VectorXl> EF);
     void initialize(Eigen::Ref<const RowVectors3l> F);
 
-    bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+    bool is_valid(const Tuple& tuple)
         const final override;
 
     bool is_connectivity_valid() const final override;
@@ -79,6 +79,8 @@ public:
     Tuple switch_vertex(const Tuple& tuple) const;
     Tuple switch_edge(const Tuple& tuple) const;
     Tuple switch_face(const Tuple& tuple) const;
+
+    std::vector<Tuple> orient_vertices(const Tuple& t) const override;
 
 protected:
     int64_t id(const Tuple& tuple, PrimitiveType type) const;

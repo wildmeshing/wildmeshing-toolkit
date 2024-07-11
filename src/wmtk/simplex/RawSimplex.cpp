@@ -11,12 +11,13 @@ RawSimplex::RawSimplex(const Mesh& mesh, const std::vector<Tuple>& vertices)
 {
     m_vertices.reserve(vertices.size());
 
-    const attribute::Accessor<int64_t> hash_accessor = mesh.get_const_cell_hash_accessor();
 
     for (size_t i = 0; i < vertices.size(); ++i) {
         m_vertices.emplace_back(
-            mesh.is_valid(vertices[i], hash_accessor) ? mesh.id(vertices[i], PrimitiveType::Vertex)
-                                                      : -1);
+            mesh.is_valid(vertices[i]) ? 
+            mesh.id(vertices[i], PrimitiveType::Vertex)
+                                                      : -1
+                                                      );
     }
 
     std::sort(m_vertices.begin(), m_vertices.end());
@@ -82,10 +83,9 @@ RawSimplex RawSimplex::opposite_face(const int64_t excluded_id)
 
 RawSimplex RawSimplex::opposite_face(const Mesh& mesh, const Tuple& vertex)
 {
-    const attribute::Accessor<int64_t> hash_accessor = mesh.get_const_cell_hash_accessor();
 
     int64_t excluded_id =
-        mesh.is_valid(vertex, hash_accessor) ? mesh.id(vertex, PrimitiveType::Vertex) : -1;
+        mesh.is_valid(vertex) ? mesh.id(vertex, PrimitiveType::Vertex) : -1;
 
     return opposite_face(excluded_id);
 }

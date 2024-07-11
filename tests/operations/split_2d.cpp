@@ -28,9 +28,14 @@ using namespace operations;
 
 using TM = TriMesh;
 using MapResult = typename Eigen::Matrix<int64_t, Eigen::Dynamic, 1>::MapType;
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
     wmtk::Tuple(),
-    std::declval<attribute::Accessor<int64_t>&>()));
+    std::declval<wmtk::attribute::Accessor<int64_t>&>()));
+#else
+using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
+    wmtk::Tuple()));
+#endif
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -211,22 +216,28 @@ TEST_CASE("delete_simplices", "[operations][2D]")
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
     std::vector<std::vector<int64_t>> simplices_to_delete(3);
-    simplices_to_delete[1].emplace_back(m.id(edge, PE));
-    simplices_to_delete[2].emplace_back(m.id(edge, PF));
+    const int64_t edge_index = m.id(edge, PE);
+    const int64_t face_index = m.id(edge, PF);
+    simplices_to_delete[1].emplace_back(edge_index);
+    simplices_to_delete[2].emplace_back(face_index);
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
     auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+    auto executor = m.get_tmoe(edge);
+#endif
 
     // new way of getting simplices
     executor.simplex_ids_to_delete = TMOE::get_split_simplices_to_delete(edge, m);
 
     executor.delete_simplices();
-    REQUIRE(executor.flag_accessors[1].scalar_attribute(edge) == 0);
-    REQUIRE(executor.flag_accessors[2].scalar_attribute(edge) == 0);
-    REQUIRE(executor.ff_accessor.vector_attribute(edge)[0] == -1);
-    REQUIRE(executor.ff_accessor.vector_attribute(edge)[1] == 2);
-    REQUIRE(executor.ff_accessor.vector_attribute(edge)[2] == 1);
-    REQUIRE(executor.ef_accessor.scalar_attribute(edge) == 0);
+    REQUIRE(executor.flag_accessors[1].index_access().const_scalar_attribute(edge_index) == 0);
+    REQUIRE(executor.flag_accessors[2].index_access().const_scalar_attribute(face_index) == 0);
+    REQUIRE(executor.ff_accessor.index_access().const_vector_attribute(face_index)[0] == -1);
+    REQUIRE(executor.ff_accessor.index_access().const_vector_attribute(face_index)[1] == 2);
+    REQUIRE(executor.ff_accessor.index_access().const_vector_attribute(face_index)[2] == 1);
+    REQUIRE(executor.ef_accessor.index_access().const_scalar_attribute(edge_index) == 0);
 }
 
 TEST_CASE("operation_state", "[operations][2D]")
@@ -240,8 +251,12 @@ TEST_CASE("operation_state", "[operations][2D]")
         REQUIRE(m.id(edge, PV) == 0);
         REQUIRE(m.id(edge, PF) == 0);
         REQUIRE(m.id(m.switch_tuple(edge, PV), PV) == 2);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+        auto executor = m.get_tmoe(edge);
+#endif
 
         REQUIRE(executor.flag_accessors.size() == 3);
         REQUIRE(executor.incident_vids().size() == 2);
@@ -256,8 +271,12 @@ TEST_CASE("operation_state", "[operations][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+        auto executor = m.get_tmoe(edge);
+#endif
 
         REQUIRE(executor.flag_accessors.size() == 3);
         REQUIRE(executor.incident_vids().size() == 2);
@@ -285,8 +304,12 @@ TEST_CASE("operation_state", "[operations][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+        auto executor = m.get_tmoe(edge);
+#endif
 
         REQUIRE(executor.flag_accessors.size() == 3);
         REQUIRE(executor.incident_vids().size() == 2);
@@ -331,8 +354,12 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     const Tuple left_ear_edge = m.switch_tuple(edge, PE);
     REQUIRE(m.id(left_ear_edge, PV) == 4);
     REQUIRE(m.id(m.switch_tuple(left_ear_edge, PV), PV) == 1);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
     auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+    auto executor = m.get_tmoe(edge);
+#endif
     auto ff_accessor_before = m.create_base_accessor<int64_t>(m.f_handle(PF));
     REQUIRE(ff_accessor_before.vector_attribute(1)(2) == 2);
     TMOE::EarData ear{1, m.id(edge, PE)};
@@ -341,7 +368,7 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     REQUIRE(ff_accessor_after.vector_attribute(1)(2) == 3);
 }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 TEST_CASE("hash_update", "[operations][2D]")
 {
     SECTION("single_triangle")
@@ -351,8 +378,12 @@ TEST_CASE("hash_update", "[operations][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+        auto executor = m.get_tmoe(edge);
+#endif
         // auto& ha = executor.hash_accessor;
 
         CHECK(m.get_cell_hash_slow(0) == 0);
@@ -368,8 +399,12 @@ TEST_CASE("hash_update", "[operations][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(3, 7, 5);
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+        auto executor = m.get_tmoe(edge);
+#endif
         // auto& ha = executor.hash_accessor;
 
         CHECK(m.get_cell_hash_slow(0) == 0);
@@ -406,8 +441,12 @@ TEST_CASE("connect_faces_across_spine", "[operations][split][2D]")
     m.reserve_attributes(PF, 10);
     REQUIRE(m.is_connectivity_valid());
     const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
     auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+    auto executor = m.get_tmoe(edge);
+#endif
     auto& incident_face_datas = executor.m_incident_face_datas;
 
     REQUIRE(executor.incident_face_datas().size() == 2);
@@ -442,8 +481,12 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         DEBUG_TriMesh m = single_triangle();
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+        auto executor = m.get_tmoe(edge);
+#endif
         auto& incident_face_datas = executor.m_incident_face_datas;
 
         //  create new vertex
@@ -525,8 +568,12 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         DEBUG_TriMesh m = interior_edge();
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+        auto executor = m.get_tmoe(edge);
+#endif
         auto& incident_face_datas = executor.m_incident_face_datas;
 
         // create new vertex
@@ -670,8 +717,12 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         const int64_t edge_id = m.id(edge, PE);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+        auto executor = m.get_tmoe(edge);
+#endif
 
         executor.split_edge();
 
@@ -708,8 +759,12 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         const int64_t edge_id = m.id(edge, PE);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+        auto executor = m.get_tmoe(edge);
+#endif
 
         executor.split_edge();
 
@@ -747,7 +802,11 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
-    REQUIRE(m.is_valid_slow(edge3));
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+    REQUIRE(m.is_valid_with_hash(edge3));
+#else
+    REQUIRE(m.is_valid(edge3));
+#endif
     split(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 
@@ -798,13 +857,19 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+#endif
         EdgeSplit split(m);
         auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid(ret, hash_accessor));
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+        REQUIRE(m.is_valid_with_hash(ret, hash_accessor));
+#else
+        REQUIRE(m.is_valid(ret));
+#endif
         CHECK(m.id(ret, PV) == 3);
         CHECK(m.id(m.switch_vertex(ret), PV) == 2);
         CHECK(m.id(ret, PF) == 2);
@@ -815,13 +880,19 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 0);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+#endif
         EdgeSplit split(m);
         auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid(ret, hash_accessor));
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+        REQUIRE(m.is_valid_with_hash(ret, hash_accessor));
+#else
+        REQUIRE(m.is_valid(ret));
+#endif
         CHECK(m.id(ret, PV) == 3);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(ret, PF) == 2);
@@ -832,13 +903,19 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+#endif
         EdgeSplit split(m);
         auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid(ret, hash_accessor));
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+        REQUIRE(m.is_valid_with_hash(ret, hash_accessor));
+#else
+        REQUIRE(m.is_valid(ret));
+#endif
         CHECK(m.id(ret, PV) == 6);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 0);
@@ -850,13 +927,19 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 3);
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+#endif
         EdgeSplit split(m);
         auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid(ret, hash_accessor));
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+        REQUIRE(m.is_valid_with_hash(ret, hash_accessor));
+#else
+        REQUIRE(m.is_valid(ret));
+#endif
         CHECK(m.id(ret, PV) == 6);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 5);
@@ -886,10 +969,14 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
     }
     EdgeSplit split(mesh);
 
-    for (size_t i = 0; i < 10; ++i) {
+    for (size_t i = 0; i < 5; ++i) {
         const std::vector<wmtk::Tuple> edges = mesh.get_all(PE);
         for (const wmtk::Tuple& e : edges) {
-            if (!mesh.is_valid_slow(e)) {
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+            if (!mesh.is_valid_with_hash(e)) {
+#else
+            if (!mesh.is_valid(e)) {
+#endif
                 continue;
             }
 

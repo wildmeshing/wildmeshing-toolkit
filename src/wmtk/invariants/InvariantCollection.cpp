@@ -33,7 +33,8 @@ bool InvariantCollection::before(const simplex::Simplex& t) const
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
             for (const Tuple& ct : mesh().map_tuples(invariant->mesh(), t)) {
-                if (!invariant->before(simplex::Simplex(mesh(), t.primitive_type(), ct))) {
+                if (!invariant->before(
+                        simplex::Simplex(invariant->mesh(), t.primitive_type(), ct))) {
                     return false;
                 }
             }
@@ -86,10 +87,10 @@ bool InvariantCollection::directly_modified_after(
 {
 #ifndef NDEBUG
     for (const auto& s : simplices_before) {
-        mesh().parent_scope([&]() { assert(mesh().is_valid_slow(s.tuple())); });
+        mesh().parent_scope([&]() { assert(mesh().is_valid(s.tuple())); });
     }
     for (const auto& s : simplices_after) {
-        assert(mesh().is_valid_slow(s.tuple()));
+        assert(mesh().is_valid(s.tuple()));
     }
 #endif
 
@@ -100,10 +101,10 @@ bool InvariantCollection::directly_modified_after(
                 [&]() { return mesh().map(invariant->mesh(), simplices_before); });
 #ifndef NDEBUG
             for (const auto& s : mapped_simplices_before) {
-                mesh().parent_scope([&]() { assert(invariant->mesh().is_valid_slow(s.tuple())); });
+                mesh().parent_scope([&]() { assert(invariant->mesh().is_valid(s.tuple())); });
             }
             for (const auto& s : mapped_simplices_after) {
-                assert(invariant->mesh().is_valid_slow(s.tuple()));
+                assert(invariant->mesh().is_valid(s.tuple()));
             }
             assert(mesh().is_from_same_multi_mesh_structure(invariant->mesh()));
 #endif

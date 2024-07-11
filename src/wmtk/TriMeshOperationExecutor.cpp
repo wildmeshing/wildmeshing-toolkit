@@ -90,17 +90,25 @@ auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> Incid
 }
 
 // constructor
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     TriMesh& m,
     const Tuple& operating_tuple,
     attribute::Accessor<int64_t>& hash_acc)
+#else
+TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
+    TriMesh& m,
+    const Tuple& operating_tuple)
+#endif
     : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Triangle)}}
     , ff_accessor(m.create_accessor<int64_t>(m.m_ff_handle))
     , fe_accessor(m.create_accessor<int64_t>(m.m_fe_handle))
     , fv_accessor(m.create_accessor<int64_t>(m.m_fv_handle))
     , vf_accessor(m.create_accessor<int64_t>(m.m_vf_handle))
     , ef_accessor(m.create_accessor<int64_t>(m.m_ef_handle))
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     , hash_accessor(hash_acc)
+#endif
     , m_mesh(m)
 
 {
@@ -137,7 +145,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     simplex::SimplexCollection faces(m_mesh);
 
     for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 
         cell_ids_to_update_hash.push_back(m_mesh.id(f));
 #endif
@@ -485,7 +493,7 @@ void TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
         m_mesh.tuple_from_global_ids(new_tuple_fid, split_spine_eids[1], split_new_vid);
     assert(m_mesh.id_vertex(m_output_tuple) == split_new_vid);
     assert(m_mesh.id_face(m_output_tuple) == new_tuple_fid);
-    assert(m_mesh.is_valid(m_output_tuple, hash_accessor));
+    assert(m_mesh.is_valid(m_output_tuple));
 }
 
 
@@ -555,7 +563,7 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
         m_output_tuple = m_mesh.switch_face(m_output_tuple);
     }
     assert(m_mesh.id_face(m_output_tuple) == new_tuple_fid);
-    assert(m_mesh.is_valid(m_output_tuple, hash_accessor));
+    assert(m_mesh.is_valid(m_output_tuple));
 
 
     // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear

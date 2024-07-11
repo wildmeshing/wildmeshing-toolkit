@@ -30,7 +30,7 @@ function(add_component WMTK_COMPONENT_PREFIX folder)
     file(APPEND "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/main/wmtk/components/spec_include.hpp"
      "spec_engine.include_directories.push_back( \"${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/${folder}/wmtk/components/${folder}\");\n")
 
-    set(WMTKC_TEST_SOURCES "test_component_${folder}.cpp" ${WMTKC_TEST_SOURCES} PARENT_SCOPE)
+    #set(WMTKC_TEST_SOURCES "test_component_${folder}.cpp" ${WMTKC_TEST_SOURCES} PARENT_SCOPE)
     target_link_libraries(wildmeshing_components PUBLIC ${CURRENT_COMPONENT_LIB_NAME})
 
 

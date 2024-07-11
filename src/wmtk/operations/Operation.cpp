@@ -249,7 +249,6 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
                     // TODO: get a larger json file to do this:
                     // op_logs_js["op_log"].push_back(operation_log);
-
                     operation_log_file << operation_log.dump(4);
                     operation_log_file.close();
                 } else {
@@ -272,14 +271,13 @@ bool Operation::before(const simplex::Simplex& simplex) const
 #if defined(WMTK_ENABLE_HASH_UPDATE)
     const attribute::Accessor<int64_t> accessor = hash_accessor();
 
-    if (!mesh().is_valid(
-            simplex.tuple(),
-            accessor)) { // TODO: chang to is_removed and resurrect later
+    if (!mesh().is_valid(simplex.tuple())) { // TODO: chang to is_removed and resurrect later
         return false;
     }
 #else
 
-    if (mesh().is_removed(simplex.tuple())) {
+    if (mesh().is_removed(simplex.tuple()) || !mesh().is_valid(simplex.tuple()) ||
+        !mesh().is_valid(simplex)) {
         return false;
     }
 #endif
@@ -354,6 +352,7 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
     }
 }
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 Tuple Operation::resurrect_tuple(const Tuple& tuple) const
 {
     return mesh().resurrect_tuple(tuple, hash_accessor());
@@ -368,6 +367,7 @@ const attribute::Accessor<int64_t> Operation::hash_accessor() const
 {
     return m_mesh.get_const_cell_hash_accessor();
 }
+#endif
 
 
 void Operation::reserve_enough_simplices()

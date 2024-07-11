@@ -9,6 +9,9 @@
 #include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 
+// debug function that reads into this structure
+#include "utils/check_map_valid.hpp"
+
 
 namespace wmtk {
 
@@ -59,15 +62,21 @@ public:
     template <typename Visitor>
     friend class multimesh::MultiMeshSimplexVisitorExecutor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
+
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
         const simplex::SimplexCollection& vertex_closed_star,
         wmtk::attribute::Accessor<int64_t>& parent_hash_accessor);
+#endif
     template <typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class wmtk::HDF5Reader;
+
+    friend bool utils::check_child_maps_valid(const Mesh& m);
+    friend bool utils::check_parent_map_valid(const Mesh& m);
 
 
     // @param the max dimension of the mesh we will get passed
@@ -536,6 +545,7 @@ public:
      * @param vertex operating vertex tuple
      * @param hash_accessor hash accessor of m
      */
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     static void update_vertex_operation_hashes_internal(
         Mesh& m,
         const Tuple& vertex,
@@ -544,6 +554,7 @@ public:
         Mesh& m,
         const simplex::SimplexCollection& vertex_closed_star,
         wmtk::attribute::Accessor<int64_t>& parent_hash_accessor);
+#endif
 
 public:
     // remove after bug fix

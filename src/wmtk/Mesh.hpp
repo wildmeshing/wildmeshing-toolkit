@@ -106,6 +106,8 @@ public:
     friend class multimesh::MultiMeshSimplexVisitorExecutor;
     template <typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
+    friend bool multimesh::utils::check_child_maps_valid(const Mesh& m);
+    friend bool multimesh::utils::check_parent_map_valid(const Mesh& m);
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class multimesh::attribute::AttributeScopeHandle;
@@ -120,6 +122,7 @@ public:
     friend class operations::EdgeSplit;
     friend class operations::EdgeOperationData;
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
         const simplex::SimplexCollection& vertex_closed_star,
@@ -129,6 +132,7 @@ public:
         Mesh& m,
         const Tuple& vertex,
         attribute::Accessor<int64_t>& hash_accessor);
+#endif
 
     int64_t top_cell_dimension() const;
     PrimitiveType top_simplex_type() const;
@@ -268,8 +272,9 @@ public:
 
 
     const attribute::Accessor<char> get_flag_accessor(PrimitiveType type) const;
-    const attribute::Accessor<int64_t> get_cell_hash_accessor() const;
     const attribute::Accessor<char> get_const_flag_accessor(PrimitiveType type) const;
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+    const attribute::Accessor<int64_t> get_cell_hash_accessor() const;
     const attribute::Accessor<int64_t> get_const_cell_hash_accessor() const;
 
 
@@ -277,6 +282,7 @@ public:
         const;
     // utility function for getting a cell's hash - slow because it creates a new accessor
     int64_t get_cell_hash_slow(int64_t cell_index) const;
+#endif
 
 
     bool operator==(const Mesh& other) const;
@@ -284,8 +290,11 @@ public:
     void assert_capacity_valid() const;
     virtual bool is_connectivity_valid() const = 0;
 
+    virtual std::vector<Tuple> orient_vertices(const Tuple& t) const = 0;
+
 protected: // member functions
     attribute::Accessor<char> get_flag_accessor(PrimitiveType type);
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     attribute::Accessor<int64_t> get_cell_hash_accessor();
 
     /**
@@ -344,7 +353,8 @@ protected: // member functions
     /**
      * @brief same as `resurrect_tuple` but slow because it creates a new accessor
      */
-    Tuple resurrect_tuple_slow(const Tuple& tuple);
+    Tuple resurrect_tuple_slow(const Tuple& tuple) const;
+#endif
 
 
 protected:
@@ -468,6 +478,7 @@ public:
 
 
     bool is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const;
+    bool is_hash_valid(const Tuple& tuple) const;
 
     /**
      * @brief check validity of tuple including its hash
@@ -478,11 +489,19 @@ public:
      * @return true if is valid
      * @return false
      */
-    virtual bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
-        const = 0;
-    bool is_valid_slow(const Tuple& tuple) const;
+    virtual bool is_valid(const Tuple& tuple) const;
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+    bool is_valid_with_hash(const Tuple& tuple) const;
+    bool is_valid_with_hash(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+        const;
+#endif
 
-    virtual bool is_removed(const Tuple& tuple) const;
+    bool is_removed(const Tuple& tuple) const;
+
+    /**
+     * @brief Check if the cached id in a simplex is up-to-date.
+     */
+    bool is_valid(const simplex::Simplex& s) const;
 
 
     //============================

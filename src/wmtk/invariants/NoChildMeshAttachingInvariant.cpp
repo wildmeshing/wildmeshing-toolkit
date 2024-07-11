@@ -14,6 +14,10 @@ bool NoChildMeshAttachingInvariant::before(const simplex::Simplex& t) const
     auto child_meshes = mesh().get_child_meshes();
 
     for (auto child_mesh : child_meshes) {
+        // if (!mesh().map_to_child(*child_mesh, simplex::Simplex::edge(mesh(), t.tuple())).empty())
+        // {
+        //     continue;
+        // }
         if (!mesh()
                  .map_to_child(*child_mesh, simplex::Simplex::vertex(mesh(), t.tuple()))
                  .empty() ||
