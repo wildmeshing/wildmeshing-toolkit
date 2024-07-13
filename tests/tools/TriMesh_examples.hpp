@@ -29,12 +29,21 @@ TriMesh single_2d_triangle_with_random_positions(size_t seed = 123);
 TriMesh one_ear(); // an alias for quad
 TriMesh quad();
 
-//  3--1--- 0 --1- 4
+// global indices:
+//  3--2--- 0 --3- 4
 //   |     / \     |
-//   2 f1 /2 1\ f2 |
-//   |  0/ f0  \1  0
+//   5 f1 0   1 f2 |
+//   |   / f0  \   6
 //   |  /       \  |
-//   1  ----0----  2
+//   1  ----4----  2
+//
+// local indices:
+//  0x-----2x0---- x2
+//   |  1  / \  1  |
+//   |2   /2 1\   0|
+//   |  0/     \2  |
+//   |  /   0   \  |
+//  1x  ---------  x1
 //
 TriMesh two_neighbors();
 
