@@ -1,5 +1,6 @@
 # The index convenction is arbitrary, 
 # orientation is not important here
+from SimplexComplex import SimplexComplex
 
 vertices = [{0},{1},{2},{3}]
 
@@ -32,13 +33,17 @@ s = [vertices,edges,faces]
 
 simplices = s
 
+simplex_complex = SimplexComplex(simplices)
+
 # Generates all possible tuples, note that some might not be valid
 def all_tuples(s):
-    return [[i,j,k] for i in range(len(s[0])) for j in range(len(s[1])) for k in range(len(s[2]))]
+    return SimplexComplex(s).all_tuples()
+
 
 # Check if a tuple is valid, i.e. if the simplex of dimension d-1 is a face of a simplex of dimension d
 def valid_tuple(t,s):
-    return s[0][t[0]].issubset(s[1][t[1]]) and s[1][t[1]].issubset(s[2][t[2]]) 
+    return SimplexComplex(s).valid_tuple(t)
+
 
 # Check if a tuple is ccw
 def ccw_tuple(t,s):
@@ -57,16 +62,9 @@ def ccw_tuple(t,s):
 # Enumerates all valid tuples similar to t, but with a different value in the slot d
 # There must be 2 of them, and this function returns the one that is different than t
 def switch(t,d,s):
-    candidates = []
-    for i in range(len(s[d])):
-        t2 = t.copy()
-        t2[d] = i
-        candidates.append(t2)
-    valid = [x for x in candidates if valid_tuple(x,s)]
-    assert(len(valid) == 2)
-    valid.remove(t)
-    assert(len(valid) == 1)
-    return valid[0]
+    return SimplexComplex(s).switch(t,d)
+
+
 
 # Builds a table for the switch operation of dimension d
 def table(d,s):
@@ -75,11 +73,12 @@ def table(d,s):
 
     for i in range(len(sv)):
         if not valid_tuple(sv[i],s):
-            sv[i] = [-1,-1,-1]
+            sv[i] = len(s) * (-1,)
         else:
             sv[i] = switch(sv[i],d,s)
 
     return sv
+
 
 # Builds a table for the switch operation of dimension d
 def table_ccw(s):
@@ -113,3 +112,5 @@ def table_complete_tuple(d,s):
     assert(len(out) == len(s[d]))
             
     return out
+
+
