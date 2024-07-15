@@ -19,6 +19,22 @@ class SimplexComplex:
         items = tuple(self[i][t[i]] for i in range(len(t)))
         return all(a.issubset(b) for a,b in zip(items[:-1],items[1:]))
 
+    def valid_tuple_as_simplicial_set(self,t):
+        assert(self.valid_tuple(t))
+        items = tuple(self[i][t[i]] for i in range(len(t)))
+        x = (next(iter(items[0])),) + tuple(next(iter((b-a))) for a,b in zip(items[:-1],items[1:]))
+
+        n = len(self)
+        return x + (int((n * (n+1)) / 2) - sum(x),)
+
+    def simplicial_set_as_valid_tuple(self, ss):
+            
+            
+
+        return tuple(self.__simplices__[d].index(frozenset(ss[:d+1]))
+                     for d in range(len(ss)-1))
+
+
     def __len__(self):
         return self.__simplices__.__len__()
 
@@ -51,3 +67,51 @@ class SimplexComplex:
 
     def valid_tuple_index(self, index):
         return self.__valid_indices__[index]
+
+
+    def index_switch(self,tuple_index, d):
+        return self.get_index(self.switch(self.tuple_from_index(tuple_index), d))
+    def valid_index_switch(self,tuple_index, d):
+        return self.__valid_index_map__[
+            self.index_switch(
+        self.__valid_indices__[tuple_index], d)
+        ]
+
+    def valid_tuples(self):
+        ts = self.all_tuples()
+        return [
+                ts[j] for j in self.__valid_indices__
+                ]
+
+    def valid_tuple_product(self, t1, t2):
+        s1 = self.valid_tuple_as_simplicial_set(t1)
+        s2 = self.valid_tuple_as_simplicial_set(t2)
+
+        sp = tuple(s1[i] for i in s2)
+
+        return self.simplicial_set_as_valid_tuple(sp)
+
+    def valid_tuple_index_product(self, i1, i2):
+        vt = self.valid_tuples()
+        return vt.index(self.valid_tuple_product(
+                vt[i1],
+                vt[i2]
+                ))
+
+
+def valid_switch_table(sc):
+    return [[sc.valid_index_switch(i,d) for d in range(len(sc))] for i in range(sc.valid_tuple_size())]
+
+
+def valid_switch_product_table(sc):
+    size = sc.valid_tuple_size()
+    return [[sc.valid_tuple_index_product(i1,i2) for i2 in range(size)] for i1 in range(size)]
+
+def valid_switch_inverse_table(sc):
+    table = valid_switch_product_table(sc)
+    size = sc.valid_tuple_size()
+    identity_valid_tuple = sc.simplicial_set_as_valid_tuple(tuple(range(len(sc)+1)))
+    identity_valid_index = sc.valid_tuples().index(identity_valid_tuple)
+    return [table[i].index(identity_valid_index) for i in range(size)] 
+
+

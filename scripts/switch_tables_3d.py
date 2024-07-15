@@ -1,6 +1,6 @@
 # The index convenction is arbitrary, 
 # orientation is not important here
-from SimplexComplex import SimplexComplex
+from SimplexComplex import SimplexComplex,valid_switch_table, valid_switch_product_table,valid_switch_inverse_table
 
 vertices = [{0},{1},{2},{3}]
 
@@ -34,6 +34,20 @@ s = [vertices,edges,faces]
 simplices = s
 
 simplex_complex = SimplexComplex(simplices)
+
+
+for t in simplex_complex.valid_tuples():
+
+    print(t, simplex_complex.valid_tuple_as_simplicial_set(t))
+    print(t, simplex_complex.simplicial_set_as_valid_tuple(simplex_complex.valid_tuple_as_simplicial_set(t)))
+
+print(valid_switch_table(simplex_complex))
+print(valid_switch_product_table(simplex_complex))
+print(valid_switch_inverse_table(simplex_complex))
+
+for a,b in enumerate(valid_switch_inverse_table(simplex_complex)):
+    print(a,b,simplex_complex.valid_tuple_index_product(a,b))
+
 
 # Generates all possible tuples, note that some might not be valid
 def all_tuples(s):
@@ -112,5 +126,8 @@ def table_complete_tuple(d,s):
     assert(len(out) == len(s[d]))
             
     return out
+
+
+
 
 
