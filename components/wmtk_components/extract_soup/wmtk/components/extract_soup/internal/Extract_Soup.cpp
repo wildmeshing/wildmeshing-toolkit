@@ -9,9 +9,6 @@
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
-#include "wmtk/components/multimesh_from_tag/internal/MultiMeshFromTag.hpp"
-#include "wmtk/function/simplex/AMIPS.hpp"
-#include "wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp"
 #include "wmtk/utils/Logger.hpp"
 
 namespace wmtk::components::internal {
