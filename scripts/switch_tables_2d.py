@@ -1,5 +1,7 @@
 # The index convenction is arbitrary, 
 # orientation is not important here
+from SimplexComplex import SimplexComplex,valid_switch_table, valid_switch_product_table,valid_switch_inverse_table
+
 
 vertices = [{0},{1},{2}]
 
@@ -17,6 +19,9 @@ edges_oriented = [
 
 s = [vertices,edges]
 simplices = s
+
+simplex_complex = SimplexComplex(simplices)
+
 
 # Generates all possible tuples, note that some might not be valid
 def all_tuples(s):

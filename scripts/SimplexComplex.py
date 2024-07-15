@@ -14,6 +14,8 @@ class SimplexComplex:
         r = list(product(*map(list,map(range,map(len,self.__simplices__)))))
         return r
 
+    def valid_indices(self):
+        return self.__valid_indices__
     # Check if a tuple is valid, i.e. if the simplex of dimension d-1 is a face of a simplex of dimension d
     def valid_tuple(self,t):
         items = tuple(self[i][t[i]] for i in range(len(t)))

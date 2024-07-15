@@ -31,5 +31,20 @@ extern const int64_t auto_3d_table_complete_edge[6][3];
 // fvid -> a ccw [lvid,leid,lfid]
 extern const int64_t auto_3d_table_complete_face[4][3];
 
+// For each valid tuple encodes the raw tuple index
+extern const int8_t auto_valid_tuple_indices[24];
+
+// Index of each tuple according to valid tuple indexing
+extern const int8_t auto_all_to_valid_tuple_indices[96];
+
+// Valid tuple indices
+extern const int8_t auto_valid_switch_table[24][3];
+
+// Tuple group product using valid tuple indices
+extern const int8_t auto_valid_switch_product_table[24][24];
+
+// Tuple group product inverse using valid tuple indices
+extern const int8_t auto_valid_switch_inverse_table[24];
+
 
 } // namespace wmtk::autogen::tet_mesh

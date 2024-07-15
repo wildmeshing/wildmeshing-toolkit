@@ -34,7 +34,7 @@ s = [vertices,edges,faces]
 simplices = s
 
 simplex_complex = SimplexComplex(simplices)
-
+"""
 
 for t in simplex_complex.valid_tuples():
 
@@ -47,7 +47,7 @@ print(valid_switch_inverse_table(simplex_complex))
 
 for a,b in enumerate(valid_switch_inverse_table(simplex_complex)):
     print(a,b,simplex_complex.valid_tuple_index_product(a,b))
-
+"""
 
 # Generates all possible tuples, note that some might not be valid
 def all_tuples(s):
