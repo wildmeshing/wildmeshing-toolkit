@@ -31,6 +31,9 @@ extern const int64_t auto_3d_table_complete_edge[6][3];
 // fvid -> a ccw [lvid,leid,lfid]
 extern const int64_t auto_3d_table_complete_face[4][3];
 
+// Valid tuple local indices
+extern const int8_t auto_valid_tuples[24][3];
+
 // For each valid tuple encodes the raw tuple index
 extern const int8_t auto_valid_tuple_indices[24];
 

@@ -17,6 +17,8 @@ const int64_t auto_2d_table_complete_vertex[3][2] = {{0, 2}, {1, 0}, {2, 1}};
 
 const int64_t auto_2d_table_complete_edge[3][2] = {{1, 0}, {2, 1}, {0, 2}};
 
+const int8_t auto_valid_tuples[6][2] = {{0, 1}, {0, 2}, {1, 0}, {1, 2}, {2, 0}, {2, 1}};
+
 const int8_t auto_valid_tuple_indices[6] = {1, 2, 3, 5, 6, 7};
 
 const int8_t auto_all_to_valid_tuple_indices[9] = {-1, 0, 1, 2, -1, 3, 4, 5, -1};

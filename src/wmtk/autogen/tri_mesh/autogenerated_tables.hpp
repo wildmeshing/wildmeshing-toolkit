@@ -22,6 +22,9 @@ extern const int64_t auto_2d_table_complete_vertex[3][2];
 // leid -> a ccw [lvid,leid]
 extern const int64_t auto_2d_table_complete_edge[3][2];
 
+// Valid tuple local indices
+extern const int8_t auto_valid_tuples[6][2];
+
 // For each valid tuple encodes the raw tuple index
 extern const int8_t auto_valid_tuple_indices[6];
 
