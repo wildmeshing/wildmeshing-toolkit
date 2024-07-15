@@ -16,6 +16,7 @@ var classwmtk_1_1multimesh_1_1_multi_mesh_manager =
     [ "children", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ab92a2744829078ea791ffdd02ad1e4a0", null ],
     [ "children", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a0b1358f443d3837639573fec15f476c7", null ],
     [ "deregister_child_mesh", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a69e485e6bb6293cafd0b96526522f556", null ],
+    [ "detach_children", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a560692f12ae7b0737295b8700d095602", null ],
     [ "find_valid_tuple", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ae46e426a979b4253c48ee8b39d17a566", null ],
     [ "find_valid_tuple_from_alternatives", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a4da01c08681b05cb15974f291bcc13d1", null ],
     [ "find_valid_tuple_from_split", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a32a3d44b1a94f3ec4102795660409f91", null ],
