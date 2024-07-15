@@ -21,6 +21,19 @@ namespace wmtk::multimesh {
 
 namespace {} // namespace
 
+
+void MultiMeshManager::detach_children() {
+    for(auto& data: m_children) {
+
+        auto& m = *data.mesh;
+        m.m_multi_mesh_manager.m_parent = nullptr;
+        m.m_multi_mesh_manager.m_child_id = -1;
+        // TODO: delete attributes
+    }
+
+    m_children.clear();
+}
+
 Tuple MultiMeshManager::map_tuple_between_meshes(
     const Mesh& source_mesh,
     const Mesh& target_mesh,
