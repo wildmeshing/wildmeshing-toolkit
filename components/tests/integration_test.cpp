@@ -220,4 +220,4 @@ WMTK_INTEGRATION("disk_fan_mm", false);
 // WMTK_INTEGRATION("grid",false);
 // WMTK_INTEGRATION("wildmeshing_2d", false);
 // WMTK_INTEGRATION("wildmeshing_3d", false);
-WMTK_INTEGRATION("marching", true);
+WMTK_INTEGRATION("marching", false);
