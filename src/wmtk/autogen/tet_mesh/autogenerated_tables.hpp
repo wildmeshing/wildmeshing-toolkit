@@ -49,5 +49,8 @@ extern const int8_t auto_valid_switch_product_table[24][24];
 // Tuple group product inverse using valid tuple indices
 extern const int8_t auto_valid_switch_inverse_table[24];
 
+// Which tuples are associated with switching. Last entry is the identity tuple
+extern const int8_t auto_valid_tuple_switch_indices[4];
+
 
 } // namespace wmtk::autogen::tet_mesh

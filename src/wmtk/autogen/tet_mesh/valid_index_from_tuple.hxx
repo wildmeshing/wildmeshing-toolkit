@@ -4,12 +4,13 @@
 #include "local_id_table_offset.hpp"
 #include "valid_index_from_tuple.hpp"
 namespace wmtk::autogen::tet_mesh {
-int8_t valid_index_from_tuple(const Tuple& t)
+inline int8_t valid_index_from_tuple(const Tuple& t)
 {
     {
-        const int64_t offset = local_id_table_offset(tuple);
+        const int64_t offset = local_id_table_offset(t);
         const int8_t valid_index = auto_all_to_valid_tuple_indices[offset];
         return valid_index;
     }
 
+}
 } // namespace wmtk::autogen::tet_mesh

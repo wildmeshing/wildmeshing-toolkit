@@ -36,6 +36,10 @@ class SimplexComplex:
         return tuple(self.__simplices__[d].index(frozenset(ss[:d+1]))
                      for d in range(len(ss)-1))
 
+    def simplicial_set_as_valid_tuple_index(self,ss):
+        tup = self.simplicial_set_as_valid_tuple(ss)
+        return self.valid_tuples().index(tup)
+
 
     def __len__(self):
         return self.__simplices__.__len__()
@@ -112,8 +116,21 @@ def valid_switch_product_table(sc):
 def valid_switch_inverse_table(sc):
     table = valid_switch_product_table(sc)
     size = sc.valid_tuple_size()
-    identity_valid_tuple = sc.simplicial_set_as_valid_tuple(tuple(range(len(sc)+1)))
-    identity_valid_index = sc.valid_tuples().index(identity_valid_tuple)
+    identity_valid_index = sc.simplicial_set_as_valid_tuple_index(tuple(range(len(sc)+1)))
     return [table[i].index(identity_valid_index) for i in range(size)] 
 
 
+def switches_plus_identity(sc):
+    identity = tuple(range(len(sc)+1))
+    print("Identity: ", identity)
+    def s(i):
+        x = list(identity)
+        print("1:",x)
+        x[i],x[i+1] = x[i+1],x[i]
+        print("2:",x)
+        return tuple(x)
+    sss = tuple(s(i) for i in range(len(sc))) + (identity,)
+    print(sss)
+    return tuple(map(sc.simplicial_set_as_valid_tuple_index,sss))
+
+    
