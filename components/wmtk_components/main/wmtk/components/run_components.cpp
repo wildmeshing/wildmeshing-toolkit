@@ -9,7 +9,8 @@
 
 #include <fstream>
 
-#include "components_include.hpp"
+//inside ${CMAKE_CURRENT_BINARY_DIR}/autogen
+#include <components_include.hpp>
 
 namespace wmtk::components {
 
@@ -31,7 +32,8 @@ wmtk::io::Cache run_components(const nlohmann::json& json_input_file, bool stric
     jse::JSE spec_engine;
     spec_engine.strict = strict;
 
-#include "spec_include.hpp"
+//inside ${CMAKE_CURRENT_BINARY_DIR}/autogen
+#include <spec_include.hpp>
     rules_json = spec_engine.inject_include(rules_json);
 
     // std::cout << rules_json.dump(2) << std::endl;
@@ -66,7 +68,8 @@ wmtk::io::Cache run_components(const nlohmann::json& json_input_file, bool stric
         components;
 
 // register components
-#include "components_map.hpp"
+// inside ${CMAKE_CURRENT_BINARY_DIR}/autogen
+#include <components_map.hpp>
 
     base::Paths paths;
     paths.root_path = root_path;
