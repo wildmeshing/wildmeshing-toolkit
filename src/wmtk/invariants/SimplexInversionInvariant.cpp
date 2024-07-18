@@ -78,7 +78,8 @@ bool SimplexInversionInvariant<T>::after(
                 const Eigen::Vector2<T> p2 = accessor.const_vector_attribute(
                     mymesh.switch_tuples(ccw_tuple, {PrimitiveType::Edge, PrimitiveType::Vertex}));
 
-                if (utils::wmtk_orient2d(p0, p1, p2) <= 0) return false;
+                // if (utils::wmtk_orient2d(p0, p1, p2) <= 0) return false;
+                if (utils::triangle_signed_2d_area(p0, p1, p2) <= 1e-12) return false;
             } else {
                 const Eigen::Vector3<T> p0 = accessor.const_vector_attribute(ccw_tuple);
                 const Eigen::Vector3<T> p1 = accessor.const_vector_attribute(

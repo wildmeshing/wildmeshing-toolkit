@@ -217,18 +217,19 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             operation_log["F_id_map_after"] = id_map_after;
                             operation_log["F_id_map_before"] = id_map_before;
 
-                            if (is_bd_v0 && is_bd_v1) {
-                                igl::writeOBJ(
-                                    OperationLogPath + "/UV_after_" +
-                                        std::to_string(succ_operations_count) + ".obj",
-                                    to_three_cols(UV_joint),
-                                    F_after);
-                                igl::writeOBJ(
-                                    OperationLogPath + "/UV_before_" +
-                                        std::to_string(succ_operations_count) + ".obj",
-                                    to_three_cols(UV_joint),
-                                    F_before);
-                            }
+
+                            // if (is_bd_v0 && is_bd_v1) {
+                            //     igl::writeOBJ(
+                            //         OperationLogPath + "/UV_after_" +
+                            //             std::to_string(succ_operations_count) + ".obj",
+                            //         to_three_cols(UV_joint),
+                            //         F_after);
+                            //     igl::writeOBJ(
+                            //         OperationLogPath + "/UV_before_" +
+                            //             std::to_string(succ_operations_count) + ".obj",
+                            //         to_three_cols(UV_joint),
+                            //         F_before);
+                            // }
                         } else { // for split operation
                             // log the mesh before and after the operation
                             operation_log["F_after"]["rows"] = F_after.rows();
