@@ -32,13 +32,23 @@ namespace wmtk::components {
 using Vector3 = Eigen::Vector3d;
 using Vector3i = Eigen::Vector3i;
 
+inline int mod3(int j)
+{
+    return j % 3;
+}
+
 class AABBWrapper
 {
 public:
     AABBWrapper(
         const std::vector<Eigen::Vector3d>& vertices,
         const std::vector<Eigen::Vector3i>& faces,
-        double envelope_size)
+        double envelope_size,
+        double sampling_dist,
+        bool use_sampling)
+        : m_envelope_size(envelope_size)
+        , m_sampling_dist(sampling_dist)
+        , m_use_sampling(use_sampling)
     {
         m_envelope = std::make_shared<fastEnvelope::FastEnvelope>(vertices, faces, envelope_size);
         m_bvh = std::make_shared<SimpleBVH::BVH>();
@@ -50,9 +60,146 @@ public:
 
         m_bvh->init(V, F, SCALAR_ZERO);
     }
+
     bool is_out(const std::array<Vector3, 3>& triangle) const
     {
-        return m_envelope->is_outside(triangle);
+        if (m_use_sampling)
+            return is_out_using_sampling(triangle);
+        else
+            return m_envelope->is_outside(triangle);
+    }
+
+    bool is_out_using_sampling(const std::array<Vector3, 3>& vs) const
+    {
+        const double distance2 = m_envelope_size * m_envelope_size;
+        SimpleBVH::VectorMax3d nearest_point;
+        double sq_dist = std::numeric_limits<double>::max();
+
+        static const double sqrt3_2 = std::sqrt(3) / 2;
+
+        std::array<double, 3> ls;
+        for (int i = 0; i < 3; i++) {
+            ls[i] = (vs[i] - vs[mod3(i + 1)]).squaredNorm();
+        }
+
+        auto min_max = std::minmax_element(ls.begin(), ls.end());
+        const int min_i = min_max.first - ls.begin();
+        const int max_i = min_max.second - ls.begin();
+
+        double N = sqrt(ls[max_i]) / m_sampling_dist;
+        if (N <= 1) {
+            for (int i = 0; i < 3; i++) {
+                m_bvh->nearest_facet(vs[i], nearest_point, sq_dist);
+
+                if (sq_dist > distance2) return true;
+            }
+            return false;
+        }
+
+        if (N == int(N)) N -= 1;
+
+        const Eigen::Vector3d v0(vs[max_i][0], vs[max_i][1], vs[max_i][2]);
+        const Eigen::Vector3d v1(
+            vs[mod3(max_i + 1)][0],
+            vs[mod3(max_i + 1)][1],
+            vs[mod3(max_i + 1)][2]);
+        const Eigen::Vector3d v2(
+            vs[mod3(max_i + 2)][0],
+            vs[mod3(max_i + 2)][1],
+            vs[mod3(max_i + 2)][2]);
+
+        const Eigen::Vector3d n_v0v1 = (v1 - v0).normalized();
+
+        int prev_facet;
+
+        for (int n = 0; n <= N; n++) {
+            const auto p = v0 + n_v0v1 * m_sampling_dist * n;
+            if (n == 0)
+                prev_facet = m_bvh->nearest_facet(p, nearest_point, sq_dist);
+            else
+                m_bvh->nearest_facet_with_hint(p, prev_facet, nearest_point, sq_dist);
+
+            if (sq_dist > distance2) return true;
+        }
+
+        m_bvh->nearest_facet_with_hint(v1, prev_facet, nearest_point, sq_dist);
+        if (sq_dist > distance2) return true;
+
+        double h = ((v2 - v0).dot(v1 - v0) * (v1 - v0) / ls[max_i] + v0 - v2).norm();
+        int M = h / (sqrt3_2 * m_sampling_dist);
+        if (M < 1) {
+            m_bvh->nearest_facet_with_hint(v2, prev_facet, nearest_point, sq_dist);
+            if (sq_dist > distance2) return true;
+        }
+
+        const Eigen::Vector3d n_v0v2 = (v2 - v0).normalized();
+        const Eigen::Vector3d n_v1v2 = (v2 - v1).normalized();
+
+        const double sin_v0 =
+            ((v2 - v0).cross(v1 - v0)).norm() / ((v0 - v2).norm() * (v0 - v1).norm());
+        const double tan_v0 = ((v2 - v0).cross(v1 - v0)).norm() / (v2 - v0).dot(v1 - v0);
+        const double tan_v1 = ((v2 - v1).cross(v0 - v1)).norm() / (v2 - v1).dot(v0 - v1);
+        const double sin_v1 =
+            ((v2 - v1).cross(v0 - v1)).norm() / ((v1 - v2).norm() * (v0 - v1).norm());
+
+        for (int m = 1; m <= M; m++) {
+            int n = sqrt3_2 / tan_v0 * m + 0.5;
+            int n1 = sqrt3_2 / tan_v0 * m;
+            if (m % 2 == 0 && n == n1) {
+                n += 1;
+            }
+            const Eigen::Vector3d v0_m = v0 + m * sqrt3_2 * m_sampling_dist / sin_v0 * n_v0v2;
+            const Eigen::Vector3d v1_m = v1 + m * sqrt3_2 * m_sampling_dist / sin_v1 * n_v1v2;
+            if ((v0_m - v1_m).norm() <= m_sampling_dist) break;
+
+            double delta_d = ((n + (m % 2) / 2.0) - m * sqrt3_2 / tan_v0) * m_sampling_dist;
+            const Eigen::Vector3d v = v0_m + delta_d * n_v0v1;
+            int N1 = (v - v1_m).norm() / m_sampling_dist;
+            for (int i = 0; i <= N1; i++) {
+                m_bvh->nearest_facet_with_hint(
+                    v + i * n_v0v1 * m_sampling_dist,
+                    prev_facet,
+                    nearest_point,
+                    sq_dist);
+
+                if (sq_dist > distance2) return true;
+            }
+        }
+
+        m_bvh->nearest_facet_with_hint(v2, prev_facet, nearest_point, sq_dist);
+        if (sq_dist > distance2) return true;
+
+        // sample edges
+        N = sqrt(ls[mod3(max_i + 1)]) / m_sampling_dist;
+        if (N > 1) {
+            if (N == int(N)) N -= 1;
+
+            const Eigen::Vector3d n_v1v2 = (v2 - v1).normalized();
+            for (int n = 1; n <= N; n++) {
+                m_bvh->nearest_facet_with_hint(
+                    v1 + n_v1v2 * m_sampling_dist * n,
+                    prev_facet,
+                    nearest_point,
+                    sq_dist);
+                if (sq_dist > distance2) return true;
+            }
+        }
+
+        N = sqrt(ls[mod3(max_i + 2)]) / m_sampling_dist;
+        if (N > 1) {
+            if (N == int(N)) N -= 1;
+            const Eigen::Vector3d n_v2v0 = (v0 - v2).normalized();
+            for (int n = 1; n <= N; n++) {
+                m_bvh->nearest_facet_with_hint(
+                    v2 + n_v2v0 * m_sampling_dist * n,
+                    prev_facet,
+                    nearest_point,
+                    sq_dist);
+                if (sq_dist > distance2) return true;
+            }
+        }
+
+        return false;
     }
 
     inline void project_to_sf(Vector3& p) const
@@ -69,6 +216,9 @@ public:
 private:
     std::shared_ptr<fastEnvelope::FastEnvelope> m_envelope = nullptr;
     std::shared_ptr<SimpleBVH::BVH> m_bvh = nullptr;
+    const double m_envelope_size;
+    const double m_sampling_dist;
+    const bool m_use_sampling;
 };
 
 class ElementInQueue
@@ -102,10 +252,6 @@ struct cmp_l
     }
 };
 
-inline int mod3(int j)
-{
-    return j % 3;
-}
 
 void set_intersection(
     const std::unordered_set<int>& s1,
@@ -622,8 +768,10 @@ void tetwild_simplification(const base::Paths& paths, const nlohmann::json& j, i
     if (duplicate_tol < 0) duplicate_tol = SCALAR_ZERO;
     if (j["relative"]) duplicate_tol *= bbdiag;
 
+    double sampling_dist = j["sampling_dist"];
+    if (j["relative"]) sampling_dist *= bbdiag;
 
-    AABBWrapper tree(vertices, faces, envelope_size);
+    AABBWrapper tree(vertices, faces, envelope_size, sampling_dist, j["sample_envelope"]);
 
     simplify(vertices, faces, tree, duplicate_tol);
 

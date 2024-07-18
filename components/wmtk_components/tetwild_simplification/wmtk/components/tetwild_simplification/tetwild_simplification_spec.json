@@ -10,6 +10,8 @@
     ],
     "optional": [
       "duplicate_tol",
+      "sample_envelope",
+      "sampling_dist",
       "relative"
     ]
   },
@@ -38,9 +40,21 @@
     "doc": "tolerance for removing duplicate vertices"
   },
   {
+    "pointer": "/sampling_dist",
+    "type": "float",
+    "default": 0.8,
+    "doc": "sampling distance for envelope"
+  },
+  {
     "pointer": "/relative",
     "type": "bool",
     "default": true,
     "doc": "relative or absolute envelope size and duplicate_tol"
+  },
+  {
+    "pointer": "/sample_envelope",
+    "type": "bool",
+    "default": false,
+    "doc": "use sampling envelope"
   }
 ]
