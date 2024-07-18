@@ -4,6 +4,7 @@
 #include <iostream>
 #include <tuple>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/autogen/edge_mesh/is_ccw.hpp>
 #include <wmtk/autogen/edge_mesh/local_switch_tuple.hpp>
 #include <wmtk/autogen/is_ccw.hpp>
@@ -239,4 +240,51 @@ TEST_CASE("tuple_autogen_products_vs_switch", "[tuple]")
             }
         }
     }
+    // when other meshes are available add them here
+    for (PrimitiveType mesh_type : {/*PrimitiveType::Triangle ,*/ PrimitiveType::Tetrahedron}) {
+        auto tuples = all_valid_local_tuples(mesh_type);
+
+        std::vector<PrimitiveType> sequence;
+
+        autogen::SimplexDart sd(mesh_type);
+
+
+        for (const auto& t : tuples) {
+            CHECK(tuple_is_valid_for_ccw(mesh_type, t));
+            auto run = [&]() {
+                Tuple manual_switch = t;
+                int8_t op = sd.identity();
+                for (const auto& s : sequence) {
+                    manual_switch = local_switch_tuple(mesh_type, manual_switch, s);
+                    op = sd.product(sd.primitive_as_index(s), op);
+                }
+
+                Tuple product_switch = sd.update_tuple_from_valid_index(t, op);
+                CHECK(manual_switch == product_switch);
+            };
+
+            for (PrimitiveType pt0 : primitives_up_to(mesh_type)) {
+                sequence.clear();
+                sequence.emplace_back(pt0);
+                run();
+                for (PrimitiveType pt1 : primitives_up_to(mesh_type)) {
+                    sequence.emplace_back(pt0);
+                    run();
+                    for (PrimitiveType pt2 : primitives_up_to(mesh_type)) {
+                        sequence.emplace_back(pt0);
+                        run();
+                        for (PrimitiveType pt3 : primitives_up_to(mesh_type)) {
+                            sequence.emplace_back(pt0);
+                            run();
+                            for (PrimitiveType pt4 : primitives_up_to(mesh_type)) {
+                                sequence.emplace_back(pt0);
+                                run();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
+

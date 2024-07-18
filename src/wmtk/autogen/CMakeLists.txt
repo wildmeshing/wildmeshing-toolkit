@@ -27,5 +27,12 @@ set(SRC_FILES
     is_ccw.cpp
     local_switch_tuple.hpp
     local_switch_tuple.cpp
+
+    SimplexDart.hpp
+    SimplexDart.cpp
+
+    tuple_from_valid_index.hpp
+    tuple_from_valid_index.cpp
+
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
