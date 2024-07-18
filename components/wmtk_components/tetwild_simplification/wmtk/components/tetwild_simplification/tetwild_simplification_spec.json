@@ -2,30 +2,45 @@
   {
     "pointer": "/",
     "type": "object",
-    "required": ["name", "file"],
-    "optional": ["ignore_z", "tetrahedron_attributes"]
+    "required": [
+      "input",
+      "position",
+      "output",
+      "envelope_size"
+    ],
+    "optional": [
+      "duplicate_tol",
+      "relative"
+    ]
   },
   {
-    "pointer": "/name",
+    "pointer": "/input",
     "type": "string"
   },
   {
-    "pointer": "/file",
+    "pointer": "/position",
+    "type": "string",
+    "doc": "name of the position attribute in input mesh"
+  },
+  {
+    "pointer": "/output",
     "type": "string"
   },
   {
-    "pointer": "/ignore_z",
+    "pointer": "/envelope_size",
+    "type": "float",
+    "doc": "envelope size for simplification"
+  },
+  {
+    "pointer": "/duplicate_tol",
+    "type": "float",
+    "default": -1,
+    "doc": "tolerance for removing duplicate vertices"
+  },
+  {
+    "pointer": "/relative",
     "type": "bool",
-    "default": false
-  },
-  {
-    "pointer": "/tetrahedron_attributes",
-    "type": "list",
-    "default": [],
-    "doc": "all attributes on tetrahedra that should be loaded from the msh file"
-  },
-  {
-    "pointer": "/tetrahedron_attributes/*",
-    "type": "string"
+    "default": true,
+    "doc": "relative or absolute envelope size and duplicate_tol"
   }
 ]

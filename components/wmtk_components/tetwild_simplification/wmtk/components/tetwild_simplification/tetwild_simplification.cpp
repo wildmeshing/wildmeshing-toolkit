@@ -9,9 +9,12 @@
 #include "tetwild_simplification.hpp"
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/TriMesh.hpp>
 #include <wmtk/components/base/resolve_path.hpp>
+#include <wmtk/utils/EigenMatrixWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
+
 
 #include <igl/remove_duplicate_vertices.h>
 #include <igl/unique_rows.h>
@@ -580,10 +583,60 @@ void tetwild_simplification(const base::Paths& paths, const nlohmann::json& j, i
 {
     using namespace internal;
 
-    // duplicate_tol = SCALAR_ZERO * bbox_diag_length
-
     std::shared_ptr<Mesh> mesh = cache.read_mesh(j["input"]);
-    // options.attributes.position
+
+    if (mesh->top_simplex_type() != PrimitiveType::Triangle)
+        log_and_throw_error("Input mesh is not a triangle mesh");
+
+    wmtk::utils::EigenMatrixWriter writer;
+    mesh->serialize(writer);
+
+    Eigen::MatrixXd V;
+    Eigen::MatrixX<int64_t> F;
+
+    writer.get_double_matrix(j["position"], PrimitiveType::Vertex, V);
+    writer.get_FV_matrix(F);
+
+    Eigen::VectorXd bmin(V.cols());
+    bmin.setConstant(std::numeric_limits<double>::max());
+    Eigen::VectorXd bmax(V.cols());
+    bmax.setConstant(std::numeric_limits<double>::lowest());
+
+    std::vector<Eigen::Vector3d> vertices(V.rows());
+    std::vector<Eigen::Vector3i> faces(F.rows());
+    for (int64_t i = 0; i < V.rows(); i++) {
+        vertices[i] = V.row(i);
+        for (int64_t d = 0; d < bmax.size(); ++d) {
+            bmin[d] = std::min(bmin[d], vertices[i][d]);
+            bmax[d] = std::max(bmax[d], vertices[i][d]);
+        }
+    }
+    for (int64_t i = 0; i < F.rows(); i++) faces[i] = F.row(i).cast<int>();
+
+    const double bbdiag = (bmax - bmin).norm();
+
+    double envelope_size = j["envelope_size"];
+    if (j["relative"]) envelope_size *= bbdiag;
+
+    double duplicate_tol = j["duplicate_tol"];
+    if (duplicate_tol < 0) duplicate_tol = SCALAR_ZERO;
+    if (j["relative"]) duplicate_tol *= bbdiag;
+
+
+    AABBWrapper tree(vertices, faces, envelope_size);
+
+    simplify(vertices, faces, tree, duplicate_tol);
+
+    V.resize(vertices.size(), 3);
+    F.resize(faces.size(), 3);
+    for (int64_t i = 0; i < V.rows(); i++) V.row(i) = vertices[i];
+    for (int64_t i = 0; i < F.rows(); i++) F.row(i) = faces[i].cast<int64_t>();
+
+    auto res = std::make_shared<TriMesh>();
+    res->initialize(F);
+    mesh_utils::set_matrix_attribute(V, j["position"], PrimitiveType::Vertex, *res);
+
+    cache.write_mesh(*res, j["output"]);
 }
 
 
