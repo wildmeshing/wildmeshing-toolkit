@@ -61,6 +61,7 @@ add_component(${WMTK_COMPONENT_PREFIX} "to_points")
 add_component(${WMTK_COMPONENT_PREFIX} "winding_number")
 add_component(${WMTK_COMPONENT_PREFIX} "periodic_optimization")
 add_component(${WMTK_COMPONENT_PREFIX} "shortestedge_collapse")
+add_component(${WMTK_COMPONENT_PREFIX} "tetwild_simplification")
 
 string(LENGTH ${json_components} json_components_length)
 math(EXPR json_components_length "${json_components_length}-2")
