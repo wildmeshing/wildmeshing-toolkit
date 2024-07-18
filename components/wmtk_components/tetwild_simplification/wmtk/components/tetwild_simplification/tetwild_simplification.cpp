@@ -28,10 +28,15 @@ static const double SCALAR_ZERO_2 = 1e-16;
 class AABBWrapper
 {
 public:
-    bool is_out(const std::array<Vector3, 3>& triangle) const { return false; }
+    bool is_out(const std::array<Vector3, 3>& triangle) const
+    {
+        // TODO
+        return false;
+    }
 
     inline void project_to_sf(Vector3& p) const
     {
+        // TODO
         // GEO::vec3 geo_p(p[0], p[1], p[2]);
         // GEO::vec3 nearest_p;
         // double sq_dist = std::numeric_limits<double>::max(); //??
@@ -119,7 +124,7 @@ double get_angle_cos(const Vector3& p, const Vector3& p1, const Vector3& p2)
     return res;
 }
 
-
+// TODO
 // void remove_duplicates(
 //     std::vector<Vector3>& input_vertices,
 //     std::vector<Vector3i>& input_faces,
@@ -521,6 +526,7 @@ void simplify(
     const AABBWrapper& tree)
 // , const double duplicate_tol)
 {
+    // TODO
     // remove_duplicates(input_vertices, input_faces, duplicate_tol);
 
     std::vector<bool> v_is_removed(input_vertices.size(), false);
@@ -581,6 +587,7 @@ void simplify(
         input_faces = new_input_faces;
     }
 
+    // TODO
     // remove_duplicates(input_vertices, input_faces, input_tags, duplicate_tol);
 
     logger().debug("#v = {}", input_vertices.size());
