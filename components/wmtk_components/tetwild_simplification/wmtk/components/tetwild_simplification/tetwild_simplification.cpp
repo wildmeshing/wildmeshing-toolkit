@@ -13,6 +13,12 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
+#include <igl/remove_duplicate_vertices.h>
+#include <igl/unique_rows.h>
+
+#include <fastenvelope/FastEnvelope.h>
+#include <SimpleBVH/BVH.hpp>
+
 #include <polysolve/Utils.hpp>
 
 #include <queue>
@@ -23,28 +29,43 @@ namespace wmtk::components {
 using Vector3 = Eigen::Vector3d;
 using Vector3i = Eigen::Vector3i;
 
-static const double SCALAR_ZERO_2 = 1e-16;
-
 class AABBWrapper
 {
 public:
+    AABBWrapper(
+        const std::vector<Eigen::Vector3d>& vertices,
+        const std::vector<Eigen::Vector3i>& faces,
+        double envelope_size)
+    {
+        m_envelope = std::make_shared<fastEnvelope::FastEnvelope>(vertices, faces, envelope_size);
+        m_bvh = std::make_shared<SimpleBVH::BVH>();
+
+        Eigen::MatrixXd V(vertices.size(), 3);
+        Eigen::MatrixXi F(faces.size(), 3);
+        for (int i = 0; i < vertices.size(); i++) V.row(i) = vertices[i];
+        for (int i = 0; i < faces.size(); i++) F.row(i) = faces[i];
+
+        m_bvh->init(V, F, SCALAR_ZERO);
+    }
     bool is_out(const std::array<Vector3, 3>& triangle) const
     {
-        // TODO
-        return false;
+        return m_envelope->is_outside(triangle);
     }
 
     inline void project_to_sf(Vector3& p) const
     {
-        // TODO
-        // GEO::vec3 geo_p(p[0], p[1], p[2]);
-        // GEO::vec3 nearest_p;
-        // double sq_dist = std::numeric_limits<double>::max(); //??
-        // sf_tree.nearest_facet(geo_p, nearest_p, sq_dist);
-        // p[0] = nearest_p[0];
-        // p[1] = nearest_p[1];
-        // p[2] = nearest_p[2];
+        SimpleBVH::VectorMax3d nearest_point;
+        double sq_dist;
+
+        m_bvh->nearest_facet(p, nearest_point, sq_dist);
+        p[0] = nearest_point[0];
+        p[1] = nearest_point[1];
+        p[2] = nearest_point[2];
     }
+
+private:
+    std::shared_ptr<fastEnvelope::FastEnvelope> m_envelope = nullptr;
+    std::shared_ptr<SimpleBVH::BVH> m_bvh = nullptr;
 };
 
 class ElementInQueue
@@ -124,97 +145,60 @@ double get_angle_cos(const Vector3& p, const Vector3& p1, const Vector3& p2)
     return res;
 }
 
-// TODO
-// void remove_duplicates(
-//     std::vector<Vector3>& input_vertices,
-//     std::vector<Vector3i>& input_faces,
-//     std::vector<int>& input_tags,
-//     const double duplicate_tol)
-// {
-//     //    std::vector<size_t> indices(input_vertices.size());
-//     //    for(size_t i=0;i<input_vertices.size();i++)
-//     //        indices[i] = i;
-//     //
-//     //    std::sort(indices.begin(), indices.end(), [&input_vertices](size_t i1, size_t i2) {
-//     //        return std::make_tuple(input_vertices[i1][0], input_vertices[i1][1],
-//     //        input_vertices[i1][2])
-//     //               < std::make_tuple(input_vertices[i2][0], input_vertices[i2][1],
-//     //               input_vertices[i2][2]);
-//     //    });
-//     //    indices.erase(std::unique(indices.begin(), indices.end(), [&input_vertices](size_t i1,
-//     //    size_t i2) {
-//     //        return std::make_tuple(input_vertices[i1][0], input_vertices[i1][1],
-//     //        input_vertices[i1][2])
-//     //               == std::make_tuple(input_vertices[i2][0], input_vertices[i2][1],
-//     //               input_vertices[i2][2]);
-//     //    }), indices.end());
 
-//     MatrixXs V_tmp(input_vertices.size(), 3), V_in;
-//     Eigen::MatrixXi F_tmp(input_faces.size(), 3), F_in;
-//     for (int i = 0; i < input_vertices.size(); i++) V_tmp.row(i) = input_vertices[i];
-//     for (int i = 0; i < input_faces.size(); i++) F_tmp.row(i) = input_faces[i];
+void remove_duplicates(
+    std::vector<Vector3>& input_vertices,
+    std::vector<Vector3i>& input_faces,
+    const double duplicate_tol)
+{
+    Eigen::MatrixXd V_tmp(input_vertices.size(), 3), V_in;
+    Eigen::MatrixXi F_tmp(input_faces.size(), 3), F_in;
+    for (int i = 0; i < input_vertices.size(); i++) V_tmp.row(i) = input_vertices[i];
+    for (int i = 0; i < input_faces.size(); i++) F_tmp.row(i) = input_faces[i];
 
-//     //
-//     Eigen::VectorXi IV, _;
-//     igl::remove_duplicate_vertices(
-//         V_tmp,
-//         F_tmp,
-//         duplicate_tol,
-//         V_in,
-//         IV,
-//         _,
-//         F_in);
-//     //
-//     for (int i = 0; i < F_in.rows(); i++) {
-//         int j_min = 0;
-//         for (int j = 1; j < 3; j++) {
-//             if (F_in(i, j) < F_in(i, j_min)) j_min = j;
-//         }
-//         if (j_min == 0) continue;
-//         int v0_id = F_in(i, j_min);
-//         int v1_id = F_in(i, (j_min + 1) % 3);
-//         int v2_id = F_in(i, (j_min + 2) % 3);
-//         F_in.row(i) << v0_id, v1_id, v2_id;
-//     }
-//     F_tmp.resize(0, 0);
-//     Eigen::VectorXi IF;
-//     igl::unique_rows(F_in, F_tmp, IF, _);
-//     F_in = F_tmp;
-//     std::vector<int> old_input_tags = input_tags;
-//     input_tags.resize(IF.rows());
-//     for (int i = 0; i < IF.rows(); i++) {
-//         input_tags[i] = old_input_tags[IF(i)];
-//     }
-//     //
-//     if (V_in.rows() == 0 || F_in.rows() == 0) return false;
+    Eigen::VectorXi IV, _;
+    igl::remove_duplicate_vertices(V_tmp, F_tmp, duplicate_tol, V_in, IV, _, F_in);
 
-//     logger().info("remove duplicates: ");
-//     logger().info("#v: {} -> {}", input_vertices.size(), V_in.rows());
-//     logger().info("#f: {} -> {}", input_faces.size(), F_in.rows());
+    for (int i = 0; i < F_in.rows(); i++) {
+        int j_min = 0;
+        for (int j = 1; j < 3; j++) {
+            if (F_in(i, j) < F_in(i, j_min)) j_min = j;
+        }
+        if (j_min == 0) continue;
+        int v0_id = F_in(i, j_min);
+        int v1_id = F_in(i, (j_min + 1) % 3);
+        int v2_id = F_in(i, (j_min + 2) % 3);
+        F_in.row(i) << v0_id, v1_id, v2_id;
+    }
+    F_tmp.resize(0, 0);
+    Eigen::VectorXi IF;
+    igl::unique_rows(F_in, F_tmp, IF, _);
+    F_in = F_tmp;
 
-//     input_vertices.resize(V_in.rows());
-//     input_faces.clear();
-//     input_faces.reserve(F_in.rows());
-//     old_input_tags = input_tags;
-//     input_tags.clear();
-//     for (int i = 0; i < V_in.rows(); i++) input_vertices[i] = V_in.row(i);
-//     for (int i = 0; i < F_in.rows(); i++) {
-//         if (F_in(i, 0) == F_in(i, 1) || F_in(i, 0) == F_in(i, 2) || F_in(i, 2) == F_in(i, 1))
-//             continue;
-//         if (i > 0 && (F_in(i, 0) == F_in(i - 1, 0) && F_in(i, 1) == F_in(i - 1, 2) &&
-//                       F_in(i, 2) == F_in(i - 1, 1)))
-//             continue;
-//         // check area
-//         Vector3 u = V_in.row(F_in(i, 1)) - V_in.row(F_in(i, 0));
-//         Vector3 v = V_in.row(F_in(i, 2)) - V_in.row(F_in(i, 0));
-//         Vector3 area = u.cross(v);
-//         if (area.norm() / 2 <= duplicate_tol) continue;
-//         input_faces.push_back(F_in.row(i));
-//         input_tags.push_back(old_input_tags[i]);
-//     }
+    if (V_in.rows() == 0 || F_in.rows() == 0) return;
 
-//     return true;
-// }
+    logger().trace("remove duplicates: ");
+    logger().trace("#v: {} -> {}", input_vertices.size(), V_in.rows());
+    logger().trace("#f: {} -> {}", input_faces.size(), F_in.rows());
+
+    input_vertices.resize(V_in.rows());
+    input_faces.clear();
+    input_faces.reserve(F_in.rows());
+    for (int i = 0; i < V_in.rows(); i++) input_vertices[i] = V_in.row(i);
+    for (int i = 0; i < F_in.rows(); i++) {
+        if (F_in(i, 0) == F_in(i, 1) || F_in(i, 0) == F_in(i, 2) || F_in(i, 2) == F_in(i, 1))
+            continue;
+        if (i > 0 && (F_in(i, 0) == F_in(i - 1, 0) && F_in(i, 1) == F_in(i - 1, 2) &&
+                      F_in(i, 2) == F_in(i - 1, 1)))
+            continue;
+        // check area
+        Vector3 u = V_in.row(F_in(i, 1)) - V_in.row(F_in(i, 0));
+        Vector3 v = V_in.row(F_in(i, 2)) - V_in.row(F_in(i, 0));
+        Vector3 area = u.cross(v);
+        if (area.norm() / 2 <= duplicate_tol) continue;
+        input_faces.push_back(F_in.row(i));
+    }
+}
 
 void collapsing(
     std::vector<Vector3>& input_vertices,
@@ -523,11 +507,10 @@ void swapping(
 void simplify(
     std::vector<Vector3>& input_vertices,
     std::vector<Vector3i>& input_faces,
-    const AABBWrapper& tree)
-// , const double duplicate_tol)
+    const AABBWrapper& tree,
+    const double duplicate_tol)
 {
-    // TODO
-    // remove_duplicates(input_vertices, input_faces, duplicate_tol);
+    remove_duplicates(input_vertices, input_faces, duplicate_tol);
 
     std::vector<bool> v_is_removed(input_vertices.size(), false);
     std::vector<bool> f_is_removed(input_faces.size(), false);
@@ -587,8 +570,7 @@ void simplify(
         input_faces = new_input_faces;
     }
 
-    // TODO
-    // remove_duplicates(input_vertices, input_faces, input_tags, duplicate_tol);
+    remove_duplicates(input_vertices, input_faces, duplicate_tol);
 
     logger().debug("#v = {}", input_vertices.size());
     logger().debug("#f = {}", input_faces.size());
