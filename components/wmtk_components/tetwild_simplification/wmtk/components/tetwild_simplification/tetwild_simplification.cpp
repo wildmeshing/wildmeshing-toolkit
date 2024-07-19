@@ -88,9 +88,8 @@ public:
         }
 
 
-        prev_facet = m_bvh->facet_in_envelope(p, m_envelope_size2, nearest_point, sq_dist);
-        // m_bvh->facet_in_envelope_with_hint(p, m_envelope_size2, prev_facet, nearest_point,
-        // sq_dist);
+        // prev_facet = m_bvh->facet_in_envelope(p, m_envelope_size2, nearest_point, sq_dist);
+        m_bvh->facet_in_envelope_with_hint(p, m_envelope_size2, prev_facet, nearest_point, sq_dist);
 
         return sq_dist > m_envelope_size2;
     }
