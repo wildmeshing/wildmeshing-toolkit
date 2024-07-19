@@ -6,12 +6,11 @@
       "input",
       "position",
       "output",
-      "envelope_size"
+      "main_eps"
     ],
     "optional": [
       "duplicate_tol",
       "sample_envelope",
-      "sampling_dist",
       "relative"
     ]
   },
@@ -29,21 +28,15 @@
     "type": "string"
   },
   {
-    "pointer": "/envelope_size",
+    "pointer": "/main_eps",
     "type": "float",
-    "doc": "envelope size for simplification"
+    "doc": "main esp tolerance"
   },
   {
     "pointer": "/duplicate_tol",
     "type": "float",
     "default": -1,
     "doc": "tolerance for removing duplicate vertices"
-  },
-  {
-    "pointer": "/sampling_dist",
-    "type": "float",
-    "default": 0.8,
-    "doc": "sampling distance for envelope"
   },
   {
     "pointer": "/relative",
