@@ -46,7 +46,7 @@ public:
         double envelope_size,
         double sampling_dist,
         bool use_sampling)
-        : m_envelope_size(envelope_size)
+        : m_envelope_size2(envelope_size * envelope_size)
         , m_sampling_dist(sampling_dist)
         , m_use_sampling(use_sampling)
     {
@@ -56,7 +56,10 @@ public:
         Eigen::MatrixXd V(vertices.size(), 3);
         Eigen::MatrixXi F(faces.size(), 3);
         for (int i = 0; i < vertices.size(); i++) V.row(i) = vertices[i];
-        for (int i = 0; i < faces.size(); i++) F.row(i) = faces[i];
+        for (int i = 0; i < faces.size(); i++) {
+            F.row(i) = faces[i];
+            m_facets.push_back({{V.row(F(i, 0)), V.row(F(i, 1)), V.row(F(i, 2))}});
+        }
 
         m_bvh->init(V, F, SCALAR_ZERO);
     }
@@ -69,31 +72,39 @@ public:
             return m_envelope->is_outside(triangle);
     }
 
+    bool is_out_envelope(const SimpleBVH::VectorMax3d& p, int& prev_facet) const
+    {
+        SimpleBVH::VectorMax3d nearest_point;
+        double sq_dist = std::numeric_limits<double>::max();
+
+        if (prev_facet >= 0) {
+            SimpleBVH::point_triangle_squared_distance(
+                p,
+                m_facets[prev_facet],
+                nearest_point,
+                sq_dist);
+
+            if (sq_dist < m_envelope_size2) return false;
+        }
+
+
+        prev_facet = m_bvh->facet_in_envelope(p, m_envelope_size2, nearest_point, sq_dist);
+        // m_bvh->facet_in_envelope_with_hint(p, m_envelope_size2, prev_facet, nearest_point,
+        // sq_dist);
+
+        return sq_dist > m_envelope_size2;
+    }
+
     bool is_out_using_sampling(const std::array<Vector3, 3>& vs) const
     {
         static const double sqrt3_2 = std::sqrt(3) / 2;
 
-        const double distance2 = m_envelope_size * m_envelope_size;
-
-        SimpleBVH::VectorMax3d nearest_point;
-        double sq_dist = std::numeric_limits<double>::max();
+        int prev_facet = -1;
 
         // first check 3 verts
-        int prev_facet = -1;
-        // m_bvh->nearest_facet_with_hint(vs[0], prev_facet, nearest_point, sq_dist);
-        m_bvh->nearest_facet(vs[0], nearest_point, sq_dist);
-        // std::cout << "sq_dist: " << sq_dist << " " << vs[0].transpose() << std::endl;
-        if (sq_dist > distance2) return true;
-
-        // m_bvh->nearest_facet_with_hint(vs[1], prev_facet, nearest_point, sq_dist);
-        m_bvh->nearest_facet(vs[1], nearest_point, sq_dist);
-        // std::cout << "sq_dist: " << sq_dist << " " << vs[1].transpose() << std::endl;
-        if (sq_dist > distance2) return true;
-
-        // m_bvh->nearest_facet_with_hint(vs[2], prev_facet, nearest_point, sq_dist);
-        m_bvh->nearest_facet(vs[2], nearest_point, sq_dist);
-        // std::cout << "sq_dist: " << sq_dist << " " << vs[2].transpose() << std::endl;
-        if (sq_dist > distance2) return true;
+        if (is_out_envelope(vs[0], prev_facet)) return true;
+        if (is_out_envelope(vs[1], prev_facet)) return true;
+        if (is_out_envelope(vs[2], prev_facet)) return true;
         ////////////////////
 
         std::array<double, 3> ls;
@@ -106,7 +117,6 @@ public:
         const int max_i = min_max.second - ls.begin();
 
         double N = sqrt(ls[max_i]) / m_sampling_dist;
-        // std::cout << "N: " << N << std::endl;
 
         // no sampling, we alrady checked the vertices
         if (N <= 1) {
@@ -128,10 +138,7 @@ public:
         for (int n = 1; n < N; n++) {
             const Eigen::Vector3d p = v0 + n_v0v1 * m_sampling_dist * n;
 
-            // m_bvh->nearest_facet_with_hint(p, prev_facet, nearest_point, sq_dist);
-            m_bvh->nearest_facet(p, nearest_point, sq_dist);
-
-            if (sq_dist > distance2) return true;
+            if (is_out_envelope(p, prev_facet)) return true;
         }
 
 
@@ -168,10 +175,8 @@ public:
             int N1 = (v - v1_m).norm() / m_sampling_dist;
             for (int i = 0; i <= N1; i++) {
                 const Eigen::Vector3d p = v + i * n_v0v1 * m_sampling_dist;
-                // m_bvh->nearest_facet_with_hint(p, prev_facet, nearest_point, sq_dist);
-                m_bvh->nearest_facet(p, nearest_point, sq_dist);
 
-                if (sq_dist > distance2) return true;
+                if (is_out_envelope(p, prev_facet)) return true;
             }
         }
 
@@ -182,9 +187,8 @@ public:
 
             for (int n = 1; n <= N; n++) {
                 const Eigen::Vector3d p = v1 + n_v1v2 * m_sampling_dist * n;
-                // m_bvh->nearest_facet_with_hint(p, prev_facet, nearest_point, sq_dist);
-                m_bvh->nearest_facet(p, nearest_point, sq_dist);
-                if (sq_dist > distance2) return true;
+
+                if (is_out_envelope(p, prev_facet)) return true;
             }
         }
 
@@ -195,9 +199,8 @@ public:
             const Eigen::Vector3d n_v2v0 = -n_v0v2;
             for (int n = 1; n <= N; n++) {
                 const Eigen::Vector3d p = v2 + n_v2v0 * m_sampling_dist * n;
-                // m_bvh->nearest_facet_with_hint(p, prev_facet, nearest_point, sq_dist);
-                m_bvh->nearest_facet(p, nearest_point, sq_dist);
-                if (sq_dist > distance2) return true;
+
+                if (is_out_envelope(p, prev_facet)) return true;
             }
         }
 
@@ -218,9 +221,10 @@ public:
 private:
     std::shared_ptr<fastEnvelope::FastEnvelope> m_envelope = nullptr;
     std::shared_ptr<SimpleBVH::BVH> m_bvh = nullptr;
-    const double m_envelope_size;
+    const double m_envelope_size2;
     const double m_sampling_dist;
     const bool m_use_sampling;
+    std::vector<std::array<SimpleBVH::VectorMax3d, 3>> m_facets;
 };
 
 class ElementInQueue
