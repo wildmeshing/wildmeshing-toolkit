@@ -3,8 +3,8 @@
     "pointer": "/",
     "type": "object",
     "required": [
-      "name",
-      "file",
+      "input",
+      "output",
       "mode"
     ],
     "optional": [
@@ -13,22 +13,21 @@
     ]
   },
   {
-    "pointer": "/name",
+    "pointer": "/input",
     "type": "string"
   },
   {
-    "pointer": "/file",
+    "pointer": "/output",
     "type": "string"
   },
   {
     "pointer": "/mode",
-    "type": "bool",
-    "default": false
+    "type": "bool"
   },
   {
-    "pointer": "/encoded_file",
+    "pointer": "/volumetric_encoded_file",
     "type": "string",
-    "default": ""
+    "default": "dummy"
   },
   {
     "pointer": "/level",

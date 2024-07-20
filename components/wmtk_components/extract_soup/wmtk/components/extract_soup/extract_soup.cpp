@@ -16,8 +16,8 @@ void extract_soup(const base::Paths& paths, const nlohmann::json& j, io::Cache& 
 
     ExtractOptions options = j.get<ExtractOptions>();
 
-    std::string input_file = options.name;
-    std::string output_file = options.file;
+    std::string input_file = options.input;
+    std::string output_file = options.output;
 
     if (!std::filesystem::exists(input_file)) {
         throw std::runtime_error(std::string("file") + input_file + " not found");

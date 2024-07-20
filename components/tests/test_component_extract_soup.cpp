@@ -17,8 +17,8 @@ TEST_CASE("component_extract_soup", "[.]")
     // input
     {
         json component_json = {
-            {"name", "/home/zhouyuan/workplace/slicer_extract/wildmeshing-toolkit/data/temp.raw"},
-            {"file", "/home/zhouyuan/workplace/slicer_extract/wildmeshing-toolkit/data/temp.out"},
+            {"input", "/home/zhouyuan/workplace/slicer_extract/wildmeshing-toolkit/data/temp.raw"},
+            {"output", "/home/zhouyuan/workplace/slicer_extract/wildmeshing-toolkit/data/temp.out"},
             {"mode", true},
             {"volumetric_encoded_file", ""},
             {"level", 1}};

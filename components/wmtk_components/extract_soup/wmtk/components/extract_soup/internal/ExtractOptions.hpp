@@ -10,14 +10,20 @@ namespace internal {
 
 struct ExtractOptions
 {
-    std::string name; // input
-    std::filesystem::path file; // output
+    std::string input; // input
+    std::string output; // output
     bool mode;
     std::string volumetric_encoded_file; // encoded_file
     int level;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ExtractOptions, name, file, mode, volumetric_encoded_file,level);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
+    ExtractOptions,
+    input,
+    output,
+    mode,
+    volumetric_encoded_file,
+    level);
 
 } // namespace internal
 } // namespace components
