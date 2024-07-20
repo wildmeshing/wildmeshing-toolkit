@@ -4,11 +4,12 @@
     "type": "object",
     "required": [
       "name",
-      "file"
+      "file",
+      "mode"
     ],
     "optional": [
-      "ignore_z",
-      "tetrahedron_attributes"
+      "volumetric_encoded_file",
+      "level"
     ]
   },
   {
@@ -20,18 +21,18 @@
     "type": "string"
   },
   {
-    "pointer": "/ignore_z",
+    "pointer": "/mode",
     "type": "bool",
     "default": false
   },
   {
-    "pointer": "/tetrahedron_attributes",
-    "type": "list",
-    "default": [],
-    "doc": "all attributes on tetrahedra that should be loaded from the msh file"
+    "pointer": "/encoded_file",
+    "type": "string",
+    "default": ""
   },
   {
-    "pointer": "/tetrahedron_attributes/*",
-    "type": "string"
+    "pointer": "/level",
+    "type": "int",
+    "default": 1
   }
 ]

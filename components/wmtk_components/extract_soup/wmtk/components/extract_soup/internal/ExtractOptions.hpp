@@ -10,13 +10,14 @@ namespace internal {
 
 struct ExtractOptions
 {
-    std::string name;
-    std::filesystem::path file;
-    bool ignore_z;
-    std::vector<std::string> tetrahedron_attributes;
+    std::string name; // input
+    std::filesystem::path file; // output
+    bool mode;
+    std::string volumetric_encoded_file; // encoded_file
+    int level;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ExtractOptions, name, file, ignore_z, tetrahedron_attributes);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ExtractOptions, name, file, mode, volumetric_encoded_file,level);
 
 } // namespace internal
 } // namespace components

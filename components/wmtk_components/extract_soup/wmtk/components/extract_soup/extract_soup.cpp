@@ -6,6 +6,7 @@
 #include <wmtk/utils/mesh_utils.hpp>
 
 #include "internal/ExtractOptions.hpp"
+#include "internal/Extract_Soup.hpp"
 
 namespace wmtk::components {
 
@@ -15,15 +16,21 @@ void extract_soup(const base::Paths& paths, const nlohmann::json& j, io::Cache& 
 
     ExtractOptions options = j.get<ExtractOptions>();
 
-    std::string file = wmtk::components::base::resolve_path(options.file.string(), paths.root_path);
+    std::string input_file = options.name;
+    std::string output_file = options.file;
 
-    if (!std::filesystem::exists(file)) {
-        throw std::runtime_error(std::string("file") + file + " not found");
+    if (!std::filesystem::exists(input_file)) {
+        throw std::runtime_error(std::string("file") + input_file + " not found");
     }
 
-    std::shared_ptr<Mesh> mesh = read_mesh(file, options.ignore_z, options.tetrahedron_attributes);
-    assert(mesh->is_connectivity_valid());
-
-    cache.write_mesh(*mesh, options.name);
+    if (options.mode) {
+        // extract_triangle_soup_from_image
+        unsigned int level = options.level;
+        internal::extract_triangle_soup_from_image(output_file, input_file, 1, level);
+    } else {
+        // gmsh2hdf_tag
+        std::string encoded_file = options.volumetric_encoded_file;
+        internal::gmsh2hdf_tag(encoded_file, input_file, output_file);
+    }
 }
 } // namespace wmtk::components
