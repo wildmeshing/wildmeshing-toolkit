@@ -7,7 +7,7 @@
 namespace wmtk::autogen {
 namespace {
 #define GET_OP(NAME, RETTYPE)                                                  \
-    auto get_##NAME(PrimitiveType pt) -> SimplexDart::RETTYPE                  \
+    auto get_##NAME(PrimitiveType pt)->SimplexDart::RETTYPE                    \
     {                                                                          \
         switch (pt) {                                                          \
         case PrimitiveType::Edge: /*return &edge_mesh::SimplexDart::NAME;*/    \
@@ -22,8 +22,30 @@ GET_OP(product, binary_op_type)
 GET_OP(inverse, unary_op_type)
 GET_OP(primitive_to_index, primitive_to_index_type)
 GET_OP(identity, nullary_op_type)
-
 } // namespace
+
+#define FORWARD_OP(NAME, OP, RETTYPE, DEFAULT)                               \
+    auto SimplexDart::NAME() const -> RETTYPE                                \
+    {                                                                        \
+        switch (m_simplex_type) {                                            \
+        case PrimitiveType::Edge:                                            \
+            /*return edge_mesh::SimplexDart::OP();*/                         \
+        case PrimitiveType::Triangle:                                        \
+            /*return tri_mesh::SimplexDart::OP();*/                          \
+        case PrimitiveType::Tetrahedron: return tet_mesh::SimplexDart::OP(); \
+        case PrimitiveType::Vertex: assert(false);                           \
+        default: assert(false);                                              \
+        }                                                                    \
+        return DEFAULT;                                                      \
+    }
+
+FORWARD_OP(size, size, size_t, {})
+using DynamicIntMap = VectorX<int8_t>::ConstMapType;
+namespace {
+const static DynamicIntMap nullmap = DynamicIntMap(nullptr, 0);
+}
+FORWARD_OP(valid_indices, valid_indices_dynamic, DynamicIntMap, nullmap)
+
 SimplexDart::SimplexDart(wmtk::PrimitiveType simplex_type)
     : m_simplex_type(simplex_type)
     , m_product(get_product(simplex_type))
@@ -59,5 +81,6 @@ wmtk::Tuple SimplexDart::update_tuple_from_valid_index(const Tuple& t, int8_t in
         wmtk::utils::TupleInspector::global_cid(t),
         index);
 }
+
 
 } // namespace wmtk::autogen

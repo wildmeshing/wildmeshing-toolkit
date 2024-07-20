@@ -1,3 +1,4 @@
+#include <spdlog/spdlog.h>
 #include <stdlib.h>
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
@@ -222,11 +223,21 @@ TEST_CASE("tuple_autogen_switch_still_valid", "[tuple]")
     }
 }
 
-TEST_CASE("tuple_autogen_products_vs_switch", "[tuple]")
+TEST_CASE("tuple_autogen_index_dart_group_structure", "[tuple]")
+{
+    // when other meshes are available add them here
+    for (PrimitiveType mesh_type : {/*PrimitiveType::Triangle ,*/ PrimitiveType::Tetrahedron}) {
+        autogen::SimplexDart sd(mesh_type);
+        assert(size_t(sd.valid_indices().size()) == sd.size());
+    }
+}
+
+TEST_CASE("tuple_autogen_index_dart_vs_switch", "[tuple]")
 {
     // when other meshes are available add them here
     for (PrimitiveType mesh_type : {/*PrimitiveType::Triangle ,*/ PrimitiveType::Tetrahedron}) {
         auto tuples = all_valid_local_tuples(mesh_type);
+        autogen::SimplexDart sd(mesh_type);
 
         for (const auto& t : tuples) {
             CHECK(tuple_is_valid_for_ccw(mesh_type, t));
@@ -240,6 +251,10 @@ TEST_CASE("tuple_autogen_products_vs_switch", "[tuple]")
             }
         }
     }
+}
+
+TEST_CASE("tuple_autogen_products_vs_switch", "[tuple]")
+{
     // when other meshes are available add them here
     for (PrimitiveType mesh_type : {/*PrimitiveType::Triangle ,*/ PrimitiveType::Tetrahedron}) {
         auto tuples = all_valid_local_tuples(mesh_type);
@@ -254,31 +269,52 @@ TEST_CASE("tuple_autogen_products_vs_switch", "[tuple]")
             auto run = [&]() {
                 Tuple manual_switch = t;
                 int8_t op = sd.identity();
+
+                std::vector<int8_t> seq_tups;
                 for (const auto& s : sequence) {
                     manual_switch = local_switch_tuple(mesh_type, manual_switch, s);
+                    seq_tups.emplace_back(sd.primitive_as_index(s));
                     op = sd.product(sd.primitive_as_index(s), op);
                 }
+                spdlog::info("sequence {} => {}", fmt::join(seq_tups, ","), op);
+
 
                 Tuple product_switch = sd.update_tuple_from_valid_index(t, op);
                 CHECK(manual_switch == product_switch);
             };
-
-            for (PrimitiveType pt0 : primitives_up_to(mesh_type)) {
-                sequence.clear();
-                sequence.emplace_back(pt0);
-                run();
-                for (PrimitiveType pt1 : primitives_up_to(mesh_type)) {
+            for (size_t j = 0; j < 1; ++j) {
+                for (PrimitiveType pt0 : primitives_up_to(mesh_type)) {
+                    sequence.clear();
                     sequence.emplace_back(pt0);
-                    run();
-                    for (PrimitiveType pt2 : primitives_up_to(mesh_type)) {
-                        sequence.emplace_back(pt0);
+                    if (j == 0) {
                         run();
-                        for (PrimitiveType pt3 : primitives_up_to(mesh_type)) {
-                            sequence.emplace_back(pt0);
+                        continue;
+                    }
+                    for (PrimitiveType pt1 : primitives_up_to(mesh_type)) {
+                        sequence.emplace_back(pt0);
+                        if (j == 1) {
                             run();
-                            for (PrimitiveType pt4 : primitives_up_to(mesh_type)) {
-                                sequence.emplace_back(pt0);
+                            continue;
+                        }
+                        for (PrimitiveType pt2 : primitives_up_to(mesh_type)) {
+                            sequence.emplace_back(pt0);
+                            if (j == 2) {
                                 run();
+                                continue;
+                            }
+                            for (PrimitiveType pt3 : primitives_up_to(mesh_type)) {
+                                sequence.emplace_back(pt0);
+                                if (j == 3) {
+                                    run();
+                                    continue;
+                                }
+                                for (PrimitiveType pt4 : primitives_up_to(mesh_type)) {
+                                    sequence.emplace_back(pt0);
+                                    if (j == 4) {
+                                        run();
+                                        continue;
+                                    }
+                                }
                             }
                         }
                     }

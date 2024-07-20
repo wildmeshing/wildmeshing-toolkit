@@ -1,6 +1,7 @@
 #pragma once
 #include <wmtk/PrimitiveType.hpp>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/Types.hpp>
 
 namespace wmtk::autogen {
 class SimplexDart
@@ -19,6 +20,9 @@ public:
     using unary_op_type = int8_t (*)(int8_t);
     using primitive_to_index_type = int8_t (*)(PrimitiveType);
     using nullary_op_type = int8_t (*)();
+
+    size_t size() const;
+    VectorX<int8_t>::ConstMapType valid_indices() const;
 
 private:
     const wmtk::PrimitiveType m_simplex_type;
