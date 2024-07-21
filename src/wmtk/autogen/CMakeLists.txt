@@ -34,5 +34,7 @@ set(SRC_FILES
     tuple_from_valid_index.hpp
     tuple_from_valid_index.cpp
 
+    valid_index_from_tuple.hpp
+    valid_index_from_tuple.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

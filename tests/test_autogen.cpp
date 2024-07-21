@@ -232,6 +232,7 @@ TEST_CASE("tuple_autogen_index_dart_group_structure", "[tuple]")
     }
 }
 
+
 TEST_CASE("tuple_autogen_index_dart_vs_switch", "[tuple]")
 {
     // when other meshes are available add them here
@@ -244,16 +245,14 @@ TEST_CASE("tuple_autogen_index_dart_vs_switch", "[tuple]")
             for (PrimitiveType pt : primitives_up_to(mesh_type)) {
                 Tuple manual_switch = local_switch_tuple(mesh_type, t, pt);
 
-                Tuple product_switch = local_switch_tuple(
-                    mesh_type,
-                    t,
-                    wmtk::autogen::internal::switch_primitive_to_valid_tuple_index(mesh_type, pt));
+                Tuple table_switch = local_switch_tuple(mesh_type, t, sd.primitive_as_index(pt));
+                CHECK(manual_switch == table_switch);
             }
         }
     }
 }
 
-TEST_CASE("tuple_autogen_products_vs_switch", "[tuple]")
+TEST_CASE("tuple_autogen_products_vs_switch", "[tuple][.]")
 {
     // when other meshes are available add them here
     for (PrimitiveType mesh_type : {/*PrimitiveType::Triangle ,*/ PrimitiveType::Tetrahedron}) {

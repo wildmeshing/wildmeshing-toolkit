@@ -3,11 +3,12 @@
 #include <wmtk/utils/TupleInspector.hpp>
 #include "tet_mesh/SimplexDart.hpp"
 #include "tuple_from_valid_index.hpp"
+#include "valid_index_from_tuple.hpp"
 
 namespace wmtk::autogen {
 namespace {
 #define GET_OP(NAME, RETTYPE)                                                  \
-    auto get_##NAME(PrimitiveType pt)->SimplexDart::RETTYPE                    \
+    auto get_##NAME(PrimitiveType pt) -> SimplexDart::RETTYPE                  \
     {                                                                          \
         switch (pt) {                                                          \
         case PrimitiveType::Edge: /*return &edge_mesh::SimplexDart::NAME;*/    \
@@ -80,6 +81,10 @@ wmtk::Tuple SimplexDart::update_tuple_from_valid_index(const Tuple& t, int8_t in
         m_simplex_type,
         wmtk::utils::TupleInspector::global_cid(t),
         index);
+}
+int8_t SimplexDart::valid_index_from_tuple(const wmtk::Tuple& t) const
+{
+    return wmtk::autogen::valid_index_from_tuple(m_simplex_type, t);
 }
 
 

@@ -16,6 +16,8 @@ public:
     wmtk::Tuple tuple_from_valid_index(int64_t gid, int8_t index) const;
     wmtk::Tuple update_tuple_from_valid_index(const Tuple& t, int8_t index) const;
 
+    int8_t valid_index_from_tuple(const wmtk::Tuple& t) const;
+
     using binary_op_type = int8_t (*)(int8_t, int8_t);
     using unary_op_type = int8_t (*)(int8_t);
     using primitive_to_index_type = int8_t (*)(PrimitiveType);
