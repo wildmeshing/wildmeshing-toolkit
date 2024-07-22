@@ -52,7 +52,7 @@ def autogenerate(files, data, use_clang_format = False, clang_format_binary = "c
                 
     for file in files:
         data["filename"] = file
-        for extension in ("hpp","cpp"):
+        for extension in ("hpp","cpp","hxx"):
             output_filename = f"{file}.{extension}"
             template_path = os.path.join("templates",output_filename + ".template")
             if os.path.exists(template_path):
