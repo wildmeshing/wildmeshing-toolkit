@@ -52,7 +52,7 @@ inline Tuple local_switch_tuple(const Tuple& t, int8_t valid_tuple_index)
     int8_t input_index = valid_index_from_tuple(t);
     const int64_t global_cid = wmtk::utils::TupleInspector::global_cid(t);
     const int64_t hash = wmtk::utils::TupleInspector::hash(t);
-    const int8_t product_result = auto_valid_switch_product_table[valid_tuple_index][input_index];
+    const int8_t product_result = auto_valid_switch_product_table[input_index][valid_tuple_index];
     return tuple_from_valid_index(global_cid, product_result, hash);
 }
 

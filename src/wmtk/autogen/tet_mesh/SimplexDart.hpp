@@ -10,7 +10,7 @@ class SimplexDart
 public:
     SimplexDart();
 
-    static int8_t product(int8_t a, int8_t b) { return auto_valid_switch_product_table[a][b]; }
+    static int8_t product(int8_t a, int8_t b) { return auto_valid_switch_product_table[b][a]; }
     static int8_t inverse(int8_t a) { return auto_valid_switch_inverse_table[a]; }
     static int8_t primitive_to_index(wmtk::PrimitiveType pt)
     {
