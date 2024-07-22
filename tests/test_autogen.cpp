@@ -241,7 +241,7 @@ TEST_CASE("tuple_autogen_index_dart_tuple_conversion", "[tuple]")
 TEST_CASE("tuple_autogen_index_dart_group_structure", "[tuple]")
 {
     // when other meshes are available add them here
-    for (PrimitiveType mesh_type : {/*PrimitiveType::Triangle ,*/ PrimitiveType::Tetrahedron}) {
+    for (PrimitiveType mesh_type : {PrimitiveType::Edge, PrimitiveType::Triangle , PrimitiveType::Tetrahedron}) {
         autogen::SimplexDart sd(mesh_type);
         assert(size_t(sd.valid_indices().size()) == sd.size());
 
@@ -270,7 +270,7 @@ TEST_CASE("tuple_autogen_index_dart_group_structure", "[tuple]")
 TEST_CASE("tuple_autogen_index_dart_vs_switch", "[tuple]")
 {
     // when other meshes are available add them here
-    for (PrimitiveType mesh_type : {/*PrimitiveType::Triangle ,*/ PrimitiveType::Tetrahedron}) {
+    for (PrimitiveType mesh_type : {PrimitiveType::Edge, PrimitiveType::Triangle , PrimitiveType::Tetrahedron}) {
         auto tuples = all_valid_local_tuples(mesh_type);
         autogen::SimplexDart sd(mesh_type);
 
@@ -293,7 +293,7 @@ TEST_CASE("tuple_autogen_index_dart_vs_switch", "[tuple]")
 TEST_CASE("tuple_autogen_products_vs_switch", "[tuple]")
 {
     // when other meshes are available add them here
-    for (PrimitiveType mesh_type : {/*PrimitiveType::Triangle ,*/ PrimitiveType::Tetrahedron}) {
+    for (PrimitiveType mesh_type : {PrimitiveType::Edge, PrimitiveType::Triangle , PrimitiveType::Tetrahedron}) {
         auto tuples = all_valid_local_tuples(mesh_type);
 
         std::vector<PrimitiveType> sequence;

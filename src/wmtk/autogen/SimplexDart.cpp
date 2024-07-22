@@ -1,23 +1,25 @@
 #include "SimplexDart.hpp"
 #include <cassert>
 #include <wmtk/utils/TupleInspector.hpp>
+#include "edge_mesh/SimplexDart.hpp"
 #include "tet_mesh/SimplexDart.hpp"
+#include "tri_mesh/SimplexDart.hpp"
 #include "tuple_from_valid_index.hpp"
 #include "valid_index_from_tuple.hpp"
 
 namespace wmtk::autogen {
 namespace {
-#define GET_OP(NAME, RETTYPE)                                                  \
-    auto get_##NAME(PrimitiveType pt) -> SimplexDart::RETTYPE                  \
-    {                                                                          \
-        switch (pt) {                                                          \
-        case PrimitiveType::Edge: /*return &edge_mesh::SimplexDart::NAME;*/    \
-        case PrimitiveType::Triangle: /*return &tri_mesh::SimplexDart::NAME;*/ \
-        case PrimitiveType::Tetrahedron: return &tet_mesh::SimplexDart::NAME;  \
-        case PrimitiveType::Vertex: assert(false);                             \
-        default: assert(false);                                                \
-        }                                                                      \
-        return nullptr;                                                        \
+#define GET_OP(NAME, RETTYPE)                                                 \
+    auto get_##NAME(PrimitiveType pt) -> SimplexDart::RETTYPE                 \
+    {                                                                         \
+        switch (pt) {                                                         \
+        case PrimitiveType::Edge: return &edge_mesh::SimplexDart::NAME;       \
+        case PrimitiveType::Triangle: return &tri_mesh::SimplexDart::NAME;    \
+        case PrimitiveType::Tetrahedron: return &tet_mesh::SimplexDart::NAME; \
+        case PrimitiveType::Vertex: assert(false);                            \
+        default: assert(false);                                               \
+        }                                                                     \
+        return nullptr;                                                       \
     }
 GET_OP(product, binary_op_type)
 GET_OP(inverse, unary_op_type)

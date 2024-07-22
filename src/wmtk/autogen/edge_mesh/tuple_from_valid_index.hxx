@@ -6,15 +6,15 @@
 namespace wmtk::autogen::edge_mesh {
 inline Tuple tuple_from_valid_index(int64_t global_cid, int8_t valid_tuple_index)
 {
-    const auto& [lvid, leid, lfid] = auto_valid_tuples[valid_tuple_index];
+    const auto& [lvid] = auto_valid_tuples[valid_tuple_index];
 
-    return Tuple(lvid, leid, lfid, global_cid);
+    return Tuple(lvid, -1, -1, global_cid);
 }
 inline Tuple tuple_from_valid_index(int64_t global_cid, int8_t valid_tuple_index, int64_t hash)
 {
-    const auto& [lvid, leid, lfid] = auto_valid_tuples[valid_tuple_index];
+    const auto& [lvid] = auto_valid_tuples[valid_tuple_index];
 
-    return Tuple(lvid, leid, lfid, global_cid, hash);
+    return Tuple(lvid, -1, -1, global_cid, hash);
 }
 
 } // namespace wmtk::autogen::edge_mesh
