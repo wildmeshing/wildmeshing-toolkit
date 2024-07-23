@@ -2,6 +2,7 @@
 
 #include <jse/jse.h>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/Stopwatch.hpp>
 
 
 #include <wmtk/components/base/Paths.hpp>
@@ -81,6 +82,7 @@ wmtk::io::Cache run_components(const nlohmann::json& json_input_file, bool stric
     for (const nlohmann::json& component_json : spec_json["components"]) {
         for (auto& el : component_json.items()) {
             wmtk::logger().info("Component {}", el.key());
+            wmtk::utils::StopWatch sw(el.key());
             components[el.key()](paths, el.value(), cache);
             cache.flush_multimeshes();
         }
