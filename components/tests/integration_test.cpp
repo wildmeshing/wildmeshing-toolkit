@@ -14,6 +14,9 @@
 
 using json = nlohmann::json;
 using namespace wmtk;
+
+enum IntegrationTestResult { Success = 0, Fail = 1, InvalidInput = 2 };
+
 namespace {
 
 bool load_json(const std::string& json_file, json& out)
@@ -47,12 +50,12 @@ bool missing_tests_data(const json& j)
     return !j.contains("tests") || !j.at("tests").contains("meshes");
 }
 
-int authenticate_json(const std::string& json_file, const bool compute_validation)
+IntegrationTestResult authenticate_json(const std::string& json_file, const bool compute_validation)
 {
     json in_args;
     if (!load_json(json_file, in_args)) {
         wmtk::logger().error("unable to open {} file", json_file);
-        return 1;
+        return IntegrationTestResult::InvalidInput;
     }
 
     in_args["root_path"] = json_file;
@@ -69,7 +72,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
     if (!compute_validation) {
         if (missing_tests_data(in_args)) {
             wmtk::logger().error("JSON file missing \"tests\" or meshes key.");
-            return 1;
+            return IntegrationTestResult::InvalidInput;
         }
 
         REQUIRE(contains_results(in_args));
@@ -80,7 +83,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
 
         if (in_args["tests"].contains("skip_check") && in_args["tests"]["skip_check"]) {
             wmtk::logger().warn("Skpping checks for {}", json_file);
-            return 0;
+            return IntegrationTestResult::Success;
         }
 
         const auto vertices = in_args["tests"]["vertices"];
@@ -91,7 +94,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
             meshes.size() != faces.size() || meshes.size() != tetrahedra.size()) {
             wmtk::logger().error(
                 "JSON size missmatch between meshes and vertices, edges, faces, or tetrahedra.");
-            return 2;
+            return IntegrationTestResult::Fail;
         }
 
         for (int64_t i = 0; i < meshes.size(); ++i) {
@@ -113,7 +116,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
                     meshes[i],
                     n_vertices,
                     expected_vertices);
-                return 2;
+                return IntegrationTestResult::Fail;
             }
             if (n_edges != expected_edges) {
                 wmtk::logger().error(
@@ -121,7 +124,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
                     meshes[i],
                     n_edges,
                     expected_edges);
-                return 2;
+                return IntegrationTestResult::Fail;
             }
             if (n_faces != expected_faces) {
                 wmtk::logger().error(
@@ -129,7 +132,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
                     meshes[i],
                     n_faces,
                     expected_faces);
-                return 2;
+                return IntegrationTestResult::Fail;
             }
             if (n_tetrahedra != expected_tetrahedra) {
                 wmtk::logger().error(
@@ -137,7 +140,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
                     meshes[i],
                     n_tetrahedra,
                     expected_tetrahedra);
-                return 2;
+                return IntegrationTestResult::Fail;
             }
         }
 
@@ -148,7 +151,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
                 "JSON file contains results even though the test was run in `computation "
                 "mode`. Set DO_VALIDATION to false to compare with saved results or remove "
                 "results from JSON to re-compute them.");
-            return 2;
+            return IntegrationTestResult::Fail;
         }
 
         wmtk::logger().warn("Appending JSON...");
@@ -184,7 +187,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
         file << in_args;
     }
 
-    return 0;
+    return IntegrationTestResult::Success;
 }
 } // namespace
 namespace {
@@ -202,7 +205,7 @@ std::string tagsrun = "[.][integration]";
         bool compute_validation = DO_VALIDATION;                                     \
         wmtk::logger().info("Processing {}", NAME);                                  \
         auto flag = authenticate_json(WMTK_DATA_DIR "/" + path, compute_validation); \
-        REQUIRE(flag == 0);                                                          \
+        REQUIRE(flag == IntegrationTestResult::Success);                             \
     }
 
 
