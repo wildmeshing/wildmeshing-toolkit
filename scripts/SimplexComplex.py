@@ -133,4 +133,35 @@ def switches_plus_identity(sc):
     print(sss)
     return tuple(map(sc.simplicial_set_as_valid_tuple_index,sss))
 
+
+def switch_normal_subgroup_table(sc, subgroup_sc):
+    assert(len(sc) > len(subgroup_sc))
+
+    valid_tuples = sc.valid_tuples()
+    valid_subtuples = subgroup_sc.valid_tuples()
+    tail = tuple(range(len(subgroup_sc)+1,len(sc)+1))
+    print(valid_subtuples)
+
+    subgroup_to_group = [-1 for _ in range(subgroup_sc.valid_tuple_size())]
+    group_to_subgroup = [-1 for _ in range(sc.valid_tuple_size())]
+
+    for index, tup in enumerate(valid_tuples):
+        print(sc.valid_tuple_as_simplicial_set(tup))
+    for subindex, subtup in enumerate(valid_subtuples):
+        sub_ss = subgroup_sc.valid_tuple_as_simplicial_set(subtup)
+        ss = sub_ss + tail
+
+        index = sc.simplicial_set_as_valid_tuple_index(ss)
+        subgroup_to_group[subindex] = index
+        group_to_subgroup[index] = subindex
+        print(sub_ss,ss,index)
+        pass
+
+
+    assert(all(x != -1 for x in subgroup_to_group))
+
+    return tuple(group_to_subgroup),tuple(subgroup_to_group)
+
+
+
     
