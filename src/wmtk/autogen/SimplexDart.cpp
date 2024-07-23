@@ -10,7 +10,7 @@
 namespace wmtk::autogen {
 namespace {
 #define GET_OP(NAME, RETTYPE)                                                 \
-    auto get_##NAME(PrimitiveType pt) -> SimplexDart::RETTYPE                 \
+    auto get_##NAME(PrimitiveType pt)->SimplexDart::RETTYPE                   \
     {                                                                         \
         switch (pt) {                                                         \
         case PrimitiveType::Edge: return &edge_mesh::SimplexDart::NAME;       \
@@ -31,10 +31,8 @@ GET_OP(identity, nullary_op_type)
     auto SimplexDart::NAME() const -> RETTYPE                                \
     {                                                                        \
         switch (m_simplex_type) {                                            \
-        case PrimitiveType::Edge:                                            \
-            /*return edge_mesh::SimplexDart::OP();*/                         \
-        case PrimitiveType::Triangle:                                        \
-            /*return tri_mesh::SimplexDart::OP();*/                          \
+        case PrimitiveType::Edge: return edge_mesh::SimplexDart::OP();       \
+        case PrimitiveType::Triangle: return tri_mesh::SimplexDart::OP();    \
         case PrimitiveType::Tetrahedron: return tet_mesh::SimplexDart::OP(); \
         case PrimitiveType::Vertex: assert(false);                           \
         default: assert(false);                                              \

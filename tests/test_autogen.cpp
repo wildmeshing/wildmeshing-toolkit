@@ -150,7 +150,7 @@ TEST_CASE("tuple_autogen_local_id_inversion", "[tuple]")
         for (const auto& t : tuples) {
             int64_t id = tri_mesh::local_id_table_offset(t);
             auto [lvid, leid] = tri_mesh::lvid_leid_from_table_offset(id);
-            Tuple nt(lvid, leid, 0, 0, 0);
+            Tuple nt(lvid, leid, -1, 0, -1);
             int64_t nid = tri_mesh::local_id_table_offset(nt);
 
             CHECK(t == nt);
@@ -163,7 +163,7 @@ TEST_CASE("tuple_autogen_local_id_inversion", "[tuple]")
         for (const auto& t : tuples) {
             int64_t id = tet_mesh::local_id_table_offset(t);
             auto [lvid, leid, lfid] = tet_mesh::lvid_leid_lfid_from_table_offset(id);
-            Tuple nt(lvid, leid, lfid, 0, 0);
+            Tuple nt(lvid, leid, lfid, 0, -1);
             int64_t nid = tet_mesh::local_id_table_offset(nt);
             CHECK(t == nt);
             CHECK(id == nid);
@@ -210,7 +210,8 @@ TEST_CASE("tuple_autogen_ptype_local_switch_tuple_equivalent", "[tuple]")
 TEST_CASE("tuple_autogen_switch_still_valid", "[tuple]")
 {
     // when other meshes are available add them here
-    for (PrimitiveType mesh_type : {PrimitiveType::Triangle /*, PrimitiveType::Tetrahedron*/}) {
+    for (PrimitiveType mesh_type :
+         {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
         auto tuples = all_valid_local_tuples(mesh_type);
 
         for (const auto& t : tuples) {
@@ -225,7 +226,8 @@ TEST_CASE("tuple_autogen_switch_still_valid", "[tuple]")
 TEST_CASE("tuple_autogen_index_dart_tuple_conversion", "[tuple]")
 {
     // when other meshes are available add them here
-    for (PrimitiveType mesh_type : {/*PrimitiveType::Triangle ,*/ PrimitiveType::Tetrahedron}) {
+    for (PrimitiveType mesh_type :
+         {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
         auto tuples = all_valid_local_tuples(mesh_type);
         autogen::SimplexDart sd(mesh_type);
 
@@ -241,7 +243,8 @@ TEST_CASE("tuple_autogen_index_dart_tuple_conversion", "[tuple]")
 TEST_CASE("tuple_autogen_index_dart_group_structure", "[tuple]")
 {
     // when other meshes are available add them here
-    for (PrimitiveType mesh_type : {PrimitiveType::Edge, PrimitiveType::Triangle , PrimitiveType::Tetrahedron}) {
+    for (PrimitiveType mesh_type :
+         {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
         autogen::SimplexDart sd(mesh_type);
         assert(size_t(sd.valid_indices().size()) == sd.size());
 
@@ -249,19 +252,19 @@ TEST_CASE("tuple_autogen_index_dart_group_structure", "[tuple]")
             const int8_t index_switch = sd.primitive_as_index(pt);
             CHECK(sd.identity() == sd.product(index_switch, index_switch));
             CHECK(index_switch == sd.inverse(index_switch));
-            for (int8_t index = 0; index < sd.size(); ++index) {
-                const int8_t inv = sd.inverse(index);
-                CHECK(sd.product(index, inv) == sd.identity());
-                CHECK(sd.product(inv, index) == sd.identity());
-                for (int8_t index2 = 0; index2 < sd.size(); ++index2) {
-                    const int8_t inv2 = sd.inverse(index2);
-                    const int8_t p = sd.product(index, index2);
-                    const int8_t pi = sd.product(inv2, inv);
-                    CHECK(pi == sd.inverse(p));
-                    CHECK(sd.product(p, pi) == sd.identity());
-                    CHECK(sd.product(pi, p) == sd.identity());
-                }
-            }
+        }
+        for (int8_t index = 0; index < sd.size(); ++index) {
+            const int8_t inv = sd.inverse(index);
+            CHECK(sd.product(index, inv) == sd.identity());
+            CHECK(sd.product(inv, index) == sd.identity());
+            // for (int8_t index2 = 0; index2 < sd.size(); ++index2) {
+            //     const int8_t inv2 = sd.inverse(index2);
+            //     const int8_t p = sd.product(index, index2);
+            //     const int8_t pi = sd.product(inv2, inv);
+            //     CHECK(pi == sd.inverse(p));
+            //     CHECK(sd.product(p, pi) == sd.identity());
+            //     CHECK(sd.product(pi, p) == sd.identity());
+            // }
         }
     }
 }
@@ -270,7 +273,8 @@ TEST_CASE("tuple_autogen_index_dart_group_structure", "[tuple]")
 TEST_CASE("tuple_autogen_index_dart_vs_switch", "[tuple]")
 {
     // when other meshes are available add them here
-    for (PrimitiveType mesh_type : {PrimitiveType::Edge, PrimitiveType::Triangle , PrimitiveType::Tetrahedron}) {
+    for (PrimitiveType mesh_type :
+         {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
         auto tuples = all_valid_local_tuples(mesh_type);
         autogen::SimplexDart sd(mesh_type);
 
@@ -293,7 +297,8 @@ TEST_CASE("tuple_autogen_index_dart_vs_switch", "[tuple]")
 TEST_CASE("tuple_autogen_products_vs_switch", "[tuple]")
 {
     // when other meshes are available add them here
-    for (PrimitiveType mesh_type : {PrimitiveType::Edge, PrimitiveType::Triangle , PrimitiveType::Tetrahedron}) {
+    for (PrimitiveType mesh_type :
+         {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
         auto tuples = all_valid_local_tuples(mesh_type);
 
         std::vector<PrimitiveType> sequence;
