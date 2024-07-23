@@ -14,6 +14,9 @@
 
 using json = nlohmann::json;
 using namespace wmtk;
+
+enum IntegrationTestResult { Success = 0, Fail = 1, InvalidInput = 2 };
+
 namespace {
 
 bool load_json(const std::string& json_file, json& out)
@@ -29,9 +32,13 @@ bool load_json(const std::string& json_file, json& out)
 
 bool contains_results(const json& in_args)
 {
+    if (!in_args.contains("tests")) {
+        return false;
+    }
+
     const auto& tests = in_args["tests"];
-    for (const auto& type : {"vertices", "edges", "faces", "tetrahedra"}) {
-        if (!(tests.contains(type) && tests[type].is_number())) {
+    for (const auto& type : {"meshes", "vertices", "edges", "faces", "tetrahedra"}) {
+        if (!tests.contains(type) || !tests[type].is_array()) {
             return false;
         }
     }
@@ -43,26 +50,16 @@ bool missing_tests_data(const json& j)
     return !j.contains("tests") || !j.at("tests").contains("meshes");
 }
 
-int authenticate_json(const std::string& json_file, const bool compute_validation)
+IntegrationTestResult authenticate_json(const std::string& json_file, const bool compute_validation)
 {
     json in_args;
     if (!load_json(json_file, in_args)) {
-        spdlog::error("unable to open {} file", json_file);
-        return 1;
+        wmtk::logger().error("unable to open {} file", json_file);
+        return IntegrationTestResult::InvalidInput;
     }
 
-    if (missing_tests_data(in_args)) {
-        spdlog::error("JSON file missing \"tests\" or meshes key.");
-        return 1;
-    }
     in_args["root_path"] = json_file;
 
-
-    if (compute_validation && !contains_results(in_args)) {
-        spdlog::error("JSON file missing vertices edges faces or tetrahedra or meshes key. Add a * "
-                      "to the beginning of filename to allow appends.");
-        return 2;
-    }
 
     // in_args["settings"] = R"({
     //     "log_level": 5,
@@ -72,26 +69,32 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
     utils::set_random_seed(0);
     auto cache = wmtk::components::run_components(in_args, true);
 
-    auto meshes = in_args["tests"]["meshes"];
-
     if (!compute_validation) {
-        spdlog::info("Authenticating...");
-
-        if (in_args["tests"].contains("skip_check") && in_args["tests"]["skip_check"]) {
-            spdlog::warn("Skpping checks for {}", json_file);
-            return 0;
+        if (missing_tests_data(in_args)) {
+            wmtk::logger().error("JSON file missing \"tests\" or meshes key.");
+            return IntegrationTestResult::InvalidInput;
         }
 
-        auto vertices = in_args["tests"]["vertices"];
-        auto edges = in_args["tests"]["edges"];
-        auto faces = in_args["tests"]["faces"];
-        auto tetrahedra = in_args["tests"]["tetrahedra"];
+        REQUIRE(contains_results(in_args));
+
+        wmtk::logger().info("Authenticating...");
+
+        const std::vector<std::string> meshes = in_args["tests"]["meshes"];
+
+        if (in_args["tests"].contains("skip_check") && in_args["tests"]["skip_check"]) {
+            wmtk::logger().warn("Skpping checks for {}", json_file);
+            return IntegrationTestResult::Success;
+        }
+
+        const auto vertices = in_args["tests"]["vertices"];
+        const auto edges = in_args["tests"]["edges"];
+        const auto faces = in_args["tests"]["faces"];
+        const auto tetrahedra = in_args["tests"]["tetrahedra"];
         if (meshes.size() != vertices.size() || meshes.size() != edges.size() ||
             meshes.size() != faces.size() || meshes.size() != tetrahedra.size()) {
-            spdlog::error("JSON size missmatch between meshes and vertices edges faces or "
-                          "tetrahedra or meshes key. Add a * "
-                          "to the beginning of filename to allow appends.");
-            return 2;
+            wmtk::logger().error(
+                "JSON size missmatch between meshes and vertices, edges, faces, or tetrahedra.");
+            return IntegrationTestResult::Fail;
         }
 
         for (int64_t i = 0; i < meshes.size(); ++i) {
@@ -108,32 +111,53 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
             const int64_t n_tetrahedra = mesh->get_all(PrimitiveType::Tetrahedron).size();
 
             if (n_vertices != expected_vertices) {
-                spdlog::error(
-                    "Violating Authenticate for vertices {}!={}",
+                wmtk::logger().error(
+                    "Violating Authenticate in mesh `{}` for vertices {} != {}",
+                    meshes[i],
                     n_vertices,
                     expected_vertices);
-                return 2;
+                return IntegrationTestResult::Fail;
             }
             if (n_edges != expected_edges) {
-                spdlog::error("Violating Authenticate for edges {}!={}", n_edges, expected_edges);
-                return 2;
+                wmtk::logger().error(
+                    "Violating Authenticate in mesh `{}` for edges {} != {}",
+                    meshes[i],
+                    n_edges,
+                    expected_edges);
+                return IntegrationTestResult::Fail;
             }
             if (n_faces != expected_faces) {
-                spdlog::error("Violating Authenticate for faces {}!={}", n_faces, expected_faces);
-                return 2;
+                wmtk::logger().error(
+                    "Violating Authenticate in mesh `{}` for faces {} != {}",
+                    meshes[i],
+                    n_faces,
+                    expected_faces);
+                return IntegrationTestResult::Fail;
             }
             if (n_tetrahedra != expected_tetrahedra) {
-                spdlog::error(
-                    "Violating Authenticate for tetrahedra {}!={}",
+                wmtk::logger().error(
+                    "Violating Authenticate in mesh `{}` for tetrahedra {} != {}",
+                    meshes[i],
                     n_tetrahedra,
                     expected_tetrahedra);
-                return 2;
+                return IntegrationTestResult::Fail;
             }
         }
 
-        spdlog::info("Authenticated ✅");
+        wmtk::logger().info("Authenticated ✅");
     } else {
-        spdlog::warn("Appending JSON...");
+        if (contains_results(in_args)) {
+            wmtk::logger().error(
+                "JSON file contains results even though the test was run in `computation "
+                "mode`. Set DO_VALIDATION to false to compare with saved results or remove "
+                "results from JSON to re-compute them.");
+            return IntegrationTestResult::Fail;
+        }
+
+        wmtk::logger().warn("Appending JSON...");
+
+        const std::vector<std::string> meshes = cache.mesh_names();
+        in_args["tests"]["meshes"] = meshes;
 
         std::vector<int64_t> expected_vertices, expected_edges, expected_faces, expected_tetrahedra;
 
@@ -163,7 +187,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
         file << in_args;
     }
 
-    return 0;
+    return IntegrationTestResult::Success;
 }
 } // namespace
 namespace {
@@ -179,9 +203,9 @@ std::string tagsrun = "[.][integration]";
     {                                                                                \
         std::string path = std::string("unit_test/") + NAME + ".json";               \
         bool compute_validation = DO_VALIDATION;                                     \
-        spdlog::info("Processing {}", NAME);                                         \
+        wmtk::logger().info("Processing {}", NAME);                                  \
         auto flag = authenticate_json(WMTK_DATA_DIR "/" + path, compute_validation); \
-        REQUIRE(flag == 0);                                                          \
+        REQUIRE(flag == IntegrationTestResult::Success);                             \
     }
 
 
