@@ -353,6 +353,7 @@ var hierarchy =
       [ "wmtk::multimesh::attribute::NewSimplexValueApplicator", "classwmtk_1_1multimesh_1_1attribute_1_1_new_simplex_value_applicator.html", null ]
     ] ],
     [ "SplitNewValueApplicatorBase", "class_split_new_value_applicator_base.html", null ],
+    [ "wmtk::utils::StopWatch", "classwmtk_1_1utils_1_1_stop_watch.html", null ],
     [ "wmtk::io::SubCacheHandle", "classwmtk_1_1io_1_1_sub_cache_handle.html", null ],
     [ "wmtk::components::internal::TagAttribute", "classwmtk_1_1components_1_1internal_1_1_tag_attribute.html", null ],
     [ "wmtk::components::TagAttribute", "classwmtk_1_1components_1_1_tag_attribute.html", null ],

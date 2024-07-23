@@ -114,6 +114,7 @@ $(document).ready(function(){initNavTree('integration__test_8cpp.html',''); init
   <div class="summary">
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
+<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">integration_test.cpp File Reference</div>  </div>
@@ -144,6 +145,14 @@ Macros</h2></td></tr>
 Typedefs</h2></td></tr>
 <tr class="memitem:ab701e3ac61a85b337ec5c1abaad6742d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> = nlohmann::json</td></tr>
 <tr class="separator:ab701e3ac61a85b337ec5c1abaad6742d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:a151bbdb51504940f831dc2dee097bb3b"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="integration__test_8cpp.html#a151bbdb51504940f831dc2dee097bb3b">IntegrationTestResult</a> { <a class="el" href="integration__test_8cpp.html#a151bbdb51504940f831dc2dee097bb3bafdfbdf3247bd36a1f17270d5cec74c9c">Success</a> = 0
+, <a class="el" href="integration__test_8cpp.html#a151bbdb51504940f831dc2dee097bb3ba2c88d6b09611bebcfd079df624ae3bfe">Fail</a> = 1
+, <a class="el" href="integration__test_8cpp.html#a151bbdb51504940f831dc2dee097bb3bae1252631a63be5890a1e78ff417d378f">InvalidInput</a> = 2
+ }</td></tr>
+<tr class="separator:a151bbdb51504940f831dc2dee097bb3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
@@ -197,14 +206,16 @@ Functions</h2></td></tr>
 <b>Value:</b><div class="fragment"><div class="line">    <a class="code" href="test__component__delaunay_8cpp.html#a3817f7ebe538bd98507ed2a69f3e65a3">TEST_CASE</a>(std::string(<span class="stringliteral">&quot;integration_&quot;</span>) + NAME, tagsrun)                           \</div>
 <div class="line">    {                                                                                \</div>
 <div class="line">        std::string path = std::string(<span class="stringliteral">&quot;unit_test/&quot;</span>) + NAME + <span class="stringliteral">&quot;.json&quot;</span>;               \</div>
-<div class="line">        bool compute_validation = DO_VALIDATION;                                     \</div>
-<div class="line">        spdlog::info(<span class="stringliteral">&quot;Processing {}&quot;</span>, NAME);                                         \</div>
+<div class="line">        bool compute_validation = DO_VALIDATION;                                     <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">\</a></div>
+<div class="line"><a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">        wmtk::logger</a>().info(<span class="stringliteral">&quot;Processing {}&quot;</span>, NAME);                                  \</div>
 <div class="line">        auto flag = authenticate_json(WMTK_DATA_DIR <span class="stringliteral">&quot;/&quot;</span> + path, compute_validation); \</div>
-<div class="line">        REQUIRE(flag == 0);                                                          \</div>
+<div class="line">        REQUIRE(flag == <a class="code" href="integration__test_8cpp.html#a151bbdb51504940f831dc2dee097bb3bafdfbdf3247bd36a1f17270d5cec74c9c">IntegrationTestResult::Success</a>);                             \</div>
 <div class="line">    }</div>
+<div class="ttc" id="aintegration__test_8cpp_html_a151bbdb51504940f831dc2dee097bb3bafdfbdf3247bd36a1f17270d5cec74c9c"><div class="ttname"><a href="integration__test_8cpp.html#a151bbdb51504940f831dc2dee097bb3bafdfbdf3247bd36a1f17270d5cec74c9c">Success</a></div><div class="ttdeci">@ Success</div><div class="ttdef"><b>Definition:</b> <a href="integration__test_8cpp_source.html#l00018">integration_test.cpp:18</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_a6a35f11c12436093d26fdd8be6fecc06"><div class="ttname"><a href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a></div><div class="ttdeci">spdlog::logger &amp; logger()</div><div class="ttdoc">Retrieves the current logger.</div><div class="ttdef"><b>Definition:</b> <a href="_logger_8cpp_source.html#l00050">Logger.cpp:50</a></div></div>
 <div class="ttc" id="atest__component__delaunay_8cpp_html_a3817f7ebe538bd98507ed2a69f3e65a3"><div class="ttname"><a href="test__component__delaunay_8cpp.html#a3817f7ebe538bd98507ed2a69f3e65a3">TEST_CASE</a></div><div class="ttdeci">TEST_CASE(&quot;delaunay_2d_five_points&quot;, &quot;[components][delaunay]&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="test__component__delaunay_8cpp_source.html#l00080">test_component_delaunay.cpp:80</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="integration__test_8cpp_source.html#l00177">177</a> of file <a class="el" href="integration__test_8cpp_source.html">integration_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="integration__test_8cpp_source.html#l00201">201</a> of file <a class="el" href="integration__test_8cpp_source.html">integration_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -222,6 +233,28 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="integration__test_8cpp_source.html#l00015">15</a> of file <a class="el" href="integration__test_8cpp_source.html">integration_test.cpp</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="a151bbdb51504940f831dc2dee097bb3b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a151bbdb51504940f831dc2dee097bb3b">&#9670;&nbsp;</a></span>IntegrationTestResult</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="integration__test_8cpp.html#a151bbdb51504940f831dc2dee097bb3b">IntegrationTestResult</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a151bbdb51504940f831dc2dee097bb3bafdfbdf3247bd36a1f17270d5cec74c9c"></a>Success&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a151bbdb51504940f831dc2dee097bb3ba2c88d6b09611bebcfd079df624ae3bfe"></a>Fail&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a151bbdb51504940f831dc2dee097bb3bae1252631a63be5890a1e78ff417d378f"></a>InvalidInput&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="integration__test_8cpp_source.html#l00018">18</a> of file <a class="el" href="integration__test_8cpp_source.html">integration_test.cpp</a>.</p>
 
 </div>
 </div>

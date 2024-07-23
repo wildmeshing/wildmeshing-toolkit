@@ -35,6 +35,10 @@ var dir_9f42d488f21f30bdc75c62948fa574ea =
     [ "Rational.hpp", "_rational_8hpp.html", [
       [ "Rational", "classwmtk_1_1_rational.html", "classwmtk_1_1_rational" ]
     ] ],
+    [ "Stopwatch.cpp", "_stopwatch_8cpp.html", null ],
+    [ "Stopwatch.hpp", "_stopwatch_8hpp.html", [
+      [ "StopWatch", "classwmtk_1_1utils_1_1_stop_watch.html", "classwmtk_1_1utils_1_1_stop_watch" ]
+    ] ],
     [ "tetmesh_topology_initialization.cpp", "tetmesh__topology__initialization_8cpp.html", "tetmesh__topology__initialization_8cpp" ],
     [ "tetmesh_topology_initialization.h", "tetmesh__topology__initialization_8h.html", "tetmesh__topology__initialization_8h" ],
     [ "triangle_areas.cpp", "triangle__areas_8cpp.html", null ],

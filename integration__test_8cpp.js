@@ -2,6 +2,11 @@ var integration__test_8cpp =
 [
     [ "WMTK_INTEGRATION", "integration__test_8cpp.html#adeae94b23fea3654af9e051a04a2da49", null ],
     [ "json", "integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d", null ],
+    [ "IntegrationTestResult", "integration__test_8cpp.html#a151bbdb51504940f831dc2dee097bb3b", [
+      [ "Success", "integration__test_8cpp.html#a151bbdb51504940f831dc2dee097bb3bafdfbdf3247bd36a1f17270d5cec74c9c", null ],
+      [ "Fail", "integration__test_8cpp.html#a151bbdb51504940f831dc2dee097bb3ba2c88d6b09611bebcfd079df624ae3bfe", null ],
+      [ "InvalidInput", "integration__test_8cpp.html#a151bbdb51504940f831dc2dee097bb3bae1252631a63be5890a1e78ff417d378f", null ]
+    ] ],
     [ "WMTK_INTEGRATION", "integration__test_8cpp.html#a9d6db4b797f1c42290edb19921a60bed", null ],
     [ "WMTK_INTEGRATION", "integration__test_8cpp.html#a6f451c083f2ecd6c656e681f2b1f2fd1", null ],
     [ "WMTK_INTEGRATION", "integration__test_8cpp.html#aa8c6dd2a6b63840ad41d8c0f22416a0c", null ],

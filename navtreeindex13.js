@@ -1,5 +1,10 @@
 var NAVTREEINDEX13 =
 {
+"classwmtk_1_1operations_1_1_or_operation_sequence.html":[5,0,2,6,27],
+"classwmtk_1_1operations_1_1_or_operation_sequence.html#a406c209eb5cabbdfccc0de7a99652ec6":[5,0,2,6,27,0],
+"classwmtk_1_1operations_1_1_or_operation_sequence.html#ab57b842522df4407984534af08c3ea3b":[5,0,2,6,27,1],
+"classwmtk_1_1operations_1_1_or_operation_sequence.html#adf0b428b0d3b5719b3cdeaff2bf471bb":[5,0,2,6,27,2],
+"classwmtk_1_1operations_1_1_rounding.html":[5,0,2,6,28],
 "classwmtk_1_1operations_1_1_rounding.html#a00f1503220c55658a0c387d2a1728a2d":[5,0,2,6,28,0],
 "classwmtk_1_1operations_1_1_rounding.html#a207156efabafea7866ac3d6aff5999ee":[5,0,2,6,28,2],
 "classwmtk_1_1operations_1_1_rounding.html#a44d2c792261c5d0b9094b23932dac8fc":[5,0,2,6,28,1],
@@ -244,10 +249,5 @@ var NAVTREEINDEX13 =
 "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html#a127a043049243f8a01d98b2fd2802bae":[5,0,2,6,4,0,1],
 "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html#a33a6a6fb82c4c79d9c6a582a58f6766a":[5,0,2,6,4,0,3],
 "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html#ab9f0ca902b9ffcd615e71f6f1b005a84":[5,0,2,6,4,0,2],
-"classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html#ad90af4d840f5858bcd6921273d144bc6":[5,0,2,6,4,0,0],
-"classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html":[5,0,2,6,4,1],
-"classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html#a41a15f9268784c043b20fc765a95eaa4":[5,0,2,6,4,1,0],
-"classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html#a8a62248e747da31b020adf6b38d55535":[5,0,2,6,4,1,3],
-"classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html#ada72d8eee90498489feab6733bd29366":[5,0,2,6,4,1,1],
-"classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html#af010a058e1bd67dbd1019342c0ac8c7d":[5,0,2,6,4,1,2]
+"classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html#ad90af4d840f5858bcd6921273d144bc6":[5,0,2,6,4,0,0]
 };

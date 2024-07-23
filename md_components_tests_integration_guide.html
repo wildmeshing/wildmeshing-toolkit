@@ -115,14 +115,14 @@ $(document).ready(function(){initNavTree('md_components_tests_integration_guide.
 <div class="title">Guide for Using Integration Test </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>When you want to start a new integration test, then you need to have following a few steps to set up the test.</p>
-<ul>
-<li>First, write a JSON file under the folder <code>/data/unit_test/</code>, you can refer to those existing JSON files to learn how to write it.</li>
-<li>Second, you need the model to run your integration test. Put your model under the folder <code>/data/unit_test/meshes</code>.(you may have to update the wmtkdata)</li>
-<li>Third, after you have done the steps above, you should add the JSON file's name to <code>/components/tests/integration_test.cpp</code>. Such as <code>WMTK_INTEGRATION("YOUR TEST NAME", false);</code></li>
-<li>Fourth, for the first time you run your integration test, you should set <code>DO_VALIDATION</code> parameter <code>true</code> in <code>WMTK_INTEGRATION</code>. Then <code>integraion_test.cpp</code> will generate the original performance of your code. After that, you should set the parameter as <code>false</code>. In the later integration test, <code>integraion_test.cpp</code> will compare the result with your original performance to make sure your new version code's performance always consistent with the original one.</li>
-</ul>
-<p>NOTE: you can have a look at the <code>integrations_test.cpp</code> to get more details if you want. </p>
+<div class="textblock"><ol type="1">
+<li>Write a JSON file under the folder <code>/data/unit_test/</code>, you can refer to those existing JSON files to learn how to write it.</li>
+<li>Put the mesh for your test under the folder <code>/data/unit_test/meshes</code>. Please check first, if one of the existing meshes is suitable for your integration test.</li>
+<li>Add the JSON file's name to <code>/components/tests/integration_test.cpp</code>, i.e. add the line <code>WMTK_INTEGRATION("YOUR TEST NAME", false);</code>.</li>
+<li>The first time you run your integration test, set the <code>DO_VALIDATION</code> parameter <code>false</code>, i.e. <code>WMTK_INTEGRATION("YOUR TEST NAME", false);</code>. The integration test will then add the test output (number of simplices) to your JSON. Afterward, set the parameter to <code>true</code>. Now, the integration test will compare the result with your original output and fail if the two do not match.</li>
+<li>Push the JSON and meshes to the <a href="https://github.com/wildmeshing/data">wmtk data repo</a>.</li>
+</ol>
+<p>Look at <code>integrations_test.cpp</code> for more details. </p>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
 </div><!-- doc-content -->

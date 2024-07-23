@@ -1,5 +1,10 @@
 var NAVTREEINDEX12 =
 {
+"classwmtk_1_1multimesh_1_1attribute_1_1_collapse_new_value_applicator_base.html#ae35f93101d5303b3df56a6c4eecf0ffb":[5,0,2,5,0,1,5],
+"classwmtk_1_1multimesh_1_1attribute_1_1_collapse_new_value_applicator_base.html#aea255b95ec27e1d9f59da02abbd15890":[5,0,2,5,0,1,7],
+"classwmtk_1_1multimesh_1_1attribute_1_1_new_simplex_value_applicator.html":[5,0,2,5,0,2],
+"classwmtk_1_1multimesh_1_1attribute_1_1_new_simplex_value_applicator.html#aa2d073a30c3ba781d000354a4c51e481":[5,0,2,5,0,2,0],
+"classwmtk_1_1multimesh_1_1attribute_1_1_new_simplex_value_applicator.html#ae65eba04410c8baef73e8514e436cef9":[5,0,2,5,0,2,1],
 "classwmtk_1_1multimesh_1_1attribute_1_1_update_strategy_collection.html":[5,0,2,5,0,3],
 "classwmtk_1_1multimesh_1_1attribute_1_1_update_strategy_collection.html#acab93e01141c243c4a2e9571b2e3f892":[5,0,2,5,0,3,0],
 "classwmtk_1_1multimesh_1_1attribute_1_1_use_parent_scope_r_a_i_i.html":[5,0,2,5,0,4],
@@ -244,10 +249,5 @@ var NAVTREEINDEX12 =
 "classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html#a9c613193797e1527a0f6e24710eb2350":[5,0,2,6,26,0,2],
 "classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html#ac9a30c4c7be81f76414d839d4675ddc2":[5,0,2,6,26,0,9],
 "classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html#ace76d2684fb503e31209fe891bd9c6d9":[5,0,2,6,26,0,8],
-"classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html#aea376070bb07d0be2628da57e06f8ad8":[5,0,2,6,26,0,5],
-"classwmtk_1_1operations_1_1_or_operation_sequence.html":[5,0,2,6,27],
-"classwmtk_1_1operations_1_1_or_operation_sequence.html#a406c209eb5cabbdfccc0de7a99652ec6":[5,0,2,6,27,0],
-"classwmtk_1_1operations_1_1_or_operation_sequence.html#ab57b842522df4407984534af08c3ea3b":[5,0,2,6,27,1],
-"classwmtk_1_1operations_1_1_or_operation_sequence.html#adf0b428b0d3b5719b3cdeaff2bf471bb":[5,0,2,6,27,2],
-"classwmtk_1_1operations_1_1_rounding.html":[5,0,2,6,28]
+"classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html#aea376070bb07d0be2628da57e06f8ad8":[5,0,2,6,26,0,5]
 };
