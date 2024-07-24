@@ -1,0 +1,53 @@
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": [
+      "input",
+      "position",
+      "output",
+      "main_eps"
+    ],
+    "optional": [
+      "duplicate_tol",
+      "sample_envelope",
+      "relative"
+    ]
+  },
+  {
+    "pointer": "/input",
+    "type": "string"
+  },
+  {
+    "pointer": "/position",
+    "type": "string",
+    "doc": "name of the position attribute in input mesh"
+  },
+  {
+    "pointer": "/output",
+    "type": "string"
+  },
+  {
+    "pointer": "/main_eps",
+    "type": "float",
+    "doc": "main esp tolerance"
+  },
+  {
+    "pointer": "/duplicate_tol",
+    "type": "float",
+    "default": -1,
+    "doc": "tolerance for removing duplicate vertices"
+  },
+  {
+    "pointer": "/relative",
+    "type": "bool",
+    "default": true,
+    "doc": "relative or absolute envelope size and duplicate_tol"
+  },
+  {
+    "pointer": "/sample_envelope",
+    "type": "bool",
+    "default": false,
+    "doc": "use sampling envelope"
+  }
+]
