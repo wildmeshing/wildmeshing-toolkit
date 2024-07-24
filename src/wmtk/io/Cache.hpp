@@ -147,6 +147,11 @@ public:
     /// Unsets the mesh held by each cached mm - useful for debugging whether cache loading works
     void flush_multimeshes();
 
+    /**
+     * @brief Get all names of the meshes stored in cache.
+     */
+    std::vector<std::string> mesh_names();
+
 private:
     std::filesystem::path m_cache_dir;
     std::map<std::string, std::filesystem::path> m_file_paths; // name --> file location
