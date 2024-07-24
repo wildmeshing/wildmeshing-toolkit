@@ -8,8 +8,6 @@
 #include <wmtk/components/base/Paths.hpp>
 #include <wmtk/components/base/resolve_path.hpp>
 
-#include <polysolve/Utils.hpp>
-
 #include <fstream>
 
 //inside ${CMAKE_CURRENT_BINARY_DIR}/autogen
@@ -82,7 +80,6 @@ wmtk::io::Cache run_components(const nlohmann::json& json_input_file, bool stric
 
 
     wmtk::io::Cache cache(spec_json["output"]["cache"], output_dir);
-    double time = 0.0;
 
     // iterate through components array
     for (const nlohmann::json& component_json : spec_json["components"]) {
