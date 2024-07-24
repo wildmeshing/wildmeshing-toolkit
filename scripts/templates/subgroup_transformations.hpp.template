@@ -11,5 +11,6 @@ namespace wmtk::autogen::{{ namespace }} {
     extern {%  include "templates/array_declaration.template" -%};
 
     {% endfor %}
+    extern int8_t remap_table[ {{ table|length }} ][ {{table|length }}][];
 }
 
