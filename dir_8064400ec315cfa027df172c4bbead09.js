@@ -20,6 +20,7 @@ var dir_8064400ec315cfa027df172c4bbead09 =
     [ "regular_space", "dir_ffc7dbb4cb583ea418cd8e4d7b4953b6.html", "dir_ffc7dbb4cb583ea418cd8e4d7b4953b6" ],
     [ "shortestedge_collapse", "dir_0fb1c207b5b6b3149abf786299cc0097.html", "dir_0fb1c207b5b6b3149abf786299cc0097" ],
     [ "tag_intersection", "dir_236cd121496d30414baca33d30c032b6.html", "dir_236cd121496d30414baca33d30c032b6" ],
+    [ "tetwild_simplification", "dir_b8318f041b47f0c2648687038c5f5413.html", "dir_b8318f041b47f0c2648687038c5f5413" ],
     [ "to_points", "dir_454c3ee98c04fd346c5af9042a1b2fa0.html", "dir_454c3ee98c04fd346c5af9042a1b2fa0" ],
     [ "triangle_insertion", "dir_f76ce0e7f34f4da57b8f683c66be780e.html", "dir_f76ce0e7f34f4da57b8f683c66be780e" ],
     [ "wildmeshing", "dir_f0ba732ac9befee6d2ad8ef858a89f32.html", "dir_f0ba732ac9befee6d2ad8ef858a89f32" ],

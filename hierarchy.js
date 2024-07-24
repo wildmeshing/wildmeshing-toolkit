@@ -1,5 +1,6 @@
 var hierarchy =
 [
+    [ "wmtk::components::AABBWrapper", "classwmtk_1_1components_1_1_a_a_b_b_wrapper.html", null ],
     [ "wmtk::attribute::AccessorBase< _T, Dim >", "classwmtk_1_1attribute_1_1_accessor_base.html", [
       [ "wmtk::attribute::CachingAccessor< T, Eigen::Dynamic >", "classwmtk_1_1attribute_1_1_caching_accessor.html", [
         [ "wmtk::attribute::Accessor< T, MeshType, Dim >", "classwmtk_1_1attribute_1_1_accessor.html", null ]
@@ -49,6 +50,8 @@ var hierarchy =
     [ "wmtk::attribute::internal::CheckpointScope", "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope.html", null ],
     [ "wmtk::multimesh::MultiMeshManager::ChildData", "structwmtk_1_1multimesh_1_1_multi_mesh_manager_1_1_child_data.html", null ],
     [ "wmtk::simplex::ClosedStarIterable", "classwmtk_1_1simplex_1_1_closed_star_iterable.html", null ],
+    [ "wmtk::components::cmp_l", "structwmtk_1_1components_1_1cmp__l.html", null ],
+    [ "wmtk::components::cmp_s", "structwmtk_1_1components_1_1cmp__s.html", null ],
     [ "wmtk::operations::CollapseNewAttributeTopoInfo", "classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html", [
       [ "wmtk::operations::edge_mesh::CollapseNewAttributeTopoInfo", "classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_topo_info.html", null ],
       [ "wmtk::operations::tet_mesh::CollapseNewAttributeTopoInfo", "classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_topo_info.html", null ],
@@ -90,6 +93,7 @@ var hierarchy =
         [ "wmtk::TriMesh::TriMeshOperationExecutor", "classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html", null ]
       ] ]
     ] ],
+    [ "wmtk::components::ElementInQueue", "classwmtk_1_1components_1_1_element_in_queue.html", null ],
     [ "std::enable_shared_from_this", null, [
       [ "wmtk::Mesh", "classwmtk_1_1_mesh.html", [
         [ "wmtk::MeshCRTP< EdgeMesh >", "classwmtk_1_1_mesh_c_r_t_p.html", [
