@@ -372,3 +372,42 @@ TEST_CASE("tuple_autogen_products_vs_switch", "[tuple]")
     }
 }
 
+TEST_CASE("tuple_autogen_index_dart_map_between_simplices", "[tuple]")
+{
+    // when other meshes are available add them here
+    for (PrimitiveType mesh_type :
+         {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
+        autogen::SimplexDart sd(mesh_type);
+        for (PrimitiveType mesh_type2 :
+             {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
+            if (mesh_type > mesh_type2) {
+                continue;
+            }
+
+            autogen::SimplexDart sd2(mesh_type2);
+            for (int8_t index = 0; index < sd.size(); ++index) {
+                REQUIRE(sd.convert(index, sd2) != -1);
+                REQUIRE(sd2.convert(sd.convert(index, sd2), sd) == index);
+            }
+
+            for (int8_t index = 0; index < sd.size(); ++index) {
+                const int8_t inv = sd.inverse(index);
+
+                int8_t index2 = sd.convert(index, sd2);
+                int8_t inv2 = sd.convert(inv, sd2);
+                CHECK(sd2.product(index2, inv2) == sd2.identity());
+            }
+            for (int8_t index = 0; index < sd.size(); ++index) {
+                for (int8_t index_ = 0; index_ < sd.size(); ++index_) {
+                    int8_t p = sd.product(index, index_);
+
+
+                    int8_t index2 = sd.convert(index, sd2);
+                    int8_t index_2 = sd.convert(index_, sd2);
+                    int8_t p2 = sd2.product(index2, index_2);
+                    CHECK(sd.convert(p, sd2) == p2);
+                }
+            }
+        }
+    }
+}

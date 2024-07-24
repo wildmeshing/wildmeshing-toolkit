@@ -2,6 +2,7 @@
 #include <cassert>
 #include <wmtk/utils/TupleInspector.hpp>
 #include "edge_mesh/SimplexDart.hpp"
+#include "subgroup/convert.hpp"
 #include "tet_mesh/SimplexDart.hpp"
 #include "tri_mesh/SimplexDart.hpp"
 #include "tuple_from_valid_index.hpp"
@@ -85,6 +86,11 @@ wmtk::Tuple SimplexDart::update_tuple_from_valid_index(const Tuple& t, int8_t in
 int8_t SimplexDart::valid_index_from_tuple(const wmtk::Tuple& t) const
 {
     return wmtk::autogen::valid_index_from_tuple(m_simplex_type, t);
+}
+
+int8_t SimplexDart::convert(int8_t valid_index, const SimplexDart& target) const
+{
+    return subgroup::convert(m_simplex_type, target.m_simplex_type, valid_index);
 }
 
 

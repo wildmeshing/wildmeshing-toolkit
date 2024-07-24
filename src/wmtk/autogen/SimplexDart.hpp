@@ -13,8 +13,8 @@ public:
     int8_t inverse(int8_t a) const;
     int8_t primitive_as_index(wmtk::PrimitiveType pt) const;
     int8_t identity() const;
-    wmtk::Tuple tuple_from_valid_index(int64_t gid, int8_t index) const;
-    wmtk::Tuple update_tuple_from_valid_index(const Tuple& t, int8_t index) const;
+    wmtk::Tuple tuple_from_valid_index(int64_t gid, int8_t valid_index) const;
+    wmtk::Tuple update_tuple_from_valid_index(const Tuple& t, int8_t valid_index) const;
 
     int8_t valid_index_from_tuple(const wmtk::Tuple& t) const;
 
@@ -25,6 +25,10 @@ public:
 
     size_t size() const;
     VectorX<int8_t>::ConstMapType valid_indices() const;
+
+
+    // converts input valid_indx to the target mesh
+    int8_t convert(int8_t valid_index, const SimplexDart& target) const;
 
 private:
     const wmtk::PrimitiveType m_simplex_type;

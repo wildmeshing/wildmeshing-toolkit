@@ -17,6 +17,8 @@ set(SRC_FILES
 
     subgroup/subgroup_transformations.cpp
     subgroup/subgroup_transformations.hpp
+    subgroup/convert.hxx
+    subgroup/convert.hpp
 )
 
 foreach(MESH_TYPE edge_mesh tri_mesh tet_mesh)
