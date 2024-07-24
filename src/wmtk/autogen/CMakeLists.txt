@@ -14,6 +14,9 @@ set(SRC_FILES
 
     valid_index_from_tuple.hpp
     valid_index_from_tuple.cpp
+
+    subgroup/subgroup_transformations.cpp
+    subgroup/subgroup_transformations.hpp
 )
 
 foreach(MESH_TYPE edge_mesh tri_mesh tet_mesh)

@@ -9,8 +9,7 @@ namespace wmtk::autogen::{{ namespace }} {
     // {{ table.comment }}
     {%- endif %}
     extern {%  include "templates/array_declaration.template" -%};
-
     {% endfor %}
-    extern int8_t remap_table[ {{ table|length }} ][ {{table|length }}][];
+    extern const int8_t *remap_table[ {{ dimensions }} ][ {{dimensions }}];
 }
 
