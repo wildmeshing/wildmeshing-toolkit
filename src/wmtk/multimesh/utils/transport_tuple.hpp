@@ -2,6 +2,9 @@
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Tuple.hpp>
 
+namespace wmtk::autogen {
+class SimplexDart;
+}
 namespace wmtk::multimesh::utils {
 namespace internal {
 
@@ -30,4 +33,11 @@ Tuple transport_tuple(
     PrimitiveType base_primitive_type,
     const Tuple& source,
     PrimitiveType primitive_type);
+
+Tuple transport_tuple(
+    const wmtk::autogen::SimplexDart& base_sd,
+    const wmtk::autogen::SimplexDart& sd,
+    const Tuple& base_source,
+    const Tuple& base_target,
+    const Tuple& source);
 } // namespace wmtk::multimesh::utils
