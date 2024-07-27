@@ -8,6 +8,9 @@ namespace wmtk::operations::tet_mesh {
 class EdgeOperationData : public wmtk::operations::EdgeOperationData
 {
 public:
+    EdgeOperationData() = default;
+    EdgeOperationData(EdgeOperationData&&) = default;
+    EdgeOperationData& operator=(EdgeOperationData&&) = default;
     //
     // E --------------- C --------------- F
     //   \-_           / | \           _-/

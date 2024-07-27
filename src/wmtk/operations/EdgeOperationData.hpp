@@ -20,6 +20,8 @@ class EdgeOperationData
 public:
     EdgeOperationData();
     ~EdgeOperationData();
+    EdgeOperationData(EdgeOperationData&&);
+    EdgeOperationData& operator=(EdgeOperationData&&);
     Tuple m_operating_tuple;
 
     Tuple m_output_tuple;
@@ -36,10 +38,18 @@ public:
 
     std::vector<std::vector<int64_t>> global_ids_to_update;
 
+    // std::unique_ptr<internal::SplitAlternateFacetData> m_split_data;
+    // std::unique_ptr<internal::CollapseAlternateFacetData> m_collapse_data;
     std::variant<
         std::unique_ptr<internal::SplitAlternateFacetData>,
         std::unique_ptr<internal::CollapseAlternateFacetData>>
         m_op_data;
+
+
+    /// Returns facet data held if the edge operation was a split - throws if data does not exist
+    const internal::SplitAlternateFacetData& split_facet_data() const;
+    /// Returns facet data held if the edge operation was a collapse- throws if data does not exist
+    const internal::CollapseAlternateFacetData& collapse_facet_data() const;
 
 protected:
     static Tuple tuple_from_id(const Mesh& m, const PrimitiveType type, const int64_t gid);

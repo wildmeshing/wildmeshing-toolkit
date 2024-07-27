@@ -9,10 +9,7 @@ class EdgeOperationData : public wmtk::operations::EdgeOperationData
 {
 public:
     EdgeOperationData() = default;
-    EdgeOperationData(const EdgeOperationData&) = default;
     EdgeOperationData(EdgeOperationData&&) = default;
-
-    EdgeOperationData& operator=(const EdgeOperationData&) = default;
     EdgeOperationData& operator=(EdgeOperationData&&) = default;
     //           C
     //         /  \ .

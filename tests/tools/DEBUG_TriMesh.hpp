@@ -13,6 +13,11 @@ public:
 
     using TriMesh::id;
     using TriMesh::id_vertex;
+    using TriMesh::m_fe_accessor;
+    using TriMesh::m_ff_accessor;
+    using TriMesh::m_fv_accessor;
+    using TriMesh::tuple_from_global_ids;
+    using TriMesh::tuple_from_id;
 
 
     DEBUG_TriMesh& operator=(TriMesh&& o);
@@ -76,11 +81,10 @@ public:
     /**
      * @brief returns the TriMeshOperationExecutor
      */
-    using TriMesh::tuple_from_id;
 
     using TriMesh::custom_attributes;
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     wmtk::attribute::Accessor<int64_t> get_cell_hash_accessor();
 
     TriMeshOperationExecutor get_tmoe(const Tuple& t, attribute::Accessor<int64_t>& hash_accessor);

@@ -19,6 +19,9 @@ public:
         Data(const Mesh& m, const Tuple& input_tuple);
         Tuple input;
         std::array<Tuple, 2> alts;
+        std::array<char8_t, 2> boundary_local_index;
+
+        std::array<std::vector<wmtk::Tuple>> sequences;
 
     private:
         static Tuple left_switches(const Mesh& m, const Tuple& t);

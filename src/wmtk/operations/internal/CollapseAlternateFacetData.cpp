@@ -1,4 +1,5 @@
 #include "CollapseAlternateFacetData.hpp"
+#include <spdlog/spdlog.h>
 #include <array>
 #include <vector>
 #include <wmtk/Mesh.hpp>
@@ -86,7 +87,9 @@ std::array<Tuple, 2> CollapseAlternateFacetData::get_alternatives(
         }
     };
 
-    return std::array<Tuple, 2>{{map(data.alts[0]), map(data.alts[1])}};
+    std::array<Tuple, 2> r{{map(data.alts[0]), map(data.alts[1])}};
+
+    return r;
 }
 Tuple CollapseAlternateFacetData::get_alternative(const PrimitiveType pt, const Tuple& t) const
 {

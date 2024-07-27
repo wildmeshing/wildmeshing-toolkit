@@ -37,3 +37,4 @@ auto SplitAlternateFacetData::get_alternative_facets(const int64_t& input_cell) 
     assert(it != m_facet_maps.cend());
     return std::get<1>(*it);
 }
+} // namespace wmtk::operations::internal
