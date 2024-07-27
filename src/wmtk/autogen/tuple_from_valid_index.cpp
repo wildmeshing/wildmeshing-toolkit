@@ -17,7 +17,7 @@ Tuple tuple_from_valid_index(
         return tri_mesh::tuple_from_valid_index(global_cid, valid_tuple_index);
     case PrimitiveType::Edge:
         return edge_mesh::tuple_from_valid_index(global_cid, valid_tuple_index);
-    case PrimitiveType::Vertex:
+    case PrimitiveType::Vertex: return Tuple(-1, -1, -1, global_cid);
     default: assert(false); // "not implemented"
     }
     return {};

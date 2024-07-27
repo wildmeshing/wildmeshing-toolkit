@@ -12,7 +12,7 @@ int8_t valid_index_from_tuple(PrimitiveType mesh_type, const Tuple& t)
     case PrimitiveType::Triangle: return tri_mesh::valid_index_from_tuple(t);
     case PrimitiveType::Edge: return edge_mesh::valid_index_from_tuple(t);
     case PrimitiveType::Vertex:
-    default: assert(false); // "not implemented"
+    default: return 0;
     }
     return {};
 }

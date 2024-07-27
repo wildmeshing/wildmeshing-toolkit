@@ -5,7 +5,7 @@
 #include <cassert>
 #include <wmtk/PrimitiveType.hpp>
 #include <wmtk/Types.hpp>
-#include <wmtk/utils/array_to_map.hpp>
+#include <array>
 
 namespace wmtk::autogen::point_mesh {
 class SimplexDart
@@ -25,7 +25,7 @@ public:
 
     const static std::array<int8_t, 1> _indices;
     static auto valid_indices() { return Vector<int8_t, 1>::ConstMapType(_indices.data()); }
-    static auto valid_indices_dynamic() { return VectorX<int8_t>::ConstMapType(_indices, size()); }
+    static auto valid_indices_dynamic() { return VectorX<int8_t>::ConstMapType(_indices.data(), size()); }
 
     // constexpr static Eigen::Map<const Eigen::Matrix<int8_t, SimplexDart::size(), 1>>
     // constexpr static auto valid_indices()
