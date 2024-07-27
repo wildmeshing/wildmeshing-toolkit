@@ -20,7 +20,7 @@ public:
         case PrimitiveType::Edge: return local_eid(t);
         case PrimitiveType::Triangle: return local_fid(t);
         case PrimitiveType::Tetrahedron:
-        default:
+        default: assert(false);
         }
         return -1;
     }
