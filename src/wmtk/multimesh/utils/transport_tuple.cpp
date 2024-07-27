@@ -40,13 +40,26 @@ Tuple transport_tuple(
     const Tuple& source,
     PrimitiveType primitive_type)
 {
-    return internal::transport_tuple_sequence(
+    auto dart = internal::transport_tuple_dart(
         base_source,
         base_target,
         base_primitive_type,
         source,
         primitive_type);
+
+
+    /*
+    auto seq = internal::transport_tuple_sequence(
+        base_source,
+        base_target,
+        base_primitive_type,
+        source,
+        primitive_type);
+    assert( dart == seq);
+    */
+    return dart;
 }
+
 Tuple transport_tuple(
     const wmtk::autogen::SimplexDart& base_sd,
     const wmtk::autogen::SimplexDart& sd,

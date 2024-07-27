@@ -2,6 +2,7 @@
 #include <cassert>
 #include <wmtk/utils/TupleInspector.hpp>
 #include "edge_mesh/SimplexDart.hpp"
+#include "point_mesh/SimplexDart.hpp"
 #include "subgroup/convert.hpp"
 #include "tet_mesh/SimplexDart.hpp"
 #include "tri_mesh/SimplexDart.hpp"
@@ -10,6 +11,27 @@
 
 namespace wmtk::autogen {
 namespace {
+
+
+/*
+int8_t empty_binary(int8_t,int8_t){
+    assert(false);
+}
+
+int8_t empty_unary(int8_t){
+    assert(false);
+}
+int8_t empty_unary(){
+    assert(false);
+}
+
+template <typename T>
+    void f();
+
+template <typename
+    */
+
+
 #define GET_OP(NAME, RETTYPE)                                                 \
     auto get_##NAME(PrimitiveType pt)->SimplexDart::RETTYPE                   \
     {                                                                         \
@@ -17,7 +39,7 @@ namespace {
         case PrimitiveType::Edge: return &edge_mesh::SimplexDart::NAME;       \
         case PrimitiveType::Triangle: return &tri_mesh::SimplexDart::NAME;    \
         case PrimitiveType::Tetrahedron: return &tet_mesh::SimplexDart::NAME; \
-        case PrimitiveType::Vertex: assert(false);                            \
+        case PrimitiveType::Vertex: break; &point_mesh::SimplexDart::NAME;    \
         default: assert(false);                                               \
         }                                                                     \
         return nullptr;                                                       \
@@ -29,13 +51,13 @@ GET_OP(identity, nullary_op_type)
 } // namespace
 
 #define FORWARD_OP(NAME, OP, RETTYPE, DEFAULT)                               \
-    auto SimplexDart::NAME() const -> RETTYPE                                \
+    auto SimplexDart::NAME() const->RETTYPE                                  \
     {                                                                        \
         switch (m_simplex_type) {                                            \
         case PrimitiveType::Edge: return edge_mesh::SimplexDart::OP();       \
         case PrimitiveType::Triangle: return tri_mesh::SimplexDart::OP();    \
         case PrimitiveType::Tetrahedron: return tet_mesh::SimplexDart::OP(); \
-        case PrimitiveType::Vertex: assert(false);                           \
+        case PrimitiveType::Vertex: break; point_mesh::SmiplexDart::OP();    \
         default: assert(false);                                              \
         }                                                                    \
         return DEFAULT;                                                      \
