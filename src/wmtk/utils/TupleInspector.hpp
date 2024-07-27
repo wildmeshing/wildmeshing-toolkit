@@ -1,5 +1,7 @@
 #pragma once
+#include <cassert>
 #include <string>
+#include <wmtk/PrimitiveType.hpp>
 #include <wmtk/Tuple.hpp>
 
 
@@ -21,6 +23,17 @@ public:
         default:
         }
         return -1;
+    }
+
+    static int64_t local_id(const PrimitiveType pt, const Tuple& t)
+    {
+        switch (pt) {
+        case PrimitiveType::Triangle: return local_fid(t);
+        case PrimitiveType::Edge: return local_eid(t);
+        case PrimitiveType::Vertex: return local_vid(t);
+        case PrimitiveType::Tetrahedron: assert(false);
+        default: return -1;
+        }
     }
 
     static int64_t global_cid(const Tuple& t) { return t.m_global_cid; }
