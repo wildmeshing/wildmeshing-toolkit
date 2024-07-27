@@ -23,7 +23,7 @@ int8_t find_local_dart_action(
     int8_t src = sd.valid_index_from_tuple(source);
     int8_t tgt = sd.valid_index_from_tuple(target);
     int8_t src_inv = sd.inverse(src);
-    return tgt * src_inv;
+    return sd.product(tgt, src_inv);
 }
 
 } // namespace wmtk::multimesh::utils
