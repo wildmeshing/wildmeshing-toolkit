@@ -10,10 +10,10 @@ namespace wmtk::utils {
 class TupleInspector
 {
 public:
-    static int64_t local_vid(const Tuple& t) { return t.m_local_vid; }
-    static int64_t local_eid(const Tuple& t) { return t.m_local_eid; }
-    static int64_t local_fid(const Tuple& t) { return t.m_local_fid; }
-    static int64_t local_id(const Tuple& t, const PrimitiveType pt)
+    static int8_t local_vid(const Tuple& t) { return t.m_local_vid; }
+    static int8_t local_eid(const Tuple& t) { return t.m_local_eid; }
+    static int8_t local_fid(const Tuple& t) { return t.m_local_fid; }
+    static int8_t local_id(const Tuple& t, const PrimitiveType pt)
     {
         switch (pt) {
         case PrimitiveType::Vertex: return local_vid(t);
@@ -25,7 +25,7 @@ public:
         return -1;
     }
 
-    static int64_t local_id(const PrimitiveType pt, const Tuple& t)
+    static int8_t local_id(const PrimitiveType pt, const Tuple& t)
     {
         switch (pt) {
         case PrimitiveType::Triangle: return local_fid(t);

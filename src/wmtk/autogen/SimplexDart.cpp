@@ -33,7 +33,7 @@ template <typename
 
 
 #define GET_OP(NAME, RETTYPE)                                                 \
-    auto get_##NAME(PrimitiveType pt) -> SimplexDart::RETTYPE                 \
+    auto get_##NAME(PrimitiveType pt)->SimplexDart::RETTYPE                   \
     {                                                                         \
         switch (pt) {                                                         \
         case PrimitiveType::Edge: return &edge_mesh::SimplexDart::NAME;       \
@@ -77,6 +77,15 @@ SimplexDart::SimplexDart(wmtk::PrimitiveType simplex_type)
     , m_primitive_to_index(get_primitive_to_index(simplex_type))
     , m_identity(get_identity(simplex_type))
 {}
+const SimplexDart& get_singleton(wmtk::PrimitiveType simplex_type)
+{
+    const static std::array<SimplexDart, 4> singletons = {
+        {SimplexDart(PrimitiveType::Vertex),
+         SimplexDart(PrimitiveType::Edge),
+         SimplexDart(PrimitiveType::Triangle),
+         SimplexDart(PrimitiveType::Tetrahedron)}};
+    return singletons[get_primitive_type_id(simplex_type)];
+}
 
 int8_t SimplexDart::product(int8_t a, int8_t b) const
 {
@@ -121,5 +130,15 @@ int8_t SimplexDart::convert(int8_t valid_index, const SimplexDart& target) const
     }
 }
 
+wmtk::Tuple SimplexDart::tuple_from_dart_tuple(const Dart& dart)
+{
+    return tuple_from_valid_index(dart.global_id(), dart.local_orientation());
+}
+Dart SimplexDart::dart_from_tuple(const wmtk::Tuple& t) const
+{
+    return Dart{
+        wmtk::utils::TupleInspector::global_cid(t),
+        wmtk::autogen::valid_index_from_tuple(m_simplex_type, t)};
+}
 
 } // namespace wmtk::autogen

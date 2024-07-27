@@ -9,6 +9,8 @@ set(SRC_FILES
     SimplexDart.hpp
     SimplexDart.cpp
 
+    Dart.hpp
+
     tuple_from_valid_index.hpp
     tuple_from_valid_index.cpp
 

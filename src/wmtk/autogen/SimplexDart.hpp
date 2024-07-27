@@ -3,11 +3,15 @@
 #include <wmtk/Tuple.hpp>
 #include <wmtk/Types.hpp>
 
+#include "Dart.hpp"
 namespace wmtk::autogen {
 class SimplexDart
 {
 public:
     SimplexDart(wmtk::PrimitiveType simplex_type);
+
+    // to avoid potential construction costs we have some singletons available
+    static const SimplexDart& get_singleton(wmtk::PrimitiveType simplex_type);
 
     int8_t product(int8_t a, int8_t b) const;
     int8_t inverse(int8_t a) const;
@@ -15,6 +19,9 @@ public:
     int8_t identity() const;
     wmtk::Tuple tuple_from_valid_index(int64_t gid, int8_t valid_index) const;
     wmtk::Tuple update_tuple_from_valid_index(const Tuple& t, int8_t valid_index) const;
+
+    wmtk::Tuple tuple_from_dart_tuple(const Dart& dart);
+    Dart dart_from_tuple(const wmtk::Tuple& t) const;
 
     int8_t valid_index_from_tuple(const wmtk::Tuple& t) const;
 
