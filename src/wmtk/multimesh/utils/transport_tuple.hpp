@@ -2,7 +2,25 @@
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Tuple.hpp>
 
+namespace wmtk::autogen {
+class SimplexDart;
+}
 namespace wmtk::multimesh::utils {
+namespace internal {
+
+Tuple transport_tuple_sequence(
+    const Tuple& base_source,
+    const Tuple& base_target,
+    PrimitiveType base_primitive_type,
+    const Tuple& source,
+    PrimitiveType primitive_type);
+Tuple transport_tuple_dart(
+    const Tuple& base_source,
+    const Tuple& base_target,
+    PrimitiveType base_primitive_type,
+    const Tuple& source,
+    PrimitiveType primitive_type);
+} // namespace internal
 
 // Maps the tuple source according to the operation sequence
 // std::vector<PrimitiveType> operations where operations satisfies
@@ -15,4 +33,11 @@ Tuple transport_tuple(
     PrimitiveType base_primitive_type,
     const Tuple& source,
     PrimitiveType primitive_type);
+
+Tuple transport_tuple(
+    const wmtk::autogen::SimplexDart& base_sd,
+    const wmtk::autogen::SimplexDart& sd,
+    const Tuple& base_source,
+    const Tuple& base_target,
+    const Tuple& source);
 } // namespace wmtk::multimesh::utils

@@ -9,5 +9,6 @@ set(TEST_SOURCES
     test_multi_mesh_boundary.cpp
     consolidate.cpp
     test_ids.cpp
+    transport_tuple.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})

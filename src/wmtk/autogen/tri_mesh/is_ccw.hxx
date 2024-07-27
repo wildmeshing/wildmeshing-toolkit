@@ -17,6 +17,9 @@ inline bool is_ccw(const Tuple& tuple)
 inline bool tuple_is_valid_for_ccw(const Tuple& tuple)
 {
     using namespace utils;
+    if (tuple.is_null()) {
+        return false;
+    }
     const int64_t offset = local_id_table_offset(tuple);
     return auto_2d_table_ccw[offset] != -1;
 }
