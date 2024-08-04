@@ -6,6 +6,9 @@ set(SRC_FILES
     local_switch_tuple.hpp
     local_switch_tuple.cpp
 
+    local_dart_action.hpp
+    local_dart_action.cpp
+
     SimplexDart.hpp
     SimplexDart.cpp
 

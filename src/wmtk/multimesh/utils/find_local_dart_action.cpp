@@ -25,5 +25,15 @@ int8_t find_local_dart_action(
     int8_t tgt = sd.valid_index_from_tuple(target);
     return wmtk::autogen::find_local_dart_action(sd, src, tgt);
 }
+int8_t find_local_dart_action(
+    const wmtk::autogen::SimplexDart& sd,
+    const wmtk::autogen::Dart& source,
+    const wmtk::autogen::Dart& target)
+{
+    return wmtk::autogen::find_local_dart_action(
+        sd,
+        source.local_orientation(),
+        target.local_orientation());
+}
 
 } // namespace wmtk::multimesh::utils

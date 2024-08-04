@@ -40,6 +40,8 @@ class SimplexComplex:
         tup = self.simplicial_set_as_valid_tuple(ss)
         return self.valid_tuples().index(tup)
 
+    def identity_valid_index(self):
+        return self.simplicial_set_as_valid_tuple_index(tuple(range(len(self)+1)))
 
     def __len__(self):
         return self.__simplices__.__len__()
@@ -65,7 +67,7 @@ class SimplexComplex:
     def tuple_from_index(self,index):
         return self.all_tuples()[index]
 
-    def valid_tuple_index(self,index):
+    def valid_tuple_from_valid_index(self,index):
         return self.tuple_from_index(self.__valid_indices__[index])
 
     def valid_tuple_size(self):
@@ -158,6 +160,82 @@ def switch_normal_subgroup_table(sc, subgroup_sc):
     assert(all(x != -1 for x in subgroup_to_group))
 
     return tuple(group_to_subgroup),tuple(subgroup_to_group)
+
+
+def face_changing_subdart_tables(sc, dimension):
+    #print(sc[dimension])
+    #print(sc.valid_tuples())
+    #print(dimension)
+    # for each valid tuple, find the best way to map it to another simplex
+
+    num_valid = sc.valid_tuple_size()
+    num_faces = len(sc[dimension])
+    action = [[-1 for _ in range(num_faces)] for _ in range(num_valid)]
+    max_dim = [[-1 for _ in range(num_faces)] for _ in range(num_valid)]
+    
+    for vindex, vt in enumerate(sc.valid_tuples()):
+        ss = sc.valid_tuple_as_simplicial_set(vt)
+        target = frozenset(ss[:dimension+1])
+        for index, s in enumerate(sc[dimension]):
+            #print(f"Mapping {ss} to {s}")
+            subss = None
+
+            max_s = None
+            for size in range(1,dimension+2):
+                new_ss = ss[:size]
+                fnew_ss = frozenset(new_ss)
+                #print(new_ss, fnew_ss, s, fnew_ss  <= s)
+                if fnew_ss  <= s:
+                    #print(new_ss, fnew_ss, s, fnew_ss  <= s)
+                    subss = new_ss 
+
+            if subss is not None:
+                #print("===", index,s,target,subss)
+                good = False
+                if max_s is None:
+                    good = True
+                else:
+                    if len(subss) > len(max_s):
+                        good = True
+            
+                if good: 
+                    max_s = subss
+            if max_s is None:
+                continue
+            preserved_dims = len(max_s)
+            start = tuple(range(preserved_dims))
+            #print("Got max preservation of ", max_s, "size is",preserved_dims)
+            for aindex, a in enumerate(sc.valid_tuples()):
+                p= sc.valid_tuple_as_simplicial_set(a)
+                if p[:preserved_dims] != start:
+                    continue
+                result_valid_tuple = sc.valid_tuple_product(
+                       vt 
+                        ,
+                        a
+                        )
+
+                new_ss = sc.valid_tuple_as_simplicial_set(result_valid_tuple)
+                #print(p,ss,"=",new_ss)
+                #print("======",frozenset(new_ss[:dimension+1]),target)
+                if frozenset(new_ss[:dimension+1]) != s:
+                    continue
+
+                #print(f"Found Permutation {aindex}:", p, "preserves", max_s)
+                action[vindex][index] = aindex
+                max_dim[vindex][index] = preserved_dims
+                if aindex == sc.identity_valid_index():
+                    break
+            #print()
+            
+    #for aindex, a in enumerate(sc.valid_tuples()):
+    #    p= sc.valid_tuple_as_simplicial_set(a)
+    #    print(p)
+
+
+    return action,max_dim
+
+    pass
 
 
 

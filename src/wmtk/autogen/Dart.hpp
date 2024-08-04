@@ -15,5 +15,7 @@ public:
 
     int8_t& local_orientation() { return std::get<1>(*this); }
     int8_t local_orientation() const { return std::get<1>(*this); }
+
+    bool is_null() const { return global_id() == -1; }
 };
 } // namespace wmtk::autogen

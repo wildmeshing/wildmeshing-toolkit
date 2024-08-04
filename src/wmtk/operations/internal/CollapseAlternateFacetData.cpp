@@ -6,11 +6,14 @@
 #include <wmtk/autogen/Dart.hpp>
 #include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/autogen/find_local_dart_action.hpp>
+#include <wmtk/autogen/local_dart_action.hpp>
 #include <wmtk/autogen/local_switch_tuple.hpp>
+#include <wmtk/multimesh/utils/find_local_dart_action.hpp>
 #include <wmtk/multimesh/utils/find_local_switch_sequence.hpp>
 #include <wmtk/multimesh/utils/local_switch_tuple.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 #include "wmtk/autogen/SimplexDart.hpp"
+#include "wmtk/multimesh/utils/find_local_dart_action.hpp"
 #include "wmtk/utils/TupleInspector.hpp"
 
 namespace wmtk::operations::internal {
@@ -160,7 +163,7 @@ auto CollapseAlternateFacetData::get_alternative_data_it(const int64_t& input_fa
     // if we found
 
     // fix case where the lower bound was not the target value
-    if (it != end && it->input.m_global_cid != input_facet) {
+    if (it != end && it->input.global_id() != input_facet) {
         it = end;
     }
     return it;
@@ -177,13 +180,16 @@ std::array<Tuple, 2> CollapseAlternateFacetData::get_alternatives(
 {
     const auto& data = get_alternatives_data(t);
 
-    const std::vector<PrimitiveType> sequence =
-        wmtk::multimesh::utils::find_local_switch_sequence(t, data.input, mesh_pt);
-    auto map = [&mesh_pt, &sequence](const Tuple& tup) -> Tuple {
+    wmtk::autogen::SimplexDart sd(mesh_pt);
+    const wmtk::autogen::Dart t_dart = sd.dart_from_tuple(t);
+
+    const int8_t action =
+        wmtk::multimesh::utils::find_local_dart_action(mesh_pt, t_dart, data.input);
+    auto map = [action, &sd](const wmtk::autogen::Dart& tup) -> Tuple {
         if (tup.is_null()) {
-            return tup;
+            return {};
         } else {
-            return wmtk::multimesh::utils::local_switch_tuples(mesh_pt, tup, sequence);
+            return sd.tuple_from_dart(local_dart_action(sd, tup, action));
         }
     };
 

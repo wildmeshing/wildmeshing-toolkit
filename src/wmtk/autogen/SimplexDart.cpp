@@ -130,7 +130,7 @@ int8_t SimplexDart::convert(int8_t valid_index, const SimplexDart& target) const
     }
 }
 
-wmtk::Tuple SimplexDart::tuple_from_dart_tuple(const Dart& dart)
+wmtk::Tuple SimplexDart::tuple_from_dart(const Dart& dart) const
 {
     return tuple_from_valid_index(dart.global_id(), dart.local_orientation());
 }

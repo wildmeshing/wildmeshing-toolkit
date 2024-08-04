@@ -20,7 +20,7 @@ public:
     wmtk::Tuple tuple_from_valid_index(int64_t gid, int8_t valid_index) const;
     wmtk::Tuple update_tuple_from_valid_index(const Tuple& t, int8_t valid_index) const;
 
-    wmtk::Tuple tuple_from_dart_tuple(const Dart& dart);
+    wmtk::Tuple tuple_from_dart(const Dart& dart) const;
     Dart dart_from_tuple(const wmtk::Tuple& t) const;
 
     int8_t valid_index_from_tuple(const wmtk::Tuple& t) const;
