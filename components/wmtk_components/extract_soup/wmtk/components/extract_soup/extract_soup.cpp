@@ -23,7 +23,7 @@ void extract_soup(const base::Paths& paths, const nlohmann::json& j, io::Cache& 
         throw std::runtime_error(std::string("file") + input_file + " not found");
     }
 
-    if (options.mode) {
+    if (options.mode == true) {
         // extract_triangle_soup_from_image
         unsigned int level = options.level;
         internal::extract_triangle_soup_from_image(output_file, input_file, 1, level);
