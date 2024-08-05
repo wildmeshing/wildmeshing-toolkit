@@ -25,12 +25,45 @@
 #include <polysolve/Utils.hpp>
 
 #include <queue>
+#include <random>
 #include <unordered_set>
+
+#ifdef WMTK_WITH_TBB
+#include <tbb/concurrent_unordered_set.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/parallel_for.h>
+#include <tbb/parallel_sort.h>
+#endif
 
 namespace wmtk::components {
 
 using Vector3 = Eigen::Vector3d;
 using Vector3i = Eigen::Vector3i;
+
+
+class Random
+{
+public:
+    static int next(int min, int max)
+    {
+        static std::mt19937 gen(42);
+        int res = (gen() - std::mt19937::min()) /
+                      double(std::mt19937::max() - std::mt19937::min()) * (max - min) +
+                  min;
+
+        return res;
+    }
+
+    template <typename T>
+    static void shuffle(std::vector<T>& vec)
+    {
+        for (int i = vec.size() - 1; i > 0; --i) {
+            using std::swap;
+            const int index = next(0, i + 1);
+            swap(vec[i], vec[index]);
+        }
+    }
+};
 
 inline int mod3(int j)
 {
@@ -78,11 +111,7 @@ public:
         double sq_dist = std::numeric_limits<double>::max();
 
         if (prev_facet >= 0) {
-            SimpleBVH::point_triangle_squared_distance(
-                p,
-                m_facets[prev_facet],
-                nearest_point,
-                sq_dist);
+            m_bvh->point_facet_distance(p, prev_facet, nearest_point, sq_dist);
 
             if (sq_dist < m_envelope_size2) return false;
         }
@@ -136,9 +165,10 @@ public:
         // start from 1, we already checked the vertices
         for (int n = 1; n < N; n++) {
             const Eigen::Vector3d p = v0 + n_v0v1 * m_sampling_dist * n;
-
+            // std::cout << p << "    nn " << prev_facet << std::endl;
             if (is_out_envelope(p, prev_facet)) return true;
         }
+        // exit(0);
 
 
         // const double h = (v2v0.dot(v1v0) * v1v0 / ls[max_i] + v0 - v2).norm();
@@ -257,6 +287,64 @@ struct cmp_l
     }
 };
 
+#ifdef WMTK_WITH_TBB
+void one_ring_edge_set(
+    const std::vector<std::array<int, 2>>& edges,
+    const std::vector<bool>& v_is_removed,
+    const std::vector<bool>& f_is_removed,
+    const std::vector<std::unordered_set<int>>& conn_fs,
+    const std::vector<Vector3>& input_vertices,
+    std::vector<int>& safe_set)
+{
+    std::vector<int> indices(edges.size());
+    std::iota(std::begin(indices), std::end(indices), 0);
+    Random::shuffle(indices);
+
+    std::vector<bool> unsafe_face(f_is_removed.size(), false);
+    safe_set.clear();
+    for (const int e_id : indices) {
+        const auto e = edges[e_id];
+        if (v_is_removed[e[0]] || v_is_removed[e[1]]) continue;
+
+        bool ok = true;
+
+
+        for (const int f : conn_fs[e[0]]) {
+            if (f_is_removed[f]) continue;
+
+            if (unsafe_face[f]) {
+                ok = false;
+                break;
+            }
+        }
+        if (!ok) continue;
+        for (const int f : conn_fs[e[1]]) {
+            if (f_is_removed[f]) continue;
+
+            if (unsafe_face[f]) {
+                ok = false;
+                break;
+            }
+        }
+        if (!ok) continue;
+
+        safe_set.push_back(e_id);
+
+        for (const int f : conn_fs[e[0]]) {
+            if (f_is_removed[f]) continue;
+
+            assert(!unsafe_face[f]);
+            unsafe_face[f] = true;
+        }
+        for (const int f : conn_fs[e[1]]) {
+            if (f_is_removed[f]) continue;
+
+            // assert(!unsafe_face[f]);
+            unsafe_face[f] = true;
+        }
+    }
+}
+#endif
 
 void set_intersection(
     const std::unordered_set<int>& s1,
@@ -362,6 +450,35 @@ void collapsing(
     std::vector<bool>& f_is_removed,
     std::vector<std::unordered_set<int>>& conn_fs)
 {
+#ifdef WMTK_WITH_TBB
+    std::vector<std::array<int, 2>> edges;
+    tbb::concurrent_vector<std::array<int, 2>> edges_tbb;
+
+    const auto build_edges = [&]() {
+        edges.clear();
+        edges.reserve(input_faces.size() * 3);
+
+        edges_tbb.clear();
+        edges_tbb.reserve(input_faces.size() * 3);
+
+        tbb::parallel_for(size_t(0), input_faces.size(), [&](size_t f_id) {
+            if (f_is_removed[f_id]) return;
+
+            for (int j = 0; j < 3; j++) {
+                std::array<int, 2> e = {{input_faces[f_id][j], input_faces[f_id][mod3(j + 1)]}};
+                if (e[0] > e[1]) std::swap(e[0], e[1]);
+                edges_tbb.push_back(e);
+            }
+        });
+
+        edges.reserve(edges_tbb.size());
+        edges.insert(edges.end(), edges_tbb.begin(), edges_tbb.end());
+        assert(edges_tbb.size() == edges.size());
+        tbb::parallel_sort(edges.begin(), edges.end());
+
+        edges.erase(std::unique(edges.begin(), edges.end()), edges.end());
+    };
+#else
     std::vector<std::array<int, 2>> edges;
     edges.reserve(input_faces.size() * 3);
     for (size_t f_id = 0; f_id < input_faces.size(); ++f_id) {
@@ -382,7 +499,7 @@ void collapsing(
         sm_queue.push(ElementInQueue(e, weight));
         sm_queue.push(ElementInQueue(std::array<int, 2>({{e[1], e[0]}}), weight));
     }
-
+#endif
 
     auto is_onering_clean = [&](int v_id) {
         std::vector<int> v_ids;
@@ -481,11 +598,13 @@ void collapsing(
         input_vertices[v2_id] = p;
         for (int f_id : n12_f_ids) {
             f_is_removed[f_id] = true;
+#ifndef WMTK_WITH_TBB
             for (int j = 0; j < 3; j++) { // rm conn_fs
                 if (input_faces[f_id][j] != v1_id) {
                     conn_fs[input_faces[f_id][j]].erase(f_id);
                 }
             }
+#endif
         }
         for (int f_id : conn_fs[v1_id]) { // add conn_fs
             if (f_is_removed[f_id]) continue;
@@ -495,15 +614,69 @@ void collapsing(
             }
         }
 
+#ifndef WMTK_WITH_TBB
         // push new edges into the queue
         for (int v_id : n_v_ids) {
             double weight = (input_vertices[v2_id] - input_vertices[v_id]).squaredNorm();
             sm_queue.push(ElementInQueue(std::array<int, 2>({{v2_id, v_id}}), weight));
             sm_queue.push(ElementInQueue(std::array<int, 2>({{v_id, v2_id}}), weight));
         }
+#endif
         return SUC;
     };
 
+
+#ifdef WMTK_WITH_TBB
+    std::atomic<int> cnt(0);
+    int cnt_suc = 0;
+    int fail_clean = -1;
+    int fail_flip = -1;
+    int fail_env = -1;
+
+    const int stopping = input_vertices.size() / 10000.;
+
+    std::vector<int> safe_set;
+    do {
+        build_edges();
+        one_ring_edge_set(edges, v_is_removed, f_is_removed, conn_fs, input_vertices, safe_set);
+        cnt = 0;
+
+        tbb::parallel_for(size_t(0), safe_set.size(), [&](size_t i) {
+            //        for (int i = 0; i < safe_set.size(); i++) {
+            std::array<int, 2>& v_ids = edges[safe_set[i]];
+
+            //            if (v_is_removed[v_ids[0]] || v_is_removed[v_ids[1]])
+            //                return;
+
+            std::vector<int> n12_f_ids;
+            set_intersection(conn_fs[v_ids[0]], conn_fs[v_ids[1]], n12_f_ids);
+
+            if (n12_f_ids.size() != 2) return;
+            //                continue;
+
+            int res = remove_an_edge(v_ids[0], v_ids[1], n12_f_ids);
+            if (res == SUC) cnt++;
+        });
+        //        }
+
+        // cleanup conn_fs
+        tbb::parallel_for(size_t(0), conn_fs.size(), [&](size_t i) {
+            //        for (int i = 0; i < conn_fs.size(); i++) {
+            if (v_is_removed[i])
+                //                continue;
+                return;
+            std::vector<int> r_f_ids;
+            for (int f_id : conn_fs[i]) {
+                if (f_is_removed[f_id]) r_f_ids.push_back(f_id);
+            }
+            for (int f_id : r_f_ids) conn_fs[i].erase(f_id);
+            //        }
+        });
+
+        cnt_suc += cnt;
+    } while (cnt > stopping);
+
+#else
     int cnt_suc = 0;
     int fail_clean = 0;
     int fail_flip = 0;
@@ -532,6 +705,7 @@ void collapsing(
         else if (res == FAIL_ENV)
             fail_env++;
     }
+#endif
 
     logger().trace(
         "{} success, {} fail, {} flip, {} out of envelope",
@@ -777,7 +951,19 @@ void tetwild_simplification(const base::Paths& paths, const nlohmann::json& j, i
     const double sampling_dist = (8.0 / 15.0) * main_esp;
     const bool use_sampling = j["sample_envelope"];
 
-    AABBWrapper tree(vertices, faces, envelope_size, sampling_dist, use_sampling);
+    AABBWrapper tree(vertices, faces, std::sqrt(0.0143205), 0.144112, use_sampling);
+
+
+    Vector3d v0(-15.3289, 86.5267, 119.344);
+    Vector3d v1(-18.216, 86.4783, 119.379);
+    Vector3d v2(-18.216, 86.5663, 119.308);
+    double asd;
+    {
+        POLYSOLVE_SCOPED_STOPWATCH("asd", asd, logger());
+
+        for (int i = 0; i < 1000; i++) tree.is_out({{v0, v1, v2}});
+    }
+    exit(0);
 
     simplify(vertices, faces, tree, duplicate_tol);
 
