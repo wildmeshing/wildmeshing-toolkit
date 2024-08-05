@@ -165,10 +165,8 @@ public:
         // start from 1, we already checked the vertices
         for (int n = 1; n < N; n++) {
             const Eigen::Vector3d p = v0 + n_v0v1 * m_sampling_dist * n;
-            // std::cout << p << "    nn " << prev_facet << std::endl;
             if (is_out_envelope(p, prev_facet)) return true;
         }
-        // exit(0);
 
 
         // const double h = (v2v0.dot(v1v0) * v1v0 / ls[max_i] + v0 - v2).norm();
@@ -952,18 +950,6 @@ void tetwild_simplification(const base::Paths& paths, const nlohmann::json& j, i
     const bool use_sampling = j["sample_envelope"];
 
     AABBWrapper tree(vertices, faces, std::sqrt(0.0143205), 0.144112, use_sampling);
-
-
-    Vector3d v0(-15.3289, 86.5267, 119.344);
-    Vector3d v1(-18.216, 86.4783, 119.379);
-    Vector3d v2(-18.216, 86.5663, 119.308);
-    double asd;
-    {
-        POLYSOLVE_SCOPED_STOPWATCH("asd", asd, logger());
-
-        for (int i = 0; i < 1000; i++) tree.is_out({{v0, v1, v2}});
-    }
-    exit(0);
 
     simplify(vertices, faces, tree, duplicate_tol);
 
