@@ -949,7 +949,7 @@ void tetwild_simplification(const base::Paths& paths, const nlohmann::json& j, i
     const double sampling_dist = (8.0 / 15.0) * main_esp;
     const bool use_sampling = j["sample_envelope"];
 
-    AABBWrapper tree(vertices, faces, std::sqrt(0.0143205), 0.144112, use_sampling);
+    AABBWrapper tree(vertices, faces, envelope_size, sampling_dist, use_sampling);
 
     simplify(vertices, faces, tree, duplicate_tol);
 
