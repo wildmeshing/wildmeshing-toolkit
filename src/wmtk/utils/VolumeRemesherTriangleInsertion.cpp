@@ -14,6 +14,9 @@
 #include <VolumeRemesher/embed.h>
 // clang-format on
 
+#include <polysolve/Utils.hpp>
+
+
 namespace wmtk::utils {
 
 template <class T>
@@ -299,6 +302,18 @@ generate_raw_tetmesh_from_input_surface(
 
     wmtk::logger().trace("triangulation starting...");
 
+    std::vector<int> asd(200);
+    std::vector<double> asd1(200);
+    for (int i = 0; i < 200; i++) {
+        asd[i] = 0;
+        asd1[i] = 0;
+    }
+
+    for (int64_t i = 0; i < polygon_faces.size(); ++i) {
+        const std::vector<int64_t>& polygon_face = polygon_faces[i];
+        asd[std::min<int>(polygon_face.size(), size_t(199))]++;
+    }
+
     for (int64_t i = 0; i < polygon_faces.size(); ++i) {
         // already clipped in other polygon
         if (map_poly_to_tri_face[i].size() != 0) continue;
@@ -321,7 +336,11 @@ generate_raw_tetmesh_from_input_surface(
             map_poly_to_tri_face[i].push_back(idx);
         } else {
             // clip polygon face
+            polysolve::StopWatch timer("triangulation", logger());
+            timer.start();
             clipped_indices = triangulate_polygon_face(v_coords, polygon_face);
+            timer.stop();
+            asd1[std::min<int>(polygon_face.size(), size_t(199))] += timer.getElapsedTimeInSec();
 
             for (int64_t j = 0; j < clipped_indices.size(); ++j) {
                 // need to map oldface index to new face indices
@@ -339,6 +358,11 @@ generate_raw_tetmesh_from_input_surface(
                 map_poly_to_tri_face[i].push_back(idx);
             }
         }
+    }
+
+
+    for (int i = 0; i < 200; i++) {
+        if (asd[i] > 0) std::cout << i << " " << asd[i] << " " << asd1[i] << std::endl;
     }
 
     wmtk::logger().info("triangulation finished.");
