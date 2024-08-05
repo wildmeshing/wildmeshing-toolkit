@@ -94,13 +94,4 @@ const int8_t* remap_table[3][3] = {
 
 };
 
-const auto subdart_preserving_actions[3] = {
-        subdart_preserving_action_2_1,
-
-        subdart_preserving_action_3_1,
-
-        subdart_preserving_action_3_2,
-
-
-};
 } // namespace wmtk::autogen::subgroup

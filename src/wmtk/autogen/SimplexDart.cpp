@@ -77,7 +77,7 @@ SimplexDart::SimplexDart(wmtk::PrimitiveType simplex_type)
     , m_primitive_to_index(get_primitive_to_index(simplex_type))
     , m_identity(get_identity(simplex_type))
 {}
-const SimplexDart& get_singleton(wmtk::PrimitiveType simplex_type)
+const SimplexDart& SimplexDart::get_singleton(wmtk::PrimitiveType simplex_type)
 {
     const static std::array<SimplexDart, 4> singletons = {
         {SimplexDart(PrimitiveType::Vertex),

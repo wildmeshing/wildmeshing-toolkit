@@ -3,6 +3,7 @@
 #include <array>
 #include <vector>
 #include <wmtk/Tuple.hpp>
+#include "wmtk/operations/internal/CollapseAlternateFacetOptionData.hpp"
 
 namespace wmtk {
 class Mesh;
@@ -13,7 +14,7 @@ namespace wmtk::operations::internal {
 class CollapseAlternateFacetData
 {
 public:
-    class Data;
+    using Data = CollapseAlternateFacetOptionData;
     CollapseAlternateFacetData();
     ~CollapseAlternateFacetData();
 

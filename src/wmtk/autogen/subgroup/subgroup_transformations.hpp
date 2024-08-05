@@ -37,5 +37,5 @@ extern const int8_t max_subdart_preservation_dimension_3_2[24][4];
 
 extern const int8_t* remap_table[3][3];
 
-extern const int8_t** subdart_preserving_actions[3];
+//extern const int8_t** subdart_preserving_actions[3];
 } // namespace wmtk::autogen::subgroup

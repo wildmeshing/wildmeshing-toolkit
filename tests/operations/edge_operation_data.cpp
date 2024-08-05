@@ -79,6 +79,22 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
 
         collapse_facet_maps_impl(data, m, bdata);
 
+        {
+            const auto& data_vec = data.m_data;
+            REQUIRE(data_vec.size() == bdata.size());
+            for (size_t j = 0; j < data_vec.size(); ++j) {
+                const auto& d = data_vec[j];
+                const auto& b = bdata[j];
+                const auto& bits = std::get<1>(b);
+                for (size_t j = 0; j < 2; ++j) {
+                    const auto& alt = d.alts[j];
+                    REQUIRE(alt.is_null() == bits[j]);
+                    // const auto& i = d.local_boundary_indices[j];
+                    // spdlog::info("{} {} => {}", alt.global_id(), alt.local_orientation(), i);
+                }
+            }
+        }
+
         for (const auto& [t, bits] : bdata) {
             // make sure there were alternatives to begin with
 
@@ -101,7 +117,12 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
 
                 const auto& tup = both[j];
                 // boundary == bits is 1
-                REQUIRE(both[j].is_null() == bits[j]);
+                // spdlog::info(
+                //    "{}: {} => {}",
+                //    j,
+                //    wmtk::utils::TupleInspector::as_string(tup),
+                //    bits[j]);
+                REQUIRE(tup.is_null() == bits[j]);
                 if (!bits[j]) { // not boundary
                     // check that the tuple returned makes sense
                     REQUIRE(m.is_valid(tup));

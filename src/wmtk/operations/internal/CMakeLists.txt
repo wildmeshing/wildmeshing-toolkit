@@ -4,4 +4,6 @@ target_sources(wildmeshing_toolkit PRIVATE
     SplitAlternateFacetData.cpp
     CollapseAlternateFacetData.hpp
     CollapseAlternateFacetData.cpp
+    CollapseAlternateFacetOptionData.hpp
+    CollapseAlternateFacetOptionData.cpp
     )

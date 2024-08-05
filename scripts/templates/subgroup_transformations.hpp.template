@@ -12,6 +12,6 @@ namespace wmtk::autogen::{{ namespace }} {
     {% endfor %}
     extern const int8_t *remap_table[ {{ dimensions }} ][ {{dimensions }}];
 
-    extern const int8_t **subdart_preserving_actions [ {{ dimensions }} ];
+    // extern const int8_t **subdart_preserving_actions [ {{ dimensions }} ];
 }
 
