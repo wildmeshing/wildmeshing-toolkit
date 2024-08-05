@@ -105,16 +105,26 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(
 
             const Vector3r a = points[cur] - points[prev];
             const Vector3r b = points[next] - points[cur];
+
+
+            // if (((a[0] * b[1] - a[1] * b[0]).get_sign() == 0 &&
+            //      (a[1] * b[2] - a[2] * b[1]).get_sign() == 0 &&
+            //      (a[0] * b[2] - a[2] * b[0]).get_sign() == 0) &&
+            //     (((b[0] * c[1] - b[1] * c[0]).get_sign() != 0 ||
+            //       (b[1] * c[2] - b[2] * c[1]).get_sign() != 0 ||
+            //       (b[0] * c[2] - b[2] * c[0]).get_sign() != 0))) {
+            if ((a[0] * b[1] - a[1] * b[0]).get_sign() != 0 ||
+                (a[1] * b[2] - a[2] * b[1]).get_sign() != 0 ||
+                (a[0] * b[2] - a[2] * b[0]).get_sign() != 0) {
+                // not colinear continue
+                continue;
+            }
             const Vector3r c = points[nextnext] - points[next];
 
-            if (((a[0] * b[1] - a[1] * b[0]).get_sign() == 0 &&
-                 (a[1] * b[2] - a[2] * b[1]).get_sign() == 0 &&
-                 (a[0] * b[2] - a[2] * b[0]).get_sign() == 0) &&
-                (((b[0] * c[1] - b[1] * c[0]).get_sign() != 0 ||
-                  (b[1] * c[2] - b[2] * c[1]).get_sign() != 0 ||
-                  (b[0] * c[2] - b[2] * c[0]).get_sign() != 0))) {
+            if (((b[0] * c[1] - b[1] * c[0]).get_sign() != 0 ||
+                 (b[1] * c[2] - b[2] * c[1]).get_sign() != 0 ||
+                 (b[0] * c[2] - b[2] * c[0]).get_sign() != 0)) {
                 no_colinear = false;
-
                 triangulated_faces.emplace_back(std::array<int64_t, 3>({{cur, next, nextnext}}));
                 points_vector.erase(points_vector.begin() + ((i + 1) % points_vector.size()));
 
@@ -345,7 +355,7 @@ generate_raw_tetmesh_from_input_surface(
                 polygon_vertices.push_back(v);
             }
         }
-        vector_unique(polygon_vertices);
+        vector_unique(polygon_vertices); // need optimiozation
 
         // compute number of triangle faces
         int64_t num_faces = 0;
@@ -381,7 +391,10 @@ generate_raw_tetmesh_from_input_surface(
             // push the tet to final queue;
             tets_final.push_back(tetra);
 
-            std::set<int64_t> local_f0 = {tetra[1], tetra[2], tetra[3]};
+            std::set<int64_t> local_f0 = {
+                tetra[1],
+                tetra[2],
+                tetra[3]}; // vector of std array and sort
             std::set<int64_t> local_f1 = {tetra[0], tetra[2], tetra[3]};
             std::set<int64_t> local_f2 = {tetra[0], tetra[1], tetra[3]};
             std::set<int64_t> local_f3 = {tetra[0], tetra[1], tetra[2]};
