@@ -71,6 +71,14 @@ public:
         mpq_clear(value);
     }
 
+    inline bool is_roundable() const
+    {
+        if (m_is_rounded) return true;
+
+        const double tmp = this->to_double();
+        return Rational(tmp) == *this;
+    }
+
     void init_from_binary(const std::string& v);
     std::string to_binary() const;
 

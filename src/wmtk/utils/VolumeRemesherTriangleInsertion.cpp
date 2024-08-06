@@ -253,6 +253,7 @@ generate_raw_tetmesh_from_input_surface(
     std::vector<std::array<int64_t, 4>> tets_final; // final tets
     std::vector<std::array<bool, 4>> tet_face_on_input_surface; // tet local face on input surface
 
+    int64_t round_cnt = 0;
     for (int64_t i = 0; i < embedded_vertices.size() / 3; ++i) {
 #ifdef USE_GNU_GMP_CLASSES
         v_coords.emplace_back();
@@ -265,7 +266,22 @@ generate_raw_tetmesh_from_input_surface(
         v_coords.back()[1].init_from_binary(embedded_vertices[3 * i + 1].get_str());
         v_coords.back()[2].init_from_binary(embedded_vertices[3 * i + 2].get_str());
 #endif
+
+        bool round = true;
+        for (int64_t j = 0; j < 3; ++j) {
+            if (!v_coords.back()[j].is_roundable()) {
+                round = false;
+                break;
+            }
+        }
+
+        if (round) {
+            round_cnt++;
+            for (int64_t j = 0; j < 3; ++j) v_coords.back()[j].round();
+        }
     }
+
+    logger().debug("{} rounded vertices over {}", round_cnt, v_coords.size());
 
     for (int64_t i = 0; i < embedded_facets.size(); ++i) {
         int64_t polysize = embedded_facets[i];
