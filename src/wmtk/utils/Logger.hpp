@@ -8,6 +8,7 @@
 
 namespace wmtk {
 
+bool has_user_overloaded_logger_level();
 ///
 /// Retrieves the current logger.
 ///

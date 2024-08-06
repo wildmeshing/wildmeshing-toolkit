@@ -49,8 +49,11 @@ wmtk::io::Cache run_components(const nlohmann::json& json_input_file, bool stric
     //     o.close();
     // }
 
-    wmtk::logger().set_level(spec_json["settings"]["log_level"]);
-    wmtk::opt_logger().set_level(spec_json["settings"]["opt_log_level"]);
+
+    if (!wmtk::has_user_overloaded_logger_level()) {
+        wmtk::logger().set_level(spec_json["settings"]["log_level"]);
+        wmtk::opt_logger().set_level(spec_json["settings"]["opt_log_level"]);
+    }
 
     const std::string root_path = spec_json["root_path"];
 
