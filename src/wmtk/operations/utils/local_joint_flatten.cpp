@@ -746,11 +746,84 @@ void local_joint_flatten(
 }
 
 void local_joint_flatten_smoothing(
-    const Eigen::MatrixXi& F,
+    const Eigen::MatrixXi& F_before,
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXd& V_after,
+    Eigen::MatrixXi& F_after,
+    Eigen::MatrixXd& UV_joint)
+{
+    Eigen::MatrixXd V_joint = V_before;
+    V_joint.conservativeResize(V_joint.rows() + 1, V_joint.cols());
+    V_joint.row(V_joint.rows() - 1) = V_after.row(0);
+
+    Eigen::MatrixXi F_joint_before = F_before;
+    Eigen::MatrixXi F_joint_after = F_before;
+    // update F_joint after
+    for (int i = 0; i < F_joint_after.rows(); i++) {
+        for (int j = 0; j < 3; j++) {
+            if (F_joint_after(i, j) == 0) {
+                F_joint_after(i, j) = V_joint.rows() - 1;
+            }
+        }
+    }
+
+    F_after = F_joint_after;
+    // bc
+    Eigen::VectorXi b_UV;
+    Eigen::VectorXd bc_UV;
+
+    b_UV.resize(3, 1);
+    bc_UV.resize(3, 1);
+    int nVjoint = V_before.rows();
+    int vi_before = 1, vj_before = 2;
+
+    b_UV << vi_before, vj_before, vi_before + nVjoint;
+    bc_UV << 0, 1, 0;
+
+    flatten(V_joint, V_joint, F_joint_before, F_joint_after, b_UV, bc_UV, UV_joint);
+}
+
+void local_joint_flatten_swap(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
     Eigen::MatrixXd& UV_joint,
-    Eigen::MatrixXi& F_after_output)
-{}
+    Eigen::VectorXi& local_vid_after_to_before_map)
+{
+    // get local_vid_after_to_before_map
+    local_vid_after_to_before_map.resize(V_after.rows());
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            if (V_before.row(i) == V_after.row(j)) {
+                local_vid_after_to_before_map[j] = i;
+                break;
+            }
+        }
+    }
+
+    Eigen::MatrixXi F_after_joint;
+    F_after_joint.resize(F_after.rows(), F_after.cols());
+    for (int i = 0; i < F_after.rows(); i++) {
+        for (int j = 0; j < F_after.cols(); j++) {
+            F_after_joint(i, j) = local_vid_after_to_before_map[F_after(i, j)];
+        }
+    }
+
+    // bc
+    Eigen::VectorXi b_UV;
+    Eigen::VectorXd bc_UV;
+
+    b_UV.resize(3, 1);
+    bc_UV.resize(3, 1);
+    int nVjoint = V_before.rows();
+    int vi_before = 0, vj_before = 1;
+
+    b_UV << vi_before, vj_before, vi_before + nVjoint;
+    bc_UV << 0, 1, 0;
+
+    // flatten
+    flatten(V_before, V_before, F_before, F_after_joint, b_UV, bc_UV, UV_joint);
+}
 
 } // namespace wmtk::operations::utils

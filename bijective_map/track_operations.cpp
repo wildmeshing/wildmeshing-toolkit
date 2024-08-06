@@ -102,6 +102,10 @@ void handle_collapse_edge(
         // find if qp is in the id_map_after
         auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
         if (it != id_map_after.end()) {
+            // std::cout << "find qp: " << qp.f_id << std::endl;
+            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
+            //           << std::endl;
+
             // find the index of qp in id_map_after
             int local_index_in_f_after = std::distance(id_map_after.begin(), it);
             // offset of the qp.fv_ids
@@ -113,12 +117,6 @@ void handle_collapse_edge(
                 }
             }
             if (offset_in_f_after == -1) {
-                std::cout << "find qp: " << qp.f_id << std::endl;
-                std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
-                          << std::endl;
-                std::cout << "qp.fv_id: " << qp.fv_ids[0] << ", " << qp.fv_ids[1] << ", "
-                          << qp.fv_ids[2] << std::endl;
-                std::cout << "local_index_in_f_after: " << local_index_in_f_after << std::endl;
                 std::cout << "something is wrong!" << std::endl;
                 continue;
                 // return;
@@ -131,6 +129,7 @@ void handle_collapse_edge(
                      qp.bc(i);
             }
 
+            // std::cout << "p:\n" << p << std::endl;
 
             // compute bc of the p in (V, F)_before
             int local_index_in_f_before = -1;
@@ -145,8 +144,14 @@ void handle_collapse_edge(
                     UV_joint.row(F_before(i, 1)),
                     UV_joint.row(F_before(i, 2)));
 
-
+                // std::cout << "bc candidate:" << bc << std::endl;
+                // std::cout << "check with p:\n"
+                //           << bc(0) * UV_joint.row(F_before(i, 0)) +
+                //                  bc(1) * UV_joint.row(F_before(i, 1)) +
+                //                  bc(2) * UV_joint.row(F_before(i, 2))
+                //           << std::endl;
                 if (-bc.minCoeff() < bc_min_coef) {
+                    // std::cout << "good!" << std::endl;
                     bc_min_coef = -bc.minCoeff();
                     local_index_in_f_before = i;
                     qp.bc = bc;
@@ -159,6 +164,9 @@ void handle_collapse_edge(
                 continue;
                 // return;
             }
+            // else {
+            //     std::cout << "bc updated\n" << std::endl;
+            // }
 
             // update qp
             qp.f_id = id_map_before[local_index_in_f_before];
@@ -553,8 +561,7 @@ void handle_split_edge(
         auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
         if (it != id_map_after.end()) {
             // std::cout << "find qp: " << qp.f_id << std::endl;
-            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) <<
-            // ")"
+            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
             //           << std::endl;
 
             // find the index of qp in id_map_after
@@ -628,8 +635,7 @@ void handle_split_edge(
             qp.bc /= qp.bc.sum();
 
             // std::cout << "qp-> " << qp.f_id << std::endl;
-            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) <<
-            // ")"
+            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
             //           << std::endl
             //           << std::endl;
         }
@@ -657,8 +663,7 @@ void handle_swap_edge(
         auto it = std::find(id_map_after.begin(), id_map_after.end(), qp.f_id);
         if (it != id_map_after.end()) {
             // std::cout << "find qp: " << qp.f_id << std::endl;
-            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) <<
-            // ")"
+            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
             //           << std::endl;
 
             // find the index of qp in id_map_after
@@ -733,8 +738,7 @@ void handle_swap_edge(
             qp.bc /= qp.bc.sum();
 
             // std::cout << "qp-> " << qp.f_id << std::endl;
-            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) <<
-            // ")"
+            // std::cout << "qp.bc: (" << qp.bc(0) << ", " << qp.bc(1) << ", " << qp.bc(2) << ")"
             //           << std::endl
             //           << std::endl;
         }

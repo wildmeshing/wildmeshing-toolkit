@@ -26,7 +26,14 @@ void local_joint_flatten_smoothing(
     const Eigen::MatrixXi& F, // the F will not change during the smoothing
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXd& V_after,
-    Eigen::MatrixXd& UV_joint,
-    Eigen::MatrixXi& F_after_output);
+    Eigen::MatrixXi& F_after,
+    Eigen::MatrixXd& UV_joint);
 
+void local_joint_flatten_swap(
+    const Eigen::MatrixXd& V_before,
+    const Eigen::MatrixXd& V_after,
+    const Eigen::MatrixXi& F_before,
+    const Eigen::MatrixXi& F_after,
+    Eigen::MatrixXd& UV_joint,
+    Eigen::VectorXi& local_vid_after_to_before_map);
 } // namespace wmtk::operations::utils

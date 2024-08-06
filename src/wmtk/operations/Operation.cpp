@@ -129,15 +129,6 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         auto [F_after, V_after, id_map_after, v_id_map_after] =
                             utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()), mods[0]);
 
-                        // auto get_mesh = [&](const simplex::Simplex& s) {
-                        //     if (operation_name == "EdgeCollapse")
-                        //         return utils::get_local_trimesh_before_collapse(
-                        //             static_cast<const TriMesh&>(mesh()),
-                        //             s);
-                        //     return utils::get_local_trimesh(static_cast<const TriMesh&>(mesh()),
-                        //     s);
-                        // };
-
                         auto [F_before, V_before, id_map_before, v_id_map_before] =
                             mesh().parent_scope(
                                 [&](const simplex::Simplex& s) {
@@ -151,19 +142,17 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 },
                                 simplex);
 
+                        auto to_three_cols = [](const Eigen::MatrixXd& V) {
+                            if (V.cols() == 2) {
+                                Eigen::MatrixXd V_temp(V.rows(), 3);
+                                V_temp << V, Eigen::VectorXd::Zero(V.rows());
+                                return V_temp;
+                            } else {
+                                return V;
+                            }
+                        };
 
                         if (operation_name == "EdgeCollapse") {
-                            // TODO: debug use to save obj files
-                            auto to_three_cols = [](const Eigen::MatrixXd& V) {
-                                if (V.cols() == 2) {
-                                    Eigen::MatrixXd V_temp(V.rows(), 3);
-                                    V_temp << V, Eigen::VectorXd::Zero(V.rows());
-                                    return V_temp;
-                                } else {
-                                    return V;
-                                }
-                            };
-
                             // add different cases for different boundary conditions
                             auto [is_bd_v0, is_bd_v1] = mesh().parent_scope(
                                 [&](const simplex::Simplex& s) {
@@ -178,7 +167,10 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 },
                                 simplex);
 
-                            if (is_bd_v0 && is_bd_v1) {
+                            Eigen::MatrixXd UV_joint;
+                            std::vector<int64_t> v_id_map_joint;
+
+                            if (true) {
                                 igl::writeOBJ(
                                     OperationLogPath + "/VF_before_" +
                                         std::to_string(succ_operations_count) + ".obj",
@@ -190,11 +182,6 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                     to_three_cols(V_after),
                                     F_after);
                             }
-
-
-                            Eigen::MatrixXd UV_joint;
-                            std::vector<int64_t> v_id_map_joint;
-
                             utils::local_joint_flatten(
                                 F_before,
                                 V_before,
@@ -206,7 +193,18 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 v_id_map_joint,
                                 is_bd_v0,
                                 is_bd_v1);
-
+                            if (true) {
+                                igl::writeOBJ(
+                                    OperationLogPath + "/UV_after_" +
+                                        std::to_string(succ_operations_count) + ".obj",
+                                    to_three_cols(UV_joint),
+                                    F_after);
+                                igl::writeOBJ(
+                                    OperationLogPath + "/UV_before_" +
+                                        std::to_string(succ_operations_count) + ".obj",
+                                    to_three_cols(UV_joint),
+                                    F_before);
+                            }
                             operation_log["UV_joint"]["rows"] = UV_joint.rows();
                             operation_log["UV_joint"]["values"] = matrix_to_json(UV_joint);
                             operation_log["v_id_map_joint"] = v_id_map_joint;
@@ -217,20 +215,41 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             operation_log["F_id_map_after"] = id_map_after;
                             operation_log["F_id_map_before"] = id_map_before;
 
+                        } else { // for other operations
 
-                            // if (is_bd_v0 && is_bd_v1) {
-                            //     igl::writeOBJ(
-                            //         OperationLogPath + "/UV_after_" +
-                            //             std::to_string(succ_operations_count) + ".obj",
-                            //         to_three_cols(UV_joint),
-                            //         F_after);
-                            //     igl::writeOBJ(
-                            //         OperationLogPath + "/UV_before_" +
-                            //             std::to_string(succ_operations_count) + ".obj",
-                            //         to_three_cols(UV_joint),
-                            //         F_before);
-                            // }
-                        } else { // for split operation
+                            if (operation_name == "AttributesUpdate") {
+                                Eigen::MatrixXd UV_joint;
+                                utils::local_joint_flatten_smoothing(
+                                    F_before,
+                                    V_before,
+                                    V_after,
+                                    F_after,
+                                    UV_joint);
+                                V_before = UV_joint;
+                                V_after = UV_joint;
+
+                                v_id_map_before.push_back(v_id_map_before[0]);
+                                v_id_map_after.push_back(v_id_map_after[0]);
+                            }
+
+                            if (operation_name == "TriEdgeSwap") {
+                                Eigen::MatrixXd UV_joint;
+                                Eigen::VectorXi local_map;
+                                utils::local_joint_flatten_swap(
+                                    V_before,
+                                    V_after,
+                                    F_before,
+                                    F_after,
+                                    UV_joint,
+                                    local_map);
+
+                                V_before = UV_joint;
+                                V_after.resize(V_before.rows(), V_before.cols());
+                                for (int i = 0; i < 4; ++i) {
+                                    V_after.row(i) = V_before.row(local_map(i));
+                                }
+                            }
+
                             // log the mesh before and after the operation
                             operation_log["F_after"]["rows"] = F_after.rows();
                             operation_log["F_after"]["values"] = matrix_to_json(F_after);
