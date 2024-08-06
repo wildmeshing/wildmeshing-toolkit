@@ -90,7 +90,32 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(
     // triangulate weak convex polygons
     std::vector<std::array<int64_t, 3>> triangulated_faces;
 
+    if (face.size() == 4) {
+        const Vector3r a = points[0] - points[3];
+        const Vector3r b = points[1] - points[0];
+
+        const Vector3r c = points[2] - points[1];
+        const Vector3r d = points[3] - points[2];
+
+        if (((a[0] * b[1] - a[1] * b[0]).get_sign() != 0 ||
+             (a[1] * b[2] - a[2] * b[1]).get_sign() != 0 ||
+             (a[0] * b[2] - a[2] * b[0]).get_sign() != 0) &&
+            ((c[0] * d[1] - c[1] * d[0]).get_sign() != 0 ||
+             (c[1] * d[2] - c[2] * d[1]).get_sign() != 0 ||
+             (c[0] * d[2] - c[2] * d[0]).get_sign() != 0)) {
+            // not colinear continue
+            triangulated_faces.emplace_back(std::array<int64_t, 3>({{0, 1, 3}}));
+            triangulated_faces.emplace_back(std::array<int64_t, 3>({{1, 2, 3}}));
+        } else {
+            triangulated_faces.emplace_back(std::array<int64_t, 3>({{0, 1, 2}}));
+            triangulated_faces.emplace_back(std::array<int64_t, 3>({{0, 2, 3}}));
+        }
+
+        return triangulated_faces;
+    }
+
     std::vector<int64_t> points_vector = face;
+
 
     // find the first colinear ABC with nonlinear BCD and delete C from vector
     while (points_vector.size() > 3) {
