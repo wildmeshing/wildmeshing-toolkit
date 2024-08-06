@@ -27,11 +27,14 @@ bool load_json(const std::string& json_file, json& out)
     return true;
 }
 
+enum class ResultType { Success = 0, JSONParseFailure = 1, ResultDiverged = 2 };
+
 bool contains_results(const json& in_args)
 {
     const auto& tests = in_args["tests"];
     for (const auto& type : {"vertices", "edges", "faces", "tetrahedra"}) {
-        if (!(tests.contains(type) && tests[type].is_number())) {
+        if (!(tests.contains(type) && (tests[type].is_number() || tests[type].is_array()))) {
+            spdlog::info("{} {}", tests.contains(type), tests[type].is_number());
             return false;
         }
     }
@@ -43,17 +46,17 @@ bool missing_tests_data(const json& j)
     return !j.contains("tests") || !j.at("tests").contains("meshes");
 }
 
-int authenticate_json(const std::string& json_file, const bool compute_validation)
+ResultType authenticate_json(const std::string& json_file, const bool compute_validation)
 {
     json in_args;
     if (!load_json(json_file, in_args)) {
         spdlog::error("unable to open {} file", json_file);
-        return 1;
+        return ResultType::JSONParseFailure;
     }
 
     if (missing_tests_data(in_args)) {
         spdlog::error("JSON file missing \"tests\" or meshes key.");
-        return 1;
+        return ResultType::JSONParseFailure;
     }
     in_args["root_path"] = json_file;
 
@@ -61,7 +64,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
     if (compute_validation && !contains_results(in_args)) {
         spdlog::error("JSON file missing vertices edges faces or tetrahedra or meshes key. Add a * "
                       "to the beginning of filename to allow appends.");
-        return 2;
+        return ResultType::JSONParseFailure;
     }
 
     // in_args["settings"] = R"({
@@ -79,7 +82,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
 
         if (in_args["tests"].contains("skip_check") && in_args["tests"]["skip_check"]) {
             spdlog::warn("Skpping checks for {}", json_file);
-            return 0;
+            return ResultType::Success;
         }
 
         auto vertices = in_args["tests"]["vertices"];
@@ -91,7 +94,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
             spdlog::error("JSON size missmatch between meshes and vertices edges faces or "
                           "tetrahedra or meshes key. Add a * "
                           "to the beginning of filename to allow appends.");
-            return 2;
+            return ResultType::ResultDiverged;
         }
 
         for (int64_t i = 0; i < meshes.size(); ++i) {
@@ -109,25 +112,31 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
 
             if (n_vertices != expected_vertices) {
                 spdlog::error(
-                    "Violating Authenticate for vertices {}!={}",
+                    "Violating Authenticate for vertices {}, expected {}",
                     n_vertices,
                     expected_vertices);
-                return 2;
+                return ResultType::ResultDiverged;
             }
             if (n_edges != expected_edges) {
-                spdlog::error("Violating Authenticate for edges {}!={}", n_edges, expected_edges);
-                return 2;
+                spdlog::error(
+                    "Violating Authenticate for edges got {}, expected {}",
+                    n_edges,
+                    expected_edges);
+                return ResultType::ResultDiverged;
             }
             if (n_faces != expected_faces) {
-                spdlog::error("Violating Authenticate for faces {}!={}", n_faces, expected_faces);
-                return 2;
+                spdlog::error(
+                    "Violating Authenticate for faces got {}, expected {}",
+                    n_faces,
+                    expected_faces);
+                return ResultType::ResultDiverged;
             }
             if (n_tetrahedra != expected_tetrahedra) {
                 spdlog::error(
-                    "Violating Authenticate for tetrahedra {}!={}",
+                    "Violating Authenticate for tetrahedra got {}, expected {}",
                     n_tetrahedra,
                     expected_tetrahedra);
-                return 2;
+                return ResultType::ResultDiverged;
             }
         }
 
@@ -163,7 +172,7 @@ int authenticate_json(const std::string& json_file, const bool compute_validatio
         file << in_args;
     }
 
-    return 0;
+    return ResultType::Success;
 }
 } // namespace
 namespace {
@@ -174,15 +183,18 @@ std::string tagsrun = "[.][integration]";
 #endif
 } // namespace
 
-#define WMTK_INTEGRATION(NAME, DO_VALIDATION)                                        \
-    TEST_CASE(std::string("integration_") + NAME, tagsrun)                           \
+#define WMTK_INTEGRATION_BODY(NAME, DO_VALIDATION)                                   \
     {                                                                                \
         std::string path = std::string("unit_test/") + NAME + ".json";               \
         bool compute_validation = DO_VALIDATION;                                     \
         spdlog::info("Processing {}", NAME);                                         \
         auto flag = authenticate_json(WMTK_DATA_DIR "/" + path, compute_validation); \
-        REQUIRE(flag == 0);                                                          \
+        REQUIRE(flag == ResultType::Success);                                        \
     }
+
+#define WMTK_INTEGRATION(NAME, DO_VALIDATION)              \
+    TEST_CASE(std::string("integration_") + NAME, tagsrun) \
+    WMTK_INTEGRATION_BODY(NAME, DO_VALIDATION)
 
 
 WMTK_INTEGRATION("input", false);
@@ -193,10 +205,18 @@ WMTK_INTEGRATION("insertion_open", false);
 WMTK_INTEGRATION("multimesh", false);
 WMTK_INTEGRATION("multimesh_boundary_2d", false);
 WMTK_INTEGRATION("multimesh_boundary_3d", false);
-// WMTK_INTEGRATION("isotropic_remeshing", false);
-// WMTK_INTEGRATION("isotropic_remeshing_mm", false);
+WMTK_INTEGRATION("isotropic_remeshing", false);
+WMTK_INTEGRATION("isotropic_remeshing_mm", false);
 WMTK_INTEGRATION("disk_fan_mm", false);
-// WMTK_INTEGRATION("grid",false);
-// WMTK_INTEGRATION("wildmeshing_2d", false);
+WMTK_INTEGRATION("grid", false);
+WMTK_INTEGRATION("wildmeshing_2d", true);
 // WMTK_INTEGRATION("wildmeshing_3d", false);
 WMTK_INTEGRATION("marching", false);
+
+
+TEST_CASE("integration_benchmark", "[.][benchmark][integration]")
+{
+    // WMTK_INTEGRATION_BODY("wildmeshing_2d_timing",false)
+    // WMTK_INTEGRATION_BODY("wildmeshing_3d_timing",false)
+    WMTK_INTEGRATION_BODY("isotropic_remeshing_mm_timing", true)
+}
