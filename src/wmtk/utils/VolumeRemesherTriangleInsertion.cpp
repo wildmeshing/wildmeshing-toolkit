@@ -650,7 +650,7 @@ generate_raw_tetmesh_from_input_surface(
             //     }
             // }
 
-            assert(v3 != -1);
+            // assert(v3 != -1);
 
             int64_t v0 = polygon_vertices[0];
             int64_t v1 = polygon_vertices[1];
