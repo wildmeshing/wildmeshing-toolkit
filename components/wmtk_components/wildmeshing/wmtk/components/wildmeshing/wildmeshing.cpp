@@ -416,13 +416,16 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
     }
 
+    wmtk::logger().trace("Getting rational point handle");
 
     //////////////////////////////////
     // Retriving vertices
     auto pt_attribute =
         mesh->get_attribute_handle<Rational>(options.attributes.position, PrimitiveType::Vertex);
+    wmtk::logger().trace("Getting rational point accessor");
     auto pt_accessor = mesh->create_accessor(pt_attribute.as<Rational>());
 
+    wmtk::logger().trace("Computing bounding box diagonal");
     //////////////////////////////////
     // computing bbox diagonal
     Eigen::VectorXd bmin(mesh->top_cell_dimension());
