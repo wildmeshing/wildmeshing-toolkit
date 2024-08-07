@@ -4,5 +4,7 @@ set(SRC_FILES
 
     AttributeTransferStrategyBase.hpp
     AttributeTransferStrategyBase.cpp
+
+    CastAttributeTransferStrategy.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
