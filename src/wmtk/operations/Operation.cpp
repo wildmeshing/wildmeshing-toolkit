@@ -20,7 +20,9 @@
 using json = nlohmann::json;
 
 // for Debugging output
+#include <igl/doublearea.h>
 #include <igl/writeOBJ.h>
+
 namespace wmtk::operations {
 
 
@@ -215,6 +217,27 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             operation_log["F_id_map_after"] = id_map_after;
                             operation_log["F_id_map_before"] = id_map_before;
 
+                            // TODO: add an after check here just to make sure this operation can be
+                            // localy parametrized without problem
+                            Eigen::VectorXd dbarea_before, dbarea_after;
+                            igl::doublearea(UV_joint, F_before, dbarea_before);
+                            igl::doublearea(UV_joint, F_after, dbarea_after);
+
+                            if (dbarea_before.minCoeff() < 0) {
+                                std::cerr << "negative area in F_before detected\n";
+
+                                scope.mark_failed();
+                                return {};
+                            }
+
+                            if (dbarea_after.minCoeff() < 0) {
+                                std::cerr << "negative area in F_after detected\n";
+
+                                scope.mark_failed();
+                                return {};
+                            }
+
+
                         } else { // for other operations
 
                             if (operation_name == "AttributesUpdate") {
@@ -264,6 +287,27 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             operation_log["V_before"]["values"] = matrix_to_json(V_before);
                             operation_log["F_id_map_before"] = id_map_before;
                             operation_log["V_id_map_before"] = v_id_map_before;
+
+
+                            // TODO: add an after check here just to make sure this operation can be
+                            // localy parametrized without problem
+                            Eigen::VectorXd dbarea_before, dbarea_after;
+                            igl::doublearea(V_before, F_before, dbarea_before);
+                            igl::doublearea(V_after, F_after, dbarea_after);
+
+                            if (dbarea_before.minCoeff() < 0) {
+                                std::cerr << "negative area in F_before detected\n";
+
+                                scope.mark_failed();
+                                return {};
+                            }
+
+                            if (dbarea_after.minCoeff() < 0) {
+                                std::cerr << "negative area in F_after detected\n";
+
+                                scope.mark_failed();
+                                return {};
+                            }
                         }
                     }
 
