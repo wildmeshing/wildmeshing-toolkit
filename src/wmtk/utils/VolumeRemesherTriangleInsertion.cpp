@@ -779,14 +779,15 @@ generate_raw_tetmesh_from_input_surface(
 
         // new ver
 
-        for (const auto& f : polygon_cell) {
-            Eigen::MatrixXi F, FF;
-            Eigen::VectorXi C;
-            F.resize(num_faces, 3);
-            FF.resize(num_faces, 3);
-            C.resize(num_faces);
+        Eigen::MatrixXi F, FF;
+        Eigen::VectorXi C;
+        F.resize(num_faces, 3);
+        FF.resize(num_faces, 3);
+        C.resize(num_faces);
 
-            int64_t row = 0;
+        int64_t row = 0;
+
+        for (const auto& f : polygon_cell) {
             for (const auto& t : map_poly_to_tri_face[f]) {
                 F.row(row) << triangulated_faces[t][0], triangulated_faces[t][1],
                     triangulated_faces[t][2];
@@ -795,43 +796,43 @@ generate_raw_tetmesh_from_input_surface(
                 assert(triangulated_faces[t][1] < v_coords.size() && triangulated_faces[t][1] >= 0);
                 assert(triangulated_faces[t][2] < v_coords.size() && triangulated_faces[t][2] >= 0);
 
+                assert(F(row, 0) < v_coords.size() && F(row, 0) >= 0);
+                assert(F(row, 1) < v_coords.size() && F(row, 1) >= 0);
+                assert(F(row, 2) < v_coords.size() && F(row, 2) >= 0);
+
                 row++;
 
                 tet_face_on_input_surface.push_back(
                     {{false, false, false, triangulated_faces_on_input[t]}});
             }
+        }
 
-            igl::bfs_orient(F, FF, C);
+        igl::bfs_orient(F, FF, C);
 
-            std::cout << "----------------------" << std::endl;
-            std::cout << F << std::endl << std::endl;
-            std::cout << FF << std::endl;
+        if (wmtk_orient3d(
+                v_coords[FF(0, 0)],
+                v_coords[FF(0, 1)],
+                v_coords[FF(0, 2)],
+                v_coords[centroid_idx]) > 0) {
+            for (int64_t i = 0; i < FF.rows(); ++i) {
+                std::array<int64_t, 4> tetra = {{FF(i, 0), FF(i, 1), FF(i, 2), centroid_idx}};
+                assert(FF(i, 0) < v_coords.size() && FF(i, 0) >= 0);
+                assert(FF(i, 1) < v_coords.size() && FF(i, 1) >= 0);
+                assert(FF(i, 2) < v_coords.size() && FF(i, 2) >= 0);
+                assert(centroid_idx < v_coords.size() && centroid_idx >= 0);
 
-            if (wmtk_orient3d(
-                    v_coords[FF(0, 0)],
-                    v_coords[FF(0, 1)],
-                    v_coords[FF(0, 2)],
-                    v_coords[centroid_idx]) > 0) {
-                for (int64_t i = 0; i < FF.rows(); ++i) {
-                    std::array<int64_t, 4> tetra = {{FF(i, 0), FF(i, 1), FF(i, 2), centroid_idx}};
-                    assert(FF(i, 0) < v_coords.size() && FF(i, 0) >= 0);
-                    assert(FF(i, 1) < v_coords.size() && FF(i, 1) >= 0);
-                    assert(FF(i, 2) < v_coords.size() && FF(i, 2) >= 0);
-                    assert(centroid_idx < v_coords.size() && centroid_idx >= 0);
+                tets_final.push_back(tetra);
+            }
+        } else {
+            for (int64_t i = 0; i < FF.rows(); ++i) {
+                std::array<int64_t, 4> tetra = {{FF(i, 1), FF(i, 0), FF(i, 2), centroid_idx}};
 
-                    tets_final.push_back(tetra);
-                }
-            } else {
-                for (int64_t i = 0; i < FF.rows(); ++i) {
-                    std::array<int64_t, 4> tetra = {{FF(i, 1), FF(i, 0), FF(i, 2), centroid_idx}};
+                assert(FF(i, 0) < v_coords.size() && FF(i, 0) >= 0);
+                assert(FF(i, 1) < v_coords.size() && FF(i, 1) >= 0);
+                assert(FF(i, 2) < v_coords.size() && FF(i, 2) >= 0);
+                assert(centroid_idx < v_coords.size() && centroid_idx >= 0);
 
-                    assert(FF(i, 0) < v_coords.size() && FF(i, 0) >= 0);
-                    assert(FF(i, 1) < v_coords.size() && FF(i, 1) >= 0);
-                    assert(FF(i, 2) < v_coords.size() && FF(i, 2) >= 0);
-                    assert(centroid_idx < v_coords.size() && centroid_idx >= 0);
-
-                    tets_final.push_back(tetra);
-                }
+                tets_final.push_back(tetra);
             }
         }
     }
