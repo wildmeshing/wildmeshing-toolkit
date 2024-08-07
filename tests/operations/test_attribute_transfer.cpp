@@ -4,6 +4,7 @@
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/attribute_update/CastAttributeTransferStrategy.hpp>
+#include <wmtk/utils/cast_attribute.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 using namespace wmtk;
@@ -378,17 +379,27 @@ TEST_CASE("attr_cast", "[operations][attributes]")
     caster.run_on_all();
     caster2.run_on_all();
 
+    auto rational_handle2 =
+        wmtk::utils::cast_attribute<wmtk::Rational>(pos_handle, m, "vertices_rational2");
+
+    REQUIRE(m.has_attribute<wmtk::Rational>("vertices_rational2", wmtk::PrimitiveType::Vertex));
+
     auto aa = m.create_const_accessor<double>(pos_handle);
     auto ba = m.create_const_accessor<wmtk::Rational>(pos_rational_handle);
     auto ca = m.create_const_accessor<double>(pos_handle2);
+    auto da = m.create_const_accessor<wmtk::Rational>(rational_handle2);
     for (const auto& vtup : m.get_all(wmtk::PrimitiveType::Vertex)) {
         auto a = aa.vector_attribute(vtup);
         auto b = ba.vector_attribute(vtup);
         auto c = ca.vector_attribute(vtup);
+        auto d = da.vector_attribute(vtup);
 
         CHECK(a == c);
         CHECK(a == b.cast<double>());
         CHECK(b.array().unaryExpr([](const auto& b) -> bool { return b.is_rounded(); }).all());
-        // a
+        REQUIRE(b.size() == d.size());
+        for (int j = 0; j < b.size(); ++j) {
+            CHECK(b(j) == d(j));
+        }
     }
 }

@@ -23,13 +23,39 @@ public:
 
     static MyVecType convert(const ParentMatType& v)
     {
-        if constexpr (
+        constexpr static bool is_hybrid_rational = std::is_same_v<
+            ParentType,
+            wmtk::attribute::utils::HybridRationalAttribute<Eigen::Dynamic>::Type>;
+        if constexpr (is_hybrid_rational) {
+            assert(false);
+            return {};
+        } else if constexpr (
             std::is_same_v<MyType, wmtk::Rational> && !std::is_same_v<ParentType, wmtk::Rational>) {
-            return v.unaryExpr([](const auto& x) -> MyType { return wmtk::Rational(x, true); });
+            constexpr auto cast_rational = [](const auto& x) -> MyType {
+                if constexpr (std::is_same_v<ParentType, double>) {
+                    return wmtk::Rational(x, true);
+                } else {
+                    return wmtk::Rational(int(x), true);
+                }
+            };
+            if (v.cols() == 1) {
+                return v.unaryExpr(cast_rational);
+            } else {
+                return v.unaryExpr(cast_rational).rowwise().sum() / wmtk::Rational(int(v.cols()));
+            }
 
 
         } else {
-            return v.template cast<MyType>();
+            if (v.cols() == 1) {
+                return v.template cast<MyType>();
+            } else {
+                if constexpr (std::is_same_v<MyType, wmtk::Rational>) {
+                    return v.template cast<MyType>().rowwise().sum() / int(v.cols());
+                } else {
+                    return v.template cast<MyType>().rowwise().mean();
+                }
+            }
+            return {};
         }
     }
 
