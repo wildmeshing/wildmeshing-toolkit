@@ -40,6 +40,9 @@ public:
         const Tuple& input_tuple,
         PrimitiveType pt) const = 0;
 
+    virtual std::vector<std::array<int64_t, 2>> output_duplicated_free_simplices(
+        const ReturnVariant& ret_data,
+        PrimitiveType pt) const = 0;
 
     //// set of faces whose one ring were modified
     //// SHOULD be safe to resurrect to a previous state

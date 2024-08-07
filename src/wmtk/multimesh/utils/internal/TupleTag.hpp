@@ -74,6 +74,6 @@ public:
     static std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
         Mesh& m,
         const wmtk::attribute::TypedAttributeHandle<T>& tag_handle,
-        const T& tag_value);
+        const T& tag_value, bool child_is_free);
 };
 } // namespace wmtk::multimesh::utils::internal

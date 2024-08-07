@@ -174,6 +174,9 @@ SplitNewAttributeStrategy<T>::SplitNewAttributeStrategy(
     set_strategy(SplitBasicStrategy::Throw);
 
     auto& mesh = m_handle.mesh();
+    assert(
+        !mesh.is_free() || m_handle.primitive_type() ==
+                               PrimitiveType::Vertex); // attribute new is not valid on free meshes
 
     if (mesh.top_simplex_type() == PrimitiveType::Edge) {
         m_topo_info =
@@ -211,33 +214,41 @@ void SplitNewAttributeStrategy<T>::update(
         const auto& return_data_variant = data.get_variant(mesh(), input_simplex);
 
         PrimitiveType pt = primitive_type();
-        //for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type()))
+        // for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type()))
         {
-            {
-                auto old_simps =
-                    m_topo_info->input_ear_simplices(return_data_variant, input_tuple, pt);
-                auto new_simps =
-                    m_topo_info->output_rib_simplices(return_data_variant, output_tuple, pt);
+            // copy attributes opposing ears
+            auto old_simps = m_topo_info->input_ear_simplices(return_data_variant, input_tuple, pt);
+            auto new_simps =
+                m_topo_info->output_rib_simplices(return_data_variant, output_tuple, pt);
 
 
-                assert(old_simps.size() == new_simps.size());
+            assert(old_simps.size() == new_simps.size());
 
-                for (size_t s = 0; s < old_simps.size(); ++s) {
-                    assign_split_ribs(pt, old_simps[s], new_simps[s]);
-                }
+            for (size_t s = 0; s < old_simps.size(); ++s) {
+                assign_split_ribs(pt, old_simps[s], new_simps[s]);
             }
-            {
-                auto old_simps =
-                    m_topo_info->input_split_simplices(return_data_variant, input_tuple, pt);
-                auto new_simps =
-                    m_topo_info->output_split_simplices(return_data_variant, output_tuple, pt);
+        }
+        {
+            auto old_simps =
+                m_topo_info->input_split_simplices(return_data_variant, input_tuple, pt);
+            auto new_simps =
+                m_topo_info->output_split_simplices(return_data_variant, output_tuple, pt);
 
 
-                assert(old_simps.size() == new_simps.size());
+            assert(old_simps.size() == new_simps.size());
 
-                for (size_t s = 0; s < old_simps.size(); ++s) {
-                    assign_split(pt, old_simps[s], new_simps[s]);
-                }
+            for (size_t s = 0; s < old_simps.size(); ++s) {
+                assign_split(pt, old_simps[s], new_simps[s]);
+            }
+        }
+        if (mesh().is_free()) {
+            assert(m_handle.primitive_type() == PrimitiveType::Vertex);
+
+            auto pairs = m_topo_info->output_duplicated_free_simplices(return_data_variant, pt);
+            auto acc = m_handle.mesh().create_accessor(m_handle.as<T>());
+            for (const auto& [first, second] : pairs) {
+                acc.index_access().vector_attribute(second) =
+                    acc.index_access().const_vector_attribute(first);
             }
         }
     }
