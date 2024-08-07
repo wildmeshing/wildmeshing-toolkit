@@ -599,6 +599,21 @@ generate_raw_tetmesh_from_input_surface(
 
     wmtk::logger().info("triangulation finished.");
 
+    wmtk::logger().info("tetrahedralization starting...");
+
+    // debugging log, to remove
+    int64_t is_tet = 0;
+    for (int64_t i = 0; i < polygon_cells.size(); ++i) {
+        auto polygon_cell = polygon_cells[i];
+        int64_t num_faces = 0;
+        for (auto f : polygon_cell) {
+            num_faces += map_poly_to_tri_face[f].size();
+        }
+        if (num_faces == 4) is_tet++;
+    }
+
+    wmtk::logger().info("{} out of {} polygon cells are tets", is_tet, polygon_cells.size());
+
     // tetrahedralization polygon cells
     // int64_t was_tet_cnt = 0;
     for (int64_t i = 0; i < polygon_cells.size(); ++i) {
