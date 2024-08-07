@@ -67,5 +67,9 @@ set(SRC_FILES
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
+include(libigl)
+
+target_link_libraries(wildmeshing_toolkit PRIVATE igl::core)
+
 
 add_subdirectory(metaprogramming)
