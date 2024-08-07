@@ -2,6 +2,19 @@
 
 #include <wmtk/EdgeMesh.hpp>
 namespace wmtk::operations::edge_mesh {
+    std::vector<simplex::Simplex> EdgeOperationData::new_vertices(const Mesh& m) const {
+        if(m.is_free()) {
+            return {
+                simplex_from_id(m,PrimitiveType::Vertex,m_free_split_v[0]),
+                simplex_from_id(m,PrimitiveType::Vertex,m_free_split_v[1])
+            };
+        } else {
+            return {
+                simplex_from_id(m,PrimitiveType::Vertex,m_split_v)
+            };
+
+        }
+    }
 std::array<Tuple, 2> EdgeOperationData::input_endpoints(const EdgeMesh& m) const
 {
     std::array<Tuple, 2> r;

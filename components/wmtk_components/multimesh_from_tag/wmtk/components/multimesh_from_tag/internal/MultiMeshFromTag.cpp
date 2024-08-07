@@ -337,11 +337,6 @@ void MultiMeshFromTag::create_substructure_soup()
     Eigen::MatrixX<int64_t> id_matrix;
     id_matrix.resize(tagged_tuples.size(), n_vertices_per_simplex);
 
-    for (size_t i = 0; i < tagged_tuples.size(); ++i) {
-        for (int64_t j = 0; j < n_vertices_per_simplex; ++j) {
-            id_matrix(i, j) = n_vertices_per_simplex * i + j;
-        }
-    }
 
     switch (m_tag_ptype) {
     case PrimitiveType::Vertex: {
@@ -351,17 +346,17 @@ void MultiMeshFromTag::create_substructure_soup()
     }
     case PrimitiveType::Edge: {
         m_soup_ptr = std ::make_shared<EdgeMesh>();
-        static_cast<EdgeMesh&>(*m_soup_ptr).initialize(id_matrix);
+        static_cast<EdgeMesh&>(*m_soup_ptr).initialize_free(tagged_tuples.size());
         break;
     }
     case PrimitiveType::Triangle: {
         m_soup_ptr = std ::make_shared<TriMesh>();
-        static_cast<TriMesh&>(*m_soup_ptr).initialize(id_matrix);
+        static_cast<TriMesh&>(*m_soup_ptr).initialize_free(tagged_tuples.size());
         break;
     }
     case PrimitiveType::Tetrahedron: {
         m_soup_ptr = std ::make_shared<TetMesh>();
-        static_cast<TetMesh&>(*m_soup_ptr).initialize(id_matrix);
+        static_cast<TetMesh&>(*m_soup_ptr).initialize_free(tagged_tuples.size());
         break;
     }
     default: log_and_throw_error("Unknown primitive type for tag");

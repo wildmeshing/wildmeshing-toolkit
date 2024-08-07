@@ -2,6 +2,7 @@
 
 
 #include <wmtk/utils/edgemesh_topology_initialization.h>
+#include <numeric>
 #include <wmtk/utils/Logger.hpp>
 namespace wmtk {
 EdgeMesh::EdgeMesh()
@@ -76,7 +77,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         assert(lvid_new != -1);
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
         const Tuple res(
             lvid_new,
@@ -85,12 +86,8 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
             gcid_new,
             get_cell_hash(gcid_new, hash_accessor));
 #else
-        const Tuple res(
-            lvid_new,
-            tuple.m_local_eid,
-            tuple.m_local_fid,
-            gcid_new);
-        
+        const Tuple res(lvid_new, tuple.m_local_eid, tuple.m_local_fid, gcid_new);
+
 #endif
         assert(is_valid(res));
         return res;
@@ -143,10 +140,20 @@ void EdgeMesh::initialize(
     }
 }
 
-void EdgeMesh::initialize(Eigen::Ref<const RowVectors2l> E)
+void EdgeMesh::initialize(Eigen::Ref<const RowVectors2l> E, bool is_free)
 {
+    this->m_is_free = is_free;
     auto [EE, VE] = edgemesh_topology_initialization(E);
+    if (is_free) {
+        EE.setConstant(-1);
+    }
     initialize(E, EE, VE);
+}
+void EdgeMesh::initialize_free(int64_t count)
+{
+    RowVectors2l S(count, 2);
+    std::iota(S.data(), S.data() + S.size(), int64_t(0));
+    initialize(S, true);
 }
 
 Tuple EdgeMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
@@ -180,7 +187,7 @@ Tuple EdgeMesh::vertex_tuple_from_id(int64_t id) const
     auto ev = ev_accessor.index_access().const_vector_attribute<2>(e);
     for (int64_t i = 0; i < 2; ++i) {
         if (ev(i) == id) {
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
             Tuple v_tuple = Tuple(i, -1, -1, e, get_cell_hash_slow(e));
 #else
             Tuple v_tuple = Tuple(i, -1, -1, e);
@@ -195,7 +202,7 @@ Tuple EdgeMesh::vertex_tuple_from_id(int64_t id) const
 
 Tuple EdgeMesh::edge_tuple_from_id(int64_t id) const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     Tuple e_tuple = Tuple(0, -1, -1, id, get_cell_hash_slow(id));
 #else
     Tuple e_tuple = Tuple(0, -1, -1, id);
@@ -219,7 +226,7 @@ Tuple EdgeMesh::tuple_from_global_ids(int64_t eid, int64_t vid) const
     }
     assert(lvid != -1);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     return Tuple(
         lvid,
         -1,
@@ -227,13 +234,8 @@ Tuple EdgeMesh::tuple_from_global_ids(int64_t eid, int64_t vid) const
         eid,
         get_cell_hash_slow(eid)); // TODO replace by function that takes hash accessor as parameter
 #else
-    return Tuple(
-        lvid,
-        -1,
-        -1,
-        eid);
+    return Tuple(lvid, -1, -1, eid);
 #endif
-
 }
 
 
@@ -300,7 +302,7 @@ std::vector<std::vector<TypedAttributeHandle<int64_t>>> EdgeMesh::connectivity_a
 std::vector<Tuple> EdgeMesh::orient_vertices(const Tuple& tuple) const
 {
     int64_t cid = tuple.m_global_cid;
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     auto hash = get_cell_hash_slow(cid);
 
     return {Tuple(0, -1, -1, cid, hash), Tuple(1, -1, -1, cid, hash)};

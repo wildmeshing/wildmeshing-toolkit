@@ -37,6 +37,11 @@ public:
         const Tuple& input_tuple,
         PrimitiveType pt) const final override;
 
+
+    std::vector<std::array<int64_t, 2>> output_duplicated_free_simplices(
+        const ReturnVariant& ret_data,
+        PrimitiveType pt) const final override;
+
 private:
     std::vector<std::array<Tuple, 2>> input_ear_simplices(
         const EdgeOperationData& ret_data,
@@ -65,6 +70,10 @@ private:
     std::vector<Tuple> input_split_simplices(
         const EdgeOperationData& ret_data,
         const Tuple& input_tuple,
+        PrimitiveType pt) const;
+
+    std::vector<std::array<int64_t, 2>> output_duplicated_free_simplices(
+        const EdgeOperationData& ret_data,
         PrimitiveType pt) const;
 
     TriMesh& m_mesh;

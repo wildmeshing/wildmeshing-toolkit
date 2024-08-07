@@ -2,6 +2,7 @@
 
 #include "TriInsOptions.hpp"
 
+#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/utils/EigenMatrixWriter.hpp>
 #include <wmtk/utils/VolumeRemesherTriangleInsertion.hpp>
@@ -97,6 +98,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
 
     /* -----------input surface--------- */
 
+    logger().error("Registering input surface from tag surface");
     auto surface_handle =
         tetmesh->register_attribute<int64_t>("surface", PrimitiveType::Triangle, 1);
     auto surface_accessor = tetmesh->create_accessor<int64_t>(surface_handle);
@@ -106,6 +108,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
     const auto& tets = tetmesh->get_all(PrimitiveType::Tetrahedron);
     assert(tets.size() == tet_face_on_input_surface.size());
 
+    logger().error("Assigning surface tags");
     for (int64_t i = 0; i < tets.size(); ++i) {
         const auto& t = tets[i]; // local face 2
         std::array<Tuple, 4> fs = {
@@ -125,16 +128,29 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
 
 
     // get multimesh from tag
+    std::shared_ptr<Mesh> surface_mesh;
 
-    internal::MultiMeshFromTag SurfaceMeshFromTag(*tetmesh, surface_handle, 1);
-    SurfaceMeshFromTag.compute_substructure_mesh();
+    if (options.make_child_free) {
+    logger().error("Making free child surface mesh");
+        surface_mesh = wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
+            *tetmesh,
+            surface_handle.as<int64_t>(),
+            1,
+            /*free = */ true);
 
-    std::shared_ptr<Mesh> surface_mesh = tetmesh->get_child_meshes().back();
+    } else {
+    logger().error("Making child surface mesh");
+        internal::MultiMeshFromTag SurfaceMeshFromTag(*tetmesh, surface_handle, 1);
+        SurfaceMeshFromTag.compute_substructure_mesh();
 
-    SurfaceMeshFromTag.remove_soup();
+        surface_mesh = tetmesh->get_child_meshes().back();
+
+        SurfaceMeshFromTag.remove_soup();
+    }
 
     /* -----------open boundary and nonmanifold edges in input surface--------- */
 
+    logger().error("Going through open/nonmanifold stuff");
     auto open_boundary_handle =
         tetmesh->register_attribute<int64_t>("open_boundary", PrimitiveType::Edge, 1);
     auto open_boundary_accessor = tetmesh->create_accessor<int64_t>(open_boundary_handle);
@@ -147,6 +163,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
     bool has_openboundary = false;
     bool has_nonmanifold_edge = false;
 
+    logger().error("Looping edges for open/nonmanifold ones");
     for (const auto& e : surface_mesh->get_all(PrimitiveType::Edge)) {
         const auto surface_edge = simplex::Simplex::edge(*surface_mesh, e);
         if (!surface_mesh->is_boundary(surface_edge)) continue;
@@ -168,19 +185,34 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
         }
     }
 
+    const bool process_nonmanifold_edges = !options.make_child_free && has_nonmanifold_edge;
+
     // get multimeshes from tag
 
     std::shared_ptr<Mesh> open_boundary_mesh, nonmanifold_edge_mesh;
 
     if (has_openboundary) {
-        internal::MultiMeshFromTag OpenBoundaryFromTag(*tetmesh, open_boundary_handle, 1);
-        OpenBoundaryFromTag.compute_substructure_mesh();
+        if (options.make_child_free) {
+    logger().error("Creating free open boundary child mesh");
+            open_boundary_mesh =
+                wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
+                    *tetmesh,
+                    open_boundary_handle.as<int64_t>(),
+                    1,
+                    /*free = */ true);
 
-        open_boundary_mesh = tetmesh->get_child_meshes().back();
-        OpenBoundaryFromTag.remove_soup();
+        } else {
+    logger().error("Creating open boundary child mesh");
+            internal::MultiMeshFromTag OpenBoundaryFromTag(*tetmesh, open_boundary_handle, 1);
+            OpenBoundaryFromTag.compute_substructure_mesh();
+
+            open_boundary_mesh = tetmesh->get_child_meshes().back();
+            OpenBoundaryFromTag.remove_soup();
+        }
     }
 
-    if (has_nonmanifold_edge) {
+    if (process_nonmanifold_edges) {
+        logger().error("Creating nonmanifold edge mesh");
         internal::MultiMeshFromTag NonmanifoldEdgeFromTag(*tetmesh, nonmanifold_edge_handle, 1);
         NonmanifoldEdgeFromTag.compute_substructure_mesh();
 
@@ -192,6 +224,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
     auto bbox_handle = tetmesh->register_attribute<int64_t>("bbox", PrimitiveType::Triangle, 1);
     auto bbox_accessor = tetmesh->create_accessor<int64_t>(bbox_handle);
 
+    logger().error("Annotating bounding box boundary");
     for (const auto& f : tetmesh->get_all(PrimitiveType::Triangle)) {
         bbox_accessor.scalar_attribute(f) =
             tetmesh->is_boundary(PrimitiveType::Triangle, f) ? 1 : 0;
@@ -208,6 +241,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
 
     /* -----------nonmanifold vertices in input surface--------- */
 
+    logger().error("Nonmanifold vertices");
     auto nonmanifold_vertex_handle =
         tetmesh->register_attribute<int64_t>("nonmanifold_vertex", PrimitiveType::Vertex, 1);
     auto nonmanifold_vertex_accessor = tetmesh->create_accessor<int64_t>(nonmanifold_vertex_handle);
@@ -221,7 +255,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
                 tetmesh->map_to_child(*open_boundary_mesh, simplex::Simplex::vertex(*tetmesh, v))
                     .size();
         }
-        if (has_nonmanifold_edge) {
+        if (process_nonmanifold_edges) {
             on_nonmanifold_edge_cnt =
                 tetmesh->map_to_child(*nonmanifold_edge_mesh, simplex::Simplex::vertex(*tetmesh, v))
                     .size();
@@ -249,6 +283,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
 
     /* ------------------ post processing -------------------*/
 
+    logger().error("Propagating position to child meshes");
     // propagate position to all child meshes
     auto pt_attribute =
         tetmesh->get_attribute_handle<Rational>(options.input_position, PrimitiveType::Vertex);
@@ -290,7 +325,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
 
         logger().info("Open boundary child EdgeMesh registered");
     }
-    if (has_nonmanifold_edge) {
+    if (process_nonmanifold_edges) {
         names["nonmanifold_edges"] = nonmanifold_edge_mesh->absolute_multi_mesh_id();
 
         logger().info("Nonmanifold edge child EdgeMesh registered");

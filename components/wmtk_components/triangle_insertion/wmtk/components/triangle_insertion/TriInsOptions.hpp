@@ -10,6 +10,7 @@ struct TriInsOptions
     std::string background;
     std::string background_position;
     std::string name;
+    bool make_child_free;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
@@ -18,6 +19,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     input_position,
     background,
     background_position,
-    name);
+    name,
+    make_child_free
+    );
 
 } // namespace wmtk::components

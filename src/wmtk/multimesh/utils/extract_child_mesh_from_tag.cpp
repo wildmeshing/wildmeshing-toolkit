@@ -1,5 +1,6 @@
 #include "extract_child_mesh_from_tag.hpp"
 #include <map>
+#include <numeric>
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/MultiMeshManager.hpp>
@@ -21,7 +22,8 @@ template <typename T>
 std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_tag_handle(
     Mesh& m,
     const wmtk::attribute::TypedAttributeHandle<T>& tag_handle,
-    const T& tag_value)
+    const T& tag_value,
+    bool child_is_free)
 {
     auto tags = m.create_const_accessor(tag_handle);
     const PrimitiveType pt = tag_handle.primitive_type();
@@ -138,21 +140,47 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
 
     std::shared_ptr<Mesh> child_mesh_ptr;
 
-    switch (pt) {
-    case PrimitiveType::Vertex: throw("not implemented");
-    case PrimitiveType::Edge: {
-        child_mesh_ptr = run_edge();
-        break;
-    }
-    case PrimitiveType::Triangle: {
-        child_mesh_ptr = run_face();
-        break;
-    }
-    case PrimitiveType::Tetrahedron: {
-        child_mesh_ptr = run_tet();
-        break;
-    }
-    default: throw("invalid child mesh type");
+    if (child_is_free) {
+        switch (pt) {
+        case PrimitiveType::Vertex: throw("not implemented");
+        case PrimitiveType::Edge: {
+            std::shared_ptr<EdgeMesh> meshptr = std::make_shared<EdgeMesh>();
+            meshptr->initialize_free(tagged_tuples.size());
+            child_mesh_ptr = meshptr;
+            break;
+        }
+        case PrimitiveType::Triangle: {
+            std::shared_ptr<TriMesh> meshptr = std::make_shared<TriMesh>();
+            meshptr->initialize_free(tagged_tuples.size());
+            child_mesh_ptr = meshptr;
+            break;
+        }
+        case PrimitiveType::Tetrahedron: {
+            std::shared_ptr<TetMesh> meshptr = std::make_shared<TetMesh>();
+            meshptr->initialize_free(tagged_tuples.size());
+            child_mesh_ptr = meshptr;
+            break;
+        }
+        default: throw("invalid child mesh type");
+        }
+
+    } else {
+        switch (pt) {
+        case PrimitiveType::Vertex: throw("not implemented");
+        case PrimitiveType::Edge: {
+            child_mesh_ptr = run_edge();
+            break;
+        }
+        case PrimitiveType::Triangle: {
+            child_mesh_ptr = run_face();
+            break;
+        }
+        case PrimitiveType::Tetrahedron: {
+            child_mesh_ptr = run_tet();
+            break;
+        }
+        default: throw("invalid child mesh type");
+        }
     }
 
     assert(bool(child_mesh_ptr));
@@ -175,27 +203,31 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag(
     Mesh& m,
     const std::string& tag,
     const int64_t tag_value,
-    const PrimitiveType pt)
+    const PrimitiveType pt,
+    bool child_is_free)
 {
     assert(m.top_simplex_type() >= pt);
     auto tag_handle = m.get_attribute_handle<int64_t>(tag, pt).as<int64_t>();
-    return extract_and_register_child_mesh_from_tag_handle(m, tag_handle, tag_value);
+    return extract_and_register_child_mesh_from_tag_handle(m, tag_handle, tag_value, child_is_free);
 }
 
 std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
     Mesh& m,
     const wmtk::attribute::TypedAttributeHandle<int64_t>& tag_handle,
-    const int64_t tag_value)
+    const int64_t tag_value,
+    bool child_is_free)
 {
     return internal::TupleTag::extract_and_register_child_mesh_from_tag_handle(
         m,
         tag_handle,
-        tag_value);
+        tag_value,
+        child_is_free);
 }
 
 std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag(
     wmtk::attribute::MeshAttributeHandle& tag_handle,
-    const wmtk::attribute::MeshAttributeHandle::ValueVariant& tag_value)
+    const wmtk::attribute::MeshAttributeHandle::ValueVariant& tag_value,
+    bool child_is_free)
 {
     return std::visit(
         [&](auto&& handle) noexcept -> std::shared_ptr<Mesh> {
@@ -210,7 +242,8 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag(
                                 extract_and_register_child_mesh_from_tag_handle(
                                     tag_handle.mesh(),
                                     handle,
-                                    T(value));
+                                    T(value),
+                                    child_is_free);
                         } else {
                             log_and_throw_error(
                                 "Tried to use a tag value that was not convertible to "

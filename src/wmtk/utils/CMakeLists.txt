@@ -44,6 +44,9 @@ set(SRC_FILES
 
     random_seed.hpp
 
+    make_free_sv_mesh.hpp
+    make_free_sv_mesh.cpp
+
 
     MerkleTreeInteriorNode.hpp
     MerkleTreeInteriorNode.cpp

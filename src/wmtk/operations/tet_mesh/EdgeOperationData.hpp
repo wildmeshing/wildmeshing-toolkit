@@ -139,6 +139,8 @@ public:
 
     std::array<int64_t, 2> new_spine_eids() const { return m_split_new_spine_eids; }
 
+    std::vector<simplex::Simplex> new_vertices(const Mesh& m) const { return {};}
+
     // for multimesh we need to know which global ids are modified to trigger
     // for every simplex dimension (We have 4 in tetmesh):
     // a list of [simplex index, {all versions of that simplex}]

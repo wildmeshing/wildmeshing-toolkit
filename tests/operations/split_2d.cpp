@@ -19,6 +19,7 @@
 #include <wmtk/utils/mesh_utils.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
+#include "../tools/is_free.hpp"
 #include "../tools/redirect_logger_to_cout.hpp"
 
 using namespace wmtk;
@@ -28,13 +29,12 @@ using namespace operations;
 
 using TM = TriMesh;
 using MapResult = typename Eigen::Matrix<int64_t, Eigen::Dynamic, 1>::MapType;
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
     wmtk::Tuple(),
     std::declval<wmtk::attribute::Accessor<int64_t>&>()));
 #else
-using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
-    wmtk::Tuple()));
+using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(wmtk::Tuple()));
 #endif
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
@@ -87,125 +87,35 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][2D]")
         }
         CHECK(fid_actual.size() == fid_expected.size());
     }
-}
-
-TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
-{
-    SECTION("interior_edge")
+    SECTION("free")
     {
-        const DEBUG_TriMesh m = edge_region();
-        Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+        const DEBUG_TriMesh m = []() {
+            TriMesh m;
+            m.initialize_free(20);
+            return m;
+        }();
+        for (Tuple edge : m.get_all(PrimitiveType::Edge)) {
+            std::array<std::vector<int64_t>, 3> ids_to_delete =
+                TMOE::get_split_simplices_to_delete(edge, m);
 
-        std::array<std::vector<int64_t>, 3> ids_to_delete =
-            TMOE::get_collapse_simplices_to_delete(edge, m);
+            REQUIRE(ids_to_delete[0].size() == 0);
+            REQUIRE(ids_to_delete[1].size() == 1);
+            REQUIRE(ids_to_delete[2].size() == 1);
 
-        REQUIRE(ids_to_delete[0].size() == 1);
-        REQUIRE(ids_to_delete[1].size() == 3);
-        REQUIRE(ids_to_delete[2].size() == 2);
+            // compare expected face ids with the actual ones that should be deleted
+            std::set<int64_t> fid_expected;
+            fid_expected.insert(m.id(edge, PF));
 
-        // V
-        const int64_t vertex_to_delete = ids_to_delete[0][0];
-        CHECK(vertex_to_delete == m.id(edge, PV));
-
-        // E
-        std::set<int64_t> eid_expected;
-        eid_expected.insert(m.id(edge, PE));
-        eid_expected.insert(m.id(m.switch_edge(edge), PE));
-        eid_expected.insert(m.id(m.switch_edge(m.switch_face(edge)), PE));
-
-        std::set<int64_t> eid_actual;
-        for (const int64_t& e : ids_to_delete[1]) {
-            CHECK(eid_expected.find(e) != eid_expected.end());
-            eid_actual.insert(e);
+            std::set<int64_t> fid_actual;
+            for (const int64_t& f : ids_to_delete[2]) {
+                CHECK(fid_expected.find(f) != fid_expected.end());
+                fid_actual.insert(f);
+            }
+            CHECK(fid_actual.size() == fid_expected.size());
         }
-        CHECK(eid_actual.size() == eid_expected.size());
-
-        // F
-        std::set<int64_t> fid_expected;
-        fid_expected.insert(m.id(edge, PF));
-        fid_expected.insert(m.id(m.switch_face(edge), PF));
-
-        std::set<int64_t> fid_actual;
-        for (const int64_t& f : ids_to_delete[2]) {
-            CHECK(fid_expected.find(f) != fid_expected.end());
-            fid_actual.insert(f);
-        }
-        CHECK(fid_actual.size() == fid_expected.size());
-    }
-    SECTION("boundary_edge")
-    {
-        const DEBUG_TriMesh m = edge_region();
-        Tuple edge = m.edge_tuple_between_v1_v2(7, 8, 6);
-
-        std::array<std::vector<int64_t>, 3> ids_to_delete =
-            TMOE::get_collapse_simplices_to_delete(edge, m);
-
-        REQUIRE(ids_to_delete[0].size() == 1);
-        REQUIRE(ids_to_delete[1].size() == 2);
-        REQUIRE(ids_to_delete[2].size() == 1);
-
-        // V
-        const int64_t vertex_to_delete = ids_to_delete[0][0];
-        CHECK(vertex_to_delete == m.id(edge, PV));
-
-        // E
-        std::set<int64_t> eid_expected;
-        eid_expected.insert(m.id(edge, PE));
-        eid_expected.insert(m.id(m.switch_edge(edge), PE));
-
-        std::set<int64_t> eid_actual;
-        for (const int64_t& e : ids_to_delete[1]) {
-            CHECK(eid_expected.find(e) != eid_expected.end());
-            eid_actual.insert(e);
-        }
-        CHECK(eid_actual.size() == eid_expected.size());
-
-        // F
-        const int64_t face_to_delete = ids_to_delete[2][0];
-        CHECK(face_to_delete == m.id(edge, PF));
-    }
-    SECTION("interior_edge_incident_to_boundary")
-    {
-        const DEBUG_TriMesh m = edge_region();
-        Tuple edge = m.edge_tuple_between_v1_v2(7, 4, 5);
-
-        std::array<std::vector<int64_t>, 3> sc_to_delete =
-            TMOE::get_collapse_simplices_to_delete(edge, m);
-
-        REQUIRE(sc_to_delete[0].size() == 1);
-        REQUIRE(sc_to_delete[1].size() == 3);
-        REQUIRE(sc_to_delete[2].size() == 2);
-
-        // V
-        const int64_t vertex_to_delete = sc_to_delete[0][0];
-        CHECK(vertex_to_delete == m.id(edge, PV));
-
-        // E
-        std::set<int64_t> eid_expected;
-        eid_expected.insert(m.id(edge, PE));
-        eid_expected.insert(m.id(m.switch_edge(edge), PE));
-        eid_expected.insert(m.id(m.switch_edge(m.switch_face(edge)), PE));
-
-        std::set<int64_t> eid_actual;
-        for (const int64_t& e : sc_to_delete[1]) {
-            CHECK(eid_expected.find(e) != eid_expected.end());
-            eid_actual.insert(e);
-        }
-        CHECK(eid_actual.size() == eid_expected.size());
-
-        // F
-        std::set<int64_t> fid_expected;
-        fid_expected.insert(m.id(edge, PF));
-        fid_expected.insert(m.id(m.switch_face(edge), PF));
-
-        std::set<int64_t> fid_actual;
-        for (const int64_t& f : sc_to_delete[2]) {
-            CHECK(fid_expected.find(f) != fid_expected.end());
-            fid_actual.insert(f);
-        }
-        CHECK(fid_actual.size() == fid_expected.size());
     }
 }
+
 
 TEST_CASE("delete_simplices", "[operations][2D]")
 {
@@ -221,7 +131,7 @@ TEST_CASE("delete_simplices", "[operations][2D]")
     simplices_to_delete[1].emplace_back(edge_index);
     simplices_to_delete[2].emplace_back(face_index);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
     auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -251,7 +161,7 @@ TEST_CASE("operation_state", "[operations][2D]")
         REQUIRE(m.id(edge, PV) == 0);
         REQUIRE(m.id(edge, PF) == 0);
         REQUIRE(m.id(m.switch_tuple(edge, PV), PV) == 2);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -271,7 +181,7 @@ TEST_CASE("operation_state", "[operations][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -304,7 +214,7 @@ TEST_CASE("operation_state", "[operations][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -338,6 +248,33 @@ TEST_CASE("operation_state", "[operations][2D]")
         REQUIRE(ear2.fid == -1);
         REQUIRE(ear2.eid > -1);
     }
+    SECTION("free")
+    {
+        DEBUG_TriMesh m = []() {
+            TriMesh m;
+            m.initialize_free(20);
+            return m;
+        }();
+        for (Tuple edge : m.get_all(PrimitiveType::Edge)) {
+            REQUIRE(m.is_connectivity_valid());
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+            wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+            auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+            auto executor = m.get_tmoe(edge);
+#endif
+
+            REQUIRE(executor.flag_accessors.size() == 3);
+            REQUIRE(executor.incident_face_datas().size() == 1);
+
+            TMOE::EarData ear1 = executor.incident_face_datas()[0].ears[0];
+            TMOE::EarData ear2 = executor.incident_face_datas()[0].ears[1];
+            REQUIRE(ear1.fid == -1);
+            REQUIRE(ear1.eid > -1);
+            REQUIRE(ear2.fid == -1);
+            REQUIRE(ear2.eid > -1);
+        }
+    }
 }
 
 TEST_CASE("glue_ear_to_face", "[operations][2D]")
@@ -354,7 +291,7 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     const Tuple left_ear_edge = m.switch_tuple(edge, PE);
     REQUIRE(m.id(left_ear_edge, PV) == 4);
     REQUIRE(m.id(m.switch_tuple(left_ear_edge, PV), PV) == 1);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
     auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -368,7 +305,7 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     REQUIRE(ff_accessor_after.vector_attribute(1)(2) == 3);
 }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 TEST_CASE("hash_update", "[operations][2D]")
 {
     SECTION("single_triangle")
@@ -378,7 +315,7 @@ TEST_CASE("hash_update", "[operations][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -399,7 +336,7 @@ TEST_CASE("hash_update", "[operations][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(3, 7, 5);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -441,7 +378,7 @@ TEST_CASE("connect_faces_across_spine", "[operations][split][2D]")
     m.reserve_attributes(PF, 10);
     REQUIRE(m.is_connectivity_valid());
     const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
     auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -481,7 +418,7 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         DEBUG_TriMesh m = single_triangle();
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -568,7 +505,7 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         DEBUG_TriMesh m = interior_edge();
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -717,7 +654,7 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         const int64_t edge_id = m.id(edge, PE);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -759,7 +696,7 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         const int64_t edge_id = m.id(edge, PE);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -802,7 +739,7 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     REQUIRE(m.is_valid_with_hash(edge3));
 #else
     REQUIRE(m.is_valid(edge3));
@@ -857,7 +794,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 #endif
         EdgeSplit split(m);
@@ -865,7 +802,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(m.is_valid_with_hash(ret, hash_accessor));
 #else
         REQUIRE(m.is_valid(ret));
@@ -880,7 +817,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 0);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 #endif
         EdgeSplit split(m);
@@ -888,7 +825,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(m.is_valid_with_hash(ret, hash_accessor));
 #else
         REQUIRE(m.is_valid(ret));
@@ -903,7 +840,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 #endif
         EdgeSplit split(m);
@@ -911,7 +848,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(m.is_valid_with_hash(ret, hash_accessor));
 #else
         REQUIRE(m.is_valid(ret));
@@ -927,7 +864,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 3);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 #endif
         EdgeSplit split(m);
@@ -935,7 +872,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(m.is_valid_with_hash(ret, hash_accessor));
 #else
         REQUIRE(m.is_valid(ret));
@@ -972,7 +909,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
     for (size_t i = 0; i < 5; ++i) {
         const std::vector<wmtk::Tuple> edges = mesh.get_all(PE);
         for (const wmtk::Tuple& e : edges) {
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
             if (!mesh.is_valid_with_hash(e)) {
 #else
             if (!mesh.is_valid(e)) {
@@ -997,4 +934,24 @@ TEST_CASE("split_modified_primitives", "[operations][split]")
     CHECK(ret.size() == 1);
     CHECK(ret[0].primitive_type() == PrimitiveType::Vertex);
     CHECK(m.id(ret[0]) == 10);
+}
+
+
+TEST_CASE("split_no_topology_trimesh", "[operations][split]")
+{
+    const int64_t initial_size = 20;
+    DEBUG_TriMesh m = [](int64_t size) {
+        TriMesh m;
+        m.initialize_free(size);
+        return m;
+    }(initial_size);
+    int64_t size = initial_size;
+    for (Tuple edge : m.get_all(PrimitiveType::Triangle)) {
+        EdgeSplit op(m);
+        REQUIRE(!op(simplex::Simplex(m, PrimitiveType::Edge, edge)).empty());
+        size++;
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(is_free(m));
+        CHECK(m.get_all(PrimitiveType::Triangle).size() == size);
+    }
 }

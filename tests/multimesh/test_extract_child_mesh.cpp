@@ -112,10 +112,16 @@ TEST_CASE("test_extract_child_edge_mesh", "[multimesh][extract_childmesh]")
                 "is_child",
                 3,
                 PE);
+        std::shared_ptr<Mesh> free_child =
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                parent,
+                "is_child",
+                1,
+                PE, true);
 
 
         const auto& p_mul_manager = parent.multi_mesh_manager();
-        REQUIRE(p_mul_manager.children().size() == 3);
+        REQUIRE(p_mul_manager.children().size() == 4);
 
         const auto& child0 = *(p_mul_manager.children()[0].mesh);
         const auto& child1 = *(p_mul_manager.children()[1].mesh);
@@ -126,6 +132,10 @@ TEST_CASE("test_extract_child_edge_mesh", "[multimesh][extract_childmesh]")
         CHECK(child1.get_all(PV).size() == 3);
         CHECK(child2.get_all(PE).size() == 2);
         CHECK(child2.get_all(PV).size() == 3);
+
+        REQUIRE(p_mul_manager.children()[3].mesh == free_child);
+        CHECK(free_child->get_all(PE).size() == 3);
+        CHECK(free_child->get_all(PV).size() == 6);
     }
 }
 
@@ -270,15 +280,24 @@ TEST_CASE("test_extract_child_face_mesh_3d", "[multimesh][extract_childmesh]")
                 "is_child",
                 1,
                 PF);
+        std::shared_ptr<Mesh> free_child=
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                parent,
+                "is_child",
+                1,
+                PF, true);
 
         const auto& p_mul_manager = parent.multi_mesh_manager();
-        REQUIRE(p_mul_manager.children().size() == 1);
+        REQUIRE(p_mul_manager.children().size() == 2);
 
         const auto& child0 = *(p_mul_manager.children()[0].mesh);
 
         CHECK(child0.get_all(PF).size() == 12);
         CHECK(child0.get_all(PE).size() == 18);
         CHECK(child0.get_all(PV).size() == 8);
+        CHECK(free_child->get_all(PF).size() == 12);
+        CHECK(free_child->get_all(PE).size() == 36);
+        CHECK(free_child->get_all(PV).size() == 36);
     }
 }
 
@@ -316,8 +335,15 @@ TEST_CASE("test_extract_child_edge_mesh_3d", "[multimesh][extract_childmesh]")
                 2,
                 PE);
 
+        std::shared_ptr<Mesh> free_ptr =
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                parent,
+                "is_child",
+                2,
+                PE, true);
+
         const auto& p_mul_manager = parent.multi_mesh_manager();
-        REQUIRE(p_mul_manager.children().size() == 2);
+        REQUIRE(p_mul_manager.children().size() == 3);
 
         const auto& child0 = *(p_mul_manager.children()[0].mesh);
         const auto& child1 = *(p_mul_manager.children()[1].mesh);
@@ -325,6 +351,8 @@ TEST_CASE("test_extract_child_edge_mesh_3d", "[multimesh][extract_childmesh]")
         CHECK(child0.get_all(PV).size() == 4);
         CHECK(child1.get_all(PE).size() == 3);
         CHECK(child1.get_all(PV).size() == 4);
+        CHECK(free_ptr->get_all(PE).size() == 3);
+        CHECK(free_ptr->get_all(PV).size() == 6);
     }
 
     SECTION("six_cycle_tet")

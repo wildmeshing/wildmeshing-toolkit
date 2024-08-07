@@ -139,7 +139,9 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
 {
     simplex::SimplexCollection all(m_mesh);
     for (const auto& s : direct_mods) {
-        all.add(simplex::closed_star(m_mesh, s, false));
+        if (!s.tuple().is_null()) {
+            all.add(simplex::closed_star(m_mesh, s, false));
+        }
     }
     all.sort_and_clean();
     for (const auto& at_ptr : m_attr_transfer_strategies) {

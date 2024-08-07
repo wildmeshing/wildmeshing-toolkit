@@ -34,6 +34,7 @@ class Simplex
     {}
 
 public:
+    Simplex() = default;
     Simplex(const Mesh& m, const PrimitiveType& ptype, const Tuple& t);
 
     Simplex(const Simplex&) = default;
