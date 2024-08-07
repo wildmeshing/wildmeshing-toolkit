@@ -556,6 +556,10 @@ generate_raw_tetmesh_from_input_surface(
 
         if (polygon_face.size() == 3) {
             // already a triangle, don't need to clip
+            assert(polygon_face[0] < v_coords.size() && polygon_face[0] >= 0);
+            assert(polygon_face[1] < v_coords.size() && polygon_face[1] >= 0);
+            assert(polygon_face[2] < v_coords.size() && polygon_face[2] >= 0);
+
             std::array<int64_t, 3> triangle_face = {
                 {polygon_face[0], polygon_face[1], polygon_face[2]}};
             const int64_t idx = triangulated_faces.size();
@@ -577,6 +581,10 @@ generate_raw_tetmesh_from_input_surface(
             for (int64_t j = 0; j < clipped_indices.size(); ++j) {
                 // need to map oldface index to new face indices
                 const std::array<int64_t, 3>& triangle_face = clipped_indices[j];
+
+                assert(triangle_face[0] < v_coords.size() && triangle_face[0] >= 0);
+                assert(triangle_face[1] < v_coords.size() && triangle_face[1] >= 0);
+                assert(triangle_face[2] < v_coords.size() && triangle_face[2] >= 0);
 
                 int64_t idx = triangulated_faces.size();
                 triangulated_faces.push_back(triangle_face);
@@ -623,6 +631,7 @@ generate_raw_tetmesh_from_input_surface(
         std::vector<int64_t> polygon_vertices;
         for (auto f : polygon_cell) {
             for (auto v : polygon_faces[f]) {
+                assert(v < v_coords.size() && v >= 0);
                 polygon_vertices.push_back(v);
             }
         }
@@ -656,6 +665,11 @@ generate_raw_tetmesh_from_input_surface(
             int64_t v1 = polygon_vertices[1];
             int64_t v2 = polygon_vertices[2];
             int64_t v3 = polygon_vertices[3];
+
+            assert(v0 < v_coords.size() && v0 >= 0);
+            assert(v1 < v_coords.size() && v1 >= 0);
+            assert(v2 < v_coords.size() && v2 >= 0);
+            assert(v3 < v_coords.size() && v3 >= 0);
 
             std::array<int64_t, 4> tetra = {{v0, v1, v2, v3}};
 
@@ -747,22 +761,23 @@ generate_raw_tetmesh_from_input_surface(
         // }
 
         // new ver
-        int64_t tri_cnt = 0;
-        for (const auto& f : polygon_cell) {
-            tri_cnt += map_poly_to_tri_face[f].size();
-        }
 
         for (const auto& f : polygon_cell) {
-            Eigen::Matrix3i F, FF;
-            Eigen::Vector3i C;
-            F.resize(tri_cnt, 3);
-            FF.resize(tri_cnt, 3);
-            C.resize(tri_cnt);
+            Eigen::MatrixXi F, FF;
+            Eigen::VectorXi C;
+            F.resize(num_faces, 3);
+            FF.resize(num_faces, 3);
+            C.resize(num_faces);
 
             int64_t row = 0;
             for (const auto& t : map_poly_to_tri_face[f]) {
                 F.row(row) << triangulated_faces[t][0], triangulated_faces[t][1],
                     triangulated_faces[t][2];
+
+                assert(triangulated_faces[t][0] < v_coords.size() && triangulated_faces[t][0] >= 0);
+                assert(triangulated_faces[t][1] < v_coords.size() && triangulated_faces[t][1] >= 0);
+                assert(triangulated_faces[t][2] < v_coords.size() && triangulated_faces[t][2] >= 0);
+
                 row++;
 
                 tet_face_on_input_surface.push_back(
@@ -771,6 +786,10 @@ generate_raw_tetmesh_from_input_surface(
 
             igl::bfs_orient(F, FF, C);
 
+            std::cout << "----------------------" << std::endl;
+            std::cout << F << std::endl << std::endl;
+            std::cout << FF << std::endl;
+
             if (wmtk_orient3d(
                     v_coords[FF(0, 0)],
                     v_coords[FF(0, 1)],
@@ -778,11 +797,22 @@ generate_raw_tetmesh_from_input_surface(
                     v_coords[centroid_idx]) > 0) {
                 for (int64_t i = 0; i < FF.rows(); ++i) {
                     std::array<int64_t, 4> tetra = {{FF(i, 0), FF(i, 1), FF(i, 2), centroid_idx}};
+                    assert(FF(i, 0) < v_coords.size() && FF(i, 0) >= 0);
+                    assert(FF(i, 1) < v_coords.size() && FF(i, 1) >= 0);
+                    assert(FF(i, 2) < v_coords.size() && FF(i, 2) >= 0);
+                    assert(centroid_idx < v_coords.size() && centroid_idx >= 0);
+
                     tets_final.push_back(tetra);
                 }
             } else {
                 for (int64_t i = 0; i < FF.rows(); ++i) {
                     std::array<int64_t, 4> tetra = {{FF(i, 1), FF(i, 0), FF(i, 2), centroid_idx}};
+
+                    assert(FF(i, 0) < v_coords.size() && FF(i, 0) >= 0);
+                    assert(FF(i, 1) < v_coords.size() && FF(i, 1) >= 0);
+                    assert(FF(i, 2) < v_coords.size() && FF(i, 2) >= 0);
+                    assert(centroid_idx < v_coords.size() && centroid_idx >= 0);
+
                     tets_final.push_back(tetra);
                 }
             }
