@@ -197,11 +197,11 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(
 
     if (face.size() == 4) {
         // special case for quad
-        const Vector3r a = points[0] - points[3];
-        const Vector3r b = points[1] - points[0];
+        const Vector3r a = points[face[0]] - points[face[3]];
+        const Vector3r b = points[face[1]] - points[face[0]];
 
-        const Vector3r c = points[2] - points[1];
-        const Vector3r d = points[3] - points[2];
+        const Vector3r c = points[face[2]] - points[face[1]];
+        const Vector3r d = points[face[3]] - points[face[2]];
 
         if (((a[0] * b[1] - a[1] * b[0]).get_sign() != 0 ||
              (a[1] * b[2] - a[2] * b[1]).get_sign() != 0 ||
@@ -220,39 +220,40 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(
         return triangulated_faces;
     } else if (face.size() == 5) {
         // special case for pentagon
-        const Vector3r a = points[0] - points[4];
-        const Vector3r b = points[1] - points[0];
-        const Vector3r c = points[2] - points[1];
-        const Vector3r d = points[3] - points[2];
-        const Vector3r f = points[2] - points[0];
-        const Vector3r e = points[4] - points[3];
+        const Vector3r a = points[face[0]] - points[face[4]];
+        const Vector3r b = points[face[1]] - points[face[0]];
+        const Vector3r c = points[face[2]] - points[face[1]];
+        const Vector3r d = points[face[3]] - points[face[2]];
+        const Vector3r f = points[face[2]] - points[face[0]];
+        const Vector3r e = points[face[4]] - points[face[3]];
 
         bool noncolinear012 = (b[0] * c[1] - b[1] * c[0]).get_sign() != 0 ||
                               (b[1] * c[2] - b[2] * c[1]).get_sign() != 0 ||
                               (b[0] * c[2] - b[2] * c[0]).get_sign() != 0;
 
-        bool noncolinear023 = (f[0] * d[1] - f[1] * d[0]).get_sign() != 0 ||
-                              (f[1] * d[2] - f[2] * d[1]).get_sign() != 0 ||
-                              (f[0] * d[2] - f[2] * d[0]).get_sign() != 0;
+        bool noncolinear123 = (c[0] * d[1] - c[1] * d[0]).get_sign() != 0 ||
+                              (c[1] * d[2] - c[2] * d[1]).get_sign() != 0 ||
+                              (c[0] * d[2] - c[2] * d[0]).get_sign() != 0;
 
         bool noncolinear340 = (e[0] * a[1] - e[1] * a[0]).get_sign() != 0 ||
                               (e[1] * a[2] - e[2] * a[1]).get_sign() != 0 ||
                               (e[0] * a[2] - e[2] * a[0]).get_sign() != 0;
 
         // check bxc fxd exa
-        if (noncolinear012 && noncolinear023 && noncolinear340) {
+        if (noncolinear012 && noncolinear123 && noncolinear340) {
             // not colinear continue
             triangulated_faces.emplace_back(std::array<int64_t, 3>({{face[0], face[1], face[3]}}));
-            triangulated_faces.emplace_back(std::array<int64_t, 3>({{face[0], face[2], face[3]}}));
+            triangulated_faces.emplace_back(std::array<int64_t, 3>({{face[1], face[2], face[3]}}));
             triangulated_faces.emplace_back(std::array<int64_t, 3>({{face[3], face[4], face[0]}}));
 
             return triangulated_faces;
         }
 
         // lookup table
-        bool noncolinear123 = (c[0] * d[1] - c[1] * d[0]).get_sign() != 0 ||
-                              (c[1] * d[2] - c[2] * d[1]).get_sign() != 0 ||
-                              (c[0] * d[2] - c[2] * d[0]).get_sign() != 0;
+
+        bool noncolinear023 = (f[0] * d[1] - f[1] * d[0]).get_sign() != 0 ||
+                              (f[1] * d[2] - f[2] * d[1]).get_sign() != 0 ||
+                              (f[0] * d[2] - f[2] * d[0]).get_sign() != 0;
 
         bool noncolinear234 = (d[0] * e[1] - d[1] * e[0]).get_sign() != 0 ||
                               (d[1] * e[2] - d[2] * e[1]).get_sign() != 0 ||
@@ -364,7 +365,7 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(
         colinear_cnt--;
     }
 
-    // cleanup convex polygon
+    // // cleanup convex polygon
     // while (points_vector.size() >= 3) {
     //     triangulated_faces.emplace_back(
     //         std::array<int64_t, 3>({{points_vector[0], points_vector[1],
@@ -690,6 +691,11 @@ generate_raw_tetmesh_from_input_surface(
 
             std::array<int64_t, 4> tetra = {{v0, v1, v2, v3}};
 
+            if (wmtk_orient3d(v_coords[v0], v_coords[v1], v_coords[v2], v_coords[v3]) == 0) {
+                std::cout << "degenerated tet: " << v0 << " " << v1 << " " << v2 << " " << v3
+                          << std::endl;
+            }
+
             if (wmtk_orient3d(v_coords[v0], v_coords[v1], v_coords[v2], v_coords[v3]) < 0) {
                 tetra = {{v1, v0, v2, v3}};
             }
@@ -821,6 +827,15 @@ generate_raw_tetmesh_from_input_surface(
                 assert(FF(i, 2) < v_coords.size() && FF(i, 2) >= 0);
                 assert(centroid_idx < v_coords.size() && centroid_idx >= 0);
 
+                if (wmtk_orient3d(
+                        v_coords[FF(i, 0)],
+                        v_coords[FF(i, 1)],
+                        v_coords[FF(i, 2)],
+                        v_coords[centroid_idx]) == 0) {
+                    std::cout << "degenerated tet: " << FF(i, 0) << " " << FF(i, 1) << " "
+                              << FF(i, 2) << " " << centroid_idx << std::endl;
+                }
+
                 tets_final.push_back(tetra);
             }
         } else {
@@ -831,6 +846,16 @@ generate_raw_tetmesh_from_input_surface(
                 assert(FF(i, 1) < v_coords.size() && FF(i, 1) >= 0);
                 assert(FF(i, 2) < v_coords.size() && FF(i, 2) >= 0);
                 assert(centroid_idx < v_coords.size() && centroid_idx >= 0);
+
+                if (wmtk_orient3d(
+                        v_coords[FF(i, 0)],
+                        v_coords[FF(i, 1)],
+                        v_coords[FF(i, 2)],
+                        v_coords[centroid_idx]) == 0) {
+                    std::cout << "degenerated tet: " << FF(i, 1) << " " << FF(i, 0) << " "
+                              << FF(i, 2) << " " << centroid_idx << std::endl;
+                }
+
 
                 tets_final.push_back(tetra);
             }
