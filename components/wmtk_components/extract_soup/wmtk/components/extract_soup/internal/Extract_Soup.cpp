@@ -40,6 +40,12 @@ void extract_triangle_soup_from_image(
         }
     }
 
+    double min_range_in_axis =
+        (double)std::min(std::min(data.size(), data[0].size()), data[0][0].size());
+    max_level = std::floor(std::log(min_range_in_axis) / std::log(2.0)) - 2;
+    max_level = std::max<unsigned int>(max_level, 1);
+    spdlog::info("level picked: {}\n", max_level);
+
     int target_value;
     Eigen::MatrixXi F(tri_num, 3);
     Eigen::MatrixXd V(3 * tri_num, 3);
