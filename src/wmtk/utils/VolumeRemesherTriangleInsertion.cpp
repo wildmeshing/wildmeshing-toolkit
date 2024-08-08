@@ -642,18 +642,43 @@ generate_raw_tetmesh_from_input_surface(
 
     // tetrahedralization polygon cells
     // int64_t was_tet_cnt = 0;
-    for (int64_t i = 0; i < polygon_cells.size(); ++i) {
-        auto polygon_cell = polygon_cells[i];
+    // for (int64_t i = 0; i < polygon_cells.size(); ++i) {
+    // debug change
 
+    polysolve::StopWatch timer("triangulation", logger());
+    double get_vertex_time = 0;
+    double vertor_unique_time = 0;
+    double orient3d_tet_time = 0;
+    double orient3d_poly_time = 0;
+    double bfs_orient_time = 0;
+    double matrix_construct_time = 0;
+    double set_time = 0;
+    double centroid_time = 0;
+    int64_t tet_cnt = 0;
+
+
+    for (int64_t i = 0; i < 100000; ++i) {
+        const auto& polygon_cell = polygon_cells[i];
+
+
+        timer.start();
         // get polygon vertices
         std::vector<int64_t> polygon_vertices;
-        for (auto f : polygon_cell) {
+        for (const auto& f : polygon_cell) {
             for (auto v : polygon_faces[f]) {
                 assert(v < v_coords.size() && v >= 0);
                 polygon_vertices.push_back(v);
             }
         }
+
+        timer.stop();
+        get_vertex_time += timer.getElapsedTimeInSec();
+
+        timer.start();
         vector_unique(polygon_vertices); // need optimiozation
+        timer.stop();
+        vertor_unique_time += timer.getElapsedTimeInSec();
+
 
         // compute number of triangle faces
         int64_t num_faces = 0;
@@ -679,6 +704,8 @@ generate_raw_tetmesh_from_input_surface(
 
             // assert(v3 != -1);
 
+            tet_cnt++;
+
             int64_t v0 = polygon_vertices[0];
             int64_t v1 = polygon_vertices[1];
             int64_t v2 = polygon_vertices[2];
@@ -691,18 +718,18 @@ generate_raw_tetmesh_from_input_surface(
 
             std::array<int64_t, 4> tetra = {{v0, v1, v2, v3}};
 
-            if (wmtk_orient3d(v_coords[v0], v_coords[v1], v_coords[v2], v_coords[v3]) == 0) {
-                std::cout << "degenerated tet: " << v0 << " " << v1 << " " << v2 << " " << v3
-                          << std::endl;
-            }
+            timer.start();
 
             if (wmtk_orient3d(v_coords[v0], v_coords[v1], v_coords[v2], v_coords[v3]) < 0) {
                 tetra = {{v1, v0, v2, v3}};
             }
-
+            timer.stop();
+            orient3d_tet_time += timer.getElapsedTimeInSec();
 
             // push the tet to final queue;
             tets_final.push_back(tetra);
+
+            timer.start();
 
             std::set<int64_t> local_f0 = {
                 tetra[1],
@@ -737,6 +764,9 @@ generate_raw_tetmesh_from_input_surface(
                 tet_face_on_input[local_f_idx] = polygon_faces_on_input[f];
             }
 
+            timer.stop();
+            set_time += timer.getElapsedTimeInSec();
+
 
             tet_face_on_input_surface.push_back(tet_face_on_input);
 
@@ -745,11 +775,15 @@ generate_raw_tetmesh_from_input_surface(
 
         // not a tet initially
         // compute centroid
+        timer.start();
         Vector3r centroid(0., 0., 0.);
         for (auto v : polygon_vertices) {
             centroid = centroid + v_coords[v];
         }
         centroid = centroid / double(polygon_vertices.size());
+
+        timer.stop();
+        centroid_time += timer.getElapsedTimeInSec();
 
         // trahedralize
         int64_t centroid_idx = v_coords.size();
@@ -785,6 +819,7 @@ generate_raw_tetmesh_from_input_surface(
 
         // new ver
 
+        timer.start();
         Eigen::MatrixXi F, FF;
         Eigen::VectorXi C;
         F.resize(num_faces, 3);
@@ -813,8 +848,15 @@ generate_raw_tetmesh_from_input_surface(
             }
         }
 
-        igl::bfs_orient(F, FF, C);
+        timer.stop();
+        matrix_construct_time += timer.getElapsedTimeInSec();
 
+        timer.start();
+        igl::bfs_orient(F, FF, C);
+        timer.stop();
+        bfs_orient_time += timer.getElapsedTimeInSec();
+
+        timer.start();
         if (wmtk_orient3d(
                 v_coords[FF(0, 0)],
                 v_coords[FF(0, 1)],
@@ -827,14 +869,12 @@ generate_raw_tetmesh_from_input_surface(
                 assert(FF(i, 2) < v_coords.size() && FF(i, 2) >= 0);
                 assert(centroid_idx < v_coords.size() && centroid_idx >= 0);
 
-                if (wmtk_orient3d(
+                assert(
+                    wmtk_orient3d(
                         v_coords[FF(i, 0)],
                         v_coords[FF(i, 1)],
                         v_coords[FF(i, 2)],
-                        v_coords[centroid_idx]) == 0) {
-                    std::cout << "degenerated tet: " << FF(i, 0) << " " << FF(i, 1) << " "
-                              << FF(i, 2) << " " << centroid_idx << std::endl;
-                }
+                        v_coords[centroid_idx]) != 0);
 
                 tets_final.push_back(tetra);
             }
@@ -847,22 +887,43 @@ generate_raw_tetmesh_from_input_surface(
                 assert(FF(i, 2) < v_coords.size() && FF(i, 2) >= 0);
                 assert(centroid_idx < v_coords.size() && centroid_idx >= 0);
 
-                if (wmtk_orient3d(
+                assert(
+                    wmtk_orient3d(
                         v_coords[FF(i, 0)],
                         v_coords[FF(i, 1)],
                         v_coords[FF(i, 2)],
-                        v_coords[centroid_idx]) == 0) {
-                    std::cout << "degenerated tet: " << FF(i, 1) << " " << FF(i, 0) << " "
-                              << FF(i, 2) << " " << centroid_idx << std::endl;
-                }
+                        v_coords[centroid_idx]) != 0);
 
 
                 tets_final.push_back(tetra);
             }
         }
+
+        timer.stop();
+        orient3d_poly_time += timer.getElapsedTimeInSec();
     }
 
+    // double get_vertex_time = 0;
+    // double vertor_unique_time = 0;
+    // double orient3d_tet_time = 0;
+    // double orient3d_poly_time = 0;
+    // double bfs_orient_time = 0;
+    // double matrix_construct_time = 0;
+    // double set_time = 0;
+    // double centroid_time = 0;
+    // int64_t tet_cnt = 0;
+
+    wmtk::logger().info("get_vertex_time: {}", get_vertex_time);
+    wmtk::logger().info("vertor_unique_time: {}", vertor_unique_time);
+    wmtk::logger().info("orient3d_tet_time: {}, tet count: {}", orient3d_tet_time, tet_cnt);
+    wmtk::logger().info("orient3d_poly_time: {}", orient3d_poly_time);
+    wmtk::logger().info("bfs_orient_time: {}", bfs_orient_time);
+    wmtk::logger().info("matrix_construct_time: {}", matrix_construct_time);
+    wmtk::logger().info("set_compare_time: {}", set_time);
+    wmtk::logger().info("centroid_time: {}", centroid_time);
+
     wmtk::logger().info("tetrahedralization finished.");
+    exit(0);
 
     // remove unused vertices and map
     std::vector<bool> v_is_used_in_tet(v_coords.size(), false);
