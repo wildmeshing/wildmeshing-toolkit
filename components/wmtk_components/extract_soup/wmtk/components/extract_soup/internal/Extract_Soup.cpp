@@ -15,7 +15,6 @@ namespace wmtk::components::internal {
 void extract_triangle_soup_from_image(
     std::string output_path,
     std::string filename,
-    double delta_x,
     unsigned int max_level)
 {
     std::vector<std::vector<std::vector<unsigned int>>> data;
@@ -202,7 +201,7 @@ void extract_triangle_soup_from_image(
 
     octree_add_points(V, max_level);
 
-    V = V * delta_x;
+    // V = V * delta_x;
     igl::writeOFF(output_path, V, F);
     // igl::writeOBJ(output_path, V, F);
 
@@ -448,7 +447,11 @@ void readGmsh(
     }
 }
 
-void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::string output_file)
+void gmsh2hdf_tag(
+    std::string volumetric_file,
+    std::string gmsh_file,
+    std::string output_file,
+    double delta_x)
 {
     std::vector<std::vector<std::vector<unsigned int>>> volumetric_data;
     std::vector<Eigen::Vector3d> vertices;
@@ -491,6 +494,7 @@ void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::strin
     auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto acc_pos = mesh.create_accessor<double>(pos_handle);
 
+    spdlog::info("Operating Tag...\n");
     for (const Tuple& t : mesh.get_all(PrimitiveType::Tetrahedron)) {
         auto v0 = acc_pos.vector_attribute(t);
         auto v1 = acc_pos.vector_attribute(mesh.switch_vertex(t));
@@ -507,6 +511,12 @@ void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::strin
             int64_t intValue = volumetric_data[idx_0][idx_1][idx_2];
             acc_tag.scalar_attribute(t) = intValue;
         }
+    }
+
+    spdlog::info("Operating position...\n");
+    for (const Tuple& t : mesh.get_all(PrimitiveType::Vertex)) {
+        auto v = acc_pos.vector_attribute(t);
+        v *= delta_x;
     }
 
     // auto amips_attribute =

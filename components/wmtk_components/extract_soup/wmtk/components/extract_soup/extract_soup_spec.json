@@ -5,7 +5,8 @@
     "required": [
       "input",
       "output",
-      "mode"
+      "mode",
+      "delta_x"
     ],
     "optional": [
       "volumetric_encoded_file",
@@ -23,6 +24,10 @@
   {
     "pointer": "/mode",
     "type": "bool"
+  },
+  {
+    "pointer": "/delta_x",
+    "type": "float"
   },
   {
     "pointer": "/volumetric_encoded_file",

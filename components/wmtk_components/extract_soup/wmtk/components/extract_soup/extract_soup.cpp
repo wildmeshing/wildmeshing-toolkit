@@ -26,11 +26,12 @@ void extract_soup(const base::Paths& paths, const nlohmann::json& j, io::Cache& 
     if (options.mode == true) {
         // extract_triangle_soup_from_image
         unsigned int level = options.level;
-        internal::extract_triangle_soup_from_image(output_file, input_file, 1, level);
+        internal::extract_triangle_soup_from_image(output_file, input_file, level);
     } else {
         // gmsh2hdf_tag
         std::string encoded_file = options.volumetric_encoded_file;
-        internal::gmsh2hdf_tag(encoded_file, input_file, output_file);
+        double delta_x = options.delta_x;
+        internal::gmsh2hdf_tag(encoded_file, input_file, output_file, delta_x);
     }
 }
 } // namespace wmtk::components

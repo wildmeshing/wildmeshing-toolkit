@@ -20,6 +20,7 @@ TEST_CASE("component_extract_soup", "[.]")
             {"input", "/home/zhouyuan/workplace/slicer_extract/wildmeshing-toolkit/data/temp.raw"},
             {"output", "/home/zhouyuan/workplace/slicer_extract/wildmeshing-toolkit/data/temp.out"},
             {"mode", true},
+            {"delta_x", 0.1},
             {"volumetric_encoded_file", ""},
             {"level", 1}};
 
@@ -33,7 +34,6 @@ TEST_CASE("surface", "[.]")
     wmtk::components::internal::extract_triangle_soup_from_image(
         "/home/zhouyuan/workplace/slicer_extract/wildmeshing-toolkit/data/test.off",
         "/home/zhouyuan/workplace/slicer_extract/wildmeshing-toolkit/data/test",
-        1,
         7);
 }
 
@@ -43,5 +43,6 @@ TEST_CASE("gmsh2hdf", "[.]")
     wmtk::components::internal::gmsh2hdf_tag(
         "/home/zhouyuan/workplace/wildmeshing-toolkit/buildr/mydata/head.raw",
         "/home/zhouyuan/workplace/wildmeshing-toolkit/buildr/mydata/head7+.off.mesh",
-        "/home/zhouyuan/workplace/wildmeshing-toolkit/buildr/mydata/head7+.out");
+        "/home/zhouyuan/workplace/wildmeshing-toolkit/buildr/mydata/head7+.out",
+        0.1);
 }

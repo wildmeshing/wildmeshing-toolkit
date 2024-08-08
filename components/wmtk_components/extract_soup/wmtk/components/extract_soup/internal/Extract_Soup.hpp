@@ -20,7 +20,6 @@ struct VectorComparer
 void extract_triangle_soup_from_image(
     std::string output_path,
     std::string filename,
-    double delta_x,
     unsigned int max_level);
 
 void read_array_data(
@@ -47,5 +46,9 @@ void readGmsh(
     std::vector<Eigen::Vector3d>& vertices,
     std::vector<Eigen::Vector4<unsigned int>>& tetrahedra);
 
-void gmsh2hdf_tag(std::string volumetric_file, std::string gmsh_file, std::string output_file);
+void gmsh2hdf_tag(
+    std::string volumetric_file,
+    std::string gmsh_file,
+    std::string output_file,
+    double delta_x);
 } // namespace wmtk::components::internal
