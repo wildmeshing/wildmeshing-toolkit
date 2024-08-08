@@ -6,9 +6,10 @@ namespace wmtk::components {
 struct WildmeshingOptionsAttributes
 {
     std::string position;
+    std::string position_double;
     //nlohmann::json position;
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WildmeshingOptionsAttributes, position);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WildmeshingOptionsAttributes, position, position_double);
 
 struct WildmeshingOptionsEnvelopeMesh
 {

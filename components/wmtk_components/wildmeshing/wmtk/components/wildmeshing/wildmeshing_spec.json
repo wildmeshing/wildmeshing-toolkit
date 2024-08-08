@@ -23,12 +23,19 @@
     "pointer": "/attributes",
     "type": "object",
     "required": "position",
+    "optional": "position_double",
     "doc": "all attributes required for this component"
   },
   {
     "pointer": "/attributes/position",
     "type": "string",
     "doc": "Position attribute"
+  },
+  {
+    "pointer": "/attributes/position_double",
+    "type": "string",
+    "default": "",
+    "doc": "Position attribute in double. If provided the position attribute will be populated with this attribute, after which this attribute will be deleted."
   },
   {
     "pointer": "/envelopes",

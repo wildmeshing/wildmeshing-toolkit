@@ -6,6 +6,7 @@
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/utils/cast_attribute.hpp>
 
 #include <wmtk/components/base/get_attributes.hpp>
 #include <wmtk/multimesh/consolidate.hpp>
@@ -95,7 +96,7 @@ void write(
             const std::filesystem::path data_dir = "";
             wmtk::io::ParaviewWriter writer(
                 data_dir / (name + "_" + std::to_string(index)),
-                "vertices",
+                vname,
                 *mesh,
                 true,
                 true,
@@ -107,7 +108,7 @@ void write(
             const std::filesystem::path data_dir = "";
             wmtk::io::ParaviewWriter writer(
                 data_dir / (name + "_" + std::to_string(index)),
-                "vertices",
+                vname,
                 *mesh,
                 true,
                 true,
@@ -119,7 +120,7 @@ void write(
             const std::filesystem::path data_dir = "";
             wmtk::io::ParaviewWriter writer(
                 data_dir / (name + "_" + std::to_string(index)),
-                "vertices",
+                vname,
                 *mesh,
                 true,
                 true,
@@ -420,6 +421,26 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     //////////////////////////////////
     // Retriving vertices
+    //
+    if (!options.attributes.position_double.empty()) {
+        wmtk::logger().trace("Found double attribugte");
+        auto pt_double_attribute =
+            mesh->get_attribute_handle<double>(options.attributes.position_double, PrimitiveType::Vertex);
+
+        if (!mesh->has_attribute<Rational>(options.attributes.position, PrimitiveType::Vertex)) {
+            wmtk::utils::cast_attribute<wmtk::Rational>(
+                pt_double_attribute,
+                *mesh,
+                options.attributes.position);
+
+
+        } else {
+            auto pt_attribute = mesh->get_attribute_handle<Rational>(
+                options.attributes.position,
+                PrimitiveType::Vertex);
+            wmtk::utils::cast_attribute<wmtk::Rational>(pt_double_attribute, pt_attribute);
+        }
+    }
     auto pt_attribute =
         mesh->get_attribute_handle<Rational>(options.attributes.position, PrimitiveType::Vertex);
     wmtk::logger().trace("Getting rational point accessor");
@@ -675,13 +696,21 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         }
         envelopes.emplace_back(envelope);
 
+            wmtk::logger().trace("TetWild: getting constrained position {} from {}", v.constrained_position, v.geometry.mesh);
         auto constrained = base::get_attributes(cache, *mesh, v.constrained_position);
         multimesh_meshes.push_back(constrained.front().mesh().shared_from_this());
         assert(constrained.size() == 1);
         pass_through_attributes.emplace_back(constrained.front());
 
+            wmtk::logger().trace("TetWild: Constructing envelope position handle {} == input = {}", v.geometry.mesh, v.geometry.mesh == "input");
+
+            const bool has_double_pos = envelope->has_attribute<double>(v.geometry.position, PrimitiveType::Vertex);
+            const bool has_rational_pos = envelope->has_attribute<Rational>(v.geometry.position, PrimitiveType::Vertex);
+            assert(has_double_pos || has_rational_pos);
+            assert((v.geometry.mesh == "input") == has_double_pos);
+
         auto envelope_position_handle =
-            v.geometry.mesh == "input"
+            has_double_pos 
                 ? envelope->get_attribute_handle<double>(v.geometry.position, PrimitiveType::Vertex)
                 : envelope->get_attribute_handle<Rational>(
                       v.geometry.position,
@@ -716,6 +745,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // Invariants
     //////////////////////////////////
 
+    wmtk::logger().trace("Going through invariants");
     auto inversion_invariant =
         std::make_shared<SimplexInversionInvariant<Rational>>(*mesh, pt_attribute.as<Rational>());
 

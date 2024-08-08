@@ -205,12 +205,12 @@ WMTK_INTEGRATION("insertion_open", false);
 WMTK_INTEGRATION("multimesh", false);
 WMTK_INTEGRATION("multimesh_boundary_2d", false);
 WMTK_INTEGRATION("multimesh_boundary_3d", false);
-WMTK_INTEGRATION("isotropic_remeshing", false);
-WMTK_INTEGRATION("isotropic_remeshing_mm", false);
+WMTK_INTEGRATION("isotropic_remeshing", true);
+WMTK_INTEGRATION("isotropic_remeshing_mm", true);
 WMTK_INTEGRATION("disk_fan_mm", false);
-WMTK_INTEGRATION("grid", false);
+WMTK_INTEGRATION("grid", true);
 WMTK_INTEGRATION("wildmeshing_2d", true);
-// WMTK_INTEGRATION("wildmeshing_3d", false);
+WMTK_INTEGRATION("wildmeshing_3d", false);
 WMTK_INTEGRATION("marching", false);
 
 
