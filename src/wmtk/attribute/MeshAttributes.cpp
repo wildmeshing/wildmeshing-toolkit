@@ -135,7 +135,8 @@ AttributeHandle MeshAttributes<T>::attribute_handle(const std::string& name) con
 template <typename T>
 bool MeshAttributes<T>::has_attribute(const std::string& name) const
 {
-    return m_handles.find(name) != m_handles.end();
+    auto it = m_handles.find(name);
+    return it != m_handles.end() && bool(m_attributes[it->second.index]);
 }
 
 template <typename T>
@@ -248,6 +249,22 @@ void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& at
 }
 
 
+template <typename T>
+void MeshAttributes<T>::remove_attribute(const AttributeHandle& attribute)
+{
+    m_attributes[attribute.index].reset();
+}
+
+template <typename T>
+void MeshAttributes<T>::clear_dead_attribute_names() {
+    for (auto it = m_handles.begin(); it != m_handles.end(); /* no increment */) {
+        if (!bool(m_attributes[it->second.index])) {
+            it = m_handles.erase(it);
+        } else {
+        ++it;
+        }
+    }
+}
 template <typename T>
 std::string MeshAttributes<T>::get_name(const AttributeHandle& handle) const
 {

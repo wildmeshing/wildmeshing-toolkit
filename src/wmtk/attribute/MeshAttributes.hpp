@@ -69,6 +69,8 @@ public:
      * @param attributes Vector of attributes that should be removed.
      */
     void remove_attributes(const std::vector<AttributeHandle>& attributes);
+    void remove_attribute(const AttributeHandle& attributes);
+    void clear_dead_attribute_names();
 
     bool operator==(const MeshAttributes<T>& other) const;
     void push_scope();

@@ -357,5 +357,19 @@ void AttributeManager::clear_attributes(
     run(char{});
     run(Rational{});
 }
+void AttributeManager::delete_attribute(
+    const attribute::MeshAttributeHandle::HandleVariant& to_delete)
+{
+    std::visit(
+        [&](auto&& val) noexcept {
+            using HandleType = typename std::decay_t<decltype(val)>;
+            if constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic<
+                              HandleType>()) {
+                using T = typename HandleType::Type;
+                get<T>(val).remove_attribute(val.base_handle());
+            }
+        },
+        to_delete);
+}
 
 } // namespace wmtk::attribute
