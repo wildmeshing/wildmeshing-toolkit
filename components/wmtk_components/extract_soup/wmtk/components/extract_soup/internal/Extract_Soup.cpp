@@ -619,6 +619,12 @@ void gmsh2hdf_tag(
         HDF5Writer writer(output_file + ".hdf5");
         mesh.serialize(writer);
     }
+
+    {
+        ParaviewWriter writer(output_file + ".vtu", "vertices", mesh, false, false, false, true);
+        mesh.serialize(writer);
+    }
+
     spdlog::info("max:{} B\n", wmtk::getPeakRSS());
 
     if (!mesh.is_connectivity_valid()) {
