@@ -210,30 +210,34 @@ void MeshAttributes<T>::guarantee_at_least(const int64_t size)
 template <typename T>
 void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& attributes)
 {
-    std::vector<int64_t> remove_indices;
-    remove_indices.reserve(attributes.size());
-    for (const AttributeHandle& h : attributes) {
-        remove_indices.emplace_back(h.index);
+    if(attributes.empty()) {
+        return;
     }
+    std::vector<int64_t> remove_indices;
+    std::transform(attributes.begin(),attributes.end(),std::back_inserter(remove_indices), [](const AttributeHandle& h) {
+            return h.index;
+            });
     std::sort(remove_indices.begin(), remove_indices.end());
+    remove_indices.erase(std::unique(remove_indices.begin(),remove_indices.end()), remove_indices.end());
+
+    size_t old_index = 0;
+    size_t new_index = 0;
 
     std::vector<bool> keep_mask(m_attributes.size(), true);
     for (const int64_t& i : remove_indices) {
         keep_mask[i] = false;
     }
+    std::vector<std::string> names(m_attributes.size() - remove_indices.size());
 
-    std::vector<std::unique_ptr<Attribute<T>>> remaining_attributes;
-    remaining_attributes.reserve(attributes.size());
 
     std::vector<int64_t> old_to_new_id(m_attributes.size(), -1);
-    for (size_t i = 0, id = 0; i < keep_mask.size(); ++i) {
-        if (keep_mask[i]) {
-            old_to_new_id[i] = id++;
-            remaining_attributes.emplace_back(std::move(m_attributes[i]));
-            // remaining_attributes.emplace_back(std::move(m_attributes[i]));
-            assert(remaining_attributes.size() == id);
+    for (old_index = 0; old_index < keep_mask.size(); ++old_index) {
+        if (keep_mask[old_index]) {
+            old_to_new_id[old_index] = new_index;
+            m_attributes[new_index++] = std::move(m_attributes[old_index]);
         }
     }
+    m_attributes.resize(new_index);
 
     // clean up m_handles
     for (auto it = m_handles.begin(); it != m_handles.end(); /* no increment */) {
@@ -245,7 +249,6 @@ void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& at
         }
     }
 
-    m_attributes = std::move(remaining_attributes);
 }
 
 

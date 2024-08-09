@@ -334,6 +334,8 @@ void AttributeManager::clear_attributes(
                     using T = typename HandleType::Type;
                     customs.get<T>()[get_primitive_type_id(val.primitive_type())].emplace_back(
                         val.base_handle());
+                } else {
+                assert(false); // this code doesn't work with hybrid rational types
                 }
             },
             attr);
@@ -343,8 +345,9 @@ void AttributeManager::clear_attributes(
     auto run = [&](auto t) {
         using T = typename std::decay_t<decltype(t)>;
         auto& mycustoms = customs.get<T>();
+        const auto& attributes = get<T>();
 
-        for (size_t ptype_id = 0; ptype_id < m_char_attributes.size(); ++ptype_id) {
+        for (size_t ptype_id = 0; ptype_id < attributes.size(); ++ptype_id) {
             const PrimitiveType primitive_type = get_primitive_type_from_id(ptype_id);
 
 
