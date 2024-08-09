@@ -220,34 +220,13 @@ void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& at
     std::sort(remove_indices.begin(), remove_indices.end());
     remove_indices.erase(std::unique(remove_indices.begin(),remove_indices.end()), remove_indices.end());
 
-    size_t old_index = 0;
-    size_t new_index = 0;
 
-    std::vector<bool> keep_mask(m_attributes.size(), true);
     for (const int64_t& i : remove_indices) {
-        keep_mask[i] = false;
+        m_attributes[i].reset();
     }
-    std::vector<std::string> names(m_attributes.size() - remove_indices.size());
 
 
-    std::vector<int64_t> old_to_new_id(m_attributes.size(), -1);
-    for (old_index = 0; old_index < keep_mask.size(); ++old_index) {
-        if (keep_mask[old_index]) {
-            old_to_new_id[old_index] = new_index;
-            m_attributes[new_index++] = std::move(m_attributes[old_index]);
-        }
-    }
-    m_attributes.resize(new_index);
-
-    // clean up m_handles
-    for (auto it = m_handles.begin(); it != m_handles.end(); /* no increment */) {
-        if (!keep_mask[it->second.index]) {
-            it = m_handles.erase(it);
-        } else {
-            it->second.index = old_to_new_id[it->second.index];
-            ++it;
-        }
-    }
+    clear_dead_attributes();
 
 }
 
@@ -259,14 +238,28 @@ void MeshAttributes<T>::remove_attribute(const AttributeHandle& attribute)
 }
 
 template <typename T>
-void MeshAttributes<T>::clear_dead_attribute_names() {
-    for (auto it = m_handles.begin(); it != m_handles.end(); /* no increment */) {
-        if (!bool(m_attributes[it->second.index])) {
-            it = m_handles.erase(it);
-        } else {
-        ++it;
+void MeshAttributes<T>::clear_dead_attributes() {
+    size_t old_index = 0;
+    size_t new_index = 0;
+    std::vector<int64_t> old_to_new_id(m_attributes.size(), -1);
+    for (old_index = 0; old_index < m_attributes.size(); ++old_index) {
+        if (bool(m_attributes[old_index])) {
+            old_to_new_id[old_index] = new_index;
+            m_attributes[new_index++] = std::move(m_attributes[old_index]);
         }
     }
+    m_attributes.resize(new_index);
+
+    // clean up m_handles
+    for (auto it = m_handles.begin(); it != m_handles.end(); /* no increment */) {
+        if (int64_t new_ind = old_to_new_id[it->second.index]; new_ind == -1) {
+            it = m_handles.erase(it);
+        } else {
+            it->second.index = new_ind;
+            ++it;
+        }
+    }
+
 }
 template <typename T>
 std::string MeshAttributes<T>::get_name(const AttributeHandle& handle) const

@@ -70,7 +70,7 @@ public:
      */
     void remove_attributes(const std::vector<AttributeHandle>& attributes);
     void remove_attribute(const AttributeHandle& attributes);
-    void clear_dead_attribute_names();
+    void clear_dead_attributes();
 
     bool operator==(const MeshAttributes<T>& other) const;
     void push_scope();
