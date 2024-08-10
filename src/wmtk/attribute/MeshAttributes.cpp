@@ -230,7 +230,7 @@ void MeshAttributes<T>::guarantee_at_least(const int64_t size)
 }
 
 template <typename T>
-void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& attributes)
+void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& attributes, bool invalidate_handles)
 {
     if (attributes.empty()) {
         return;
@@ -252,7 +252,9 @@ void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& at
     }
 
 
+    if(invalidate_handles) {
     clear_dead_attributes();
+    }
 }
 
 

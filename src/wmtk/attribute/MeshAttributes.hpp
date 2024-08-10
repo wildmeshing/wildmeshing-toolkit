@@ -67,8 +67,9 @@ public:
      * @brief Remove all passed in attributes.
      *
      * @param attributes Vector of attributes that should be removed.
+     * @param invalidate_handles invalidates all handles. If true this garbage collects old handles
      */
-    void remove_attributes(const std::vector<AttributeHandle>& attributes);
+    void remove_attributes(const std::vector<AttributeHandle>& attributes, bool invalidate_handles = true);
     /**
      * @brief Remove a single attribute
      *
