@@ -54,30 +54,38 @@ template <typename T>
 void MeshAttributes<T>::push_scope()
 {
     for (auto& attr_ptr : m_attributes) {
-        attr_ptr->push_scope();
+        if (bool(attr_ptr)) {
+            attr_ptr->push_scope();
+        }
     }
 }
 template <typename T>
 void MeshAttributes<T>::pop_scope(bool apply_updates)
 {
     for (auto& attr_ptr : m_attributes) {
-        attr_ptr->pop_scope(apply_updates);
+        if (bool(attr_ptr)) {
+            attr_ptr->pop_scope(apply_updates);
+        }
     }
 }
 template <typename T>
 void MeshAttributes<T>::rollback_current_scope()
 {
     for (auto& attr_ptr : m_attributes) {
-        attr_ptr->rollback_current_scope();
+        if (bool(attr_ptr)) {
+            attr_ptr->rollback_current_scope();
+        }
     }
 }
 template <typename T>
 void MeshAttributes<T>::change_to_parent_scope() const
 {
     for (const auto& attr_ptr : m_attributes) {
-        auto& stack = attr_ptr->get_local_scope_stack();
+        if (bool(attr_ptr)) {
+            auto& stack = attr_ptr->get_local_scope_stack();
 
-        stack.change_to_next_scope();
+            stack.change_to_next_scope();
+        }
     }
 }
 
@@ -85,7 +93,9 @@ template <typename T>
 void MeshAttributes<T>::change_to_child_scope() const
 {
     for (const auto& attr_ptr : m_attributes) {
-        attr_ptr->get_local_scope_stack().change_to_previous_scope();
+        if (bool(attr_ptr)) {
+            attr_ptr->get_local_scope_stack().change_to_previous_scope();
+        }
     }
 }
 
@@ -124,7 +134,9 @@ template <typename T>
 void MeshAttributes<T>::assert_capacity_valid(int64_t cap) const
 {
     for (const auto& a : m_attributes) {
-        assert(a->reserved_size() >= cap);
+        if (bool(a)) {
+            assert(a->reserved_size() >= cap);
+        }
     }
 }
 template <typename T>
@@ -149,7 +161,11 @@ bool MeshAttributes<T>::operator==(const MeshAttributes<T>& other) const
         return false;
     }
     for (size_t j = 0; j < m_attributes.size(); ++j) {
-        if (!(*m_attributes[j] == *other.m_attributes[j])) {
+        const bool exists = bool(m_attributes[j]);
+        const bool o_exists = bool(other.m_attributes[j]);
+        if (exists != o_exists) {
+            return false;
+        } else if (exists && o_exists && !(*m_attributes[j] == *other.m_attributes[j])) {
             return false;
         }
     }
@@ -210,15 +226,19 @@ void MeshAttributes<T>::guarantee_at_least(const int64_t size)
 template <typename T>
 void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& attributes)
 {
-    if(attributes.empty()) {
+    if (attributes.empty()) {
         return;
     }
     std::vector<int64_t> remove_indices;
-    std::transform(attributes.begin(),attributes.end(),std::back_inserter(remove_indices), [](const AttributeHandle& h) {
-            return h.index;
-            });
+    std::transform(
+        attributes.begin(),
+        attributes.end(),
+        std::back_inserter(remove_indices),
+        [](const AttributeHandle& h) { return h.index; });
     std::sort(remove_indices.begin(), remove_indices.end());
-    remove_indices.erase(std::unique(remove_indices.begin(),remove_indices.end()), remove_indices.end());
+    remove_indices.erase(
+        std::unique(remove_indices.begin(), remove_indices.end()),
+        remove_indices.end());
 
 
     for (const int64_t& i : remove_indices) {
@@ -227,7 +247,6 @@ void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& at
 
 
     clear_dead_attributes();
-
 }
 
 
@@ -238,7 +257,8 @@ void MeshAttributes<T>::remove_attribute(const AttributeHandle& attribute)
 }
 
 template <typename T>
-void MeshAttributes<T>::clear_dead_attributes() {
+void MeshAttributes<T>::clear_dead_attributes()
+{
     size_t old_index = 0;
     size_t new_index = 0;
     std::vector<int64_t> old_to_new_id(m_attributes.size(), -1);
@@ -259,7 +279,6 @@ void MeshAttributes<T>::clear_dead_attributes() {
             ++it;
         }
     }
-
 }
 template <typename T>
 std::string MeshAttributes<T>::get_name(const AttributeHandle& handle) const
