@@ -95,8 +95,13 @@ public:
 
     bool has_attribute(const std::string& name) const;
 
-    // the number of attributes held in this object
+    // the number of active attributes held in this object
+    // Note that the set of active attribute indices is not defined by the integers between 0, attribute_count. To get a list of valid handles use active_attributes
+    // This function is not that fast
     size_t attribute_count() const;
+
+    // Returns a vector of handles to the set of active attributes
+    std::vector<AttributeHandle> active_attributes() const;
     void assert_capacity_valid(int64_t cap) const;
 
 protected:
