@@ -50,5 +50,8 @@ Mesh::Mesh(const int64_t& dimension, const int64_t& max_primitive_type_id, Primi
 }
 
 
-Mesh::~Mesh() = default;
+Mesh::~Mesh() {
+
+    m_multi_mesh_manager.detach_children();
+}
 } // namespace wmtk

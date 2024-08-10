@@ -334,6 +334,8 @@ void AttributeManager::clear_attributes(
                     using T = typename HandleType::Type;
                     customs.get<T>()[get_primitive_type_id(val.primitive_type())].emplace_back(
                         val.base_handle());
+                } else {
+                assert(false); // this code doesn't work with hybrid rational types
                 }
             },
             attr);
@@ -343,8 +345,9 @@ void AttributeManager::clear_attributes(
     auto run = [&](auto t) {
         using T = typename std::decay_t<decltype(t)>;
         auto& mycustoms = customs.get<T>();
+        const auto& attributes = get<T>();
 
-        for (size_t ptype_id = 0; ptype_id < m_char_attributes.size(); ++ptype_id) {
+        for (size_t ptype_id = 0; ptype_id < attributes.size(); ++ptype_id) {
             const PrimitiveType primitive_type = get_primitive_type_from_id(ptype_id);
 
 
@@ -356,6 +359,20 @@ void AttributeManager::clear_attributes(
     run(int64_t{});
     run(char{});
     run(Rational{});
+}
+void AttributeManager::delete_attribute(
+    const attribute::MeshAttributeHandle::HandleVariant& to_delete)
+{
+    std::visit(
+        [&](auto&& val) noexcept {
+            using HandleType = typename std::decay_t<decltype(val)>;
+            if constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic<
+                              HandleType>()) {
+                using T = typename HandleType::Type;
+                get<T>(val).remove_attribute(val.base_handle());
+            }
+        },
+        to_delete);
 }
 
 } // namespace wmtk::attribute

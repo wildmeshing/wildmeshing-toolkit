@@ -255,6 +255,8 @@ public:
         const std::vector<attribute::MeshAttributeHandle::HandleVariant>& keep_attributes);
     void clear_attributes();
     void clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes);
+    void delete_attribute(const attribute::MeshAttributeHandle& to_delete);
+    void delete_attribute(const attribute::MeshAttributeHandle::HandleVariant& to_delete);
 
 
     // creates a scope as int64_t as the AttributeScopeHandle exists

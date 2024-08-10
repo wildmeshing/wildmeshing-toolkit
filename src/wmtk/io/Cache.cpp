@@ -180,6 +180,16 @@ void Cache::flush_multimeshes()
     }
 }
 
+std::vector<std::string> Cache::mesh_names()
+{
+    std::vector<std::string> names;
+    for (const auto& fp : m_file_paths) {
+        names.emplace_back(fp.first);
+    }
+
+    return names;
+}
+
 void Cache::write_mesh(
     const Mesh& m,
     const std::string& name,
