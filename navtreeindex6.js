@@ -1,5 +1,7 @@
 var NAVTREEINDEX6 =
 {
+"classwmtk_1_1_scheduler_stats.html#ae6e50990c7c4705a810c633755e9c2c0":[5,0,2,43,6],
+"classwmtk_1_1_simplex_inversion_invariant.html":[5,0,2,23],
 "classwmtk_1_1_simplex_inversion_invariant.html#a06bc64243e7edc0f435f57e67e903dbd":[5,0,2,23,0],
 "classwmtk_1_1_simplex_inversion_invariant.html#a1163728175bfbd4dc26f4861019ee591":[5,0,2,23,1],
 "classwmtk_1_1_simplex_inversion_invariant.html#a9368c5b1963e3fb92b2024d1ab85df56":[5,0,2,23,4],
@@ -247,7 +249,5 @@ var NAVTREEINDEX6 =
 "classwmtk_1_1_tuple.html#ac21eef2d77eefcac56d390c645fe7c1e":[5,0,2,47,11],
 "classwmtk_1_1_tuple.html#ac3cd5381c7147e3ff35347c574635311":[5,0,2,47,5],
 "classwmtk_1_1_tuple.html#acf945c2bb0bf6b0386c0ffebf222303f":[5,0,2,47,0],
-"classwmtk_1_1_tuple.html#ad2faeb9ca9f5bf346bfc104f9095e51f":[5,0,2,47,3],
-"classwmtk_1_1_tuple.html#ae00aedffbf97f4e854d05099801960a6":[5,0,2,47,19],
-"classwmtk_1_1_tuple.html#ae723236d95ba6bd3a28a590d968036dd":[5,0,2,47,1]
+"classwmtk_1_1_tuple.html#ad2faeb9ca9f5bf346bfc104f9095e51f":[5,0,2,47,3]
 };

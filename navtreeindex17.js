@@ -1,5 +1,10 @@
 var NAVTREEINDEX17 =
 {
+"internal_2winding__number_8cpp.html":[6,0,0,1,24,0,0,0,0,0],
+"internal_2winding__number_8cpp.html#a18a56f1ee7f5d72c7557922789a96802":[6,0,0,1,24,0,0,0,0,0,0],
+"internal_2winding__number_8cpp.html#afb68ce2cd6102c4f403bb39329da8a02":[6,0,0,1,24,0,0,0,0,0,1],
+"internal_2winding__number_8cpp_source.html":[6,0,0,1,24,0,0,0,0,0],
+"internal_2winding__number_8hpp.html":[6,0,0,1,24,0,0,0,0,1],
 "internal_2winding__number_8hpp.html#a18a56f1ee7f5d72c7557922789a96802":[6,0,0,1,24,0,0,0,0,1,0],
 "internal_2winding__number_8hpp.html#afb68ce2cd6102c4f403bb39329da8a02":[6,0,0,1,24,0,0,0,0,1,1],
 "internal_2winding__number_8hpp_source.html":[6,0,0,1,24,0,0,0,0,1],
@@ -244,10 +249,5 @@ var NAVTREEINDEX17 =
 "namespacemembers_v.html":[4,1,0,20],
 "namespacemembers_vars.html":[4,1,2],
 "namespacemembers_w.html":[4,1,0,21],
-"namespacenlohmann.html":[4,0,2],
-"namespaceparaviewo.html":[4,0,3],
-"namespacepolysolve.html":[4,0,4],
-"namespacepolysolve_1_1nonlinear.html":[4,0,4,0],
-"namespaces.html":[4,0],
-"namespacestd.html":[4,0,6]
+"namespacenlohmann.html":[4,0,2]
 };

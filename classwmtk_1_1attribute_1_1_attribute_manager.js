@@ -11,6 +11,7 @@ var classwmtk_1_1attribute_1_1_attribute_manager =
     [ "child_hashes", "classwmtk_1_1attribute_1_1_attribute_manager.html#a7ee8d15e43059df1cfe4c81f4383529a", null ],
     [ "clear_attributes", "classwmtk_1_1attribute_1_1_attribute_manager.html#a835244773a5c602c821f39e4cc730477", null ],
     [ "create_scope", "classwmtk_1_1attribute_1_1_attribute_manager.html#a1c8738df1731c57be9b261d84440fe9a", null ],
+    [ "delete_attribute", "classwmtk_1_1attribute_1_1_attribute_manager.html#ada6e3ba92183d3e7e4a3ec82d1a6de53", null ],
     [ "flush_all_scopes", "classwmtk_1_1attribute_1_1_attribute_manager.html#a7149164cd55886c03b347144bfcd0948", null ],
     [ "get", "classwmtk_1_1attribute_1_1_attribute_manager.html#a8f09c6131e0dbf55f249c5eb97c3216b", null ],
     [ "get", "classwmtk_1_1attribute_1_1_attribute_manager.html#ac0e453a2eb1fc31f68b4a73007090c40", null ],

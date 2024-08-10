@@ -122,88 +122,95 @@ $(document).ready(function(){initNavTree('internal_2winding__number_8cpp_source.
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_eigen_matrix_writer_8hpp.html">wmtk/utils/EigenMatrixWriter.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &lt;igl/bfs_orient.h&gt;</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &lt;igl/fast_winding_number.h&gt;</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &lt;igl/winding_number.h&gt;</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_rational_8hpp.html">wmtk/utils/Rational.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160; </div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a> {</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
-<div class="line"><a name="l00014"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1internal.html#a18a56f1ee7f5d72c7557922789a96802">   14</a></span>&#160;Eigen::VectorXd <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a18a56f1ee7f5d72c7557922789a96802">winding_number</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; m, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp; surface)</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;{</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html">wmtk::utils::EigenMatrixWriter</a> m_writer, surface_writer;</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    m.<a class="code" href="classwmtk_1_1_mesh.html#a32203cf93aa0cff5c2e5c1fac502ec27">serialize</a>(m_writer);</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    surface.<a class="code" href="classwmtk_1_1_mesh.html#a32203cf93aa0cff5c2e5c1fac502ec27">serialize</a>(surface_writer);</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    Eigen::MatrixX&lt;Rational&gt; m_pos_rational, surface_pos_rational;</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    Eigen::MatrixXd m_pos, surface_pos;</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;int64_t&gt;</a> m_FV, surface_FV;</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    m_writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a3907d601b0f4f64c662e4c32da9ca52c">get_position_matrix</a>(m_pos_rational);</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    assert(m_pos_rational.cols() == 3);</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    m_pos.resize(m_pos_rational.rows(), m_pos_rational.cols());</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    m_pos = m_pos_rational.cast&lt;<span class="keywordtype">double</span>&gt;();</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    surface_writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a3907d601b0f4f64c662e4c32da9ca52c">get_position_matrix</a>(surface_pos_rational);</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    surface_pos.resize(surface_pos_rational.rows(), surface_pos_rational.cols());</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    surface_pos = surface_pos_rational.cast&lt;<span class="keywordtype">double</span>&gt;();</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keywordflow">switch</span> (m.<a class="code" href="classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9">top_simplex_type</a>()) {</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keywordflow">case</span> (<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>): {</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        m_writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a7d76c607fec79828f387677795e990ab">get_TV_matrix</a>(m_FV);</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    }</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keywordflow">case</span> (<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>): {</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        m_writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#abad266697117582fd962efd4129a4389">get_FV_matrix</a>(m_FV);</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    }</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keywordflow">case</span> (<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>): {</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        m_writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a5efd88e142a5559e8c79b2de5858b9f8">get_EV_matrix</a>(m_FV);</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    }</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keywordflow">default</span>: <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;Unsupported Mesh Type&quot;</span>);</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    }</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    surface_writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#abad266697117582fd962efd4129a4389">get_FV_matrix</a>(surface_FV);</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    Eigen::MatrixXd centroids;</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    centroids.resize(m_FV.rows(), 3);</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; m_FV.rows(); ++i) {</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Eigen::Vector3d</a> centroid(0, 0, 0);</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keywordflow">for</span> (int64_t j = 0; j &lt; m_FV.cols(); ++j) {</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> v_pos = m_pos.row(m_FV(i, j));</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            centroid = centroid + v_pos;</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        }</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        centroids.row(i) = centroid / m_FV.cols();</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    }</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="comment">// correct the orientation of the surface mesh</span></div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;int64_t&gt;</a> _C;</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    igl::bfs_orient(surface_FV, surface_FV, _C);</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    Eigen::VectorXd winding_numbers = <a class="code" href="namespacewmtk_1_1components_1_1internal.html#afb68ce2cd6102c4f403bb39329da8a02">winding_number_internal</a>(centroids, surface_pos, surface_FV);</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keywordflow">return</span> winding_numbers;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;}</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1internal.html#afb68ce2cd6102c4f403bb39329da8a02">   71</a></span>&#160;Eigen::VectorXd <a class="code" href="namespacewmtk_1_1components_1_1internal.html#afb68ce2cd6102c4f403bb39329da8a02">winding_number_internal</a>(</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keyword">const</span> Eigen::MatrixXd&amp; query_points,</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keyword">const</span> Eigen::MatrixXd&amp; surface_V,</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;int64_t&gt;</a>&amp; surface_F)</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;{</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    Eigen::VectorXd winding_numbers;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    igl::fast_winding_number(surface_V, surface_F, query_points, winding_numbers);</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keywordflow">return</span> winding_numbers;</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;}</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;} <span class="comment">// namespace wmtk::components::internal</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#if defined(__GNUG__) &amp;&amp; !defined(__clang__)</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#pragma GCC diagnostic push</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#pragma GCC diagnostic ignored &quot;-Warray-bounds&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &lt;igl/fast_winding_number.h&gt;</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &lt;igl/winding_number.h&gt;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#if defined(__GNUG__) &amp;&amp; !defined(__clang__)</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#pragma GCC diagnostic pop</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_rational_8hpp.html">wmtk/utils/Rational.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a> {</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
+<div class="line"><a name="l00021"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1internal.html#a18a56f1ee7f5d72c7557922789a96802">   21</a></span>&#160;Eigen::VectorXd <a class="code" href="namespacewmtk_1_1components_1_1internal.html#a18a56f1ee7f5d72c7557922789a96802">winding_number</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; m, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp; surface)</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;{</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html">wmtk::utils::EigenMatrixWriter</a> m_writer, surface_writer;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    m.<a class="code" href="classwmtk_1_1_mesh.html#a32203cf93aa0cff5c2e5c1fac502ec27">serialize</a>(m_writer);</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    surface.<a class="code" href="classwmtk_1_1_mesh.html#a32203cf93aa0cff5c2e5c1fac502ec27">serialize</a>(surface_writer);</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    Eigen::MatrixX&lt;Rational&gt; m_pos_rational, surface_pos_rational;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    Eigen::MatrixXd m_pos, surface_pos;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;int64_t&gt;</a> m_FV, surface_FV;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    m_writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a3907d601b0f4f64c662e4c32da9ca52c">get_position_matrix</a>(m_pos_rational);</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    assert(m_pos_rational.cols() == 3);</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    m_pos.resize(m_pos_rational.rows(), m_pos_rational.cols());</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    m_pos = m_pos_rational.cast&lt;<span class="keywordtype">double</span>&gt;();</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    surface_writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a3907d601b0f4f64c662e4c32da9ca52c">get_position_matrix</a>(surface_pos_rational);</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    surface_pos.resize(surface_pos_rational.rows(), surface_pos_rational.cols());</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    surface_pos = surface_pos_rational.cast&lt;<span class="keywordtype">double</span>&gt;();</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keywordflow">switch</span> (m.<a class="code" href="classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9">top_simplex_type</a>()) {</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keywordflow">case</span> (<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">PrimitiveType::Tetrahedron</a>): {</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        m_writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a7d76c607fec79828f387677795e990ab">get_TV_matrix</a>(m_FV);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    }</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keywordflow">case</span> (<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">PrimitiveType::Triangle</a>): {</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        m_writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#abad266697117582fd962efd4129a4389">get_FV_matrix</a>(m_FV);</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    }</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordflow">case</span> (<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>): {</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        m_writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a5efd88e142a5559e8c79b2de5858b9f8">get_EV_matrix</a>(m_FV);</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    }</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordflow">default</span>: <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;Unsupported Mesh Type&quot;</span>);</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    }</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    surface_writer.<a class="code" href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#abad266697117582fd962efd4129a4389">get_FV_matrix</a>(surface_FV);</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    Eigen::MatrixXd centroids;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    centroids.resize(m_FV.rows(), 3);</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; m_FV.rows(); ++i) {</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Eigen::Vector3d</a> centroid(0, 0, 0);</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="keywordflow">for</span> (int64_t j = 0; j &lt; m_FV.cols(); ++j) {</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> v_pos = m_pos.row(m_FV(i, j));</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            centroid = centroid + v_pos;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        }</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        centroids.row(i) = centroid / m_FV.cols();</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    }</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="comment">// correct the orientation of the surface mesh</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;int64_t&gt;</a> _C;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    igl::bfs_orient(surface_FV, surface_FV, _C);</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    Eigen::VectorXd winding_numbers = <a class="code" href="namespacewmtk_1_1components_1_1internal.html#afb68ce2cd6102c4f403bb39329da8a02">winding_number_internal</a>(centroids, surface_pos, surface_FV);</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keywordflow">return</span> winding_numbers;</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;}</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
+<div class="line"><a name="l00078"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1internal.html#afb68ce2cd6102c4f403bb39329da8a02">   78</a></span>&#160;Eigen::VectorXd <a class="code" href="namespacewmtk_1_1components_1_1internal.html#afb68ce2cd6102c4f403bb39329da8a02">winding_number_internal</a>(</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keyword">const</span> Eigen::MatrixXd&amp; query_points,</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keyword">const</span> Eigen::MatrixXd&amp; surface_V,</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">MatrixX&lt;int64_t&gt;</a>&amp; surface_F)</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;{</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    Eigen::VectorXd winding_numbers;</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    igl::fast_winding_number(surface_V, surface_F, query_points, winding_numbers);</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keywordflow">return</span> winding_numbers;</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;}</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;} <span class="comment">// namespace wmtk::components::internal</span></div>
 <div class="ttc" id="a_edge_mesh_8hpp_html"><div class="ttname"><a href="_edge_mesh_8hpp.html">EdgeMesh.hpp</a></div></div>
 <div class="ttc" id="a_eigen_matrix_writer_8hpp_html"><div class="ttname"><a href="_eigen_matrix_writer_8hpp.html">EigenMatrixWriter.hpp</a></div></div>
 <div class="ttc" id="a_rational_8hpp_html"><div class="ttname"><a href="_rational_8hpp.html">Rational.hpp</a></div></div>
 <div class="ttc" id="a_tet_mesh_8hpp_html"><div class="ttname"><a href="_tet_mesh_8hpp.html">TetMesh.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00091">Mesh.hpp:92</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html_a32203cf93aa0cff5c2e5c1fac502ec27"><div class="ttname"><a href="classwmtk_1_1_mesh.html#a32203cf93aa0cff5c2e5c1fac502ec27">wmtk::Mesh::serialize</a></div><div class="ttdeci">void serialize(MeshWriter &amp;writer, const Mesh *local_root=nullptr) const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8cpp_source.html#l00044">Mesh.cpp:44</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html_abaf00438d0700358b160e310d69725c9"><div class="ttname"><a href="classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9">wmtk::Mesh::top_simplex_type</a></div><div class="ttdeci">PrimitiveType top_simplex_type() const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l01017">Mesh.hpp:1017</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html_abaf00438d0700358b160e310d69725c9"><div class="ttname"><a href="classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9">wmtk::Mesh::top_simplex_type</a></div><div class="ttdeci">PrimitiveType top_simplex_type() const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l01019">Mesh.hpp:1019</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_8hpp_source.html#l00018">TriMesh.hpp:19</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1utils_1_1_eigen_matrix_writer_html"><div class="ttname"><a href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html">wmtk::utils::EigenMatrixWriter</a></div><div class="ttdef"><b>Definition:</b> <a href="_eigen_matrix_writer_8hpp_source.html#l00009">EigenMatrixWriter.hpp:10</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1utils_1_1_eigen_matrix_writer_html_a3907d601b0f4f64c662e4c32da9ca52c"><div class="ttname"><a href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a3907d601b0f4f64c662e4c32da9ca52c">wmtk::utils::EigenMatrixWriter::get_position_matrix</a></div><div class="ttdeci">void get_position_matrix(MatrixX&lt; double &gt; &amp;matrix)</div><div class="ttdef"><b>Definition:</b> <a href="_eigen_matrix_writer_8cpp_source.html#l00005">EigenMatrixWriter.cpp:5</a></div></div>
@@ -211,8 +218,8 @@ $(document).ready(function(){initNavTree('internal_2winding__number_8cpp_source.
 <div class="ttc" id="aclasswmtk_1_1utils_1_1_eigen_matrix_writer_html_a7d76c607fec79828f387677795e990ab"><div class="ttname"><a href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#a7d76c607fec79828f387677795e990ab">wmtk::utils::EigenMatrixWriter::get_TV_matrix</a></div><div class="ttdeci">void get_TV_matrix(MatrixX&lt; int64_t &gt; &amp;matrix)</div><div class="ttdef"><b>Definition:</b> <a href="_eigen_matrix_writer_8cpp_source.html#l00016">EigenMatrixWriter.cpp:16</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1utils_1_1_eigen_matrix_writer_html_abad266697117582fd962efd4129a4389"><div class="ttname"><a href="classwmtk_1_1utils_1_1_eigen_matrix_writer.html#abad266697117582fd962efd4129a4389">wmtk::utils::EigenMatrixWriter::get_FV_matrix</a></div><div class="ttdeci">void get_FV_matrix(MatrixX&lt; int64_t &gt; &amp;matrix)</div><div class="ttdef"><b>Definition:</b> <a href="_eigen_matrix_writer_8cpp_source.html#l00021">EigenMatrixWriter.cpp:21</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html_a18a56f1ee7f5d72c7557922789a96802"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html#a18a56f1ee7f5d72c7557922789a96802">wmtk::components::internal::winding_number</a></div><div class="ttdeci">Eigen::VectorXd winding_number(const Mesh &amp;m, const TriMesh &amp;surface)</div><div class="ttdef"><b>Definition:</b> <a href="internal_2winding__number_8cpp_source.html#l00014">winding_number.cpp:14</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html_afb68ce2cd6102c4f403bb39329da8a02"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html#afb68ce2cd6102c4f403bb39329da8a02">wmtk::components::internal::winding_number_internal</a></div><div class="ttdeci">Eigen::VectorXd winding_number_internal(const Eigen::MatrixXd &amp;query_points, const Eigen::MatrixXd &amp;surface_V, const MatrixX&lt; int64_t &gt; &amp;surface_F)</div><div class="ttdef"><b>Definition:</b> <a href="internal_2winding__number_8cpp_source.html#l00071">winding_number.cpp:71</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html_a18a56f1ee7f5d72c7557922789a96802"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html#a18a56f1ee7f5d72c7557922789a96802">wmtk::components::internal::winding_number</a></div><div class="ttdeci">Eigen::VectorXd winding_number(const Mesh &amp;m, const TriMesh &amp;surface)</div><div class="ttdef"><b>Definition:</b> <a href="internal_2winding__number_8cpp_source.html#l00021">winding_number.cpp:21</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html_afb68ce2cd6102c4f403bb39329da8a02"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html#afb68ce2cd6102c4f403bb39329da8a02">wmtk::components::internal::winding_number_internal</a></div><div class="ttdeci">Eigen::VectorXd winding_number_internal(const Eigen::MatrixXd &amp;query_points, const Eigen::MatrixXd &amp;surface_V, const MatrixX&lt; int64_t &gt; &amp;surface_F)</div><div class="ttdef"><b>Definition:</b> <a href="internal_2winding__number_8cpp_source.html#l00078">winding_number.cpp:78</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_a8f74118e77f6f9bce5ebc12a1be515f3"><div class="ttname"><a href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">wmtk::Vector3d</a></div><div class="ttdeci">Vector&lt; double, 3 &gt; Vector3d</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00039">Types.hpp:39</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_ae2013f5a8b3c4a8df232b70b5bf9a146"><div class="ttname"><a href="namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146">wmtk::MatrixX</a></div><div class="ttdeci">Eigen::Matrix&lt; T, Eigen::Dynamic, Eigen::Dynamic &gt; MatrixX</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00014">Types.hpp:14</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::PrimitiveType::Triangle</a></div><div class="ttdeci">@ Triangle</div></div>

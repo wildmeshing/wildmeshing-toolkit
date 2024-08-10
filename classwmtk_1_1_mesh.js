@@ -28,6 +28,8 @@ var classwmtk_1_1_mesh =
     [ "create_scope", "classwmtk_1_1_mesh.html#a75c72ea3e05b6d7b3ab3981589762d1f", null ],
     [ "create_single_mesh_scope", "classwmtk_1_1_mesh.html#a9bc202cb5a2deadfce19a0c733a1a498", null ],
     [ "custom_attributes", "classwmtk_1_1_mesh.html#a1d3ffa74e65ca7932d7ed32c3959e2a1", null ],
+    [ "delete_attribute", "classwmtk_1_1_mesh.html#ab4e40406cd9d1f20b1f493f0529ea309", null ],
+    [ "delete_attribute", "classwmtk_1_1_mesh.html#a16e68f8b676f13f030927e8f295b78de", null ],
     [ "deregister_child_mesh", "classwmtk_1_1_mesh.html#ad43e9c7d4db3d24c9d9c30fa381cf54b", null ],
     [ "get_all", "classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f", null ],
     [ "get_all", "classwmtk_1_1_mesh.html#a893e47f5da1a44ca19eb2b1665506cce", null ],

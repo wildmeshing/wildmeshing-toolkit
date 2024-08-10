@@ -1,5 +1,10 @@
 var NAVTREEINDEX14 =
 {
+"classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ab62e2a31d31b663371640f698c292caa":[5,0,2,6,3,1,3],
+"classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ab6565d369cf4a4918676220a157adc84":[5,0,2,6,3,1,4],
+"classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#abbc7494d3fd150b1d4f23d43645c0ac8":[5,0,2,6,3,1,7],
+"classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#abde449107fdbb8d53b331d0071109a33":[5,0,2,6,3,1,9],
+"classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#adddef387d15254327732043b4006c696":[5,0,2,6,3,1,22],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#afb2540171ed00a0002c0cc164f44cf4f":[5,0,2,6,3,1,15],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_split_new_attribute_topo_info.html":[5,0,2,6,3,2],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_split_new_attribute_topo_info.html#a0102f7ae1b4f12af63b28c0b4494e9d8":[5,0,2,6,3,2,3],
@@ -244,10 +249,5 @@ var NAVTREEINDEX14 =
 "closed__star__iterable_8hpp.html":[6,0,2,0,7,8],
 "closed__star__iterable_8hpp.html#ae37e7bd61fb3f9b968b6ce6f9cf6f11f":[6,0,2,0,7,8,0],
 "closed__star__iterable_8hpp_source.html":[6,0,2,0,7,8],
-"cofaces__single__dimension_8cpp.html":[6,0,2,0,7,9],
-"cofaces__single__dimension_8cpp.html#a822a4b42dd4b13153cbac8ffac5dca9c":[6,0,2,0,7,9,0],
-"cofaces__single__dimension_8cpp.html#a996a48358d73e378978c6d5827cb3212":[6,0,2,0,7,9,1],
-"cofaces__single__dimension_8cpp.html#abee08ace6632fab4e958282840e65e43":[6,0,2,0,7,9,2],
-"cofaces__single__dimension_8cpp_source.html":[6,0,2,0,7,9],
-"cofaces__single__dimension_8hpp.html":[6,0,2,0,7,10]
+"cofaces__single__dimension_8cpp.html":[6,0,2,0,7,9]
 };
