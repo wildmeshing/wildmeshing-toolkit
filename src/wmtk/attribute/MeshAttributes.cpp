@@ -177,14 +177,18 @@ template <typename T>
 void MeshAttributes<T>::set(const AttributeHandle& handle, std::vector<T> val)
 {
     // TODO: should we validate the size of val compared to the internally held data?
-    auto& attr = *m_attributes[handle.index];
+    auto& attr_ptr = m_attributes[handle.index];
+    assert(bool(attr_ptr));
+    auto& attr = *attr_ptr;
     attr.set(std::move(val));
 }
 
 template <typename T>
 size_t MeshAttributes<T>::attribute_size(const AttributeHandle& handle) const
 {
-    return m_attributes[handle.index]->reserved_size();
+    auto& attr_ptr = m_attributes[handle.index];
+    assert(bool(attr_ptr));
+    return attr_ptr->reserved_size();
 }
 
 template <typename T>
@@ -204,7 +208,9 @@ void MeshAttributes<T>::reserve(const int64_t size)
 {
     m_reserved_size = size;
     for (auto& attr_ptr : m_attributes) {
-        attr_ptr->reserve(size);
+        if (bool(attr_ptr)) {
+            attr_ptr->reserve(size);
+        }
     }
 }
 
@@ -302,6 +308,7 @@ void MeshAttributes<T>::set_name(const AttributeHandle& handle, const std::strin
     }
 
     auto& attr = m_attributes[handle.index];
+    assert(bool(attr));
     assert(attr->m_name == old_name);
 
     assert(m_handles.count(name) == 0); // name should not exist already
