@@ -221,7 +221,7 @@ WMTK_INTEGRATION("isotropic_remeshing_mm", false);
 WMTK_INTEGRATION("disk_fan_mm", false);
 WMTK_INTEGRATION("grid", false);
 // WMTK_INTEGRATION("wildmeshing_2d", true);
-// WMTK_INTEGRATION("wildmeshing_3d", false);
+WMTK_INTEGRATION("wildmeshing_3d", false);
 WMTK_INTEGRATION("marching", false);
 
 

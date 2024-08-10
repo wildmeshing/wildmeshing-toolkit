@@ -422,10 +422,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
     // Retriving vertices
     //
-    if (!options.attributes.position_double.empty()) {
+    if (options.attributes.replace_double_coordinate) {
         wmtk::logger().trace("Found double attribugte");
         auto pt_double_attribute =
-            mesh->get_attribute_handle<double>(options.attributes.position_double, PrimitiveType::Vertex);
+            mesh->get_attribute_handle<double>(options.attributes.position, PrimitiveType::Vertex);
 
         if (!mesh->has_attribute<Rational>(options.attributes.position, PrimitiveType::Vertex)) {
             wmtk::utils::cast_attribute<wmtk::Rational>(
@@ -440,6 +440,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 PrimitiveType::Vertex);
             wmtk::utils::cast_attribute<wmtk::Rational>(pt_double_attribute, pt_attribute);
         }
+        mesh->delete_attribute(pt_double_attribute);
     }
     auto pt_attribute =
         mesh->get_attribute_handle<Rational>(options.attributes.position, PrimitiveType::Vertex);
@@ -552,10 +553,19 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         target_edge_length); // defaults to target edge length
 
     // Target edge length update
-    const double min_edge_length =
-        options.envelopes.empty()
-            ? 1e-6 // some default value if no envelope exists
-            : options.envelopes[0].thickness; // use envelope thickness if available
+    const double min_edge_length = [&]() -> double {
+        if (options.envelopes.empty()) {
+            return 1e-6; // some default value if no envelope exists
+        } else {
+            // use envelope thickness if available
+            double r = 0;
+            for (const auto& e : options.envelopes) {
+                r = std::max(r, e.thickness);
+            }
+            assert(r > 0);
+            return r;
+        }
+    }();
     const double target_max_amips = options.target_max_amips;
 
     // Target Edge length update
@@ -682,8 +692,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     std::vector<std::shared_ptr<Mesh>> multimesh_meshes;
 
-    assert(options.envelopes.size() == 4); // four kind of envelopes in tetwild [surface_mesh,
-                                           // open_boudnary, nonmanifold_edges, is_boundary(bbox)]
+    // assert(options.envelopes.size() == 4);
+    // four kind of envelopes in tetwild [surface_mesh,
+    // open_boudnary, nonmanifold_edges, is_boundary(bbox)]
     // TODO: add nonmanifold vertex point mesh
 
     for (const auto& v : options.envelopes) {
@@ -696,21 +707,29 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         }
         envelopes.emplace_back(envelope);
 
-            wmtk::logger().trace("TetWild: getting constrained position {} from {}", v.constrained_position, v.geometry.mesh);
+        wmtk::logger().trace(
+            "TetWild: getting constrained position {} from {}",
+            v.constrained_position,
+            v.geometry.mesh);
         auto constrained = base::get_attributes(cache, *mesh, v.constrained_position);
         multimesh_meshes.push_back(constrained.front().mesh().shared_from_this());
         assert(constrained.size() == 1);
         pass_through_attributes.emplace_back(constrained.front());
 
-            wmtk::logger().trace("TetWild: Constructing envelope position handle {} == input = {}", v.geometry.mesh, v.geometry.mesh == "input");
+        wmtk::logger().trace(
+            "TetWild: Constructing envelope position handle {} == input = {}",
+            v.geometry.mesh,
+            v.geometry.mesh == "input");
 
-            const bool has_double_pos = envelope->has_attribute<double>(v.geometry.position, PrimitiveType::Vertex);
-            const bool has_rational_pos = envelope->has_attribute<Rational>(v.geometry.position, PrimitiveType::Vertex);
-            assert(has_double_pos || has_rational_pos);
-            assert((v.geometry.mesh == "input") == has_double_pos);
+        const bool has_double_pos =
+            envelope->has_attribute<double>(v.geometry.position, PrimitiveType::Vertex);
+        const bool has_rational_pos =
+            envelope->has_attribute<Rational>(v.geometry.position, PrimitiveType::Vertex);
+        assert(has_double_pos || has_rational_pos);
+        assert(!(v.geometry.mesh == "input") || has_double_pos);
 
         auto envelope_position_handle =
-            has_double_pos 
+            has_double_pos
                 ? envelope->get_attribute_handle<double>(v.geometry.position, PrimitiveType::Vertex)
                 : envelope->get_attribute_handle<Rational>(
                       v.geometry.position,
