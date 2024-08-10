@@ -184,7 +184,19 @@ void Mesh::clear_attributes(const std::vector<attribute::MeshAttributeHandle>& k
         mptr->clear_attributes(handles);
     }
 }
+void Mesh::delete_attribute(const attribute::MeshAttributeHandle& to_delete)
+{
+    assert(this == &to_delete.mesh());
 
+    delete_attribute(to_delete.handle());
+
+}
+
+void Mesh::delete_attribute(const attribute::MeshAttributeHandle::HandleVariant& to_delete)
+{
+    m_attribute_manager.delete_attribute(to_delete);
+
+}
 multimesh::attribute::AttributeScopeHandle Mesh::create_scope()
 {
     return multimesh::attribute::AttributeScopeHandle(*this);
