@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include <catch2/catch_test_macros.hpp>
+#include <polysolve/Utils.hpp>
 
 #include <wmtk/utils/Logger.hpp>
 
@@ -232,7 +233,29 @@ WMTK_INTEGRATION("marching", false);
 
 TEST_CASE("integration_benchmark", "[.][benchmark][integration]")
 {
-    // WMTK_INTEGRATION_BODY("wildmeshing_2d_timing",false)
-    WMTK_INTEGRATION_BODY("wildmeshing_3d", false)
-    WMTK_INTEGRATION_BODY("isotropic_remeshing_mm_timing", false)
+    double total_time = 0;
+    int count = 0;
+    double prod = 1;
+
+    nlohmann::json js;
+    auto run = [&](const std::string& name) {
+        double time = 0;
+        {
+            POLYSOLVE_SCOPED_STOPWATCH("Benchmark " + name, time, logger());
+            WMTK_INTEGRATION_BODY(name, false)
+        }
+        js[name] = time;
+        prod *= time;
+        count++;
+    };
+    // run("wildmeshing_2d_timing");
+    {
+        POLYSOLVE_SCOPED_STOPWATCH("Benchmark total time", total_time, logger());
+        run("wildmeshing_3d");
+        run("isotropic_remeshing_mm_timing");
+    }
+    js["total_time"] = total_time;
+    js["geometric_mean_time"] = std::pow(total_time, 1.0 / count);
+
+    fmt::print("{}\n", js.dump());
 }
