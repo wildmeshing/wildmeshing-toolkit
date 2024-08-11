@@ -200,7 +200,21 @@ int64_t MeshAttributes<T>::reserved_size() const
 template <typename T>
 size_t MeshAttributes<T>::attribute_count() const
 {
-    return m_attributes.size();
+    return active_attributes().size();
+}
+template <typename T>
+auto MeshAttributes<T>::active_attributes() const -> std::vector<AttributeHandle>
+{
+    std::vector<AttributeHandle> handles;
+    handles.reserve(m_attributes.size());
+    for(size_t j = 0; j < m_attributes.size(); ++j) {
+        if(bool(m_attributes[j])) {
+            handles.emplace_back(j);
+        }
+    }
+
+    return handles;
+
 }
 
 template <typename T>
