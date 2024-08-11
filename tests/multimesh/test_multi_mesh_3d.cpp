@@ -1191,7 +1191,8 @@ TEST_CASE("test_collapse_multi_mesh_3D_free", "[multimesh][1D][2D][3D]")
 }
 TEST_CASE("test_split_multi_mesh_3D_free", "[multimesh][1D][2D][3D]")
 {
-    auto [mesh_ptr, handles] = make_mesh_with_free_children();
+    auto [mesh_ptr_, handles] = make_mesh_with_free_children();
+    auto mesh_ptr = mesh_ptr_;// just to beat clang issue with structured bindings
 
     auto children = mesh_ptr->get_child_meshes();
     for (const auto& child_ptr : children) {
