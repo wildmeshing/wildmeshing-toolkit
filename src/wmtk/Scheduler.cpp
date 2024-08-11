@@ -1,15 +1,15 @@
 #include "Scheduler.hpp"
 
-#include "Mesh.hpp"
 #include <cassert>
+#include "Mesh.hpp"
 
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
+#include <wmtk/multimesh/utils/check_map_valid.hpp>
 #include <wmtk/simplex/k_ring.hpp>
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/random_seed.hpp>
-#include <wmtk/multimesh/utils/check_map_valid.hpp>
 
 #include <polysolve/Utils.hpp>
 
@@ -66,9 +66,11 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
     {
         POLYSOLVE_SCOPED_STOPWATCH("Executing operation", res.executing_time, logger());
 
+        size_t total_simplices = simplices.size();
 
         if (op.use_random_priority()) {
             for (const auto& s : simplices) {
+                log(res, total_simplices);
                 auto mods = op(s);
                 if (mods.empty())
                     res.fail();
@@ -77,12 +79,16 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
             }
         } else {
             for (const auto& o : order) {
+                log(res, total_simplices);
                 auto mods = op(simplices[o.first]);
                 if (mods.empty())
                     res.fail();
                 else
                     res.succeed();
             }
+        }
+        if (m_update_frequency) {
+            res.print_update_log(total_simplices);
         }
     }
 
@@ -164,6 +170,7 @@ SchedulerStats Scheduler::run_operation_on_all(
         }
 
         {
+            size_t total_simplices = order.size();
             POLYSOLVE_SCOPED_STOPWATCH(
                 "Executing operation",
                 internal_stats.executing_time,
@@ -171,23 +178,25 @@ SchedulerStats Scheduler::run_operation_on_all(
 
             if (op.use_random_priority()) {
                 for (const auto& s : simplices) {
+                    log(internal_stats, total_simplices);
                     auto mods = op(s);
-		    //assert(wmtk::multimesh::utils::check_child_maps_valid(op.mesh()));
+                    // assert(wmtk::multimesh::utils::check_child_maps_valid(op.mesh()));
                     if (mods.empty()) {
                         res.fail();
-		    } else {
-                        res.succeed(); 
-		    }
+                    } else {
+                        res.succeed();
+                    }
                 }
             } else {
                 for (const auto& o : order) {
+                    log(internal_stats, total_simplices);
                     auto mods = op(simplices[o.first]);
-		    //assert(wmtk::multimesh::utils::check_child_maps_valid(op.mesh()));
+                    // assert(wmtk::multimesh::utils::check_child_maps_valid(op.mesh()));
                     if (mods.empty()) {
                         internal_stats.fail();
-		    } else {
+                    } else {
                         internal_stats.succeed();
-		    }
+                    }
                 }
             }
         }
@@ -358,6 +367,39 @@ SchedulerStats Scheduler::run_operation_on_all_coloring(
     m_stats += res;
 
     return res;
+}
+
+void Scheduler::log(size_t total)
+{
+    log(m_stats, total);
+}
+void Scheduler::log(const SchedulerStats& stats, size_t total)
+{
+    if (m_update_frequency) {
+        const size_t freq = m_update_frequency.value();
+        size_t count = stats.number_of_performed_operations();
+        if (count % freq == 0) {
+            stats.print_update_log(total);
+        }
+        count++;
+    }
+}
+
+void Scheduler::set_update_frequency(std::optional<size_t>&& freq)
+{
+    m_update_frequency = std::move(freq);
+}
+
+
+void SchedulerStats::print_update_log(size_t total, spdlog::level::level_enum level) const
+{
+    logger().log(
+        level,
+        "{} success + {} fail = {} out of {}",
+        number_of_successful_operations(),
+        number_of_failed_operations(),
+        number_of_performed_operations(),
+        total);
 }
 
 } // namespace wmtk

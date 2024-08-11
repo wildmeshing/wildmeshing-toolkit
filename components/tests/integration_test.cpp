@@ -40,7 +40,12 @@ bool contains_results(const json& in_args)
     const auto& tests = in_args["tests"];
     for (const auto& type : {"meshes", "vertices", "edges", "faces", "tetrahedra"}) {
         if (!(tests.contains(type) && (tests[type].is_number() || tests[type].is_array()))) {
-            spdlog::info("Test must have type {} = {} and test is an (array type = {} or number type {})", tests.contains(type), type, tests[type].is_number(), tests[type].is_array());
+            spdlog::info(
+                "Test must have type {} = {} and test is an (array type = {} or number type {})",
+                tests.contains(type),
+                type,
+                tests[type].is_number(),
+                tests[type].is_array());
             return false;
         }
     }
@@ -228,6 +233,6 @@ WMTK_INTEGRATION("marching", false);
 TEST_CASE("integration_benchmark", "[.][benchmark][integration]")
 {
     // WMTK_INTEGRATION_BODY("wildmeshing_2d_timing",false)
-    // WMTK_INTEGRATION_BODY("wildmeshing_3d_timing",false)
-    // WMTK_INTEGRATION_BODY("isotropic_remeshing_mm_timing", true)
+    WMTK_INTEGRATION_BODY("wildmeshing_3d", false)
+    WMTK_INTEGRATION_BODY("isotropic_remeshing_mm_timing", false)
 }

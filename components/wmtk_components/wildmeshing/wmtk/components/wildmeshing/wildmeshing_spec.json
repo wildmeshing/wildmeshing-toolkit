@@ -8,7 +8,8 @@
       "passes",
       "target_edge_length",
       "target_max_amips",
-      "intermediate_output"
+      "intermediate_output",
+      "scheduler_update_frequency"
     ]
   },
   {
@@ -93,6 +94,12 @@
     "pointer": "/passes",
     "type": "int",
     "default": 10
+  },
+  {
+    "pointer": "/scheduler_update_frequency",
+    "type": "int",
+    "default": 0,
+    "doc": "Frequency of which the scheduler updates on how many operations have occured"
   },
   {
     "pointer": "/target_edge_length",

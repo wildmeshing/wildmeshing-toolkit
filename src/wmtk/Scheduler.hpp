@@ -1,5 +1,6 @@
 #pragma once
 
+#include <spdlog/common.h>
 #include "operations/Operation.hpp"
 
 namespace wmtk {
@@ -80,6 +81,8 @@ public:
     // private:
     int64_t m_num_op_success = 0;
     int64_t m_num_op_fail = 0;
+
+    void print_update_log(size_t total, spdlog::level::level_enum = spdlog::level::info) const;
 };
 
 class Scheduler
@@ -98,8 +101,14 @@ public:
 
     const SchedulerStats& stats() const { return m_stats; }
 
+    void set_update_frequency(std::optional<size_t>&& freq = {});
+
 private:
     SchedulerStats m_stats;
+    std::optional<size_t> m_update_frequency = {};
+
+    void log(const size_t total);
+    void log(const SchedulerStats& stats, const size_t total);
 };
 
 } // namespace wmtk

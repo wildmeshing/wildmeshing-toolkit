@@ -10,7 +10,7 @@ class Simplex;
 }
 } // namespace wmtk
 
-namespace wmtk::operations::utils {
+namespace wmtk::operations::attribute_update {
 
 
 template <typename MyType, typename ParentType>
@@ -23,39 +23,52 @@ public:
 
     static MyVecType convert(const ParentMatType& v)
     {
-        constexpr static bool is_hybrid_rational = std::is_same_v<
-            ParentType,
-            wmtk::attribute::utils::HybridRationalAttribute<Eigen::Dynamic>::Type>;
+        auto eval = [](const auto& vec) -> MyVecType {
+            if (vec.cols() == 1) {
+                return vec;
+            } else {
+                if constexpr (std::is_same_v<MyType, wmtk::Rational>) {
+                    return vec.rowwise().sum() / int(vec.cols());
+                } else {
+                    return vec.rowwise().mean();
+                }
+            }
+        };
+
+        constexpr static bool is_hybrid_rational =
+            std::is_same_v<
+                ParentType,
+                wmtk::attribute::utils::HybridRationalAttribute<Eigen::Dynamic>::Type> ||
+            std::is_same_v<
+                MyType,
+                wmtk::attribute::utils::HybridRationalAttribute<Eigen::Dynamic>::Type>;
         if constexpr (is_hybrid_rational) {
             assert(false);
             return {};
-        } else if constexpr (
-            std::is_same_v<MyType, wmtk::Rational> && !std::is_same_v<ParentType, wmtk::Rational>) {
-            constexpr auto cast_rational = [](const auto& x) -> MyType {
-                if constexpr (std::is_same_v<ParentType, double>) {
-                    return wmtk::Rational(x, true);
-                } else {
-                    return wmtk::Rational(int(x), true);
-                }
-            };
-            if (v.cols() == 1) {
-                return v.unaryExpr(cast_rational);
+        } else if constexpr (std::is_same_v<MyType, wmtk::Rational>) {
+            if constexpr (std::is_same_v<ParentType, wmtk::Rational>) {
+                return eval(v);
             } else {
-                return v.unaryExpr(cast_rational).rowwise().sum() / wmtk::Rational(int(v.cols()));
+                constexpr auto cast_rational = [](const auto& x) -> MyType {
+                    if constexpr (std::is_same_v<ParentType, double>) {
+                        return wmtk::Rational(x, true);
+                    } else {
+                        return wmtk::Rational(int(x), true);
+                    }
+                };
+                return eval(v.unaryExpr(cast_rational));
             }
 
 
-        } else {
-            if (v.cols() == 1) {
-                return v.template cast<MyType>();
+        } else { // my type is not rational
+            if constexpr (std::is_same_v<ParentType, wmtk::Rational>) {
+                constexpr auto cast_from_rational = [](const auto& x) -> MyType {
+                    return x.to_double();
+                };
+                return eval(v.unaryExpr(cast_from_rational));
             } else {
-                if constexpr (std::is_same_v<MyType, wmtk::Rational>) {
-                    return v.template cast<MyType>().rowwise().sum() / int(v.cols());
-                } else {
-                    return v.template cast<MyType>().rowwise().mean();
-                }
+                return eval(v.template cast<MyType>());
             }
-            return {};
         }
     }
 

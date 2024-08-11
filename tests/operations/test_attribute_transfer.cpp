@@ -369,10 +369,10 @@ TEST_CASE("attr_cast", "[operations][attributes]")
         m.get_attribute_dimension(pos_handle.as<double>()));
 
 
-    wmtk::operations::utils::CastAttributeTransferStrategy<wmtk::Rational, double> caster(
+    wmtk::operations::attribute_update::CastAttributeTransferStrategy<wmtk::Rational, double> caster(
         pos_rational_handle,
         pos_handle);
-    wmtk::operations::utils::CastAttributeTransferStrategy<double, double> caster2(
+    wmtk::operations::attribute_update::CastAttributeTransferStrategy<double, double> caster2(
         pos_handle2,
         pos_handle);
 

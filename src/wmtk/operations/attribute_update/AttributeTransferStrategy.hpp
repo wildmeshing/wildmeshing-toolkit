@@ -1,10 +1,8 @@
 #pragma once
 #include "AttributeTransferStrategyBase.hpp"
+#include <wmtk/Mesh.hpp>
 
 
-namespace wmtk {
-class Mesh;
-}
 namespace wmtk::operations {
 
 
@@ -99,15 +97,18 @@ SingleAttributeTransferStrategy<MyType, ParentType>::SingleAttributeTransferStra
     : AttributeTransferStrategy<MyType>(me)
     , m_functor(f)
     , m_parent_handle(parent)
-{}
+{
+    assert(me.template holds<MyType>());
+    assert(parent.template holds<ParentType>());
+}
 template <typename MyType, typename ParentType>
 SingleAttributeTransferStrategy<MyType, ParentType>::SingleAttributeTransferStrategy(
     const attribute::MeshAttributeHandle& me,
     const attribute::MeshAttributeHandle& parent,
     FunctorWithoutSimplicesType&& f)
-    : AttributeTransferStrategy<MyType>(me)
-    , m_functor(make_nosimplices_func(std::move(f)))
-    , m_parent_handle(parent)
+    : SingleAttributeTransferStrategy(me
+    , parent
+    , make_nosimplices_func(std::move(f)))
 {}
 
 template <typename MyType, typename ParentType>

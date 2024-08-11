@@ -10,7 +10,7 @@ void cast_attribute(
     const wmtk::attribute::MeshAttributeHandle& new_handle)
 {
     std::visit(
-        [&](const auto& typed_handle) {
+        [&](const auto& typed_handle) noexcept {
             using ParentHandleType = std::decay_t<decltype(typed_handle)>;
             using ParentType = typename ParentHandleType::Type;
             constexpr static bool is_hybrid_rational =
@@ -22,7 +22,7 @@ void cast_attribute(
                     wmtk::attribute::utils::HybridRationalAttribute<Eigen::Dynamic>::Type>;
 
             if constexpr (!is_hybrid_rational) {
-                wmtk::operations::utils::CastAttributeTransferStrategy<T, ParentType> caster(
+                wmtk::operations::attribute_update::CastAttributeTransferStrategy<T, ParentType> caster(
                     new_handle,
                     original_handle);
                 caster.run_on_all();
