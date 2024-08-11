@@ -280,13 +280,15 @@ std::vector<MeshAttributeHandle::HandleVariant> AttributeManager::get_all_attrib
 
         const std::vector<MeshAttributes<T>>& mesh_attributes = get<T>();
         for (size_t pt_index = 0; pt_index < mesh_attributes.size(); ++pt_index) {
+                const PrimitiveType pt = get_primitive_type_from_id(pt_index);
+
+            auto handle_converter = [pt](const AttributeHandle& h)  -> TypedAttributeHandle<T> {
+                return {h, pt};
+                return TypedAttributeHandle<T>{h,pt};
+            };
             size_t count = mesh_attributes[pt_index].attribute_count();
-            for (int64_t index = 0; index < count; ++index) {
-                TypedAttributeHandle<T> t;
-                t.m_base_handle.index = index;
-                t.m_primitive_type = get_primitive_type_from_id(pt_index);
-                handles.emplace_back(t);
-            }
+            const auto active_handles = mesh_attributes[pt_index].active_attributes();
+            std::transform(active_handles.begin(), active_handles.end(), std::back_inserter(handles), handle_converter);
         }
     };
     run(double{});
