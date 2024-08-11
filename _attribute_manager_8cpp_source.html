@@ -397,102 +397,104 @@ $(document).ready(function(){initNavTree('_attribute_manager_8cpp_source.html','
 <div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160; </div>
 <div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;        <span class="keyword">const</span> std::vector&lt;MeshAttributes&lt;T&gt;&gt;&amp; mesh_attributes = get&lt;T&gt;();</div>
 <div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> pt_index = 0; pt_index &lt; mesh_attributes.size(); ++pt_index) {</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;            <span class="keywordtype">size_t</span> count = mesh_attributes[pt_index].attribute_count();</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;            <span class="keywordflow">for</span> (int64_t index = 0; index &lt; count; ++index) {</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;                <a class="code" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle&lt;T&gt;</a> t;</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;                t.<a class="code" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ade337a19e83a2c6a2386dc8e5386bb89">m_base_handle</a>.<a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html#ade0396212cf4d305252085e6fe8f5e20">index</a> = index;</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;                t.<a class="code" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#afd9ad7a40bd8e443de2e3a1e9a044631">m_primitive_type</a> = <a class="code" href="namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59">get_primitive_type_from_id</a>(pt_index);</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;                handles.emplace_back(t);</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;            }</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;        }</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    };</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    run(<span class="keywordtype">double</span>{});</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;    run(int64_t{});</div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    run(<span class="keywordtype">char</span>{});</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;    run(<a class="code" href="classwmtk_1_1_rational.html">Rational</a>{});</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;    <span class="keywordflow">return</span> handles;</div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;}</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160; </div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;<span class="keyword">namespace </span>{</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;<span class="keyword">class </span>ClearAttrDataT : <span class="keyword">public</span> std::array&lt;std::vector&lt;AttributeHandle&gt;, 5&gt;</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;{</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;};</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160; </div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;<span class="keyword">class </span>ClearAttrData : <span class="keyword">public</span> ClearAttrDataT&lt;char&gt;,</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                      <span class="keyword">public</span> ClearAttrDataT&lt;int64_t&gt;,</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;                      <span class="keyword">public</span> ClearAttrDataT&lt;double&gt;,</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                      <span class="keyword">public</span> ClearAttrDataT&lt;Rational&gt;</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;{</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    ClearAttrDataT&lt;T&gt;&amp; get();</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;};</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;ClearAttrDataT&lt;T&gt;&amp; ClearAttrData::get()</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;{</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span>ClearAttrDataT&lt;T&gt;&amp;<span class="keyword">&gt;</span>(*this);</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;}</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;} <span class="comment">// namespace</span></div>
-<div class="line"><a name="l00320"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_manager.html#a835244773a5c602c821f39e4cc730477">  320</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_manager.html#a835244773a5c602c821f39e4cc730477">AttributeManager::clear_attributes</a>(</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;    <span class="keyword">const</span> std::vector&lt;attribute::MeshAttributeHandle::HandleVariant&gt;&amp; custom_attributes)</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;{</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;    <span class="comment">// std::array&lt;std::array&lt;std::vector&lt;AttributeHandle&gt;, 5&gt;, 4&gt;</span></div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;    <span class="comment">//    keeps; // [char/int64_t/...][ptype][attribute]</span></div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160; </div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160; </div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;    ClearAttrData customs;</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">attribute::MeshAttributeHandle::HandleVariant</a>&amp; attr : custom_attributes) {</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;        std::visit(</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;            [&amp;](<span class="keyword">auto</span>&amp;&amp; val) noexcept {</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;                <span class="keyword">using</span> HandleType = <span class="keyword">typename</span> std::decay_t&lt;decltype(val)&gt;;</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;                <span class="keywordflow">if</span> constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic&lt;</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                                  HandleType&gt;()) {</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                    <span class="keyword">using</span> T = <span class="keyword">typename</span> HandleType::Type;</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;                    customs.get&lt;T&gt;()[<a class="code" href="namespacewmtk.html#a5cf45c152e856196bb734c6f48919a24">get_primitive_type_id</a>(val.primitive_type())].emplace_back(</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;                        val.base_handle());</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                assert(<span class="keyword">false</span>); <span class="comment">// this code doesn&#39;t work with hybrid rational types</span></div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;                }</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;            },</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            attr);</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;    }</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160; </div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160; </div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;    <span class="keyword">auto</span> run = [&amp;](<span class="keyword">auto</span> t) {</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;        <span class="keyword">using</span> T = <span class="keyword">typename</span> std::decay_t&lt;decltype(t)&gt;;</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;        <span class="keyword">auto</span>&amp; mycustoms = customs.get&lt;T&gt;();</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; attributes = get&lt;T&gt;();</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160; </div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> ptype_id = 0; ptype_id &lt; attributes.size(); ++ptype_id) {</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;            <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> primitive_type = <a class="code" href="namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59">get_primitive_type_from_id</a>(ptype_id);</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160; </div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160; </div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;            get&lt;T&gt;(primitive_type).remove_attributes(mycustoms[ptype_id]);</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;        }</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;    };</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160; </div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;    run(<span class="keywordtype">double</span>{});</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;    run(int64_t{});</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;    run(<span class="keywordtype">char</span>{});</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;    run(<a class="code" href="classwmtk_1_1_rational.html">Rational</a>{});</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;}</div>
-<div class="line"><a name="l00363"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_manager.html#ada6e3ba92183d3e7e4a3ec82d1a6de53">  363</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_manager.html#ada6e3ba92183d3e7e4a3ec82d1a6de53">AttributeManager::delete_attribute</a>(</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">attribute::MeshAttributeHandle::HandleVariant</a>&amp; to_delete)</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;{</div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;    std::visit(</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;        [&amp;](<span class="keyword">auto</span>&amp;&amp; val) noexcept {</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;            <span class="keyword">using</span> HandleType = <span class="keyword">typename</span> std::decay_t&lt;decltype(val)&gt;;</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;            <span class="keywordflow">if</span> constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic&lt;</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;                              HandleType&gt;()) {</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;                <span class="keyword">using</span> T = <span class="keyword">typename</span> HandleType::Type;</div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;                get&lt;T&gt;(val).remove_attribute(val.base_handle());</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;            }</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;        },</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;        to_delete);</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;}</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160; </div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;} <span class="comment">// namespace wmtk::attribute</span></div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;                <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> pt = <a class="code" href="namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59">get_primitive_type_from_id</a>(pt_index);</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160; </div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;            <span class="keyword">auto</span> handle_converter = [pt](<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a>&amp; h)  -&gt; <a class="code" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle&lt;T&gt;</a> {</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;                <span class="keywordflow">return</span> {h, pt};</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle&lt;T&gt;</a>{h,pt};</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;            };</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;            <span class="keywordtype">size_t</span> count = mesh_attributes[pt_index].attribute_count();</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;            <span class="keyword">const</span> <span class="keyword">auto</span> active_handles = mesh_attributes[pt_index].active_attributes();</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;            std::transform(active_handles.begin(), active_handles.end(), std::back_inserter(handles), handle_converter);</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;        }</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;    };</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    run(<span class="keywordtype">double</span>{});</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;    run(int64_t{});</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;    run(<span class="keywordtype">char</span>{});</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    run(<a class="code" href="classwmtk_1_1_rational.html">Rational</a>{});</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;    <span class="keywordflow">return</span> handles;</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;}</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160; </div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;<span class="keyword">namespace </span>{</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;<span class="keyword">class </span>ClearAttrDataT : <span class="keyword">public</span> std::array&lt;std::vector&lt;AttributeHandle&gt;, 5&gt;</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;{</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;};</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160; </div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;<span class="keyword">class </span>ClearAttrData : <span class="keyword">public</span> ClearAttrDataT&lt;char&gt;,</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                      <span class="keyword">public</span> ClearAttrDataT&lt;int64_t&gt;,</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;                      <span class="keyword">public</span> ClearAttrDataT&lt;double&gt;,</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;                      <span class="keyword">public</span> ClearAttrDataT&lt;Rational&gt;</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;{</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;    ClearAttrDataT&lt;T&gt;&amp; get();</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;};</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;ClearAttrDataT&lt;T&gt;&amp; ClearAttrData::get()</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;{</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span>ClearAttrDataT&lt;T&gt;&amp;<span class="keyword">&gt;</span>(*this);</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;}</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;} <span class="comment">// namespace</span></div>
+<div class="line"><a name="l00322"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_manager.html#a835244773a5c602c821f39e4cc730477">  322</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_manager.html#a835244773a5c602c821f39e4cc730477">AttributeManager::clear_attributes</a>(</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;    <span class="keyword">const</span> std::vector&lt;attribute::MeshAttributeHandle::HandleVariant&gt;&amp; custom_attributes)</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;{</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;    <span class="comment">// std::array&lt;std::array&lt;std::vector&lt;AttributeHandle&gt;, 5&gt;, 4&gt;</span></div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;    <span class="comment">//    keeps; // [char/int64_t/...][ptype][attribute]</span></div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160; </div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160; </div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    ClearAttrData customs;</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">attribute::MeshAttributeHandle::HandleVariant</a>&amp; attr : custom_attributes) {</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;        std::visit(</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;            [&amp;](<span class="keyword">auto</span>&amp;&amp; val) noexcept {</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                <span class="keyword">using</span> HandleType = <span class="keyword">typename</span> std::decay_t&lt;decltype(val)&gt;;</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                <span class="keywordflow">if</span> constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic&lt;</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;                                  HandleType&gt;()) {</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;                    <span class="keyword">using</span> T = <span class="keyword">typename</span> HandleType::Type;</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                    customs.get&lt;T&gt;()[<a class="code" href="namespacewmtk.html#a5cf45c152e856196bb734c6f48919a24">get_primitive_type_id</a>(val.primitive_type())].emplace_back(</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                        val.base_handle());</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;                } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                assert(<span class="keyword">false</span>); <span class="comment">// this code doesn&#39;t work with hybrid rational types</span></div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;                }</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;            },</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;            attr);</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;    }</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160; </div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160; </div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;    <span class="keyword">auto</span> run = [&amp;](<span class="keyword">auto</span> t) {</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;        <span class="keyword">using</span> T = <span class="keyword">typename</span> std::decay_t&lt;decltype(t)&gt;;</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;        <span class="keyword">auto</span>&amp; mycustoms = customs.get&lt;T&gt;();</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; attributes = get&lt;T&gt;();</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160; </div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> ptype_id = 0; ptype_id &lt; attributes.size(); ++ptype_id) {</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;            <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> primitive_type = <a class="code" href="namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59">get_primitive_type_from_id</a>(ptype_id);</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160; </div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160; </div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;            get&lt;T&gt;(primitive_type).remove_attributes(mycustoms[ptype_id]);</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;        }</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;    };</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160; </div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;    run(<span class="keywordtype">double</span>{});</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;    run(int64_t{});</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;    run(<span class="keywordtype">char</span>{});</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;    run(<a class="code" href="classwmtk_1_1_rational.html">Rational</a>{});</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;}</div>
+<div class="line"><a name="l00365"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_manager.html#ada6e3ba92183d3e7e4a3ec82d1a6de53">  365</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_manager.html#ada6e3ba92183d3e7e4a3ec82d1a6de53">AttributeManager::delete_attribute</a>(</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">attribute::MeshAttributeHandle::HandleVariant</a>&amp; to_delete)</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;{</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;    std::visit(</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;        [&amp;](<span class="keyword">auto</span>&amp;&amp; val) noexcept {</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;            <span class="keyword">using</span> HandleType = <span class="keyword">typename</span> std::decay_t&lt;decltype(val)&gt;;</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;            <span class="keywordflow">if</span> constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic&lt;</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;                              HandleType&gt;()) {</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;                <span class="keyword">using</span> T = <span class="keyword">typename</span> HandleType::Type;</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;                get&lt;T&gt;(val).remove_attribute(val.base_handle());</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;            }</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;        },</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;        to_delete);</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;}</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160; </div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;} <span class="comment">// namespace wmtk::attribute</span></div>
 <div class="ttc" id="a_attribute_manager_8hpp_html"><div class="ttname"><a href="_attribute_manager_8hpp.html">AttributeManager.hpp</a></div></div>
 <div class="ttc" id="a_mesh_writer_8hpp_html"><div class="ttname"><a href="_mesh_writer_8hpp.html">MeshWriter.hpp</a></div></div>
 <div class="ttc" id="a_paraview_writer_8hpp_html"><div class="ttname"><a href="_paraview_writer_8hpp.html">ParaviewWriter.hpp</a></div></div>
@@ -503,7 +505,7 @@ $(document).ready(function(){initNavTree('_attribute_manager_8cpp_source.html','
 <div class="ttc" id="aclasswmtk_1_1_mesh_writer_html_a9775a31599c23785098b9be77bdbfb62"><div class="ttname"><a href="classwmtk_1_1_mesh_writer.html#a9775a31599c23785098b9be77bdbfb62">wmtk::MeshWriter::write</a></div><div class="ttdeci">virtual bool write(const int dim)=0</div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_writer_html_adaf132d57772f8692155189c4c5789b9"><div class="ttname"><a href="classwmtk_1_1_mesh_writer.html#adaf132d57772f8692155189c4c5789b9">wmtk::MeshWriter::write_capacities</a></div><div class="ttdeci">virtual void write_capacities(const std::vector&lt; int64_t &gt; &amp;capacities)=0</div></div>
 <div class="ttc" id="aclasswmtk_1_1_rational_html"><div class="ttname"><a href="classwmtk_1_1_rational.html">wmtk::Rational</a></div><div class="ttdef"><b>Definition:</b> <a href="_rational_8hpp_source.html#l00012">Rational.hpp:13</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_handle_html_ade0396212cf4d305252085e6fe8f5e20"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_handle.html#ade0396212cf4d305252085e6fe8f5e20">wmtk::attribute::AttributeHandle::index</a></div><div class="ttdeci">int64_t index</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_handle_8hpp_source.html#l00035">AttributeHandle.hpp:35</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_handle.html">wmtk::attribute::AttributeHandle</a></div><div class="ttdoc">Internal handle representation used by MeshAttributes.</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_handle_8hpp_source.html#l00023">AttributeHandle.hpp:24</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html">wmtk::attribute::AttributeManager</a></div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8hpp_source.html#l00016">AttributeManager.hpp:17</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_a149536f0026af469e5ccb10f8487bb88"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#a149536f0026af469e5ccb10f8487bb88">wmtk::attribute::AttributeManager::m_double_attributes</a></div><div class="ttdeci">std::vector&lt; MeshAttributes&lt; double &gt; &gt; m_double_attributes</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8hpp_source.html#l00033">AttributeManager.hpp:33</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_a18df3f3c3a1358954dcbc935c58444fd"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#a18df3f3c3a1358954dcbc935c58444fd">wmtk::attribute::AttributeManager::reserve_to_fit</a></div><div class="ttdeci">void reserve_to_fit()</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8cpp_source.html#l00068">AttributeManager.cpp:68</a></div></div>
@@ -523,7 +525,7 @@ $(document).ready(function(){initNavTree('_attribute_manager_8cpp_source.html','
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_a7a9367f5436b0077e0bacbf3a59c3b43"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#a7a9367f5436b0077e0bacbf3a59c3b43">wmtk::attribute::AttributeManager::m_capacities</a></div><div class="ttdeci">std::vector&lt; int64_t &gt; m_capacities</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8hpp_source.html#l00038">AttributeManager.hpp:38</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_a7ee8d15e43059df1cfe4c81f4383529a"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#a7ee8d15e43059df1cfe4c81f4383529a">wmtk::attribute::AttributeManager::child_hashes</a></div><div class="ttdeci">std::map&lt; std::string, std::size_t &gt; child_hashes() const override</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8cpp_source.html#l00040">AttributeManager.cpp:40</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_a828abf16a7aec59662913cbf4f37904a"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#a828abf16a7aec59662913cbf4f37904a">wmtk::attribute::AttributeManager::m_rational_attributes</a></div><div class="ttdeci">std::vector&lt; MeshAttributes&lt; Rational &gt; &gt; m_rational_attributes</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8hpp_source.html#l00034">AttributeManager.hpp:34</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_a835244773a5c602c821f39e4cc730477"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#a835244773a5c602c821f39e4cc730477">wmtk::attribute::AttributeManager::clear_attributes</a></div><div class="ttdeci">void clear_attributes(const std::vector&lt; attribute::MeshAttributeHandle::HandleVariant &gt; &amp;custom_attributes)</div><div class="ttdoc">Remove all custom attributes besides the one passed in.</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8cpp_source.html#l00320">AttributeManager.cpp:320</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_a835244773a5c602c821f39e4cc730477"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#a835244773a5c602c821f39e4cc730477">wmtk::attribute::AttributeManager::clear_attributes</a></div><div class="ttdeci">void clear_attributes(const std::vector&lt; attribute::MeshAttributeHandle::HandleVariant &gt; &amp;custom_attributes)</div><div class="ttdoc">Remove all custom attributes besides the one passed in.</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8cpp_source.html#l00322">AttributeManager.cpp:322</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_a87216c73c02b436c7f965faa52553f56"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#a87216c73c02b436c7f965faa52553f56">wmtk::attribute::AttributeManager::size</a></div><div class="ttdeci">int64_t size() const</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8cpp_source.html#l00165">AttributeManager.cpp:165</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_a899d353ddc2cf4666139c2d712284f98"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#a899d353ddc2cf4666139c2d712284f98">wmtk::attribute::AttributeManager::assert_capacity_valid</a></div><div class="ttdeci">void assert_capacity_valid() const</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8cpp_source.html#l00136">AttributeManager.cpp:136</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_a99f6661c1b5c363a1e713d03cf1602fa"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#a99f6661c1b5c363a1e713d03cf1602fa">wmtk::attribute::AttributeManager::rollback_current_scope</a></div><div class="ttdeci">void rollback_current_scope()</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8cpp_source.html#l00226">AttributeManager.cpp:226</a></div></div>
@@ -531,15 +533,13 @@ $(document).ready(function(){initNavTree('_attribute_manager_8cpp_source.html','
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_aa87669e6919f7825ca475a3c9e85d76c"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#aa87669e6919f7825ca475a3c9e85d76c">wmtk::attribute::AttributeManager::get_all_attributes</a></div><div class="ttdeci">std::vector&lt; MeshAttributeHandle::HandleVariant &gt; get_all_attributes() const</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8cpp_source.html#l00274">AttributeManager.cpp:274</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_ab039b35d4b19c0942e95014693a86cfa"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#ab039b35d4b19c0942e95014693a86cfa">wmtk::attribute::AttributeManager::reserve_more_attributes</a></div><div class="ttdeci">void reserve_more_attributes(int64_t dimension, int64_t size)</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8cpp_source.html#l00083">AttributeManager.cpp:83</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_ab37901c560fe81350c6e2ec34ff3769c"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#ab37901c560fe81350c6e2ec34ff3769c">wmtk::attribute::AttributeManager::get_name</a></div><div class="ttdeci">std::string get_name(const TypedAttributeHandle&lt; T &gt; &amp;attr) const</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8hpp_source.html#l00227">AttributeManager.hpp:227</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_ada6e3ba92183d3e7e4a3ec82d1a6de53"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#ada6e3ba92183d3e7e4a3ec82d1a6de53">wmtk::attribute::AttributeManager::delete_attribute</a></div><div class="ttdeci">void delete_attribute(const attribute::MeshAttributeHandle::HandleVariant &amp;to_delete)</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8cpp_source.html#l00363">AttributeManager.cpp:363</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_ada6e3ba92183d3e7e4a3ec82d1a6de53"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#ada6e3ba92183d3e7e4a3ec82d1a6de53">wmtk::attribute::AttributeManager::delete_attribute</a></div><div class="ttdeci">void delete_attribute(const attribute::MeshAttributeHandle::HandleVariant &amp;to_delete)</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8cpp_source.html#l00365">AttributeManager.cpp:365</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_ade4ad24f8fde18f38a4709bf24ccf549"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#ade4ad24f8fde18f38a4709bf24ccf549">wmtk::attribute::AttributeManager::reserve_attributes</a></div><div class="ttdeci">void reserve_attributes(int64_t dimension, int64_t size)</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8cpp_source.html#l00075">AttributeManager.cpp:75</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_ae019ea0db1256194b97d665dc0fdb800"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#ae019ea0db1256194b97d665dc0fdb800">wmtk::attribute::AttributeManager::~AttributeManager</a></div><div class="ttdeci">~AttributeManager()</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_manager_html_ae201e683b171d8bab0592d0f64122e12"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_manager.html#ae201e683b171d8bab0592d0f64122e12">wmtk::attribute::AttributeManager::m_long_attributes</a></div><div class="ttdeci">std::vector&lt; MeshAttributes&lt; int64_t &gt; &gt; m_long_attributes</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_manager_8hpp_source.html#l00032">AttributeManager.hpp:32</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html">wmtk::attribute::AttributeScopeHandle</a></div><div class="ttdoc">This handle is a wrapper for the MeshManager scope funtions.</div><div class="ttdef"><b>Definition:</b> <a href="attribute_2_attribute_scope_handle_8hpp_source.html#l00014">AttributeScopeHandle.hpp:15</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_mesh_attribute_handle_html_ae48d78982e9495c0b7e9edc18051a5ac"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ae48d78982e9495c0b7e9edc18051a5ac">wmtk::attribute::MeshAttributeHandle::HandleVariant</a></div><div class="ttdeci">std::variant&lt; TypedAttributeHandle&lt; char &gt;, TypedAttributeHandle&lt; int64_t &gt;, TypedAttributeHandle&lt; double &gt;, TypedAttributeHandle&lt; wmtk::Rational &gt;, utils::HybridRationalAttribute&lt; Eigen::Dynamic &gt; &gt; HandleVariant</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_attribute_handle_8hpp_source.html#l00029">MeshAttributeHandle.hpp:34</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_typed_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">wmtk::attribute::TypedAttributeHandle</a></div><div class="ttdoc">Handle that represents attributes for some mesh.</div><div class="ttdef"><b>Definition:</b> <a href="_typed_attribute_handle_8hpp_source.html#l00032">TypedAttributeHandle.hpp:33</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_typed_attribute_handle_html_ade337a19e83a2c6a2386dc8e5386bb89"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ade337a19e83a2c6a2386dc8e5386bb89">wmtk::attribute::TypedAttributeHandle::m_base_handle</a></div><div class="ttdeci">wmtk::attribute::AttributeHandle m_base_handle</div><div class="ttdef"><b>Definition:</b> <a href="_typed_attribute_handle_8hpp_source.html#l00048">TypedAttributeHandle.hpp:48</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_typed_attribute_handle_html_afd9ad7a40bd8e443de2e3a1e9a044631"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#afd9ad7a40bd8e443de2e3a1e9a044631">wmtk::attribute::TypedAttributeHandle::m_primitive_type</a></div><div class="ttdeci">wmtk::PrimitiveType m_primitive_type</div><div class="ttdef"><b>Definition:</b> <a href="_typed_attribute_handle_8hpp_source.html#l00049">TypedAttributeHandle.hpp:49</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1utils_1_1_merkle_tree_interior_node_html_a93791c16f3a59b614619e6481c2804dd"><div class="ttname"><a href="classwmtk_1_1utils_1_1_merkle_tree_interior_node.html#a93791c16f3a59b614619e6481c2804dd">wmtk::utils::MerkleTreeInteriorNode::child_hashes</a></div><div class="ttdeci">std::map&lt; std::string, std::size_t &gt; child_hashes() const override</div><div class="ttdef"><b>Definition:</b> <a href="_merkle_tree_interior_node_8cpp_source.html#l00007">MerkleTreeInteriorNode.cpp:7</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1attribute_html"><div class="ttname"><a href="namespacewmtk_1_1attribute.html">wmtk::attribute</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8hpp_source.html#l00016">Accessor.hpp:16</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_a3b08a5d7fb42f02c54bae85758b39f59"><div class="ttname"><a href="namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59">wmtk::get_primitive_type_from_id</a></div><div class="ttdeci">constexpr PrimitiveType get_primitive_type_from_id(int8_t id)</div><div class="ttdoc">Get the primitive type corresponding to its unique integer id.</div><div class="ttdef"><b>Definition:</b> <a href="_primitive_type_8hpp_source.html#l00051">PrimitiveType.hpp:51</a></div></div>

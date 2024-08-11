@@ -1,5 +1,6 @@
 var NAVTREEINDEX20 =
 {
+"namespacewmtk_1_1utils.html#aaa740c5fb7d719b1add0bc9acee3d8e8":[4,0,7,12,31],
 "namespacewmtk_1_1utils.html#abfdeacbb173bcc7af1a15955b29c78be":[4,0,7,12,35],
 "namespacewmtk_1_1utils.html#ac02c195a92eb9c9582984a2d94fba796":[4,0,7,12,33],
 "namespacewmtk_1_1utils.html#ac944349a1bb3d0459995baad96b9c1d4":[4,0,7,12,26],
@@ -248,6 +249,5 @@ var NAVTREEINDEX20 =
 "struct_d_scalar2.html#a3c4e3a28a17ace078b0a2564477dd925":[5,0,5,42],
 "struct_d_scalar2.html#a3da7806e9de311a72709d4133e99dc25":[5,0,5,20],
 "struct_d_scalar2.html#a452415bbc44e4897fe03c061fa65e294":[5,0,5,37],
-"struct_d_scalar2.html#a4b0829d98285873b8bbc82276b934ac7":[5,0,5,40],
-"struct_d_scalar2.html#a51b7cd14e6f457142494c459bbcc7750":[5,0,5,25]
+"struct_d_scalar2.html#a4b0829d98285873b8bbc82276b934ac7":[5,0,5,40]
 };

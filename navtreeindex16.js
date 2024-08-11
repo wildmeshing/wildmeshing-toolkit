@@ -1,5 +1,6 @@
 var NAVTREEINDEX16 =
 {
+"extract__operation__tuples_8cpp.html#a84de33f6768ece7cd80fb26fa8194488":[6,0,2,0,5,1,1,1],
 "extract__operation__tuples_8cpp_source.html":[6,0,2,0,5,1,1],
 "extract__operation__tuples_8hpp.html":[6,0,2,0,5,1,2],
 "extract__operation__tuples_8hpp.html#a081a57c4ca754769d7673bff8cd97eb9":[6,0,2,0,5,1,2,1],
@@ -51,8 +52,8 @@ var NAVTREEINDEX16 =
 "find__local__switch__sequence_8hpp.html":[6,0,2,0,5,2,8],
 "find__local__switch__sequence_8hpp.html#a99cdf56ec6abe68409d30e0b67f4ce82":[6,0,2,0,5,2,8,0],
 "find__local__switch__sequence_8hpp_source.html":[6,0,2,0,5,2,8],
-"functions.html":[5,3,0,0],
 "functions.html":[5,3,0],
+"functions.html":[5,3,0,0],
 "functions_a.html":[5,3,0,1],
 "functions_b.html":[5,3,0,2],
 "functions_c.html":[5,3,0,3],
@@ -60,8 +61,8 @@ var NAVTREEINDEX16 =
 "functions_e.html":[5,3,0,5],
 "functions_enum.html":[5,3,4],
 "functions_f.html":[5,3,0,6],
-"functions_func.html":[5,3,1],
 "functions_func.html":[5,3,1,0],
+"functions_func.html":[5,3,1],
 "functions_func_a.html":[5,3,1,1],
 "functions_func_b.html":[5,3,1,2],
 "functions_func_c.html":[5,3,1,3],
@@ -102,8 +103,8 @@ var NAVTREEINDEX16 =
 "functions_type.html":[5,3,3],
 "functions_u.html":[5,3,0,20],
 "functions_v.html":[5,3,0,21],
-"functions_vars.html":[5,3,2,0],
 "functions_vars.html":[5,3,2],
+"functions_vars.html":[5,3,2,0],
 "functions_vars_b.html":[5,3,2,1],
 "functions_vars_c.html":[5,3,2,2],
 "functions_vars_d.html":[5,3,2,3],
@@ -189,8 +190,8 @@ var NAVTREEINDEX16 =
 "import__cache_8hpp.html":[6,0,0,1,6,0,0,0,1],
 "import__cache_8hpp.html#a8cd85970ef9fa9710aa4ed2ae53ddb4f":[6,0,0,1,6,0,0,0,1,0],
 "import__cache_8hpp_source.html":[6,0,0,1,6,0,0,0,1],
-"index.html":[],
 "index.html":[0],
+"index.html":[],
 "index.html#autotoc_md1":[0,0],
 "index.html#autotoc_md10":[0,2,3],
 "index.html#autotoc_md11":[0,2,4],
@@ -248,6 +249,5 @@ var NAVTREEINDEX16 =
 "internal_2periodic__optimization_8cpp.html#af3655ebb89360c7fe41a0ac2828e9895":[6,0,0,1,15,0,0,0,0,0,3],
 "internal_2periodic__optimization_8cpp_source.html":[6,0,0,1,15,0,0,0,0,0],
 "internal_2periodic__optimization_8hpp.html":[6,0,0,1,15,0,0,0,0,1],
-"internal_2periodic__optimization_8hpp.html#a8890d5e5bb5f11779d4e40e07882253a":[6,0,0,1,15,0,0,0,0,1,0],
-"internal_2periodic__optimization_8hpp_source.html":[6,0,0,1,15,0,0,0,0,1]
+"internal_2periodic__optimization_8hpp.html#a8890d5e5bb5f11779d4e40e07882253a":[6,0,0,1,15,0,0,0,0,1,0]
 };

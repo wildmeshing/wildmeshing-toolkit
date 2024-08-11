@@ -1,5 +1,6 @@
 var NAVTREEINDEX14 =
 {
+"classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ab5a7eef3670caf86dfc4529bda83d402":[5,0,2,6,3,1,19],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ab62e2a31d31b663371640f698c292caa":[5,0,2,6,3,1,3],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ab6565d369cf4a4918676220a157adc84":[5,0,2,6,3,1,4],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#abbc7494d3fd150b1d4f23d43645c0ac8":[5,0,2,6,3,1,7],
@@ -248,6 +249,5 @@ var NAVTREEINDEX14 =
 "closed__star__iterable_8cpp_source.html":[6,0,2,0,7,7],
 "closed__star__iterable_8hpp.html":[6,0,2,0,7,8],
 "closed__star__iterable_8hpp.html#ae37e7bd61fb3f9b968b6ce6f9cf6f11f":[6,0,2,0,7,8,0],
-"closed__star__iterable_8hpp_source.html":[6,0,2,0,7,8],
-"cofaces__single__dimension_8cpp.html":[6,0,2,0,7,9]
+"closed__star__iterable_8hpp_source.html":[6,0,2,0,7,8]
 };
