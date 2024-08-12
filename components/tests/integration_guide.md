@@ -1,10 +1,9 @@
 # Guide for Using Integration Test
 
-When you want to start a new integration test, then you need to have following a few steps to set up the test.
+1. Write a JSON file under the folder `/data/unit_test/`, you can refer to those existing JSON files to learn how to write it.
+2. Put the mesh for your test under the folder `/data/unit_test/meshes`. Please check first, if one of the existing meshes is suitable for your integration test.
+3. Add the JSON file's name to `/components/tests/integration_test.cpp`, i.e. add the line `WMTK_INTEGRATION("YOUR TEST NAME", false);`.
+4. The first time you run your integration test, set the `DO_VALIDATION` parameter `false`, i.e. `WMTK_INTEGRATION("YOUR TEST NAME", false);`. The integration test will then add the test output (number of simplices) to your JSON. Afterward, set the parameter to `true`. Now, the integration test will compare the result with your original output and fail if the two do not match.
+5. Push the JSON and meshes to the [wmtk data repo](https://github.com/wildmeshing/data).
 
-- First, write a JSON file under the folder `/data/unit_test/`, you can refer to those existing JSON files to learn how to write it.
-- Second, you need the model to run your integration test. Put your model under the folder `/data/unit_test/meshes`.(you may have to update the wmtkdata)
-- Third, after you have done the steps above, you should add the JSON file's name to `/components/tests/integration_test.cpp`. Such as `WMTK_INTEGRATION("YOUR TEST NAME", false);`
-- Fourth, for the first time you run your integration test, you should set `DO_VALIDATION` parameter `true` in `WMTK_INTEGRATION`. Then `integraion_test.cpp` will generate the original performance of your code. After that, you should set the parameter as `false`. In the later integration test, `integraion_test.cpp` will compare the result with your original performance to make sure your new version code's performance always consistent with the original one.
-
-NOTE: you can have a look at the `integrations_test.cpp` to get more details if you want.
+Look at `integrations_test.cpp` for more details.
