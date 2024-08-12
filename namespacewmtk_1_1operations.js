@@ -1,5 +1,6 @@
 var namespacewmtk_1_1operations =
 [
+    [ "attribute_update", "namespacewmtk_1_1operations_1_1attribute__update.html", "namespacewmtk_1_1operations_1_1attribute__update" ],
     [ "composite", "namespacewmtk_1_1operations_1_1composite.html", "namespacewmtk_1_1operations_1_1composite" ],
     [ "edge_mesh", "namespacewmtk_1_1operations_1_1edge__mesh.html", "namespacewmtk_1_1operations_1_1edge__mesh" ],
     [ "tet_mesh", "namespacewmtk_1_1operations_1_1tet__mesh.html", "namespacewmtk_1_1operations_1_1tet__mesh" ],

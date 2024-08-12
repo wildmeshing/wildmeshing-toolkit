@@ -187,6 +187,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:acddf202ad38f22b09eb8eb6af183cc8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a959b72718c01bf582e34896a37f819"><td class="memItemLeft" align="right" valign="top">std::array&lt; int64_t, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a5a959b72718c01bf582e34896a37f819">new_spine_eids</a> () const</td></tr>
 <tr class="separator:a5a959b72718c01bf582e34896a37f819"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c7519d037d58a3cd7747ba1d72c00ef"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a8c7519d037d58a3cd7747ba1d72c00ef">new_vertices</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m) const</td></tr>
+<tr class="separator:a8c7519d037d58a3cd7747ba1d72c00ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -232,6 +234,8 @@ Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data"><td colspan="2" onclick="javascript:toggleInherit('pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data')"><img src="closed.png" alt="-"/>&#160;Static Protected Member Functions inherited from <a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a></td></tr>
 <tr class="memitem:a24a9fb4d4eb3904a1dc33914d3c4bafd inherit pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html#a24a9fb4d4eb3904a1dc33914d3c4bafd">tuple_from_id</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type, const int64_t gid)</td></tr>
 <tr class="separator:a24a9fb4d4eb3904a1dc33914d3c4bafd inherit pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9202f2d7143caad7b6c065803d054dba inherit pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html#a9202f2d7143caad7b6c065803d054dba">simplex_from_id</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type, const int64_t gid)</td></tr>
+<tr class="separator:a9202f2d7143caad7b6c065803d054dba inherit pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -329,7 +333,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00138">incident_face_datas()</a>, and <a class="el" href="_edge_operation_data_8cpp_source.html#l00009">wmtk::operations::EdgeOperationData::tuple_from_id()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00097">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::input_ear_simplices()</a>, and <a class="el" href="tet__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00037">wmtk::operations::tet_mesh::CollapseNewAttributeTopoInfo::merged_simplices()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00103">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::input_ear_simplices()</a>, and <a class="el" href="tet__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00037">wmtk::operations::tet_mesh::CollapseNewAttributeTopoInfo::merged_simplices()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -365,7 +369,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00137">incident_tet_datas()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="_edge_operation_data_8cpp_source.html#l00009">wmtk::operations::EdgeOperationData::tuple_from_id()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00097">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::input_ear_simplices()</a>, and <a class="el" href="tet__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00037">wmtk::operations::tet_mesh::CollapseNewAttributeTopoInfo::merged_simplices()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00103">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::input_ear_simplices()</a>, and <a class="el" href="tet__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00037">wmtk::operations::tet_mesh::CollapseNewAttributeTopoInfo::merged_simplices()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -406,9 +410,9 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00138">138</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00163">m_incident_face_datas</a>.</p>
+<p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00165">m_incident_face_datas</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00047">collapse_merged_ear_edges()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00009">ear_edges()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00091">input_faces()</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00620">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00069">split_new_rib_edges()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00122">split_output_faces()</a>, and <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00204">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00047">collapse_merged_ear_edges()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00009">ear_edges()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00091">input_faces()</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00628">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00069">split_new_rib_edges()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00122">split_output_faces()</a>, and <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00208">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -443,9 +447,9 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00137">137</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00162">m_incident_tet_datas</a>.</p>
+<p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00164">m_incident_tet_datas</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00058">collapse_merged_ear_faces()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00024">ear_faces()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00102">input_tets()</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00620">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00080">split_new_rib_faces()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00136">split_output_tets()</a>, and <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00204">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00058">collapse_merged_ear_faces()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00024">ear_faces()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00102">input_tets()</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00628">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00080">split_new_rib_faces()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00136">split_output_tets()</a>, and <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00208">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -480,9 +484,9 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00113">113</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00153">m_spine_vids</a>.</p>
+<p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00155">m_spine_vids</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00620">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00628">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -510,9 +514,9 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00039">39</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html">EdgeOperationData.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_edge_operation_data_8hpp_source.html#l00013">wmtk::operations::EdgeOperationData::m_operating_tuple</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00276">wmtk::TetMesh::switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_edge_operation_data_8hpp_source.html#l00014">wmtk::operations::EdgeOperationData::m_operating_tuple</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00287">wmtk::TetMesh::switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00097">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::input_ear_simplices()</a>, and <a class="el" href="tet__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00037">wmtk::operations::tet_mesh::CollapseNewAttributeTopoInfo::merged_simplices()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00103">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::input_ear_simplices()</a>, and <a class="el" href="tet__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00037">wmtk::operations::tet_mesh::CollapseNewAttributeTopoInfo::merged_simplices()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -548,7 +552,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00138">incident_face_datas()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00075">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::input_split_simplices()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00081">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::input_split_simplices()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -584,7 +588,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00137">incident_tet_datas()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00075">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::input_split_simplices()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00081">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::input_split_simplices()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -625,15 +629,43 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00140">140</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00159">m_split_new_spine_eids</a>.</p>
+<p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00161">m_split_new_spine_eids</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00620">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00628">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_a5a959b72718c01bf582e34896a37f819_icgraph.svg" width="500" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
+
+</div>
+</div>
+<a id="a8c7519d037d58a3cd7747ba1d72c00ef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c7519d037d58a3cd7747ba1d72c00ef">&#9670;&nbsp;</a></span>new_vertices()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&gt; wmtk::operations::tet_mesh::EdgeOperationData::new_vertices </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00142">142</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
 </div>
 </div>
@@ -662,7 +694,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00115">115</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00154">m_operating_edge_id</a>.</p>
+<p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00156">m_operating_edge_id</a>.</p>
 
 </div>
 </div>
@@ -686,7 +718,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00138">incident_face_datas()</a>, and <a class="el" href="_edge_operation_data_8cpp_source.html#l00009">wmtk::operations::EdgeOperationData::tuple_from_id()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00119">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::output_rib_simplices()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00125">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::output_rib_simplices()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -722,7 +754,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00137">incident_tet_datas()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="_edge_operation_data_8cpp_source.html#l00009">wmtk::operations::EdgeOperationData::tuple_from_id()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00119">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::output_rib_simplices()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00125">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::output_rib_simplices()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -756,9 +788,9 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00113">113</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html">EdgeOperationData.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00159">m_split_new_spine_eids</a>, and <a class="el" href="_edge_operation_data_8cpp_source.html#l00009">wmtk::operations::EdgeOperationData::tuple_from_id()</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00161">m_split_new_spine_eids</a>, and <a class="el" href="_edge_operation_data_8cpp_source.html#l00009">wmtk::operations::EdgeOperationData::tuple_from_id()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00052">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::output_split_simplices()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00058">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::output_split_simplices()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -794,7 +826,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00138">incident_face_datas()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="_edge_operation_data_8cpp_source.html#l00009">wmtk::operations::EdgeOperationData::tuple_from_id()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00052">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::output_split_simplices()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00058">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::output_split_simplices()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -830,7 +862,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00137">incident_tet_datas()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, and <a class="el" href="_edge_operation_data_8cpp_source.html#l00009">wmtk::operations::EdgeOperationData::tuple_from_id()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00052">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::output_split_simplices()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00058">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::output_split_simplices()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -875,9 +907,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00146">146</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00148">148</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00892">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00900">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>.</p>
 
 </div>
 </div>
@@ -893,9 +925,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00148">148</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00150">150</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00892">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00900">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>.</p>
 
 </div>
 </div>
@@ -919,7 +951,7 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00163">163</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00165">165</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00138">incident_face_datas()</a>.</p>
 
@@ -945,7 +977,7 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00162">162</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00164">164</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00137">incident_tet_datas()</a>.</p>
 
@@ -971,7 +1003,7 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00154">154</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00156">156</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00115">operating_edge_id()</a>.</p>
 
@@ -997,7 +1029,7 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00155">155</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00157">157</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
 </div>
 </div>
@@ -1021,7 +1053,7 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00156">156</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00158">158</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
 </div>
 </div>
@@ -1045,7 +1077,7 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00153">153</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00155">155</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00113">incident_vids()</a>.</p>
 
@@ -1071,7 +1103,7 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00159">159</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00161">161</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00140">new_spine_eids()</a>, and <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00113">split_output_edges()</a>.</p>
 
@@ -1097,7 +1129,7 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00158">158</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00160">160</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
 
 </div>
 </div>

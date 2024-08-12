@@ -8,6 +8,7 @@ var classwmtk_1_1_scheduler_stats =
     [ "number_of_performed_operations", "classwmtk_1_1_scheduler_stats.html#a6eb636bacf541d1f62a86bfffa3b4b0e", null ],
     [ "number_of_successful_operations", "classwmtk_1_1_scheduler_stats.html#ae6e50990c7c4705a810c633755e9c2c0", null ],
     [ "operator+=", "classwmtk_1_1_scheduler_stats.html#a65ce3dba578b98c1b365ad3e711123c7", null ],
+    [ "print_update_log", "classwmtk_1_1_scheduler_stats.html#af4b4bf1f4201cce63753908178a40498", null ],
     [ "succeed", "classwmtk_1_1_scheduler_stats.html#a743d45b86c6ac7d696c26e2cad573ac9", null ],
     [ "total_time", "classwmtk_1_1_scheduler_stats.html#a1fd67de12d109a2ccd651a495ede7423", null ],
     [ "collecting_time", "classwmtk_1_1_scheduler_stats.html#a8a547725b5afb794478dcaee161cd5e3", null ],

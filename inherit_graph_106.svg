@@ -8,9 +8,9 @@
  viewBox="0.00 0.00 944.00 241.50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 237.5)">
 <title>Graphical Class Hierarchy</title>
-<!-- Node80 -->
+<!-- Node81 -->
 <g id="node1" class="node">
-<title>Node80</title>
+<title>Node81</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="none" stroke="#bfbfbf" points="200.5,-132.5 200.5,-162.5 309.5,-162.5 309.5,-132.5 200.5,-132.5"/>
 <text text-anchor="start" x="208.5" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::enable_shared</text>
@@ -27,9 +27,9 @@
 </a>
 </g>
 </g>
-<!-- Node80&#45;&gt;Node0 -->
+<!-- Node81&#45;&gt;Node0 -->
 <g id="edge1" class="edge">
-<title>Node80&#45;&gt;Node0</title>
+<title>Node81&#45;&gt;Node0</title>
 <path fill="none" stroke="midnightblue" d="M319.77,-147.5C361.26,-147.5 413.97,-147.5 448.89,-147.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="319.75,-144 309.75,-147.5 319.75,-151 319.75,-144"/>
 </g>
@@ -168,54 +168,54 @@
 <path fill="none" stroke="midnightblue" d="M809.28,-109.5C818,-109.5 826.57,-109.5 834.62,-109.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="809,-106 799,-109.5 809,-113 809,-106"/>
 </g>
-<!-- Node128 -->
+<!-- Node129 -->
 <g id="node12" class="node">
-<title>Node128</title>
+<title>Node129</title>
 <g id="a_node12"><a xlink:href="classwmtk_1_1utils_1_1_hashable.html" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="0,-72 0,-91 123,-91 123,-72 0,-72"/>
 <text text-anchor="middle" x="61.5" y="-79" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::utils::Hashable</text>
 </a>
 </g>
 </g>
-<!-- Node129 -->
+<!-- Node130 -->
 <g id="node13" class="node">
-<title>Node129</title>
+<title>Node130</title>
 <g id="a_node13"><a xlink:href="classwmtk_1_1attribute_1_1_attribute.html" target="_top" xlink:title="This class stores data of type T in a vector.">
 <polygon fill="none" stroke="black" points="170,-91 170,-110 340,-110 340,-91 170,-91"/>
 <text text-anchor="middle" x="255" y="-98" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Attribute&lt; T &gt;</text>
 </a>
 </g>
 </g>
-<!-- Node128&#45;&gt;Node129 -->
+<!-- Node129&#45;&gt;Node130 -->
 <g id="edge11" class="edge">
-<title>Node128&#45;&gt;Node129</title>
+<title>Node129&#45;&gt;Node130</title>
 <path fill="none" stroke="midnightblue" d="M133.33,-88.53C145.16,-89.7 157.53,-90.93 169.66,-92.13"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="133.39,-85.02 123.09,-87.51 132.7,-91.98 133.39,-85.02"/>
 </g>
-<!-- Node130 -->
+<!-- Node131 -->
 <g id="node14" class="node">
-<title>Node130</title>
+<title>Node131</title>
 <g id="a_node14"><a xlink:href="classwmtk_1_1utils_1_1_merkle_tree_interior_node.html" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="159,-53 159,-72 351,-72 351,-53 159,-53"/>
 <text text-anchor="middle" x="255" y="-60" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::utils::MerkleTreeInteriorNode</text>
 </a>
 </g>
 </g>
-<!-- Node128&#45;&gt;Node130 -->
+<!-- Node129&#45;&gt;Node131 -->
 <g id="edge12" class="edge">
-<title>Node128&#45;&gt;Node130</title>
+<title>Node129&#45;&gt;Node131</title>
 <path fill="none" stroke="midnightblue" d="M133.15,-74.49C141.52,-73.66 150.17,-72.8 158.81,-71.94"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="132.7,-71.02 123.09,-75.49 133.39,-77.98 132.7,-71.02"/>
 </g>
-<!-- Node130&#45;&gt;Node0 -->
+<!-- Node131&#45;&gt;Node0 -->
 <g id="edge13" class="edge">
-<title>Node130&#45;&gt;Node0</title>
+<title>Node131&#45;&gt;Node0</title>
 <path fill="none" stroke="midnightblue" d="M340.15,-75.8C343.92,-77.49 347.55,-79.38 351,-81.5 373.1,-95.12 364.9,-113.87 387,-127.5 405.45,-138.88 429.14,-143.94 448.77,-146.13"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="341.17,-72.44 330.58,-72.02 338.6,-78.95 341.17,-72.44"/>
 </g>
-<!-- Node131 -->
+<!-- Node132 -->
 <g id="node15" class="node">
-<title>Node131</title>
+<title>Node132</title>
 <g id="a_node15"><a xlink:href="classwmtk_1_1attribute_1_1_attribute_manager.html" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="417,-88.5 417,-118.5 558,-118.5 558,-88.5 417,-88.5"/>
 <text text-anchor="start" x="425" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Attribute</text>
@@ -223,30 +223,30 @@
 </a>
 </g>
 </g>
-<!-- Node130&#45;&gt;Node131 -->
+<!-- Node131&#45;&gt;Node132 -->
 <g id="edge14" class="edge">
-<title>Node130&#45;&gt;Node131</title>
+<title>Node131&#45;&gt;Node132</title>
 <path fill="none" stroke="midnightblue" d="M319.45,-73.79C349.62,-79.15 385.77,-85.58 416.72,-91.09"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="319.92,-70.31 309.46,-72.01 318.69,-77.21 319.92,-70.31"/>
 </g>
-<!-- Node132 -->
+<!-- Node133 -->
 <g id="node16" class="node">
-<title>Node132</title>
+<title>Node133</title>
 <g id="a_node16"><a xlink:href="classwmtk_1_1attribute_1_1_mesh_attributes.html" target="_top" xlink:title="Contains all attributes of type T for a single mesh.">
 <polygon fill="none" stroke="black" points="387,-50 387,-69 588,-69 588,-50 387,-50"/>
 <text text-anchor="middle" x="487.5" y="-57" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::MeshAttributes&lt; T &gt;</text>
 </a>
 </g>
 </g>
-<!-- Node130&#45;&gt;Node132 -->
+<!-- Node131&#45;&gt;Node133 -->
 <g id="edge15" class="edge">
-<title>Node130&#45;&gt;Node132</title>
+<title>Node131&#45;&gt;Node133</title>
 <path fill="none" stroke="midnightblue" d="M361.36,-61.13C369.83,-61.02 378.36,-60.91 386.78,-60.8"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="361.04,-57.63 351.08,-61.26 361.13,-64.63 361.04,-57.63"/>
 </g>
-<!-- Node133 -->
+<!-- Node134 -->
 <g id="node17" class="node">
-<title>Node133</title>
+<title>Node134</title>
 <g id="a_node17"><a xlink:href="classwmtk_1_1multimesh_1_1_multi_mesh_manager.html" target="_top" xlink:title="Implementation details for how the Mesh class implements multiple meshes.">
 <polygon fill="none" stroke="black" points="407.5,-0.5 407.5,-30.5 567.5,-30.5 567.5,-0.5 407.5,-0.5"/>
 <text text-anchor="start" x="415.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::MultiMesh</text>
@@ -254,24 +254,24 @@
 </a>
 </g>
 </g>
-<!-- Node130&#45;&gt;Node133 -->
+<!-- Node131&#45;&gt;Node134 -->
 <g id="edge16" class="edge">
-<title>Node130&#45;&gt;Node133</title>
+<title>Node131&#45;&gt;Node134</title>
 <path fill="none" stroke="midnightblue" d="M312.58,-50.96C342.76,-44.81 380.26,-37.16 412.7,-30.55"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="311.74,-47.56 302.65,-52.99 313.14,-54.42 311.74,-47.56"/>
 </g>
-<!-- Node134 -->
+<!-- Node135 -->
 <g id="node18" class="node">
-<title>Node134</title>
+<title>Node135</title>
 <g id="a_node18"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="639.5,-6 639.5,-25 783.5,-25 783.5,-6 639.5,-6"/>
 <text text-anchor="middle" x="711.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
 </a>
 </g>
 </g>
-<!-- Node133&#45;&gt;Node134 -->
+<!-- Node134&#45;&gt;Node135 -->
 <g id="edge17" class="edge">
-<title>Node133&#45;&gt;Node134</title>
+<title>Node134&#45;&gt;Node135</title>
 <path fill="none" stroke="midnightblue" d="M577.97,-15.5C598.43,-15.5 619.89,-15.5 639.45,-15.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="577.71,-12 567.71,-15.5 577.71,-19 577.71,-12"/>
 </g>

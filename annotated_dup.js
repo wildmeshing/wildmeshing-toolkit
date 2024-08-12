@@ -181,6 +181,9 @@ var annotated_dup =
         [ "MultiMeshSimplexEventVisitor", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor.html", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor" ]
       ] ],
       [ "operations", "namespacewmtk_1_1operations.html", [
+        [ "attribute_update", "namespacewmtk_1_1operations_1_1attribute__update.html", [
+          [ "CastAttributeTransferStrategy", "classwmtk_1_1operations_1_1attribute__update_1_1_cast_attribute_transfer_strategy.html", "classwmtk_1_1operations_1_1attribute__update_1_1_cast_attribute_transfer_strategy" ]
+        ] ],
         [ "composite", "namespacewmtk_1_1operations_1_1composite.html", [
           [ "ProjectOperation", "classwmtk_1_1operations_1_1composite_1_1_project_operation.html", "classwmtk_1_1operations_1_1composite_1_1_project_operation" ],
           [ "TetCellSplit", "classwmtk_1_1operations_1_1composite_1_1_tet_cell_split.html", "classwmtk_1_1operations_1_1composite_1_1_tet_cell_split" ],

@@ -222,11 +222,11 @@ $(document).ready(function(){initNavTree('_project_operation_8cpp_source.html','
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                pair.first.<a class="code" href="classwmtk_1_1attribute_1_1_accessor.html#a431fd8bdff3e47b44a989ba82bea0499">mesh</a>().create_accessor(pair.first.as&lt;<span class="keywordtype">double</span>&gt;());</div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; t : mapped_tuples_after) {</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                <span class="keyword">const</span> <span class="keyword">auto</span> p = accessor.<a class="code" href="classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26">const_vector_attribute</a>(t);</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                <span class="keyword">auto</span> p = accessor.<a class="code" href="classwmtk_1_1attribute_1_1_accessor.html#a3d892570a7adb851051afe1da9dba682">vector_attribute</a>(t);</div>
 <div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                SimpleBVH::VectorMax3d nearest_point;</div>
 <div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                <span class="keywordtype">double</span> sq_dist;</div>
 <div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;                pair.second-&gt;nearest_facet(p, nearest_point, sq_dist);</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                accessor.<a class="code" href="classwmtk_1_1attribute_1_1_accessor.html#a3d892570a7adb851051afe1da9dba682">vector_attribute</a>(t) = nearest_point;</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                p = nearest_point;</div>
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            }</div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            assert((pair.first.holds&lt;<a class="code" href="classwmtk_1_1_rational.html">Rational</a>&gt;()));</div>
@@ -234,21 +234,22 @@ $(document).ready(function(){initNavTree('_project_operation_8cpp_source.html','
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;                pair.first.<a class="code" href="classwmtk_1_1attribute_1_1_accessor.html#a431fd8bdff3e47b44a989ba82bea0499">mesh</a>().create_accessor(pair.first.as&lt;<a class="code" href="classwmtk_1_1_rational.html">Rational</a>&gt;());</div>
 <div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; t : mapped_tuples_after) {</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;                <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Eigen::Vector3d</a> p = accessor.<a class="code" href="classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26">const_vector_attribute</a>(t).cast&lt;<span class="keywordtype">double</span>&gt;();</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                SimpleBVH::VectorMax3d nearest_point;</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;                <span class="keywordtype">double</span> sq_dist;</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;                pair.second-&gt;nearest_facet(p, nearest_point, sq_dist);</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;                <span class="keywordflow">for</span> (int64_t d = 0; d &lt; pair.first.dimension(); ++d) {</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;                    accessor.<a class="code" href="classwmtk_1_1attribute_1_1_accessor.html#a3d892570a7adb851051afe1da9dba682">vector_attribute</a>(t)[d] = <a class="code" href="classwmtk_1_1_rational.html">Rational</a>(nearest_point[d], <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;                }</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            }</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        }</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    }</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    <span class="keywordflow">return</span> main_simplices;</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;}</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160; </div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;} <span class="comment">// namespace wmtk::operations::composite</span></div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;                <span class="keyword">auto</span> p_map = accessor.<a class="code" href="classwmtk_1_1attribute_1_1_accessor.html#a3d892570a7adb851051afe1da9dba682">vector_attribute</a>(t);</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Eigen::Vector3d</a> p = p_map.cast&lt;<span class="keywordtype">double</span>&gt;();</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;                SimpleBVH::VectorMax3d nearest_point;</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;                <span class="keywordtype">double</span> sq_dist;</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;                pair.second-&gt;nearest_facet(p, nearest_point, sq_dist);</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;                <span class="keywordflow">for</span> (int64_t d = 0; d &lt; pair.first.dimension(); ++d) {</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;                    p_map(d) = <a class="code" href="classwmtk_1_1_rational.html">Rational</a>(nearest_point[d], <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;                }</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            }</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        }</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    }</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    <span class="keywordflow">return</span> main_simplices;</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;}</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160; </div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;} <span class="comment">// namespace wmtk::operations::composite</span></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="a_project_operation_8hpp_html"><div class="ttname"><a href="_project_operation_8hpp.html">ProjectOperation.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html_a6d2a546c8f661bf6386cf845a1693d2f"><div class="ttname"><a href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f">wmtk::Mesh::get_all</a></div><div class="ttdeci">std::vector&lt; Tuple &gt; get_all(PrimitiveType type) const</div><div class="ttdoc">Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index.</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8cpp_source.html#l00018">Mesh.cpp:18</a></div></div>

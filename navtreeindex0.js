@@ -106,6 +106,8 @@ var NAVTREEINDEX0 =
 "_caching_accessor_8hpp_source.html":[6,0,2,0,0,19],
 "_caching_accessor_8hxx.html":[6,0,2,0,0,20],
 "_caching_accessor_8hxx_source.html":[6,0,2,0,0,20],
+"_cast_attribute_transfer_strategy_8hpp.html":[6,0,2,0,6,1,4],
+"_cast_attribute_transfer_strategy_8hpp_source.html":[6,0,2,0,6,1,4],
 "_cell_8cpp.html":[6,0,2,0,9],
 "_cell_8cpp_source.html":[6,0,2,0,9],
 "_cell_8hpp.html":[6,0,2,0,10],
@@ -196,10 +198,10 @@ var NAVTREEINDEX0 =
 "_edge_valence_invariant_8cpp_source.html":[6,0,2,0,3,7],
 "_edge_valence_invariant_8hpp.html":[6,0,2,0,3,8],
 "_edge_valence_invariant_8hpp_source.html":[6,0,2,0,3,8],
-"_eigen_matrix_writer_8cpp.html":[6,0,2,0,8,3],
-"_eigen_matrix_writer_8cpp_source.html":[6,0,2,0,8,3],
-"_eigen_matrix_writer_8hpp.html":[6,0,2,0,8,4],
-"_eigen_matrix_writer_8hpp_source.html":[6,0,2,0,8,4],
+"_eigen_matrix_writer_8cpp.html":[6,0,2,0,8,4],
+"_eigen_matrix_writer_8cpp_source.html":[6,0,2,0,8,4],
+"_eigen_matrix_writer_8hpp.html":[6,0,2,0,8,5],
+"_eigen_matrix_writer_8hpp_source.html":[6,0,2,0,8,5],
 "_energy_filter_invariant_8cpp.html":[6,0,2,0,3,9],
 "_energy_filter_invariant_8cpp_source.html":[6,0,2,0,3,9],
 "_energy_filter_invariant_8hpp.html":[6,0,2,0,3,10],
@@ -247,7 +249,5 @@ var NAVTREEINDEX0 =
 "_grid3_options_8hpp_source.html":[6,0,0,1,16,0,0,0,0,5],
 "_grid_options_8cpp.html":[6,0,0,1,16,0,0,0,0,8],
 "_grid_options_8cpp.html#afc38ded3a4052aa252280a0a73ee9e69":[6,0,0,1,16,0,0,0,0,8,0],
-"_grid_options_8cpp_source.html":[6,0,0,1,16,0,0,0,0,8],
-"_grid_options_8hpp.html":[6,0,0,1,16,0,0,0,0,9],
-"_grid_options_8hpp_source.html":[6,0,0,1,16,0,0,0,0,9]
+"_grid_options_8cpp_source.html":[6,0,0,1,16,0,0,0,0,8]
 };

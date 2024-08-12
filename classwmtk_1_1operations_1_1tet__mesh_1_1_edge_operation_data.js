@@ -16,6 +16,7 @@ var classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data =
     [ "input_faces", "classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a5daa64539dd47d6e50b0ef03d95662ed", null ],
     [ "input_tets", "classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#aef1faa44cc046d0e0fdf00ba50cd8409", null ],
     [ "new_spine_eids", "classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a5a959b72718c01bf582e34896a37f819", null ],
+    [ "new_vertices", "classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a8c7519d037d58a3cd7747ba1d72c00ef", null ],
     [ "operating_edge_id", "classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#ac54fc13ba9237e8c114c5f83a13cf9db", null ],
     [ "split_new_rib_edges", "classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#affac0ce9f4e4bf2d80724c31186c2281", null ],
     [ "split_new_rib_faces", "classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#af1fb41177c6ec48e607739caae953e66", null ],

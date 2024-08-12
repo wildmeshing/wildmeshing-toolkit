@@ -1,6 +1,7 @@
 var _types_8hpp =
 [
     [ "MatrixX", "_types_8hpp.html#ae2013f5a8b3c4a8df232b70b5bf9a146", null ],
+    [ "MatrixXl", "_types_8hpp.html#addc4daac0072efdc066eca04d8e8d5c4", null ],
     [ "RowVector", "_types_8hpp.html#aedb4fc2d32ca00754b3eff536d9959fb", null ],
     [ "RowVector2d", "_types_8hpp.html#a0a7976035b3997694e57eb2e83d185fb", null ],
     [ "RowVector3d", "_types_8hpp.html#a731bef3001a94ad9a5fa2dcdeec43dcc", null ],

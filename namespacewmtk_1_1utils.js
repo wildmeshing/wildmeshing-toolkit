@@ -14,6 +14,8 @@ var namespacewmtk_1_1utils =
     [ "TupleCellLessThan", "classwmtk_1_1utils_1_1_tuple_cell_less_than.html", "classwmtk_1_1utils_1_1_tuple_cell_less_than" ],
     [ "TupleInspector", "classwmtk_1_1utils_1_1_tuple_inspector.html", null ],
     [ "mesh_type_from_primitive_type_t", "namespacewmtk_1_1utils.html#a4a14004fe275472582e54f21d079b230", null ],
+    [ "cast_attribute", "namespacewmtk_1_1utils.html#a63f193e192f0629608e3d43f8143b6a9", null ],
+    [ "cast_attribute", "namespacewmtk_1_1utils.html#a216f2306e90d409a64e86d49e5ef31e2", null ],
     [ "exactinit", "namespacewmtk_1_1utils.html#a5f6998f980cb239bfc739e9600e3d03e", null ],
     [ "generate_background_mesh", "namespacewmtk_1_1utils.html#a81fce5e5de645986df7e56f010ca2886", null ],
     [ "generate_raw_tetmesh_from_input_surface", "namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456", null ],

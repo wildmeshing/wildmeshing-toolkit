@@ -22,6 +22,7 @@ var classwmtk_1_1attribute_1_1_mesh_attributes =
     [ "get_name", "classwmtk_1_1attribute_1_1_mesh_attributes.html#aef8124419e388035c985a41da7ed31af", null ],
     [ "guarantee_at_least", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a4f739618d61b5d574ea7225624d32e22", null ],
     [ "has_attribute", "classwmtk_1_1attribute_1_1_mesh_attributes.html#adef20f60a366655c618f15657cad236a", null ],
+    [ "is_active", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a2265046d63f57dc21d6dd8d597e9e6ce", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a5211b2f89300781678433467407279d4", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a7c1c27937008581bd426f11fdb8d3338", null ],
     [ "operator==", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a71110eb742259fd194285ea7077c120d", null ],
@@ -38,7 +39,6 @@ var classwmtk_1_1attribute_1_1_mesh_attributes =
     [ "set", "classwmtk_1_1attribute_1_1_mesh_attributes.html#abadd5d73274cea6db874ede4ecfdb825", null ],
     [ "set_name", "classwmtk_1_1attribute_1_1_mesh_attributes.html#ae3ebdecc3016e4a5c982e953b644f995", null ],
     [ "AccessorBase", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a45a470617083e2afdca1b76b5c0377c7", null ],
-    [ "wmtk::Mesh", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a40e16ebf947f9980244ad9e954e38aa3", null ],
     [ "m_attributes", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a0f5e1ce753026d570ed579f1120879d6", null ],
     [ "m_handles", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a5a1f05a517e3cf5e2578cfc1b58b7fd0", null ],
     [ "m_reserved_size", "classwmtk_1_1attribute_1_1_mesh_attributes.html#aa38524abe2c17e57d5193520a9e03ca0", null ]

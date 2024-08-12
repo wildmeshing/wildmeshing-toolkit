@@ -1,5 +1,6 @@
 var _logger_8cpp =
 [
+    [ "has_user_overloaded_logger_level", "_logger_8cpp.html#a1d15e628edf89f87be62412176114df6", null ],
     [ "log_and_throw_error", "_logger_8cpp.html#a441d6ad4f19569c7d4946e743da1a925", null ],
     [ "logger", "_logger_8cpp.html#a6a35f11c12436093d26fdd8be6fecc06", null ],
     [ "opt_logger", "_logger_8cpp.html#a9bf9fa5eaec03a3e61a023a35f84f0e0", null ],

@@ -1,6 +1,7 @@
 var classwmtk_1_1simplex_1_1_simplex =
 [
     [ "Simplex", "classwmtk_1_1simplex_1_1_simplex.html#af155459e2314645e9e67cb9778e1536c", null ],
+    [ "Simplex", "classwmtk_1_1simplex_1_1_simplex.html#ab6d51ca0c220792c1c09824d152bb53a", null ],
     [ "Simplex", "classwmtk_1_1simplex_1_1_simplex.html#ad0c897a1361951b7897e7f73d0de468f", null ],
     [ "Simplex", "classwmtk_1_1simplex_1_1_simplex.html#a3d986919d07615dc85757a5216c2089c", null ],
     [ "Simplex", "classwmtk_1_1simplex_1_1_simplex.html#a3a76ee20ee0fd27738bba1097cc1c2d8", null ],

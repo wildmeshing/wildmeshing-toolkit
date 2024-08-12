@@ -161,6 +161,12 @@ Typedefs</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a63f193e192f0629608e3d43f8143b6a9"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a63f193e192f0629608e3d43f8143b6a9"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a63f193e192f0629608e3d43f8143b6a9">cast_attribute</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a> &amp;original_handle, const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a> &amp;new_handle)</td></tr>
+<tr class="separator:a63f193e192f0629608e3d43f8143b6a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a216f2306e90d409a64e86d49e5ef31e2"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a216f2306e90d409a64e86d49e5ef31e2"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a216f2306e90d409a64e86d49e5ef31e2">cast_attribute</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a> &amp;original_handle, <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const std::string &amp;new_attribute_name)</td></tr>
+<tr class="separator:a216f2306e90d409a64e86d49e5ef31e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0dca8cd0cb666277e80d2b93286cfb65"><td class="memItemLeft" align="right" valign="top"><a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a0dca8cd0cb666277e80d2b93286cfb65">merkle_tree</a> (const <a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;hashable)</td></tr>
 <tr class="separator:a0dca8cd0cb666277e80d2b93286cfb65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa8bd6cb2e566ee2d1badbff8eec034ea"><td class="memItemLeft" align="right" valign="top">std::optional&lt; <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#aa8bd6cb2e566ee2d1badbff8eec034ea">merkle_tree_diff</a> (const <a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;a, const <a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;b, bool detailed)</td></tr>
@@ -245,6 +251,92 @@ template&lt;PrimitiveType pt&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="a63f193e192f0629608e3d43f8143b6a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a63f193e192f0629608e3d43f8143b6a9">&#9670;&nbsp;</a></span>cast_attribute() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::utils::cast_attribute </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a> &amp;&#160;</td>
+          <td class="paramname"><em>original_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a> &amp;&#160;</td>
+          <td class="paramname"><em>new_handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cast__attribute_8hpp_source.html#l00008">8</a> of file <a class="el" href="cast__attribute_8hpp_source.html">cast_attribute.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00116">wmtk::attribute::MeshAttributeHandle::handle()</a>, and <a class="el" href="_attribute_transfer_strategy_base_8cpp_source.html#l00015">wmtk::operations::AttributeTransferStrategyBase::run_on_all()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a63f193e192f0629608e3d43f8143b6a9_cgraph.svg" width="100%" height="476"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a216f2306e90d409a64e86d49e5ef31e2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a216f2306e90d409a64e86d49e5ef31e2">&#9670;&nbsp;</a></span>cast_attribute() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a> wmtk::utils::cast_attribute </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a> &amp;&#160;</td>
+          <td class="paramname"><em>original_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>new_attribute_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="cast__attribute_8hpp_source.html#l00036">36</a> of file <a class="el" href="cast__attribute_8hpp_source.html">cast_attribute.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00053">wmtk::attribute::MeshAttributeHandle::dimension()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00225">wmtk::attribute::MeshAttributeHandle::primitive_type()</a>, and <a class="el" href="_mesh__attributes_8cpp_source.html#l00011">wmtk::Mesh::register_attribute()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a216f2306e90d409a64e86d49e5ef31e2_cgraph.svg" width="100%" height="486"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
 <a id="a5f6998f980cb239bfc739e9600e3d03e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5f6998f980cb239bfc739e9600e3d03e">&#9670;&nbsp;</a></span>exactinit()</h2>
 
@@ -393,9 +485,9 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00144">144</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00033">generate_background_mesh()</a>, <a class="el" href="_logger_8cpp_source.html#l00093">wmtk::log_and_throw_error()</a>, <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="mesh__utils_8hpp_source.html#l00009">wmtk::mesh_utils::set_matrix_attribute()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00084">triangulate_polygon_face()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00021">vector_unique()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="orient_8cpp_source.html#l00052">wmtk_orient3d()</a>.</p>
+<p class="reference">References <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00033">generate_background_mesh()</a>, <a class="el" href="_logger_8cpp_source.html#l00101">wmtk::log_and_throw_error()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="mesh__utils_8hpp_source.html#l00009">wmtk::mesh_utils::set_matrix_attribute()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00084">triangulate_polygon_face()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00021">vector_unique()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="orient_8cpp_source.html#l00052">wmtk_orient3d()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00562">generate_raw_tetmesh_with_surface_from_input()</a>, and <a class="el" href="triangle__insertion_8cpp_source.html#l00026">wmtk::components::triangle_insertion()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00562">generate_raw_tetmesh_with_surface_from_input()</a>, and <a class="el" href="triangle__insertion_8cpp_source.html#l00027">wmtk::components::triangle_insertion()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -457,7 +549,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00562">562</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00174">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00144">generate_raw_tetmesh_from_input_surface()</a>, <a class="el" href="_logger_8cpp_source.html#l00050">wmtk::logger()</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00017">wmtk::PE</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">PF</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00006">PT</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00016">wmtk::PV</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00202">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00144">generate_raw_tetmesh_from_input_surface()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00017">wmtk::PE</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">PF</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00006">PT</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00016">wmtk::PV</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -650,7 +742,7 @@ Here is the call graph for this function:</div>
 
 <p class="reference">References <a class="el" href="primitive__range_8cpp_source.html#l00003">primitive_range()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00065">wmtk::components::internal::MultiMeshFromTag::compute_substructure_ids()</a>, <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00383">wmtk::components::internal::MultiMeshFromTag::compute_substructure_mesh()</a>, <a class="el" href="faces_8cpp_source.html#l00019">wmtk::simplex::faces()</a>, <a class="el" href="regular__space_8cpp_source.html#l00014">wmtk::components::gather_attributes()</a>, <a class="el" href="get__attributes_8cpp_source.html#l00014">wmtk::components::base::get_attribute()</a>, and <a class="el" href="test__component__multimesh__from__tag_8cpp_source.html#l00023">TEST_CASE()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00065">wmtk::components::internal::MultiMeshFromTag::compute_substructure_ids()</a>, <a class="el" href="_multi_mesh_from_tag_8cpp_source.html#l00378">wmtk::components::internal::MultiMeshFromTag::compute_substructure_mesh()</a>, <a class="el" href="faces_8cpp_source.html#l00019">wmtk::simplex::faces()</a>, <a class="el" href="regular__space_8cpp_source.html#l00014">wmtk::components::gather_attributes()</a>, <a class="el" href="get__attributes_8cpp_source.html#l00014">wmtk::components::base::get_attribute()</a>, and <a class="el" href="test__component__multimesh__from__tag_8cpp_source.html#l00023">TEST_CASE()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1349,7 +1441,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00052">52</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>, <a class="el" href="_collapse_energy_before_invariant_8cpp_source.html#l00023">wmtk::invariants::CollapseEnergyBeforeInvariant::before()</a>, <a class="el" href="_collapse_energy_before_invariant_double_8cpp_source.html#l00023">wmtk::invariants::CollapseEnergyBeforeInvariantDouble::before()</a>, <a class="el" href="_collapse_soft_energy_before_invariant_8cpp_source.html#l00027">wmtk::invariants::CollapseSoftEnergyBeforeInvariant::before()</a>, <a class="el" href="_swap23_energy_before_invariant_8cpp_source.html#l00014">wmtk::Swap23EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap32_energy_before_invariant_8cpp_source.html#l00016">wmtk::Swap32EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap32_energy_before_invariant_double_8cpp_source.html#l00016">wmtk::Swap32EnergyBeforeInvariantDouble::before()</a>, <a class="el" href="_swap44_energy_before_invariant_8cpp_source.html#l00019">wmtk::Swap44EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap44_energy_before_invariant_double_8cpp_source.html#l00019">wmtk::Swap44EnergyBeforeInvariantDouble::before()</a>, <a class="el" href="_swap56_energy_before_invariant_8cpp_source.html#l00019">wmtk::Swap56EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap56_energy_before_invariant_double_8cpp_source.html#l00019">wmtk::Swap56EnergyBeforeInvariantDouble::before()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00144">generate_raw_tetmesh_from_input_surface()</a>, <a class="el" href="_a_m_i_p_s_optimization_smoothing_8cpp_source.html#l00190">wmtk::operations::AMIPSOptimizationSmoothing::WMTKAMIPSProblem&lt; S &gt;::is_step_valid()</a>, <a class="el" href="_a_m_i_p_s_optimization_smoothing_periodic_8cpp_source.html#l00193">wmtk::operations::AMIPSOptimizationSmoothingPeriodic::WMTKAMIPSProblem&lt; S &gt;::is_step_valid()</a>, <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l00112">wmtk::components::internal::periodic_optimization()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00020">wmtk::MshReader::read()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00405">wmtk::components::wildmeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>, <a class="el" href="_collapse_energy_before_invariant_8cpp_source.html#l00023">wmtk::invariants::CollapseEnergyBeforeInvariant::before()</a>, <a class="el" href="_collapse_energy_before_invariant_double_8cpp_source.html#l00023">wmtk::invariants::CollapseEnergyBeforeInvariantDouble::before()</a>, <a class="el" href="_collapse_soft_energy_before_invariant_8cpp_source.html#l00027">wmtk::invariants::CollapseSoftEnergyBeforeInvariant::before()</a>, <a class="el" href="_swap23_energy_before_invariant_8cpp_source.html#l00014">wmtk::Swap23EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap32_energy_before_invariant_8cpp_source.html#l00016">wmtk::Swap32EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap32_energy_before_invariant_double_8cpp_source.html#l00016">wmtk::Swap32EnergyBeforeInvariantDouble::before()</a>, <a class="el" href="_swap44_energy_before_invariant_8cpp_source.html#l00019">wmtk::Swap44EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap44_energy_before_invariant_double_8cpp_source.html#l00019">wmtk::Swap44EnergyBeforeInvariantDouble::before()</a>, <a class="el" href="_swap56_energy_before_invariant_8cpp_source.html#l00019">wmtk::Swap56EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap56_energy_before_invariant_double_8cpp_source.html#l00019">wmtk::Swap56EnergyBeforeInvariantDouble::before()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00144">generate_raw_tetmesh_from_input_surface()</a>, <a class="el" href="_a_m_i_p_s_optimization_smoothing_8cpp_source.html#l00190">wmtk::operations::AMIPSOptimizationSmoothing::WMTKAMIPSProblem&lt; S &gt;::is_step_valid()</a>, <a class="el" href="_a_m_i_p_s_optimization_smoothing_periodic_8cpp_source.html#l00193">wmtk::operations::AMIPSOptimizationSmoothingPeriodic::WMTKAMIPSProblem&lt; S &gt;::is_step_valid()</a>, <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l00112">wmtk::components::internal::periodic_optimization()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00020">wmtk::MshReader::read()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00407">wmtk::components::wildmeshing()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">

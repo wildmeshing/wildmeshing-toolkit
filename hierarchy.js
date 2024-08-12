@@ -33,7 +33,9 @@ var hierarchy =
     [ "wmtk::attribute::internal::AttributeTransactionStack< T >", "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html", null ],
     [ "wmtk::operations::AttributeTransferStrategyBase", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html", [
       [ "wmtk::operations::AttributeTransferStrategy< MyType >", "classwmtk_1_1operations_1_1_attribute_transfer_strategy.html", [
-        [ "wmtk::operations::SingleAttributeTransferStrategy< MyType, ParentType >", "classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html", null ]
+        [ "wmtk::operations::SingleAttributeTransferStrategy< MyType, ParentType >", "classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html", [
+          [ "wmtk::operations::attribute_update::CastAttributeTransferStrategy< MyType, ParentType >", "classwmtk_1_1operations_1_1attribute__update_1_1_cast_attribute_transfer_strategy.html", null ]
+        ] ]
       ] ]
     ] ],
     [ "wmtk::function::utils::AutoDiffRAII", "classwmtk_1_1function_1_1utils_1_1_auto_diff_r_a_i_i.html", null ],
