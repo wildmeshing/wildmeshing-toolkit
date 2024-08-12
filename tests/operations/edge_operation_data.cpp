@@ -59,7 +59,7 @@ void collapse_facet_maps_impl(
 }
 } // namespace
 
-TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
+TEST_CASE("collapse_facet_maps_1d", "[operations][data][1D]")
 {
     {
         spdlog::info("1d");
@@ -132,6 +132,9 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
             }
         }
     }
+}
+TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
+{
     {
         spdlog::info("2d");
         {
@@ -141,7 +144,6 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
             auto m = wmtk::tests::two_neighbors();
             auto& m_debug = reinterpret_cast<wmtk::tests::DEBUG_Mesh&>(m);
             auto& m_tri_debug = reinterpret_cast<wmtk::tests::DEBUG_TriMesh&>(m);
-            std::vector<std::tuple<wmtk::Tuple, std::bitset<2>>> bdata;
 
 
             // template for the following:
@@ -162,6 +164,7 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
             wmtk::Tuple main_tuple = m_tri_debug.tuple_from_global_ids(0, 4, 1);
 
             data.add(m, main_tuple);
+
 
 
             // the input edge's "mirror" to access ears easier
@@ -251,6 +254,15 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
             REQUIRE(m.switch_face(right_ear_opp) == right_alt_opp);
 
 
+            {
+            const auto& data_vec = data.m_data;
+            REQUIRE(data_vec.size() == 1);
+            const auto&  dat = data_vec[0];
+
+            const auto& left_dart = dat.alts[0];
+            const auto& right_dart = dat.alts[1];
+            }
+            return;
             std::vector<std::tuple<wmtk::Tuple, wmtk::Tuple>> left_alternatives, right_alternatives;
 
             left_alternatives.emplace_back(left_ear, left_alt);

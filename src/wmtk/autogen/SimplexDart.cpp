@@ -95,6 +95,10 @@ int8_t SimplexDart::inverse(int8_t a) const
 {
     return m_inverse(a);
 }
+    Dart SimplexDart::act(const Dart& d, int8_t action) const {
+        return Dart(d.global_id(), product(action,d.local_orientation()));
+    }
+
 int8_t SimplexDart::primitive_as_index(wmtk::PrimitiveType pt) const
 {
     return m_primitive_to_index(pt);

@@ -17,6 +17,9 @@ public:
     int8_t inverse(int8_t a) const;
     int8_t primitive_as_index(wmtk::PrimitiveType pt) const;
     int8_t identity() const;
+
+    Dart act(const Dart& d, int8_t action) const;
+
     wmtk::Tuple tuple_from_valid_index(int64_t gid, int8_t valid_index) const;
     wmtk::Tuple update_tuple_from_valid_index(const Tuple& t, int8_t valid_index) const;
 
