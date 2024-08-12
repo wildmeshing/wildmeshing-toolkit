@@ -137,6 +137,7 @@ public:
 
     int64_t top_cell_dimension() const;
     PrimitiveType top_simplex_type() const;
+    bool is_free() const;
 
     // attribute directly hashes its "children" components so it overrides "child_hashes"
     std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
@@ -369,6 +370,7 @@ protected:
      * @return Tuple
      */
     virtual Tuple tuple_from_id(const PrimitiveType type, const int64_t gid) const = 0;
+    simplex::Simplex simplex_from_id(const PrimitiveType type, const int64_t gid) const;
     std::vector<std::vector<int64_t>> simplices_to_gids(
         const std::vector<std::vector<simplex::Simplex>>& simplices) const;
     /**
@@ -499,8 +501,18 @@ public:
         const;
 #endif
 
+    // whether the tuple refers to a removed / invalid dart in the mesh
     bool is_removed(const Tuple& tuple) const;
+    // whether the tuple refers to a removed / invalid simplex in the mesh
+    bool is_removed(const Tuple& tuple, PrimitiveType pt) const;
 
+protected:
+    // whether the tuple refers to a removed / invalid facet
+    bool is_removed(int64_t index) const;
+    // whether the tuple refers to a removed / invalid simplex
+    bool is_removed(int64_t index, PrimitiveType pt) const;
+
+public:
     /**
      * @brief Check if the cached id in a simplex is up-to-date.
      */
@@ -577,6 +589,7 @@ public:
      * mesh will be invalidated by deregistration.
      */
     void deregister_child_mesh(const std::shared_ptr<Mesh>& child_mesh_ptr);
+
 
 private:
     /**
@@ -875,6 +888,9 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     int64_t m_top_cell_dimension = -1;
 
+    // assumes no adjacency data exists
+    bool m_is_free = false;
+
 private:
     // PImpl'd manager of per-thread update stacks
     // Every time a new access scope is requested the manager creates another level of indirection
@@ -1010,6 +1026,10 @@ inline Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequen
         r = switch_tuple(r, primitive);
     }
     return r;
+}
+inline bool Mesh::is_free() const
+{
+    return m_is_free;
 }
 
 inline int64_t Mesh::top_cell_dimension() const

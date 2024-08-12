@@ -21,8 +21,11 @@ void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer) const
 {
     for (const auto& p : m_handles) {
         const auto& handle = p.second;
-        const auto& attr = *m_attributes[handle.index];
-        attr.serialize(p.first, dim, writer);
+        const auto& attr_ptr = attribute(handle);
+        if (is_active(handle)) {
+            const auto& attr = *m_attributes[handle.index];
+            attr.serialize(p.first, dim, writer);
+        }
     }
 }
 
@@ -207,14 +210,20 @@ auto MeshAttributes<T>::active_attributes() const -> std::vector<AttributeHandle
 {
     std::vector<AttributeHandle> handles;
     handles.reserve(m_attributes.size());
-    for(size_t j = 0; j < m_attributes.size(); ++j) {
-        if(bool(m_attributes[j])) {
+    for (size_t j = 0; j < m_attributes.size(); ++j) {
+        if (bool(m_attributes[j])) {
             handles.emplace_back(j);
         }
     }
 
     return handles;
-
+}
+template <typename T>
+bool MeshAttributes<T>::is_active(const AttributeHandle& h) const
+{
+    const size_t index = h.index;
+    assert(index < m_attributes.size());
+    return bool(m_attributes[index]);
 }
 
 template <typename T>
@@ -244,7 +253,9 @@ void MeshAttributes<T>::guarantee_at_least(const int64_t size)
 }
 
 template <typename T>
-void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& attributes, bool invalidate_handles)
+void MeshAttributes<T>::remove_attributes(
+    const std::vector<AttributeHandle>& attributes,
+    bool invalidate_handles)
 {
     if (attributes.empty()) {
         return;
@@ -266,8 +277,8 @@ void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& at
     }
 
 
-    if(invalidate_handles) {
-    clear_dead_attributes();
+    if (invalidate_handles) {
+        clear_dead_attributes();
     }
 }
 

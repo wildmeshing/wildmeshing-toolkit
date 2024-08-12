@@ -3,6 +3,8 @@
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
+#include <wmtk/operations/attribute_update/CastAttributeTransferStrategy.hpp>
+#include <wmtk/utils/cast_attribute.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 using namespace wmtk;
@@ -339,6 +341,65 @@ TEST_CASE("attribute_update_multimesh", "[attribute_updates][multimesh]")
         for (int j = 1; j < 3; ++j) {
             Eigen::VectorXd b = d_pos.vector_attribute(d_indices[j]);
             CHECK((b.array() == 2.0).all());
+        }
+    }
+}
+
+TEST_CASE("attr_cast", "[operations][attributes]")
+{
+    using namespace operations;
+    //    0---1---2
+    //   / \ / \ / \ .
+    //  3---4---5---6
+    //   \ / \ /
+    //    7---8
+    TriMesh mold = hex_plus_two_with_position(); // 0xa <- 0xa
+    DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(mold);
+
+
+    auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto pos_rational_handle = m.register_attribute<wmtk::Rational>(
+        "vertices_rational",
+        PrimitiveType::Vertex,
+        m.get_attribute_dimension(pos_handle.as<double>()));
+
+    auto pos_handle2 = m.register_attribute<double>(
+        "vertices2",
+        PrimitiveType::Vertex,
+        m.get_attribute_dimension(pos_handle.as<double>()));
+
+
+    wmtk::operations::attribute_update::CastAttributeTransferStrategy<wmtk::Rational, double> caster(
+        pos_rational_handle,
+        pos_handle);
+    wmtk::operations::attribute_update::CastAttributeTransferStrategy<double, double> caster2(
+        pos_handle2,
+        pos_handle);
+
+    caster.run_on_all();
+    caster2.run_on_all();
+
+    auto rational_handle2 =
+        wmtk::utils::cast_attribute<wmtk::Rational>(pos_handle, m, "vertices_rational2");
+
+    REQUIRE(m.has_attribute<wmtk::Rational>("vertices_rational2", wmtk::PrimitiveType::Vertex));
+
+    auto aa = m.create_const_accessor<double>(pos_handle);
+    auto ba = m.create_const_accessor<wmtk::Rational>(pos_rational_handle);
+    auto ca = m.create_const_accessor<double>(pos_handle2);
+    auto da = m.create_const_accessor<wmtk::Rational>(rational_handle2);
+    for (const auto& vtup : m.get_all(wmtk::PrimitiveType::Vertex)) {
+        auto a = aa.vector_attribute(vtup);
+        auto b = ba.vector_attribute(vtup);
+        auto c = ca.vector_attribute(vtup);
+        auto d = da.vector_attribute(vtup);
+
+        CHECK(a == c);
+        CHECK(a == b.cast<double>());
+        CHECK(b.array().unaryExpr([](const auto& b) -> bool { return b.is_rounded(); }).all());
+        REQUIRE(b.size() == d.size());
+        for (int j = 0; j < b.size(); ++j) {
+            CHECK(b(j) == d(j));
         }
     }
 }

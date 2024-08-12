@@ -8,6 +8,9 @@
             "background",
             "background_position",
             "name"
+        ],
+        "optional": [
+            "make_child_free"
         ]
     },
     {
@@ -29,5 +32,11 @@
     {
         "pointer": "/name",
         "type": "string"
+    },
+    {
+        "pointer": "/make_child_free",
+        "type": "bool",
+        "default": false,
+        "doc": "Make the inserted mesh not have any topology"
     }
 ]

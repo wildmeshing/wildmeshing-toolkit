@@ -1,5 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include <catch2/catch_test_macros.hpp>
+#include <polysolve/Utils.hpp>
 
 #include <wmtk/utils/Logger.hpp>
 
@@ -30,6 +31,7 @@ bool load_json(const std::string& json_file, json& out)
     return true;
 }
 
+
 bool contains_results(const json& in_args)
 {
     if (!in_args.contains("tests")) {
@@ -38,7 +40,13 @@ bool contains_results(const json& in_args)
 
     const auto& tests = in_args["tests"];
     for (const auto& type : {"meshes", "vertices", "edges", "faces", "tetrahedra"}) {
-        if (!tests.contains(type) || !tests[type].is_array()) {
+        if (!(tests.contains(type) && (tests[type].is_number() || tests[type].is_array()))) {
+            spdlog::info(
+                "Test must have type {} = {} and test is an (array type = {} or number type {})",
+                tests.contains(type),
+                type,
+                tests[type].is_number(),
+                tests[type].is_array());
             return false;
         }
     }
@@ -59,12 +67,6 @@ IntegrationTestResult authenticate_json(const std::string& json_file, const bool
     }
 
     in_args["root_path"] = json_file;
-
-
-    // in_args["settings"] = R"({
-    //     "log_level": 5,
-    //     "opt_log_level": 5
-    //     })"_json;
 
     utils::set_random_seed(0);
     auto cache = wmtk::components::run_components(in_args, true);
@@ -198,8 +200,7 @@ std::string tagsrun = "[.][integration]";
 #endif
 } // namespace
 
-#define WMTK_INTEGRATION(NAME, DO_VALIDATION)                                        \
-    TEST_CASE(std::string("integration_") + NAME, tagsrun)                           \
+#define WMTK_INTEGRATION_BODY(NAME, DO_VALIDATION)                                   \
     {                                                                                \
         std::string path = std::string("unit_test/") + NAME + ".json";               \
         bool compute_validation = DO_VALIDATION;                                     \
@@ -207,6 +208,10 @@ std::string tagsrun = "[.][integration]";
         auto flag = authenticate_json(WMTK_DATA_DIR "/" + path, compute_validation); \
         REQUIRE(flag == IntegrationTestResult::Success);                             \
     }
+
+#define WMTK_INTEGRATION(NAME, DO_VALIDATION)              \
+    TEST_CASE(std::string("integration_") + NAME, tagsrun) \
+    WMTK_INTEGRATION_BODY(NAME, DO_VALIDATION)
 
 
 WMTK_INTEGRATION("input", false);
@@ -217,10 +222,40 @@ WMTK_INTEGRATION("insertion_open", false);
 WMTK_INTEGRATION("multimesh", false);
 WMTK_INTEGRATION("multimesh_boundary_2d", false);
 WMTK_INTEGRATION("multimesh_boundary_3d", false);
-// WMTK_INTEGRATION("isotropic_remeshing", false);
-// WMTK_INTEGRATION("isotropic_remeshing_mm", false);
+WMTK_INTEGRATION("isotropic_remeshing", false);
+WMTK_INTEGRATION("isotropic_remeshing_mm", false);
 WMTK_INTEGRATION("disk_fan_mm", false);
-// WMTK_INTEGRATION("grid",false);
-// WMTK_INTEGRATION("wildmeshing_2d", false);
-// WMTK_INTEGRATION("wildmeshing_3d", false);
+WMTK_INTEGRATION("grid", false);
+// WMTK_INTEGRATION("wildmeshing_2d", true);
+WMTK_INTEGRATION("wildmeshing_3d", false);
 WMTK_INTEGRATION("marching", false);
+
+
+TEST_CASE("integration_benchmark", "[.][benchmark][integration]")
+{
+    double total_time = 0;
+    int count = 0;
+    double prod = 1;
+
+    nlohmann::json js;
+    auto run = [&](const std::string& name) {
+        double time = 0;
+        {
+            POLYSOLVE_SCOPED_STOPWATCH("Benchmark " + name, time, logger());
+            WMTK_INTEGRATION_BODY(name, false)
+        }
+        js[name] = time;
+        prod *= time;
+        count++;
+    };
+    // run("wildmeshing_2d_timing");
+    {
+        POLYSOLVE_SCOPED_STOPWATCH("Benchmark total time", total_time, logger());
+        run("wildmeshing_3d");
+        run("isotropic_remeshing_mm_timing");
+    }
+    js["total_time"] = total_time;
+    js["geometric_mean_time"] = std::pow(total_time, 1.0 / count);
+
+    fmt::print("{}\n", js.dump());
+}

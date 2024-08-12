@@ -111,8 +111,27 @@ bool Mesh::is_valid(const Tuple& tuple) const
 
 bool Mesh::is_removed(const Tuple& tuple) const
 {
-    const auto& flag_accessor = get_const_flag_accessor(top_simplex_type());
-    return !(flag_accessor.index_access().const_scalar_attribute(tuple.m_global_cid) & 0x1);
+    return is_removed(tuple.m_global_cid);
+}
+bool Mesh::is_removed(const Tuple& t, PrimitiveType pt) const
+{
+    if (!is_removed(t)) {
+        return is_removed(id(t, pt), pt);
+    } else {
+        return false;
+    }
+}
+simplex::Simplex Mesh::simplex_from_id(const PrimitiveType pt, const int64_t gid) const {
+    return simplex::Simplex(pt, tuple_from_id(pt,gid),gid);
+}
+bool Mesh::is_removed(int64_t index) const
+{
+    return is_removed(index, top_simplex_type());
+}
+bool Mesh::is_removed(int64_t index, PrimitiveType pt) const
+{
+    const auto& flag_accessor = get_const_flag_accessor(pt);
+    return !(flag_accessor.index_access().const_scalar_attribute(index) & 0x1);
 }
 
 bool Mesh::is_valid(const simplex::Simplex& s) const
