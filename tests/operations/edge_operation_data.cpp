@@ -144,7 +144,21 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
             std::vector<std::tuple<wmtk::Tuple, std::bitset<2>>> bdata;
 
 
+            // template for the following:
+            //   x-----x-----x 
+            //   |    / \    |
+            //   |   /   \   |
+            //   |  /     \  |
+            //   | /       \ |
+            //   x-----------x 
+
             // estimate of the edge used for teh collapse
+            //   x-----x-----x 
+            //   |    / \    |
+            //   |   /   \   |
+            //   |  /  o  \  |
+            //   | /       \ |
+            //   o-----o-----x 
             wmtk::Tuple main_tuple = m_tri_debug.tuple_from_global_ids(0, 4, 1);
 
             data.add(m, main_tuple);
@@ -152,32 +166,86 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
 
             // the input edge's "mirror" to access ears easier
             // collapsing this edge does the same topological operation
+            //   x-----x-----x 
+            //   |    / \    |
+            //   |   /   \   |
+            //   |  /  o  \  |
+            //   | /       \ |
+            //   x-----o-----o 
             wmtk::Tuple dual_tuple = m_tri_debug.tuple_from_global_ids(0, 4, 2);
             REQUIRE(m.switch_vertex(main_tuple) == dual_tuple);
 
             // tuples in the input face for the left ear's edge
+            //   x-----x-----x 
+            //   |    / \    |
+            //   |   o   \   |
+            //   |  /  o  \  |
+            //   | /       \ |
+            //   o-----------x 
             wmtk::Tuple left_ear = m_tri_debug.tuple_from_global_ids(0, 0, 1);
             REQUIRE(m.switch_edge(main_tuple) == left_ear);
+            //   x-----o-----x 
+            //   |    / \    |
+            //   |   o   \   |
+            //   |  /  o  \  |
+            //   | /       \ |
+            //   x-----------x 
             wmtk::Tuple left_ear_opp = m_tri_debug.tuple_from_global_ids(0, 0, 0);
             REQUIRE(m.switch_vertex(left_ear) == left_ear_opp);
 
 
             // tuples in the input face for the right ear's edge
+            //   x-----x-----x 
+            //   |    / \    |
+            //   |   /   o   |
+            //   |  /  o  \  |
+            //   | /       \ |
+            //   x-----------o 
             wmtk::Tuple right_ear = m_tri_debug.tuple_from_global_ids(0, 1, 2);
             REQUIRE(m.switch_edge(dual_tuple) == right_ear);
+            //   x-----o-----x 
+            //   |    / \    |
+            //   |   /   o   |
+            //   |  /  o  \  |
+            //   | /       \ |
+            //   x-----------x 
             wmtk::Tuple right_ear_opp = m_tri_debug.tuple_from_global_ids(0, 1, 0);
             REQUIRE(m.switch_vertex(right_ear) == right_ear_opp);
 
 
             // left ear's tuples but in triangle 1 (should have equivalent vertex and edge
+            //   x-----x-----x 
+            //   | o  / \    |
+            //   |   o   \   |
+            //   |  /     \  |
+            //   | /       \ |
+            //   o-----------x 
             wmtk::Tuple left_alt = m_tri_debug.tuple_from_global_ids(1, 0, 1);
             REQUIRE(m.switch_face(left_ear) == left_alt);
+            //   x-----o-----x 
+            //   | o  / \    |
+            //   |   o   \   |
+            //   |  /     \  |
+            //   | /       \ |
+            //   x-----------x 
             wmtk::Tuple left_alt_opp = m_tri_debug.tuple_from_global_ids(1, 0, 0);
             REQUIRE(m.switch_vertex(left_alt) == left_alt_opp);
             REQUIRE(m.switch_face(left_ear_opp) == left_alt_opp);
 
+            //   x-----x-----x 
+            //   |    / \  o |
+            //   |   /   o   |
+            //   |  /     \  |
+            //   | /       \ |
+            //   x-----------o 
             wmtk::Tuple right_alt = m_tri_debug.tuple_from_global_ids(2, 1, 2);
             REQUIRE(m.switch_face(right_ear) == right_alt);
+            //   x-----o-----x 
+            //   |    / \ o  |
+            //   |   /   o   |
+            //   |  /     \  |
+            //   | /       \ |
+            //   x-----------x 
             wmtk::Tuple right_alt_opp = m_tri_debug.tuple_from_global_ids(2, 1, 0);
             REQUIRE(m.switch_vertex(right_alt) == right_alt_opp);
             REQUIRE(m.switch_face(right_ear_opp) == right_alt_opp);

@@ -60,12 +60,11 @@ TEST_CASE("trimesh_split_collapse_factories", "[operations][2D]")
     }
 }
 
-/*
 TEST_CASE("get per face data")
 {
     SECTION("single face")
     {
-        DEBUG_TriMesh m = ;
+        DEBUG_TriMesh m;
         {
             //         0
             //        / \   .
@@ -163,4 +162,3 @@ TEST_CASE("get per face data")
         REQUIRE(ear2.eid > -1);
     }
 }
-*/
