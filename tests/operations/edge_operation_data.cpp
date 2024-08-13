@@ -235,6 +235,7 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
             //   | /       \ |
             //   x-----------x 
             wmtk::Tuple left_alt_opp = m_tri_debug.tuple_from_global_ids(1, 0, 0);
+            const auto left_alt_opp_dart = sd.dart_from_tuple(left_alt_opp);
             REQUIRE(m.switch_vertex(left_alt) == left_alt_opp);
             REQUIRE(m.switch_face(left_ear_opp) == left_alt_opp);
 
@@ -254,6 +255,7 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
             //   | /       \ |
             //   x-----------x 
             wmtk::Tuple right_alt_opp = m_tri_debug.tuple_from_global_ids(2, 1, 0);
+            const auto right_alt_opp_dart = sd.dart_from_tuple(right_alt_opp);
             REQUIRE(m.switch_vertex(right_alt) == right_alt_opp);
             REQUIRE(m.switch_face(right_ear_opp) == right_alt_opp);
 
@@ -269,8 +271,10 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
             CHECK(left_dart.global_id() == 1);
             CHECK(right_dart.global_id() == 2);
 
-            CHECK(left_alt_dart == sd.act(main_dart, left_dart.local_orientation()));
-            CHECK(right_alt_dart == sd.act(main_dart, right_dart.local_orientation()));
+            const auto left_act = sd.act(main_dart, left_dart.local_orientation());
+            const auto right_act = sd.act(main_dart, right_dart.local_orientation());
+            CHECK(left_alt_opp_dart == left_act);
+            CHECK(right_alt_opp_dart == right_act);
 
             }
             return;

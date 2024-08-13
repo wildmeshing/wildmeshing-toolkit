@@ -13,6 +13,7 @@ set(SRC_FILES
     SimplexDart.cpp
 
     Dart.hpp
+    Dart.cpp
 
     tuple_from_valid_index.hpp
     tuple_from_valid_index.cpp

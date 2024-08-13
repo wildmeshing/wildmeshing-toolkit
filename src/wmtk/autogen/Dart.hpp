@@ -1,6 +1,7 @@
 #pragma once
 #include <cinttypes>
 #include <tuple>
+#include <string>
 
 namespace wmtk::autogen {
 class Dart : public std::tuple<int64_t, int8_t>
@@ -17,5 +18,8 @@ public:
     int8_t local_orientation() const { return std::get<1>(*this); }
 
     bool is_null() const { return global_id() == -1; }
+
+    operator std::string() const;
 };
 } // namespace wmtk::autogen
+std::ostream& operator<<(std::ostream& out, wmtk::autogen::Dart const& vec);
