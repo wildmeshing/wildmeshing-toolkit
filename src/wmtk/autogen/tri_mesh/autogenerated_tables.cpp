@@ -35,6 +35,6 @@ const int8_t auto_valid_switch_product_table[6][6] = {
 
 const int8_t auto_valid_switch_inverse_table[6] = {0, 1, 5, 3, 4, 2};
 
-const int8_t auto_valid_tuple_switch_indices[3] = {3, 0, 1};
+const int8_t auto_valid_tuple_switch_indices[4] = {3, 0, 1, 4};
 
 } // namespace wmtk::autogen::tri_mesh

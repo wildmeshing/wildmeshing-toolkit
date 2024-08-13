@@ -123,6 +123,6 @@ const int8_t auto_valid_switch_product_table[24][24] = {
 const int8_t auto_valid_switch_inverse_table[24] = {0,  1, 5,  3,  4,  2,  6,  7, 19, 13, 18, 12,
                                                     11, 9, 21, 15, 23, 17, 10, 8, 20, 14, 22, 16};
 
-const int8_t auto_valid_tuple_switch_indices[4] = {7, 3, 0, 1};
+const int8_t auto_valid_tuple_switch_indices[5] = {7, 3, 0, 1, 22};
 
 } // namespace wmtk::autogen::tet_mesh
