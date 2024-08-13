@@ -122,17 +122,19 @@ def valid_switch_inverse_table(sc):
     return [table[i].index(identity_valid_index) for i in range(size)] 
 
 
-def switches_plus_identity(sc):
+def switches_plus_identity_and_opp(sc):
     identity = tuple(range(len(sc)+1))
-    print("Identity: ", identity)
+    #print("Identity: ", identity)
     def s(i):
         x = list(identity)
-        print("1:",x)
+        #print("1:",x)
         x[i],x[i+1] = x[i+1],x[i]
-        print("2:",x)
+        #print("2:",x)
         return tuple(x)
-    sss = tuple(s(i) for i in range(len(sc))) + (identity,)
-    print(sss)
+    opp = identity[::-1]
+    sss = tuple(s(i) for i in range(len(sc))) + (identity,opp)
+
+    #print(sss)
     return tuple(map(sc.simplicial_set_as_valid_tuple_index,sss))
 
 
