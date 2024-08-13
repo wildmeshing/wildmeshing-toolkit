@@ -311,9 +311,9 @@ TEST_CASE("tuple_autogen_products_vs_switch", "[tuple]")
             auto run = [&]() {
                 Tuple manual_switch = t;
                 const int8_t initial_index = sd.valid_index_from_tuple(t);
+                const autogen::Dart initial_dart = sd.dart_from_tuple(t);
                 int8_t index = initial_index;
                 int8_t op = sd.identity();
-                ;
 
                 std::vector<int8_t> seq_tups;
                 for (const auto& s : sequence) {
@@ -327,8 +327,13 @@ TEST_CASE("tuple_autogen_products_vs_switch", "[tuple]")
                 Tuple product_switch2 =
                     sd.update_tuple_from_valid_index(t, sd.product(op, initial_index));
 
+                const autogen::Dart output = sd.act(initial_dart, op);
+
+                const autogen::Dart expected = sd.dart_from_tuple(product_switch);
+
                 CHECK(manual_switch == product_switch);
                 CHECK(product_switch == product_switch2);
+                CHECK(output ==  expected);
             };
             for (size_t j = 0; j < 4; ++j) {
                 for (PrimitiveType pt0 : primitives_up_to(mesh_type)) {
