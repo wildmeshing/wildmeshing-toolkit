@@ -642,8 +642,6 @@ generate_raw_tetmesh_from_input_surface(
 
     // tetrahedralization polygon cells
     // int64_t was_tet_cnt = 0;
-    // for (int64_t i = 0; i < polygon_cells.size(); ++i) {
-    // debug change
 
     polysolve::StopWatch timer("triangulation", logger());
     double get_vertex_time = 0;
@@ -656,8 +654,9 @@ generate_raw_tetmesh_from_input_surface(
     double centroid_time = 0;
     int64_t tet_cnt = 0;
 
-
-    for (int64_t i = 0; i < 100000; ++i) {
+    for (int64_t i = 0; i < polygon_cells.size(); ++i) {
+        // debug change
+        // for (int64_t i = 0; i < 3000000; ++i) {
         const auto& polygon_cell = polygon_cells[i];
 
 
