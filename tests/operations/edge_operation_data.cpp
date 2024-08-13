@@ -142,6 +142,7 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
 
 
             auto m = wmtk::tests::two_neighbors();
+            wmtk::autogen::SimplexDart sd(m.top_simplex_type());
             auto& m_debug = reinterpret_cast<wmtk::tests::DEBUG_Mesh&>(m);
             auto& m_tri_debug = reinterpret_cast<wmtk::tests::DEBUG_TriMesh&>(m);
 
@@ -162,6 +163,7 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
             //   | /       \ |
             //   o-----o-----x 
             wmtk::Tuple main_tuple = m_tri_debug.tuple_from_global_ids(0, 4, 1);
+            const auto main_dart = sd.dart_from_tuple(main_tuple);
 
             data.add(m, main_tuple);
 
@@ -224,6 +226,7 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
             //   | /       \ |
             //   o-----------x 
             wmtk::Tuple left_alt = m_tri_debug.tuple_from_global_ids(1, 0, 1);
+            const auto left_alt_dart = sd.dart_from_tuple(left_alt);
             REQUIRE(m.switch_face(left_ear) == left_alt);
             //   x-----o-----x 
             //   | o  / \    |
@@ -242,6 +245,7 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
             //   | /       \ |
             //   x-----------o 
             wmtk::Tuple right_alt = m_tri_debug.tuple_from_global_ids(2, 1, 2);
+            const auto right_alt_dart = sd.dart_from_tuple(right_alt);
             REQUIRE(m.switch_face(right_ear) == right_alt);
             //   x-----o-----x 
             //   |    / \ o  |
@@ -261,6 +265,13 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
 
             const auto& left_dart = dat.alts[0];
             const auto& right_dart = dat.alts[1];
+
+            CHECK(left_dart.global_id() == 1);
+            CHECK(right_dart.global_id() == 2);
+
+            CHECK(left_alt_dart == sd.act(main_dart, left_dart.local_orientation()));
+            CHECK(right_alt_dart == sd.act(main_dart, right_dart.local_orientation()));
+
             }
             return;
             std::vector<std::tuple<wmtk::Tuple, wmtk::Tuple>> left_alternatives, right_alternatives;
