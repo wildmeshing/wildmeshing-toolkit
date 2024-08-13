@@ -48,6 +48,7 @@ GET_OP(product, binary_op_type)
 GET_OP(inverse, unary_op_type)
 GET_OP(primitive_to_index, primitive_to_index_type)
 GET_OP(identity, nullary_op_type)
+GET_OP(opposite, nullary_op_type)
 } // namespace
 
 #define FORWARD_OP(NAME, OP, RETTYPE, DEFAULT)                               \
@@ -76,6 +77,7 @@ SimplexDart::SimplexDart(wmtk::PrimitiveType simplex_type)
     , m_inverse(get_inverse(simplex_type))
     , m_primitive_to_index(get_primitive_to_index(simplex_type))
     , m_identity(get_identity(simplex_type))
+    , m_opposite(get_opposite(simplex_type))
 {}
 const SimplexDart& SimplexDart::get_singleton(wmtk::PrimitiveType simplex_type)
 {
@@ -95,9 +97,10 @@ int8_t SimplexDart::inverse(int8_t a) const
 {
     return m_inverse(a);
 }
-    Dart SimplexDart::act(const Dart& d, int8_t action) const {
-        return Dart(d.global_id(), product(action,d.local_orientation()));
-    }
+Dart SimplexDart::act(const Dart& d, int8_t action) const
+{
+    return Dart(d.global_id(), product(action, d.local_orientation()));
+}
 
 int8_t SimplexDart::primitive_as_index(wmtk::PrimitiveType pt) const
 {
@@ -106,6 +109,10 @@ int8_t SimplexDart::primitive_as_index(wmtk::PrimitiveType pt) const
 int8_t SimplexDart::identity() const
 {
     return m_identity();
+}
+int8_t SimplexDart::opposite() const
+{
+    return m_opposite();
 }
 wmtk::Tuple SimplexDart::tuple_from_valid_index(int64_t gid, int8_t index) const
 {

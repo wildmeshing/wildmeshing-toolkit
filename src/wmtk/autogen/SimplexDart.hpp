@@ -15,8 +15,15 @@ public:
 
     int8_t product(int8_t a, int8_t b) const;
     int8_t inverse(int8_t a) const;
+
+    // returns the action equivalent to switching by a particular primitive
     int8_t primitive_as_index(wmtk::PrimitiveType pt) const;
+
+    // returns the two-sided identity action - product(identity(),x) = x
     int8_t identity() const;
+    // returns the dart O such that for each simplex I[i] in the identity I,
+    // O[i] = S - I[i], where S is the facet simplex
+    int8_t opposite() const;
 
     Dart act(const Dart& d, int8_t action) const;
 
@@ -46,5 +53,6 @@ private:
     const unary_op_type m_inverse;
     const primitive_to_index_type m_primitive_to_index;
     const nullary_op_type m_identity;
+    const nullary_op_type m_opposite;
 };
 } // namespace wmtk::autogen

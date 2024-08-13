@@ -195,6 +195,7 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
             //   | /       \ |
             //   x-----------x
             wmtk::Tuple left_ear_opp = m_tri_debug.tuple_from_global_ids(0, 0, 0);
+            const auto left_ear_opp_dart = sd.dart_from_tuple(left_ear_opp);
             REQUIRE(m.switch_vertex(left_ear) == left_ear_opp);
 
 
@@ -214,6 +215,7 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
             //   | /       \ |
             //   x-----------x
             wmtk::Tuple right_ear_opp = m_tri_debug.tuple_from_global_ids(0, 1, 0);
+            const auto right_ear_opp_dart = sd.dart_from_tuple(right_ear_opp);
             REQUIRE(m.switch_vertex(right_ear) == right_ear_opp);
 
 
@@ -260,6 +262,18 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
 
 
             {
+                // premable debug printouts to check what happened in add
+                fmt::print(
+                    "Should have a main {} => left opp {} == left alt {}\n",
+                    std::string(main_dart),
+                    std::string(left_ear_opp_dart),
+                    std::string(left_alt_opp_dart));
+                fmt::print(
+                    "Should have a main {} => right opp {} == right alt {}\n",
+                    std::string(main_dart),
+                    std::string(right_ear_opp_dart),
+                    std::string(right_alt_opp_dart));
+
                 const auto& data_vec = data.m_data;
                 REQUIRE(data_vec.size() == 1);
                 const auto& dat = data_vec[0];
@@ -273,7 +287,7 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
                 const auto left_act = sd.act(main_dart, left_dart.local_orientation());
                 const auto right_act = sd.act(main_dart, right_dart.local_orientation());
                 fmt::print(
-                    "{} => {} {} == {} {}",
+                    "{} => {} {} == {} {}\n",
                     std::string(main_dart),
                     std::string(left_alt_opp_dart),
                     std::string(right_alt_opp_dart),

@@ -9,32 +9,33 @@
 namespace wmtk::operations::internal {
 
 namespace {
-auto make_left_ear_darts() -> std::array<int8_t, 4>
+auto make_opp_actions() -> std::array<int8_t, 4>
 {
     std::array<int8_t, 4> darts;
     darts[0] = 0;
     for (int8_t j = 1; j < darts.size(); ++j) {
         PrimitiveType pt = get_primitive_type_from_id(j);
         wmtk::autogen::SimplexDart sd(pt);
-        int8_t& action = darts[j] = sd.identity();
-
-        for (int8_t k = 1; k < j; ++k) {
-            const PrimitiveType apt = get_primitive_type_from_id(k);
-            action = sd.product(action, sd.primitive_as_index(apt));
-        }
+        darts[j] = sd.opposite();
     }
     //
+    // spdlog::error("Left Darts: {}", fmt::join(darts, ","));
     return darts;
 }
 auto make_right_ear_darts() -> std::array<int8_t, 4>
 {
-    auto darts = make_left_ear_darts();
+    return make_opp_actions();
+}
+auto make_left_ear_darts() -> std::array<int8_t, 4>
+{
+    auto darts = make_opp_actions();
     for (int8_t j = 1; j < darts.size(); ++j) {
         PrimitiveType pt = get_primitive_type_from_id(j);
         wmtk::autogen::SimplexDart sd(pt);
         int8_t& action = darts[j];
         action = sd.product(action, sd.primitive_as_index(wmtk::PrimitiveType::Vertex));
     }
+    // spdlog::error("Right Darts: {}", fmt::join(darts, ","));
     return darts;
 }
 const static std::array<int8_t, 4> left_ear_darts = make_left_ear_darts();
@@ -84,6 +85,14 @@ auto CollapseAlternateFacetOptionData::get_neighbor_action(
     const PrimitiveType boundary_type = mesh_type - 1;
     Tuple r = wmtk::autogen::local_switch_tuple(mesh_type, t, local_action);
     Dart d;
+    {
+        const auto& sd = autogen::SimplexDart::get_singleton(m.top_simplex_type());
+        spdlog::info(
+            "Input dart {} being moved by action {} to {}",
+            std::string(sd.dart_from_tuple(t)),
+            local_action,
+            std::string(sd.dart_from_tuple(r)));
+    }
     if (!m.is_boundary(boundary_type, r)) {
         const auto& sd = autogen::SimplexDart::get_singleton(m.top_simplex_type());
         int8_t source_orientation = sd.valid_index_from_tuple(t);
@@ -101,7 +110,7 @@ auto CollapseAlternateFacetOptionData::get_neighbor_action(
             wmtk::utils::TupleInspector::as_string(r),
             source_orientation,
             old,
-            target_orientation);
+            std::string(d));
     }
 
     return d;

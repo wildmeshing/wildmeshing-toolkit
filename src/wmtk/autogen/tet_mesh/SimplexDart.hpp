@@ -18,7 +18,16 @@ public:
     {
         return auto_valid_tuple_switch_indices[get_primitive_type_id(pt)];
     }
-    static int8_t identity() { return primitive_to_index(wmtk::PrimitiveType::Tetrahedron); }
+    static int8_t identity()
+    {
+        return auto_valid_tuple_switch_indices[get_primitive_type_id(
+            wmtk::PrimitiveType::Tetrahedron)];
+    }
+    static int8_t opposite()
+    {
+        return auto_valid_tuple_switch_indices
+            [get_primitive_type_id(wmtk::PrimitiveType::Tetrahedron) + 1];
+    }
     constexpr static size_t size() { return sizeof(auto_valid_tuple_indices) / sizeof(int8_t); }
 
     static auto valid_indices() { return wmtk::utils::array_to_map(auto_valid_tuple_indices); }
