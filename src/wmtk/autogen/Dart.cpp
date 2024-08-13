@@ -1,5 +1,6 @@
 #include "Dart.hpp"
 #include <fmt/format.h>
+#include <ostream>
 namespace wmtk::autogen {
 
     Dart::operator std::string() const {

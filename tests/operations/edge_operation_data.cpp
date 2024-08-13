@@ -148,112 +148,111 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
 
 
             // template for the following:
-            //   x-----x-----x 
+            //   x-----x-----x
             //   |    / \    |
             //   |   /   \   |
             //   |  /     \  |
             //   | /       \ |
-            //   x-----------x 
+            //   x-----------x
 
             // estimate of the edge used for teh collapse
-            //   x-----x-----x 
+            //   x-----x-----x
             //   |    / \    |
             //   |   /   \   |
             //   |  /  o  \  |
             //   | /       \ |
-            //   o-----o-----x 
+            //   o-----o-----x
             wmtk::Tuple main_tuple = m_tri_debug.tuple_from_global_ids(0, 4, 1);
             const auto main_dart = sd.dart_from_tuple(main_tuple);
 
             data.add(m, main_tuple);
 
 
-
             // the input edge's "mirror" to access ears easier
             // collapsing this edge does the same topological operation
-            //   x-----x-----x 
+            //   x-----x-----x
             //   |    / \    |
             //   |   /   \   |
             //   |  /  o  \  |
             //   | /       \ |
-            //   x-----o-----o 
+            //   x-----o-----o
             wmtk::Tuple dual_tuple = m_tri_debug.tuple_from_global_ids(0, 4, 2);
             REQUIRE(m.switch_vertex(main_tuple) == dual_tuple);
 
             // tuples in the input face for the left ear's edge
-            //   x-----x-----x 
+            //   x-----x-----x
             //   |    / \    |
             //   |   o   \   |
             //   |  /  o  \  |
             //   | /       \ |
-            //   o-----------x 
+            //   o-----------x
             wmtk::Tuple left_ear = m_tri_debug.tuple_from_global_ids(0, 0, 1);
             REQUIRE(m.switch_edge(main_tuple) == left_ear);
-            //   x-----o-----x 
+            //   x-----o-----x
             //   |    / \    |
             //   |   o   \   |
             //   |  /  o  \  |
             //   | /       \ |
-            //   x-----------x 
+            //   x-----------x
             wmtk::Tuple left_ear_opp = m_tri_debug.tuple_from_global_ids(0, 0, 0);
             REQUIRE(m.switch_vertex(left_ear) == left_ear_opp);
 
 
             // tuples in the input face for the right ear's edge
-            //   x-----x-----x 
+            //   x-----x-----x
             //   |    / \    |
             //   |   /   o   |
             //   |  /  o  \  |
             //   | /       \ |
-            //   x-----------o 
+            //   x-----------o
             wmtk::Tuple right_ear = m_tri_debug.tuple_from_global_ids(0, 1, 2);
             REQUIRE(m.switch_edge(dual_tuple) == right_ear);
-            //   x-----o-----x 
+            //   x-----o-----x
             //   |    / \    |
             //   |   /   o   |
             //   |  /  o  \  |
             //   | /       \ |
-            //   x-----------x 
+            //   x-----------x
             wmtk::Tuple right_ear_opp = m_tri_debug.tuple_from_global_ids(0, 1, 0);
             REQUIRE(m.switch_vertex(right_ear) == right_ear_opp);
 
 
             // left ear's tuples but in triangle 1 (should have equivalent vertex and edge
-            //   x-----x-----x 
+            //   x-----x-----x
             //   | o  / \    |
             //   |   o   \   |
             //   |  /     \  |
             //   | /       \ |
-            //   o-----------x 
+            //   o-----------x
             wmtk::Tuple left_alt = m_tri_debug.tuple_from_global_ids(1, 0, 1);
             const auto left_alt_dart = sd.dart_from_tuple(left_alt);
             REQUIRE(m.switch_face(left_ear) == left_alt);
-            //   x-----o-----x 
+            //   x-----o-----x
             //   | o  / \    |
             //   |   o   \   |
             //   |  /     \  |
             //   | /       \ |
-            //   x-----------x 
+            //   x-----------x
             wmtk::Tuple left_alt_opp = m_tri_debug.tuple_from_global_ids(1, 0, 0);
             const auto left_alt_opp_dart = sd.dart_from_tuple(left_alt_opp);
             REQUIRE(m.switch_vertex(left_alt) == left_alt_opp);
             REQUIRE(m.switch_face(left_ear_opp) == left_alt_opp);
 
-            //   x-----x-----x 
+            //   x-----x-----x
             //   |    / \  o |
             //   |   /   o   |
             //   |  /     \  |
             //   | /       \ |
-            //   x-----------o 
+            //   x-----------o
             wmtk::Tuple right_alt = m_tri_debug.tuple_from_global_ids(2, 1, 2);
             const auto right_alt_dart = sd.dart_from_tuple(right_alt);
             REQUIRE(m.switch_face(right_ear) == right_alt);
-            //   x-----o-----x 
+            //   x-----o-----x
             //   |    / \ o  |
             //   |   /   o   |
             //   |  /     \  |
             //   | /       \ |
-            //   x-----------x 
+            //   x-----------x
             wmtk::Tuple right_alt_opp = m_tri_debug.tuple_from_global_ids(2, 1, 0);
             const auto right_alt_opp_dart = sd.dart_from_tuple(right_alt_opp);
             REQUIRE(m.switch_vertex(right_alt) == right_alt_opp);
@@ -261,21 +260,27 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
 
 
             {
-            const auto& data_vec = data.m_data;
-            REQUIRE(data_vec.size() == 1);
-            const auto&  dat = data_vec[0];
+                const auto& data_vec = data.m_data;
+                REQUIRE(data_vec.size() == 1);
+                const auto& dat = data_vec[0];
 
-            const auto& left_dart = dat.alts[0];
-            const auto& right_dart = dat.alts[1];
+                const auto& left_dart = dat.alts[0];
+                const auto& right_dart = dat.alts[1];
 
-            CHECK(left_dart.global_id() == 1);
-            CHECK(right_dart.global_id() == 2);
+                CHECK(left_dart.global_id() == 1);
+                CHECK(right_dart.global_id() == 2);
 
-            const auto left_act = sd.act(main_dart, left_dart.local_orientation());
-            const auto right_act = sd.act(main_dart, right_dart.local_orientation());
-            CHECK(left_alt_opp_dart == left_act);
-            CHECK(right_alt_opp_dart == right_act);
-
+                const auto left_act = sd.act(main_dart, left_dart.local_orientation());
+                const auto right_act = sd.act(main_dart, right_dart.local_orientation());
+                fmt::print(
+                    "{} => {} {} == {} {}",
+                    std::string(main_dart),
+                    std::string(left_alt_opp_dart),
+                    std::string(right_alt_opp_dart),
+                    std::string(left_act),
+                    std::string(right_act));
+                CHECK(left_alt_opp_dart == left_act);
+                CHECK(right_alt_opp_dart == right_act);
             }
             return;
             std::vector<std::tuple<wmtk::Tuple, wmtk::Tuple>> left_alternatives, right_alternatives;

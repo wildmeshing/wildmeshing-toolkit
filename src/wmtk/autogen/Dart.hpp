@@ -1,13 +1,14 @@
 #pragma once
 #include <cinttypes>
-#include <tuple>
 #include <string>
+#include <tuple>
 
 namespace wmtk::autogen {
 class Dart : public std::tuple<int64_t, int8_t>
 {
 public:
-    using std::tuple<int64_t, int8_t>::tuple;
+    using tuple_type = std::tuple<int64_t, int8_t>;
+    using tuple_type::tuple_type;
     Dart()
         : Dart(-1, -1)
     {}
@@ -20,6 +21,8 @@ public:
     bool is_null() const { return global_id() == -1; }
 
     operator std::string() const;
+
+    const tuple_type& as_tuple() const { return static_cast<const tuple_type&>(*this); }
 };
 } // namespace wmtk::autogen
-std::ostream& operator<<(std::ostream& out, wmtk::autogen::Dart const& vec);
+auto operator<<(std::ostream& out, const wmtk::autogen::Dart& vec) -> std::ostream&;
