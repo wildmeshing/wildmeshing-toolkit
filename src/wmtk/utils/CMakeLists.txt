@@ -11,9 +11,13 @@ set(SRC_FILES
     getRSS.cpp
     getRSS.h
     Rational.hpp
+    Rational.cpp
     mesh_utils.hpp
     mesh_utils.cpp
     TupleInspector.hpp
+
+    orient.hpp
+    orient.cpp
 
     TupleInspector.cpp
     triangle_areas.hpp
@@ -40,6 +44,9 @@ set(SRC_FILES
 
     random_seed.hpp
 
+    make_free_sv_mesh.hpp
+    make_free_sv_mesh.cpp
+
 
     MerkleTreeInteriorNode.hpp
     MerkleTreeInteriorNode.cpp
@@ -60,6 +67,8 @@ set(SRC_FILES
 
     edge_insertion.hpp
     edge_insertion.cpp
+    Stopwatch.hpp
+    Stopwatch.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

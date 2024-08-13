@@ -30,7 +30,6 @@ class MeshAttributes : public wmtk::utils::MerkleTreeInteriorNode
 {
     template <typename U, int D>
     friend class AccessorBase;
-    friend class wmtk::Mesh;
 
     typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;
     typedef Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> ConstMapResult;
@@ -67,8 +66,18 @@ public:
      * @brief Remove all passed in attributes.
      *
      * @param attributes Vector of attributes that should be removed.
+     * @param invalidate_handles invalidates all handles. If true this garbage collects old handles
      */
-    void remove_attributes(const std::vector<AttributeHandle>& attributes);
+    void remove_attributes(
+        const std::vector<AttributeHandle>& attributes,
+        bool invalidate_handles = true);
+    /**
+     * @brief Remove a single attribute
+     *
+     * @param attribute the attribute being deleted
+     */
+    void remove_attribute(const AttributeHandle& attribute);
+
 
     bool operator==(const MeshAttributes<T>& other) const;
     void push_scope();
@@ -80,24 +89,38 @@ public:
 
 
     int64_t dimension(const AttributeHandle& handle) const;
+    const T& default_value(const AttributeHandle& handle) const;
     std::string get_name(const AttributeHandle& handle) const;
+
+    void set_name(const AttributeHandle& handle, const std::string& name);
 
     bool has_attribute(const std::string& name) const;
 
-    // the number of attributes held in this object
+    // the number of active attributes held in this object
+    // Note that the set of active attribute indices is not defined by the integers between 0,
+    // attribute_count. To get a list of valid handles use active_attributes This function is not
+    // that fast
     size_t attribute_count() const;
+
+    // Returns a vector of handles to the set of active attributes
+    std::vector<AttributeHandle> active_attributes() const;
     void assert_capacity_valid(int64_t cap) const;
-
-protected:
-    AttributeHandle attribute_handle(const std::string& name) const;
-
 
     Attribute<T>& attribute(const AttributeHandle& handle);
     const Attribute<T>& attribute(const AttributeHandle& handle) const;
 
+    AttributeHandle attribute_handle(const std::string& name) const;
+
+    bool is_active(const AttributeHandle& handle) const;
+
     // pass by value due to
     //https://clang.llvm.org/extra/clang-tidy/checks/modernize/pass-by-value.html
     void set(const AttributeHandle& handle, std::vector<T> val);
+
+protected:
+    /// Clears and compactifies the attribute list. This invalidates all existing handles
+    void clear_dead_attributes();
+
 
     size_t attribute_size(const AttributeHandle& handle) const;
 
@@ -125,6 +148,11 @@ template <typename T>
 inline int64_t MeshAttributes<T>::dimension(const AttributeHandle& handle) const
 {
     return attribute(handle).dimension();
+}
+template <typename T>
+inline const T& MeshAttributes<T>::default_value(const AttributeHandle& handle) const
+{
+    return attribute(handle).default_value();
 }
 } // namespace attribute
 } // namespace wmtk

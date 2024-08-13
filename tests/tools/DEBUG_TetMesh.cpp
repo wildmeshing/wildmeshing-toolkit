@@ -116,6 +116,9 @@ auto DEBUG_TetMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) con
     const attribute::Accessor<int64_t> tv = create_const_accessor<int64_t>(m_tv_handle);
     auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
     for (int64_t tid = 0; tid < capacity(PrimitiveType::Tetrahedron); ++tid) {
+        if (is_removed(tid)) {
+            continue;
+        }
         Tuple tet = tet_tuple_from_id(tid);
         auto tv0 = tv.const_vector_attribute(tet);
         int64_t local_vid1 = -1, local_vid2 = -1;
@@ -272,6 +275,7 @@ void DEBUG_TetMesh::reserve_attributes(PrimitiveType type, int64_t size)
 }
 
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 attribute::Accessor<int64_t> DEBUG_TetMesh::get_cell_hash_accessor()
 {
     return TetMesh::get_cell_hash_accessor();
@@ -282,13 +286,20 @@ auto DEBUG_TetMesh::get_tmoe(const Tuple& t, wmtk::attribute::Accessor<int64_t>&
 {
     return TetMeshOperationExecutor(*this, t, hash_accessor);
 }
+#else
+
+auto DEBUG_TetMesh::get_tmoe(const Tuple& t) -> TetMeshOperationExecutor
+{
+    return TetMeshOperationExecutor(*this, t);
+}
+#endif
 
 int64_t DEBUG_TetMesh::valid_primitive_count(PrimitiveType type) const
 {
     int64_t cnt = 0;
     const auto& flag_accessor = get_const_flag_accessor(type);
     for (int i = 0; i < capacity(type); i++) {
-        if (flag_accessor.const_scalar_attribute(tuple_from_id(type, i)) != 0) {
+        if (flag_accessor.index_access().const_scalar_attribute(i) != 0) {
             cnt++;
         }
     }

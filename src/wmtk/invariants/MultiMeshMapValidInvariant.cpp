@@ -16,8 +16,10 @@ bool are_all_ears_in_child(const TriMesh& parent, const EdgeMesh& child, const T
 {
     const Tuple parent_ear_0 = parent.switch_edge(t);
     const Tuple paretn_ear_1 = parent.switch_edge(parent.switch_vertex(t));
-    bool find_ear_0 = !parent.map_to_child(child, simplex::Simplex::edge(parent_ear_0)).empty();
-    bool find_ear_1 = !parent.map_to_child(child, simplex::Simplex::edge(paretn_ear_1)).empty();
+    bool find_ear_0 =
+        !parent.map_to_child(child, simplex::Simplex::edge(parent, parent_ear_0)).empty();
+    bool find_ear_1 =
+        !parent.map_to_child(child, simplex::Simplex::edge(parent, paretn_ear_1)).empty();
     return find_ear_0 && find_ear_1;
 }
 
@@ -25,8 +27,10 @@ bool are_all_ears_in_child(const TetMesh& parent, const TriMesh& child, const Tu
 {
     const Tuple parent_ear_0 = parent.switch_face(parent.switch_edge(t));
     const Tuple parent_ear_1 = parent.switch_face(parent.switch_edge(parent.switch_vertex(t)));
-    bool find_ear_0 = !parent.map_to_child(child, simplex::Simplex::face(parent_ear_0)).empty();
-    bool find_ear_1 = !parent.map_to_child(child, simplex::Simplex::face(parent_ear_1)).empty();
+    bool find_ear_0 =
+        !parent.map_to_child(child, simplex::Simplex::face(parent, parent_ear_0)).empty();
+    bool find_ear_1 =
+        !parent.map_to_child(child, simplex::Simplex::face(parent, parent_ear_1)).empty();
     return find_ear_0 && find_ear_1;
 }
 
@@ -34,14 +38,18 @@ bool are_all_ears_in_child(const TetMesh& parent, const EdgeMesh& child, const T
 {
     const Tuple parent_ear_0 = parent.switch_edge(t);
     const Tuple parent_ear_1 = parent.switch_edge(parent.switch_vertex(t));
-    bool find_ear_0 = !parent.map_to_child(child, simplex::Simplex::edge(parent_ear_0)).empty();
-    bool find_ear_1 = !parent.map_to_child(child, simplex::Simplex::edge(parent_ear_1)).empty();
+    bool find_ear_0 =
+        !parent.map_to_child(child, simplex::Simplex::edge(parent, parent_ear_0)).empty();
+    bool find_ear_1 =
+        !parent.map_to_child(child, simplex::Simplex::edge(parent, parent_ear_1)).empty();
 
     const Tuple t_switch_face = parent.switch_face(t);
     const Tuple parent_ear_2 = parent.switch_edge(t_switch_face);
     const Tuple parent_ear_3 = parent.switch_edge(parent.switch_vertex(t_switch_face));
-    bool find_ear_2 = !parent.map_to_child(child, simplex::Simplex::edge(parent_ear_2)).empty();
-    bool find_ear_3 = !parent.map_to_child(child, simplex::Simplex::edge(parent_ear_3)).empty();
+    bool find_ear_2 =
+        !parent.map_to_child(child, simplex::Simplex::edge(parent, parent_ear_2)).empty();
+    bool find_ear_3 =
+        !parent.map_to_child(child, simplex::Simplex::edge(parent, parent_ear_3)).empty();
 
     return (find_ear_0 && find_ear_1) || (find_ear_2 && find_ear_3);
 }

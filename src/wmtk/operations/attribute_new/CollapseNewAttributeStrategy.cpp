@@ -55,6 +55,50 @@ CollapseNewAttributeStrategy<T>::standard_collapse_strategy(CollapseBasicStrateg
     return {};
 }
 
+template <>
+typename CollapseNewAttributeStrategy<Rational>::CollapseFuncType
+CollapseNewAttributeStrategy<Rational>::standard_collapse_strategy(CollapseBasicStrategy optype)
+{
+    switch (optype) {
+    default: [[fallthrough]];
+    case CollapseBasicStrategy::Default:
+        return standard_collapse_strategy(CollapseBasicStrategy::Mean);
+    case CollapseBasicStrategy::CopyTuple:
+        return [](const VecType& a, const VecType& b, const std::bitset<2>& bs) -> VecType {
+            if (!bs[1] && bs[0]) {
+                return b;
+            } else {
+                return a;
+            }
+        };
+    case CollapseBasicStrategy::CopyOther:
+        return [](const VecType& a, const VecType& b, const std::bitset<2>& bs) -> VecType {
+            if (!bs[0] && bs[1]) {
+                return a;
+            } else {
+                return b;
+            }
+        };
+    case CollapseBasicStrategy::Mean:
+        return [](const VecType& a, const VecType& b, const std::bitset<2>& bs) -> VecType {
+            if (bs[0] == bs[1]) {
+                return (a + b) / Rational(2, true);
+            } else if (bs[0]) {
+                return a;
+
+            } else {
+                return b;
+            }
+        };
+    case CollapseBasicStrategy::Throw:
+        return [](const VecType&, const VecType&, const std::bitset<2>&) -> VecType {
+            throw std::runtime_error("Collapse should have a new attribute");
+        };
+    case CollapseBasicStrategy::None: return {};
+    }
+    return {};
+}
+
 
 template <typename T>
 CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
@@ -63,9 +107,13 @@ CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
     , m_collapse_op(nullptr)
 {
     assert(h.holds<T>());
-    set_strategy(CollapseBasicStrategy::Throw);
 
     auto& mesh = m_handle.mesh();
+    if(mesh.is_free()) {
+    set_strategy(CollapseBasicStrategy::None);
+    } else {
+    set_strategy(CollapseBasicStrategy::Throw);
+    }
 
     if (mesh.top_simplex_type() == PrimitiveType::Edge) {
         m_topo_info =
@@ -86,6 +134,11 @@ void CollapseNewAttributeStrategy<T>::update(
     const ReturnData& data,
     const OperationTupleData& op_datas)
 {
+    if (!bool(m_collapse_op)) {
+        return;
+    }
+    assert(!mesh().is_free()); // attribute new is not valid on free meshes
+
     if (op_datas.find(&mesh()) == op_datas.end()) return;
     const std::vector<std::array<Tuple, 2>>& tuple_pairs = op_datas.at(&mesh());
 
@@ -93,10 +146,14 @@ void CollapseNewAttributeStrategy<T>::update(
         const Tuple& input_tuple = tuple_pair[0];
         const Tuple& output_tuple = tuple_pair[1];
 
-        const auto& return_data_variant =
-            data.get_variant(mesh(), wmtk::simplex::Simplex::edge(input_tuple));
+        simplex::Simplex input_simplex = mesh().parent_scope(
+            [this, &input_tuple]() { return simplex::Simplex::edge(mesh(), input_tuple); });
 
-        for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type())) {
+        const auto& return_data_variant = data.get_variant(mesh(), input_simplex);
+
+        PrimitiveType pt = primitive_type();
+        // for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type()))
+        {
             auto merged_simps = m_topo_info->merged_simplices(return_data_variant, input_tuple, pt);
             auto new_simps = m_topo_info->new_simplices(return_data_variant, output_tuple, pt);
 

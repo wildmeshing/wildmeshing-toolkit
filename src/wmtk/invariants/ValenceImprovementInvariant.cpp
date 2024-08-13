@@ -14,8 +14,9 @@ bool ValenceImprovementInvariant::before(const simplex::Simplex& simplex) const
 
     assert(simplex.primitive_type() == PrimitiveType::Edge);
 
-    const simplex::Simplex f0 = simplex::Simplex::face(t);
-    const simplex::Simplex f1 = simplex::Simplex::face(mesh().switch_tuple(t, PrimitiveType::Triangle));
+    const simplex::Simplex f0 = simplex::Simplex::face(mesh(), t);
+    const simplex::Simplex f1 =
+        simplex::Simplex::face(mesh(), mesh().switch_tuple(t, PrimitiveType::Triangle));
     const std::vector<Tuple> vertices_t0 =
         simplex::faces_single_dimension_tuples(mesh(), f0, PrimitiveType::Vertex);
     const std::vector<Tuple> vertices_t1 =
@@ -26,7 +27,7 @@ bool ValenceImprovementInvariant::before(const simplex::Simplex& simplex) const
     const Tuple v3 = vertices_t1[2];
 
     auto valence = [this](const Tuple& v) {
-        return static_cast<int64_t>(simplex::link(mesh(), simplex::Simplex::vertex(v))
+        return static_cast<int64_t>(simplex::link(mesh(), simplex::Simplex::vertex(mesh(), v))
                                         .simplex_vector(PrimitiveType::Vertex)
                                         .size());
     };

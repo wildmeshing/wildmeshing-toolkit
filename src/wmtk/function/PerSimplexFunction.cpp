@@ -12,13 +12,13 @@ PerSimplexFunction::PerSimplexFunction(
     , m_primitive_type(primitive_type)
 {
     assert(variable_attribute_handle.is_same_mesh(m_mesh));
-    assert(m_handle.holds<double>());
+    assert(m_handle.holds<double>() || m_handle.holds<Rational>());
 }
 
 
 int64_t PerSimplexFunction::embedded_dimension() const
 {
-    auto res = mesh().get_attribute_dimension(attribute_handle().as<double>());
+    auto res = attribute_handle().dimension();
     assert(res > 0);
     return res;
 }

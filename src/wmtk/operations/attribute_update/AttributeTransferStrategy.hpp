@@ -1,10 +1,8 @@
 #pragma once
 #include "AttributeTransferStrategyBase.hpp"
+#include <wmtk/Mesh.hpp>
 
 
-namespace wmtk {
-class Mesh;
-}
 namespace wmtk::operations {
 
 
@@ -99,15 +97,18 @@ SingleAttributeTransferStrategy<MyType, ParentType>::SingleAttributeTransferStra
     : AttributeTransferStrategy<MyType>(me)
     , m_functor(f)
     , m_parent_handle(parent)
-{}
+{
+    assert(me.template holds<MyType>());
+    assert(parent.template holds<ParentType>());
+}
 template <typename MyType, typename ParentType>
 SingleAttributeTransferStrategy<MyType, ParentType>::SingleAttributeTransferStrategy(
     const attribute::MeshAttributeHandle& me,
     const attribute::MeshAttributeHandle& parent,
     FunctorWithoutSimplicesType&& f)
-    : AttributeTransferStrategy<MyType>(me)
-    , m_functor(make_nosimplices_func(std::move(f)))
-    , m_parent_handle(parent)
+    : SingleAttributeTransferStrategy(me
+    , parent
+    , make_nosimplices_func(std::move(f)))
 {}
 
 template <typename MyType, typename ParentType>
@@ -119,7 +120,7 @@ auto SingleAttributeTransferStrategy<MyType, ParentType>::read_parent_values(
     auto simps =
         AttributeTransferStrategyBase::get_parent_simplices(handle(), m_parent_handle, my_simplex);
 
-    MatrixX<MyType> A(
+    MatrixX<ParentType> A(
         m_parent_handle.mesh().get_attribute_dimension(m_parent_handle.template as<ParentType>()),
         simps.size());
 
@@ -132,7 +133,7 @@ auto SingleAttributeTransferStrategy<MyType, ParentType>::read_parent_values(
 template <typename MyType, typename ParentType>
 void SingleAttributeTransferStrategy<MyType, ParentType>::run(const simplex::Simplex& s)
 {
-    assert(mesh().is_valid_slow(s.tuple()));
+    assert(mesh().is_valid(s.tuple()));
     if (s.primitive_type() != primitive_type()) {
         // TODO: is this an error out or silent fail
         return;

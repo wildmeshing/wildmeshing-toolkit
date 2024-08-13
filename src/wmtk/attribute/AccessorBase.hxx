@@ -8,95 +8,104 @@
 
 namespace wmtk::attribute {
 template <typename T, int Dim>
-inline AccessorBase<T,Dim>::AccessorBase(Mesh& m, const TypedAttributeHandle<T>& handle)
+inline AccessorBase<T, Dim>::AccessorBase(Mesh& m, const TypedAttributeHandle<T>& handle)
     : m_handle(handle)
     , m_mesh(m)
     , m_attribute(mesh().m_attribute_manager.get(m_handle).attribute(m_handle.m_base_handle))
 {}
 template <typename T, int Dim>
-AccessorBase<T,Dim>::AccessorBase(const Mesh& m, const TypedAttributeHandle<T>& handle): AccessorBase(const_cast<Mesh&>(m), handle) {}
+AccessorBase<T, Dim>::AccessorBase(const Mesh& m, const TypedAttributeHandle<T>& handle)
+    : AccessorBase(const_cast<Mesh&>(m), handle)
+{}
 
 
 template <typename T, int Dim>
-inline Mesh& AccessorBase<T,Dim>::mesh()
+inline Mesh& AccessorBase<T, Dim>::mesh()
 {
     return m_mesh;
 }
 template <typename T, int Dim>
-inline const Mesh& AccessorBase<T,Dim>::mesh() const
+inline const Mesh& AccessorBase<T, Dim>::mesh() const
 {
     return m_mesh;
 }
 
 template <typename T, int Dim>
-inline const AttributeManager& AccessorBase<T,Dim>::attribute_manager() const
+inline const AttributeManager& AccessorBase<T, Dim>::attribute_manager() const
 {
     return mesh().m_attribute_manager;
 }
 
 template <typename T, int Dim>
-inline AttributeManager& AccessorBase<T,Dim>::attribute_manager()
+inline AttributeManager& AccessorBase<T, Dim>::attribute_manager()
 {
     return mesh().m_attribute_manager;
 }
 
 
 template <typename T, int Dim>
-inline AccessorBase<T,Dim>::~AccessorBase() = default;
+inline AccessorBase<T, Dim>::~AccessorBase() = default;
 
 
 template <typename T, int Dim>
-inline int64_t AccessorBase<T,Dim>::reserved_size() const
+inline int64_t AccessorBase<T, Dim>::reserved_size() const
 {
     return attribute().reserved_size();
 }
 
 template <typename T, int Dim>
-inline int64_t AccessorBase<T,Dim>::dimension() const
+inline int64_t AccessorBase<T, Dim>::dimension() const
 {
     return attribute().dimension();
 }
 
 template <typename T, int Dim>
-inline auto AccessorBase<T,Dim>::attributes() -> MeshAttributes<T>&
+inline const T& AccessorBase<T, Dim>::default_value() const
+{
+    return attribute().default_value();
+}
+
+template <typename T, int Dim>
+inline auto AccessorBase<T, Dim>::attributes() -> MeshAttributes<T>&
 {
     return attribute_manager().get(m_handle);
 }
 template <typename T, int Dim>
-inline auto AccessorBase<T,Dim>::attributes() const -> const MeshAttributes<T>&
+inline auto AccessorBase<T, Dim>::attributes() const -> const MeshAttributes<T>&
 {
     return attribute_manager().get(m_handle);
 }
 template <typename T, int Dim>
-inline auto AccessorBase<T,Dim>::attribute() -> Attribute<T>&
+inline auto AccessorBase<T, Dim>::attribute() -> Attribute<T>&
 {
     return m_attribute;
 }
 template <typename T, int Dim>
-inline auto AccessorBase<T,Dim>::attribute() const -> const Attribute<T>&
+inline auto AccessorBase<T, Dim>::attribute() const -> const Attribute<T>&
 {
     return m_attribute;
 }
 template <typename T, int Dim>
-inline const TypedAttributeHandle<T>& AccessorBase<T,Dim>::typed_handle() const
+inline const TypedAttributeHandle<T>& AccessorBase<T, Dim>::typed_handle() const
 {
     return m_handle;
 }
 template <typename T, int Dim>
-inline MeshAttributeHandle AccessorBase<T,Dim>::handle() const
+inline MeshAttributeHandle AccessorBase<T, Dim>::handle() const
 {
     return MeshAttributeHandle(m_mesh, m_handle);
 }
 
 template <typename T, int Dim>
-inline PrimitiveType AccessorBase<T,Dim>::primitive_type() const
+inline PrimitiveType AccessorBase<T, Dim>::primitive_type() const
 {
     return handle().primitive_type();
 }
 
 template <typename T, int Dim>
 template <int D>
-inline auto AccessorBase<T,Dim>::const_vector_attribute(const int64_t index) const -> ConstMapResult<D>
+inline auto AccessorBase<T, Dim>::const_vector_attribute(const int64_t index) const
+    -> ConstMapResult<D>
 {
     auto buffer = attribute().template const_vector_attribute<D>(index);
     return buffer;
@@ -104,7 +113,7 @@ inline auto AccessorBase<T,Dim>::const_vector_attribute(const int64_t index) con
 
 template <typename T, int Dim>
 template <int D>
-inline auto AccessorBase<T,Dim>::vector_attribute(const int64_t index) -> MapResult<D>
+inline auto AccessorBase<T, Dim>::vector_attribute(const int64_t index) -> MapResult<D>
 {
     auto& attr = attribute();
     auto buffer = attr.template vector_attribute<D>(index);
@@ -113,33 +122,34 @@ inline auto AccessorBase<T,Dim>::vector_attribute(const int64_t index) -> MapRes
 }
 
 template <typename T, int Dim>
-inline T AccessorBase<T,Dim>::const_scalar_attribute(const int64_t index) const
+inline T AccessorBase<T, Dim>::const_scalar_attribute(const int64_t index) const
 {
     auto value = attribute().const_scalar_attribute(index);
     return value;
 }
 template <typename T, int Dim>
-inline auto AccessorBase<T,Dim>::scalar_attribute(const int64_t index) -> T&
+inline auto AccessorBase<T, Dim>::scalar_attribute(const int64_t index) -> T&
 {
     auto& value = attribute().scalar_attribute(index);
     return value;
 }
 
 template <typename T, int Dim>
-inline T AccessorBase<T,Dim>::const_scalar_attribute(const int64_t index, const int8_t offset) const
+inline T AccessorBase<T, Dim>::const_scalar_attribute(const int64_t index, const int8_t offset)
+    const
 {
     auto value = attribute().const_scalar_attribute(index, offset);
     return value;
 }
 template <typename T, int Dim>
-inline auto AccessorBase<T,Dim>::scalar_attribute(const int64_t index, const int8_t offset) -> T&
+inline auto AccessorBase<T, Dim>::scalar_attribute(const int64_t index, const int8_t offset) -> T&
 {
     auto& value = attribute().scalar_attribute(index, offset);
     return value;
 }
 
 template <typename T, int Dim>
-inline void AccessorBase<T,Dim>::set_attribute(std::vector<T> value)
+inline void AccessorBase<T, Dim>::set_attribute(std::vector<T> value)
 {
     attribute().set(std::move(value));
 }

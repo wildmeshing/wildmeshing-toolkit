@@ -35,6 +35,33 @@ SplitNewAttributeStrategy<T>::standard_split_strategy(SplitBasicStrategy optype)
     return {};
 }
 
+template <>
+typename SplitNewAttributeStrategy<Rational>::SplitFuncType
+SplitNewAttributeStrategy<Rational>::standard_split_strategy(SplitBasicStrategy optype)
+{
+    using VT = SplitNewAttributeStrategy::VecType;
+
+    switch (optype) {
+    default: [[fallthrough]];
+    case SplitBasicStrategy::Default: [[fallthrough]];
+    case SplitBasicStrategy::Copy:
+        return [](const VT& a, const std::bitset<2>&) -> std::array<VT, 2> {
+            return std::array<VT, 2>{{a, a}};
+        };
+    case SplitBasicStrategy::Half:
+        return [](const VT& a, const std::bitset<2>&) -> std::array<VT, 2> {
+            return std::array<VT, 2>{{a / Rational(2, true), a / Rational(2, true)}};
+        };
+    case SplitBasicStrategy::Throw:
+        return [](const VT&, const std::bitset<2>&) -> std::array<VT, 2> {
+            throw std::runtime_error("Split should have a new attribute");
+        };
+    case SplitBasicStrategy::None: return {};
+    }
+    return {};
+}
+
+
 template <typename T>
 typename SplitNewAttributeStrategy<T>::SplitRibFuncType
 SplitNewAttributeStrategy<T>::standard_split_rib_strategy(SplitRibBasicStrategy optype)
@@ -86,6 +113,53 @@ SplitNewAttributeStrategy<T>::standard_split_rib_strategy(SplitRibBasicStrategy 
     }
     return {};
 }
+template <>
+typename SplitNewAttributeStrategy<Rational>::SplitRibFuncType
+SplitNewAttributeStrategy<Rational>::standard_split_rib_strategy(SplitRibBasicStrategy optype)
+{
+    using VT = SplitNewAttributeStrategy::VecType;
+
+    switch (optype) {
+    default: [[fallthrough]];
+    case SplitRibBasicStrategy::Default:
+        return standard_split_rib_strategy(SplitRibBasicStrategy::Mean);
+    case SplitRibBasicStrategy::CopyTuple:
+        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+            // if both are boundary then return a (failed link anyway but oh well)
+            // if a is boundary but b is interior get b though
+            if (!bs[1] && bs[0]) {
+                return b;
+            } else {
+                return a;
+            }
+        };
+    case SplitRibBasicStrategy::CopyOther:
+        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+            if (!bs[0] && bs[1]) {
+                return a;
+            } else {
+                return b;
+            }
+        };
+    case SplitRibBasicStrategy::Mean:
+        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+            if (bs[0] == bs[1]) {
+                return (a + b) / Rational(2, true);
+            } else if (bs[0]) {
+                return a;
+
+            } else {
+                return b;
+            }
+        };
+    case SplitRibBasicStrategy::Throw:
+        return [](const VT&, const VT&, const std::bitset<2>&) -> VT {
+            throw std::runtime_error("Split should have a new attribute");
+        };
+    case SplitRibBasicStrategy::None: return {};
+    }
+    return {};
+}
 
 
 template <typename T>
@@ -100,6 +174,9 @@ SplitNewAttributeStrategy<T>::SplitNewAttributeStrategy(
     set_strategy(SplitBasicStrategy::Throw);
 
     auto& mesh = m_handle.mesh();
+    assert(
+        !mesh.is_free() || m_handle.primitive_type() ==
+                               PrimitiveType::Vertex); // attribute new is not valid on free meshes
 
     if (mesh.top_simplex_type() == PrimitiveType::Edge) {
         m_topo_info =
@@ -120,6 +197,10 @@ void SplitNewAttributeStrategy<T>::update(
     const ReturnData& data,
     const OperationTupleData& op_datas)
 {
+    if (!bool(m_split_rib_op) && !bool(m_split_op)) {
+        return;
+    }
+
     if (op_datas.find(&mesh()) == op_datas.end()) return;
     const std::vector<std::array<Tuple, 2>>& tuple_pairs = op_datas.at(&mesh());
 
@@ -127,35 +208,47 @@ void SplitNewAttributeStrategy<T>::update(
         const Tuple& input_tuple = tuple_pair[0];
         const Tuple& output_tuple = tuple_pair[1];
 
-        const auto& return_data_variant =
-            data.get_variant(mesh(), wmtk::simplex::Simplex::edge(input_tuple));
+        simplex::Simplex input_simplex = mesh().parent_scope(
+            [this, &input_tuple]() { return simplex::Simplex::edge(mesh(), input_tuple); });
 
-        for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type())) {
-            {
-                auto old_simps =
-                    m_topo_info->input_ear_simplices(return_data_variant, input_tuple, pt);
-                auto new_simps =
-                    m_topo_info->output_rib_simplices(return_data_variant, output_tuple, pt);
+        const auto& return_data_variant = data.get_variant(mesh(), input_simplex);
+
+        PrimitiveType pt = primitive_type();
+        // for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type()))
+        {
+            // copy attributes opposing ears
+            auto old_simps = m_topo_info->input_ear_simplices(return_data_variant, input_tuple, pt);
+            auto new_simps =
+                m_topo_info->output_rib_simplices(return_data_variant, output_tuple, pt);
 
 
-                assert(old_simps.size() == new_simps.size());
+            assert(old_simps.size() == new_simps.size());
 
-                for (size_t s = 0; s < old_simps.size(); ++s) {
-                    assign_split_ribs(pt, old_simps[s], new_simps[s]);
-                }
+            for (size_t s = 0; s < old_simps.size(); ++s) {
+                assign_split_ribs(pt, old_simps[s], new_simps[s]);
             }
-            {
-                auto old_simps =
-                    m_topo_info->input_split_simplices(return_data_variant, input_tuple, pt);
-                auto new_simps =
-                    m_topo_info->output_split_simplices(return_data_variant, output_tuple, pt);
+        }
+        {
+            auto old_simps =
+                m_topo_info->input_split_simplices(return_data_variant, input_tuple, pt);
+            auto new_simps =
+                m_topo_info->output_split_simplices(return_data_variant, output_tuple, pt);
 
 
-                assert(old_simps.size() == new_simps.size());
+            assert(old_simps.size() == new_simps.size());
 
-                for (size_t s = 0; s < old_simps.size(); ++s) {
-                    assign_split(pt, old_simps[s], new_simps[s]);
-                }
+            for (size_t s = 0; s < old_simps.size(); ++s) {
+                assign_split(pt, old_simps[s], new_simps[s]);
+            }
+        }
+        if (mesh().is_free()) {
+            assert(m_handle.primitive_type() == PrimitiveType::Vertex);
+
+            auto pairs = m_topo_info->output_duplicated_free_simplices(return_data_variant, pt);
+            auto acc = m_handle.mesh().create_accessor(m_handle.as<T>());
+            for (const auto& [first, second] : pairs) {
+                acc.index_access().vector_attribute(second) =
+                    acc.index_access().const_vector_attribute(first);
             }
         }
     }

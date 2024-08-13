@@ -1,14 +1,16 @@
 #include "Swap32EnergyBeforeInvariant.hpp"
 #include <wmtk/Mesh.hpp>
 #include <wmtk/function/utils/amips.hpp>
-#include "predicates.h"
+#include <wmtk/utils/orient.hpp>
 
 namespace wmtk {
 Swap32EnergyBeforeInvariant::Swap32EnergyBeforeInvariant(
     const Mesh& m,
-    const attribute::TypedAttributeHandle<double>& coordinate)
+    const attribute::TypedAttributeHandle<Rational>& coordinate,
+    double eps)
     : Invariant(m, true, false, false)
     , m_coordinate_handle(coordinate)
+    , m_eps(eps)
 {}
 
 bool Swap32EnergyBeforeInvariant::before(const simplex::Simplex& t) const
@@ -30,12 +32,18 @@ bool Swap32EnergyBeforeInvariant::before(const simplex::Simplex& t) const
     const Tuple v4 = mesh().switch_tuples(v0, {PT, PF, PE, PV});
 
 
-    std::array<Eigen::Vector3d, 5> positions = {
+    std::array<Eigen::Vector3<Rational>, 5> positions = {
         {accessor.const_vector_attribute(v0),
          accessor.const_vector_attribute(v1),
          accessor.const_vector_attribute(v2),
          accessor.const_vector_attribute(v3),
          accessor.const_vector_attribute(v4)}};
+    std::array<Eigen::Vector3d, 5> positions_double = {
+        {accessor.const_vector_attribute(v0).cast<double>(),
+         accessor.const_vector_attribute(v1).cast<double>(),
+         accessor.const_vector_attribute(v2).cast<double>(),
+         accessor.const_vector_attribute(v3).cast<double>(),
+         accessor.const_vector_attribute(v4).cast<double>()}};
 
     std::array<std::array<int, 4>, 3> old_tets = {{{{0, 1, 2, 3}}, {{0, 1, 3, 4}}, {{0, 1, 4, 2}}}};
     std::array<std::array<int, 4>, 2> new_tets = {{{{2, 3, 4, 0}}, {{2, 4, 3, 1}}}};
@@ -45,42 +53,42 @@ bool Swap32EnergyBeforeInvariant::before(const simplex::Simplex& t) const
     double new_energy_max = std::numeric_limits<double>::lowest();
 
     for (int i = 0; i < 3; ++i) {
-        if (orient3d(
-                positions[old_tets[i][0]].data(),
-                positions[old_tets[i][1]].data(),
-                positions[old_tets[i][2]].data(),
-                positions[old_tets[i][3]].data()) > 0) {
+        if (utils::wmtk_orient3d(
+                positions[old_tets[i][0]],
+                positions[old_tets[i][1]],
+                positions[old_tets[i][2]],
+                positions[old_tets[i][3]]) > 0) {
             auto energy = wmtk::function::utils::Tet_AMIPS_energy({{
-                positions[old_tets[i][0]][0],
-                positions[old_tets[i][0]][1],
-                positions[old_tets[i][0]][2],
-                positions[old_tets[i][1]][0],
-                positions[old_tets[i][1]][1],
-                positions[old_tets[i][1]][2],
-                positions[old_tets[i][2]][0],
-                positions[old_tets[i][2]][1],
-                positions[old_tets[i][2]][2],
-                positions[old_tets[i][3]][0],
-                positions[old_tets[i][3]][1],
-                positions[old_tets[i][3]][2],
+                positions_double[old_tets[i][0]][0],
+                positions_double[old_tets[i][0]][1],
+                positions_double[old_tets[i][0]][2],
+                positions_double[old_tets[i][1]][0],
+                positions_double[old_tets[i][1]][1],
+                positions_double[old_tets[i][1]][2],
+                positions_double[old_tets[i][2]][0],
+                positions_double[old_tets[i][2]][1],
+                positions_double[old_tets[i][2]][2],
+                positions_double[old_tets[i][3]][0],
+                positions_double[old_tets[i][3]][1],
+                positions_double[old_tets[i][3]][2],
             }});
 
 
             old_energy_max = std::max(energy, old_energy_max);
         } else {
             auto energy = wmtk::function::utils::Tet_AMIPS_energy({{
-                positions[old_tets[i][1]][0],
-                positions[old_tets[i][1]][1],
-                positions[old_tets[i][1]][2],
-                positions[old_tets[i][0]][0],
-                positions[old_tets[i][0]][1],
-                positions[old_tets[i][0]][2],
-                positions[old_tets[i][2]][0],
-                positions[old_tets[i][2]][1],
-                positions[old_tets[i][2]][2],
-                positions[old_tets[i][3]][0],
-                positions[old_tets[i][3]][1],
-                positions[old_tets[i][3]][2],
+                positions_double[old_tets[i][1]][0],
+                positions_double[old_tets[i][1]][1],
+                positions_double[old_tets[i][1]][2],
+                positions_double[old_tets[i][0]][0],
+                positions_double[old_tets[i][0]][1],
+                positions_double[old_tets[i][0]][2],
+                positions_double[old_tets[i][2]][0],
+                positions_double[old_tets[i][2]][1],
+                positions_double[old_tets[i][2]][2],
+                positions_double[old_tets[i][3]][0],
+                positions_double[old_tets[i][3]][1],
+                positions_double[old_tets[i][3]][2],
             }});
 
 
@@ -89,42 +97,42 @@ bool Swap32EnergyBeforeInvariant::before(const simplex::Simplex& t) const
     }
 
     for (int i = 0; i < 2; ++i) {
-        if (orient3d(
-                positions[new_tets[i][0]].data(),
-                positions[new_tets[i][1]].data(),
-                positions[new_tets[i][2]].data(),
-                positions[new_tets[i][3]].data()) > 0) {
+        if (utils::wmtk_orient3d(
+                positions[new_tets[i][0]],
+                positions[new_tets[i][1]],
+                positions[new_tets[i][2]],
+                positions[new_tets[i][3]]) > 0) {
             auto energy = wmtk::function::utils::Tet_AMIPS_energy({{
-                positions[new_tets[i][0]][0],
-                positions[new_tets[i][0]][1],
-                positions[new_tets[i][0]][2],
-                positions[new_tets[i][1]][0],
-                positions[new_tets[i][1]][1],
-                positions[new_tets[i][1]][2],
-                positions[new_tets[i][2]][0],
-                positions[new_tets[i][2]][1],
-                positions[new_tets[i][2]][2],
-                positions[new_tets[i][3]][0],
-                positions[new_tets[i][3]][1],
-                positions[new_tets[i][3]][2],
+                positions_double[new_tets[i][0]][0],
+                positions_double[new_tets[i][0]][1],
+                positions_double[new_tets[i][0]][2],
+                positions_double[new_tets[i][1]][0],
+                positions_double[new_tets[i][1]][1],
+                positions_double[new_tets[i][1]][2],
+                positions_double[new_tets[i][2]][0],
+                positions_double[new_tets[i][2]][1],
+                positions_double[new_tets[i][2]][2],
+                positions_double[new_tets[i][3]][0],
+                positions_double[new_tets[i][3]][1],
+                positions_double[new_tets[i][3]][2],
             }});
 
 
             new_energy_max = std::max(energy, new_energy_max);
         } else {
             auto energy = wmtk::function::utils::Tet_AMIPS_energy({{
-                positions[new_tets[i][1]][0],
-                positions[new_tets[i][1]][1],
-                positions[new_tets[i][1]][2],
-                positions[new_tets[i][0]][0],
-                positions[new_tets[i][0]][1],
-                positions[new_tets[i][0]][2],
-                positions[new_tets[i][2]][0],
-                positions[new_tets[i][2]][1],
-                positions[new_tets[i][2]][2],
-                positions[new_tets[i][3]][0],
-                positions[new_tets[i][3]][1],
-                positions[new_tets[i][3]][2],
+                positions_double[new_tets[i][1]][0],
+                positions_double[new_tets[i][1]][1],
+                positions_double[new_tets[i][1]][2],
+                positions_double[new_tets[i][0]][0],
+                positions_double[new_tets[i][0]][1],
+                positions_double[new_tets[i][0]][2],
+                positions_double[new_tets[i][2]][0],
+                positions_double[new_tets[i][2]][1],
+                positions_double[new_tets[i][2]][2],
+                positions_double[new_tets[i][3]][0],
+                positions_double[new_tets[i][3]][1],
+                positions_double[new_tets[i][3]][2],
             }});
 
 
@@ -132,7 +140,7 @@ bool Swap32EnergyBeforeInvariant::before(const simplex::Simplex& t) const
         }
     }
 
-    return old_energy_max > new_energy_max;
+    return old_energy_max > new_energy_max * m_eps;
 }
 
 } // namespace wmtk

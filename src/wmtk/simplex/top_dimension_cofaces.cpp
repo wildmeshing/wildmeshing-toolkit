@@ -1,6 +1,7 @@
 #include "top_dimension_cofaces.hpp"
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleCellLessThanFunctor.hpp>
+#include <wmtk/utils/TupleInspector.hpp>
 #include "utils/tuple_vector_to_homogeneous_simplex_vector.hpp"
 
 #include <queue>
@@ -22,31 +23,36 @@ void top_dimension_cofaces_tuples_vertex(
     const Tuple& t_in,
     std::vector<Tuple>& collection)
 {
-    assert(mesh.is_valid_slow(t_in));
-    std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
-    std::queue<Tuple> q;
-    q.push(t_in);
-    while (!q.empty()) {
-        const Tuple t = q.front();
-        q.pop();
-
-        {
-            // check if cell already exists
-            const auto [it, did_insert] = touched_cells.insert(t);
-            if (!did_insert) {
-                continue;
-            }
-        }
+    assert(mesh.is_valid(t_in));
+    Tuple t = t_in;
+    do {
         collection.emplace_back(t);
 
-        if (!mesh.is_boundary_edge(t)) {
-            q.push(mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Edge}));
+        if (mesh.is_boundary_edge(t)) {
+            break;
         }
-        const Tuple t_other = mesh.switch_edge(t);
-        if (!mesh.is_boundary_edge(t_other)) {
-            q.push(mesh.switch_face(t_other));
-        }
+        t = mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Edge});
+    } while (t != t_in);
+
+    if (t == t_in && !mesh.is_boundary_edge(t)) {
+        return;
     }
+
+    t = mesh.switch_edge(t_in);
+
+    if (mesh.is_boundary_edge(t)) {
+        return;
+    }
+    t = mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Edge});
+
+    do {
+        collection.emplace_back(t);
+
+        if (mesh.is_boundary_edge(t)) {
+            break;
+        }
+        t = mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Edge});
+    } while (true);
 }
 void top_dimension_cofaces_tuples_edge(
     const TriMesh& mesh,
@@ -71,35 +77,58 @@ void top_dimension_cofaces_tuples_vertex(
     const Tuple& input,
     std::vector<Tuple>& collection)
 {
-    std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
-    std::queue<Tuple> q;
-    q.push(input);
-    while (!q.empty()) {
-        const Tuple t = q.front();
-        q.pop();
+    std::vector<int64_t> visited;
+    visited.reserve(50);
 
-        {
-            // check if cell already exists
-            const auto& [it, was_inserted] = touched_cells.insert(t);
-            if (!was_inserted) {
-                continue;
+    auto is_visited = [&visited](const Tuple& t) -> bool {
+        const int64_t c = wmtk::utils::TupleInspector::global_cid(t);
+        for (const int64_t v : visited) {
+            if (v == c) {
+                return true;
             }
+        }
+        visited.emplace_back(c);
+        return false;
+    };
+
+    std::vector<Tuple> q(200);
+    size_t q_front = 0;
+    size_t q_back = 1;
+    q[0] = input;
+
+    while (q_front != q_back) {
+        const Tuple t = q[q_front++];
+
+
+        if (is_visited(t)) {
+            continue;
         }
 
         collection.emplace_back(t);
+
+        if (q_back + 4 >= q.size()) {
+            q.resize(q.size() * 1.5);
+            // logger().info(
+            //     "Increasing size of queue in top_dimension_cofaces_tuples_vertex to {}.",
+            //     q.size());
+            // logger().info("Current collection size: {}", collection.size());
+        }
 
         const Tuple& t1 = t;
         const Tuple t2 = mesh.switch_face(t);
         const Tuple t3 = mesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Triangle});
 
         if (!mesh.is_boundary_face(t1)) {
-            q.push(mesh.switch_tetrahedron(t1));
+            const Tuple ts = mesh.switch_tetrahedron(t1);
+            q[q_back++] = ts;
         }
         if (!mesh.is_boundary_face(t2)) {
-            q.push(mesh.switch_tetrahedron(t2));
+            const Tuple ts = mesh.switch_tetrahedron(t2);
+            q[q_back++] = ts;
         }
         if (!mesh.is_boundary_face(t3)) {
-            q.push(mesh.switch_tetrahedron(t3));
+            const Tuple ts = mesh.switch_tetrahedron(t3);
+            q[q_back++] = ts;
         }
     }
 }
@@ -108,33 +137,82 @@ void top_dimension_cofaces_tuples_edge(
     const Tuple& input,
     std::vector<Tuple>& collection)
 {
-    std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
-    std::queue<Tuple> q;
-    q.push(input);
-    while (!q.empty()) {
-        const Tuple t = q.front();
-        q.pop();
+    // std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
+    // std::queue<Tuple> q;
+    // q.push(input);
+    // while (!q.empty()) {
+    //     const Tuple t = q.front();
+    //     q.pop();
+    //
+    //     {
+    //        // check if cell already exists
+    //        const auto& [it, was_inserted] = touched_cells.insert(t);
+    //        if (!was_inserted) {
+    //            continue;
+    //        }
+    //    }
+    //
+    //    collection.emplace_back(t);
+    //
+    //    const Tuple& t1 = t;
+    //    const Tuple t2 = mesh.switch_face(t);
+    //
+    //    if (!mesh.is_boundary_face(t1)) {
+    //        q.push(mesh.switch_tuples(t1, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle}));
+    //    }
+    //    if (!mesh.is_boundary_face(t2)) {
+    //        q.push(mesh.switch_tetrahedron(t2));
+    //    }
+    //}
 
-        {
-            // check if cell already exists
-            const auto& [it, was_inserted] = touched_cells.insert(t);
-            if (!was_inserted) {
-                continue;
-            }
-        }
 
+    assert(mesh.is_valid(input));
+    Tuple t = input;
+    do {
         collection.emplace_back(t);
 
-        const Tuple& t1 = t;
-        const Tuple t2 = mesh.switch_face(t);
+        if (mesh.is_boundary_face(t)) {
+            break;
+        }
+        t = mesh.switch_tuples(t, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle});
+    } while (t != input);
 
-        if (!mesh.is_boundary_face(t1)) {
-            q.push(mesh.switch_tuples(t1, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle}));
-        }
-        if (!mesh.is_boundary_face(t2)) {
-            q.push(mesh.switch_tetrahedron(t2));
-        }
+    if (t == input && !mesh.is_boundary_face(t)) {
+        return;
     }
+
+    t = input;
+
+    if (mesh.is_boundary_face(mesh.switch_face(t))) {
+        return;
+    }
+
+    t = mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Tetrahedron});
+
+    do {
+        collection.emplace_back(t);
+
+        if (mesh.is_boundary_face(mesh.switch_face(t))) {
+            break;
+        }
+        t = mesh.switch_tuples(t, {PrimitiveType::Triangle, PrimitiveType::Tetrahedron});
+    } while (true);
+
+    // t = mesh.switch_face(input);
+
+    // if (mesh.is_boundary_face(t)) {
+    //     return;
+    // }
+    // t = mesh.switch_tuples(t, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle});
+
+    // do {
+    //     collection.emplace_back(t);
+
+    //     if (mesh.is_boundary_face(t)) {
+    //         break;
+    //     }
+    //     t = mesh.switch_tuples(t, {PrimitiveType::Tetrahedron, PrimitiveType::Triangle});
+    // } while (true);
 }
 
 void top_dimension_cofaces_tuples_face(
@@ -210,7 +288,7 @@ void top_dimension_cofaces_tuples_vertex(
     const Tuple& t_in,
     SimplexCollection& collection)
 {
-    assert(mesh.is_valid_slow(t_in));
+    assert(mesh.is_valid(t_in));
     std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
     std::queue<Tuple> q;
     q.push(t_in);
@@ -556,6 +634,7 @@ top_dimension_cofaces(const TriMesh& mesh, const Simplex& simplex, const bool so
     SimplexCollection collection(
         mesh,
         utils::tuple_vector_to_homogeneous_simplex_vector(
+            mesh,
             top_dimension_cofaces_tuples(mesh, simplex),
             PrimitiveType::Triangle));
     if (sort_and_clean) {
@@ -571,6 +650,7 @@ top_dimension_cofaces(const TetMesh& mesh, const Simplex& simplex, const bool so
     SimplexCollection collection(
         mesh,
         utils::tuple_vector_to_homogeneous_simplex_vector(
+            mesh,
             top_dimension_cofaces_tuples(mesh, simplex),
             PrimitiveType::Tetrahedron));
     if (sort_and_clean) {
@@ -586,6 +666,7 @@ top_dimension_cofaces(const Mesh& mesh, const Simplex& simplex, const bool sort_
     SimplexCollection collection(
         mesh,
         utils::tuple_vector_to_homogeneous_simplex_vector(
+            mesh,
             top_dimension_cofaces_tuples(mesh, simplex),
             mesh.top_simplex_type()));
     if (sort_and_clean) {

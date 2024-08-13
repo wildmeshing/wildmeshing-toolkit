@@ -41,6 +41,7 @@ public:
         const int64_t v2,
         const int64_t v3,
         const int64_t tid) const -> Tuple;
+    using TetMesh::vertex_tuple_from_id;
     auto edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple;
     auto face_tuple_from_vids(const int64_t v1, const int64_t v2, const int64_t v3) const -> Tuple;
     auto tet_tuple_from_vids(const int64_t v1, const int64_t v2, const int64_t v3, const int64_t v4)
@@ -81,9 +82,13 @@ public:
 
     using TetMesh::tuple_from_id;
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     attribute::Accessor<int64_t> get_cell_hash_accessor();
 
     TetMeshOperationExecutor get_tmoe(const Tuple& t, attribute::Accessor<int64_t>& hash_accessor);
+#else
+    TetMeshOperationExecutor get_tmoe(const Tuple& t);
+#endif
 
     int64_t valid_primitive_count(PrimitiveType type) const;
 

@@ -13,15 +13,21 @@ get_simplex_attributes(
     const simplex::Simplex& simplex_in,
     const std::optional<wmtk::Tuple>& vertex_marker)
 {
-    const simplex::Simplex simplex =
-        mesh.is_ccw(simplex_in.tuple())
-            ? simplex_in
-            : simplex::Simplex(simplex_in.primitive_type(), mesh.switch_tuple(simplex_in.tuple(), PrimitiveType::Vertex));
+    std::vector<Tuple> faces;
+    if (primitive_type == PrimitiveType::Vertex) {
+        faces = mesh.orient_vertices(simplex_in.tuple());
+    } else {
+        const simplex::Simplex simplex =
+            mesh.is_ccw(simplex_in.tuple())
+                ? simplex_in
+                : simplex::Simplex(
+                      mesh,
+                      simplex_in.primitive_type(),
+                      mesh.switch_tuple(simplex_in.tuple(), PrimitiveType::Vertex));
 
-    assert(mesh.is_ccw(simplex.tuple()));
-    const std::vector<Tuple> faces =
-        wmtk::simplex::faces_single_dimension_tuples(mesh, simplex, primitive_type);
-
+        assert(mesh.is_ccw(simplex.tuple()));
+        faces = wmtk::simplex::faces_single_dimension_tuples(mesh, simplex, primitive_type);
+    }
 
     std::vector<std::decay_t<typename attribute::ConstMapResult<T>>> ret;
     ret.reserve(faces.size());

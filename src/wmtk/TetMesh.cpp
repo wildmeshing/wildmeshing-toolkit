@@ -2,6 +2,7 @@
 
 
 #include <wmtk/utils/tetmesh_topology_initialization.h>
+#include <numeric>
 #include <wmtk/autogen/tet_mesh/is_ccw.hpp>
 #include <wmtk/autogen/tet_mesh/local_switch_tuple.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
@@ -62,14 +63,14 @@ TetMesh& TetMesh::operator=(TetMesh&& o)
 
 void TetMesh::make_cached_accessors()
 {
-    m_vt_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_vt_handle);
-    m_et_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_et_handle);
-    m_ft_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_ft_handle);
+    m_vt_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_vt_handle);
+    m_et_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_et_handle);
+    m_ft_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_ft_handle);
 
-    m_tv_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_tv_handle);
-    m_te_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_te_handle);
-    m_tf_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_tf_handle);
-    m_tt_accessor = std::make_unique<attribute::Accessor<int64_t,TetMesh>>(*this, m_tt_handle);
+    m_tv_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_tv_handle);
+    m_te_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_te_handle);
+    m_tf_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_tf_handle);
+    m_tt_accessor = std::make_unique<attribute::Accessor<int64_t, TetMesh>>(*this, m_tt_handle);
 }
 
 
@@ -131,10 +132,20 @@ void TetMesh::initialize(
 }
 
 
-void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T)
+void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T, bool is_free)
 {
+    this->m_is_free = is_free;
     auto [TE, TF, TT, VT, ET, FT] = tetmesh_topology_initialization(T);
+    if (is_free) {
+        TT.setConstant(-1);
+    }
     initialize(T, TE, TF, TT, VT, ET, FT);
+}
+void TetMesh::initialize_free(int64_t count)
+{
+    RowVectors4l S(count, 4);
+    std::iota(S.data(), S.data() + S.size(), int64_t(0));
+    initialize(S, true);
 }
 
 Tuple TetMesh::vertex_tuple_from_id(int64_t id) const
@@ -155,11 +166,15 @@ Tuple TetMesh::vertex_tuple_from_id(int64_t id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("vertex_tuple_from_id failed");
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
 
     Tuple v_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
+#else
+    Tuple v_tuple = Tuple(lvid, leid, lfid, t);
+#endif
     assert(is_ccw(v_tuple));
-    assert(is_valid(v_tuple, hash_accessor));
+    assert(is_valid(v_tuple));
     return v_tuple;
 }
 
@@ -182,11 +197,15 @@ Tuple TetMesh::edge_tuple_from_id(int64_t id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("edge_tuple_from_id failed");
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
 
     Tuple e_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
+#else
+    Tuple e_tuple = Tuple(lvid, leid, lfid, t);
+#endif
     assert(is_ccw(e_tuple));
-    assert(is_valid(e_tuple, hash_accessor));
+    assert(is_valid(e_tuple));
     return e_tuple;
 }
 
@@ -209,11 +228,15 @@ Tuple TetMesh::face_tuple_from_id(int64_t id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("face_tuple_from_id failed");
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
 
     Tuple f_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
+#else
+    Tuple f_tuple = Tuple(lvid, leid, lfid, t);
+#endif
     assert(is_ccw(f_tuple));
-    assert(is_valid(f_tuple, hash_accessor));
+    assert(is_valid(f_tuple));
     return f_tuple;
 }
 
@@ -223,11 +246,15 @@ Tuple TetMesh::tet_tuple_from_id(int64_t id) const
     const auto [nlvid, leid, lfid] = autogen::tet_mesh::auto_3d_table_complete_vertex[lvid];
     assert(lvid == nlvid);
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
 
     Tuple t_tuple = Tuple(lvid, leid, lfid, id, get_cell_hash(id, hash_accessor));
+#else
+    Tuple t_tuple = Tuple(lvid, leid, lfid, id);
+#endif
     assert(is_ccw(t_tuple));
-    assert(is_valid(t_tuple, hash_accessor));
+    assert(is_valid(t_tuple));
     return t_tuple;
 }
 
@@ -259,7 +286,7 @@ Tuple TetMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
 
 Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
-    assert(is_valid_slow(tuple));
+    assert(is_valid(tuple));
     switch (type) {
     // bool ccw = is_ccw(tuple);
     case PrimitiveType::Tetrahedron: {
@@ -310,8 +337,12 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         assert(leid_new != -1);
         assert(lfid_new != -1);
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         const Tuple res(lvid_new, leid_new, lfid_new, gcid_new, get_cell_hash_slow(gcid_new));
-        assert(is_valid_slow(res));
+#else
+        const Tuple res(lvid_new, leid_new, lfid_new, gcid_new);
+#endif
+        assert(is_valid(res));
         return res;
     }
     case PrimitiveType::Vertex:
@@ -323,13 +354,15 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 
 bool TetMesh::is_ccw(const Tuple& tuple) const
 {
-    assert(is_valid_slow(tuple));
+    assert(is_valid(tuple));
     return autogen::tet_mesh::is_ccw(tuple);
 }
 
-bool TetMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const
+bool TetMesh::is_valid(const Tuple& tuple) const
 {
-    if (tuple.is_null()) return false;
+    if (!Mesh::is_valid(tuple)) {
+        return false;
+    }
     const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
                                        tuple.m_local_fid >= 0 && tuple.m_global_cid >= 0 &&
                                        autogen::tet_mesh::tuple_is_valid_for_ccw(tuple);
@@ -338,7 +371,7 @@ bool TetMesh::is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& h
         return false;
     }
 
-    return Mesh::is_hash_valid(tuple, hash_accessor);
+    return true;
 }
 
 bool TetMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
@@ -366,7 +399,7 @@ bool TetMesh::is_boundary_edge(const Tuple& edge) const
 {
     for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
              *this,
-             simplex::Simplex::edge(edge),
+             simplex::Simplex::edge(*this, edge),
              PrimitiveType::Triangle)) {
         if (is_boundary_face(f)) {
             return true;
@@ -378,7 +411,7 @@ bool TetMesh::is_boundary_vertex(const Tuple& vertex) const
 {
     // go through all faces and check if they are boundary
     const simplex::SimplexCollection neigh =
-        wmtk::simplex::open_star(*this, simplex::Simplex::vertex(vertex));
+        wmtk::simplex::open_star(*this, simplex::Simplex::vertex(*this, vertex));
     for (const simplex::Simplex& s : neigh.simplex_vector(PrimitiveType::Triangle)) {
         if (is_boundary(s)) {
             return true;
@@ -546,7 +579,27 @@ Tuple TetMesh::tuple_from_global_ids(int64_t tid, int64_t fid, int64_t eid, int6
     assert(leid != -1);
     assert(lfid != -1);
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     return Tuple(lvid, leid, lfid, tid, get_cell_hash_slow(tid));
+#else
+    return Tuple(lvid, leid, lfid, tid);
+#endif
+}
+
+std::vector<Tuple> TetMesh::orient_vertices(const Tuple& tuple) const
+{
+    int64_t cid = tuple.m_global_cid;
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+    auto hash = get_cell_hash_slow(cid);
+
+    return {
+        Tuple(0, 0, 2, cid, hash),
+        Tuple(1, 0, 3, cid, hash),
+        Tuple(2, 1, 1, cid, hash),
+        Tuple(3, 2, 2, cid, hash)};
+#else
+    return {Tuple(0, 0, 2, cid), Tuple(1, 0, 3, cid), Tuple(2, 1, 1, cid), Tuple(3, 2, 2, cid)};
+#endif
 }
 
 

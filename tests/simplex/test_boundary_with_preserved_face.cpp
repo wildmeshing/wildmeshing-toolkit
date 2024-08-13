@@ -66,17 +66,17 @@ TEST_CASE("simplex_coface_preserving_boundary_tuples", "[simplex_collection]")
     //            Simplex::face(t),
     //            PrimitiveType::HalfEdge);
     //
-    //        run(m, Simplex(PV, t), Simplex(PV, t), 0);
-    //        run(m, Simplex(PV, t), Simplex(PE, t), 1); // 1 vert
-    //        run(m, Simplex(PV, t), Simplex(PF, t), 2); // 2 edges
+    //        run(m, Simplex(m,PV, t), Simplex(m,PV, t), 0);
+    //        run(m, Simplex(m,PV, t), Simplex(m,PE, t), 1); // 1 vert
+    //        run(m, Simplex(m,PV, t), Simplex(m,PF, t), 2); // 2 edges
     //
-    //        run(m, Simplex(PE, t), Simplex(PV, t), 0);
-    //        run(m, Simplex(PE, t), Simplex(PE, t), 0);
-    //        run(m, Simplex(PE, t), Simplex(PF, t), 1); // 1 edge
+    //        run(m, Simplex(m,PE, t), Simplex(m,PV, t), 0);
+    //        run(m, Simplex(m,PE, t), Simplex(m,PE, t), 0);
+    //        run(m, Simplex(m,PE, t), Simplex(m,PF, t), 1); // 1 edge
     //
-    //        run(m, Simplex(PF, t), Simplex(PV, t), 0);
-    //        run(m, Simplex(PF, t), Simplex(PE, t), 0);
-    //        run(m, Simplex(PF, t), Simplex(PF, t), 0);
+    //        run(m, Simplex(m,PF, t), Simplex(m,PV, t), 0);
+    //        run(m, Simplex(m,PF, t), Simplex(m,PE, t), 0);
+    //        run(m, Simplex(m,PF, t), Simplex(m,PF, t), 0);
     //    }
     //}
     {
@@ -85,25 +85,25 @@ TEST_CASE("simplex_coface_preserving_boundary_tuples", "[simplex_collection]")
 
 
         for (const Tuple& t : all_tuples) {
-            run(m, Simplex(PV, t), Simplex(PV, t), 0);
-            run(m, Simplex(PV, t), Simplex(PE, t), 1); // 1 vert
-            run(m, Simplex(PV, t), Simplex(PF, t), 2); // 2 edges
-            run(m, Simplex(PV, t), Simplex(PT, t), 3); // 3 faces
+            run(m, Simplex(m, PV, t), Simplex(m, PV, t), 0);
+            run(m, Simplex(m, PV, t), Simplex(m, PE, t), 1); // 1 vert
+            run(m, Simplex(m, PV, t), Simplex(m, PF, t), 2); // 2 edges
+            run(m, Simplex(m, PV, t), Simplex(m, PT, t), 3); // 3 faces
 
-            run(m, Simplex(PE, t), Simplex(PV, t), 0);
-            run(m, Simplex(PE, t), Simplex(PE, t), 0);
-            run(m, Simplex(PE, t), Simplex(PF, t), 1); // 1 edge
-            run(m, Simplex(PE, t), Simplex(PT, t), 2); // 2 faces
+            run(m, Simplex(m, PE, t), Simplex(m, PV, t), 0);
+            run(m, Simplex(m, PE, t), Simplex(m, PE, t), 0);
+            run(m, Simplex(m, PE, t), Simplex(m, PF, t), 1); // 1 edge
+            run(m, Simplex(m, PE, t), Simplex(m, PT, t), 2); // 2 faces
 
-            run(m, Simplex(PF, t), Simplex(PV, t), 0);
-            run(m, Simplex(PF, t), Simplex(PE, t), 0);
-            run(m, Simplex(PF, t), Simplex(PF, t), 0);
-            run(m, Simplex(PF, t), Simplex(PT, t), 1); // 1 face
+            run(m, Simplex(m, PF, t), Simplex(m, PV, t), 0);
+            run(m, Simplex(m, PF, t), Simplex(m, PE, t), 0);
+            run(m, Simplex(m, PF, t), Simplex(m, PF, t), 0);
+            run(m, Simplex(m, PF, t), Simplex(m, PT, t), 1); // 1 face
 
-            run(m, Simplex(PT, t), Simplex(PV, t), 0);
-            run(m, Simplex(PT, t), Simplex(PE, t), 0);
-            run(m, Simplex(PT, t), Simplex(PF, t), 0);
-            run(m, Simplex(PT, t), Simplex(PT, t), 0);
+            run(m, Simplex(m, PT, t), Simplex(m, PV, t), 0);
+            run(m, Simplex(m, PT, t), Simplex(m, PE, t), 0);
+            run(m, Simplex(m, PT, t), Simplex(m, PF, t), 0);
+            run(m, Simplex(m, PT, t), Simplex(m, PT, t), 0);
         }
     }
 }

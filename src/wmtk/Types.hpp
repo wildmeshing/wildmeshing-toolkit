@@ -53,4 +53,5 @@ using RowVectors3d = RowVectors<double, 3>;
 using RowVectors3r = RowVectors<Rational, 3>;
 using RowVectors2r = RowVectors<Rational, 2>;
 
+using MatrixXl = MatrixX<int64_t>;
 } // namespace wmtk

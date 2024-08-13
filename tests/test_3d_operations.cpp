@@ -1,8 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <numeric>
-#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/TetMeshOperationExecutor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
@@ -25,9 +25,14 @@ using namespace wmtk::tests_3d;
 
 using TM = TetMesh;
 using MapResult = typename Eigen::Matrix<int64_t, Eigen::Dynamic, 1>::MapType;
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 using TMOE = decltype(std::declval<DEBUG_TetMesh>().get_tmoe(
     wmtk::Tuple(),
     std::declval<attribute::Accessor<int64_t>&>()));
+#else
+using TMOE = decltype(std::declval<DEBUG_TetMesh>().get_tmoe(
+    wmtk::Tuple()));
+#endif
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -148,8 +153,12 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
 
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+        auto executor = m.get_tmoe(edge);
+#endif
 
         // std::array<std::vector<Tuple>, 2> incident_tets_and_faces =
         //     executor.get_incident_tets_and_faces(edge);
@@ -170,8 +179,12 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         DEBUG_TetMesh m = one_ear();
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+        auto executor = m.get_tmoe(edge);
+#endif
 
         const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
 
@@ -186,8 +199,12 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
 
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+        auto executor = m.get_tmoe(edge);
+#endif
 
         const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
 
@@ -202,8 +219,12 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 4, 1);
 
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+        auto executor = m.get_tmoe(edge);
+#endif
 
         const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
 
@@ -216,8 +237,12 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 2);
 
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+        auto executor = m.get_tmoe(edge);
+#endif
 
         const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
 
@@ -229,8 +254,12 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         DEBUG_TetMesh m = six_cycle_tets();
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0);
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
+#else
+        auto executor = m.get_tmoe(edge);
+#endif
 
         const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
 
@@ -247,7 +276,7 @@ TEST_CASE("tet_split_edge_single_tet", "[operations][split][3d]")
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
     EdgeSplit op(m);
-    op(Simplex::edge(edge));
+    op(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 }
 TEST_CASE("tet_split_edge_one_ear", "[operations][split][3d]")
@@ -257,7 +286,7 @@ TEST_CASE("tet_split_edge_one_ear", "[operations][split][3d]")
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
     EdgeSplit op(m);
-    op(Simplex::edge(edge));
+    op(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 }
 TEST_CASE("tet_split_edge_two_ears", "[operations][split][3d]")
@@ -267,7 +296,7 @@ TEST_CASE("tet_split_edge_two_ears", "[operations][split][3d]")
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
     EdgeSplit op(m);
-    op(Simplex::edge(edge));
+    op(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 }
 TEST_CASE("tet_split_edge_three_incident_tets", "[operations][split][3d]")
@@ -277,7 +306,7 @@ TEST_CASE("tet_split_edge_three_incident_tets", "[operations][split][3d]")
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 1);
     EdgeSplit op(m);
-    op(Simplex::edge(edge));
+    op(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 }
 TEST_CASE("tet_split_edge_six_cycle_tets", "[operations][split][3d]")
@@ -287,7 +316,7 @@ TEST_CASE("tet_split_edge_six_cycle_tets", "[operations][split][3d]")
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
     EdgeSplit op(m);
-    op(Simplex::edge(edge));
+    op(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 }
 
@@ -296,72 +325,66 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
     SECTION("one_ear")
     {
         DEBUG_TetMesh m = one_ear();
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
         EdgeCollapse op(m);
-        op(Simplex::edge(edge));
+        op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 1);
     }
     SECTION("two_ears")
     {
         DEBUG_TetMesh m = two_ears();
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
         EdgeCollapse op(m);
-        op(Simplex::edge(edge));
+        op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 2);
     }
     SECTION("three_incident_tets_1")
     {
         DEBUG_TetMesh m = three_incident_tets();
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 2, 1);
         EdgeCollapse op(m);
-        op(Simplex::edge(edge));
+        op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 2);
     }
     SECTION("three_incident_tets_2")
     {
         DEBUG_TetMesh m = three_incident_tets();
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
         EdgeCollapse op(m);
-        op(Simplex::edge(edge));
+        op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 2);
     }
     SECTION("six_cycle_tets_1")
     {
         DEBUG_TetMesh m = six_cycle_tets();
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
         EdgeCollapse op(m);
-        op(Simplex::edge(edge));
+        op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 4);
     }
     SECTION("six_cycle_tets_2")
     {
         DEBUG_TetMesh m = six_cycle_tets();
-        wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 2, 1);
         EdgeCollapse op(m);
-        op(Simplex::edge(edge));
+        op(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 5);
     }
@@ -385,7 +408,7 @@ TEST_CASE("tet_edge_split", "[operations][split][3d]")
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(1, 2, 0))),
                 PrimitiveType::Vertex) == 3);
-        auto res = op(Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0)));
+        auto res = op(Simplex::edge(m, m.edge_tuple_between_v1_v2(1, 2, 0)));
         CHECK(!res.empty());
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
         CHECK(m.get_all(PrimitiveType::Edge).size() == 9);
@@ -426,7 +449,7 @@ TEST_CASE("tet_edge_split", "[operations][split][3d]")
         //
         DEBUG_TetMesh m = two_ears();
         EdgeSplit op(m);
-        auto res = op(Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0)));
+        auto res = op(Simplex::edge(m, m.edge_tuple_between_v1_v2(1, 2, 0)));
         CHECK(!res.empty());
         auto res_tuple = res.front().tuple();
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 7);
@@ -470,7 +493,7 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(1, 2, 0))),
                 PrimitiveType::Vertex) == 3);
-        auto res = op(Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0)));
+        auto res = op(Simplex::edge(m, m.edge_tuple_between_v1_v2(1, 2, 0)));
         CHECK(!res.empty());
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
         CHECK(m.get_all(PrimitiveType::Edge).size() == 9);
@@ -500,7 +523,7 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(2, 4, 1))),
                 PrimitiveType::Vertex) == 0);
-        auto res = op(Simplex::edge(m.edge_tuple_between_v1_v2(2, 4, 1)));
+        auto res = op(Simplex::edge(m, m.edge_tuple_between_v1_v2(2, 4, 1)));
         CHECK(!res.empty());
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
         CHECK(m.get_all(PrimitiveType::Edge).size() == 9);
@@ -516,7 +539,7 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
 }
 
 
-TEST_CASE("tet_tet_split", "[operations][split][collapse][3d][.]")
+TEST_CASE("tet_tet_split", "[operations][split][collapse][3d]")
 {
     using namespace operations::composite;
     SECTION("single_tet")
@@ -534,7 +557,9 @@ TEST_CASE("tet_tet_split", "[operations][split][collapse][3d][.]")
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(1, 2, 0))),
                 PrimitiveType::Vertex) == 3);
-        auto res = op(Simplex::tetrahedron(m.edge_tuple_between_v1_v2(1, 2, 0)));
+        auto s = Simplex::tetrahedron(m, m.edge_tuple_between_v1_v2(1, 2, 0));
+
+        auto res = op(s);
         CHECK(!res.empty());
         auto res_tuple = res.front().tuple();
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
@@ -562,7 +587,7 @@ TEST_CASE("tet_tet_split", "[operations][split][collapse][3d][.]")
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(2, 3, 0))),
                 PrimitiveType::Vertex) == 1);
-        auto res = op(Simplex::tetrahedron(m.edge_tuple_between_v1_v2(2, 3, 0)));
+        auto res = op(Simplex::tetrahedron(m, m.edge_tuple_between_v1_v2(2, 3, 0)));
         CHECK(!res.empty());
         auto res_tuple = res.front().tuple();
         CHECK(m.id(res_tuple, PrimitiveType::Vertex) == 2);
@@ -633,7 +658,7 @@ TEST_CASE("tet_tet_split", "[operations][split][collapse][3d][.]")
     }
 }
 
-TEST_CASE("tet_split_with_tags", "[operations][split][3d][.]")
+TEST_CASE("tet_split_with_tags", "[operations][split][3d]")
 {
     using namespace operations;
 
@@ -671,15 +696,28 @@ TEST_CASE("tet_split_with_tags", "[operations][split][3d][.]")
             embedding_tag_value);
         wmtk::attribute::MeshAttributeHandle todo_tag_handle =
             m.register_attribute<int64_t>("todo_tag", wmtk::PrimitiveType::Tetrahedron, 1);
-        wmtk::attribute::Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
+        wmtk::attribute::Accessor<int64_t> acc_edge_tag =
+            m.create_accessor<int64_t>(edge_tag_handle);
         acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = 5;
-        wmtk::attribute::Accessor<int64_t> acc_todo_tag = m.create_accessor<int64_t>(todo_tag_handle);
+        wmtk::attribute::Accessor<int64_t> acc_todo_tag =
+            m.create_accessor<int64_t>(todo_tag_handle);
         acc_todo_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = 1;
 
         composite::TetCellSplit op(m);
         op.add_invariant(std::make_shared<TodoInvariant>(m, todo_tag_handle.as<int64_t>()));
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-        auto res = op(Simplex::tetrahedron(m.edge_tuple_between_v1_v2(1, 2, 0)));
+
+        auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        op.collapse().set_new_attribute_strategy(todo_tag_handle);
+        op.collapse().set_new_attribute_strategy(edge_tag_handle);
+        op.collapse().set_new_attribute_strategy(vertex_tag_handle);
+        op.collapse().set_new_attribute_strategy(pos_handle);
+        op.split().set_new_attribute_strategy(todo_tag_handle);
+        op.split().set_new_attribute_strategy(edge_tag_handle);
+        op.split().set_new_attribute_strategy(vertex_tag_handle);
+        op.split().set_new_attribute_strategy(pos_handle);
+
+        auto res = op(Simplex::tetrahedron(m, m.edge_tuple_between_v1_v2(1, 2, 0)));
 
         CHECK(!res.empty());
         auto return_tuple = res.front().tuple();
@@ -728,7 +766,8 @@ TEST_CASE("tet_split_with_tags", "[operations][split][3d][.]")
             embedding_tag_value);
         wmtk::attribute::MeshAttributeHandle todo_tag_handle =
             m.register_attribute<int64_t>("todo_tag", wmtk::PrimitiveType::Tetrahedron, 1);
-        wmtk::attribute::Accessor<int64_t> acc_todo_tag = m.create_accessor<int64_t>(todo_tag_handle);
+        wmtk::attribute::Accessor<int64_t> acc_todo_tag =
+            m.create_accessor<int64_t>(todo_tag_handle);
         acc_todo_tag.scalar_attribute(m.get_all(PrimitiveType::Tetrahedron)[0]) = 1;
         acc_todo_tag.scalar_attribute(m.get_all(PrimitiveType::Tetrahedron)[3]) = 1;
 
@@ -740,7 +779,21 @@ TEST_CASE("tet_split_with_tags", "[operations][split][3d][.]")
         composite::TetCellSplit op(m);
         op.add_invariant(std::make_shared<TodoInvariant>(m, todo_tag_handle.as<int64_t>()));
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-        auto res = op(Simplex::tetrahedron(m.edge_tuple_between_v1_v2(1, 2, 0)));
+
+        // used the default strategy, so the tag is not updated.
+        auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        op.collapse().set_new_attribute_strategy(todo_tag_handle);
+        op.collapse().set_new_attribute_strategy(edge_tag_handle);
+        op.collapse().set_new_attribute_strategy(vertex_tag_handle);
+        op.collapse().set_new_attribute_strategy(pos_handle);
+        op.split().set_new_attribute_strategy(todo_tag_handle);
+        op.split().set_new_attribute_strategy(edge_tag_handle);
+        op.split().set_new_attribute_strategy(vertex_tag_handle);
+        op.split().set_new_attribute_strategy(pos_handle);
+
+        CHECK(op(Simplex::tetrahedron(m, m.edge_tuple_between_v1_v2(7, 2, 5))).empty());
+
+        auto res = op(Simplex::tetrahedron(m, m.edge_tuple_between_v1_v2(1, 2, 0)));
 
         CHECK(!res.empty());
         auto return_tuple = res.front().tuple();
@@ -755,7 +808,6 @@ TEST_CASE("tet_split_with_tags", "[operations][split][3d][.]")
         CHECK(
             acc_todo_tag.scalar_attribute(m.switch_tetrahedron(
                 m.switch_face(m.switch_tetrahedron(m.switch_edge(return_tuple))))) == 1);
-        CHECK(op(Simplex::tetrahedron(return_tuple)).empty());
     }
 }
 
@@ -774,7 +826,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 0);
-        auto ret_faces = op(Simplex::edge(edge));
+        auto ret_faces = op(Simplex::edge(m, edge));
         CHECK(ret_faces.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
@@ -789,7 +841,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 0);
-        auto ret_faces = op(Simplex::edge(edge));
+        auto ret_faces = op(Simplex::edge(m, edge));
         CHECK(ret_faces.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
@@ -804,7 +856,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 0);
-        auto ret_faces = op(Simplex::edge(edge));
+        auto ret_faces = op(Simplex::edge(m, edge));
         CHECK(ret_faces.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
@@ -819,7 +871,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 3);
-        auto ret_edges = op(Simplex::edge(edge));
+        auto ret_edges = op(Simplex::edge(m, edge));
         CHECK(ret_edges.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
@@ -834,7 +886,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 3);
-        auto ret_edges = op(Simplex::edge(edge));
+        auto ret_edges = op(Simplex::edge(m, edge));
         CHECK(ret_edges.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
@@ -855,7 +907,7 @@ TEST_CASE("tetmesh_face_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple face = m.edge_tuple_between_v1_v2(0, 2, 3, 0);
-        auto ret_edges = op(Simplex::face(face));
+        auto ret_edges = op(Simplex::face(m, face));
         CHECK(ret_edges.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 3);
@@ -871,7 +923,7 @@ TEST_CASE("tetmesh_face_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple face = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
-        auto ret_edges = op(Simplex::face(face));
+        auto ret_edges = op(Simplex::face(m, face));
         CHECK(ret_edges.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 7);

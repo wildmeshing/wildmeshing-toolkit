@@ -32,8 +32,9 @@ bool TetMeshSubstructureTopologyPreservingInvariant::before(
     // edge e = (u,v)
 
     const simplex::Simplex& edge_e = input_simplex;
-    const simplex::Simplex vertex_u(PrimitiveType::Vertex, input_simplex.tuple());
+    const simplex::Simplex vertex_u(mesh(), PrimitiveType::Vertex, input_simplex.tuple());
     const simplex::Simplex vertex_v(
+        mesh(),
         PrimitiveType::Vertex,
         mesh().switch_tuple(input_simplex.tuple(), PrimitiveType::Vertex));
 

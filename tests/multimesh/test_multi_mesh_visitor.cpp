@@ -67,9 +67,6 @@ struct PrintEdgeReturnsFunctor
 
 
 using TM = TriMesh;
-using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
-    wmtk::Tuple(),
-    std::declval<wmtk::attribute::Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -101,7 +98,7 @@ TEST_CASE("test_multi_mesh_print_visitor", "[multimesh][2D]")
 
     auto tups = parent.get_all(PrimitiveType::Triangle);
     for (const auto& t : tups) {
-        print_type_visitor.execute_from_root(static_cast<TriMesh&>(parent), Simplex(PF, t));
+        print_type_visitor.execute_from_root(static_cast<TriMesh&>(parent), Simplex(parent, PF, t));
     }
 
     logger().trace("edge visitor!");
@@ -109,7 +106,7 @@ TEST_CASE("test_multi_mesh_print_visitor", "[multimesh][2D]")
 
 
     for (const auto& t : tups) {
-        print_edge_visitor.execute_from_root(parent, Simplex(PF, t));
+        print_edge_visitor.execute_from_root(parent, Simplex(parent, PF, t));
         multimesh::MultiMeshSimplexEventVisitor print_edge_event_visitor(print_edge_visitor);
         print_edge_event_visitor.run_on_edges(PrintEdgeReturnsFunctor{});
     }

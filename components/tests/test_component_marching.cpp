@@ -178,7 +178,7 @@ TEST_CASE("marching_component_tri", "[components][marching]")
     {
         for (const Tuple& v : vertices) {
             if (acc_vertex_tag.scalar_attribute(v) == isosurface_tag_value) {
-                std::vector<Tuple> one_ring = simplex::link(m, simplex::Simplex::vertex(v))
+                std::vector<Tuple> one_ring = simplex::link(m, simplex::Simplex::vertex(m, v))
                                                   .simplex_vector_tuples(PrimitiveType::Vertex);
 
                 int64_t tagged_neighbors = 0;

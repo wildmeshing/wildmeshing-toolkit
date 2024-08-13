@@ -19,6 +19,16 @@ void Mesh::register_child_mesh(
     m_multi_mesh_manager.register_child_mesh(*this, child_mesh_ptr, map_tuples);
 }
 
+void Mesh::deregister_child_mesh(const std::shared_ptr<Mesh>& child_mesh_ptr)
+{
+    m_multi_mesh_manager.deregister_child_mesh(*this, child_mesh_ptr);
+}
+
+void Mesh::update_child_handles()
+{
+    m_multi_mesh_manager.update_child_handles(*this);
+}
+
 
 bool Mesh::is_from_same_multi_mesh_structure(const Mesh& other) const
 {
@@ -123,7 +133,7 @@ Mesh::map_tuples(const Mesh& other_mesh, PrimitiveType pt, const std::vector<Tup
     std::vector<Tuple> ret;
     ret.reserve(tuples.size());
     for (const auto& t : tuples) {
-        auto v = map_tuples(other_mesh, simplex::Simplex(pt, t));
+        auto v = map_tuples(other_mesh, simplex::Simplex(*this, pt, t));
         ret.insert(ret.end(), v.begin(), v.end());
     }
 
@@ -147,7 +157,7 @@ std::vector<Tuple> Mesh::lub_map_tuples(
     std::vector<Tuple> ret;
     ret.reserve(tuples.size());
     for (const auto& t : tuples) {
-        auto v = lub_map_tuples(other_mesh, simplex::Simplex(pt, t));
+        auto v = lub_map_tuples(other_mesh, simplex::Simplex(*this, pt, t));
         ret.insert(ret.end(), v.begin(), v.end());
     }
 

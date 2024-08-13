@@ -51,7 +51,7 @@ class Converter:
 
 
         topologies = dict()
-        if ext in {"ply","stl"}:
+        if ext in {"ply","stl","off"}:
             m = mio.read(input_filename)
             topologies["pos"] = m
         elif ext == "obj":

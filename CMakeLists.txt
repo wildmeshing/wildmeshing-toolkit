@@ -88,12 +88,13 @@ include(polysolve)
 include(fast_envelope)
 include(bvh)
 include(volume_mesher)
+include(onetbb)
 
 # Core library
 add_library(wildmeshing_toolkit)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 target_link_libraries(wildmeshing_toolkit PUBLIC wmtk_coverage_config)
-set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR  ON)
+set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR  OFF)
 
 
 add_subdirectory(src)
@@ -128,6 +129,21 @@ option(WMTK_ENABLE_GENERIC_CHECKPOINTS "Enable checkpoint selection" OFF)
 if(WMTK_ENABLE_GENERIC_CHECKPOINTS)
     target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_ENABLE_GENERIC_CHECKPOINTS)
 endif()
+option(WMTK_ENABLE_MAP_CACHE "Enable checkpoint selection" ON)
+if(WMTK_ENABLE_MAP_CACHE)
+    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_MAP_CACHE)
+endif()
+
+option(WMTK_ENABLE_TRANSACTION_STACK "Enable transaction stack" ON)
+if(WMTK_ENABLE_TRANSACTION_STACK)
+    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_TRANSACTION_STACK)
+endif()
+
+option(WMTK_ENABLE_HASH_UPDATE "Enable hash update" OFF)
+if(WMTK_ENABLE_HASH_UPDATE)
+    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_HASH_UPDATE)
+endif()
+
 
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
@@ -141,7 +157,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     FastEnvelope::FastEnvelope
     simple_bvh::simple_bvh
     VolumeRemesher::VolumeRemesher
-
+    TBB::tbb
 )
 
 

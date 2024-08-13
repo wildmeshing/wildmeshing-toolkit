@@ -20,7 +20,6 @@
 #include <wmtk/simplex/Simplex.hpp>
 #include "Tuple.hpp"
 #include "Types.hpp"
-#include "attribute/Attribute.hpp" // Why do we need to include this now?
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
@@ -107,12 +106,15 @@ public:
     friend class multimesh::MultiMeshSimplexVisitorExecutor;
     template <typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
+    friend bool multimesh::utils::check_child_maps_valid(const Mesh& m);
+    friend bool multimesh::utils::check_parent_map_valid(const Mesh& m);
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class multimesh::attribute::AttributeScopeHandle;
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::RawSimplex;
+    friend class simplex::Simplex;
     friend class simplex::SimplexCollection;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
@@ -120,6 +122,7 @@ public:
     friend class operations::EdgeSplit;
     friend class operations::EdgeOperationData;
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
         const simplex::SimplexCollection& vertex_closed_star,
@@ -129,10 +132,12 @@ public:
         Mesh& m,
         const Tuple& vertex,
         attribute::Accessor<int64_t>& hash_accessor);
+#endif
 
 
     int64_t top_cell_dimension() const;
     PrimitiveType top_simplex_type() const;
+    bool is_free() const;
 
     // attribute directly hashes its "children" components so it overrides "child_hashes"
     std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
@@ -233,6 +238,9 @@ public:
     int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
+    const T& get_attribute_default_value(const TypedAttributeHandle<T>& handle) const;
+
+    template <typename T>
     std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;
 
     std::string get_attribute_name(
@@ -247,6 +255,8 @@ public:
         const std::vector<attribute::MeshAttributeHandle::HandleVariant>& keep_attributes);
     void clear_attributes();
     void clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes);
+    void delete_attribute(const attribute::MeshAttributeHandle& to_delete);
+    void delete_attribute(const attribute::MeshAttributeHandle::HandleVariant& to_delete);
 
 
     // creates a scope as int64_t as the AttributeScopeHandle exists
@@ -266,8 +276,9 @@ public:
 
 
     const attribute::Accessor<char> get_flag_accessor(PrimitiveType type) const;
-    const attribute::Accessor<int64_t> get_cell_hash_accessor() const;
     const attribute::Accessor<char> get_const_flag_accessor(PrimitiveType type) const;
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+    const attribute::Accessor<int64_t> get_cell_hash_accessor() const;
     const attribute::Accessor<int64_t> get_const_cell_hash_accessor() const;
 
 
@@ -275,6 +286,7 @@ public:
         const;
     // utility function for getting a cell's hash - slow because it creates a new accessor
     int64_t get_cell_hash_slow(int64_t cell_index) const;
+#endif
 
 
     bool operator==(const Mesh& other) const;
@@ -282,8 +294,11 @@ public:
     void assert_capacity_valid() const;
     virtual bool is_connectivity_valid() const = 0;
 
+    virtual std::vector<Tuple> orient_vertices(const Tuple& t) const = 0;
+
 protected: // member functions
     attribute::Accessor<char> get_flag_accessor(PrimitiveType type);
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     attribute::Accessor<int64_t> get_cell_hash_accessor();
 
     /**
@@ -342,7 +357,8 @@ protected: // member functions
     /**
      * @brief same as `resurrect_tuple` but slow because it creates a new accessor
      */
-    Tuple resurrect_tuple_slow(const Tuple& tuple);
+    Tuple resurrect_tuple_slow(const Tuple& tuple) const;
+#endif
 
 
 protected:
@@ -354,6 +370,7 @@ protected:
      * @return Tuple
      */
     virtual Tuple tuple_from_id(const PrimitiveType type, const int64_t gid) const = 0;
+    simplex::Simplex simplex_from_id(const PrimitiveType type, const int64_t gid) const;
     std::vector<std::vector<int64_t>> simplices_to_gids(
         const std::vector<std::vector<simplex::Simplex>>& simplices) const;
     /**
@@ -466,6 +483,7 @@ public:
 
 
     bool is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const;
+    bool is_hash_valid(const Tuple& tuple) const;
 
     /**
      * @brief check validity of tuple including its hash
@@ -476,9 +494,29 @@ public:
      * @return true if is valid
      * @return false
      */
-    virtual bool is_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
-        const = 0;
-    bool is_valid_slow(const Tuple& tuple) const;
+    virtual bool is_valid(const Tuple& tuple) const;
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+    bool is_valid_with_hash(const Tuple& tuple) const;
+    bool is_valid_with_hash(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
+        const;
+#endif
+
+    // whether the tuple refers to a removed / invalid dart in the mesh
+    bool is_removed(const Tuple& tuple) const;
+    // whether the tuple refers to a removed / invalid simplex in the mesh
+    bool is_removed(const Tuple& tuple, PrimitiveType pt) const;
+
+protected:
+    // whether the tuple refers to a removed / invalid facet
+    bool is_removed(int64_t index) const;
+    // whether the tuple refers to a removed / invalid simplex
+    bool is_removed(int64_t index, PrimitiveType pt) const;
+
+public:
+    /**
+     * @brief Check if the cached id in a simplex is up-to-date.
+     */
+    bool is_valid(const simplex::Simplex& s) const;
 
 
     //============================
@@ -540,9 +578,26 @@ public:
      * @param mesh_tuples a sequence of corresponding tuples between meshes
      */
     void register_child_mesh(
-        const std::shared_ptr<Mesh>& child_mesh,
+        const std::shared_ptr<Mesh>& child_mesh_ptr,
         const std::vector<std::array<Tuple, 2>>& map_tuples);
 
+    /**
+     * @brief Deregister a child mesh.
+     *
+     * The child mesh is not deleted. It is only detached from the multi-mesh structure. The child
+     * mesh becomes the new root for its own children. Attribute handles for the child and parent
+     * mesh will be invalidated by deregistration.
+     */
+    void deregister_child_mesh(const std::shared_ptr<Mesh>& child_mesh_ptr);
+
+
+private:
+    /**
+     * @brief Update the child handles after clearing attributes.
+     */
+    void update_child_handles();
+
+public:
     /**
      * @brief maps a simplex from this mesh to any other mesh
      *
@@ -833,6 +888,9 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     int64_t m_top_cell_dimension = -1;
 
+    // assumes no adjacency data exists
+    bool m_is_free = false;
+
 private:
     // PImpl'd manager of per-thread update stacks
     // Every time a new access scope is requested the manager creates another level of indirection
@@ -968,6 +1026,10 @@ inline Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequen
         r = switch_tuple(r, primitive);
     }
     return r;
+}
+inline bool Mesh::is_free() const
+{
+    return m_is_free;
 }
 
 inline int64_t Mesh::top_cell_dimension() const

@@ -1,7 +1,7 @@
 #pragma once
 #include <wmtk/utils/Rational.hpp>
 #include "AttributeCacheData.hpp"
-namespace wmtk::attribute {
+namespace wmtk::attribute::internal {
 template <typename T>
 template <int D>
 inline auto AttributeCacheData<T>::data_as_map() -> typename VectorD<D>::MapType

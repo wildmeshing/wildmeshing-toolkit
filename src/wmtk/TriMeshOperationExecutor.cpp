@@ -43,27 +43,27 @@ auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> Incid
     for (int i = 0; i < 3; ++i) {
         if (simplex::utils::SimplexComparisons::equal(
                 m_mesh,
-                simplex::Simplex::edge(t),
-                simplex::Simplex::edge(m_operating_tuple))) {
+                simplex::Simplex::edge(m_mesh, t),
+                simplex::Simplex::edge(m_mesh, m_operating_tuple))) {
             break;
         }
         t = next_edge(t);
     }
     assert(simplex::utils::SimplexComparisons::equal(
         m_mesh,
-        simplex::Simplex::edge(t),
-        simplex::Simplex::edge(m_operating_tuple)));
+        simplex::Simplex::edge(m_mesh, t),
+        simplex::Simplex::edge(m_mesh, m_operating_tuple)));
 
     if (!simplex::utils::SimplexComparisons::equal(
             m_mesh,
-            simplex::Simplex::vertex(t),
-            simplex::Simplex::vertex(m_operating_tuple))) {
+            simplex::Simplex::vertex(m_mesh, t),
+            simplex::Simplex::vertex(m_mesh, m_operating_tuple))) {
         t = m_mesh.switch_vertex(t);
     }
     assert(simplex::utils::SimplexComparisons::equal(
         m_mesh,
-        simplex::Simplex::vertex(t),
-        simplex::Simplex::vertex(m_operating_tuple)));
+        simplex::Simplex::vertex(m_mesh, t),
+        simplex::Simplex::vertex(m_mesh, m_operating_tuple)));
 
     const std::array<Tuple, 2> ear_edges{
         {m_mesh.switch_edge(t), m_mesh.switch_edge(m_mesh.switch_vertex(t))}};
@@ -79,7 +79,7 @@ auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> Incid
         face_data.ears.begin(),
         [&](const Tuple& edge) {
             // accessing ear face id through FF to make it work also at boundaries
-            const int64_t ear_fid = ff_accessor.vector_attribute(edge)[edge.m_local_eid];
+            const int64_t ear_fid = ff_accessor.const_vector_attribute(edge)[edge.m_local_eid];
 
             return EarData{
                 /*.fid = */ ear_fid,
@@ -90,17 +90,25 @@ auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> Incid
 }
 
 // constructor
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     TriMesh& m,
     const Tuple& operating_tuple,
     attribute::Accessor<int64_t>& hash_acc)
+#else
+TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
+    TriMesh& m,
+    const Tuple& operating_tuple)
+#endif
     : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge), m.get_flag_accessor(PrimitiveType::Triangle)}}
     , ff_accessor(m.create_accessor<int64_t>(m.m_ff_handle))
     , fe_accessor(m.create_accessor<int64_t>(m.m_fe_handle))
     , fv_accessor(m.create_accessor<int64_t>(m.m_fv_handle))
     , vf_accessor(m.create_accessor<int64_t>(m.m_vf_handle))
     , ef_accessor(m.create_accessor<int64_t>(m.m_ef_handle))
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     , hash_accessor(hash_acc)
+#endif
     , m_mesh(m)
 
 {
@@ -111,8 +119,12 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     m_spine_vids[0] = m_mesh.id_vertex(m_operating_tuple);
     m_spine_vids[1] = m_mesh.id_vertex(m_mesh.switch_vertex(m_operating_tuple));
 
+    if(m_mesh.is_free()) {
+        m_incident_face_datas.emplace_back(get_incident_face_data(m_operating_tuple));
+
+    } else {
     const simplex::SimplexCollection edge_closed_star =
-        simplex::closed_star(m_mesh, simplex::Simplex::edge(operating_tuple));
+        simplex::closed_star(m_mesh, simplex::Simplex::edge(m_mesh, operating_tuple));
 
     // get all faces incident to the edge
     for (const simplex::Simplex& f : edge_closed_star.simplex_vector(PrimitiveType::Triangle)) {
@@ -137,7 +149,10 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     simplex::SimplexCollection faces(m_mesh);
 
     for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+
         cell_ids_to_update_hash.push_back(m_mesh.id(f));
+#endif
 
         faces.add(wmtk::simplex::faces(m, f, false));
         faces.add(f);
@@ -166,7 +181,8 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     // load(PrimitiveType::Vertex, 0);
     // load(PrimitiveType::Edge, 1);
     // load(PrimitiveType::Face, 2);
-};
+    }
+}
 
 void TriMesh::TriMeshOperationExecutor::delete_simplices()
 {
@@ -179,7 +195,9 @@ void TriMesh::TriMeshOperationExecutor::delete_simplices()
 
 void TriMesh::TriMeshOperationExecutor::update_cell_hash()
 {
+#if defined(WMTK_ENABLE_HASH_UPDATE)
     m_mesh.update_cell_hashes(cell_ids_to_update_hash, hash_accessor);
+#endif
 }
 
 const std::array<std::vector<int64_t>, 3>
@@ -187,7 +205,7 @@ TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete(
     const Tuple& tuple,
     const TriMesh& m)
 {
-    const simplex::SimplexCollection sc = simplex::open_star(m, simplex::Simplex::edge(tuple));
+    const simplex::SimplexCollection sc = simplex::open_star(m, simplex::Simplex::edge(m, tuple));
     std::array<std::vector<int64_t>, 3> ids;
     for (const simplex::Simplex& s : sc) {
         ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
@@ -201,20 +219,32 @@ TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete(
     const Tuple& tuple,
     const TriMesh& m)
 {
-    const simplex::SimplexCollection vertex_open_star =
-        simplex::open_star(m, simplex::Simplex::vertex(tuple));
-    const simplex::SimplexCollection edge_closed_star =
-        simplex::closed_star(m, simplex::Simplex::edge(tuple));
+    std::array<std::vector<int64_t>, 3> ids;
+    auto get_sc = [&]() -> simplex::SimplexCollection {
+    if(m.is_free()) {
+        simplex::Simplex simp (m,PrimitiveType::Triangle,tuple);
 
-    const simplex::SimplexCollection sc =
+        simplex::SimplexCollection sc = simplex::faces(m, simp);
+        sc.add(simp);
+        return sc;
+    } else {
+    const simplex::SimplexCollection vertex_open_star =
+        simplex::open_star(m, simplex::Simplex::vertex(m, tuple));
+    const simplex::SimplexCollection edge_closed_star =
+        simplex::closed_star(m, simplex::Simplex::edge(m, tuple));
+
+    simplex::SimplexCollection sc=
         simplex::SimplexCollection::get_intersection(vertex_open_star, edge_closed_star);
 
-    std::array<std::vector<int64_t>, 3> ids;
-    for (const simplex::Simplex& s : sc) {
+    return sc;
+    }
+    };
+    for (const simplex::Simplex& s : get_sc()) {
         ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
     }
 
     return ids;
+
 }
 
 /**
@@ -302,7 +332,7 @@ void TriMesh::TriMeshOperationExecutor::connect_ears()
         update_ids_in_ear(new_f0_ear, ear1.fid, f_old);
         update_ids_in_ear(ear1, ear0.fid, f_old);
     }
-};
+}
 
 void TriMesh::TriMeshOperationExecutor::connect_faces_across_spine()
 {
@@ -314,8 +344,8 @@ void TriMesh::TriMeshOperationExecutor::connect_faces_across_spine()
     const int64_t f_old_bottom = m_incident_face_datas[1].fid;
     const int64_t f0_bottom = m_incident_face_datas[1].split_f[0];
     const int64_t f1_bottom = m_incident_face_datas[1].split_f[1];
-    auto ff_old_top = ff_accessor.index_access().vector_attribute(f_old_top);
-    auto ff_old_bottom = ff_accessor.index_access().vector_attribute(f_old_bottom);
+    auto ff_old_top = ff_accessor.index_access().const_vector_attribute(f_old_top);
+    auto ff_old_bottom = ff_accessor.index_access().const_vector_attribute(f_old_bottom);
     assert(m_mesh.capacity(PrimitiveType::Triangle) > f0_top);
     assert(m_mesh.capacity(PrimitiveType::Triangle) > f1_top);
     assert(m_mesh.capacity(PrimitiveType::Triangle) > f0_bottom);
@@ -349,10 +379,12 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(IncidentFaceData& 
 
     std::copy(new_fids.begin(), new_fids.end(), face_data.split_f.begin());
 
-    std::vector<int64_t> splitting_edges = this->request_simplex_indices(PrimitiveType::Edge, 1);
-    assert(splitting_edges[0] > -1); // TODO: is this assert reasonable at all?
-    int64_t& split_edge_eid = face_data.new_edge_id;
-    split_edge_eid = splitting_edges[0];
+    if(!m_mesh.is_free()) {
+        std::vector<int64_t> splitting_edges = this->request_simplex_indices(PrimitiveType::Edge, 1);
+        assert(splitting_edges[0] > -1); // TODO: is this assert reasonable at all?
+        int64_t& split_edge_eid = face_data.new_edge_id;
+        split_edge_eid = splitting_edges[0];
+    }
 
     //  ---------v2--------
     // |        /|\        |
@@ -398,8 +430,13 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(IncidentFaceData& 
             // if the original face edge was the other ear's edge then we replace it with thee
             // spline
             if (fe[i] == other_ear.eid) {
-                ff[i] = other_f;
-                fe[i] = split_edge_eid;
+                if(m_mesh.is_free()) {
+                    fe[i] = m_free_split_e[j];
+                } else {
+                    const int64_t& split_edge_eid = face_data.new_edge_id;
+                    ff[i] = other_f;
+                    fe[i] = split_edge_eid;
+                }
             }
 
             // replace the input edge iwth the new edge for this triangle
@@ -409,7 +446,11 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(IncidentFaceData& 
 
             // if i find the other vertex then i set it to be the new vertex
             if (fv[i] == other_v) {
-                fv[i] = split_new_vid;
+                if(m_mesh.is_free()) {
+                    fv[i] = m_free_split_v[j];
+                } else {
+                    fv[i] = split_new_vid;
+                }
             }
         }
         // assign each edge one face
@@ -420,10 +461,28 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(IncidentFaceData& 
     }
 
     vf_accessor.index_access().scalar_attribute(v_opp) = new_fids[0];
-    vf_accessor.index_access().scalar_attribute(split_new_vid) = new_fids[0];
 
-    ef_accessor.index_access().scalar_attribute(split_edge_eid) = new_fids[0];
-    vf_accessor.index_access().scalar_attribute(split_new_vid) = new_fids[0];
+    if(m_mesh.is_free()) {
+        for(size_t j = 0; j < 2; ++j) {
+            ef_accessor.index_access().scalar_attribute(m_free_split_e[j]) = new_fids[j];
+            vf_accessor.index_access().scalar_attribute(m_free_split_v[j]) = new_fids[j];
+        }
+
+        const int64_t f = face_data.split_f[1]; // new face to insert
+        auto fv = fv_accessor.index_access().vector_attribute(f);
+        for(int j = 0; j < 3; ++j) {
+            if(fv(j) == face_data.opposite_vid) {
+                fv(j) = split_new_vid;
+
+                vf_accessor.index_access().scalar_attribute(split_new_vid) = new_fids[1];
+            }
+        }
+
+    } else {
+        const int64_t& split_edge_eid = face_data.new_edge_id;
+        ef_accessor.index_access().scalar_attribute(split_edge_eid) = new_fids[0];
+        vf_accessor.index_access().scalar_attribute(split_new_vid) = new_fids[0];
+    }
 
     // face neighbors on the other side of the spine are updated separately
 
@@ -439,16 +498,34 @@ void TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
 {
     simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
 
-    // create new vertex (center)
-    std::vector<int64_t> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
-    assert(new_vids.size() == 1);
-    split_new_vid = new_vids[0];
+    if(m_mesh.is_free()) {
+        // create new vertex (center)
+        std::vector<int64_t> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 3);
+        assert(new_vids.size() == 3);
 
-    // create new edges (spine)
-    std::vector<int64_t> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
-    assert(new_eids.size() == 2);
+        std::copy(new_vids.begin()+1, new_vids.end(), m_free_split_v.begin());
+        split_new_vid = new_vids[0];
 
-    std::copy(new_eids.begin(), new_eids.end(), split_spine_eids.begin());
+        // create new edges (spine)
+        std::vector<int64_t> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 4);
+        assert(new_eids.size() == 4);
+
+        auto midpoint = new_eids.begin() + 2;
+        std::copy(new_eids.begin(), midpoint, split_spine_eids.begin());
+        std::copy(midpoint, new_eids.end(), m_free_split_e.begin());
+
+    } else {
+        // create new vertex (center)
+        std::vector<int64_t> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
+        assert(new_vids.size() == 1);
+        split_new_vid = new_vids[0];
+
+        // create new edges (spine)
+        std::vector<int64_t> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
+        assert(new_eids.size() == 2);
+
+        std::copy(new_eids.begin(), new_eids.end(), split_spine_eids.begin());
+    }
 
     for (IncidentFaceData& face_data : m_incident_face_datas) {
         replace_incident_face(face_data);
@@ -459,7 +536,6 @@ void TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
     }
 
     update_cell_hash();
-    delete_simplices();
 
 
     //  ---------v2--------
@@ -475,12 +551,19 @@ void TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
 
     // return Tuple new_fid, new_vid that points
     const int64_t new_tuple_fid = m_incident_face_datas[0].split_f[1];
-    m_output_tuple = m_mesh.edge_tuple_from_id(split_spine_eids[1]);
+    if(m_mesh.is_free()) {
+    m_output_tuple =
+        m_mesh.tuple_from_global_ids(new_tuple_fid, split_spine_eids[1], m_free_split_v[1]);
+    assert(m_mesh.id_vertex(m_output_tuple) == m_free_split_v[1]);
+    } else {
     m_output_tuple =
         m_mesh.tuple_from_global_ids(new_tuple_fid, split_spine_eids[1], split_new_vid);
     assert(m_mesh.id_vertex(m_output_tuple) == split_new_vid);
+    }
     assert(m_mesh.id_face(m_output_tuple) == new_tuple_fid);
-    assert(m_mesh.is_valid(m_output_tuple, hash_accessor));
+    assert(m_mesh.is_valid(m_output_tuple));
+
+    delete_simplices();
 }
 
 
@@ -495,9 +578,10 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
 {
     simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
 
+    if(!m_mesh.is_free()) {
     // must collect star before changing connectivity
     const simplex::SimplexCollection v0_star =
-        simplex::closed_star(m_mesh, simplex::Simplex::vertex(m_operating_tuple));
+        simplex::closed_star(m_mesh, simplex::Simplex::vertex(m_mesh, m_operating_tuple));
 
 
     connect_ears();
@@ -524,6 +608,7 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
             }
         }
     }
+    update_cell_hash();
 
     const int64_t& ret_eid = m_incident_face_datas[0].ears[1].eid;
     const int64_t& ret_vid = m_spine_vids[1];
@@ -531,9 +616,6 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
     const int64_t& ef1 = m_incident_face_datas[0].ears[1].fid;
 
     const int64_t new_tuple_fid = (ef0 > -1) ? ef0 : ef1;
-
-    update_cell_hash();
-    delete_simplices();
 
 
     m_output_tuple = m_mesh.edge_tuple_from_id(ret_eid);
@@ -550,7 +632,10 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
         m_output_tuple = m_mesh.switch_face(m_output_tuple);
     }
     assert(m_mesh.id_face(m_output_tuple) == new_tuple_fid);
-    assert(m_mesh.is_valid(m_output_tuple, hash_accessor));
+    assert(m_mesh.is_valid(m_output_tuple));
+    }
+
+    delete_simplices();
 
 
     // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear

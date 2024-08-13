@@ -252,8 +252,8 @@ TEST_CASE("attribute_after_split", "[io][.]")
             for (const Tuple& t : m.get_all(PE)) {
                 if (simplex::utils::SimplexComparisons::equal(
                         m,
-                        Simplex::edge(edge),
-                        Simplex::edge(t))) {
+                        Simplex::edge(m, edge),
+                        Simplex::edge(m, t))) {
                     CHECK(acc_attribute.scalar_attribute(t) == 1);
                 } else {
                     CHECK(acc_attribute.scalar_attribute(t) == 0);
@@ -270,7 +270,7 @@ TEST_CASE("attribute_after_split", "[io][.]")
                     wmtk::operations::SplitRibBasicStrategy::CopyTuple);
             }
 
-            auto tmp = op(Simplex::edge(edge));
+            auto tmp = op(Simplex::edge(m, edge));
             REQUIRE(!tmp.empty());
 
             // set new vertex position

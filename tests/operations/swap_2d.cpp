@@ -2,8 +2,8 @@
 #include <filesystem>
 #include <numeric>
 #include <set>
-#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
@@ -28,9 +28,6 @@ using namespace operations;
 
 using TM = TriMesh;
 using MapResult = typename Eigen::Matrix<int64_t, Eigen::Dynamic, 1>::MapType;
-using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
-    wmtk::Tuple(),
-    std::declval<attribute::Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -52,7 +49,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        auto res = op(Simplex::edge(edge));
+        auto res = op(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
@@ -79,7 +76,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 2);
-        auto res = op(Simplex::edge(edge));
+        auto res = op(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
@@ -106,7 +103,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        REQUIRE(op(Simplex::edge(edge)).empty());
+        REQUIRE(op(Simplex::edge(m, edge)).empty());
         REQUIRE(m.is_connectivity_valid());
     }
     SECTION("tetrahedron_fail")
@@ -118,7 +115,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
-        REQUIRE(op(Simplex::edge(edge)).empty());
+        REQUIRE(op(Simplex::edge(m, edge)).empty());
         REQUIRE(m.is_connectivity_valid());
     }
 }
@@ -140,7 +137,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         const Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-        auto result = op(Simplex::face(f));
+        auto result = op(Simplex::face(m, f));
         bool is_success = !result.empty();
         CHECK(is_success);
         const Tuple ret = result.front().tuple();
@@ -151,7 +148,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         CHECK(m.id(ret, PV) == 4);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 2);
-        CHECK(simplex::link(m, simplex::Simplex::vertex(ret)).simplex_vector().size() == 6);
+        CHECK(simplex::link(m, simplex::Simplex::vertex(m, ret)).simplex_vector().size() == 6);
     }
 
     SECTION("split_face_in_quad")
@@ -167,7 +164,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         Tuple f = m.edge_tuple_between_v1_v2(1, 0, 1);
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-        const auto res = op(Simplex::face(f));
+        const auto res = op(Simplex::face(m, f));
         const bool is_success = !res.empty();
         CHECK(is_success);
         CHECK(m.get_all(PV).size() == 5);
@@ -228,11 +225,11 @@ TEST_CASE("split_face", "[operations][split][2D]")
 
 
         const Tuple f0 = m.face_tuple_from_vids(3, 4, 0);
-        CHECK(!op(Simplex::face(f0)).empty());
+        CHECK(!op(Simplex::face(m, f0)).empty());
         const Tuple f1 = m.face_tuple_from_vids(8, 9, 5);
-        CHECK(!op(Simplex::face(f1)).empty());
+        CHECK(!op(Simplex::face(m, f1)).empty());
         const Tuple f2 = m.face_tuple_from_vids(4, 8, 5);
-        CHECK(!op(Simplex::face(f2)).empty());
+        CHECK(!op(Simplex::face(m, f2)).empty());
 
         for (const Tuple& t : m.get_all(PF)) {
             CHECK(acc_attri.scalar_attribute(t) == 1);
@@ -276,7 +273,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
             pos_handle,
             operations::CollapseBasicStrategy::CopyOther);
 
-        auto res = op(Simplex::face(f));
+        auto res = op(Simplex::face(m, f));
         bool is_success = !res.empty();
         CHECK(is_success);
         Tuple ret = res.front().tuple();
@@ -288,8 +285,9 @@ TEST_CASE("split_face", "[operations][split][2D]")
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 2);
         CHECK(
-            simplex::link(m, Simplex::vertex(ret)).simplex_vector(PrimitiveType::Vertex).size() ==
-            3);
+            simplex::link(m, Simplex::vertex(m, ret))
+                .simplex_vector(PrimitiveType::Vertex)
+                .size() == 3);
         wmtk::attribute::Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
         CHECK(acc_pos.vector_attribute(ret).x() == 0.375);
         CHECK(acc_pos.vector_attribute(m.switch_vertex(ret)).x() == 1);
@@ -319,7 +317,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
             SplitRibBasicStrategy::None);
         op.collapse().set_new_attribute_strategy(todo_handle, CollapseBasicStrategy::None);
 
-        CHECK(!op(Simplex::face(f)).empty());
+        CHECK(!op(Simplex::face(m, f)).empty());
 
         CHECK(m.get_all(PF).size() == 12);
         for (const Tuple& t : m.get_all(PF)) {
@@ -339,8 +337,10 @@ TEST_CASE("split_face", "[operations][split][2D]")
         wmtk::attribute::MeshAttributeHandle vertex_tag_handle =
             m.register_attribute<int64_t>("vertex_tag", PV, 1);
         wmtk::attribute::Accessor<int64_t> acc_todo = m.create_accessor<int64_t>(todo_handle);
-        wmtk::attribute::Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
-        wmtk::attribute::Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
+        wmtk::attribute::Accessor<int64_t> acc_edge_tag =
+            m.create_accessor<int64_t>(edge_tag_handle);
+        wmtk::attribute::Accessor<int64_t> acc_vertex_tag =
+            m.create_accessor<int64_t>(vertex_tag_handle);
         acc_todo.scalar_attribute(f) = 1;
 
         acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = 1;
@@ -376,7 +376,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
 
 
         op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle.as<int64_t>()));
-        const auto res = op(Simplex::face(f));
+        const auto res = op(Simplex::face(m, f));
 
         CHECK(!res.empty());
         const Tuple& return_tuple = res.front().tuple();
@@ -426,6 +426,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
             SplitBasicStrategy::None,
             SplitRibBasicStrategy::None);
 
-        CHECK(op(Simplex::face(f)).empty());
+        CHECK(op(Simplex::face(m, f)).empty());
     }
 }

@@ -6,6 +6,7 @@
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
+#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include "../tools/DEBUG_EdgeMesh.hpp"
 #include "../tools/DEBUG_TetMesh.hpp"
 #include "../tools/DEBUG_TriMesh.hpp"
@@ -13,6 +14,8 @@
 #include "../tools/EdgeMesh_examples.hpp"
 #include "../tools/TetMesh_examples.hpp"
 #include "../tools/TriMesh_examples.hpp"
+#include "../tools/add_free_child_mesh.hpp"
+#include "../tools/is_free.hpp"
 
 using namespace wmtk;
 using namespace wmtk::tests;
@@ -65,17 +68,21 @@ TEST_CASE("test_split_multi_mesh_2D_3D", "[multimesh][2D][3D]")
         std::map<int64_t, int64_t> child_to_parent;
         for (const auto& child0_f : child0.get_all(PF)) {
             child_to_parent[child0.id(child0_f, PF)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
-        REQUIRE(parent.is_valid_slow(edge));
-        REQUIRE(!split(Simplex::edge(edge)).empty());
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
+        REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 12);
 
         for (const auto& child0_f : child0.get_all(PF)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT) >
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT) >
                 5); // all parent tets should be new
 
             int64_t parent_old = -1;
@@ -86,7 +93,7 @@ TEST_CASE("test_split_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 "child 0 face {} maps to parent tet {} -> {} after split",
                 child0.id(child0_f, PF),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT));
         }
     }
 
@@ -95,19 +102,23 @@ TEST_CASE("test_split_multi_mesh_2D_3D", "[multimesh][2D][3D]")
         std::map<int64_t, int64_t> child_to_parent;
         for (const auto& child0_f : child0.get_all(PF)) {
             child_to_parent[child0.id(child0_f, PF)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT);
         }
 
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
-        REQUIRE(parent.is_valid_slow(edge));
-        REQUIRE(!split(Simplex::edge(edge)).empty());
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
+        REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 7);
         CHECK(child0.get_all(PF).size() == 14);
 
         for (const auto& child0_f : child0.get_all(PF)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT) >
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT) >
                 0); // tet 0 is splitted
 
             int64_t parent_old = -1;
@@ -118,7 +129,7 @@ TEST_CASE("test_split_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 "child 0 face {} maps to parent tet {} -> {} after split",
                 child0.id(child0_f, PF),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT));
         }
     }
 
@@ -127,19 +138,23 @@ TEST_CASE("test_split_multi_mesh_2D_3D", "[multimesh][2D][3D]")
         std::map<int64_t, int64_t> child_to_parent;
         for (const auto& child0_f : child0.get_all(PF)) {
             child_to_parent[child0.id(child0_f, PF)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT);
         }
 
         Tuple edge = parent.edge_tuple_from_vids(0, 2);
-        REQUIRE(parent.is_valid_slow(edge));
-        REQUIRE(!split(Simplex::edge(edge)).empty());
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
+        REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 8);
         CHECK(child0.get_all(PF).size() == 14);
 
         for (const auto& child0_f : child0.get_all(PF)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT) >
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT) >
                 1); // tet 0 and 1 are splitted
 
             int64_t parent_old = -1;
@@ -150,7 +165,7 @@ TEST_CASE("test_split_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 "child 0 face {} maps to parent tet {} -> {} after split",
                 child0.id(child0_f, PF),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT));
         }
     }
 }
@@ -191,17 +206,21 @@ TEST_CASE("test_split_multi_mesh_1D_3D", "[multimesh][1D][3D]")
         std::map<int64_t, int64_t> child_to_parent;
         for (const auto& child0_e : child0.get_all(PE)) {
             child_to_parent[child0.id(child0_e, PE)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
-        REQUIRE(parent.is_valid_slow(edge));
-        REQUIRE(!split(Simplex::edge(edge)).empty());
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
+        REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 12);
 
         for (const auto& child0_e : child0.get_all(PE)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT) >
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT) >
                 5); // all parent tets should be new
 
             int64_t parent_old = -1;
@@ -212,7 +231,7 @@ TEST_CASE("test_split_multi_mesh_1D_3D", "[multimesh][1D][3D]")
                 "child 0 edge {} maps to parent tet {} -> {} after split",
                 child0.id(child0_e, PE),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT));
         }
     }
 
@@ -221,18 +240,22 @@ TEST_CASE("test_split_multi_mesh_1D_3D", "[multimesh][1D][3D]")
         std::map<int64_t, int64_t> child_to_parent;
         for (const auto& child0_e : child0.get_all(PE)) {
             child_to_parent[child0.id(child0_e, PE)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
-        REQUIRE(parent.is_valid_slow(edge));
-        REQUIRE(!split(Simplex::edge(edge)).empty());
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
+        REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 7);
         CHECK(child0.get_all(PE).size() == 7);
 
         for (const auto& child0_e : child0.get_all(PE)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT) >
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT) >
                 0); // all parent tets should be new
 
             int64_t parent_old = -1;
@@ -243,7 +266,7 @@ TEST_CASE("test_split_multi_mesh_1D_3D", "[multimesh][1D][3D]")
                 "child 0 edge {} maps to parent tet {} -> {} after split",
                 child0.id(child0_e, PE),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT));
         }
     }
 
@@ -252,18 +275,22 @@ TEST_CASE("test_split_multi_mesh_1D_3D", "[multimesh][1D][3D]")
         std::map<int64_t, int64_t> child_to_parent;
         for (const auto& child0_e : child0.get_all(PE)) {
             child_to_parent[child0.id(child0_e, PE)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 2);
-        REQUIRE(parent.is_valid_slow(edge));
-        REQUIRE(!split(Simplex::edge(edge)).empty());
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
+        REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 8);
         CHECK(child0.get_all(PE).size() == 6);
 
         for (const auto& child0_e : child0.get_all(PE)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT) >
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT) >
                 1); // all parent tets should be new
 
             int64_t parent_old = -1;
@@ -274,7 +301,7 @@ TEST_CASE("test_split_multi_mesh_1D_3D", "[multimesh][1D][3D]")
                 "child 0 edge {} maps to parent tet {} -> {} after split",
                 child0.id(child0_e, PE),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT));
         }
     }
 }
@@ -368,17 +395,21 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
         std::map<int64_t, int64_t> child0_to_parent;
         for (const auto& child0_f : child0.get_all(PF)) {
             child0_to_parent[child0.id(child0_f, PF)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT);
         }
 
         std::map<int64_t, int64_t> child1_to_parent;
         for (const auto& child1_f : child1.get_all(PF)) {
             child1_to_parent[child1.id(child1_f, PF)] =
-                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT);
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1, child1_f)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
-        REQUIRE(parent.is_valid_slow(edge));
-        REQUIRE(!collapse(Simplex::edge(edge)).empty());
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
+        REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 5);
         CHECK(child0.get_all(PF).size() == 5);
@@ -388,7 +419,7 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
 
         for (const auto& child0_f : child0.get_all(PF)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT) >
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT) >
                 0); // tet 0 is collapsed
 
             int64_t parent_old = -1;
@@ -399,12 +430,12 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 "child 0 face {} maps to parent tet {} -> {} after collapse",
                 child0.id(child0_f, PF),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT));
         }
 
         for (const auto& child1_f : child1.get_all(PF)) {
             CHECK(
-                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT) >
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1, child1_f)), PT) >
                 0); // tet 0 is collapsed
 
             int64_t parent_old = -1;
@@ -415,7 +446,7 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 "child 1 face {} maps to parent tet {} -> {} after collapse",
                 child1.id(child1_f, PF),
                 parent_old,
-                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT));
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1, child1_f)), PT));
         }
     }
 
@@ -424,17 +455,21 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
         std::map<int64_t, int64_t> child0_to_parent;
         for (const auto& child0_f : child0.get_all(PF)) {
             child0_to_parent[child0.id(child0_f, PF)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT);
         }
 
         std::map<int64_t, int64_t> child1_to_parent;
         for (const auto& child1_f : child1.get_all(PF)) {
             child1_to_parent[child1.id(child1_f, PF)] =
-                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT);
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1, child1_f)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 2);
-        REQUIRE(parent.is_valid_slow(edge));
-        REQUIRE(!collapse(Simplex::edge(edge)).empty());
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
+        REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 4);
         CHECK(child0.get_all(PF).size() == 4);
@@ -444,7 +479,7 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
 
         for (const auto& child0_f : child0.get_all(PF)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT) >
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT) >
                 1); // tet 0 and 1 is collapsed
 
             int64_t parent_old = -1;
@@ -455,12 +490,12 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 "child 0 face {} maps to parent tet {} -> {} after collapse",
                 child0.id(child0_f, PF),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT));
         }
 
         for (const auto& child1_f : child1.get_all(PF)) {
             CHECK(
-                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT) >
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1, child1_f)), PT) >
                 1); // tet 0 and 1 is collapsed
 
             int64_t parent_old = -1;
@@ -471,7 +506,7 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 "child 1 face {} maps to parent tet {} -> {} after collapse",
                 child1.id(child1_f, PF),
                 parent_old,
-                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT));
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1, child1_f)), PT));
         }
     }
 
@@ -480,17 +515,21 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
         std::map<int64_t, int64_t> child0_to_parent;
         for (const auto& child0_f : child0.get_all(PF)) {
             child0_to_parent[child0.id(child0_f, PF)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT);
         }
 
         std::map<int64_t, int64_t> child1_to_parent;
         for (const auto& child1_f : child1.get_all(PF)) {
             child1_to_parent[child1.id(child1_f, PF)] =
-                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT);
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1, child1_f)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 3);
-        REQUIRE(parent.is_valid_slow(edge));
-        REQUIRE(!collapse(Simplex::edge(edge)).empty());
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
+        REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 4);
         CHECK(child0.get_all(PF).size() == 6);
@@ -500,7 +539,7 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
 
         for (const auto& child0_f : child0.get_all(PF)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT) >
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT) >
                 1); // tet 0 and 1 is collapsed
 
             int64_t parent_old = -1;
@@ -511,12 +550,12 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 "child 0 face {} maps to parent tet {} -> {} after collapse",
                 child0.id(child0_f, PF),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0, child0_f)), PT));
         }
 
         for (const auto& child1_f : child1.get_all(PF)) {
             CHECK(
-                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT) >
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1, child1_f)), PT) >
                 1); // tet 0 and 1 is collapsed
 
             int64_t parent_old = -1;
@@ -527,22 +566,30 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
                 "child 1 face {} maps to parent tet {} -> {} after collapse",
                 child1.id(child1_f, PF),
                 parent_old,
-                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT));
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1, child1_f)), PT));
         }
     }
 
     SECTION("collapse_middle_edge")
     {
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
-        REQUIRE(parent.is_valid_slow(edge));
-        REQUIRE(collapse(Simplex::edge(edge)).empty()); // should fail
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
+        REQUIRE(collapse(Simplex::edge(parent, edge)).empty()); // should fail
     }
 
     SECTION("collapse_degenerate_face_edge")
     {
         Tuple edge = parent.edge_tuple_from_vids(2, 7);
-        REQUIRE(parent.is_valid_slow(edge));
-        REQUIRE(collapse(Simplex::edge(edge)).empty()); // should fail
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
+        REQUIRE(collapse(Simplex::edge(parent, edge)).empty()); // should fail
     }
 }
 
@@ -601,13 +648,17 @@ TEST_CASE("test_collapse_multi_mesh_1D_3D", "[multimesh][2D][3D]")
         std::map<int64_t, int64_t> child0_to_parent;
         for (const auto& child0_e : child0.get_all(PE)) {
             child0_to_parent[child0.id(child0_e, PE)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT);
         }
 
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
 
-        REQUIRE(parent.is_valid_slow(edge));
-        REQUIRE(!collapse(Simplex::edge(edge)).empty());
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
+        REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 5);
         CHECK(child0.get_all(PE).size() == 5);
@@ -615,7 +666,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_3D", "[multimesh][2D][3D]")
 
         for (const auto& child0_e : child0.get_all(PE)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT) >
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT) >
                 0); // tet 0 is collapsed
 
             int64_t parent_old = -1;
@@ -626,7 +677,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_3D", "[multimesh][2D][3D]")
                 "child 0 edge {} maps to parent tet {} -> {} after collapse",
                 child0.id(child0_e, PE),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT));
         }
     }
 
@@ -635,13 +686,17 @@ TEST_CASE("test_collapse_multi_mesh_1D_3D", "[multimesh][2D][3D]")
         std::map<int64_t, int64_t> child0_to_parent;
         for (const auto& child0_e : child0.get_all(PE)) {
             child0_to_parent[child0.id(child0_e, PE)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT);
         }
 
         Tuple edge = parent.edge_tuple_from_vids(0, 2);
 
-        REQUIRE(parent.is_valid_slow(edge));
-        REQUIRE(!collapse(Simplex::edge(edge)).empty());
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
+        REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 4);
         CHECK(child0.get_all(PE).size() == 6);
@@ -649,7 +704,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_3D", "[multimesh][2D][3D]")
 
         for (const auto& child0_e : child0.get_all(PE)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT) >
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT) >
                 1); // tet 0 and 1 is collapsed
 
             int64_t parent_old = -1;
@@ -660,7 +715,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_3D", "[multimesh][2D][3D]")
                 "child 0 edge {} maps to parent tet {} -> {} after collapse",
                 child0.id(child0_e, PE),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT));
         }
     }
 
@@ -669,13 +724,17 @@ TEST_CASE("test_collapse_multi_mesh_1D_3D", "[multimesh][2D][3D]")
         // std::map<int64_t, int64_t> child0_to_parent;
         // for (const auto& child0_e : child0.get_all(PE)) {
         //     child0_to_parent[child0.id(child0_e, PE)] =
-        //         parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT);
+        //         parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT);
         // }
 
         Tuple edge = parent.edge_tuple_from_vids(2, 7);
 
-        REQUIRE(parent.is_valid_slow(edge));
-        REQUIRE(collapse(Simplex::edge(edge)).empty());
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
+        REQUIRE(collapse(Simplex::edge(parent, edge)).empty());
 
         // CHECK(parent.get_all(PT).size() == 4);
         // CHECK(child0.get_all(PE).size() == 6);
@@ -683,7 +742,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_3D", "[multimesh][2D][3D]")
 
         // for (const auto& child0_e : child0.get_all(PE)) {
         //     CHECK(
-        //         parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT) >
+        //         parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT) >
         //         1); // tet 0 and 1 is collapsed
 
         //     int64_t parent_old = -1;
@@ -694,7 +753,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_3D", "[multimesh][2D][3D]")
         //         "child 0 edge {} maps to parent tet {} -> {} after collapse",
         //         child0.id(child0_e, PE),
         //         parent_old,
-        //         parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT));
+        //         parent.id(child0.map_to_parent_tuple(Simplex::edge(child0, child0_e)), PT));
         // }
     }
 }
@@ -715,7 +774,7 @@ TEST_CASE("test_multi_mesh_navigation_3D", "[multimesh][3D]")
     parent.register_child_mesh(child1_ptr, child1_map);
 
     auto get_single_child_tuple = [&](const auto& mesh, const auto& tuple) -> Tuple {
-        auto tups = parent.map_to_child_tuples(mesh, Simplex(PT, tuple));
+        auto tups = parent.map_to_child_tuples(mesh, Simplex(parent, PT, tuple));
         REQUIRE(tups.size() == 1);
         return tups[0];
     };
@@ -788,22 +847,26 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
         std::map<int64_t, int64_t> child_to_parent;
         for (const auto& child0_t : child0.get_all(PT)) {
             child_to_parent[child0.id(child0_t, PT)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0, child0_t)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
 
-        REQUIRE(parent.is_valid_slow(edge));
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
 
-        auto child_simplices = parent.map_to_child(child0, Simplex::edge(edge));
+        auto child_simplices = parent.map_to_child(child0, Simplex::edge(parent, edge));
 
-        REQUIRE(!split(Simplex::edge(edge)).empty());
+        REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 12);
         CHECK(child0.get_all(PT).size() == 6);
 
         for (const auto& child0_t : child0.get_all(PT)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT) >
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0, child0_t)), PT) >
                 5); // all parent tets should be new
 
             int64_t parent_old = -1;
@@ -814,7 +877,7 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
                 "child 0 tet {} maps to parent tet {} -> {} after split",
                 child0.id(child0_t, PT),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0, child0_t)), PT));
         }
     }
 
@@ -823,23 +886,27 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
         std::map<int64_t, int64_t> child_to_parent;
         for (const auto& child0_t : child0.get_all(PT)) {
             child_to_parent[child0.id(child0_t, PT)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0, child0_t)), PT);
         }
 
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
 
-        REQUIRE(parent.is_valid_slow(edge));
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
 
-        auto child_simplices = parent.map_to_child(child0, Simplex::edge(edge));
+        auto child_simplices = parent.map_to_child(child0, Simplex::edge(parent, edge));
 
-        REQUIRE(!split(Simplex::edge(edge)).empty());
+        REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 7);
         CHECK(child0.get_all(PT).size() == 4);
 
         for (const auto& child0_t : child0.get_all(PT)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT) >
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0, child0_t)), PT) >
                 0); // tet 0 is splitted
             int64_t parent_old = -1;
             if (child_to_parent.find(child0.id(child0_t, PT)) != child_to_parent.end()) {
@@ -849,7 +916,7 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
                 "child 0 tet {} maps to parent tet {} -> {} after split",
                 child0.id(child0_t, PT),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0, child0_t)), PT));
         }
     }
 
@@ -858,23 +925,27 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
         std::map<int64_t, int64_t> child_to_parent;
         for (const auto& child0_t : child0.get_all(PT)) {
             child_to_parent[child0.id(child0_t, PT)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0, child0_t)), PT);
         }
 
         Tuple edge = parent.edge_tuple_from_vids(0, 2);
 
-        REQUIRE(parent.is_valid_slow(edge));
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
 
-        auto child_simplices = parent.map_to_child(child0, Simplex::edge(edge));
+        auto child_simplices = parent.map_to_child(child0, Simplex::edge(parent, edge));
 
-        REQUIRE(!split(Simplex::edge(edge)).empty());
+        REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 8);
         CHECK(child0.get_all(PT).size() == 5);
 
         for (const auto& child0_t : child0.get_all(PT)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT) >
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0, child0_t)), PT) >
                 1); // tet 0 and 1 are splitted
             int64_t parent_old = -1;
             if (child_to_parent.find(child0.id(child0_t, PT)) != child_to_parent.end()) {
@@ -884,7 +955,7 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
                 "child 0 tet {} maps to parent tet {} -> {} after split",
                 child0.id(child0_t, PT),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0, child0_t)), PT));
         }
     }
 
@@ -892,11 +963,15 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
     {
         Tuple edge = parent.edge_tuple_from_vids(2, 6);
 
-        REQUIRE(parent.is_valid_slow(edge));
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
 
-        auto child_simplices = parent.map_to_child(child0, Simplex::edge(edge));
+        auto child_simplices = parent.map_to_child(child0, Simplex::edge(parent, edge));
 
-        REQUIRE(!split(Simplex::edge(edge)).empty());
+        REQUIRE(!split(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 8);
         CHECK(child0.get_all(PT).size() == 3);
@@ -954,15 +1029,19 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
         std::map<int64_t, int64_t> child_to_parent;
         for (const auto& child0_t : child0.get_all(PT)) {
             child_to_parent[child0.id(child0_t, PT)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0, child0_t)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
 
-        REQUIRE(parent.is_valid_slow(edge));
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
 
-        auto child_simplices = parent.map_to_child(child0, Simplex::edge(edge));
+        auto child_simplices = parent.map_to_child(child0, Simplex::edge(parent, edge));
 
-        REQUIRE(!collapse(Simplex::edge(edge)).empty());
+        REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 5);
         CHECK(child0.get_all(PT).size() == 2);
@@ -970,7 +1049,7 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
 
         for (const auto& child0_t : child0.get_all(PT)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT) >
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0, child0_t)), PT) >
                 0); // tet 0 is collapsed
 
             int64_t parent_old = -1;
@@ -981,7 +1060,7 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
                 "child 0 tet {} maps to parent tet {} -> {} after collapse",
                 child0.id(child0_t, PT),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0, child0_t)), PT));
         }
     }
 
@@ -990,15 +1069,19 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
         std::map<int64_t, int64_t> child_to_parent;
         for (const auto& child0_t : child0.get_all(PT)) {
             child_to_parent[child0.id(child0_t, PT)] =
-                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT);
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0, child0_t)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(1, 2);
 
-        REQUIRE(parent.is_valid_slow(edge));
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
 
-        auto child_simplices = parent.map_to_child(child0, Simplex::edge(edge));
+        auto child_simplices = parent.map_to_child(child0, Simplex::edge(parent, edge));
 
-        REQUIRE(!collapse(Simplex::edge(edge)).empty());
+        REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 4);
         CHECK(child0.get_all(PT).size() == 2);
@@ -1006,7 +1089,7 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
 
         for (const auto& child0_t : child0.get_all(PT)) {
             CHECK(
-                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT) !=
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0, child0_t)), PT) !=
                 3); // tet 3 is collapsed
 
             int64_t parent_old = -1;
@@ -1017,7 +1100,7 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
                 "child 0 tet {} maps to parent tet {} -> {} after collapse",
                 child0.id(child0_t, PT),
                 parent_old,
-                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT));
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0, child0_t)), PT));
         }
     }
 
@@ -1025,17 +1108,162 @@ TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
     {
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
 
-        REQUIRE(parent.is_valid_slow(edge));
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
 
-        REQUIRE(collapse(Simplex::edge(edge)).empty());
+        REQUIRE(collapse(Simplex::edge(parent, edge)).empty());
     }
 
     SECTION("collapse_child_degenerate_edge")
     {
         Tuple edge = parent.edge_tuple_from_vids(0, 4);
 
-        REQUIRE(parent.is_valid_slow(edge));
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+        REQUIRE(parent.is_valid_with_hash(edge));
+#else
+        REQUIRE(parent.is_valid(edge));
+#endif
 
-        REQUIRE(collapse(Simplex::edge(edge)).empty());
+        REQUIRE(collapse(Simplex::edge(parent, edge)).empty());
     }
 }
+
+namespace {
+
+std::pair<std::shared_ptr<Mesh>, std::vector<attribute::MeshAttributeHandle>>
+make_mesh_with_free_children()
+{
+    std::shared_ptr<TetMesh> mesh;
+    // mesh = std::make_shared<TetMesh>(six_cycle_tets());
+    mesh = std::make_shared<TetMesh>(six_cycle_tets_with_positions());
+    auto aptr = add_free_child_mesh(*mesh, PE);
+    auto bptr = add_free_child_mesh(*mesh, PF);
+    auto ah = aptr->register_attribute<double>("pos", PV, 3);
+    auto bh = bptr->register_attribute<double>("pos", PV, 3);
+    // add_free_child_mesh(*mesh, PT);
+    auto a = mesh->get_attribute_handle<int64_t>("child_tag", PE);
+    auto b = mesh->get_attribute_handle<int64_t>("child_tag", PF);
+    // auto c = mesh->get_attribute_handle<int64_t>("child_tag", PT);
+    return {mesh, {a, b, ah, bh}};
+    // return {mesh,{a,b}};
+}
+} // namespace
+TEST_CASE("test_collapse_multi_mesh_3D_free", "[multimesh][1D][2D][3D]")
+{
+    auto [mesh_ptr_, handles] = make_mesh_with_free_children();
+    auto mesh_ptr = mesh_ptr_;// just to beat clang issue with structured bindings
+
+    auto children = mesh_ptr->get_child_meshes();
+    for (const auto& child_ptr : children) {
+        REQUIRE(is_free(*child_ptr));
+        REQUIRE(child_ptr->get_child_meshes().size() == 0);
+    }
+    operations::EdgeCollapse collapse(*mesh_ptr);
+    for (const auto& h : handles) {
+        collapse.set_new_attribute_strategy(h);
+    }
+    if (mesh_ptr->has_attribute<double>("vertices", PV)) {
+        auto pos_attribute = mesh_ptr->get_attribute_handle<double>("vertices", PV);
+        collapse.set_new_attribute_strategy(
+            pos_attribute,
+            wmtk::operations::CollapseBasicStrategy::Mean);
+    }
+    collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh_ptr));
+    {
+        Tuple edge = reinterpret_cast<DEBUG_TetMesh&>(*mesh_ptr).edge_tuple_from_vids(0, 1);
+        CHECK(!collapse(Simplex::edge(*mesh_ptr, edge)).empty());
+    }
+    REQUIRE(mesh_ptr->is_connectivity_valid());
+    for (const auto& child_ptr : children) {
+        REQUIRE(is_free(*child_ptr));
+    }
+
+    {
+        Tuple edge = reinterpret_cast<DEBUG_TetMesh&>(*mesh_ptr).edge_tuple_from_vids(2, 7);
+        CHECK(!collapse(Simplex::edge(*mesh_ptr, edge)).empty());
+    }
+    REQUIRE(mesh_ptr->is_connectivity_valid());
+    for (const auto& child_ptr : children) {
+        REQUIRE(is_free(*child_ptr));
+    }
+}
+TEST_CASE("test_split_multi_mesh_3D_free", "[multimesh][1D][2D][3D]")
+{
+    auto [mesh_ptr_, handles] = make_mesh_with_free_children();
+    auto mesh_ptr = mesh_ptr_;// just to beat clang issue with structured bindings
+
+    auto children = mesh_ptr->get_child_meshes();
+    for (const auto& child_ptr : children) {
+        REQUIRE(is_free(*child_ptr));
+        REQUIRE(child_ptr->get_child_meshes().size() == 0);
+    }
+    operations::EdgeSplit split(*mesh_ptr);
+    for (const auto& h : handles) {
+        split.set_new_attribute_strategy(h);
+    }
+    const bool has_positions = mesh_ptr->has_attribute<double>("vertices", PV);
+    if (has_positions) {
+        auto pos_attribute = mesh_ptr->get_attribute_handle<double>("vertices", PV);
+        split.set_new_attribute_strategy(
+            pos_attribute,
+            wmtk::operations::SplitBasicStrategy::None,
+            wmtk::operations::SplitRibBasicStrategy::Mean);
+
+        for (const auto& child_ptr : children) {
+            auto child_pos_attribute = child_ptr->get_attribute_handle<double>("pos", PV);
+            auto update_child_position =
+                std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+                    child_pos_attribute,
+                    pos_attribute,
+                    [&](const auto& a) { return a; });
+            split.add_transfer_strategy(update_child_position);
+            update_child_position->run_on_all();
+        }
+    }
+    auto check = [&]() {
+        spdlog::info("Starting check");
+        REQUIRE(mesh_ptr->is_connectivity_valid());
+        for (const auto& child_ptr : children) {
+            REQUIRE(is_free(*child_ptr));
+            REQUIRE(child_ptr->is_connectivity_valid());
+        }
+        if (has_positions) {
+            auto pos_attribute = mesh_ptr->get_attribute_handle<double>("vertices", PV);
+            auto pos_acc = mesh_ptr->create_const_accessor<double>(pos_attribute);
+            for (const auto& child_ptr : children) {
+                auto child_pos_attribute = child_ptr->get_attribute_handle<double>("pos", PV);
+                auto child_pos_acc = child_ptr->create_const_accessor<double>(child_pos_attribute);
+
+                for (const Tuple& t : child_ptr->get_all(PrimitiveType::Vertex)) {
+                    const simplex::Simplex child_simplex(*child_ptr, PrimitiveType::Vertex, t);
+                    const simplex::Simplex parent_simplex = child_ptr->map_to_root(child_simplex);
+                    auto child_value = child_pos_acc.const_vector_attribute(child_simplex);
+                    auto parent_value = pos_acc.const_vector_attribute(parent_simplex);
+
+                    std::cout << parent_value.transpose() << " ==== " << child_value.transpose()
+                              << std::endl;
+
+                    CHECK(parent_value == child_value);
+                }
+            }
+        }
+    };
+
+    check();
+
+    {
+        Tuple edge = reinterpret_cast<DEBUG_TetMesh&>(*mesh_ptr).edge_tuple_from_vids(0, 1);
+        CHECK(!split(Simplex::edge(*mesh_ptr, edge)).empty());
+    }
+    check();
+
+    {
+        Tuple edge = reinterpret_cast<DEBUG_TetMesh&>(*mesh_ptr).edge_tuple_from_vids(2, 3);
+        CHECK(!split(Simplex::edge(*mesh_ptr, edge)).empty());
+    }
+    check();
+}
+

@@ -3,8 +3,8 @@
 #include "attribute_new/NewAttributeStrategy.hpp"
 #include "attribute_update/AttributeTransferStrategyBase.hpp"
 
-#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 
 
@@ -30,15 +30,15 @@ public:
     virtual ~Operation();
 
     // main entry point of the operator by the scheduler
-    std::vector<simplex::Simplex> operator()(const simplex::Simplex& simplex);
+    virtual std::vector<simplex::Simplex> operator()(const simplex::Simplex& simplex);
 
-    virtual std::vector<double> priority(const simplex::Simplex& simplex) const
+    virtual double priority(const simplex::Simplex& simplex) const
     {
-        return m_priority == nullptr ? std::vector<double>({0}) : m_priority(simplex);
+        return m_priority == nullptr ? 0 : m_priority(simplex);
     }
 
-    bool use_random_priority() const { return m_use_random_priority; }
-    bool& use_random_priority() { return m_use_random_priority; }
+    virtual bool use_random_priority() const { return m_use_random_priority; }
+    virtual bool& use_random_priority() { return m_use_random_priority; }
 
     virtual PrimitiveType primitive_type() const = 0;
 
@@ -47,7 +47,7 @@ public:
 
     void add_invariant(std::shared_ptr<Invariant> invariant) { m_invariants.add(invariant); }
 
-    void set_priority(const std::function<std::vector<double>(const simplex::Simplex&)>& func)
+    void set_priority(const std::function<double(const simplex::Simplex&)>& func)
     {
         m_priority = func;
     }
@@ -84,6 +84,7 @@ protected:
         const std::vector<simplex::Simplex>& unmods,
         const std::vector<simplex::Simplex>& mods) const;
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     /// @brief utility for subclasses
     /// @param tuple
     Tuple resurrect_tuple(const Tuple& tuple) const;
@@ -92,6 +93,7 @@ protected:
     attribute::Accessor<int64_t> hash_accessor();
     /// @brief utility for subclasses
     const attribute::Accessor<int64_t> hash_accessor() const;
+#endif
 
 
     void apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods);
@@ -101,9 +103,10 @@ private:
     Mesh& m_mesh;
     bool m_use_random_priority = false;
 
-    std::function<std::vector<double>(const simplex::Simplex&)> m_priority = nullptr;
 
 protected:
+    std::function<double(const simplex::Simplex&)> m_priority = nullptr;
+
     invariants::InvariantCollection m_invariants;
 
     std::vector<std::shared_ptr<operations::AttributeTransferStrategyBase>>

@@ -22,7 +22,7 @@ std::vector<simplex::Simplex> TriFaceSplit::execute(const simplex::Simplex& simp
     //   \   /
     //    \ /
 
-    const auto split_simplicies = m_split(simplex::Simplex::edge(simplex.tuple()));
+    const auto split_simplicies = m_split(simplex::Simplex::edge(mesh(), simplex.tuple()));
     if (split_simplicies.empty()) return {};
     assert(split_simplicies.size() == 1);
     const Tuple split_ret = split_simplicies.front().tuple();
@@ -47,7 +47,8 @@ std::vector<simplex::Simplex> TriFaceSplit::execute(const simplex::Simplex& simp
     //    \|/
     const Tuple second_split_input_tuple =
         mesh().switch_tuples(split_ret, {PrimitiveType::Edge, PrimitiveType::Vertex});
-    const auto second_split_simplicies = m_split(simplex::Simplex::edge(second_split_input_tuple));
+    const auto second_split_simplicies =
+        m_split(simplex::Simplex::edge(mesh(), second_split_input_tuple));
     if (second_split_simplicies.empty()) return {};
     assert(second_split_simplicies.size() == 1);
     const Tuple second_split_ret = second_split_simplicies.front().tuple();
@@ -77,7 +78,7 @@ std::vector<simplex::Simplex> TriFaceSplit::execute(const simplex::Simplex& simp
 
     const Tuple col1_input_tuple =
         mesh().switch_tuples(second_split_ret, {PrimitiveType::Vertex, PrimitiveType::Edge});
-    const auto collapse_simplicies = m_collapse(simplex::Simplex::edge(col1_input_tuple));
+    const auto collapse_simplicies = m_collapse(simplex::Simplex::edge(mesh(), col1_input_tuple));
     if (collapse_simplicies.empty()) return {};
     assert(collapse_simplicies.size() == 1);
     const Tuple col1_ret = collapse_simplicies.front().tuple();
@@ -97,7 +98,7 @@ std::vector<simplex::Simplex> TriFaceSplit::execute(const simplex::Simplex& simp
     const Tuple output_tuple =
         mesh().switch_tuples(col1_ret, {PrimitiveType::Vertex, PrimitiveType::Edge});
 
-    return {simplex::Simplex::vertex(output_tuple)};
+    return {simplex::Simplex::vertex(mesh(), output_tuple)};
 }
 
 std::vector<simplex::Simplex> TriFaceSplit::unmodified_primitives(

@@ -3,6 +3,7 @@
 #include <map>
 #include <wmtk/Types.hpp>
 #include <wmtk/io/MeshWriter.hpp>
+#include <wmtk/utils/Rational.hpp>
 
 namespace wmtk::utils {
 class EigenMatrixWriter : public MeshWriter
@@ -12,6 +13,7 @@ public:
     ~EigenMatrixWriter() = default;
 
     void get_position_matrix(MatrixX<double>& matrix);
+    void get_position_matrix(MatrixX<Rational>& matrix);
     void get_TV_matrix(MatrixX<int64_t>& matrix);
     void get_FV_matrix(MatrixX<int64_t>& matrix);
     void get_EV_matrix(MatrixX<int64_t>& matrix);

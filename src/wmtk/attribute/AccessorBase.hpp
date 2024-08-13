@@ -47,6 +47,7 @@ public:
     // returns the size of the underlying attribute
     int64_t reserved_size() const;
     int64_t dimension() const;
+    const T& default_value() const;
 
 
     void set_attribute(std::vector<T> value);

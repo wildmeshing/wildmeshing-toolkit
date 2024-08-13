@@ -56,48 +56,52 @@ void SimplexCollection::add(const PrimitiveType ptype, const std::vector<Tuple>&
     m_simplices.reserve(m_simplices.size() + tuple_vec.size());
 
     for (const Tuple& t : tuple_vec) {
-        m_simplices.emplace_back(Simplex(ptype, t));
+        m_simplices.emplace_back(Simplex(mesh(), ptype, t));
     }
 }
 
 void SimplexCollection::add(const PrimitiveType ptype, const Tuple& tuple)
 {
-    m_simplices.emplace_back(Simplex(ptype, tuple));
+    m_simplices.emplace_back(Simplex(mesh(), ptype, tuple));
 }
 
 void SimplexCollection::sort_and_clean()
 {
-    using SimplexIdPair = std::pair<int64_t, Simplex>;
+    // using SimplexIdPair = std::pair<int64_t, Simplex>;
+    //
+    // std::vector<SimplexIdPair> tmp;
+    // tmp.reserve(m_simplices.size());
+    //
+    // std::transform(
+    //     m_simplices.begin(),
+    //     m_simplices.end(),
+    //     std::back_inserter(tmp),
+    //     [&](const Simplex& s) { return std::make_pair(m_mesh.id(s), s); });
+    //
+    // auto cmp = [](const SimplexIdPair& a, const SimplexIdPair& b) {
+    //     if (a.second.primitive_type() == b.second.primitive_type()) {
+    //         return a.first < b.first;
+    //     } else {
+    //         return a.second.primitive_type() < b.second.primitive_type();
+    //     }
+    // };
+    // auto equal = [](const SimplexIdPair& a, const SimplexIdPair& b) {
+    //     return a.first == b.first && a.second.primitive_type() == b.second.primitive_type();
+    // };
+    // std::sort(tmp.begin(), tmp.end(), cmp);
+    // const auto last = std::unique(tmp.begin(), tmp.end(), equal);
+    // tmp.erase(last, tmp.end());
+    //
+    // m_simplices.clear();
+    // std::transform(
+    //     tmp.begin(),
+    //     tmp.end(),
+    //     std::back_inserter(m_simplices),
+    //     [&](const SimplexIdPair& p) { return p.second; });
 
-    std::vector<SimplexIdPair> tmp;
-    tmp.reserve(m_simplices.size());
-
-    std::transform(
-        m_simplices.begin(),
-        m_simplices.end(),
-        std::back_inserter(tmp),
-        [&](const Simplex& s) { return std::make_pair(m_mesh.id(s), s); });
-
-    auto cmp = [](const SimplexIdPair& a, const SimplexIdPair& b) {
-        if (a.second.primitive_type() == b.second.primitive_type()) {
-            return a.first < b.first;
-        } else {
-            return a.second.primitive_type() < b.second.primitive_type();
-        }
-    };
-    auto equal = [](const SimplexIdPair& a, const SimplexIdPair& b) {
-        return a.first == b.first && a.second.primitive_type() == b.second.primitive_type();
-    };
-    std::sort(tmp.begin(), tmp.end(), cmp);
-    const auto last = std::unique(tmp.begin(), tmp.end(), equal);
-    tmp.erase(last, tmp.end());
-
-    m_simplices.clear();
-    std::transform(
-        tmp.begin(),
-        tmp.end(),
-        std::back_inserter(m_simplices),
-        [&](const SimplexIdPair& p) { return p.second; });
+    std::sort(m_simplices.begin(), m_simplices.end());
+    const auto last = std::unique(m_simplices.begin(), m_simplices.end());
+    m_simplices.erase(last, m_simplices.end());
 }
 
 void SimplexCollection::sort()

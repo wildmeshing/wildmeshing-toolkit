@@ -28,7 +28,7 @@ CollapseReturnData multi_mesh_edge_collapse(
     multimesh::MultiMeshSimplexVisitor visitor(
         std::integral_constant<int64_t, 1>{}, // specify that this runs over edges
         MultiMeshEdgeCollapseFunctor{});
-    visitor.execute_from_root(mesh, simplex::Simplex(PrimitiveType::Edge, t));
+    visitor.execute_from_root(mesh, simplex::Simplex(mesh, PrimitiveType::Edge, t));
 
     multimesh::MultiMeshSimplexEventVisitor event_visitor(visitor);
     event_visitor.run_on_nodes(UpdateEdgeOperationMultiMeshMapFunctor{});
@@ -58,9 +58,13 @@ std::vector<simplex::Simplex> multi_mesh_edge_collapse_with_modified_simplices(
     auto return_data =
         operations::utils::multi_mesh_edge_collapse(mesh, simplex.tuple(), new_attr_strategies);
 
+    if (mesh.is_free()) {
+        return std::vector<simplex::Simplex>{1};
+    }
+
     return std::visit(
-        [](const auto& rt) -> std::vector<simplex::Simplex> {
-            return {simplex::Simplex::vertex(rt.m_output_tuple)};
+        [&mesh](const auto& rt) -> std::vector<simplex::Simplex> {
+            return {simplex::Simplex::vertex(mesh, rt.m_output_tuple)};
         },
         return_data.get_variant(mesh, simplex));
 }

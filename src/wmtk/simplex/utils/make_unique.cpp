@@ -20,7 +20,7 @@ make_unique_tuples(const Mesh& m, const std::vector<Tuple>& ts, PrimitiveType pr
     std::vector<Simplex> simps;
     simps.reserve(ts.size());
     std::transform(ts.begin(), ts.end(), std::back_inserter(simps), [&](const Tuple& t) {
-        return Simplex(primitive, t);
+        return Simplex(m, primitive, t);
     });
 
     simps = make_unique(m, simps);

@@ -9,11 +9,14 @@
 #include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 
+// debug function that reads into this structure
+#include "utils/check_map_valid.hpp"
+
 
 namespace wmtk {
 
-    class Mesh;
-    class HDF5Reader;
+class Mesh;
+class HDF5Reader;
 namespace operations::utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
@@ -35,10 +38,10 @@ class MultiMeshVisitorExecutor;
 } // namespace multimesh
 class Mesh;
 namespace simplex {
-    class Simplex;
+class Simplex;
 class SimplexCollection;
-}
-}
+} // namespace simplex
+} // namespace wmtk
 namespace wmtk::multimesh {
 /**
  * @brief Implementation details for how the Mesh class implements multiple meshes
@@ -59,15 +62,21 @@ public:
     template <typename Visitor>
     friend class multimesh::MultiMeshSimplexVisitorExecutor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
+
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
         const simplex::SimplexCollection& vertex_closed_star,
         wmtk::attribute::Accessor<int64_t>& parent_hash_accessor);
+#endif
     template <typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class wmtk::HDF5Reader;
+
+    friend bool utils::check_child_maps_valid(const Mesh& m);
+    friend bool utils::check_parent_map_valid(const Mesh& m);
 
 
     // @param the max dimension of the mesh we will get passed
@@ -81,6 +90,9 @@ public:
     // attribute directly hashes its "children" components so it overrides "child_hashes"
     std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
     std::map<std::string, std::size_t> child_hashes() const override;
+    
+
+    void detach_children();
 
     //=========================================================
     // Storage of MultiMesh
@@ -131,6 +143,23 @@ public:
         Mesh& my_mesh,
         const std::shared_ptr<Mesh>& child_mesh,
         const std::vector<std::array<Tuple, 2>>& child_tuple_my_tuple_map);
+
+    /**
+     * @brief Deregister a child mesh.
+     *
+     * The child mesh is not deleted. It is only detached from the multi-mesh structure. The child
+     * mesh becomes the new root for its own children. Attribute handles for the child and parent
+     * mesh will be invalidated by deregistration.
+     */
+    void deregister_child_mesh(Mesh& my_mesh, const std::shared_ptr<Mesh>& child_mesh_ptr);
+
+    /**
+     * @brief Clean up child data after deleting attributes.
+     *
+     * When attributes are deleted, all attribute handles are invalidated. This method goes through
+     * all child data and updates the handles.
+     */
+    void update_child_handles(Mesh& my_mesh);
 
 
     // bool are_maps_valid(const Mesh& my_mesh) const;
@@ -519,6 +548,7 @@ public:
      * @param vertex operating vertex tuple
      * @param hash_accessor hash accessor of m
      */
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     static void update_vertex_operation_hashes_internal(
         Mesh& m,
         const Tuple& vertex,
@@ -527,6 +557,7 @@ public:
         Mesh& m,
         const simplex::SimplexCollection& vertex_closed_star,
         wmtk::attribute::Accessor<int64_t>& parent_hash_accessor);
+#endif
 
 public:
     // remove after bug fix
@@ -534,4 +565,4 @@ public:
 
     void check_child_map_valid(const Mesh& my_mesh, const ChildData& child_data) const;
 };
-} // namespace wmtk
+} // namespace wmtk::multimesh

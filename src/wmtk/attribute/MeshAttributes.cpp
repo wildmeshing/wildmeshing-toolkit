@@ -21,8 +21,11 @@ void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer) const
 {
     for (const auto& p : m_handles) {
         const auto& handle = p.second;
-        const auto& attr = *m_attributes[handle.index];
-        attr.serialize(p.first, dim, writer);
+        const auto& attr_ptr = attribute(handle);
+        if (is_active(handle)) {
+            const auto& attr = *m_attributes[handle.index];
+            attr.serialize(p.first, dim, writer);
+        }
     }
 }
 
@@ -54,30 +57,38 @@ template <typename T>
 void MeshAttributes<T>::push_scope()
 {
     for (auto& attr_ptr : m_attributes) {
-        attr_ptr->push_scope();
+        if (bool(attr_ptr)) {
+            attr_ptr->push_scope();
+        }
     }
 }
 template <typename T>
 void MeshAttributes<T>::pop_scope(bool apply_updates)
 {
     for (auto& attr_ptr : m_attributes) {
-        attr_ptr->pop_scope(apply_updates);
+        if (bool(attr_ptr)) {
+            attr_ptr->pop_scope(apply_updates);
+        }
     }
 }
 template <typename T>
 void MeshAttributes<T>::rollback_current_scope()
 {
     for (auto& attr_ptr : m_attributes) {
-        attr_ptr->rollback_current_scope();
+        if (bool(attr_ptr)) {
+            attr_ptr->rollback_current_scope();
+        }
     }
 }
 template <typename T>
 void MeshAttributes<T>::change_to_parent_scope() const
 {
     for (const auto& attr_ptr : m_attributes) {
-        auto& stack = attr_ptr->get_local_scope_stack();
+        if (bool(attr_ptr)) {
+            auto& stack = attr_ptr->get_local_scope_stack();
 
-        stack.change_to_next_scope();
+            stack.change_to_next_scope();
+        }
     }
 }
 
@@ -85,7 +96,9 @@ template <typename T>
 void MeshAttributes<T>::change_to_child_scope() const
 {
     for (const auto& attr_ptr : m_attributes) {
-        attr_ptr->get_local_scope_stack().change_to_previous_scope();
+        if (bool(attr_ptr)) {
+            attr_ptr->get_local_scope_stack().change_to_previous_scope();
+        }
     }
 }
 
@@ -124,7 +137,9 @@ template <typename T>
 void MeshAttributes<T>::assert_capacity_valid(int64_t cap) const
 {
     for (const auto& a : m_attributes) {
-        assert(a->reserved_size() >= cap);
+        if (bool(a)) {
+            assert(a->reserved_size() >= cap);
+        }
     }
 }
 template <typename T>
@@ -135,7 +150,8 @@ AttributeHandle MeshAttributes<T>::attribute_handle(const std::string& name) con
 template <typename T>
 bool MeshAttributes<T>::has_attribute(const std::string& name) const
 {
-    return m_handles.find(name) != m_handles.end();
+    auto it = m_handles.find(name);
+    return it != m_handles.end() && bool(m_attributes[it->second.index]);
 }
 
 template <typename T>
@@ -148,7 +164,11 @@ bool MeshAttributes<T>::operator==(const MeshAttributes<T>& other) const
         return false;
     }
     for (size_t j = 0; j < m_attributes.size(); ++j) {
-        if (!(*m_attributes[j] == *other.m_attributes[j])) {
+        const bool exists = bool(m_attributes[j]);
+        const bool o_exists = bool(other.m_attributes[j]);
+        if (exists != o_exists) {
+            return false;
+        } else if (exists && o_exists && !(*m_attributes[j] == *other.m_attributes[j])) {
             return false;
         }
     }
@@ -160,14 +180,18 @@ template <typename T>
 void MeshAttributes<T>::set(const AttributeHandle& handle, std::vector<T> val)
 {
     // TODO: should we validate the size of val compared to the internally held data?
-    auto& attr = *m_attributes[handle.index];
+    auto& attr_ptr = m_attributes[handle.index];
+    assert(bool(attr_ptr));
+    auto& attr = *attr_ptr;
     attr.set(std::move(val));
 }
 
 template <typename T>
 size_t MeshAttributes<T>::attribute_size(const AttributeHandle& handle) const
 {
-    return m_attributes[handle.index]->reserved_size();
+    auto& attr_ptr = m_attributes[handle.index];
+    assert(bool(attr_ptr));
+    return attr_ptr->reserved_size();
 }
 
 template <typename T>
@@ -179,7 +203,27 @@ int64_t MeshAttributes<T>::reserved_size() const
 template <typename T>
 size_t MeshAttributes<T>::attribute_count() const
 {
-    return m_attributes.size();
+    return active_attributes().size();
+}
+template <typename T>
+auto MeshAttributes<T>::active_attributes() const -> std::vector<AttributeHandle>
+{
+    std::vector<AttributeHandle> handles;
+    handles.reserve(m_attributes.size());
+    for (size_t j = 0; j < m_attributes.size(); ++j) {
+        if (bool(m_attributes[j])) {
+            handles.emplace_back(j);
+        }
+    }
+
+    return handles;
+}
+template <typename T>
+bool MeshAttributes<T>::is_active(const AttributeHandle& h) const
+{
+    const size_t index = h.index;
+    assert(index < m_attributes.size());
+    return bool(m_attributes[index]);
 }
 
 template <typename T>
@@ -187,7 +231,9 @@ void MeshAttributes<T>::reserve(const int64_t size)
 {
     m_reserved_size = size;
     for (auto& attr_ptr : m_attributes) {
-        attr_ptr->reserve(size);
+        if (bool(attr_ptr)) {
+            attr_ptr->reserve(size);
+        }
     }
 }
 
@@ -201,53 +247,72 @@ template <typename T>
 void MeshAttributes<T>::guarantee_at_least(const int64_t size)
 {
     if (size > m_reserved_size) {
-        logger().warn("Pre-reserve enough simplices before your operation.");
+        // logger().warn("Pre-reserve enough simplices before your operation.");
         reserve(size);
     }
 }
 
 template <typename T>
-void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& attributes)
+void MeshAttributes<T>::remove_attributes(
+    const std::vector<AttributeHandle>& attributes,
+    bool invalidate_handles)
 {
+    if (attributes.empty()) {
+        return;
+    }
     std::vector<int64_t> remove_indices;
-    remove_indices.reserve(attributes.size());
-    for (const AttributeHandle& h : attributes) {
-        remove_indices.emplace_back(h.index);
-    }
+    std::transform(
+        attributes.begin(),
+        attributes.end(),
+        std::back_inserter(remove_indices),
+        [](const AttributeHandle& h) { return h.index; });
     std::sort(remove_indices.begin(), remove_indices.end());
+    remove_indices.erase(
+        std::unique(remove_indices.begin(), remove_indices.end()),
+        remove_indices.end());
 
-    std::vector<bool> keep_mask(m_attributes.size(), true);
+
     for (const int64_t& i : remove_indices) {
-        keep_mask[i] = false;
+        m_attributes[i].reset();
     }
 
-    std::vector<std::unique_ptr<Attribute<T>>> remaining_attributes;
-    remaining_attributes.reserve(attributes.size());
 
-    std::vector<int64_t> old_to_new_id(m_attributes.size(), -1);
-    for (size_t i = 0, id = 0; i < keep_mask.size(); ++i) {
-        if (keep_mask[i]) {
-            old_to_new_id[i] = id++;
-            remaining_attributes.emplace_back(std::move(m_attributes[i]));
-            // remaining_attributes.emplace_back(std::move(m_attributes[i]));
-            assert(remaining_attributes.size() == id);
-        }
+    if (invalidate_handles) {
+        clear_dead_attributes();
     }
-
-    // clean up m_handles
-    for (auto it = m_handles.begin(); it != m_handles.end(); /* no increment */) {
-        if (!keep_mask[it->second.index]) {
-            it = m_handles.erase(it);
-        } else {
-            it->second.index = old_to_new_id[it->second.index];
-            ++it;
-        }
-    }
-
-    m_attributes = std::move(remaining_attributes);
 }
 
 
+template <typename T>
+void MeshAttributes<T>::remove_attribute(const AttributeHandle& attribute)
+{
+    m_attributes[attribute.index].reset();
+}
+
+template <typename T>
+void MeshAttributes<T>::clear_dead_attributes()
+{
+    size_t old_index = 0;
+    size_t new_index = 0;
+    std::vector<int64_t> old_to_new_id(m_attributes.size(), -1);
+    for (old_index = 0; old_index < m_attributes.size(); ++old_index) {
+        if (bool(m_attributes[old_index])) {
+            old_to_new_id[old_index] = new_index;
+            m_attributes[new_index++] = std::move(m_attributes[old_index]);
+        }
+    }
+    m_attributes.resize(new_index);
+
+    // clean up m_handles
+    for (auto it = m_handles.begin(); it != m_handles.end(); /* no increment */) {
+        if (int64_t new_ind = old_to_new_id[it->second.index]; new_ind == -1) {
+            it = m_handles.erase(it);
+        } else {
+            it->second.index = new_ind;
+            ++it;
+        }
+    }
+}
 template <typename T>
 std::string MeshAttributes<T>::get_name(const AttributeHandle& handle) const
 {
@@ -258,6 +323,26 @@ std::string MeshAttributes<T>::get_name(const AttributeHandle& handle) const
     }
     throw std::runtime_error("Could not find handle in MeshAttributes");
     return "UNKNOWN";
+}
+
+template <typename T>
+void MeshAttributes<T>::set_name(const AttributeHandle& handle, const std::string& name)
+{
+    const std::string old_name = get_name(handle);
+
+    if (old_name == name) {
+        return;
+    }
+
+    auto& attr = m_attributes[handle.index];
+    assert(bool(attr));
+    assert(attr->m_name == old_name);
+
+    assert(m_handles.count(name) == 0); // name should not exist already
+
+    attr->m_name = name;
+    m_handles[name] = m_handles[old_name];
+    m_handles.erase(old_name);
 }
 
 template class MeshAttributes<char>;

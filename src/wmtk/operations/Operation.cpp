@@ -63,11 +63,18 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
         return {};
     }
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+    const auto simplex_resurrect =
+        simplex::Simplex(mesh(), simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
+#else
+    const auto simplex_resurrect = simplex;
+#endif
+
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
 
-    auto unmods = unmodified_primitives(simplex);
-    auto mods = execute(simplex);
+    auto unmods = unmodified_primitives(simplex_resurrect);
+    auto mods = execute(simplex_resurrect);
     if (!mods.empty()) { // success should be marked here
         apply_attribute_transfer(mods);
         if (after(unmods, mods)) {
@@ -80,21 +87,41 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
 bool Operation::before(const simplex::Simplex& simplex) const
 {
-    const attribute::Accessor<int64_t> accessor = hash_accessor();
+    // const attribute::Accessor<int64_t> accessor = hash_accessor();
 
-    if (!mesh().is_valid(simplex.tuple(), accessor)) {
+    // if (!mesh().is_valid(
+    //         simplex.tuple(),
+    //         accessor)) { // TODO: chang to is_removed and resurrect later
+    //     return false;
+    // }
+
+    if (mesh().is_removed(simplex.tuple()) || !mesh().is_valid(simplex)) {
         return false;
     }
+
+#if defined(WMTK_ENABLE_HASH_UPDATE)
+    const auto simplex_resurrect =
+        simplex::Simplex(mesh(), simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
+#else
+    const auto simplex_resurrect = simplex;
+#endif
 
     // map simplex to the invariant mesh
     const Mesh& invariant_mesh = m_invariants.mesh();
 
-    // TODO check if this is correct
-    const std::vector<simplex::Simplex> invariant_simplices = m_mesh.map(invariant_mesh, simplex);
-
-    for (const simplex::Simplex& s : invariant_simplices) {
-        if (!m_invariants.before(s)) {
+    if (&invariant_mesh == &mesh()) {
+        if (!m_invariants.before(simplex_resurrect)) {
             return false;
+        }
+    } else {
+        // TODO check if this is correct
+        const std::vector<simplex::Simplex> invariant_simplices =
+            m_mesh.map(invariant_mesh, simplex_resurrect);
+
+        for (const simplex::Simplex& s : invariant_simplices) {
+            if (!m_invariants.before(s)) {
+                return false;
+            }
         }
     }
 
@@ -112,7 +139,9 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
 {
     simplex::SimplexCollection all(m_mesh);
     for (const auto& s : direct_mods) {
-        all.add(simplex::closed_star(m_mesh, s, false));
+        if (!s.tuple().is_null()) {
+            all.add(simplex::closed_star(m_mesh, s, false));
+        }
     }
     all.sort_and_clean();
     for (const auto& at_ptr : m_attr_transfer_strategies) {
@@ -142,6 +171,7 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
     }
 }
 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
 Tuple Operation::resurrect_tuple(const Tuple& tuple) const
 {
     return mesh().resurrect_tuple(tuple, hash_accessor());
@@ -156,6 +186,7 @@ const attribute::Accessor<int64_t> Operation::hash_accessor() const
 {
     return m_mesh.get_const_cell_hash_accessor();
 }
+#endif
 
 
 void Operation::reserve_enough_simplices()

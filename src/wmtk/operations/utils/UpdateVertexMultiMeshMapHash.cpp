@@ -9,11 +9,15 @@
 #include <wmtk/simplex/closed_star.hpp>
 
 namespace wmtk::operations::utils {
-void update_vertex_operation_hashes(Mesh& m, const Tuple& vertex, attribute::Accessor<int64_t>& hash_accessor)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+void update_vertex_operation_hashes(
+    Mesh& m,
+    const Tuple& vertex,
+    attribute::Accessor<int64_t>& hash_accessor)
 {
     const PrimitiveType pt = m.top_simplex_type();
     const simplex::SimplexCollection star =
-        simplex::closed_star(m, simplex::Simplex::vertex(vertex));
+        simplex::closed_star(m, simplex::Simplex::vertex(m, vertex));
     std::vector<Tuple> tuples_to_update;
     switch (pt) {
     case PrimitiveType::Vertex: {
@@ -57,7 +61,7 @@ void update_vertex_operation_hashes(Mesh& m, const Tuple& vertex, attribute::Acc
     // need to get a star with new hash, otherwise cannot get_simplices()
     auto vertex_new_hash = m.resurrect_tuple(vertex, hash_accessor);
     const simplex::SimplexCollection star_new_hash =
-        simplex::closed_star(m, simplex::Simplex::vertex(vertex_new_hash));
+        simplex::closed_star(m, simplex::Simplex::vertex(m, vertex_new_hash));
     update_vertex_operation_multimesh_map_hash(m, star_new_hash, hash_accessor);
 }
 
@@ -95,4 +99,5 @@ void update_vertex_operation_multimesh_map_hash(
     }
 }
 
+#endif
 } // namespace wmtk::operations::utils

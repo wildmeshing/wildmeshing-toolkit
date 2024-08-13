@@ -33,10 +33,10 @@ TEST_CASE("energy_valence")
     EdgeValenceEnergy valence_energy(tri_mesh, handle);
 
 
-    REQUIRE(valence_energy.get_value(Simplex(PrimitiveType::Edge, e1)) == 2);
-    REQUIRE(valence_energy.get_value(Simplex(PrimitiveType::Edge, e2)) == 2);
-    REQUIRE(valence_energy.get_value(Simplex(PrimitiveType::Edge, e3)) == 2);
-    REQUIRE(valence_energy.get_value(Simplex(PrimitiveType::Edge, e4)) == 2);
+    REQUIRE(valence_energy.get_value(Simplex(tri_mesh, PrimitiveType::Edge, e1)) == 2);
+    REQUIRE(valence_energy.get_value(Simplex(tri_mesh, PrimitiveType::Edge, e2)) == 2);
+    REQUIRE(valence_energy.get_value(Simplex(tri_mesh, PrimitiveType::Edge, e3)) == 2);
+    REQUIRE(valence_energy.get_value(Simplex(tri_mesh, PrimitiveType::Edge, e4)) == 2);
 }
 
 TEST_CASE("amips2d_values")
@@ -52,7 +52,7 @@ TEST_CASE("amips2d_values")
 
         TriangleAMIPS amips2d(tri_mesh, uv_handle);
 
-        CHECK(abs(amips2d.get_value(Simplex(PrimitiveType::Triangle, e1)) - 2.0) < 1e-6);
+        CHECK(abs(amips2d.get_value(Simplex(tri_mesh, PrimitiveType::Triangle, e1)) - 2.0) < 1e-6);
     }
     SECTION("random_triangle")
     {
@@ -65,7 +65,7 @@ TEST_CASE("amips2d_values")
             const TriMesh& tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
             TriangleAMIPS amips2d(tri_mesh, uv_handle);
-            CHECK(amips2d.get_value(Simplex(PrimitiveType::Triangle, e1)) >= 2.);
+            CHECK(amips2d.get_value(Simplex(tri_mesh, PrimitiveType::Triangle, e1)) >= 2.);
         }
     }
 }

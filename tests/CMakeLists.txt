@@ -8,6 +8,10 @@ include(wmtk_data)
 set(TEST_TOOLS
 tools/all_valid_local_tuples.hpp
 tools/all_valid_local_tuples.cpp
+tools/is_free.hpp
+tools/is_free.cpp
+tools/add_free_child_mesh.hpp
+tools/add_free_child_mesh.cpp
 tools/DEBUG_PointMesh.hpp
 tools/DEBUG_EdgeMesh.hpp
 tools/DEBUG_EdgeMesh.cpp
@@ -29,6 +33,7 @@ tools/DEBUG_MultiMeshManager.hpp
 tools/DEBUG_MultiMeshManager.cpp
 tools/DEBUG_Tuple.hpp
 tools/DEBUG_Tuple.cpp
+
 )
 add_library(wmtk_test_tools ${TEST_TOOLS})
 target_include_directories(wmtk_test_tools PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -71,6 +76,7 @@ add_executable(wmtk_tests ${TEST_SOURCES})
 target_link_libraries(wmtk_tests PUBLIC wmtk_test_tools
     Catch2::Catch2WithMain
     wmtk::toolkit
+    igl::core
     )
 
 FetchContent_GetProperties(catch2)

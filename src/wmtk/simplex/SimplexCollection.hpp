@@ -15,7 +15,9 @@ public:
         , m_simplices(std::move(simplices))
         , m_simplex_is_less(mesh)
         , m_simplex_is_equal(mesh)
-    {}
+    {
+        m_simplices.reserve(100);
+    }
 
     /**
      * @brief Return const reference to the simplex vector.

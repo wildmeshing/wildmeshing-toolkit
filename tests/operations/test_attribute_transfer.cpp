@@ -3,6 +3,8 @@
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
+#include <wmtk/operations/attribute_update/CastAttributeTransferStrategy.hpp>
+#include <wmtk/utils/cast_attribute.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 using namespace wmtk;
@@ -48,7 +50,7 @@ TEST_CASE("split_edge_attr_update", "[operations][split][2D]")
 
     auto check_lengths = [&]() {
         for (const Tuple& e : m.get_all(PrimitiveType::Edge)) {
-            // el_strategy->update(simplex::Simplex::edge(e));
+            // el_strategy->update(simplex::Simplex::edge(m,e));
 
 
             const Tuple v0 = e;
@@ -77,28 +79,28 @@ TEST_CASE("split_edge_attr_update", "[operations][split][2D]")
                                       // in the update strategy
     op.set_new_attribute_strategy(pos_handle);
     const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-    bool success = !op(Simplex::edge(edge)).empty();
+    bool success = !op(Simplex::edge(m, edge)).empty();
     CHECK(success);
     check_lengths();
 
     const Tuple edge2 = m.edge_tuple_between_v1_v2(3, 0, 0);
-    success = !op(Simplex::edge(edge2)).empty();
+    success = !op(Simplex::edge(m, edge2)).empty();
     CHECK(success);
     check_lengths();
 
     const Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
-    success = !op(Simplex::edge(edge3)).empty();
+    success = !op(Simplex::edge(m, edge3)).empty();
     CHECK(success);
     REQUIRE(m.is_connectivity_valid());
     check_lengths();
 
     const Tuple edge4 = m.edge_tuple_between_v1_v2(4, 9, 8);
-    success = !op(Simplex::edge(edge4)).empty();
+    success = !op(Simplex::edge(m, edge4)).empty();
     CHECK(success);
     check_lengths();
 
     const Tuple edge5 = m.edge_tuple_between_v1_v2(5, 6, 4);
-    success = !op(Simplex::edge(edge5)).empty();
+    success = !op(Simplex::edge(m, edge5)).empty();
     CHECK(success);
     check_lengths();
 }
@@ -138,7 +140,7 @@ TEST_CASE("collapse_edge_new_attr", "[operations][collapse][2D]")
         // initialize
         auto edges = m.get_all(PrimitiveType::Edge);
         for (const auto& e : edges) {
-            el_strategy->run(simplex::Simplex::edge(e));
+            el_strategy->run(simplex::Simplex::edge(m, e));
         }
     }
 
@@ -182,7 +184,7 @@ TEST_CASE("collapse_edge_new_attr", "[operations][collapse][2D]")
         edge = m.edge_tuple_between_v1_v2(0, 1, 1);
     }
 
-    const bool success = !op(Simplex::edge(edge)).empty();
+    const bool success = !op(Simplex::edge(m, edge)).empty();
     CHECK(success);
     check_lengths();
 }
@@ -207,10 +209,10 @@ TEST_CASE("attribute_strategy_missing", "[operations][split]")
     const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
 
     // attributes without update strategy cause an exception in the operation
-    CHECK_THROWS(op(Simplex::edge(edge)));
+    CHECK_THROWS(op(Simplex::edge(m, edge)));
 
     op.set_new_attribute_strategy(pos_handle);
-    CHECK_NOTHROW(op(Simplex::edge(edge)));
+    CHECK_NOTHROW(op(Simplex::edge(m, edge)));
 }
 TEST_CASE("attribute_update_multimesh", "[attribute_updates][multimesh]")
 {
@@ -343,3 +345,61 @@ TEST_CASE("attribute_update_multimesh", "[attribute_updates][multimesh]")
     }
 }
 
+TEST_CASE("attr_cast", "[operations][attributes]")
+{
+    using namespace operations;
+    //    0---1---2
+    //   / \ / \ / \ .
+    //  3---4---5---6
+    //   \ / \ /
+    //    7---8
+    TriMesh mold = hex_plus_two_with_position(); // 0xa <- 0xa
+    DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(mold);
+
+
+    auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto pos_rational_handle = m.register_attribute<wmtk::Rational>(
+        "vertices_rational",
+        PrimitiveType::Vertex,
+        m.get_attribute_dimension(pos_handle.as<double>()));
+
+    auto pos_handle2 = m.register_attribute<double>(
+        "vertices2",
+        PrimitiveType::Vertex,
+        m.get_attribute_dimension(pos_handle.as<double>()));
+
+
+    wmtk::operations::attribute_update::CastAttributeTransferStrategy<wmtk::Rational, double> caster(
+        pos_rational_handle,
+        pos_handle);
+    wmtk::operations::attribute_update::CastAttributeTransferStrategy<double, double> caster2(
+        pos_handle2,
+        pos_handle);
+
+    caster.run_on_all();
+    caster2.run_on_all();
+
+    auto rational_handle2 =
+        wmtk::utils::cast_attribute<wmtk::Rational>(pos_handle, m, "vertices_rational2");
+
+    REQUIRE(m.has_attribute<wmtk::Rational>("vertices_rational2", wmtk::PrimitiveType::Vertex));
+
+    auto aa = m.create_const_accessor<double>(pos_handle);
+    auto ba = m.create_const_accessor<wmtk::Rational>(pos_rational_handle);
+    auto ca = m.create_const_accessor<double>(pos_handle2);
+    auto da = m.create_const_accessor<wmtk::Rational>(rational_handle2);
+    for (const auto& vtup : m.get_all(wmtk::PrimitiveType::Vertex)) {
+        auto a = aa.vector_attribute(vtup);
+        auto b = ba.vector_attribute(vtup);
+        auto c = ca.vector_attribute(vtup);
+        auto d = da.vector_attribute(vtup);
+
+        CHECK(a == c);
+        CHECK(a == b.cast<double>());
+        CHECK(b.array().unaryExpr([](const auto& b) -> bool { return b.is_rounded(); }).all());
+        REQUIRE(b.size() == d.size());
+        for (int j = 0; j < b.size(); ++j) {
+            CHECK(b(j) == d(j));
+        }
+    }
+}

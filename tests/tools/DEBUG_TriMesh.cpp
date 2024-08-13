@@ -70,7 +70,11 @@ auto DEBUG_TriMesh::edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2,
             local_vid2 = i;
         }
     }
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
     return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid, get_cell_hash_slow(fid));
+#else
+    return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid);
+#endif
 }
 
 auto DEBUG_TriMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple
@@ -90,12 +94,20 @@ auto DEBUG_TriMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) con
             }
         }
         if (local_vid1 != -1 && local_vid2 != -1) {
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
             return Tuple(
                 local_vid1,
                 (3 - local_vid1 - local_vid2) % 3,
                 -1,
                 fid,
                 get_cell_hash_slow(fid));
+#else
+            return Tuple(
+                local_vid1,
+                (3 - local_vid1 - local_vid2) % 3,
+                -1,
+                fid);
+#endif
         }
     }
     return Tuple();
@@ -106,8 +118,7 @@ auto DEBUG_TriMesh::face_tuple_from_vids(const int64_t v1, const int64_t v2, con
 {
     const attribute::Accessor<int64_t> fv = create_const_accessor<int64_t>(m_fv_handle);
     auto fv_base = create_base_accessor<int64_t>(m_fv_handle);
-    for (int64_t fid = 0; fid < capacity(PrimitiveType::Triangle); ++fid) {
-        Tuple face = face_tuple_from_id(fid);
+    for (const Tuple face : get_all(PrimitiveType::Triangle)) {
         auto fv0 = fv.const_vector_attribute(face);
         bool find_v1 = false, find_v2 = false, find_v3 = false;
         for (int64_t i = 0; i < fv0.size(); ++i) {
@@ -161,6 +172,7 @@ void DEBUG_TriMesh::reserve_attributes(PrimitiveType type, int64_t size)
 }
 
 
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
 attribute::Accessor<int64_t> DEBUG_TriMesh::get_cell_hash_accessor()
 {
     return TriMesh::get_cell_hash_accessor();
@@ -173,4 +185,11 @@ auto DEBUG_TriMesh::get_tmoe(const Tuple& t, wmtk::attribute::Accessor<int64_t>&
 {
     return TriMeshOperationExecutor(*this, t, hash_accessor);
 }
+#else
+auto DEBUG_TriMesh::get_tmoe(const Tuple& t)
+    -> TriMeshOperationExecutor
+{
+    return TriMeshOperationExecutor(*this, t);
+}
+#endif
 } // namespace wmtk::tests
