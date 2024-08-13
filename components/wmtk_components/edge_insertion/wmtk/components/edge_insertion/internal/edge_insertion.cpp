@@ -104,5 +104,28 @@ bool segment_segment_inter(
     return true;
 }
 
+bool is_point_in_bbox(const Vector2r& point, const bbox& box)
+{
+    if (point[0] >= box.x_min && point[0] <= box.xmax && point[1] >= box.y_min &&
+        point[1] <= box.y_max) {
+        return true;
+    }
+    return false;
+}
+
+bool is_bbox_intersect(const bbox& b0, const bbox& b1)
+{
+    // can intersect at boundary
+    if (b1.x_min >= b0.x_min && b1.x_min <= b0.x_max && b1.y_min >= b0.y_min &&
+        b1.y_max <= b0.y_max) {
+        return true;
+    }
+    return false;
+}
+
+void edge_insertion(TriMesh& triangles, EdgeMesh& segments)
+{
+    // convert trimesh and edgemesh into eigen matrices
+}
 
 } // namespace wmtk::components::internal

@@ -9,6 +9,63 @@
 
 namespace wmtk::components::internal {
 
+struct bbox
+{
+    Rational x_min, x_max, y_min, y_max;
+
+    bbox(const Vector2r& p0, const Vector2r& p1)
+    {
+        if (p0[0] < p1[0]) {
+            x_min = p0[0];
+            x_max = p1[0];
+        } else {
+            x_min = p1[0];
+            x_max = p0[0];
+        }
+
+        if (p0[1] < p1[1]) {
+            y_min = p0[1];
+            y_max = p1[1];
+        } else {
+            y_min = p1[1];
+            y_max = p0[1];
+        }
+    }
+
+    bbox(const Vector2r& p0, const Vector2r& p1, const Vector2r& p2)
+    {
+        if (p0[0] < p1[0]) {
+            x_min = p0[0];
+            x_max = p1[0];
+        } else {
+            x_min = p1[0];
+            x_max = p0[0];
+        }
+
+        if (p0[1] < p1[1]) {
+            y_min = p0[1];
+            y_max = p1[1];
+        } else {
+            y_min = p1[1];
+            y_max = p0[1];
+        }
+
+        x_min = (x_min > p2[0]) ? p2[0] : x_min;
+        x_max = (x_max < p2[0]) ? p2[0] : x_max;
+        y_min = (y_min > p2[1]) ? p2[1] : y_min;
+        y_max = (y_max < p2[1]) ? p2[1] : y_max;
+    }
+};
+class Segment
+{
+public:
+    const Vector2r p0, p1;
+
+    std::vector<std::pair<int64_t, Rational>> points_on_segments;
+
+    Segment(const Vector2r& p0, const Vector2r& p1, const int64_t idx0, const int64_t idx1);
+};
+
 /**
  * @brief
  *
