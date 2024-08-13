@@ -1,4 +1,3 @@
-#pragma once
 #include <wmtk/Primitive.hpp>
 #include <wmtk/autogen/Dart.hpp>
 #include <wmtk/autogen/SimplexDart.hpp>
