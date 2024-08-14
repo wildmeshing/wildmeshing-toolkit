@@ -20,8 +20,14 @@ public:
 
     void add(const Mesh& m, const Tuple& input_tuple);
 
-    std::array<Tuple, 2> get_alternatives(const PrimitiveType mesh_pt, const Tuple& t) const;
-    Tuple get_alternative(const PrimitiveType mesh_pt, const Tuple& t) const;
+    std::array<Tuple, 2> get_alternatives(
+        const PrimitiveType mesh_pt,
+        const Tuple& t,
+        const PrimitiveType simplex_dimension) const;
+    Tuple get_alternative(
+        const PrimitiveType mesh_pt,
+        const Tuple& t,
+        const PrimitiveType simplex_dimension) const;
 
     using AltData = std::vector<Data>;
     AltData m_data;

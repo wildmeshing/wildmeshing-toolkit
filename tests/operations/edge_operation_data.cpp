@@ -280,6 +280,10 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
 
                 const auto& left_dart = dat.alts[0];
                 const auto& right_dart = dat.alts[1];
+                const int8_t left_ear_eid = wmtk::utils::TupleInspector::local_eid(left_ear);
+                const int8_t right_ear_eid = wmtk::utils::TupleInspector::local_eid(right_ear);
+                CHECK(left_ear_eid == dat.local_boundary_indices[0]);
+                CHECK(right_ear_eid == dat.local_boundary_indices[1]);
 
                 CHECK(left_dart.global_id() == 1);
                 CHECK(right_dart.global_id() == 2);
@@ -304,10 +308,12 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
             right_alternatives.emplace_back(right_ear, right_alt);
             right_alternatives.emplace_back(right_ear_opp, right_alt_opp);
 
-            std::vector<std::tuple<wmtk::Tuple, std::array<wmtk::Tuple, 2>>> results;
+            // left result, right result, expected subdart preservation
+            using Dat = std::tuple<wmtk::Tuple, wmtk::Tuple, PrimitiveType>;
+            std::vector<std::tuple<wmtk::Tuple, Dat>> results;
 
-            results.emplace_back(left_ear, std::array<wmtk::Tuple, 2>{{left_alt, right_alt}});
-            results.emplace_back(right_ear, std::array<wmtk::Tuple, 2>{{left_alt, right_alt}});
+            results.emplace_back(left_ear, Dat{left_alt, {}, PF});
+            results.emplace_back(right_ear, Dat{{}, right_alt, PF});
             results.emplace_back(
                 left_ear_opp,
                 std::array<wmtk::Tuple, 2>{{left_alt_opp, right_alt_opp}});
