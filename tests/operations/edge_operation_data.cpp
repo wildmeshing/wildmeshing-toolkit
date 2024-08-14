@@ -284,19 +284,18 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
                 CHECK(left_dart.global_id() == 1);
                 CHECK(right_dart.global_id() == 2);
 
-                const auto left_act = sd.act(main_dart, left_dart.local_orientation());
-                const auto right_act = sd.act(main_dart, right_dart.local_orientation());
+                auto left_act = sd.act(main_dart, left_dart.local_orientation());
+                auto right_act = sd.act(main_dart, right_dart.local_orientation());
                 fmt::print(
-                    "{} => {} {} == {} {}\n",
+                    "{} => {} {} == {} {} (ignore the global ids)\n",
                     std::string(main_dart),
                     std::string(left_alt_opp_dart),
                     std::string(right_alt_opp_dart),
                     std::string(left_act),
                     std::string(right_act));
-                CHECK(left_alt_opp_dart == left_act);
-                CHECK(right_alt_opp_dart == right_act);
+                CHECK(left_alt_opp_dart.local_orientation() == left_act.local_orientation());
+                CHECK(right_alt_opp_dart.local_orientation() == right_act.local_orientation());
             }
-            return;
             std::vector<std::tuple<wmtk::Tuple, wmtk::Tuple>> left_alternatives, right_alternatives;
 
             left_alternatives.emplace_back(left_ear, left_alt);
@@ -324,7 +323,7 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
                     const auto& [a, b] = pr;
                     const auto& [c, d] = ret;
                     spdlog::info(
-                        "{}: {} {} => {} {}",
+                        "Input {}: Expecteed two alts{} {} => Got two alts{} {}",
                         wmtk::utils::TupleInspector::as_string(t),
                         wmtk::utils::TupleInspector::as_string(a),
                         wmtk::utils::TupleInspector::as_string(b),

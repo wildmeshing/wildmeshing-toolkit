@@ -1,5 +1,4 @@
 #include "CollapseAlternateFacetData.hpp"
-#include <spdlog/spdlog.h>
 #include <array>
 #include <vector>
 #include <wmtk/Mesh.hpp>
@@ -63,7 +62,8 @@ std::array<Tuple, 2> CollapseAlternateFacetData::get_alternatives(
         if (tup.is_null()) {
             return {};
         } else {
-            return sd.tuple_from_dart(wmtk::autogen::local_dart_action(sd, tup, action));
+                    const wmtk::autogen::Dart d(tup.global_id(),sd.product(tup.local_orientation(), action));
+            return sd.tuple_from_dart(d);
         }
     };
 
@@ -73,6 +73,10 @@ std::array<Tuple, 2> CollapseAlternateFacetData::get_alternatives(
 }
 Tuple CollapseAlternateFacetData::get_alternative(const PrimitiveType pt, const Tuple& t) const
 {
+    // TODO: map to a valid face
+
+
+
     auto alts = get_alternatives(pt, t);
     assert(!alts[0].is_null() || !alts[1].is_null());
     if (!alts[0].is_null()) {

@@ -22,8 +22,8 @@ public:
 
     // Stores {ear_global_id, M}
     // where M is defined by:
-    // Let {G, O} be the input
-    // Let {Ge, Oe} be the left/0 or right/1 ear
+    // Let {G, O} be the input dart
+    // Let {Ge, Oe} be the left/0 or right/1 ear opposite
     // Let R be such that Oe = R O
     // We select an arbitrary dart that includes the right face
     // {G,Oa} a dart that includes the ear face, and
