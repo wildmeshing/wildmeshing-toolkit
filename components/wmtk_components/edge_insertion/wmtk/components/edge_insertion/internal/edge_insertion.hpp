@@ -73,7 +73,7 @@ public:
  * @param t1
  * @param t2
  * @param t3
- * @return int -1: outside 0: inside 1: on AB 2: on BC 3: on AC 4:on endpoint
+ * @return int -1: outside 0: inside 1: on AB 2: on BC 3: on AC 4:on A 5: on B 6:on C
  */
 int is_point_inside_triangle(
     const wmtk::Vector2r& P,
