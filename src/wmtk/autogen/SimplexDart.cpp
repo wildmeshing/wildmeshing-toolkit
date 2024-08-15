@@ -152,4 +152,8 @@ Dart SimplexDart::dart_from_tuple(const wmtk::Tuple& t) const
         wmtk::autogen::valid_index_from_tuple(m_simplex_type, t)};
 }
 
+int8_t SimplexDart::simplex_index(const Dart& dart, PrimitiveType simplex_type) const
+{
+    return simplex_index(dart.local_orientation(), simplex_type);
+}
 } // namespace wmtk::autogen

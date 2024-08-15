@@ -100,13 +100,14 @@ TEST_CASE("collapse_facet_maps_1d", "[operations][data][1D]")
 
             int64_t index = m_debug.id(t, m.top_simplex_type());
             REQUIRE(bits != 3);
-            auto both = data.get_alternatives(m.top_simplex_type(), t);
+            auto both = data.get_alternatives(m.top_simplex_type(), t, wmtk::PrimitiveType::Vertex);
             auto [a, b] = both;
             static_assert(std::is_same_v<std::decay_t<decltype(a)>, wmtk::Tuple>);
             static_assert(std::is_same_v<std::decay_t<decltype(b)>, wmtk::Tuple>);
             {
                 // just check that it's not null and that it's one of the two optiosn
-                const wmtk::Tuple new_tup = data.get_alternative(m.top_simplex_type(), t);
+                const wmtk::Tuple new_tup =
+                    data.get_alternative(m.top_simplex_type(), t, wmtk::PrimitiveType::Vertex);
                 CHECK(!new_tup.is_null());
                 CHECK((new_tup == a || new_tup == b));
             }
@@ -309,11 +310,11 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
             right_alternatives.emplace_back(right_ear_opp, right_alt_opp);
 
             // left result, right result, expected subdart preservation
-            using Dat = std::tuple<wmtk::Tuple, wmtk::Tuple, PrimitiveType>;
+            using Dat = std::tuple<wmtk::Tuple, wmtk::Tuple, wmtk::PrimitiveType>;
             std::vector<std::tuple<wmtk::Tuple, Dat>> results;
 
-            results.emplace_back(left_ear, Dat{left_alt, {}, PF});
-            results.emplace_back(right_ear, Dat{{}, right_alt, PF});
+            results.emplace_back(left_ear, Dat{left_alt, {}, wmtk::PrimitiveType::Edge});
+            results.emplace_back(right_ear, Dat{{}, right_alt, wmtk::PrimitiveType::Edge});
             results.emplace_back(
                 left_ear_opp,
                 std::array<wmtk::Tuple, 2>{{left_alt_opp, right_alt_opp}});
@@ -323,23 +324,23 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
 
 
             for (const auto& [t, pr] : results) {
-                auto ret = data.get_alternatives(m.top_simplex_type(), t);
+                auto ret =
+                    data.get_alternatives(m.top_simplex_type(), t, wmtk::PrimitiveType::Edge);
 
-                {
-                    const auto& [a, b] = pr;
-                    const auto& [c, d] = ret;
-                    spdlog::info(
-                        "Input {}: Expecteed two alts{} {} => Got two alts{} {}",
-                        wmtk::utils::TupleInspector::as_string(t),
-                        wmtk::utils::TupleInspector::as_string(a),
-                        wmtk::utils::TupleInspector::as_string(b),
-                        wmtk::utils::TupleInspector::as_string(c),
-                        wmtk::utils::TupleInspector::as_string(d));
-                    // notation is triangle; vertex, edge (matches global; local vid, local eid)
-                    // 0; 1,2 (global: 0; 1,0)
-                    // currently: 1;1,0 2;1,2 => 1;1,2 2;1,0
-                }
-                CHECK(pr == ret);
+                const auto& [a, b, pt] = pr;
+                const auto& [c, d] = ret;
+                spdlog::info(
+                    "Input {}: Expecteed two alts{} {} => Got two alts{} {}",
+                    wmtk::utils::TupleInspector::as_string(t),
+                    wmtk::utils::TupleInspector::as_string(a),
+                    wmtk::utils::TupleInspector::as_string(b),
+                    wmtk::utils::TupleInspector::as_string(c),
+                    wmtk::utils::TupleInspector::as_string(d));
+                // notation is triangle; vertex, edge (matches global; local vid, local eid)
+                // 0; 1,2 (global: 0; 1,0)
+                // currently: 1;1,0 2;1,2 => 1;1,2 2;1,0
+                CHECK(a == c);
+                CHECK(b == d);
             }
         }
     }

@@ -35,6 +35,10 @@ public:
 
     int8_t valid_index_from_tuple(const wmtk::Tuple& t) const;
 
+
+    int8_t simplex_index(const int8_t valid_index, PrimitiveType simplex_type) const;
+    int8_t simplex_index(const Dart& dart, PrimitiveType simplex_type) const;
+
     using binary_op_type = int8_t (*)(int8_t, int8_t);
     using unary_op_type = int8_t (*)(int8_t);
     using primitive_to_index_type = int8_t (*)(PrimitiveType);
