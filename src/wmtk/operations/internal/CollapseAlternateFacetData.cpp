@@ -49,7 +49,8 @@ auto CollapseAlternateFacetData::get_alternatives_data(const Tuple& t) const -> 
 }
 std::array<Tuple, 2> CollapseAlternateFacetData::get_alternatives(
     const PrimitiveType mesh_pt,
-    const Tuple& t) const
+    const Tuple& t,
+    const PrimitiveType simplex_dimension) const
 {
     const auto& data = get_alternatives_data(t);
 
@@ -58,23 +59,27 @@ std::array<Tuple, 2> CollapseAlternateFacetData::get_alternatives(
 
     const int8_t action =
         wmtk::multimesh::utils::find_local_dart_action(mesh_pt, t_dart, data.input);
-    auto map = [action, &sd](const wmtk::autogen::Dart& tup) -> Tuple {
-        if (tup.is_null()) {
+    auto map = [action, &sd](const size_t index) -> Tuple {
+        const wmtk::autogen::Dart transform = data.alts[index];
+        const int8_t local_boundary_index = data.local_boundary_indices[index];
+        const PrimitiveType mappable_dart_dimension = a;
+        if (transform.is_null() || mappable_dart_dimension < simplex_dimension) {
             return {};
         } else {
-                    const wmtk::autogen::Dart d(tup.global_id(),sd.product(tup.local_orientation(), action));
+            int8_t projected_subdart = sd.project_subdubdart(action, , mesh_pt - 1);
+            int8_t mapped_dart = sd.product(tup.local_orientation(), action);
+            const wmtk::autogen::Dart d(tup.global_id(), mapped_dart);
             return sd.tuple_from_dart(d);
         }
     };
 
-    std::array<Tuple, 2> r{{map(data.alts[0]), map(data.alts[1])}};
+    std::array<Tuple, 2> r{{map(0), map(1)}};
 
     return r;
 }
 Tuple CollapseAlternateFacetData::get_alternative(const PrimitiveType pt, const Tuple& t) const
 {
     // TODO: map to a valid face
-
 
 
     auto alts = get_alternatives(pt, t);
