@@ -23,9 +23,9 @@ using path = std::filesystem::path;
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
+#include "generate_iso_line.hpp"
 #include "render_utils.hpp"
 #include "track_operations.hpp"
-
 
 void back_track_map(
     path dirPath,
@@ -231,11 +231,51 @@ void back_track_lines(path dirPath, query_curve& curve, bool do_forward = false)
             std::vector<int64_t> face_ids_maps;
             std::vector<int64_t> vertex_ids_maps;
             parse_consolidate_file(operation_log, face_ids_maps, vertex_ids_maps);
+            if (do_forward) {
+                handle_consolidate_forward(face_ids_maps, vertex_ids_maps, curve);
+            } else {
+                handle_consolidate(face_ids_maps, vertex_ids_maps, curve);
+            }
+        } else if (operation_name == "TriEdgeSwap" || operation_name == "AttributesUpdate") {
+            std::cout << "This Operations is" << operation_name << std::endl;
+            Eigen::MatrixXi F_after, F_before;
+            Eigen::MatrixXd V_after, V_before;
+            std::vector<int64_t> id_map_after, id_map_before;
+            std::vector<int64_t> v_id_map_after, v_id_map_before;
+            parse_edge_split_file(
+                operation_log,
+                V_before,
+                F_before,
+                id_map_before,
+                v_id_map_before,
+                V_after,
+                F_after,
+                id_map_after,
+                v_id_map_after);
 
-            handle_consolidate(face_ids_maps, vertex_ids_maps, curve);
-        } else if (operation_name == "TriEdgeSwap") {
-            std::cout << "This Operations is TriEdgeSwap" << std::endl;
-            // TODO:
+            if (do_forward) {
+                handle_swap_edge_curve(
+                    V_after,
+                    F_after,
+                    id_map_after,
+                    v_id_map_after,
+                    V_before,
+                    F_before,
+                    id_map_before,
+                    v_id_map_before,
+                    curve);
+            } else {
+                handle_swap_edge_curve(
+                    V_before,
+                    F_before,
+                    id_map_before,
+                    v_id_map_before,
+                    V_after,
+                    F_after,
+                    id_map_after,
+                    v_id_map_after,
+                    curve);
+            }
         } else if (operation_name == "EdgeSplit") {
             std::cout << "This Operations is EdgeSplit" << std::endl;
             Eigen::MatrixXi F_after, F_before;
@@ -267,15 +307,25 @@ void back_track_lines(path dirPath, query_curve& curve, bool do_forward = false)
                 v_id_map_joint,
                 id_map_before,
                 id_map_after);
-
-            handle_collapse_edge_curve(
-                UV_joint,
-                F_before,
-                F_after,
-                v_id_map_joint,
-                id_map_before,
-                id_map_after,
-                curve);
+            if (do_forward) {
+                handle_collapse_edge_curve(
+                    UV_joint,
+                    F_after,
+                    F_before,
+                    v_id_map_joint,
+                    id_map_after,
+                    id_map_before,
+                    curve);
+            } else {
+                handle_collapse_edge_curve(
+                    UV_joint,
+                    F_before,
+                    F_after,
+                    v_id_map_joint,
+                    id_map_before,
+                    id_map_after,
+                    curve);
+            }
         } else {
             // std::cout << "This Operations is not implemented" << std::endl;
         }
@@ -692,6 +742,82 @@ void back_track_line_app(
     }
 }
 
+void forward_track_line_app(
+    const Eigen::MatrixXd& V_in,
+    const Eigen::MatrixXi& F_in,
+    const Eigen::MatrixXd& uv_in,
+    const Eigen::MatrixXi& Fuv_in,
+    const Eigen::MatrixXd& V_out,
+    const Eigen::MatrixXi& F_out,
+    const path& operation_logs_dir)
+{
+    auto intersections = computeIntersections(uv_in, Fuv_in, 0.5);
+    query_curve curve;
+    for (int i = 0; i < intersections.size(); i += 2) {
+        query_segment seg;
+        if (intersections[i].fid != intersections[i + 1].fid) {
+            std::cout << "something wrong with intersections" << std::endl;
+        }
+        seg.f_id = intersections[i].fid;
+        seg.bcs[0] = intersections[i].barycentric;
+        seg.bcs[1] = intersections[i + 1].barycentric;
+        seg.fv_ids = F_in.row(intersections[i].fid);
+        curve.segments.push_back(seg);
+    }
+
+    curve.next_segment_ids.resize(curve.segments.size());
+    for (int i = 0; i < curve.segments.size() - 1; i++) {
+        curve.next_segment_ids[i] = i + 1;
+    }
+    curve.next_segment_ids[curve.segments.size() - 1] = -1;
+
+    // query_curve curve = generate_curve(V_in, F_in, 10, 0);
+    auto curve_origin = curve;
+
+    {
+        igl::opengl::glfw::Viewer viewer;
+        viewer.data().set_mesh(V_in, F_in);
+        viewer.data().point_size /= 3;
+        for (const auto& seg : curve_origin.segments) {
+            Eigen::MatrixXd pts(2, 3);
+            for (int i = 0; i < 2; i++) {
+                Eigen::Vector3d p(0, 0, 0);
+                for (int j = 0; j < 3; j++) {
+                    p += V_in.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                }
+                pts.row(i) = p;
+            }
+            viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+            viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+            viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+        }
+        viewer.launch();
+    }
+
+    // forward track lines
+    back_track_lines(operation_logs_dir, curve, true);
+
+    {
+        igl::opengl::glfw::Viewer viewer;
+        viewer.data().set_mesh(V_out, F_out);
+        viewer.data().point_size /= 3;
+        for (const auto& seg : curve.segments) {
+            Eigen::MatrixXd pts(2, 3);
+            for (int i = 0; i < 2; i++) {
+                Eigen::Vector3d p(0, 0, 0);
+                for (int j = 0; j < 3; j++) {
+                    p += V_out.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                }
+                pts.row(i) = p;
+            }
+            viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+            viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+            viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+        }
+
+        viewer.launch();
+    }
+}
 
 int main(int argc, char** argv)
 {
@@ -910,6 +1036,19 @@ int main(int argc, char** argv)
         back_track_app(V_in, F_in, V_out, F_out, operation_logs_dir, true);
     } else if (application_name == "back_lines_r") {
         back_track_line_app(V_in, F_in, V_out, F_out, operation_logs_dir, true);
+    } else if (application_name == "iso_lines") {
+        Eigen::MatrixXd V_in_obj, Vt_in_obj, Vn_in_obj;
+        Eigen::MatrixXi F_in_obj, Ft_in_obj, Fn_in_obj;
+        std::cout << "\nloading input obj file..." << std::endl;
+        igl::readOBJ(
+            input_obj_file.string(),
+            V_in_obj,
+            Vt_in_obj,
+            Vn_in_obj,
+            F_in_obj,
+            Ft_in_obj,
+            Fn_in_obj);
+        forward_track_line_app(V_in, F_in, Vt_in_obj, Ft_in_obj, V_out, F_out, operation_logs_dir);
     }
     return 0;
 }

@@ -224,14 +224,14 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             igl::doublearea(UV_joint, F_after, dbarea_after);
 
                             if (dbarea_before.minCoeff() < 0) {
-                                std::cerr << "negative area in F_before detected\n";
+                                // std::cerr << "negative area in F_before detected\n";
 
                                 scope.mark_failed();
                                 return {};
                             }
 
                             if (dbarea_after.minCoeff() < 0) {
-                                std::cerr << "negative area in F_after detected\n";
+                                // std::cerr << "negative area in F_after detected\n";
 
                                 scope.mark_failed();
                                 return {};
@@ -296,14 +296,14 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             igl::doublearea(V_after, F_after, dbarea_after);
 
                             if (dbarea_before.minCoeff() < 0) {
-                                std::cerr << "negative area in F_before detected\n";
+                                // std::cerr << "negative area in F_before detected\n";
 
                                 scope.mark_failed();
                                 return {};
                             }
 
                             if (dbarea_after.minCoeff() < 0) {
-                                std::cerr << "negative area in F_after detected\n";
+                                // std::cerr << "negative area in F_after detected\n";
 
                                 scope.mark_failed();
                                 return {};
