@@ -51,22 +51,14 @@ std::vector<simplex::Simplex> TetFaceSwap::execute(const simplex::Simplex& simpl
 
     // prepare the simplex for the second collapse
     const auto edge_input_for_second_collapse =
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-        simplex::Simplex::edge(mesh(), resurrect_tuple(edge_tuple_input_for_second_collapse));
-#else
         simplex::Simplex::edge(mesh(), edge_tuple_input_for_second_collapse);
-#endif
 
     // second collapse, drag the interior vertex on the ground to the "peak"
     const auto collapse_simplicies_second = m_collapse(edge_input_for_second_collapse);
     if (collapse_simplicies_second.empty()) return {};
     assert(collapse_simplicies_second.size() == 1);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-    return {simplex::Simplex::edge(mesh(), resurrect_tuple(edge_tuple_for_return))};
-#else
     return {simplex::Simplex::edge(mesh(), edge_tuple_for_return)};
-#endif
 }
 
 std::vector<simplex::Simplex> TetFaceSwap::unmodified_primitives(

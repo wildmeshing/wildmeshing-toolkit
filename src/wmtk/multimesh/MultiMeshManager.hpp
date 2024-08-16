@@ -6,7 +6,6 @@
 #include <wmtk/attribute/MeshAttributes.hpp>
 // included to make a friend as this requires IDs
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
-#include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 
 // debug function that reads into this structure
@@ -63,12 +62,6 @@ public:
     friend class multimesh::MultiMeshSimplexVisitorExecutor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-    friend void operations::utils::update_vertex_operation_multimesh_map_hash(
-        Mesh& m,
-        const simplex::SimplexCollection& vertex_closed_star,
-        wmtk::attribute::Accessor<int64_t>& parent_hash_accessor);
-#endif
     template <typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
@@ -548,16 +541,6 @@ public:
      * @param vertex operating vertex tuple
      * @param hash_accessor hash accessor of m
      */
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-    static void update_vertex_operation_hashes_internal(
-        Mesh& m,
-        const Tuple& vertex,
-        wmtk::attribute::Accessor<int64_t>& hash_accessor);
-    static void update_vertex_operation_multimesh_map_hash_internal(
-        Mesh& m,
-        const simplex::SimplexCollection& vertex_closed_star,
-        wmtk::attribute::Accessor<int64_t>& parent_hash_accessor);
-#endif
 
 public:
     // remove after bug fix

@@ -16,12 +16,7 @@ edge_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
     EdgeMesh& m,
     const simplex::Simplex& s) const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-    attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-    EdgeMesh::EdgeMeshOperationExecutor exec(m, s.tuple(), hash_accessor);
-#else
     EdgeMesh::EdgeMeshOperationExecutor exec(m, s.tuple());
-#endif
     exec.collapse_edge();
     return exec;
 }
@@ -29,12 +24,7 @@ tri_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
     TriMesh& m,
     const simplex::Simplex& s) const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-    attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-    TriMesh::TriMeshOperationExecutor exec(m, s.tuple(), hash_accessor);
-#else
     TriMesh::TriMeshOperationExecutor exec(m, s.tuple());
-#endif
     exec.collapse_edge();
 
     return exec;
@@ -43,12 +33,7 @@ tet_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
     TetMesh& m,
     const simplex::Simplex& s) const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-    attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-    TetMesh::TetMeshOperationExecutor exec(m, s.tuple(), hash_accessor);
-#else
     TetMesh::TetMeshOperationExecutor exec(m, s.tuple());
-#endif
     exec.collapse_edge();
     return exec;
 }

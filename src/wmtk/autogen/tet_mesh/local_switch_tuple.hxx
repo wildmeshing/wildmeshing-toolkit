@@ -14,30 +14,26 @@ inline Tuple local_switch_tuple(const Tuple& tuple, PrimitiveType pt)
 
 
     const int64_t global_cid = TupleInspector::global_cid(tuple);
-    const int64_t hash = TupleInspector::hash(tuple);
     switch (pt) {
     case PrimitiveType::Vertex:
         return Tuple(
             auto_3d_table_vertex[offset][0],
             auto_3d_table_vertex[offset][1],
             auto_3d_table_vertex[offset][2],
-            global_cid,
-            hash);
+            global_cid);
 
     case PrimitiveType::Edge:
         return Tuple(
             auto_3d_table_edge[offset][0],
             auto_3d_table_edge[offset][1],
             auto_3d_table_edge[offset][2],
-            global_cid,
-            hash);
+            global_cid);
     case PrimitiveType::Triangle:
         return Tuple(
             auto_3d_table_face[offset][0],
             auto_3d_table_face[offset][1],
             auto_3d_table_face[offset][2],
-            global_cid,
-            hash);
+            global_cid);
 
     case PrimitiveType::Tetrahedron:
     default: assert(false); // "Tuple switch: Invalid primitive type"

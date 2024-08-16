@@ -22,12 +22,7 @@ std::vector<simplex::Simplex> OperationSequence::operator()(const simplex::Simpl
         return {};
     }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-    const auto simplex_resurrect =
-        simplex::Simplex(mesh(), simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
-#else
     const auto simplex_resurrect = simplex;
-#endif
 
     auto mods = execute_operations(simplex_resurrect);
     if (!mods.empty()) { // success should be marked here

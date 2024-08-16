@@ -17,16 +17,14 @@ inline Tuple local_switch_tuple(const Tuple& tuple, PrimitiveType pt)
             auto_2d_table_vertex[offset][0],
             auto_2d_table_vertex[offset][1],
             TupleInspector::local_fid(tuple),
-            TupleInspector::global_cid(tuple),
-            TupleInspector::hash(tuple));
+            TupleInspector::global_cid(tuple));
 
     case PrimitiveType::Edge:
         return Tuple(
             auto_2d_table_edge[offset][0],
             auto_2d_table_edge[offset][1],
             TupleInspector::local_fid(tuple),
-            TupleInspector::global_cid(tuple),
-            TupleInspector::hash(tuple));
+            TupleInspector::global_cid(tuple));
 
     case PrimitiveType::Triangle:
     case PrimitiveType::Tetrahedron:
