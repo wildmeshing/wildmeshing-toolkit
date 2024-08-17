@@ -41,7 +41,7 @@ int64_t max_tuple_count(PrimitiveType pt)
 
 Tuple tuple_from_offset_id(PrimitiveType pt, int offset)
 {
-    int64_t lvid = 0, leid = 0, lfid = 0, gcid = 0, hash = 0;
+    int64_t lvid = 0, leid = 0, lfid = 0, gcid = 0;
 
     switch (pt) {
     case PrimitiveType::Triangle: {
@@ -60,7 +60,7 @@ Tuple tuple_from_offset_id(PrimitiveType pt, int offset)
     case PrimitiveType::Vertex: break;
     }
 
-    Tuple r(lvid, leid, lfid, gcid, hash);
+    Tuple r(lvid, leid, lfid, gcid);
     if (!tuple_is_valid_for_ccw(pt, r)) {
         r = Tuple();
     }

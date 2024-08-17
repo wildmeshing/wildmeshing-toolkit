@@ -16,16 +16,16 @@ namespace {} // namespace
 TEST_CASE("tuple_to_int64_t_storage", "[accessor]")
 {
     std::array basic_data = {
-        wmtk::Tuple(0, 0, 0, 0, 0),
-        wmtk::Tuple(1, 0, 0, 0, 0),
-        wmtk::Tuple(0, 1, 0, 0, 0),
-        wmtk::Tuple(0, 0, 1, 0, 0),
-        wmtk::Tuple(0, 0, 0, 1, 0),
-        wmtk::Tuple(0, 0, 0, 0, 1),
-        wmtk::Tuple(-1, -1, -1, -1, -1),
-        wmtk::Tuple(0, 0, 0, 0, 0),
-        wmtk::Tuple(0, 20, 30, 40, 50),
-        wmtk::Tuple(-20, 0, -3, 16, -4)};
+        wmtk::Tuple(0, 0, 0, 0),
+        wmtk::Tuple(1, 0, 0, 0),
+        wmtk::Tuple(0, 1, 0, 0),
+        wmtk::Tuple(0, 0, 1, 0),
+        wmtk::Tuple(0, 0, 0, 1),
+        wmtk::Tuple(0, 0, 0, 0),
+        wmtk::Tuple(-1, -1, -1, -1),
+        wmtk::Tuple(0, 0, 0, 0),
+        wmtk::Tuple(0, 20, 30, 40),
+        wmtk::Tuple(-20, 0, -3, 16)};
     for (const auto& t : basic_data) {
         wmtk::Vector<int64_t, 2> idat = wmtk::multimesh::utils::tuple_to_vector(t);
         const int64_t* iptr = reinterpret_cast<const int64_t*>(&t);
@@ -62,14 +62,13 @@ TEST_CASE("test_single_tuple_accessor", "[accessor]")
         wmtk::Tuple& t_ref = tuple_accessor.scalar_attribute(tup);
         CHECK(t == t_ref);
         CHECK(t.is_null());
-        t_ref = wmtk::Tuple(gid, gid + 1, gid + 2, gid + 3, gid + 4);
+        t_ref = wmtk::Tuple(gid, gid + 1, gid + 2, gid + 3);
         {
             const wmtk::Tuple t2 = tuple_accessor.const_scalar_attribute(tup);
             CHECK(wmtk::utils::TupleInspector::local_vid(t2) == gid);
             CHECK(wmtk::utils::TupleInspector::local_eid(t2) == gid + 1);
             CHECK(wmtk::utils::TupleInspector::local_fid(t2) == gid + 2);
             CHECK(wmtk::utils::TupleInspector::global_cid(t2) == gid + 3);
-            CHECK(wmtk::utils::TupleInspector::hash(t2) == gid + 4);
         }
     }
     for (const wmtk::Tuple& tup : vertices) {
@@ -81,7 +80,6 @@ TEST_CASE("test_single_tuple_accessor", "[accessor]")
         CHECK(wmtk::utils::TupleInspector::local_eid(t) == gid + 1);
         CHECK(wmtk::utils::TupleInspector::local_fid(t) == gid + 2);
         CHECK(wmtk::utils::TupleInspector::global_cid(t) == gid + 3);
-        CHECK(wmtk::utils::TupleInspector::hash(t) == gid + 4);
     }
 }
 
@@ -115,8 +113,8 @@ TEST_CASE("test_multi_tuple_accessor", "[accessor]")
         CHECK(t(0).is_null());
         CHECK(t(1).is_null());
         int64_t gid = m.id(tup);
-        t(0) = wmtk::Tuple(gid, gid + 1, gid + 2, gid + 3, gid + 4);
-        t(1) = wmtk::Tuple(gid, gid + 5, gid + 6, gid + 7, gid + 8);
+        t(0) = wmtk::Tuple(gid, gid + 1, gid + 2, gid + 3);
+        t(1) = wmtk::Tuple(gid, gid + 4, gid + 5, gid + 6);
     }
     for (const wmtk::Tuple& tup : vertices) {
         auto v = int64_t_acc.const_vector_attribute(tup);
@@ -128,8 +126,8 @@ TEST_CASE("test_multi_tuple_accessor", "[accessor]")
         CHECK(!t(0).is_null());
         CHECK(!t(1).is_null());
         int64_t gid = m.id(tup);
-        CHECK(t(0) == wmtk::Tuple(gid, gid + 1, gid + 2, gid + 3, gid + 4));
-        CHECK(t(1) == wmtk::Tuple(gid, gid + 5, gid + 6, gid + 7, gid + 8));
+        CHECK(t(0) == wmtk::Tuple(gid, gid + 1, gid + 2, gid + 3));
+        CHECK(t(1) == wmtk::Tuple(gid, gid + 4, gid + 5, gid + 6));
     }
 }
 TEST_CASE("test_multi_tuple_accessor_gid", "[accessor]")
