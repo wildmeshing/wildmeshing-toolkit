@@ -7,5 +7,12 @@ var dir_fd02c99d91715576a6d875eb1bfb4f34 =
     [ "local_id_table_offset.hpp", "tri__mesh_2local__id__table__offset_8hpp.html", "tri__mesh_2local__id__table__offset_8hpp" ],
     [ "local_id_table_offset.hxx", "tri__mesh_2local__id__table__offset_8hxx.html", "tri__mesh_2local__id__table__offset_8hxx" ],
     [ "local_switch_tuple.hpp", "autogen_2tri__mesh_2local__switch__tuple_8hpp.html", "autogen_2tri__mesh_2local__switch__tuple_8hpp" ],
-    [ "local_switch_tuple.hxx", "tri__mesh_2local__switch__tuple_8hxx.html", "tri__mesh_2local__switch__tuple_8hxx" ]
+    [ "local_switch_tuple.hxx", "tri__mesh_2local__switch__tuple_8hxx.html", "tri__mesh_2local__switch__tuple_8hxx" ],
+    [ "SimplexDart.hpp", "tri__mesh_2_simplex_dart_8hpp.html", [
+      [ "SimplexDart", "classwmtk_1_1autogen_1_1tri__mesh_1_1_simplex_dart.html", "classwmtk_1_1autogen_1_1tri__mesh_1_1_simplex_dart" ]
+    ] ],
+    [ "tuple_from_valid_index.hpp", "tri__mesh_2tuple__from__valid__index_8hpp.html", "tri__mesh_2tuple__from__valid__index_8hpp" ],
+    [ "tuple_from_valid_index.hxx", "tri__mesh_2tuple__from__valid__index_8hxx.html", "tri__mesh_2tuple__from__valid__index_8hxx" ],
+    [ "valid_index_from_tuple.hpp", "tri__mesh_2valid__index__from__tuple_8hpp.html", "tri__mesh_2valid__index__from__tuple_8hpp" ],
+    [ "valid_index_from_tuple.hxx", "tri__mesh_2valid__index__from__tuple_8hxx.html", "tri__mesh_2valid__index__from__tuple_8hxx" ]
 ];

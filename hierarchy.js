@@ -348,6 +348,11 @@ var hierarchy =
     [ "wmtk::simplex::Simplex", "classwmtk_1_1simplex_1_1_simplex.html", null ],
     [ "wmtk::simplex::SimplexCollection", "classwmtk_1_1simplex_1_1_simplex_collection.html", null ],
     [ "wmtk::simplex::utils::SimplexComparisons", "classwmtk_1_1simplex_1_1utils_1_1_simplex_comparisons.html", null ],
+    [ "wmtk::autogen::edge_mesh::SimplexDart", "classwmtk_1_1autogen_1_1edge__mesh_1_1_simplex_dart.html", null ],
+    [ "wmtk::autogen::point_mesh::SimplexDart", "classwmtk_1_1autogen_1_1point__mesh_1_1_simplex_dart.html", null ],
+    [ "wmtk::autogen::SimplexDart", "classwmtk_1_1autogen_1_1_simplex_dart.html", null ],
+    [ "wmtk::autogen::tet_mesh::SimplexDart", "classwmtk_1_1autogen_1_1tet__mesh_1_1_simplex_dart.html", null ],
+    [ "wmtk::autogen::tri_mesh::SimplexDart", "classwmtk_1_1autogen_1_1tri__mesh_1_1_simplex_dart.html", null ],
     [ "wmtk::simplex::internal::SimplexEqualFunctor", "structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html", null ],
     [ "wmtk::simplex::internal::SimplexLessFunctor", "structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html", null ],
     [ "wmtk::operations::SplitNewAttributeTopoInfo", "classwmtk_1_1operations_1_1_split_new_attribute_topo_info.html", [

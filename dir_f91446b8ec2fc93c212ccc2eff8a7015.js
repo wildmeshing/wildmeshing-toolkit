@@ -7,6 +7,8 @@ var dir_f91446b8ec2fc93c212ccc2eff8a7015 =
     [ "create_tag.hpp", "create__tag_8hpp.html", "create__tag_8hpp" ],
     [ "extract_child_mesh_from_tag.cpp", "extract__child__mesh__from__tag_8cpp.html", "extract__child__mesh__from__tag_8cpp" ],
     [ "extract_child_mesh_from_tag.hpp", "extract__child__mesh__from__tag_8hpp.html", "extract__child__mesh__from__tag_8hpp" ],
+    [ "find_local_dart_action.cpp", "find__local__dart__action_8cpp.html", "find__local__dart__action_8cpp" ],
+    [ "find_local_dart_action.hpp", "find__local__dart__action_8hpp.html", "find__local__dart__action_8hpp" ],
     [ "find_local_switch_sequence.cpp", "find__local__switch__sequence_8cpp.html", "find__local__switch__sequence_8cpp" ],
     [ "find_local_switch_sequence.hpp", "find__local__switch__sequence_8hpp.html", "find__local__switch__sequence_8hpp" ],
     [ "local_switch_tuple.cpp", "multimesh_2utils_2local__switch__tuple_8cpp.html", "multimesh_2utils_2local__switch__tuple_8cpp" ],

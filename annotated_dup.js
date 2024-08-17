@@ -46,6 +46,21 @@ var annotated_dup =
         [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", "classwmtk_1_1attribute_1_1_mesh_attribute_handle" ],
         [ "TupleAccessor", "classwmtk_1_1attribute_1_1_tuple_accessor.html", "classwmtk_1_1attribute_1_1_tuple_accessor" ]
       ] ],
+      [ "autogen", "namespacewmtk_1_1autogen.html", [
+        [ "edge_mesh", "namespacewmtk_1_1autogen_1_1edge__mesh.html", [
+          [ "SimplexDart", "classwmtk_1_1autogen_1_1edge__mesh_1_1_simplex_dart.html", "classwmtk_1_1autogen_1_1edge__mesh_1_1_simplex_dart" ]
+        ] ],
+        [ "point_mesh", "namespacewmtk_1_1autogen_1_1point__mesh.html", [
+          [ "SimplexDart", "classwmtk_1_1autogen_1_1point__mesh_1_1_simplex_dart.html", "classwmtk_1_1autogen_1_1point__mesh_1_1_simplex_dart" ]
+        ] ],
+        [ "tet_mesh", "namespacewmtk_1_1autogen_1_1tet__mesh.html", [
+          [ "SimplexDart", "classwmtk_1_1autogen_1_1tet__mesh_1_1_simplex_dart.html", "classwmtk_1_1autogen_1_1tet__mesh_1_1_simplex_dart" ]
+        ] ],
+        [ "tri_mesh", "namespacewmtk_1_1autogen_1_1tri__mesh.html", [
+          [ "SimplexDart", "classwmtk_1_1autogen_1_1tri__mesh_1_1_simplex_dart.html", "classwmtk_1_1autogen_1_1tri__mesh_1_1_simplex_dart" ]
+        ] ],
+        [ "SimplexDart", "classwmtk_1_1autogen_1_1_simplex_dart.html", "classwmtk_1_1autogen_1_1_simplex_dart" ]
+      ] ],
       [ "components", "namespacewmtk_1_1components.html", [
         [ "adaptive_tessellation", "namespacewmtk_1_1components_1_1adaptive__tessellation.html", [
           [ "image", "namespacewmtk_1_1components_1_1adaptive__tessellation_1_1image.html", [

@@ -7,5 +7,12 @@ var dir_7bcc95ae756e9f287116e87c951b5352 =
     [ "local_id_table_offset.hpp", "tet__mesh_2local__id__table__offset_8hpp.html", "tet__mesh_2local__id__table__offset_8hpp" ],
     [ "local_id_table_offset.hxx", "tet__mesh_2local__id__table__offset_8hxx.html", "tet__mesh_2local__id__table__offset_8hxx" ],
     [ "local_switch_tuple.hpp", "autogen_2tet__mesh_2local__switch__tuple_8hpp.html", "autogen_2tet__mesh_2local__switch__tuple_8hpp" ],
-    [ "local_switch_tuple.hxx", "tet__mesh_2local__switch__tuple_8hxx.html", "tet__mesh_2local__switch__tuple_8hxx" ]
+    [ "local_switch_tuple.hxx", "tet__mesh_2local__switch__tuple_8hxx.html", "tet__mesh_2local__switch__tuple_8hxx" ],
+    [ "SimplexDart.hpp", "tet__mesh_2_simplex_dart_8hpp.html", [
+      [ "SimplexDart", "classwmtk_1_1autogen_1_1tet__mesh_1_1_simplex_dart.html", "classwmtk_1_1autogen_1_1tet__mesh_1_1_simplex_dart" ]
+    ] ],
+    [ "tuple_from_valid_index.hpp", "tet__mesh_2tuple__from__valid__index_8hpp.html", "tet__mesh_2tuple__from__valid__index_8hpp" ],
+    [ "tuple_from_valid_index.hxx", "tet__mesh_2tuple__from__valid__index_8hxx.html", "tet__mesh_2tuple__from__valid__index_8hxx" ],
+    [ "valid_index_from_tuple.hpp", "tet__mesh_2valid__index__from__tuple_8hpp.html", "tet__mesh_2valid__index__from__tuple_8hpp" ],
+    [ "valid_index_from_tuple.hxx", "tet__mesh_2valid__index__from__tuple_8hxx.html", "tet__mesh_2valid__index__from__tuple_8hxx" ]
 ];
