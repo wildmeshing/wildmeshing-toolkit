@@ -2,11 +2,12 @@
 
 #include <wmtk/utils/EigenMatrixWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/orient.hpp>
 
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/composite/TriFaceSplit.hpp>
 
-#include <wmtk/attribute/>
+#include <igl/edges.h>
 
 namespace wmtk::components::internal {
 
@@ -90,7 +91,9 @@ bool segment_segment_inter(
     const Vector2r& e0,
     const Vector2r& s1,
     const Vector2r& e1,
-    Vector2r& res)
+    Vector2r& res,
+    Rational& t0,
+    Rational& t1)
 {
     Rational dd = e0[0] * e1[1] - e0[0] * s1[1] - e0[1] * e1[0] + e0[1] * s1[0] + e1[0] * s0[1] -
                   e1[1] * s0[0] + s0[0] * s1[1] - s0[1] * s1[0];
@@ -99,12 +102,12 @@ bool segment_segment_inter(
         return false;
     }
 
-    const Rational t0 = (e1[0] * s0[1] - e1[0] * s1[1] - e1[1] * s0[0] + e1[1] * s1[0] +
-                         s0[0] * s1[1] - s0[1] * s1[0]) /
-                        dd;
-    const Rational t1 = (e0[0] * s0[1] - e0[0] * s1[1] - e0[1] * s0[0] + e0[1] * s1[0] +
-                         s0[0] * s1[1] - s0[1] * s1[0]) /
-                        dd;
+    t0 = (e1[0] * s0[1] - e1[0] * s1[1] - e1[1] * s0[0] + e1[1] * s1[0] + s0[0] * s1[1] -
+          s0[1] * s1[0]) /
+         dd;
+    t1 = (e0[0] * s0[1] - e0[0] * s1[1] - e0[1] * s0[0] + e0[1] * s1[0] + s0[0] * s1[1] -
+          s0[1] * s1[0]) /
+         dd;
 
     if (t0 < 0 || t0 > 1 || t1 < 0 || t1 > 1) {
         return false;
@@ -128,28 +131,19 @@ bool is_point_in_bbox(const Vector2r& point, const Vector2r& bbox_min, const Vec
     return false;
 }
 
-bool is_bbox_intersect(const bbox& b0, const bbox& b1)
-{
-    // can intersect at boundary
-    if (b1.x_min >= b0.x_min && b1.x_min <= b0.x_max && b1.y_min >= b0.y_min &&
-        b1.y_max <= b0.y_max) {
-        return true;
-    }
-    return false;
-}
-
 bool is_bbox_intersect(
     const Vector2r& bbox_min_0,
     const Vector2r& bbox_max_0,
     const Vector2r& bbox_min_1,
     const Vector2r& bbox_max_1)
 {
-    // can intersect at boundary
-    if (bbox_min_1[0] >= bbox_min_0[0] && bbox_min_1[0] <= bbox_max_0[0] &&
-        bbox_min_1[1] >= bbox_min_0[1] && bbox_min_1[1] <= bbox_max_0[1]) {
-        return true;
+    if (bbox_min_0[0] > bbox_max_1[0] || bbox_max_0[0] < bbox_min_1[0]) {
+        return false;
     }
-    return false;
+    if (bbox_min_0[1] > bbox_max_1[1] || bbox_max_0[1] < bbox_min_1[1]) {
+        return false;
+    }
+    return true;
 }
 
 std::array<wmtk::Vector2r, 2>
@@ -180,6 +174,116 @@ compute_bbox(const wmtk::Vector2r& p0, const wmtk::Vector2r& p1, const wmtk::Vec
     return {{wmtk::Vector2r(x_min, y_min), wmtk::Vector2r(x_max, y_max)}};
 }
 
+std::array<wmtk::Vector2r, 2> compute_bbox(const wmtk::Vector2r& p0, const wmtk::Vector2r& p1)
+{
+    wmtk::Rational x_min, x_max, y_min, y_max;
+    if (p0[0] < p1[0]) {
+        x_min = p0[0];
+        x_max = p1[0];
+    } else {
+        x_min = p1[0];
+        x_max = p0[0];
+    }
+
+    if (p0[1] < p1[1]) {
+        y_min = p0[1];
+        y_max = p1[1];
+    } else {
+        y_min = p1[1];
+        y_max = p0[1];
+    }
+
+    return {{wmtk::Vector2r(x_min, y_min), wmtk::Vector2r(x_max, y_max)}};
+}
+
+bool is_colinear(const Vector2r& p0, const Vector2r& p1, const Vector2r& q0, const Vector2r& q1)
+{
+    if (wmtk::orient2d(p0, p1, q0) == 0 && wmtk::orient2d(p0, p1, q1) == 0) {
+        return true;
+    }
+    return false;
+}
+
+void dfs_triangulate(
+    std::vector<std::vector<std::tuple<int64_t, bool, bool>>>& VV,
+    std::vector<Vector2r>& V_pos,
+    std::vector<std::array<int64_t, 3>>& FV,
+    std::vector<std::array<bool, 3>>& local_e_on_input)
+{
+    std::vector<bool> in_stack(VV.size(), false);
+    std::vector<int64_t> in_stack_idx(VV.size(), -1);
+
+    std::vector<int64_t> stack;
+
+    Vector2r prev_vector(1, 0);
+    int64_t v_cur = -1;
+    int64_t v_prev = -1;
+
+    // stack.push_back(0);
+    // in_stack[0] = true;
+    // in_stack_idx[0] = 0;
+
+    // while (stack.size() != 0) {
+    //     stack.pop_back()
+    // }
+}
+
+void dfs_triangulate_aux(
+    int64_t v,
+    std::vector<std::vector<std::tuple<int64_t, bool, bool>>>& VV,
+    std::vector<Vector2r>& V_pos,
+    std::vector<int64_t>& stack,
+    std::vector<bool>& in_stack,
+    std::vector<bool>& is_on_input,
+    std::vector<int64_t>& in_stack_idx,
+    const Vector2r& prev_vector,
+    const int64_t v_prev,
+    std::vector<std::array<int64_t, 3>>& FV,
+    std::vector<std::array<bool, 3>>& local_e_on_input)
+{
+    if (in_stack[v]) {
+        // got a polygon, triangulate it
+        const int64_t begin_idx = in_stack_idx[v];
+        const int64_t end_idx = stack.size() - 1;
+
+        assert(end_idx - begin_idx >= 2);
+
+        if (end_idx - begin_idx == 2) {
+            // triangle case
+            FV.push_back({{stack[begin_idx], stack[begin_idx + 1], stack[end_idx]}});
+            local_e_on_input.push_back(
+                {{is_on_input[begin_idx + 1], is_on_input[end_idx], is_on_input[begin_idx]}});
+        } else {
+            // polygon case
+            // add vertex in the center
+            Vector2r centroid(0, 0);
+            int64_t centroid_idx = V_pos.size();
+            for (int64_t i = begin_idx; i < end_idx + 1; ++i) {
+                centroid = centroid + V_pos[stack[i]];
+                FV.push_back({{stack[i], stack[begin_idx + (i + 1) % stack.size()], centroid_idx}});
+                local_e_on_input.push_back({{false, false, is_on_input[i]}});
+            }
+
+            V_pos.push_back(centroid / (end_idx - begin_idx + 1));
+        }
+        return;
+    }
+
+    stack.push_back(v);
+    in_stack[v] = true;
+    in_stack_idx[v] = stack.size() - 1;
+
+    std::vector<std::pair<int64_t, Rational>> idx_angle;
+
+    for (int64_t i = 0; i < VV[v].size(); ++i) {
+        Vector2r cur_vector = V_pos[VV[v].get(0)] - V_pos[v];
+    }
+
+    stack.pop_back();
+    in_stack[v] = false;
+    in_stack_idx[v] = -1;
+}
+
 void edge_insertion(const TriMesh& _trimesh, const EdgeMesh& edgemesh)
 {
     TriMesh trimesh = _trimesh; // make a full copy here. we may not want to change the input
@@ -189,11 +293,62 @@ void edge_insertion(const TriMesh& _trimesh, const EdgeMesh& edgemesh)
     wmtk::utils::EigenMatrixWriter writer_edge;
     edgemesh.serialize(writer_edge);
 
-    MatrixX<int64_t> EV;
-    MatrixX<Rational> V_edge;
+    Eigen::MatrixX<int64_t> EV_tmp;
+    Eigen::MatrixX<Rational> V_edge;
 
-    writer_edge.get_EV_matrix(EV);
+    writer_edge.get_EV_matrix(EV_tmp);
     writer_edge.get_position_matrix(V_edge);
+
+    // TODO: merge colinear and overlapping segments
+    std::vector<std::array<int64_t, 2>> EV;
+    for (int64_t i = 0; i < EV_tmp.rows(); ++i) {
+        const auto& p0 = V_edge.row(EV_tmp(i, 0));
+        const auto& p1 = V_edge.row(EV_tmp(i, 1));
+        auto bbox_p = compute_bbox(p0, p1);
+
+        bool overlapped = false;
+        for (auto& e : EV) {
+            const auto& q0 = V_edge.row(e[0]);
+            const auto& q1 = V_edge.row(e[1]);
+            auto bbox_q = compute_bbox(q0, q1);
+
+            if (is_colinear(p0, p1, q0, q1) &&
+                is_bbox_intersect(bbox_p[0], bbox_p[1], bbox_q[0], bbox_q[1])) {
+                overlapped = true;
+
+                // merge two segments
+                int64_t endpoint0 = EV_tmp(i, 0);
+                int64_t endpoint1 = EV_tmp(i, 1);
+
+                const Vector2r p0p1 = p1 - p0;
+                const Vector2r p0q0 = q0 - p0;
+                const Vector2r p0q1 = q1 - p0;
+                const Vector2r p1q0 = q0 - p1;
+                const Vector2r p1q1 = q1 - p1;
+
+                if (p0p1[0] * p0q0[0] < 0 || p0p1[1] * p0q0[1] < 0) {
+                    endpoint0 = e[0];
+                } else if (p0p1[0] * p0q1[0] < 0 || p0p1[1] * p0q1[1] < 0) {
+                    endpoint0 = e[1];
+                }
+
+                if (-p0p1[0] * p1q0[0] < 0 || -p0p1[1] * p1q0[1] < 0) {
+                    endpoint1 = e[0];
+                } else if (-p0p1[0] * p1q1[0] < 0 || -p0p1[1] * p1q1[1] < 0) {
+                    endpoint1 = e[1];
+                }
+
+                e[0] = endpoint[0];
+                e[1] = endpoint[1];
+
+                break;
+            }
+        }
+        if (!overlapped) {
+            EV.push_back({{EV_tmp(i, 0), EV_tmp(i, 1)}});
+        }
+    }
+
 
     // add segment vertices into tris and split the tris
 
@@ -458,8 +613,154 @@ void edge_insertion(const TriMesh& _trimesh, const EdgeMesh& edgemesh)
         }
     }
 
+    // get vertex map segment -> trimesh
+    std::vector<int64_t> v_map_seg_to_tri(V_edge.rows());
 
-    // remove duplicated vertices
+    const auto& vs = trimesh.get_all(PrimitiveType::Vertex);
+    for (int64_t i = 0; i < vs.size(); ++i) {
+        int64_t seg_idx = segment_index_accessor.const_scalar_attribute(vs[i]);
+
+        if (seg_idx < 0) {
+            continue;
+        }
+
+        assert(seg_idx < V_edge.rows());
+        v_map_seg_to_tri[seg_idx] = i;
+    }
+
+    // get all edges from trimesh
+    wmtk::utils::EigenMatrixWriter writer_tri;
+    trimesh.serialize(writer_tri);
+
+    Eigen::MatrixX<int64_t> FV;
+    Eigen::MatrixX<Rational> V_tris;
+
+    writer_tri.get_FV_matrix(FV);
+    writer_tri.get_position_matrix(V_tris);
+
+    Eigen::MatrixX<int64_t> edges;
+    edges = igl::edges(FV);
+
+    // compute intersections, store in each segment
+    std::vector<Vector2r> v_final(V_tris.rows());
+
+    for (int64_t i = 0; i < V_tris.rows(); ++i) {
+        v_final[i] = V_tris.row(i);
+    }
+
+    std::vector<Segment> segments;
+    for (int64_t i = 0; i < edges.rows(); ++i) {
+        segments.emplace_back(v_final[edges(i, 0)], v_final[edges(i, 1)], edges(i, 0), edges(i, 1));
+    }
+
+    const int64_t not_on_input_cnt = segments.size();
+
+    for (int64_t i = 0; i < EV.size(); ++i) {
+        const int64_t idx0 = v_map_seg_to_tri[EV[i][0]];
+        const int64_t idx1 = v_map_seg_to_tri[EV[i][1]];
+        const Vector2r p0 = v_final[idx0];
+        const Vector2r p1 = v_final[idx1];
+
+        Segment s(p0, p1, idx0, idx1);
+
+        for (int64_t j = 0; j < segments.size(); ++j) {
+            auto& seg = segments[j];
+            // check bbox intersection
+            if (!is_bbox_intersect(s.bbox_min, s.bbox_max, seg.bbox_min, seg.bbox_max)) {
+                continue;
+            }
+
+            // get real intersection
+            Vector2r res;
+            Rational t0, t1;
+            if (!segment_segment_inter(p0, p1, seg.p0, seg.p1, res, t0, t1)) {
+                continue;
+            }
+
+            assert(t0 >= 0 && t0 <= 1);
+            assert(t1 >= 0 && t1 <= 1);
+
+            // add point to segment
+            bool v_exist_on_0 = false;
+            bool v_exist_on_1 = false;
+            int64_t new_v_idx = -1;
+
+            for (int64_t k = 0; k < s.points_on_segment.size(); ++k) {
+                if (t0 == s.points_on_segment[k].second) {
+                    v_exist_on_0 = true;
+                    new_v_idx = s.points_on_segment[k].first;
+                    break;
+                }
+            }
+
+            for (int64_t k = 0; k < seg.points_on_segment.size(); ++k) {
+                if (t1 == seg.points_on_segment[k].second) {
+                    v_exist_on_1 = true;
+                    new_v_idx = seg.points_on_segment[k].first;
+                    break;
+                }
+            }
+
+            if (!v_exist_on_0 && !v_exist_on_1) {
+                v_final.push_back(res);
+                new_v_idx = v_final.size();
+            }
+
+            assert(new_v_idx > -1);
+
+            if (!v_exist_on_0) {
+                for (int64_t k = 0; k < s.points_on_segment.size() - 1; ++k) {
+                    // insert by order of t
+                    if (t0 > s.points_on_segment[k].second &&
+                        t0 < s.points_on_segment[k + 1].second) {
+                        s.points_on_segment.insert(
+                            std::next(s.points_on_segment.begin(), k + 1),
+                            std::make_pair(new_v_idx, t0));
+                        break;
+                    }
+                }
+            }
+
+            if (!v_exist_on_1) {
+                for (int64_t k = 0; k < seg.points_on_segment.size() - 1; ++k) {
+                    // insert by order of t
+                    if (t1 > seg.points_on_segment[k].second &&
+                        t1 < seg.points_on_segment[k + 1].second) {
+                        seg.points_on_segment.insert(
+                            std::next(seg.points_on_segment.begin(), k + 1),
+                            std::make_pair(new_v_idx, t1));
+                        break;
+                    }
+                }
+            }
+        }
+
+        segments.push_back(s);
+    }
+
+    // get all v-v connectivity in ccw order
+    // bool 1: is on input, bool 2: visited
+    std::vector<std::vector<std::tuple<int64_t, bool, bool>>> VV(v_final.size());
+
+    for (int64_t i = 0; i < not_on_input_cnt; ++i) {
+        for (int64_t j = 0; j < segments[i].points_on_segment.size() - 1; ++j) {
+            VV[segments[i].points_on_segment[j].first].push_back(
+                std::tie(segments[i].points_on_segment[j + 1].first, false, false));
+            VV[segments[i].points_on_segment[j + 1].first].push_back(
+                std::tie(segments[i].points_on_segment[j].first, false, false));
+        }
+    }
+
+    for (int64_t i = not_on_input_cnt; i < segments.size(); ++i) {
+        for (int64_t j = 0; j < segments[i].points_on_segment.size() - 1; ++j) {
+            VV[segments[i].points_on_segment[j].first].push_back(
+                std::tie(segments[i].points_on_segment[j + 1].first, true, false));
+            VV[segments[i].points_on_segment[j + 1].first].push_back(
+                std::tie(segments[i].points_on_segment[j].first, true, false));
+        }
+    }
+
+    std::vector<std::array<int64_t, 3>> triangles;
 }
 
 } // namespace wmtk::components::internal
