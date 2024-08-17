@@ -59,9 +59,9 @@ std::array<Tuple, 2> CollapseAlternateFacetData::get_alternatives(
 
     const int8_t action =
         wmtk::multimesh::utils::find_local_dart_action(mesh_pt, t_dart, data.input);
-    auto map = [action, &sd](const size_t index) -> Tuple {
-        const wmtk::autogen::Dart transform = data.alts[index];
-        const int8_t local_boundary_index = data.local_boundary_indices[index];
+    auto map = [action, &sd, &data](const size_t index) -> Tuple {
+        const wmtk::autogen::Dart& transform = data.alts[index];
+        const int8_t& local_boundary_index = data.local_boundary_indices[index];
         const PrimitiveType mappable_dart_dimension = a;
         if (transform.is_null() || mappable_dart_dimension < simplex_dimension) {
             return {};

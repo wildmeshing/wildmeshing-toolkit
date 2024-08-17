@@ -3,6 +3,7 @@
 #include <wmtk/utils/TupleInspector.hpp>
 #include "edge_mesh/SimplexDart.hpp"
 #include "point_mesh/SimplexDart.hpp"
+#include "simplex_from_valid_index.hpp"
 #include "subgroup/convert.hpp"
 #include "tet_mesh/SimplexDart.hpp"
 #include "tri_mesh/SimplexDart.hpp"
@@ -154,6 +155,7 @@ Dart SimplexDart::dart_from_tuple(const wmtk::Tuple& t) const
 
 int8_t SimplexDart::simplex_index(const Dart& dart, PrimitiveType simplex_type) const
 {
-    return simplex_index(dart.local_orientation(), simplex_type);
+    return simplex_index_from_valid_tuple(m_simplex_type, dart.local_orientation(), simplex_type);
 }
 } // namespace wmtk::autogen
+

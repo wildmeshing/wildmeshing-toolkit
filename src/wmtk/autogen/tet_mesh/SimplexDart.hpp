@@ -36,6 +36,11 @@ public:
         return VectorX<int8_t>::ConstMapType(auto_valid_tuple_indices, size());
     }
 
+    static int8_t simplex_index(wmtk::PrimitiveType type, int8_t valid_index)
+    {
+        return auto_valid_tuples[valid_index][get_primitive_type_id(type)];
+    }
+
     // constexpr static Eigen::Map<const Eigen::Matrix<int8_t, SimplexDart::size(), 1>>
     // constexpr static auto valid_indices()
     //{
