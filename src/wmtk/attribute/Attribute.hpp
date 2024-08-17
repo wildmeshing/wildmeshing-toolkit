@@ -19,8 +19,6 @@ template <typename T>
 class PerThreadAttributeScopeStacks;
 namespace internal {
 template <typename T>
-class AttributeMapCache;
-template <typename T>
 class AttributeTransactionStack;
 } // namespace internal
 
@@ -46,7 +44,6 @@ public:
 
     template <typename U, int D>
     friend class AccessorBase;
-    friend class internal::AttributeMapCache<T>;
     friend class internal::AttributeTransactionStack<T>;
     void serialize(const std::string& name, const int dim, MeshWriter& writer) const;
 

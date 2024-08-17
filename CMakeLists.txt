@@ -119,17 +119,9 @@ target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_MAX_ATTRIBUTE_DIMENSI
 
 
 
-option(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE "Use monotonic allocator to store the cache buffer" OFF)
-if(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
-    target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
-endif()
 
 
 
-option(WMTK_ENABLE_TRANSACTION_STACK "Enable transaction stack" ON)
-if(WMTK_ENABLE_TRANSACTION_STACK)
-    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_TRANSACTION_STACK)
-endif()
 
 
 
