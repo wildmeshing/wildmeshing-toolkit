@@ -2,7 +2,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/attribute/Attribute.hpp>
-#include <wmtk/attribute/AttributeScopeStack.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "../tools/DEBUG_PointMesh.hpp"
 #include "../tools/DEBUG_TriMesh.hpp"

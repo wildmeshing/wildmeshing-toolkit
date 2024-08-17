@@ -17,8 +17,6 @@ template <typename T>
 class AttributeScope;
 class AttributeManager;
 
-#define WMTK_ATTRIBUTE_SCOPE_STACK_CACHE_ACTIVE
-// #define WMTK_USE_MAP_CACHE_ITERATOR
 /**
  * A stack of changes applied to an Attribute.
  * The stack consists of AttributeScopes which hold all changes applied inside one scope. Whenever a
@@ -97,9 +95,7 @@ protected:
     std::vector<AttributeScope<T>> m_scopes;
     typename std::vector<AttributeScope<T>>::const_iterator m_active;
     // typename std::vector<AttributeScope<T>>::iterator m_back;
-#if defined(WMTK_ATTRIBUTE_SCOPE_STACK_CACHE_ACTIVE)
     bool m_at_current_scope = true;
-#endif
     //  Mesh& m_mesh;
     //  AttributeManager& m_attribute_manager;
     //  MeshAttributeHandle<T> m_handle;
@@ -154,27 +150,6 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
         assert(m_active >= m_scopes.begin());
         assert(m_active < m_scopes.end());
         for (auto it = m_active; it < m_scopes.end(); ++it) {
-#if defined(WMTK_USE_MAP_CACHE_ITERATOR)
-#if defined(WMTK_ENABLE_MAP_CACHE)
-            if (auto mapit = it->find_value(index); it->is_value(mapit)) {
-                const auto& d = mapit->second;
-                auto dat = d.template data_as_const_map<D>();
-                return dat;
-            }
-#else
-
-            const auto& indices = it->indices();
-            for (auto iit = indices.crbegin(); iit != indices.crend(); ++iit) {
-                const auto& [global, local] = *iit;
-                if (global == index) {
-                    const int dim = accessor.dimension();
-                    auto dat = ConstMapResult<D>(it->buffer().data() + dim * local, dim);
-                    return dat;
-                }
-            }
-
-#endif
-#else
             const int dim = accessor.dimension();
             const auto ptr = it->get_value(index, dim);
             if (ptr != nullptr) {
@@ -182,7 +157,6 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(
                 return dat;
             }
 
-#endif
         }
     }
     return accessor.template const_vector_attribute<D>(index);

@@ -87,11 +87,7 @@ protected:
     const BaseType& base_type() const { return *this; }
 
 private:
-#if defined(WMTK_ENABLE_TRANSACTION_STACK)
     internal::AttributeTransactionStack<T>& m_cache_stack;
-#else
-    AttributeScopeStack<T>& m_cache_stack;
-#endif
 };
 } // namespace wmtk::attribute
 #include "CachingAccessor.hxx"
