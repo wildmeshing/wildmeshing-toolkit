@@ -1548,11 +1548,8 @@ TEST_CASE("simplex_cofaces_single_dimension", "[simplex_collection][2D]")
         REQUIRE(tc.size() == 3);
         SimplexCollection sc(
             m,
-            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
-                m,
-                tc,
-                PrimitiveType::Triangle));
-        sc.sort();
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(m, tc, PrimitiveType::Edge));
+        sc.sort_and_clean();
 
         const auto& cells = sc.simplex_vector();
 

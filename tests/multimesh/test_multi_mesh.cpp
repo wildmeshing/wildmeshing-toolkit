@@ -1071,10 +1071,10 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
     CHECK(parent.fv_from_fid(4) == Vector3l(3, 5, 0));
     CHECK(child0.fv_from_fid(1) == Vector3l(3, 1, 2));
     CHECK(child0.fv_from_fid(2) == Vector3l(0, 3, 2));
-    CHECK(child1.fv_from_fid(4) == Vector3l(4, 1, 2));
-    CHECK(child1.fv_from_fid(5) == Vector3l(0, 4, 2));
-    CHECK(child1.fv_from_fid(2) == Vector3l(3, 1, 4));
-    CHECK(child1.fv_from_fid(3) == Vector3l(3, 4, 0));
+    CHECK(child1.fv_from_fid(2) == Vector3l(4, 1, 2));
+    CHECK(child1.fv_from_fid(3) == Vector3l(0, 4, 2));
+    CHECK(child1.fv_from_fid(4) == Vector3l(3, 1, 4));
+    CHECK(child1.fv_from_fid(5) == Vector3l(3, 4, 0));
     CHECK(child2.fv_from_fid(2) == Vector3l(0, 2, 4));
     CHECK(child2.fv_from_fid(3) == Vector3l(7, 1, 2));
     CHECK(child2.fv_from_fid(4) == Vector3l(0, 7, 2));
@@ -1107,8 +1107,8 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
     CHECK(child0.fv_from_fid(3) == Vector3l(0, 4, 2));
     CHECK(child0.fv_from_fid(4) == Vector3l(4, 3, 2));
 
-    CHECK(child1.fv_from_fid(4) == Vector3l(4, 1, 2));
-    CHECK(child1.fv_from_fid(2) == Vector3l(3, 1, 4));
+    CHECK(child1.fv_from_fid(2) == Vector3l(4, 1, 2));
+    CHECK(child1.fv_from_fid(4) == Vector3l(3, 1, 4));
     CHECK(child1.fv_from_fid(8) == Vector3l(0, 5, 2));
     CHECK(child1.fv_from_fid(9) == Vector3l(5, 4, 2));
     CHECK(child1.fv_from_fid(6) == Vector3l(3, 5, 0));
