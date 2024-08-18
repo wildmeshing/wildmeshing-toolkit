@@ -8,6 +8,10 @@ include(wmtk_data)
 set(TEST_TOOLS
 tools/all_valid_local_tuples.hpp
 tools/all_valid_local_tuples.cpp
+tools/is_free.hpp
+tools/is_free.cpp
+tools/add_free_child_mesh.hpp
+tools/add_free_child_mesh.cpp
 tools/DEBUG_PointMesh.hpp
 tools/DEBUG_EdgeMesh.hpp
 tools/DEBUG_EdgeMesh.cpp

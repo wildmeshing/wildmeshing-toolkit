@@ -9,11 +9,7 @@ namespace wmtk {
 class TriMesh::TriMeshOperationExecutor : public operations::tri_mesh::EdgeOperationData
 {
 public:
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple, attribute::Accessor<int64_t>& hash_acc);
-#else
     TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple);
-#endif
     void delete_simplices();
     void update_cell_hash();
 
@@ -23,9 +19,6 @@ public:
     attribute::Accessor<int64_t,TriMesh>& fv_accessor;
     attribute::Accessor<int64_t,TriMesh>& vf_accessor;
     attribute::Accessor<int64_t,TriMesh>& ef_accessor;
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    attribute::Accessor<int64_t>& hash_accessor;
-#endif
 
     /**
      * @brief jump to the next edge

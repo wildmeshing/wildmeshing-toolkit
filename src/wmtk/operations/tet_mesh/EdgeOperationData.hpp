@@ -140,6 +140,7 @@ public:
     std::vector<IncidentTetData> incident_tet_datas() const { return m_incident_tet_datas; }
     std::vector<IncidentFaceData> incident_face_datas() const { return m_incident_face_datas; }
 
+    std::vector<simplex::Simplex> new_vertices(const Mesh&) const;
     std::array<int64_t, 2> new_spine_eids() const { return m_split_new_spine_eids; }
 
 

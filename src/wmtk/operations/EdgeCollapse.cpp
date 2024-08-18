@@ -1,4 +1,5 @@
 #include "EdgeCollapse.hpp"
+#include <wmtk/utils/Logger.hpp>
 
 #include <cassert>
 #include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
@@ -17,6 +18,9 @@ EdgeCollapse::EdgeCollapse(Mesh& m)
     auto collect_attrs = [&](auto&& mesh) {
         // can have const variant values here so gotta filter htose out
         if constexpr (!std::is_const_v<std::remove_reference_t<decltype(mesh)>>) {
+            if (mesh.is_free()) {
+                return;
+            }
             for (const auto& attr : mesh.custom_attributes()) {
                 std::visit(
                     [&](auto&& tah) noexcept {
@@ -80,6 +84,10 @@ void EdgeCollapse::set_new_attribute_strategy(
             return;
         }
     }
+    if(attribute.mesh().is_free()) {
+        logger().debug("Set new collapse attribute strategy on a free mesh, there are no new attributes for free mesh collapses");
+        return;
+    }
 
     throw std::runtime_error("unable to find attribute");
 }
@@ -105,4 +113,14 @@ void EdgeCollapse::set_new_attribute_strategy(
         attribute.handle());
 }
 
+bool EdgeCollapse::after(
+    const std::vector<simplex::Simplex>& unmods,
+    const std::vector<simplex::Simplex>& mods) const
+{
+    if (mesh().is_free()) {
+        return true;
+    } else {
+        return Operation::after(unmods, mods);
+    }
+}
 } // namespace wmtk::operations

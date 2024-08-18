@@ -2,11 +2,7 @@
 
 #include <wmtk/utils/Rational.hpp>
 #include "AttributeScope.hpp"
-#if defined(WMTK_ENABLE_TRANSACTION_STACK)
 #include "internal/AttributeTransactionStack.hpp"
-#else
-#include "AttributeScopeStack.hpp"
-#endif
 #include "CachingAccessor.hpp"
 
 namespace wmtk::attribute {

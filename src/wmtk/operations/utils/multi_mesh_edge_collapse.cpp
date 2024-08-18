@@ -58,6 +58,10 @@ std::vector<simplex::Simplex> multi_mesh_edge_collapse_with_modified_simplices(
     auto return_data =
         operations::utils::multi_mesh_edge_collapse(mesh, simplex.tuple(), new_attr_strategies);
 
+    if (mesh.is_free()) {
+        return std::vector<simplex::Simplex>{1};
+    }
+
     return std::visit(
         [&mesh](const auto& rt) -> std::vector<simplex::Simplex> {
             return {simplex::Simplex::vertex(mesh, rt.m_output_tuple)};

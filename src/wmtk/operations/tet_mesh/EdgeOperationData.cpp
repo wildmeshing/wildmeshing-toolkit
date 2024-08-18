@@ -65,6 +65,20 @@ std::vector<Tuple> EdgeOperationData::collapse_merged_ear_faces(const TetMesh& m
     }
     return ret;
 }
+    std::vector<simplex::Simplex> EdgeOperationData::new_vertices(const Mesh&m) const {
+        if(m.is_free()) {
+            throw std::runtime_error("tet edgeoperationdata new_vertices no implemented for free meshes");
+            return {
+                //simplex_from_id(m,PrimitiveType::Vertex,m_free_split_v[0]),
+                //simplex_from_id(m,PrimitiveType::Vertex,m_free_split_v[1]),
+                simplex_from_id(m,PrimitiveType::Vertex,m_split_new_vid),
+            };
+        } else {
+            return {
+                simplex_from_id(m,PrimitiveType::Vertex,m_split_new_vid)
+            };
+        }
+    }
 
 std::vector<Tuple> EdgeOperationData::split_new_rib_edges(const TetMesh& m) const
 {

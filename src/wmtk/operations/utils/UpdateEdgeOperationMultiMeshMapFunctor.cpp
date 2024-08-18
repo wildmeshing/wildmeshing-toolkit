@@ -104,22 +104,20 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
 {
     const auto& parent_incident_datas = fmoe.incident_face_datas();
     auto& parent_mmmanager = m.m_multi_mesh_manager;
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    auto parent_hash_accessor = m.get_const_cell_hash_accessor();
-#endif
     const auto& parent_incident_vids = fmoe.incident_vids();
 
     for (const auto& parent_data : parent_incident_datas) {
         for (int ear_index = 0; ear_index < 2; ++ear_index) {
             for (auto child_ptr : m.get_child_meshes()) {
+                // no ear replcaement required for free child meshes
+                if (child_ptr->is_free()) {
+                    continue;
+                }
                 if (child_ptr->top_cell_dimension() != 1)
                     continue; // only deal with child edgemeshes
 
                 const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
                 int64_t child_id = child_mmmanager.child_id();
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-                auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
-#endif
                 auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
                 auto parent_to_child_handle = parent_mmmanager.children().at(child_id).map_handle;
                 auto child_to_parent_accessor = child_ptr->create_accessor(child_to_parent_handle);
@@ -148,9 +146,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 }
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-                child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
-#endif
 
                 //  check also the flag accessor of child mesh
                 const char child_flag =
@@ -160,14 +155,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     continue;
                 }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-                // parent_tuple need to be ressurected in the parent scope and get id in the parent
-                // scope.
-                // TODO: remove the resurrect cuz parent_tuple should be already valid in the parent
-                // scope
-                parent_tuple = m.parent_scope(
-                    [&]() { return m.resurrect_tuple(parent_tuple, parent_hash_accessor); });
-#endif
                 const int64_t parent_old_vid =
                     m.parent_scope([&]() { return m.id_vertex(parent_tuple); });
 
@@ -208,21 +195,19 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
     const auto& parent_incident_tet_datas = tmoe.incident_tet_datas();
     const auto& parent_incident_face_datas = tmoe.incident_face_datas();
     auto parent_mmmanager = m.m_multi_mesh_manager;
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    auto parent_hash_accessor = m.get_const_cell_hash_accessor();
-#endif
 
     for (const auto& parent_data : parent_incident_tet_datas) {
         for (int ear_index = 0; ear_index < 2; ++ear_index) {
             for (auto child_ptr : m.get_child_meshes()) {
+                // no ear replcaement required for free child meshes
+                if (child_ptr->is_free()) {
+                    continue;
+                }
                 if (child_ptr->top_cell_dimension() == 2) {
                     // handle with child tri mesh
                     // update merge faces here
                     const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
                     const int64_t child_id = child_mmmanager.child_id();
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-                    auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
-#endif
                     const auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
                     const auto parent_to_child_handle =
                         parent_mmmanager.children().at(child_id).map_handle;
@@ -254,10 +239,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     }
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-                    // change to index access
-                    child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
-#endif
 
                     const char child_flag =
                         child_cell_flag_accessor.const_scalar_attribute(child_tuple);
@@ -266,10 +247,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         continue;
                     }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-                    parent_tuple = m.parent_scope(
-                        [&]() { return m.resurrect_tuple(parent_tuple, parent_hash_accessor); });
-#endif
                     const int64_t parent_old_eid =
                         m.parent_scope([&]() { return m.id_edge(parent_tuple); });
                     const int64_t parent_old_vid =
@@ -325,9 +302,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     // there are three ear edges per side
                     const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
                     int64_t child_id = child_mmmanager.child_id();
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-                    auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
-#endif
                     auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
                     auto parent_to_child_handle =
                         parent_mmmanager.children().at(child_id).map_handle;
@@ -371,9 +345,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         }
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-                        child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
-#endif
 
                         const char child_flag =
                             child_cell_flag_accessor.const_scalar_attribute(child_tuple);
@@ -382,11 +353,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                             continue;
                         }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-                        parent_tuple = m.parent_scope([&]() {
-                            return m.resurrect_tuple(parent_tuple, parent_hash_accessor);
-                        });
-#endif
                         const int64_t parent_old_vid =
                             m.parent_scope([&]() { return m.id_vertex(parent_tuple); });
 

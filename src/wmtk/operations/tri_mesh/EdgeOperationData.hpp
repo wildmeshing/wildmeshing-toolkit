@@ -82,6 +82,7 @@ public:
     std::array<Tuple, 2> split_output_edges(const TriMesh&) const;
     std::vector<std::array<Tuple, 2>> split_output_faces(const TriMesh&) const;
 
+    std::vector<simplex::Simplex> new_vertices(const Mesh&) const;
 
     std::array<std::vector<int64_t>, 3> simplex_ids_to_delete;
     std::vector<int64_t> cell_ids_to_update_hash;
@@ -95,7 +96,11 @@ public:
     std::vector<IncidentFaceData> m_incident_face_datas;
 
     std::array<int64_t, 2> split_spine_eids = std::array<int64_t, 2>{{-1, -1}};
+    // in a free mesh this encodes the new vertex added to one of the faces
     int64_t split_new_vid = -1;
+
+    std::array<int64_t, 2> m_free_split_v;
+    std::array<int64_t, 2> m_free_split_e;
 
     bool is_collapse = false;
 };

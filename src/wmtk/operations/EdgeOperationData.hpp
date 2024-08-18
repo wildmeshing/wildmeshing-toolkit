@@ -4,6 +4,7 @@
 #include <variant>
 #include <vector>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk {
 class Mesh;
@@ -53,5 +54,6 @@ public:
 
 protected:
     static Tuple tuple_from_id(const Mesh& m, const PrimitiveType type, const int64_t gid);
+    static simplex::Simplex simplex_from_id(const Mesh& m, const PrimitiveType type, const int64_t gid);
 };
 } // namespace wmtk::operations
