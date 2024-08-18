@@ -150,7 +150,7 @@ TEST_CASE("tuple_autogen_local_id_inversion", "[tuple]")
         for (const auto& t : tuples) {
             int64_t id = tri_mesh::local_id_table_offset(t);
             auto [lvid, leid] = tri_mesh::lvid_leid_from_table_offset(id);
-            Tuple nt(lvid, leid, -1, 0, -1);
+            Tuple nt(lvid, leid, -1, 0);
             int64_t nid = tri_mesh::local_id_table_offset(nt);
 
             CHECK(t == nt);
@@ -163,7 +163,7 @@ TEST_CASE("tuple_autogen_local_id_inversion", "[tuple]")
         for (const auto& t : tuples) {
             int64_t id = tet_mesh::local_id_table_offset(t);
             auto [lvid, leid, lfid] = tet_mesh::lvid_leid_lfid_from_table_offset(id);
-            Tuple nt(lvid, leid, lfid, 0, -1);
+            Tuple nt(lvid, leid, lfid, 0);
             int64_t nid = tet_mesh::local_id_table_offset(nt);
             CHECK(t == nt);
             CHECK(id == nid);

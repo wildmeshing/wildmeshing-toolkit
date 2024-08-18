@@ -45,8 +45,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
             1 - tuple.m_local_vid,
             tuple.m_local_eid,
             tuple.m_local_fid,
-            tuple.m_global_cid,
-            tuple.m_hash);
+            tuple.m_global_cid);
     case PrimitiveType::Edge: {
         const int64_t gvid = id(tuple, PrimitiveType::Vertex);
 
@@ -77,18 +76,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         assert(lvid_new != -1);
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-        const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
-        const Tuple res(
-            lvid_new,
-            tuple.m_local_eid,
-            tuple.m_local_fid,
-            gcid_new,
-            get_cell_hash(gcid_new, hash_accessor));
-#else
         const Tuple res(lvid_new, tuple.m_local_eid, tuple.m_local_fid, gcid_new);
-
-#endif
         assert(is_valid(res));
         return res;
     }
@@ -187,11 +175,7 @@ Tuple EdgeMesh::vertex_tuple_from_id(int64_t id) const
     auto ev = ev_accessor.index_access().const_vector_attribute<2>(e);
     for (int64_t i = 0; i < 2; ++i) {
         if (ev(i) == id) {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-            Tuple v_tuple = Tuple(i, -1, -1, e, get_cell_hash_slow(e));
-#else
             Tuple v_tuple = Tuple(i, -1, -1, e);
-#endif
             return v_tuple;
         }
     }
@@ -202,11 +186,7 @@ Tuple EdgeMesh::vertex_tuple_from_id(int64_t id) const
 
 Tuple EdgeMesh::edge_tuple_from_id(int64_t id) const
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    Tuple e_tuple = Tuple(0, -1, -1, id, get_cell_hash_slow(id));
-#else
     Tuple e_tuple = Tuple(0, -1, -1, id);
-#endif
 
     assert(is_valid(e_tuple));
     return e_tuple;
@@ -226,16 +206,7 @@ Tuple EdgeMesh::tuple_from_global_ids(int64_t eid, int64_t vid) const
     }
     assert(lvid != -1);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    return Tuple(
-        lvid,
-        -1,
-        -1,
-        eid,
-        get_cell_hash_slow(eid)); // TODO replace by function that takes hash accessor as parameter
-#else
     return Tuple(lvid, -1, -1, eid);
-#endif
 }
 
 
@@ -302,13 +273,7 @@ std::vector<std::vector<TypedAttributeHandle<int64_t>>> EdgeMesh::connectivity_a
 std::vector<Tuple> EdgeMesh::orient_vertices(const Tuple& tuple) const
 {
     int64_t cid = tuple.m_global_cid;
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    auto hash = get_cell_hash_slow(cid);
-
-    return {Tuple(0, -1, -1, cid, hash), Tuple(1, -1, -1, cid, hash)};
-#else
     return {Tuple(0, -1, -1, cid), Tuple(1, -1, -1, cid)};
-#endif
 }
 
 
