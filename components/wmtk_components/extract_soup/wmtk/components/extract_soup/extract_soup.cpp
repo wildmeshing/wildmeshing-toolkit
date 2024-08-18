@@ -30,8 +30,13 @@ void extract_soup(const base::Paths& paths, const nlohmann::json& j, io::Cache& 
     } else {
         // gmsh2hdf_tag
         std::string encoded_file = options.volumetric_encoded_file;
+        std::string encoded_bc_file = options.volumetric_encoded_bc_file;
         double delta_x = options.delta_x;
-        internal::gmsh2hdf_tag(encoded_file, input_file, output_file, delta_x);
+        if (encoded_bc_file == "dummy") {
+            internal::gmsh2hdf_tag(encoded_file, input_file, output_file, delta_x);
+        } else {
+            internal::gmsh2hdf_tag(encoded_file, encoded_bc_file, input_file, output_file, delta_x);
+        }
     }
 }
 } // namespace wmtk::components

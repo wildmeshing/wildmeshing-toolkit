@@ -14,7 +14,8 @@ struct ExtractOptions
     std::string output; // output
     double delta_x;
     bool mode;
-    std::string volumetric_encoded_file; // encoded_file
+    std::string volumetric_encoded_file; // encoded tag file
+    std::string volumetric_encoded_bc_file; // encoded boundary condition tag file
     int level;
 };
 
@@ -25,6 +26,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     delta_x,
     mode,
     volumetric_encoded_file,
+    volumetric_encoded_bc_file,
     level);
 
 } // namespace internal

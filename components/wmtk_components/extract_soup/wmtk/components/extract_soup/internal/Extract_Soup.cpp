@@ -459,12 +459,28 @@ void gmsh2hdf_tag(
     std::string output_file,
     double delta_x)
 {
+    gmsh2hdf_tag(volumetric_file, "", gmsh_file, output_file, delta_x);
+}
+
+void gmsh2hdf_tag(
+    std::string volumetric_file,
+    std::string volumetric_bc_file,
+    std::string gmsh_file,
+    std::string output_file,
+    double delta_x)
+{
     std::vector<std::vector<std::vector<unsigned int>>> volumetric_data;
+    std::vector<std::vector<std::vector<unsigned int>>> volumetric_bc_data;
     std::vector<Eigen::Vector3d> vertices;
     std::vector<Eigen::Vector4<unsigned int>> tetrahedras;
+    bool has_bc = false;
 
     read_array_data(volumetric_data, volumetric_file);
     readGmsh(gmsh_file, vertices, tetrahedras);
+    if (volumetric_bc_file != "") {
+        has_bc = true;
+        read_array_data(volumetric_bc_data, volumetric_bc_file);
+    }
 
     RowVectors4l T;
     T.resize(tetrahedras.size(), 4);
@@ -499,6 +515,8 @@ void gmsh2hdf_tag(
     auto acc_tag = mesh.create_accessor<int64_t>(tag_handle);
     auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto acc_pos = mesh.create_accessor<double>(pos_handle);
+    auto bc_tag_handle = mesh.register_attribute<int64_t>("bc_tag", PrimitiveType::Tetrahedron, 1);
+    auto acc_bc_tag = mesh.create_accessor<int64_t>(bc_tag_handle);
 
     spdlog::info("Operating Tag...\n");
     for (const Tuple& t : mesh.get_all(PrimitiveType::Tetrahedron)) {
@@ -514,8 +532,12 @@ void gmsh2hdf_tag(
         if (idx_0 >= 0 && idx_0 < volumetric_data.size() && idx_1 > 0 &&
             idx_1 < volumetric_data[0].size() && idx_2 > 0 &&
             idx_2 < volumetric_data[0][0].size()) {
+            // for tag
             int64_t intValue = volumetric_data[idx_0][idx_1][idx_2];
             acc_tag.scalar_attribute(t) = intValue;
+            // for bc_tag
+            int64_t intBCValue = volumetric_bc_data[idx_0][idx_1][idx_2];
+            acc_bc_tag.scalar_attribute(t) = intBCValue;
         }
     }
 

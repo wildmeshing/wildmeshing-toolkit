@@ -51,4 +51,11 @@ void gmsh2hdf_tag(
     std::string gmsh_file,
     std::string output_file,
     double delta_x);
+
+void gmsh2hdf_tag(
+    std::string volumetric_file,
+    std::string volumetric_bc_file,
+    std::string gmsh_file,
+    std::string output_file,
+    double delta_x);
 } // namespace wmtk::components::internal
