@@ -8,10 +8,6 @@ var dir_aa61c4bf93d6c6781f6d1544a13a5327 =
       [ "AttributeFlatCache", "classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html", "classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache" ]
     ] ],
     [ "AttributeFlatCache.hxx", "_attribute_flat_cache_8hxx.html", null ],
-    [ "AttributeMapCache.hpp", "_attribute_map_cache_8hpp.html", [
-      [ "AttributeMapCache", "classwmtk_1_1attribute_1_1internal_1_1_attribute_map_cache.html", "classwmtk_1_1attribute_1_1internal_1_1_attribute_map_cache" ]
-    ] ],
-    [ "AttributeMapCache.hxx", "_attribute_map_cache_8hxx.html", null ],
     [ "AttributeTransactionStack.hpp", "_attribute_transaction_stack_8hpp.html", [
       [ "AttributeTransactionStack", "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html", "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack" ]
     ] ],

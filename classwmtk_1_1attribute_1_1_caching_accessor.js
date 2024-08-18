@@ -30,9 +30,8 @@ var classwmtk_1_1attribute_1_1_caching_accessor =
     [ "vector_attribute", "classwmtk_1_1attribute_1_1_caching_accessor.html#a4d3e92a1feb6f4b17f8df584df59f7e2", null ],
     [ "vector_attribute", "classwmtk_1_1attribute_1_1_caching_accessor.html#a1082ba3fd4f20f59ec2a756c74b9c57d", null ],
     [ "writing_enabled", "classwmtk_1_1attribute_1_1_caching_accessor.html#ae7a77d50d8acb8ea7ecba48f6ae7deb4", null ],
-    [ "internal::AttributeMapCache< T >", "classwmtk_1_1attribute_1_1_caching_accessor.html#a7f4a91e84ce03a36e9d9c498e8bae316", null ],
     [ "wmtk::Mesh", "classwmtk_1_1attribute_1_1_caching_accessor.html#a40e16ebf947f9980244ad9e954e38aa3", null ],
     [ "wmtk::TetMesh", "classwmtk_1_1attribute_1_1_caching_accessor.html#a5ce9c8694cc086ab16205a502784b419", null ],
     [ "wmtk::TriMesh", "classwmtk_1_1attribute_1_1_caching_accessor.html#ad1488dc86ee7c27ce1c7ae5acb1f62a3", null ],
-    [ "m_cache_stack", "classwmtk_1_1attribute_1_1_caching_accessor.html#af8ade52bb21786a60c29a4f700a9cceb", null ]
+    [ "m_cache_stack", "classwmtk_1_1attribute_1_1_caching_accessor.html#a854507f2b8c3ae3588eeb076794566f3", null ]
 ];

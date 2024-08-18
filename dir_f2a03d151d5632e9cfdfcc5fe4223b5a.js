@@ -29,8 +29,6 @@ var dir_f2a03d151d5632e9cfdfcc5fe4223b5a =
     [ "AttributeScopeHandle.hpp", "attribute_2_attribute_scope_handle_8hpp.html", [
       [ "AttributeScopeHandle", "classwmtk_1_1attribute_1_1_attribute_scope_handle.html", "classwmtk_1_1attribute_1_1_attribute_scope_handle" ]
     ] ],
-    [ "AttributeScopeStack.hpp", "_attribute_scope_stack_8hpp.html", "_attribute_scope_stack_8hpp" ],
-    [ "AttributeScopeStack.hxx", "_attribute_scope_stack_8hxx.html", null ],
     [ "CachingAccessor.hpp", "_caching_accessor_8hpp.html", [
       [ "CachingAccessor", "classwmtk_1_1attribute_1_1_caching_accessor.html", "classwmtk_1_1attribute_1_1_caching_accessor" ]
     ] ],

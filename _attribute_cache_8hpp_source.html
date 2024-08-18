@@ -116,28 +116,16 @@ $(document).ready(function(){initNavTree('_attribute_cache_8hpp_source.html','')
 </div><!--header-->
 <div class="contents">
 <a href="_attribute_cache_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#if defined(WMTK_ENABLE_MAP_CACHE)</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_attribute_map_cache_8hpp.html">internal/AttributeMapCache.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1attribute.html">wmtk::attribute</a> {</div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;        <span class="keyword">using</span> <a class="code" href="namespacewmtk_1_1attribute.html#a4ca9acf6e5e8cc431e42433aaf3dd481">AttributeCache</a> = internal::AttributeMapCache&lt;T&gt;;</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;}</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#else</span></div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_attribute_flat_cache_8hpp.html">internal/AttributeFlatCache.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1attribute.html">wmtk::attribute</a> {</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00016"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1attribute.html#a4ca9acf6e5e8cc431e42433aaf3dd481">   16</a></span>&#160;        <span class="keyword">using</span> <a class="code" href="classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html">AttributeCache</a> = <a class="code" href="classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html">internal::AttributeFlatCache&lt;T&gt;</a>;</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;}</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_attribute_flat_cache_8hpp.html">internal/AttributeFlatCache.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160; </div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1attribute.html">wmtk::attribute</a> {</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00007"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1attribute.html#a4ca9acf6e5e8cc431e42433aaf3dd481">    7</a></span>&#160;        <span class="keyword">using</span> <a class="code" href="classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html">AttributeCache</a> = <a class="code" href="classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html">internal::AttributeFlatCache&lt;T&gt;</a>;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;}</div>
 <div class="ttc" id="a_attribute_flat_cache_8hpp_html"><div class="ttname"><a href="_attribute_flat_cache_8hpp.html">AttributeFlatCache.hpp</a></div></div>
-<div class="ttc" id="a_attribute_map_cache_8hpp_html"><div class="ttname"><a href="_attribute_map_cache_8hpp.html">AttributeMapCache.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html">wmtk::attribute::internal::AttributeFlatCache</a></div><div class="ttdef"><b>Definition:</b> <a href="_attribute_flat_cache_8hpp_source.html#l00016">AttributeFlatCache.hpp:17</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1attribute_html"><div class="ttname"><a href="namespacewmtk_1_1attribute.html">wmtk::attribute</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8hpp_source.html#l00016">Accessor.hpp:16</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1attribute_html_a4ca9acf6e5e8cc431e42433aaf3dd481"><div class="ttname"><a href="namespacewmtk_1_1attribute.html#a4ca9acf6e5e8cc431e42433aaf3dd481">wmtk::attribute::AttributeCache</a></div><div class="ttdeci">internal::AttributeFlatCache&lt; T &gt; AttributeCache</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_cache_8hpp_source.html#l00016">AttributeCache.hpp:16</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

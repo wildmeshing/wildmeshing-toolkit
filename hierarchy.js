@@ -26,10 +26,8 @@ var hierarchy =
       [ "wmtk::attribute::AttributeScope< T >", "classwmtk_1_1attribute_1_1_attribute_scope.html", null ]
     ] ],
     [ "wmtk::attribute::AttributeHandle", "classwmtk_1_1attribute_1_1_attribute_handle.html", null ],
-    [ "wmtk::attribute::internal::AttributeMapCache< T >", "classwmtk_1_1attribute_1_1internal_1_1_attribute_map_cache.html", null ],
     [ "wmtk::attribute::AttributeScopeHandle", "classwmtk_1_1attribute_1_1_attribute_scope_handle.html", null ],
     [ "wmtk::multimesh::attribute::AttributeScopeHandle", "classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle.html", null ],
-    [ "wmtk::attribute::AttributeScopeStack< T >", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html", null ],
     [ "wmtk::attribute::internal::AttributeTransactionStack< T >", "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html", null ],
     [ "wmtk::operations::AttributeTransferStrategyBase", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html", [
       [ "wmtk::operations::AttributeTransferStrategy< MyType >", "classwmtk_1_1operations_1_1_attribute_transfer_strategy.html", [

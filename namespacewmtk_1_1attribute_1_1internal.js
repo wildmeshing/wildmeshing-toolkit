@@ -1,6 +1,5 @@
 var namespacewmtk_1_1attribute_1_1internal =
 [
-    [ "AttributeMapCache", "classwmtk_1_1attribute_1_1internal_1_1_attribute_map_cache.html", "classwmtk_1_1attribute_1_1internal_1_1_attribute_map_cache" ],
     [ "AttributeTransactionStack", "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html", "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack" ],
     [ "AttributeCacheData", "classwmtk_1_1attribute_1_1internal_1_1_attribute_cache_data.html", "classwmtk_1_1attribute_1_1internal_1_1_attribute_cache_data" ],
     [ "AttributeFlatCache", "classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html", "classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache" ],

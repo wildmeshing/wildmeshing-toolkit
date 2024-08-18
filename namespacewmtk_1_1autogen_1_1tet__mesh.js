@@ -11,7 +11,6 @@ var namespacewmtk_1_1autogen_1_1tet__mesh =
     [ "local_switch_tuple", "namespacewmtk_1_1autogen_1_1tet__mesh.html#a4060d948aa959f21810c425f3f197dd5", null ],
     [ "lvid_leid_lfid_from_table_offset", "namespacewmtk_1_1autogen_1_1tet__mesh.html#a25a52c95d0e04d803d206f61bc2986b2", null ],
     [ "tuple_from_valid_index", "namespacewmtk_1_1autogen_1_1tet__mesh.html#af85b0d2452e4895a5c63bb37bb7024e7", null ],
-    [ "tuple_from_valid_index", "namespacewmtk_1_1autogen_1_1tet__mesh.html#af9136fdc1d883f03b83113c7aa6ab7c6", null ],
     [ "tuple_is_valid_for_ccw", "namespacewmtk_1_1autogen_1_1tet__mesh.html#a217b7c5c5312a716ad27c99abcfc0eb1", null ],
     [ "valid_index_from_tuple", "namespacewmtk_1_1autogen_1_1tet__mesh.html#aa75dd77ec88f9fffac8d3c09d501000b", null ],
     [ "auto_3d_edges", "namespacewmtk_1_1autogen_1_1tet__mesh.html#a1513d9ac4f9575ff4b6fc27dc184a74d", null ],

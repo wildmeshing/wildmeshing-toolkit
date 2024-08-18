@@ -14,6 +14,5 @@ var classwmtk_1_1attribute_1_1_attribute_scope =
     [ "load_const_cached_vector_value", "classwmtk_1_1attribute_1_1_attribute_scope.html#a5c29b7ffe679e8acd6f00d85f9dd4350", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_attribute_scope.html#a605e1a7a0b1f2dd2e97fb4806295151a", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_attribute_scope.html#a05cf652b98ce554e1960017b0267fb8b", null ],
-    [ "AttributeScopeStack< T >", "classwmtk_1_1attribute_1_1_attribute_scope.html#ae8140b04fe2c11b9d85d7beb2474c99a", null ],
     [ "CachingAccessor", "classwmtk_1_1attribute_1_1_attribute_scope.html#a5031d6d5de6cc3cf7f984dba227e475e", null ]
 ];

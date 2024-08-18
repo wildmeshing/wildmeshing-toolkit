@@ -9,7 +9,6 @@ var namespacewmtk_1_1attribute =
     [ "AccessorCache", "classwmtk_1_1attribute_1_1_accessor_cache.html", null ],
     [ "AccessorBase", "classwmtk_1_1attribute_1_1_accessor_base.html", "classwmtk_1_1attribute_1_1_accessor_base" ],
     [ "PerThreadAttributeScopeStacks", "classwmtk_1_1attribute_1_1_per_thread_attribute_scope_stacks.html", "classwmtk_1_1attribute_1_1_per_thread_attribute_scope_stacks" ],
-    [ "AttributeScopeStack", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html", "classwmtk_1_1attribute_1_1_attribute_scope_stack" ],
     [ "TypedAttributeHandle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", "classwmtk_1_1attribute_1_1_typed_attribute_handle" ],
     [ "AttributeHandle", "classwmtk_1_1attribute_1_1_attribute_handle.html", "classwmtk_1_1attribute_1_1_attribute_handle" ],
     [ "AttributeManager", "classwmtk_1_1attribute_1_1_attribute_manager.html", "classwmtk_1_1attribute_1_1_attribute_manager" ],
