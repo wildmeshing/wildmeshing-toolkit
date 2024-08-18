@@ -36,7 +36,7 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
     assert(pos_handles.size() == 1);
     auto pos_handle = pos_handles.front();
 
-    if (mesh_in->top_simplex_type() != PrimitiveType::Triangle) {
+    if (pos_handle.mesh().top_simplex_type() != PrimitiveType::Triangle) {
         log_and_throw_error(
             "isotropic remeshing works only for triangle meshes: {}",
             mesh_in->top_simplex_type());
@@ -56,7 +56,8 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
 
     /////////////////////////////////////////////
 
-    TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
+    // TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
+    TriMesh& mesh = static_cast<TriMesh&>(pos_handle.mesh());
 
 
     // // debug code
@@ -98,7 +99,7 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
             compute_edge_length);
     edge_length_update->run_on_all();
 
-  #if false // old implementation from teseo/sec branch
+#if false // old implementation from teseo/sec branch
     double avg_length = 0;
     const auto edges = mesh.get_all(PrimitiveType::Edge);
     for (const auto& e : edges) {
@@ -225,7 +226,6 @@ void shortestedge_collapse(const base::Paths& paths, const nlohmann::json& j, io
         collapse->add_invariant(
             std::make_shared<invariants::FusionEdgeInvariant>(mesh, mesh.get_multi_mesh_root()));
         for (auto& p : positions) {
-
             collapse->set_new_attribute_strategy(
                 p,
                 wmtk::operations::CollapseBasicStrategy::CopyOther);
