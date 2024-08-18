@@ -22,6 +22,7 @@ TEST_CASE("component_extract_soup", "[.]")
             {"mode", true},
             {"delta_x", 0.1},
             {"volumetric_encoded_file", ""},
+            {"volumetric_encoded_bc_file", ""},
             {"level", 1}};
 
 
