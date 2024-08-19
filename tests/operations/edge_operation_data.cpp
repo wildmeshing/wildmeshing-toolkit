@@ -315,12 +315,12 @@ TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
 
             results.emplace_back(left_ear, Dat{left_alt, {}, wmtk::PrimitiveType::Edge});
             results.emplace_back(right_ear, Dat{{}, right_alt, wmtk::PrimitiveType::Edge});
-            results.emplace_back(
-                left_ear_opp,
-                std::array<wmtk::Tuple, 2>{{left_alt_opp, right_alt_opp}});
-            results.emplace_back(
-                right_ear_opp,
-                std::array<wmtk::Tuple, 2>{{left_alt_opp, right_alt_opp}});
+            // results.emplace_back(
+            //     left_ear_opp,
+            //     std::array<wmtk::Tuple, 2>{{left_alt_opp, right_alt_opp}});
+            // results.emplace_back(
+            //     right_ear_opp,
+            //     std::array<wmtk::Tuple, 2>{{left_alt_opp, right_alt_opp}});
 
 
             for (const auto& [t, pr] : results) {

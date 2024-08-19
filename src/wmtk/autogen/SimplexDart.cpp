@@ -3,7 +3,7 @@
 #include <wmtk/utils/TupleInspector.hpp>
 #include "edge_mesh/SimplexDart.hpp"
 #include "point_mesh/SimplexDart.hpp"
-#include "simplex_from_valid_index.hpp"
+#include "simplex_index_from_valid_index.hpp"
 #include "subgroup/convert.hpp"
 #include "tet_mesh/SimplexDart.hpp"
 #include "tri_mesh/SimplexDart.hpp"

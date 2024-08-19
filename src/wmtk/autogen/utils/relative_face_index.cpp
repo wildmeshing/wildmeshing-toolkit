@@ -12,7 +12,7 @@ int8_t relative_face_index(
     PrimitiveType target_type,
     int8_t target_index)
 {
-    const int8_t identity_action_to_right_face = sd.action_to_simplex(target_type, target_index);
+    const int8_t identity_action_to_right_face = action_to_simplex(target_type, target_index);
     const int8_t action_to_right_face =
         sd.product(identity_action_to_right_face, sd.inverse(current_orientation()));
 

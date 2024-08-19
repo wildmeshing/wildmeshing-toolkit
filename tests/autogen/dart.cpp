@@ -1,5 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/autogen/SimplexDart.hpp>
+#include <wmtk/autogen/is_ccw.hpp>
+#include <wmtk/autogen/local_dart_action.hpp>
+#include <wmtk/autogen/local_switch_tuple.hpp>
+#include <wmtk/utils/primitive_range.hpp>
+#include "tools/all_valid_local_tuples.hpp"
 using namespace wmtk;
 using namespace wmtk::autogen;
 using namespace wmtk::tests;
@@ -9,7 +14,7 @@ TEST_CASE("tuple_autogen_index_dart_tuple_conversion", "[tuple]")
     // when other meshes are available add them here
     for (PrimitiveType mesh_type :
          {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
-        auto tuples = all_valid_local_tuples(mesh_type);
+        auto tuples = wmtk::tests::all_valid_local_tuples(mesh_type);
         autogen::SimplexDart sd(mesh_type);
 
         for (const auto& t : tuples) {
@@ -29,7 +34,7 @@ TEST_CASE("tuple_autogen_index_dart_group_structure", "[tuple]")
         autogen::SimplexDart sd(mesh_type);
         assert(size_t(sd.valid_indices().size()) == sd.size());
 
-        for (PrimitiveType pt : primitives_up_to(mesh_type)) {
+        for (PrimitiveType pt : wmtk::utils::primitive_below(mesh_type)) {
             const int8_t index_switch = sd.primitive_as_index(pt);
             CHECK(sd.identity() == sd.product(index_switch, index_switch));
             CHECK(index_switch == sd.inverse(index_switch));
@@ -114,7 +119,7 @@ TEST_CASE("tuple_autogen_products_vs_switch", "[tuple]")
 
                 CHECK(manual_switch == product_switch);
                 CHECK(product_switch == product_switch2);
-                CHECK(output ==  expected);
+                CHECK(output == expected);
             };
             for (size_t j = 0; j < 4; ++j) {
                 for (PrimitiveType pt0 : primitives_up_to(mesh_type)) {

@@ -18,7 +18,7 @@ edge_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
 {
     EdgeMesh::EdgeMeshOperationExecutor exec(m, s.tuple());
     exec.collapse_edge();
-    return std::move(exec);
+    return exec;
 }
 tri_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
     TriMesh& m,
@@ -26,7 +26,7 @@ tri_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
 {
     TriMesh::TriMeshOperationExecutor exec(m, s.tuple());
     exec.collapse_edge();
-    return std::move(exec);
+    return exec;
 }
 tet_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
     TetMesh& m,
@@ -34,6 +34,6 @@ tet_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
 {
     TetMesh::TetMeshOperationExecutor exec(m, s.tuple());
     exec.collapse_edge();
-    return std::move(exec);
+    return exec;
 }
 } // namespace wmtk::operations::utils
