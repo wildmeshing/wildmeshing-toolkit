@@ -202,9 +202,9 @@ def face_changing_subdart_tables(sc, dimension):
             
                 if good: 
                     max_s = subss
-            if max_s is None:
-                continue
-            preserved_dims = len(max_s)
+            # if max_s is None:
+            #     continue
+            preserved_dims = 0 if max_s is None else len(max_s)
             start = tuple(range(preserved_dims))
             #print("Got max preservation of ", max_s, "size is",preserved_dims)
             for aindex, a in enumerate(sc.valid_tuples()):

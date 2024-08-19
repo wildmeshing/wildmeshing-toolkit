@@ -6,7 +6,8 @@
 namespace wmtk::autogen::tri_mesh {
 inline int8_t simplex_index_from_valid_index(int8_t valid_index, wmtk::PrimitiveType type)
 {
-    return auto_valid_tuples[valid_index][get_primitive_type_id(type)];
+    const int8_t type_index = get_primitive_type_id(type);
+    return auto_valid_tuples[valid_index][type_index];
 }
 
 } // namespace wmtk::autogen::tri_mesh

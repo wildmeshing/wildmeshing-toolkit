@@ -54,4 +54,16 @@ extern const int8_t auto_valid_switch_inverse_table[24];
 extern const int8_t auto_valid_tuple_switch_indices[5];
 
 
+extern const int8_t subdart_preserving_action_1[24][6];
+
+
+extern const int8_t max_subdart_preservation_dimension_1[24][6];
+
+
+extern const int8_t subdart_preserving_action_2[24][4];
+
+
+extern const int8_t max_subdart_preservation_dimension_2[24][4];
+
+
 } // namespace wmtk::autogen::tet_mesh

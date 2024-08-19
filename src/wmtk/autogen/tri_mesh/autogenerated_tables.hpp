@@ -45,4 +45,10 @@ extern const int8_t auto_valid_switch_inverse_table[6];
 extern const int8_t auto_valid_tuple_switch_indices[4];
 
 
+extern const int8_t subdart_preserving_action_1[6][3];
+
+
+extern const int8_t max_subdart_preservation_dimension_1[6][3];
+
+
 } // namespace wmtk::autogen::tri_mesh
