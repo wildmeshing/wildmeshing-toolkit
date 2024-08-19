@@ -1,6 +1,7 @@
 
 #include "relative_face_index.hpp"
 #include <wmtk/autogen/SimplexDart.hpp>
+#include <wmtk/autogen/simplex_index_from_valid_index.hpp>
 
 namespace wmtk::autogen {
 class SimplexDart;
@@ -12,7 +13,7 @@ int8_t relative_face_index(
     PrimitiveType target_type,
     int8_t target_index)
 {
-    const int8_t identity_action_to_right_face = action_to_simplex(target_type, target_index);
+    const int8_t identity_action_to_right_face = simplex_index_from_valid_index(target_type, target_index);
     const int8_t action_to_right_face =
         sd.product(identity_action_to_right_face, sd.inverse(current_orientation()));
 
