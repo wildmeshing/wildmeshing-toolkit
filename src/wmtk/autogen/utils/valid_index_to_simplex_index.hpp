@@ -4,8 +4,8 @@
 
 namespace wmtk::autogen::utils {
 int8_t valid_index_to_simplex_index(
+    PrimitiveType mesh_type,
     int8_t valid_index,
-    PrimitiveType target_type,
-    int8_t target_index);
+    PrimitiveType target_type);
 
 }

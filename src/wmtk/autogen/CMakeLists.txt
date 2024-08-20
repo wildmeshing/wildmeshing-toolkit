@@ -49,8 +49,12 @@ foreach(MESH_TYPE edge_mesh tri_mesh tet_mesh)
             is_ccw.hxx
             local_id_table_offset.hxx
             local_id_table_offset.hpp
+
             simplex_index_from_valid_index.hpp
             simplex_index_from_valid_index.hxx
+
+            subdart_maximal_action_to_face.hpp
+            subdart_maximal_action_to_face.cpp
             )
         set(SRC_FILES ${SRC_FILES} ${MESH_TYPE}/${FILE_NAME})
     endforeach()

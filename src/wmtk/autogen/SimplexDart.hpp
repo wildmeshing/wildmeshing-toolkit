@@ -51,6 +51,9 @@ public:
     // converts input valid_indx to the target mesh
     int8_t convert(int8_t valid_index, const SimplexDart& target) const;
 
+
+    wmtk::PrimitiveType simplex_type() const { return m_simplex_type; }
+
 private:
     const wmtk::PrimitiveType m_simplex_type;
     const binary_op_type m_product;
