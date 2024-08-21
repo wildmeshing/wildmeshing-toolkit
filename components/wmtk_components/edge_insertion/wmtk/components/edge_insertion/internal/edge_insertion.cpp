@@ -987,7 +987,7 @@ void edge_insertion(
             }
         }
 
-        // TODO: segments.push_back new segments
+        // segments.push_back new segments
         for (const auto& seg : new_segments) {
             segments.push_back(seg);
         }
@@ -997,7 +997,18 @@ void edge_insertion(
         }
     }
 
-    // TODO: sort points_on_segment
+    // sort points_on_segment
+
+    auto comp = [](const std::pair<int64_t, Vector2r>& v0, const std::pair<int64_t, Vector2r>& v1) {
+        if (v0.second[0] < v1.second[0]) {
+            return true;
+        }
+        return v0.second[1] < v1.second[1];
+    };
+
+    for (int64_t i = 0; i < segments.size(); ++i) {
+        std::sort(segments[i].points_on_segment.begin(), segments[i].points_on_segment.end(), comp);
+    }
 
     // get all v-v connectivity
     // bool 1: is on input, bool 2: visited
