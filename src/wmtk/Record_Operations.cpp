@@ -2,7 +2,7 @@
 #ifdef WMTK_RECORD_OPERATIONS
 
 long succ_operations_count = 0;
-std::string OperationLogPath = generatePathNameWithCurrentTime();
+std::string OperationLogPath = "";
 std::string OperationLogPrefix = "/operation_log_";
 
 std::string generatePathNameWithCurrentTime()
