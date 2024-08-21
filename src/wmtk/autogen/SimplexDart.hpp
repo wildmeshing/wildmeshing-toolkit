@@ -13,6 +13,7 @@ public:
     // to avoid potential construction costs we have some singletons available
     static const SimplexDart& get_singleton(wmtk::PrimitiveType simplex_type);
 
+    // takes two valid indices and returns their dart-product as a valid index
     int8_t product(int8_t a, int8_t b) const;
     int8_t inverse(int8_t a) const;
 

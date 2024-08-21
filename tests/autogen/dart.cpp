@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <numeric>
 #include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/autogen/is_ccw.hpp>
 #include <wmtk/autogen/local_dart_action.hpp>
@@ -8,6 +9,27 @@
 using namespace wmtk;
 using namespace wmtk::autogen;
 using namespace wmtk::tests;
+TEST_CASE("tuple_autogen_valid_indices_equal", "[tuple]")
+{
+    // when other meshes are available add them here
+    for (PrimitiveType mesh_type :
+         {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
+        auto tuples = wmtk::tests::all_valid_local_tuples(mesh_type);
+        autogen::SimplexDart sd(mesh_type);
+        VectorX<int8_t> valid_indices = sd.valid_indices();
+
+        std::sort(valid_indices.begin(), valid_indices.end());
+
+        std::vector<int8_t> indices_from_tuples;
+        for (const auto& t : tuples) {
+            indices_from_tuples.emplace_back(sd.valid_index_from_tuple(t));
+        }
+        std::sort(indices_from_tuples.begin(), indices_from_tuples.end());
+        std::vector<int8_t> range(valid_indices.size());
+        std::iota(range.begin(), range.end(), 0);
+        CHECK(range == indices_from_tuples);
+    }
+}
 
 TEST_CASE("tuple_autogen_index_dart_tuple_conversion", "[tuple]")
 {
