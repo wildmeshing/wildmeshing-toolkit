@@ -5,6 +5,8 @@
 
 #include "Dart.hpp"
 namespace wmtk::autogen {
+// TODO: valid_index here currently stands for the range [0,N] rfather than the set of discontiguous
+// valid indices stored in each mesh. This nomenclature needs to be cleaned up.
 class SimplexDart
 {
 public:

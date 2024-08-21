@@ -3,6 +3,8 @@
 #include <wmtk/Tuple.hpp>
 
 namespace wmtk::autogen::utils {
-int8_t valid_index_to_simplex_index(PrimitiveType mesh_type, const Tuple& t);
+// external access to each mesh type's local id offsets from tuple code
+// mostl'y for unit testing
+int8_t local_id_table_offset(PrimitiveType mesh_type, const Tuple& t);
 
-}
+} // namespace wmtk::autogen::utils

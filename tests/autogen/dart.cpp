@@ -4,6 +4,7 @@
 #include <wmtk/autogen/is_ccw.hpp>
 #include <wmtk/autogen/local_dart_action.hpp>
 #include <wmtk/autogen/local_switch_tuple.hpp>
+#include <wmtk/autogen/utils/local_id_table_offset.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 #include "tools/all_valid_local_tuples.hpp"
 using namespace wmtk;
@@ -16,18 +17,25 @@ TEST_CASE("tuple_autogen_valid_indices_equal", "[tuple]")
          {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
         auto tuples = wmtk::tests::all_valid_local_tuples(mesh_type);
         autogen::SimplexDart sd(mesh_type);
-        VectorX<int8_t> valid_indices = sd.valid_indices();
 
-        std::sort(valid_indices.begin(), valid_indices.end());
+        // std::sort(valid_indices.begin(), valid_indices.end());
 
-        std::vector<int8_t> indices_from_tuples;
+        std::vector<int8_t> indices_from_tuples, valid_indices_from_tuples;
         for (const auto& t : tuples) {
             indices_from_tuples.emplace_back(sd.valid_index_from_tuple(t));
+            valid_indices_from_tuples.emplace_back(
+                wmtk::autogen::utils::local_id_table_offset(mesh_type, t));
         }
-        std::sort(indices_from_tuples.begin(), indices_from_tuples.end());
+        VectorX<int8_t> valid_indices = sd.valid_indices();
+        std::cout << valid_indices.transpose() << std::endl;
+        // std::sort(indices_from_tuples.begin(), indices_from_tuples.end());
         std::vector<int8_t> range(valid_indices.size());
         std::iota(range.begin(), range.end(), 0);
-        CHECK(range == indices_from_tuples);
+        CHECK(range == valid_indices_from_tuples);
+
+        std::vector<int8_t> valid_indices_vec(valid_indices.begin(), valid_indices.end());
+
+        CHECK(valid_indices_vec == valid_indices_from_tuples);
     }
 }
 
