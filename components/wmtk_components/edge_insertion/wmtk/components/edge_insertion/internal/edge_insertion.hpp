@@ -62,8 +62,11 @@ public:
     const Vector2r p0, p1;
     const int64_t idx0, idx1;
     Vector2r bbox_min, bbox_max;
+    bool deprecated = false;
+    bool is_on_input = false;
 
-    std::vector<std::pair<int64_t, Rational>> points_on_segment;
+    // std::vector<std::pair<int64_t, Rational>> points_on_segment;
+    std::vector<std::pair<int64_t, Vector2r>> points_on_segment;
 
     Segment(const Vector2r& _p0, const Vector2r& _p1, const int64_t _idx0, const int64_t _idx1)
         : p0(_p0)
@@ -92,8 +95,8 @@ public:
         bbox_min = Vector2r(x_min, y_min);
         bbox_max = Vector2r(x_max, y_max);
 
-        points_on_segment.emplace_back(idx0, 0);
-        poings_on_segments.emplace_back(idx1, 1);
+        points_on_segment.emplace_back(idx0, p0);
+        points_on_segment.emplace_back(idx1, p1);
     }
 };
 
@@ -124,6 +127,11 @@ bool segment_segment_inter(
     const Vector2r& e1,
     Vector2r& res);
 
-void edge_insertion(const TriMesh& _trimesh, const EdgeMesh& edgemesh);
+void edge_insertion(
+    TriMesh& _trimesh,
+    EdgeMesh& edgemesh,
+    std::vector<Vector2r>& v_final,
+    std::vector<std::array<int64_t, 3>>& FV_new,
+    std::vector<std::array<bool, 3>>& local_e_on_input);
 
 } // namespace wmtk::components::internal

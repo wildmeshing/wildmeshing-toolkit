@@ -18,7 +18,6 @@
 #include <wmtk/utils/Rational.hpp>
 
 
-// this should change! make a util?
 #include <wmtk/components/multimesh_from_tag/internal/MultiMeshFromTag.hpp>
 
 
@@ -131,7 +130,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
     std::shared_ptr<Mesh> surface_mesh;
 
     if (options.make_child_free) {
-    logger().error("Making free child surface mesh");
+        logger().error("Making free child surface mesh");
         surface_mesh = wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
             *tetmesh,
             surface_handle.as<int64_t>(),
@@ -139,7 +138,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
             /*free = */ true);
 
     } else {
-    logger().error("Making child surface mesh");
+        logger().error("Making child surface mesh");
         internal::MultiMeshFromTag SurfaceMeshFromTag(*tetmesh, surface_handle, 1);
         SurfaceMeshFromTag.compute_substructure_mesh();
 
@@ -193,7 +192,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
 
     if (has_openboundary) {
         if (options.make_child_free) {
-    logger().error("Creating free open boundary child mesh");
+            logger().error("Creating free open boundary child mesh");
             open_boundary_mesh =
                 wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
                     *tetmesh,
@@ -202,7 +201,7 @@ void triangle_insertion(const base::Paths& paths, const nlohmann::json& j, io::C
                     /*free = */ true);
 
         } else {
-    logger().error("Creating open boundary child mesh");
+            logger().error("Creating open boundary child mesh");
             internal::MultiMeshFromTag OpenBoundaryFromTag(*tetmesh, open_boundary_handle, 1);
             OpenBoundaryFromTag.compute_substructure_mesh();
 
