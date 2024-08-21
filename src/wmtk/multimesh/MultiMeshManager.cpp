@@ -54,10 +54,6 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
         return Tuple(); // return null tuple
     }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-    source_mesh_base_tuple = source_mesh.resurrect_tuple_slow(source_mesh_base_tuple);
-    target_mesh_base_tuple = target_mesh.resurrect_tuple_slow(target_mesh_base_tuple);
-#endif
     // assert(source_mesh.is_valid(source_mesh_base_tuple));
     // assert(target_mesh.is_valid(target_mesh_base_tuple));
 
@@ -780,9 +776,6 @@ void MultiMeshManager::update_map_tuple_hashes(
 
     const PrimitiveType parent_primitive_type = my_mesh.top_simplex_type();
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-    auto parent_hash_accessor = my_mesh.get_const_cell_hash_accessor();
-#endif
     auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
     // auto& update_tuple = [&](const auto& flag_accessor, Tuple& t) -> bool {
     //     if(acc.index_access().
@@ -805,9 +798,6 @@ void MultiMeshManager::update_map_tuple_hashes(
         auto& [parent_to_child_accessor, child_to_parent_accessor] = maps;
 
         auto child_flag_accessor = child_mesh.get_const_flag_accessor(primitive_type);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-        auto child_hash_accessor = child_mesh.get_const_cell_hash_accessor();
-#endif
 
 
         std::vector<bool> is_gid_visited(my_mesh.capacity(primitive_type), false);
@@ -835,34 +825,13 @@ void MultiMeshManager::update_map_tuple_hashes(
 
             // If the parent tuple is valid, it means this parent-child pair has already been
             // handled, so we can skip it
-#if defined(WMTK_ENABLE_HASH_UPDATE) // optimization if hash is available
-            if (my_mesh.is_valid_with_hash(parent_tuple)) {
-                continue;
-            }
-#endif
             // If the parent tuple is invalid then there was no map so we can try the next cell
             if (parent_tuple.is_null()) {
                 continue;
             }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-            // navigate parent_original_sharer -> parent_tuple
-            // then take parent_new_sharer -> parent_tuple
-            parent_tuple = my_mesh.resurrect_tuple(parent_tuple, parent_hash_accessor);
-            child_tuple = child_mesh.resurrect_tuple(child_tuple, child_hash_accessor);
-#endif
 
             // check if the map is handled in the ear case
-#if defined(WMTK_ENABLE_HASH_UPDATE) // optimization if hash is available
-            auto child_to_parent_data =
-                child_to_parent_accessor.const_vector_attribute(child_tuple);
-            Tuple parent_tuple_from_child_map = wmtk::multimesh::utils::vector_to_tuple(
-                child_to_parent_data.tail<wmtk::multimesh::utils::TUPLE_SIZE>());
-            if (my_mesh.is_valid_with_hash(
-                    parent_tuple_from_child_map)) { // optimization if hash is available
-                continue;
-            }
-#endif
             // if the child simplex is deleted then we can skip it
             const bool child_exists = !child_mesh.is_removed(child_tuple);
             if (!child_exists) {
@@ -870,11 +839,6 @@ void MultiMeshManager::update_map_tuple_hashes(
                 continue;
             }
             std::vector<Tuple> equivalent_parent_tuples_good_hash = equivalent_parent_tuples;
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-            for (Tuple& t : equivalent_parent_tuples_good_hash) {
-                t = my_mesh.resurrect_tuple(t, parent_hash_accessor);
-            }
-#endif
 
             // Find a valid representation of this simplex representation of the original tupl
             Tuple old_tuple;
@@ -916,9 +880,6 @@ void MultiMeshManager::update_map_tuple_hashes(
                 my_mesh.top_simplex_type(),
                 new_parent_tuple_shared,
                 my_mesh.top_simplex_type());
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-            parent_tuple = my_mesh.resurrect_tuple(parent_tuple, parent_hash_accessor);
-#endif
             assert(my_mesh.is_valid(parent_tuple));
             assert(child_mesh.is_valid(child_tuple));
 
@@ -1000,21 +961,11 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_split(
 
         const Tuple& old_cid_tuple = old_tuple_opt.value();
         for (const int64_t new_cid : new_cids) {
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-            // try seeing if we get the right gid by shoving in the new face id
-            Tuple tuple(
-                old_cid_tuple.m_local_vid,
-                old_cid_tuple.m_local_eid,
-                old_cid_tuple.m_local_fid,
-                new_cid,
-                my_mesh.get_cell_hash_slow(new_cid));
-#else
             Tuple tuple(
                 old_cid_tuple.m_local_vid,
                 old_cid_tuple.m_local_eid,
                 old_cid_tuple.m_local_fid,
                 new_cid);
-#endif
 
 
             if (my_mesh.is_valid(tuple) && !my_mesh.is_removed(tuple) &&
@@ -1089,100 +1040,7 @@ int64_t MultiMeshManager::parent_local_fid(
 }
 
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-void MultiMeshManager::update_vertex_operation_hashes_internal(
-    Mesh& m,
-    const Tuple& vertex,
-    wmtk::attribute::Accessor<int64_t>& hash_accessor)
-{
-    const PrimitiveType pt = m.top_simplex_type();
-    const simplex::SimplexCollection star =
-        simplex::closed_star(m, simplex::Simplex::vertex(m, vertex));
-    std::vector<Tuple> tuples_to_update;
-    switch (pt) {
-    case PrimitiveType::Vertex: {
-        const auto star_vertices = star.simplex_vector(PrimitiveType::Vertex);
-        tuples_to_update.reserve(star_vertices.size());
-        for (const simplex::Simplex& s : star_vertices) {
-            tuples_to_update.emplace_back(s.tuple());
-        }
-        break;
-    }
-    case PrimitiveType::Edge: {
-        const auto star_edges = star.simplex_vector(PrimitiveType::Edge);
-        tuples_to_update.reserve(star_edges.size());
-        for (const simplex::Simplex& s : star_edges) {
-            tuples_to_update.emplace_back(s.tuple());
-        }
-        break;
-    }
-    case PrimitiveType::Triangle: {
-        const auto star_faces = star.simplex_vector(PrimitiveType::Triangle);
-        tuples_to_update.reserve(star_faces.size());
-        for (const simplex::Simplex& s : star_faces) {
-            tuples_to_update.emplace_back(s.tuple());
-        }
-        break;
-    }
-    case PrimitiveType::Tetrahedron: {
-        const auto star_tets = star.simplex_vector(PrimitiveType::Tetrahedron);
-        tuples_to_update.reserve(star_tets.size());
-        for (const simplex::Simplex& s : star_tets) {
-            tuples_to_update.emplace_back(s.tuple());
-        }
-        break;
-    }
-    default: assert(false); // "Invalid case"
-    }
 
-
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-    m.update_cell_hashes(tuples_to_update, hash_accessor);
-
-    // need to get a star with new hash, otherwise cannot get_simplices()
-    auto vertex_new_hash = m.resurrect_tuple(vertex, hash_accessor);
-    const simplex::SimplexCollection star_new_hash =
-        simplex::closed_star(m, simplex::Simplex::vertex(m, vertex_new_hash));
-    update_vertex_operation_multimesh_map_hash_internal(m, star_new_hash, hash_accessor);
-#endif
-}
-#endif
-
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-void MultiMeshManager::update_vertex_operation_multimesh_map_hash_internal(
-    Mesh& m,
-    const simplex::SimplexCollection& vertex_closed_star,
-    wmtk::attribute::Accessor<int64_t>& parent_hash_accessor)
-{
-    auto& mm_manager = m.m_multi_mesh_manager;
-
-    for (auto& child_data : mm_manager.children()) {
-        auto& child_mesh = *child_data.mesh;
-        auto child_mesh_pt = child_mesh.top_simplex_type();
-        auto maps = mm_manager.get_map_accessors(m, child_data);
-        auto& [parent_to_child_accessor, child_to_parent_accessor] = maps;
-
-        const auto parent_simplices_to_update = vertex_closed_star.simplex_vector(child_mesh_pt);
-        for (auto& s : parent_simplices_to_update) {
-            auto s_tuple = s.tuple();
-            auto [parent_tuple, child_tuple] =
-                wmtk::multimesh::utils::read_tuple_map_attribute(parent_to_child_accessor, s_tuple);
-
-            if (parent_tuple.is_null()) continue;
-
-            // resurrect the parent tuple
-            parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
-
-            // write back to map
-            wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
-                parent_to_child_accessor,
-                child_to_parent_accessor,
-                parent_tuple,
-                child_tuple);
-        }
-    }
-}
-#endif
 
 // remove after bug fix
 void MultiMeshManager::check_map_valid(const Mesh& my_mesh) const

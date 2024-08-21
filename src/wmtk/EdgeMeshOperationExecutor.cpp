@@ -3,23 +3,13 @@
 
 namespace wmtk {
 // constructor
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
-    EdgeMesh& m,
-    const Tuple& operating_tuple,
-    attribute::Accessor<int64_t>& hash_acc)
-#else
 EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
     EdgeMesh& m,
     const Tuple& operating_tuple)
-#endif
     : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge)}}
     , ee_accessor(m.create_accessor<int64_t>(m.m_ee_handle))
     , ev_accessor(m.create_accessor<int64_t>(m.m_ev_handle))
     , ve_accessor(m.create_accessor<int64_t>(m.m_ve_handle))
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    , hash_accessor(hash_acc)
-#endif
     , m_mesh(m)
 {
     m_operating_tuple = operating_tuple;
@@ -30,20 +20,11 @@ EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
     m_spine_vids[1] = m_mesh.id_vertex(operating_tuple_switch_vertex);
 
     // update hash on neighborhood
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    cell_ids_to_update_hash.emplace_back(m_mesh.id_edge(m_operating_tuple));
-#endif
     if (!m_mesh.is_boundary_vertex(m_operating_tuple)) {
         m_neighbor_eids[0] = m_mesh.id_edge(m_mesh.switch_edge(m_operating_tuple));
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-        cell_ids_to_update_hash.emplace_back(m_neighbor_eids[0]);
-#endif
     }
     if (!m_mesh.is_boundary_vertex(operating_tuple_switch_vertex)) {
         m_neighbor_eids[1] = m_mesh.id_edge(m_mesh.switch_edge(operating_tuple_switch_vertex));
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-        cell_ids_to_update_hash.emplace_back(m_neighbor_eids[1]);
-#endif
     }
 
 
@@ -63,10 +44,6 @@ void EdgeMesh::EdgeMeshOperationExecutor::delete_simplices()
 
 void EdgeMesh::EdgeMeshOperationExecutor::update_cell_hash()
 {
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-
-    m_mesh.update_cell_hashes(cell_ids_to_update_hash, hash_accessor);
-#endif
 }
 
 const std::array<std::vector<int64_t>, 2>

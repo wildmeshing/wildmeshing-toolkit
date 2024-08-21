@@ -6,7 +6,6 @@ set(TEST_SOURCES
     hybrid_rational_accessor.cpp
 
     performance.cpp
-    caches.cpp
     old_wmtk_attributecollection.cpp
 
     transaction_stack.cpp

@@ -119,30 +119,10 @@ target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_MAX_ATTRIBUTE_DIMENSI
 
 
 
-option(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE "Use monotonic allocator to store the cache buffer" OFF)
-if(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
-    target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
-endif()
 
 
-option(WMTK_ENABLE_GENERIC_CHECKPOINTS "Enable checkpoint selection" OFF)
-if(WMTK_ENABLE_GENERIC_CHECKPOINTS)
-    target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_ENABLE_GENERIC_CHECKPOINTS)
-endif()
-option(WMTK_ENABLE_MAP_CACHE "Enable checkpoint selection" ON)
-if(WMTK_ENABLE_MAP_CACHE)
-    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_MAP_CACHE)
-endif()
 
-option(WMTK_ENABLE_TRANSACTION_STACK "Enable transaction stack" ON)
-if(WMTK_ENABLE_TRANSACTION_STACK)
-    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_TRANSACTION_STACK)
-endif()
 
-option(WMTK_ENABLE_HASH_UPDATE "Enable hash update" OFF)
-if(WMTK_ENABLE_HASH_UPDATE)
-    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_HASH_UPDATE)
-endif()
 
 
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)

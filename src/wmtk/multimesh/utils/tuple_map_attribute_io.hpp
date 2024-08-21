@@ -4,7 +4,7 @@
 // #define WMTK_DISABLE_COMPRESSED_MULTIMESH_TUPLE
 namespace wmtk::multimesh::utils {
 #if defined WMTK_DISABLE_COMPRESSED_MULTIMESH_TUPLE
-constexpr static int64_t TUPLE_SIZE = 5; // in terms of int64_t
+constexpr static int64_t TUPLE_SIZE = 4; // in terms of int64_t
 constexpr static int64_t GLOBAL_ID_INDEX = 3;
 #else
 constexpr static int64_t TUPLE_SIZE = 2; // in terms of int64_t

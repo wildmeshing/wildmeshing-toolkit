@@ -1734,8 +1734,7 @@ TEST_CASE("simplex_link_condtion_edgemesh", "[simplex_collection]")
         tests::DEBUG_EdgeMesh m1 = tests::loop_lines();
         tests::DEBUG_EdgeMesh m2 = tests::two_line_loop();
 
-        int64_t hash = 0;
-        Tuple t(0, -1, -1, 0, hash);
+        Tuple t(0, -1, -1, 0);
         REQUIRE(link_condition(m0, t) == true);
         REQUIRE(link_condition(m1, t) == true);
         REQUIRE(link_condition(m2, t) == true);
@@ -1746,8 +1745,7 @@ TEST_CASE("simplex_link_condtion_edgemesh", "[simplex_collection]")
         tests::DEBUG_EdgeMesh m0 = tests::single_line();
         tests::DEBUG_EdgeMesh m1 = tests::self_loop();
 
-        int64_t hash = 0;
-        Tuple t(0, -1, -1, 0, hash);
+        Tuple t(0, -1, -1, 0);
         REQUIRE(link_condition(m0, t) == false);
         REQUIRE(link_condition(m1, t) == false);
     }
@@ -1760,8 +1758,7 @@ TEST_CASE("simplex_link_condtion_trimesh", "[simplex_collection]")
         tests::DEBUG_TriMesh m;
         m = tests::three_neighbors();
         // get the tuple point to V(0), E(01), F(012)
-        int64_t hash = 0;
-        Tuple t(0, 2, -1, 1, hash);
+        Tuple t(0, 2, -1, 1);
         REQUIRE(link_condition(m, t) == false);
     }
 

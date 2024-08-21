@@ -122,17 +122,6 @@ public:
     friend class operations::EdgeSplit;
     friend class operations::EdgeOperationData;
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    friend void operations::utils::update_vertex_operation_multimesh_map_hash(
-        Mesh& m,
-        const simplex::SimplexCollection& vertex_closed_star,
-        attribute::Accessor<int64_t>& parent_hash_accessor);
-
-    friend void operations::utils::update_vertex_operation_hashes(
-        Mesh& m,
-        const Tuple& vertex,
-        attribute::Accessor<int64_t>& hash_accessor);
-#endif
 
 
     int64_t top_cell_dimension() const;
@@ -277,16 +266,6 @@ public:
 
     const attribute::Accessor<char> get_flag_accessor(PrimitiveType type) const;
     const attribute::Accessor<char> get_const_flag_accessor(PrimitiveType type) const;
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    const attribute::Accessor<int64_t> get_cell_hash_accessor() const;
-    const attribute::Accessor<int64_t> get_const_cell_hash_accessor() const;
-
-
-    int64_t get_cell_hash(int64_t cell_index, const attribute::Accessor<int64_t>& hash_accessor)
-        const;
-    // utility function for getting a cell's hash - slow because it creates a new accessor
-    int64_t get_cell_hash_slow(int64_t cell_index) const;
-#endif
 
 
     bool operator==(const Mesh& other) const;
@@ -298,67 +277,6 @@ public:
 
 protected: // member functions
     attribute::Accessor<char> get_flag_accessor(PrimitiveType type);
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    attribute::Accessor<int64_t> get_cell_hash_accessor();
-
-    /**
-     * @brief update hash in given cell
-     *
-     * @param cell tuple in which the hash should be updated
-     * @param hash_accessor hash accessor
-     */
-    void update_cell_hash(const Tuple& cell, attribute::Accessor<int64_t>& hash_accessor);
-
-    /**
-     * @brief update hashes in given cells
-     *
-     * @param cells vector of tuples in which the hash should be updated
-     * @param hash_accessor hash accessor
-     */
-    void update_cell_hashes(
-        const std::vector<Tuple>& cells,
-        attribute::Accessor<int64_t>& hash_accessor);
-    /**
-     * @brief same as `update_cell_hashes` but slow because it creates a new accessor
-     */
-    /**
-     * @brief update hash in given cell
-     *
-     * @param cell tuple in which the hash should be updated
-     * @param hash_accessor hash accessor
-     */
-    void update_cell_hash(const int64_t cell_index, attribute::Accessor<int64_t>& hash_accessor);
-
-    /**
-     * @brief update hashes in given cells
-     *
-     * @param cells vector of tuples in which the hash should be updated
-     * @param hash_accessor hash accessor
-     */
-    void update_cell_hashes(
-        const std::vector<int64_t>& cell_indices,
-        attribute::Accessor<int64_t>& hash_accessor);
-
-    void update_cell_hashes_slow(const std::vector<Tuple>& cells);
-
-    /**
-     * @brief return the same tuple but with updated hash
-     *
-     * This function should only be used in operations to create a valid return tuple in a known
-     * position.
-     *
-     * @param tuple tuple with potentially outdated hash
-     * @param hash_accessor hash accessor
-     * @return tuple with updated hash
-     */
-    Tuple resurrect_tuple(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
-        const;
-
-    /**
-     * @brief same as `resurrect_tuple` but slow because it creates a new accessor
-     */
-    Tuple resurrect_tuple_slow(const Tuple& tuple) const;
-#endif
 
 
 protected:
@@ -495,11 +413,6 @@ public:
      * @return false
      */
     virtual bool is_valid(const Tuple& tuple) const;
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    bool is_valid_with_hash(const Tuple& tuple) const;
-    bool is_valid_with_hash(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor)
-        const;
-#endif
 
     // whether the tuple refers to a removed / invalid dart in the mesh
     bool is_removed(const Tuple& tuple) const;
