@@ -848,16 +848,21 @@ void edge_insertion(
 
                 auto comp = [](const std::pair<int64_t, Vector2r>& v0,
                                const std::pair<int64_t, Vector2r>& v1) {
-                    if (v0.second[0] < v1.second[0]) {
-                        return true;
+                    if (v0.second[0] == v1.second[0]) {
+                        return v0.second[1] < v1.second[1];
                     }
-                    return v0.second[1] < v1.second[1];
+                    return v0.second[0] < v1.second[0];
+                };
+
+                auto equal = [](const std::pair<int64_t, Vector2r>& v0,
+                                const std::pair<int64_t, Vector2r>& v1) {
+                    return v0.second[0] == v1.second[0] && v0.second[1] == v1.second[1];
                 };
 
                 // sort and unique
                 std::sort(all_points.begin(), all_points.end(), comp);
                 all_points.erase(
-                    std::unique(all_points.begin(), all_points.end()),
+                    std::unique(all_points.begin(), all_points.end(), equal),
                     all_points.end());
 
                 int64_t p0_idx = -1, p1_idx = -1;
@@ -1000,13 +1005,16 @@ void edge_insertion(
     // sort points_on_segment
 
     auto comp = [](const std::pair<int64_t, Vector2r>& v0, const std::pair<int64_t, Vector2r>& v1) {
-        if (v0.second[0] < v1.second[0]) {
-            return true;
+        if (v0.second[0] == v1.second[0]) {
+            return v0.second[1] < v1.second[1];
         }
-        return v0.second[1] < v1.second[1];
+        return v0.second[0] < v1.second[0];
     };
 
     for (int64_t i = 0; i < segments.size(); ++i) {
+        if (segments[i].deprecated) {
+            continue;
+        }
         std::sort(segments[i].points_on_segment.begin(), segments[i].points_on_segment.end(), comp);
     }
 
@@ -1015,6 +1023,9 @@ void edge_insertion(
     std::vector<std::vector<std::tuple<int64_t, bool, bool>>> VV(v_final.size());
 
     for (int64_t i = 0; i < segments.size(); ++i) {
+        if (segments[i].deprecated) {
+            continue;
+        }
         for (int64_t j = 0; j < segments[i].points_on_segment.size() - 1; ++j) {
             VV[segments[i].points_on_segment[j].first].push_back(std::make_tuple(
                 segments[i].points_on_segment[j + 1].first,
