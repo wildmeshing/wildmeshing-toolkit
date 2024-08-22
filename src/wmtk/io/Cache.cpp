@@ -182,7 +182,15 @@ void Cache::load_multimesh(const std::string& name) const
             if (it == m_meshes.end()) {
                 log_and_throw_error("A mesh with the name {} does not exist", mm_name);
             } else {
-                cmm.load(it->second);
+                // cmm.load(it->second);
+
+                // HACK because Mesh cannot be copied
+                Mesh& m = *(it->second);
+                HDF5Writer writer("dummy.hdf5");
+                m.serialize(writer, &m);
+                cmm.load("dummy.hdf5");
+
+                fs::remove("dummy.hdf5");
             }
         }
     }
@@ -236,6 +244,7 @@ void Cache::write_mesh(
         // write in meshes list
         const auto it = m_meshes.find(name);
         std::shared_ptr<Mesh> pm = const_cast<Mesh&>(m).shared_from_this();
+
         if (it == m_meshes.end()) {
             m_meshes[name] = pm;
         } else {
