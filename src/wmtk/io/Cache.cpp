@@ -369,9 +369,19 @@ bool Cache::equals(const Cache& o)
         !std::equal(
             m_file_paths.begin(),
             m_file_paths.end(),
-            m_file_paths.begin(),
+            o.m_file_paths.begin(),
             [](const auto& a, const auto& b) { return a.first == b.first; })) {
         wmtk::logger().info("File name list is unequal.");
+        return false;
+    }
+
+    if (m_meshes.size() != o.m_meshes.size() ||
+        !std::equal(
+            m_meshes.begin(),
+            m_meshes.end(),
+            o.m_meshes.begin(),
+            [](const auto& a, const auto& b) { return a.first == b.first; })) {
+        wmtk::logger().info("Mesh list is unequal.");
         return false;
     }
 

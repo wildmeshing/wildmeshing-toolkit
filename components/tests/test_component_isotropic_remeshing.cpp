@@ -63,7 +63,7 @@ TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
 {
     using namespace operations;
 
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     // input
     json input_component_json = {
@@ -644,7 +644,7 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
 
 TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D]")
 {
-    io::Cache cache("wmtk_cache", ".");
+    io::Cache cache;
 
     if constexpr (true) {
         const std::filesystem::path input_file = data_dir / "small.msh";
@@ -680,18 +680,6 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         })"_json;
 
         CHECK_NOTHROW(wmtk::components::output(Paths(), component_json, cache));
-
-        // auto mesh_in = cache.read_mesh("output_mesh");
-        // TriMesh& m = static_cast<TriMesh&>(*mesh_in);
-        // ParaviewWriter writer(
-        //    cache.get_cache_path() / "isotropic_remeshing_output",
-        //    "vertices",
-        //    m,
-        //    false,
-        //    false,
-        //    true,
-        //    false);
-        // m.serialize(writer);
     }
 }
 
@@ -699,7 +687,7 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D]")
 {
     using namespace wmtk::components::internal;
 
-    io::Cache cache("wmtk_cache", ".");
+    io::Cache cache;
 
     // input
     DEBUG_TriMesh mesh = tetrahedron_with_position();
@@ -726,15 +714,8 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D]")
         false,
         10));
 
-    {
-        ParaviewWriter writer(
-            cache.get_cache_path() / "tet_remeshing",
-            "vertices",
-            mesh,
-            false,
-            false,
-            true,
-            false);
+    if (false) {
+        ParaviewWriter writer("tet_remeshing", "vertices", mesh, false, false, true, false);
         mesh.serialize(writer);
     }
 }
@@ -743,7 +724,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
 {
     using namespace wmtk::components::internal;
 
-    io::Cache cache("wmtk_cache", ".");
+    io::Cache cache;
 
     // input
     TriMesh mesh = edge_region_with_position();
@@ -770,15 +751,9 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
         }
         CHECK(n_boundary_edges > 8);
 
-        {
-            ParaviewWriter writer(
-                cache.get_cache_path() / "w_bd_remeshing_lock_false",
-                "vertices",
-                mesh,
-                false,
-                false,
-                true,
-                false);
+        if (false) {
+            ParaviewWriter
+                writer("w_bd_remeshing_lock_false", "vertices", mesh, false, false, true, false);
             mesh.serialize(writer);
         }
     }
@@ -804,15 +779,9 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
         }
         CHECK(n_boundary_edges == 8);
 
-        {
-            ParaviewWriter writer(
-                cache.get_cache_path() / "w_bd_remeshing_lock_true",
-                "vertices",
-                mesh,
-                false,
-                false,
-                true,
-                false);
+        if (false) {
+            ParaviewWriter
+                writer("w_bd_remeshing_lock_true", "vertices", mesh, false, false, true, false);
             mesh.serialize(writer);
         }
     }
@@ -875,7 +844,7 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
     // CHECK(n_boundary_edges > 8);
 
     // output
-    {
+    if (false) {
         ParaviewWriter writer("remeshing_test", "vertices", mesh, true, true, true, false);
         mesh.serialize(writer);
     }
@@ -886,7 +855,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     using namespace wmtk::components::internal;
     using namespace operations;
 
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     // input
     // TODO: What is the default attribute for "vertices". From the reader it seems to be
@@ -958,19 +927,13 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     }
 
     // output
-    {
-        ParaviewWriter writer(
-            cache.get_cache_path() / "remeshing_test_circle_final",
-            "vertices",
-            mesh,
-            true,
-            true,
-            true,
-            false);
+    if (false) {
+        ParaviewWriter
+            writer("remeshing_test_circle_final", "vertices", mesh, true, true, true, false);
         mesh.serialize(writer);
 
         ParaviewWriter writer2(
-            cache.get_cache_path() / "remeshing_test_circle_child_mesh_final",
+            "remeshing_test_circle_child_mesh_final",
             "vertices",
             *child_ptr,
             true,
@@ -986,7 +949,7 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
     using namespace wmtk::components::internal;
     using namespace operations;
 
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     // input
     json input_component_json = {
@@ -1037,15 +1000,9 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
     // mesh.multi_mesh_manager().check_map_valid(mesh);
 
     // output
-    {
-        ParaviewWriter writer(
-            cache.get_cache_path() / "remeshing_test_circle_no_nultimesh",
-            "vertices",
-            mesh,
-            true,
-            true,
-            true,
-            false);
+    if (false) {
+        ParaviewWriter
+            writer("remeshing_test_circle_no_nultimesh", "vertices", mesh, true, true, true, false);
         mesh.serialize(writer);
     }
 }

@@ -13,7 +13,7 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
 TEST_CASE("component_input", "[components][input]")
 {
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     SECTION("should pass")
     {
@@ -44,7 +44,7 @@ TEST_CASE("component_input", "[components][input]")
 
 TEST_CASE("component_input_point", "[components][input][.]")
 {
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     // TODO we need a point cloud to read from
     json component_json = {
@@ -62,7 +62,7 @@ TEST_CASE("component_input_point", "[components][input][.]")
 TEST_CASE("mesh_with_tag_from_image", "[components][input]")
 {
     using namespace wmtk;
-    io::Cache cache("wmtk_cache", std::filesystem::current_path());
+    io::Cache cache;
 
     std::filesystem::path img_path = data_dir / "images/half_white_half_black.png";
 
@@ -72,13 +72,8 @@ TEST_CASE("mesh_with_tag_from_image", "[components][input]")
 
     REQUIRE_NOTHROW(m = components::internal::mesh_with_tag_from_image(img_path, tag_name));
 
-    ParaviewWriter writer(
-        cache.get_cache_path() / "mesh_with_tag_from_image",
-        "vertices",
-        *m,
-        true,
-        true,
-        true,
-        false);
-    m->serialize(writer);
+    if (false) {
+        ParaviewWriter writer("mesh_with_tag_from_image", "vertices", *m, true, true, true, false);
+        m->serialize(writer);
+    }
 }

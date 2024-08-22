@@ -13,7 +13,7 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
 TEST_CASE("component_mesh_info", "[components][mesh_info]")
 {
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     const std::filesystem::path input_file = data_dir / "small.msh";
 

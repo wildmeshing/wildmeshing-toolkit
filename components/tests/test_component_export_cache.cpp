@@ -11,7 +11,7 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
 TEST_CASE("component_export_cache", "[components][export_cache]")
 {
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     // input
     {

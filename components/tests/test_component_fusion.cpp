@@ -27,7 +27,7 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
 TEST_CASE("fusion_2d", "[components][fusion][.]")
 {
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     RowVectors3d V;
     V.resize(15, 3);
@@ -184,7 +184,7 @@ TEST_CASE("fusion_2d", "[components][fusion][.]")
 
 TEST_CASE("fusion_3d", "[components][fusion][.]")
 {
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     RowVectors3d V;
     V.resize(8, 3);

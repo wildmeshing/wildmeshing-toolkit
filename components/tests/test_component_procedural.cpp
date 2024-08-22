@@ -12,7 +12,7 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
 TEST_CASE("component_procedural_nocoord", "[components][procedural][.]")
 {
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     // SECTION("grid2")
     {
@@ -66,7 +66,7 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural][.]")
 }
 TEST_CASE("component_procedural_coords", "[components][procedural][.]")
 {
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     // SECTION("grid2")
     {
@@ -131,7 +131,7 @@ TEST_CASE("component_procedural_coords", "[components][procedural][.]")
 }
 TEST_CASE("component_procedural_cyclic_grids", "[components][procedural]")
 {
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     // SECTION("grid2")
     {

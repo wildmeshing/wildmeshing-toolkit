@@ -76,7 +76,7 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
 TEST_CASE("wildmeshing", "[components][wildmeshing][.]")
 {
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     json input_component_json = {
         {"name", "mesh"},
@@ -103,7 +103,7 @@ TEST_CASE("wildmeshing", "[components][wildmeshing][.]")
 
 TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
 {
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     json input_component_json = {
         {"name", "mesh"},
@@ -131,7 +131,7 @@ TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
 
 TEST_CASE("wildmeshing_3d_multimesh", "[components][wildmeshing][.]")
 {
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     json input_component_json = {
         {"name", "mesh"},

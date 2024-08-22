@@ -23,8 +23,7 @@
         "default": null,
         "type": "object",
         "optional": [
-            "directory",
-            "cache"
+            "directory"
         ],
         "doc": "Options for the output."
     },
@@ -33,12 +32,6 @@
         "default": ".",
         "type": "string",
         "doc": "Directory for output files."
-    },
-    {
-        "pointer": "/output/cache",
-        "default": "wmtk_cache",
-        "type": "string",
-        "doc": "Directory for cache files."
     },
     {
         "pointer": "/settings",

@@ -13,7 +13,7 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
 TEST_CASE("multimesh", "[components][multimesh][.]")
 {
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     json parent_json = {
         {"type", "input"},

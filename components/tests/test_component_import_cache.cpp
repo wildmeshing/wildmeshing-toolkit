@@ -12,7 +12,7 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
 TEST_CASE("component_import_cache", "[components][import_cache]")
 {
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     // input
     {
@@ -37,7 +37,7 @@ TEST_CASE("component_import_cache", "[components][import_cache]")
         CHECK_NOTHROW(wmtk::components::export_cache(Paths(), o, cache));
     }
 
-    wmtk::io::Cache cache2("wmtk_cache_from_import", ".");
+    wmtk::io::Cache cache2;
     // import cache
     {
         json o;

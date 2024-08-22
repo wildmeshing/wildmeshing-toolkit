@@ -468,7 +468,7 @@ TEST_CASE("multimesh_from_tag_tri_visualization", "[components][multimesh][multi
 
 TEST_CASE("multimesh_from_tag", "[components][multimesh][multimesh_from_tag]")
 {
-    io::Cache cache("wmtk_cache", ".");
+    io::Cache cache;
     {
         auto mesh_in = tests::disk(6);
         DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(*mesh_in);

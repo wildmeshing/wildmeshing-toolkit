@@ -12,7 +12,7 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
 TEST_CASE("component_output", "[components][output]")
 {
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    wmtk::io::Cache cache;
 
     const std::filesystem::path input_file = data_dir / "armadillo.msh";
     json input_component_json = {
