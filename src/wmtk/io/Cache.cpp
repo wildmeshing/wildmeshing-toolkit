@@ -53,7 +53,7 @@ std::filesystem::path Cache::create_unique_directory(
     const std::filesystem::path& location,
     size_t max_tries)
 {
-    const fs::path tmp = location.empty() ? std::filesystem::temp_directory_path() : location;
+    const fs::path tmp = location.empty() ? std::filesystem::current_path() : location;
 
     const std::string timestamp = number_to_hex(nanoseconds_timestamp());
 
