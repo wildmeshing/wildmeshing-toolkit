@@ -207,6 +207,9 @@ std::vector<std::string> Cache::mesh_names()
     for (const auto& fp : m_file_paths) {
         names.emplace_back(fp.first);
     }
+    for (const auto& fp : m_meshes) {
+        names.emplace_back(fp.first);
+    }
 
     return names;
 }

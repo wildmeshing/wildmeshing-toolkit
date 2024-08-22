@@ -82,6 +82,7 @@ wmtk::io::Cache run_components(const nlohmann::json& json_input_file, bool stric
     logger().info("Root path: {}, output dir: {}", root_path, output_dir);
 
 
+    // wmtk::io::Cache cache("wmtk_cache", output_dir);
     wmtk::io::Cache cache;
 
     // iterate through components array
