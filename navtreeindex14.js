@@ -1,5 +1,6 @@
 var NAVTREEINDEX14 =
 {
+"classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html#afb1bcdd5e1672488cf44c7704c352d93":[5,0,2,7,4,0,4],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html":[5,0,2,7,4,1],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a0e2340c5c07860beaebae415bcfa6114":[5,0,2,7,4,1,27],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a0f5a5db2ec38cf6bdb447cd475104e22":[5,0,2,7,4,1,10],
@@ -248,6 +249,5 @@ var NAVTREEINDEX14 =
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a275755bf053deeafd3956e74ff1f177c":[5,0,2,9,0,0,8,2],
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a2d4e8819e94c7d717f9cb27fb953c9e1":[5,0,2,9,0,0,8,12],
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a31b56eba1f5bd731f738170979d38bfc":[5,0,2,9,0,0,8,11],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a37cf7d563c8bdcaf6d2df0f0ac8bc431":[5,0,2,9,0,0,8,8],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a489990dd759a67e8a29ad85275990b7d":[5,0,2,9,0,0,8,17]
+"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a37cf7d563c8bdcaf6d2df0f0ac8bc431":[5,0,2,9,0,0,8,8]
 };

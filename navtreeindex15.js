@@ -1,5 +1,6 @@
 var NAVTREEINDEX15 =
 {
+"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a489990dd759a67e8a29ad85275990b7d":[5,0,2,9,0,0,8,17],
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a4b22ae12458355b069affa4ca107c3a8":[5,0,2,9,0,0,8,5],
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5ffba4ecba9b713c61963ceb4fd5a2dd":[5,0,2,9,0,0,8,7],
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a70a58a5ce7f6bb70e0d033637513c0e9":[5,0,2,9,0,0,8,16],
@@ -248,6 +249,5 @@ var NAVTREEINDEX15 =
 "edge__mesh_2_simplex_dart_8hpp.html":[6,0,2,0,1,0,8],
 "edge__mesh_2_simplex_dart_8hpp_source.html":[6,0,2,0,1,0,8],
 "edge__mesh_2_split_new_attribute_topo_info_8cpp.html":[6,0,2,0,6,3,4],
-"edge__mesh_2_split_new_attribute_topo_info_8cpp_source.html":[6,0,2,0,6,3,4],
-"edge__mesh_2_split_new_attribute_topo_info_8hpp.html":[6,0,2,0,6,3,5]
+"edge__mesh_2_split_new_attribute_topo_info_8cpp_source.html":[6,0,2,0,6,3,4]
 };

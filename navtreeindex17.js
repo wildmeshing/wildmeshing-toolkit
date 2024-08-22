@@ -1,5 +1,6 @@
 var NAVTREEINDEX17 =
 {
+"globals_vars.html":[6,1,2],
 "grid__utils_8cpp.html":[6,0,0,1,16,0,0,0,0,6],
 "grid__utils_8cpp.html#a2a5ca17b568f0a95f3e09a50106afd70":[6,0,0,1,16,0,0,0,0,6,1],
 "grid__utils_8cpp.html#a35d1c2751f3a87c2bc71ff5b7a89d0b4":[6,0,0,1,16,0,0,0,0,6,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX17 =
 "mesh__with__tag__from__image_8hpp.html":[6,0,0,1,7,0,0,0,0,2],
 "mesh__with__tag__from__image_8hpp.html#a7e292eba37fd37581ede0aa29943c3db":[6,0,0,1,7,0,0,0,0,2,0],
 "mesh__with__tag__from__image_8hpp_source.html":[6,0,0,1,7,0,0,0,0,2],
-"multi__mesh__edge__collapse_8cpp.html":[6,0,2,0,6,6,0],
-"multi__mesh__edge__collapse_8cpp.html#a0d925c29e22ee1b95307157a318b8914":[6,0,2,0,6,6,0,1]
+"multi__mesh__edge__collapse_8cpp.html":[6,0,2,0,6,6,0]
 };

@@ -1,5 +1,6 @@
 var NAVTREEINDEX18 =
 {
+"multi__mesh__edge__collapse_8cpp.html#a0d925c29e22ee1b95307157a318b8914":[6,0,2,0,6,6,0,1],
 "multi__mesh__edge__collapse_8cpp.html#a7d3bef6e1f47c04bbc437235cc8c8cab":[6,0,2,0,6,6,0,2],
 "multi__mesh__edge__collapse_8cpp.html#ab5e8f949ae96f6b2930b99ada4bbbdd2":[6,0,2,0,6,6,0,0],
 "multi__mesh__edge__collapse_8cpp_source.html":[6,0,2,0,6,6,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX18 =
 "namespacewmtk_1_1autogen_1_1subgroup.html#a90a681d1b4ae0b95baed2fcd49d2269f":[4,0,8,1,3,5],
 "namespacewmtk_1_1autogen_1_1subgroup.html#a9b4c9cc6aebaf0622a95cb3174d984e1":[4,0,8,1,3,1],
 "namespacewmtk_1_1autogen_1_1subgroup.html#aac58c29282e2e0f5ccbece920da36d62":[4,0,8,1,3,7],
-"namespacewmtk_1_1autogen_1_1subgroup.html#ab9e08de18cd4f688c5779cda8a13b384":[4,0,8,1,3,11],
-"namespacewmtk_1_1autogen_1_1subgroup.html#ac8b9cd19adc2c6e6c35ae43a4dfefd36":[4,0,8,1,3,0]
+"namespacewmtk_1_1autogen_1_1subgroup.html#ab9e08de18cd4f688c5779cda8a13b384":[4,0,8,1,3,11]
 };

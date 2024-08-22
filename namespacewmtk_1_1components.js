@@ -10,6 +10,7 @@ var namespacewmtk_1_1components =
     [ "PeriodicOptimizationOptions", "structwmtk_1_1components_1_1_periodic_optimization_options.html", "structwmtk_1_1components_1_1_periodic_optimization_options" ],
     [ "TagAttribute", "classwmtk_1_1components_1_1_tag_attribute.html", "classwmtk_1_1components_1_1_tag_attribute" ],
     [ "TagIntersection", "classwmtk_1_1components_1_1_tag_intersection.html", "classwmtk_1_1components_1_1_tag_intersection" ],
+    [ "Random", "classwmtk_1_1components_1_1_random.html", null ],
     [ "AABBWrapper", "classwmtk_1_1components_1_1_a_a_b_b_wrapper.html", "classwmtk_1_1components_1_1_a_a_b_b_wrapper" ],
     [ "ElementInQueue", "classwmtk_1_1components_1_1_element_in_queue.html", "classwmtk_1_1components_1_1_element_in_queue" ],
     [ "cmp_s", "structwmtk_1_1components_1_1cmp__s.html", "structwmtk_1_1components_1_1cmp__s" ],

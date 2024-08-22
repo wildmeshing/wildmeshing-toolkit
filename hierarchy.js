@@ -315,6 +315,7 @@ var hierarchy =
       [ "wmtk::operations::OptimizationSmoothing::WMTKProblem< T >", "classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html", null ]
     ] ],
     [ "wmtk::components::internal::ProceduralOptions", "structwmtk_1_1components_1_1internal_1_1_procedural_options.html", null ],
+    [ "wmtk::components::Random", "classwmtk_1_1components_1_1_random.html", null ],
     [ "wmtk::utils::RandomSeedSingleton", "classwmtk_1_1utils_1_1_random_seed_singleton.html", null ],
     [ "wmtk::Rational", "classwmtk_1_1_rational.html", null ],
     [ "wmtk::simplex::RawSimplex", "classwmtk_1_1simplex_1_1_raw_simplex.html", null ],

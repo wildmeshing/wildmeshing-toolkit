@@ -1,5 +1,6 @@
 var NAVTREEINDEX23 =
 {
+"structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_equal_functor.html#a6fb73fd1aad1ce5c2e5e5918676ee8eb":[5,0,2,8,0,0,2],
 "structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_equal_functor.html#a7455faebc3cf30944cbf4027fbec1468":[5,0,2,8,0,0,0],
 "structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_equal_functor.html#a7f054af16b7afe9dc2269848949e1d79":[5,0,2,8,0,0,3],
 "structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_less_functor.html":[5,0,2,8,0,1],
@@ -248,6 +249,5 @@ var NAVTREEINDEX23 =
 "test__component__winding__number_8cpp.html":[6,0,0,0,20],
 "test__component__winding__number_8cpp_source.html":[6,0,0,0,20],
 "tet__mesh_2_collapse_new_attribute_topo_info_8cpp.html":[6,0,2,0,6,4,0],
-"tet__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html":[6,0,2,0,6,4,0],
-"tet__mesh_2_collapse_new_attribute_topo_info_8hpp.html":[6,0,2,0,6,4,1]
+"tet__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html":[6,0,2,0,6,4,0]
 };
