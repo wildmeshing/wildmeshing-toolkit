@@ -21,13 +21,17 @@ public:
      * The cache folder is automatically removed in the destructor of the class
      * if delete_cache is set to be true. If the contents of the cache should
      * be copied out, one can use `export_cache()`. Once a cache is exported, it
-     * can be
-     * imported again using `import_cache()`.
+     * can be imported again using `import_cache()`.
      */
     Cache(
         const std::string& prefix,
         const std::filesystem::path directory = "",
         bool delete_cache = true);
+
+    /**
+     * @brief This version of Cache purely keeps meshes in memory.
+     */
+    Cache();
 
     Cache(Cache&&);
     Cache& operator=(Cache&&);
@@ -35,22 +39,19 @@ public:
     ~Cache();
 
     /**
-     * @brief Create a file with the given name in the cache without overwriting any file with the
-     * same name.
+     * @brief Create a file with the given name in the cache without overwriting any file
+     * with the same name.
      *
      * The file path is stored internally and can be accessed using `get_file_path`
      *
      * @param name The file name.
      */
-    const std::filesystem::path& create_unique_file(
+    const std::filesystem::path& create_cache_file(
         const std::string& filename,
-        const std::string& extension,
-        size_t max_tries = 10000);
+        const std::string& extension);
 
     /**
      * @brief Get the path where the file with the given name is stored.
-     *
-     * If a file with this name does not exist yet, it is created using `create_unique_file`.
      *
      * @return file path
      */
@@ -88,8 +89,7 @@ public:
      *
      * @param mesh The mesh that is written
      * @param name The name associated with the mesh
-     * @param name The name associated with the mesh
-     * @param multimesh_names names to absolute_multi_mesh_id
+     * @param multimesh_names names to absolute_multi_mesh_id <-- I still don't know what this is
      */
     void write_mesh(
         const Mesh& m,
@@ -153,8 +153,17 @@ public:
     std::vector<std::string> mesh_names();
 
 private:
+    /**
+     * @brief Checks if cache only stores in memory.
+     *
+     * Throws if it does.
+     */
+    void throw_memory_only_mode() const;
+
+private:
     std::filesystem::path m_cache_dir;
     std::map<std::string, std::filesystem::path> m_file_paths; // name --> file location
+    std::map<std::string, std::shared_ptr<Mesh>> m_meshes; // name --> mesh pointer
     mutable std::map<std::string, CachedMultiMesh> m_multimeshes;
     bool m_delete_cache = true;
 

@@ -132,7 +132,7 @@ TEST_CASE("cache_files", "[cache][io]")
     {
         io::Cache cache("wmtk_cache", fs::current_path());
 
-        filepath = cache.create_unique_file(file_name, ".txt");
+        filepath = cache.create_cache_file(file_name, ".txt");
 
         CHECK(fs::exists(filepath));
         CHECK(filepath.stem().string().rfind(file_name, 0) == 0);
@@ -148,6 +148,24 @@ TEST_CASE("cache_files", "[cache][io]")
 TEST_CASE("cache_read_write_mesh", "[cache][io]")
 {
     io::Cache cache("wmtk_cache", fs::current_path());
+    std::shared_ptr<TriMesh> mesh_ptr = std::make_shared<TriMesh>(tests::single_triangle());
+    TriMesh& mesh = *mesh_ptr;
+
+    const std::string name = "cached_mesh";
+    cache.write_mesh(mesh, name);
+    cache.flush_multimeshes();
+
+    auto mesh_from_cache = cache.read_mesh(name);
+
+    CHECK(*mesh_from_cache == mesh);
+    CHECK_FALSE(&*mesh_from_cache == &mesh);
+    CHECK_THROWS(cache.read_mesh("some_file_that_does_not_exist"));
+}
+
+TEST_CASE("cache_default", "[cache][io]")
+{
+    io::Cache cache;
+    CHECK_THROWS(cache.create_cache_file("dummy", ".txt"));
     std::shared_ptr<TriMesh> mesh_ptr = std::make_shared<TriMesh>(tests::single_triangle());
     TriMesh& mesh = *mesh_ptr;
 
@@ -174,7 +192,7 @@ TEST_CASE("cache_export_import", "[cache][io]")
         io::Cache cache("wmtk_cache", fs::current_path());
         // generate some files
         for (const std::string& name : file_names) {
-            const fs::path p = cache.create_unique_file(name, ".txt");
+            const fs::path p = cache.create_cache_file(name, ".txt");
             CHECK(fs::exists(p));
             CHECK(p.stem().string().rfind(name, 0) == 0);
             CHECK(p.extension().string() == ".txt");
@@ -208,9 +226,47 @@ TEST_CASE("cache_export_import", "[cache][io]")
     // try to import even though the cache contains a file
     {
         io::Cache cache("wmtk_cache", fs::current_path());
-        cache.create_unique_file("some_file", "");
+        cache.create_cache_file("some_file", "");
         // import should not work if the cache already contains files
         CHECK_FALSE(cache.import_cache(export_location));
+    }
+
+    // clean up export
+    fs::remove_all(export_location);
+}
+
+TEST_CASE("cache_default_export_import", "[cache][io]")
+{
+    const fs::path export_location =
+        io::Cache::create_unique_directory("wmtk_cache_export", fs::current_path());
+
+    const std::vector<std::string> mesh_names = {"a", "b", "c"};
+
+    // create cache
+    {
+        io::Cache cache;
+        // generate some files
+        for (const std::string& name : mesh_names) {
+            std::shared_ptr<TriMesh> mesh_ptr = std::make_shared<TriMesh>(tests::single_triangle());
+            cache.write_mesh(*mesh_ptr, name);
+        }
+
+        fs::remove_all(export_location);
+        REQUIRE_FALSE(fs::exists(export_location));
+        // export cache to dummy directory
+        REQUIRE(cache.export_cache(export_location));
+    }
+
+    // create new cache
+    {
+        io::Cache cache;
+        // import the previously exported
+        CHECK(cache.import_cache(export_location));
+
+        // check if meshes are there
+        for (const std::string& name : mesh_names) {
+            CHECK_NOTHROW(cache.read_mesh(name));
+        }
     }
 
     // clean up export

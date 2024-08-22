@@ -74,6 +74,16 @@ Cache::Cache(const std::string& prefix, const std::filesystem::path location, bo
     , m_delete_cache(delete_cache)
 {
     m_cache_dir = create_unique_directory(prefix, location);
+    wmtk::logger().info(
+        "Cache stores in folder: {}\nThe folder will be deleted automatically after successful "
+        "completion.",
+        fs::absolute(m_cache_dir));
+}
+
+Cache::Cache()
+    : m_delete_cache(false)
+{
+    wmtk::logger().info("Cache does not write to disk.");
 }
 
 Cache::~Cache()
@@ -90,41 +100,39 @@ Cache::~Cache()
     }
 }
 
-const std::filesystem::path& Cache::create_unique_file(
+const std::filesystem::path& Cache::create_cache_file(
     const std::string& filename,
-    const std::string& extension,
-    size_t max_tries)
+    const std::string& extension)
 {
-    const std::string timestamp = number_to_hex(nanoseconds_timestamp());
+    throw_memory_only_mode();
 
-    for (size_t i = 0; i < max_tries; ++i) {
-        const fs::path p =
-            m_cache_dir / (filename + "_" + timestamp + "_" + number_to_hex(i) + extension);
+    const fs::path p = m_cache_dir / (filename + extension);
 
-        if (fs::exists(p)) {
-            continue;
-        }
-
-        // try to touch the file
-        std::ofstream ofs(p);
-        if (ofs.is_open()) {
-            m_file_paths[filename] = p;
-            ofs.close();
-            return m_file_paths[filename];
-        }
-        ofs.close();
+    if (fs::exists(p)) {
+        wmtk::logger().warn("File '{}' already exists and might be overwritten.");
     }
 
-    throw std::runtime_error("Could not generate a unique file.");
+    // try to touch the file
+    std::ofstream ofs(p);
+    if (ofs.is_open()) {
+        ofs.close();
+    } else {
+        log_and_throw_error("Cannot create file '{}'", p);
+    }
+
+    m_file_paths[filename] = p;
+    return m_file_paths[filename];
 }
 
 const std::filesystem::path& Cache::get_file_path(const std::string& filename)
 {
+    throw_memory_only_mode();
+
     const auto it = m_file_paths.find(filename);
 
     if (it == m_file_paths.end()) {
         // filename does not exist yet --> create it
-        return create_unique_file(filename, "");
+        return create_cache_file(filename, "");
     } else {
         return it->second;
     }
@@ -132,6 +140,8 @@ const std::filesystem::path& Cache::get_file_path(const std::string& filename)
 
 std::filesystem::path Cache::get_file_path(const std::string& filename) const
 {
+    throw_memory_only_mode();
+
     const auto it = m_file_paths.find(filename);
 
     if (it == m_file_paths.end()) {
@@ -160,10 +170,21 @@ void Cache::load_multimesh(const std::string& name) const
             mm_name,
             CachedMultiMesh(mm_name, std::map<std::string, std::vector<int64_t>>{}));
     }
-    auto& cmm = m_multimeshes.at(mm_name);
+    CachedMultiMesh& cmm = m_multimeshes.at(mm_name);
     if (!bool(cmm.get_root())) {
-        const fs::path p = get_file_path(mm_name);
-        cmm.load(p);
+        if (!m_cache_dir.empty()) {
+            // load from file
+            const fs::path p = get_file_path(mm_name);
+            cmm.load(p);
+        } else {
+            // load from memory
+            const auto it = m_meshes.find(mm_name);
+            if (it == m_meshes.end()) {
+                log_and_throw_error("A mesh with the name {} does not exist", mm_name);
+            } else {
+                cmm.load(it->second);
+            }
+        }
     }
 }
 
@@ -195,18 +216,31 @@ void Cache::write_mesh(
     const std::string& name,
     const std::map<std::string, std::vector<int64_t>>& multimesh_names)
 {
-    const auto it = m_file_paths.find(name);
-
-    fs::path p;
-
-    if (it == m_file_paths.end()) {
-        // file does not exist yet --> create it
-        p = create_unique_file(name, ".hdf5");
-        m_file_paths[name] = p;
+    // write to file
+    if (!m_cache_dir.empty()) {
+        const auto it = m_file_paths.find(name);
+        fs::path p;
+        if (it == m_file_paths.end()) {
+            // file does not exist yet --> create it
+            p = create_cache_file(name, ".hdf5");
+            m_file_paths[name] = p;
+        } else {
+            p = it->second;
+        }
+        HDF5Writer writer(p);
+        m.serialize(writer, &m);
     } else {
-        p = it->second;
+        // write in meshes list
+        const auto it = m_meshes.find(name);
+        std::shared_ptr<Mesh> pm = const_cast<Mesh&>(m).shared_from_this();
+        if (it == m_meshes.end()) {
+            m_meshes[name] = pm;
+        } else {
+            it->second = pm;
+        }
     }
 
+    // undocumented multimesh stuff - no clue what it does
     std::map<std::string, std::vector<int64_t>> mm_names = multimesh_names;
     if (m_multimeshes.find(name) != m_multimeshes.end()) {
         mm_names = m_multimeshes.at(name).get_multimesh_names();
@@ -223,9 +257,6 @@ void Cache::write_mesh(
                 multimesh_names,
                 const_cast<Mesh&>(m).get_multi_mesh_root().shared_from_this()));
     }
-
-    HDF5Writer writer(p);
-    m.serialize(writer, &m);
 }
 
 bool Cache::export_cache(const std::filesystem::path& export_location)
@@ -234,27 +265,41 @@ bool Cache::export_cache(const std::filesystem::path& export_location)
         return false;
     }
 
-    fs::path cache_content_path;
+    fs::create_directory(export_location);
+
+    fs::path cache_content_path = export_location / (m_cache_content_name + ".json");
 
     // create a json with all cached names
     {
         nlohmann::json cache_content;
-        for (const auto& [first, second] : m_file_paths) {
-            cache_content[first] = fs::relative(second, m_cache_dir).string();
+        if (!m_cache_dir.empty()) {
+            for (const auto& [first, second] : m_file_paths) {
+                cache_content[first] = fs::relative(second, m_cache_dir).string();
+            }
+        } else {
+            for (const auto& [name, _] : m_meshes) {
+                cache_content[name] = name + ".hdf5";
+            }
         }
 
-        cache_content_path = create_unique_file(m_cache_content_name, ".json");
         std::ofstream o(cache_content_path);
         o << std::setw(4) << cache_content << std::endl;
         o.close();
     }
 
     // copy folder to export location
-    fs::copy(m_cache_dir, export_location, fs::copy_options::recursive);
+    if (!m_cache_dir.empty()) {
+        fs::copy(m_cache_dir, export_location, fs::copy_options::recursive);
+    } else {
+        for (const auto& [name, m] : m_meshes) {
+            HDF5Writer writer(export_location / (name + ".hdf5"));
+            m->serialize(writer, m.get());
+        }
+    }
 
-    // delete json
-    fs::remove(cache_content_path);
-    m_file_paths.erase(m_cache_content_name);
+    //// delete json
+    // fs::remove(cache_content_path);
+    // m_file_paths.erase(m_cache_content_name);
 
     return true;
 }
@@ -267,15 +312,20 @@ bool Cache::import_cache(const std::filesystem::path& import_location)
     if (!m_file_paths.empty()) {
         return false;
     }
+    if (!m_meshes.empty()) {
+        return false;
+    }
 
-    // remove current directory
-    fs::remove_all(m_cache_dir);
-    // copy import
-    fs::copy(import_location, m_cache_dir, fs::copy_options::recursive);
+    if (!m_cache_dir.empty()) {
+        // remove current directory
+        fs::remove_all(m_cache_dir);
+        // copy import
+        fs::copy(import_location, m_cache_dir, fs::copy_options::recursive);
+    }
 
     // find json
     fs::path cache_content_path;
-    for (const auto& f : fs::directory_iterator(m_cache_dir)) {
+    for (const auto& f : fs::directory_iterator(import_location)) {
         const fs::path p = f.path();
         if (p.stem().string().rfind(m_cache_content_name, 0) == 0) {
             cache_content_path = p;
@@ -296,13 +346,18 @@ bool Cache::import_cache(const std::filesystem::path& import_location)
             cache_content.get<std::map<std::string, std::string>>();
 
         // make file paths absolute
-        for (auto& [first, second] : map_paths) {
-            m_file_paths[first] = m_cache_dir / second;
+        if (!m_cache_dir.empty()) {
+            for (auto& [first, second] : map_paths) {
+                m_file_paths[first] = m_cache_dir / second;
+            }
+        } else {
+            // load meshes
+            for (const auto& [name, file] : map_paths) {
+                // TODO check if file is a mesh
+                m_meshes[name] = wmtk::read_mesh(import_location / file);
+            }
         }
     }
-
-    // delete json
-    fs::remove(cache_content_path);
 
     return true;
 }
@@ -334,6 +389,13 @@ bool Cache::equals(const Cache& o)
     }
 
     return true;
+}
+
+void Cache::throw_memory_only_mode() const
+{
+    if (m_cache_dir.empty()) {
+        log_and_throw_error("Cache is storing in memory only.");
+    }
 }
 
 } // namespace wmtk::io
