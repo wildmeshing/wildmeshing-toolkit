@@ -692,7 +692,7 @@ void local_joint_flatten(
             UV_joint,
             v_id_map_joint);
     } else if (is_bd_v0 && is_bd_v1) {
-        std::cout << "case 2: boundary edge" << std::endl;
+        // std::cout << "case 2: boundary edge" << std::endl;
         local_joint_flatten_case2_3_colinear(
             F_before,
             V_before,
@@ -705,7 +705,7 @@ void local_joint_flatten(
 
 
     } else {
-        std::cout << "case 1: edge connect a interior vertex and a boundary vertex" << std::endl;
+        // std::cout << "case 1: edge connect a interior vertex and a boundary vertex" << std::endl;
 
         local_joint_flatten_case1(
             F_before,

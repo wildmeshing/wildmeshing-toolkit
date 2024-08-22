@@ -751,70 +751,93 @@ void forward_track_line_app(
     const Eigen::MatrixXi& F_out,
     const path& operation_logs_dir)
 {
-    auto intersections = computeIntersections(uv_in, Fuv_in, 0.5);
-    query_curve curve;
-    for (int i = 0; i < intersections.size(); i += 2) {
-        query_segment seg;
-        if (intersections[i].fid != intersections[i + 1].fid) {
-            std::cout << "something wrong with intersections" << std::endl;
+    // get all curves
+    std::vector<query_curve> curves;
+    {
+        int N = 5;
+
+        auto curve_from_intersections = [&](const std::vector<Intersection>& input_intersections) {
+            query_curve curve;
+            for (int i = 0; i < input_intersections.size(); i += 2) {
+                query_segment seg;
+                if (input_intersections[i].fid != input_intersections[i + 1].fid) {
+                    std::cout << "something wrong with input_intersections" << std::endl;
+                }
+                seg.f_id = input_intersections[i].fid;
+                seg.bcs[0] = input_intersections[i].barycentric;
+                seg.bcs[1] = input_intersections[i + 1].barycentric;
+                seg.fv_ids = F_in.row(input_intersections[i].fid);
+                curve.segments.push_back(seg);
+            }
+
+            curve.next_segment_ids.resize(curve.segments.size());
+            for (int i = 0; i < curve.segments.size() - 1; i++) {
+                curve.next_segment_ids[i] = i + 1;
+            }
+            curve.next_segment_ids[curve.segments.size() - 1] = -1;
+
+            return curve;
+        };
+
+        for (int k = 0; k < N - 1; k++) {
+            double value = 1.0 / N * (k + 1);
+            auto intersectionsX = computeIsoLineIntersectionsX(uv_in, Fuv_in, value);
+            auto curveX = curve_from_intersections(intersectionsX);
+            curves.push_back(curveX);
+            auto intersectionsY = computeIsoLineIntersectionsY(uv_in, Fuv_in, value);
+            auto curveY = curve_from_intersections(intersectionsY);
+            curves.push_back(curveY);
         }
-        seg.f_id = intersections[i].fid;
-        seg.bcs[0] = intersections[i].barycentric;
-        seg.bcs[1] = intersections[i + 1].barycentric;
-        seg.fv_ids = F_in.row(intersections[i].fid);
-        curve.segments.push_back(seg);
     }
 
-    curve.next_segment_ids.resize(curve.segments.size());
-    for (int i = 0; i < curve.segments.size() - 1; i++) {
-        curve.next_segment_ids[i] = i + 1;
-    }
-    curve.next_segment_ids[curve.segments.size() - 1] = -1;
-
-    // query_curve curve = generate_curve(V_in, F_in, 10, 0);
-    auto curve_origin = curve;
+    auto curves_origin = curves;
 
     {
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_in, F_in);
         viewer.data().point_size /= 3;
-        for (const auto& seg : curve_origin.segments) {
-            Eigen::MatrixXd pts(2, 3);
-            for (int i = 0; i < 2; i++) {
-                Eigen::Vector3d p(0, 0, 0);
-                for (int j = 0; j < 3; j++) {
-                    p += V_in.row(seg.fv_ids[j]) * seg.bcs[i](j);
+        for (const auto curve_origin : curves_origin) {
+            for (const auto& seg : curve_origin.segments) {
+                Eigen::MatrixXd pts(2, 3);
+                for (int i = 0; i < 2; i++) {
+                    Eigen::Vector3d p(0, 0, 0);
+                    for (int j = 0; j < 3; j++) {
+                        p += V_in.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                    }
+                    pts.row(i) = p;
                 }
-                pts.row(i) = p;
+                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
             }
-            viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
-            viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
-            viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
         }
         viewer.launch();
     }
 
     // forward track lines
-    back_track_lines(operation_logs_dir, curve, true);
+    for (auto& curve : curves) {
+        back_track_lines(operation_logs_dir, curve, true);
+    }
 
     {
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_out, F_out);
         viewer.data().point_size /= 3;
-        for (const auto& seg : curve.segments) {
-            Eigen::MatrixXd pts(2, 3);
-            for (int i = 0; i < 2; i++) {
-                Eigen::Vector3d p(0, 0, 0);
-                for (int j = 0; j < 3; j++) {
-                    p += V_out.row(seg.fv_ids[j]) * seg.bcs[i](j);
+        for (const auto& curve : curves) {
+            for (const auto& seg : curve.segments) {
+                Eigen::MatrixXd pts(2, 3);
+                for (int i = 0; i < 2; i++) {
+                    Eigen::Vector3d p(0, 0, 0);
+                    for (int j = 0; j < 3; j++) {
+                        p += V_out.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                    }
+                    pts.row(i) = p;
                 }
-                pts.row(i) = p;
+                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
             }
-            viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
-            viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
-            viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
         }
-
         viewer.launch();
     }
 }

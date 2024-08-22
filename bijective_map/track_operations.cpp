@@ -305,7 +305,8 @@ bool intersectSegmentEdge(
     const Eigen::Vector2d& b,
     const Eigen::Vector2d& c,
     const Eigen::Vector2d& d,
-    Eigen::Vector2d& barycentric)
+    Eigen::Vector2d& barycentric,
+    double eps = 1e-8)
 {
     Eigen::Vector2d ab = b - a;
     Eigen::Vector2d cd = d - c;
@@ -316,14 +317,16 @@ bool intersectSegmentEdge(
 
     double t = (ac.x() * cd.y() - ac.y() * cd.x()) / denominator;
     double u = -(ab.x() * ac.y() - ab.y() * ac.x()) / denominator;
-
-    if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
-        // Calculate barycentric coordinates for intersection
-        double alpha = 1 - u;
-        double beta = u;
-        barycentric = Eigen::Vector2d(alpha, beta);
+    double alpha = 1 - u;
+    double beta = u;
+    barycentric = Eigen::Vector2d(alpha, beta);
+    if (t >= eps && t <= 1 + eps && u >= eps && u <= 1 + eps) {
+        alpha = std::max(0.0, std::min(1.0, alpha));
+        beta = std::max(0.0, std::min(1.0, beta));
+        barycentric = Eigen::Vector2d(alpha, beta) / (alpha + beta);
         return true;
     }
+    // std::cout << "t: " << t << ", u: " << u << std::endl;
     return false;
 }
 
@@ -354,6 +357,214 @@ bool intersectSegmentEdge_r(
     return false;
 }
 
+void handle_one_segment(
+    query_curve& curve,
+    int id,
+    std::vector<query_point>& query_points,
+    const Eigen::MatrixXd& UV_joint,
+    const Eigen::MatrixXi& F_before,
+    const std::vector<int64_t>& v_id_map_joint,
+    const std::vector<int64_t>& id_map_before)
+{
+    query_segment& qs = curve.segments[id];
+
+    if (query_points[0].f_id == query_points[1].f_id) {
+        // two endpoints are on the same face --> no need to compute intersections
+        qs.f_id = query_points[0].f_id;
+        qs.bcs[0] = query_points[0].bc;
+        qs.bcs[1] = query_points[1].bc;
+        qs.fv_ids = query_points[0].fv_ids;
+    } else {
+        double eps = 1e-8;
+
+        int old_next_seg = curve.next_segment_ids[id];
+
+        Eigen::MatrixXi TT, TTi;
+        igl::triangle_triangle_adjacency(F_before, TT, TTi);
+
+        // compute the two end points
+        auto it = std::find(id_map_before.begin(), id_map_before.end(), query_points[0].f_id);
+        if (it == id_map_before.end()) {
+            std::cout << "query_points[0] not found" << std::endl;
+            throw std::runtime_error("query_points[0] not found");
+        }
+        int current_fid = std::distance(id_map_before.begin(), it);
+        Eigen::Vector2d p0(0, 0);
+        for (int i = 0; i < 3; i++) {
+            p0 += UV_joint.row(F_before(current_fid, i)) * query_points[0].bc(i);
+        }
+
+        it = std::find(id_map_before.begin(), id_map_before.end(), query_points[1].f_id);
+        if (it == id_map_before.end()) {
+            std::cout << "query_points[1] not found" << std::endl;
+            throw std::runtime_error("query_points[1] not found");
+        }
+        int target_fid = std::distance(id_map_before.begin(), it);
+        Eigen::Vector2d p1(0, 0);
+        for (int i = 0; i < 3; i++) {
+            p1 += UV_joint.row(F_before(target_fid, i)) * query_points[1].bc(i);
+        }
+
+        // std::cout << "current fid: " << current_fid << std::endl;
+        // std::cout << "current bc: " << query_points[0].bc << std::endl;
+        // std::cout << "target fid: " << target_fid << std::endl;
+        // std::cout << "target bc: " << query_points[1].bc << std::endl;
+        // std::cout << "TT(current_fid): " << TT.row(current_fid) << std::endl;
+        // std::cout << "TTi(current_fid): " << TTi.row(current_fid) << std::endl;
+
+        int current_edge_id = -1;
+        // case that the first point is on the edge
+        for (int eid = 0; eid < 3; eid++) {
+            if (query_points[0].bc(eid) == 0) {
+                current_edge_id = (eid + 1) % 3;
+            }
+        }
+
+        Eigen::Vector2d last_edge_bc;
+        {
+            int next_edge_id0 = -1;
+            // find the first intersection
+            for (int edge_id = 0; edge_id < 3; edge_id++) {
+                if (edge_id == current_edge_id) continue; // we need to find the other intersection
+
+                Eigen::VectorXd a = UV_joint.row(F_before(current_fid, edge_id));
+                Eigen::VectorXd b = UV_joint.row(F_before(current_fid, (edge_id + 1) % 3));
+                // std::cout << "a:\n" << a << std::endl;
+                // std::cout << "b:\n" << b << std::endl;
+
+                Eigen::Vector2d edge_bc;
+                if (intersectSegmentEdge(p0, p1, a, b, edge_bc)) {
+                    // std::cout << "intersection found" << std::endl;
+                    // std::cout << edge_bc << std::endl;
+
+                    next_edge_id0 = edge_id;
+                    qs.f_id = query_points[0].f_id;
+                    qs.bcs[0] = query_points[0].bc;
+                    qs.bcs[1] << 0, 0, 0;
+                    qs.bcs[1](edge_id) = edge_bc(0);
+                    qs.bcs[1]((edge_id + 1) % 3) = edge_bc(1);
+                    qs.fv_ids = query_points[0].fv_ids;
+                    last_edge_bc = edge_bc;
+                    curve.next_segment_ids[id] =
+                        curve.segments.size(); // next segment will add to the end
+                    break;
+                }
+            }
+
+            if (next_edge_id0 == -1) {
+                // case that the first point is not on a edge, then it is a bug
+                if (current_edge_id == -1) {
+                    std::cout << "no first intersection found" << std::endl;
+                    throw std::runtime_error("no first intersection found");
+                }
+                // solve this by changing the first point
+                int e0 = current_edge_id;
+                int f1 = TT(current_fid, e0);
+                int e1 = TTi(current_fid, e0);
+
+                query_points[0].f_id = id_map_before[f1];
+                query_points[0].fv_ids << v_id_map_joint[F_before(f1, 0)],
+                    v_id_map_joint[F_before(f1, 1)], v_id_map_joint[F_before(f1, 2)];
+                auto current_bc = query_points[0].bc;
+                query_points[0].bc(e1) = current_bc((e0 + 1) % 3);
+                query_points[0].bc((e1 + 1) % 3) = current_bc(e0);
+                query_points[0].bc((e1 + 2) % 3) = 0;
+
+                handle_one_segment(
+                    curve,
+                    id,
+                    query_points,
+                    UV_joint,
+                    F_before,
+                    v_id_map_joint,
+                    id_map_before);
+                return;
+
+                std::cout << "no intersection found" << std::endl;
+                throw std::runtime_error("no intersection found");
+            }
+            // else {
+            //     std::cout << "next_edge_id0: " << next_edge_id0 << std::endl;
+            // }
+            current_edge_id = TTi(current_fid, next_edge_id0);
+            current_fid = TT(current_fid, next_edge_id0);
+            // std::cout << "last_edge_bc:\n" << last_edge_bc << std::endl;
+        }
+
+        // find the rest intersections
+        while (current_fid != target_fid) {
+            // std::cout << "current fid: " << current_fid << std::endl;
+            // std::cout << "target fid: " << target_fid << std::endl;
+            // std::cout << "current edge id: " << current_edge_id << std::endl;
+            // std::cout << "last_edge_bc: " << last_edge_bc << std::endl;
+
+            int next_edge_id = -1;
+            for (int edge_id = 0; edge_id < 3; edge_id++) {
+                if (edge_id == current_edge_id) continue;
+                Eigen::VectorXd a = UV_joint.row(F_before(current_fid, edge_id));
+                Eigen::VectorXd b = UV_joint.row(F_before(current_fid, (edge_id + 1) % 3));
+                Eigen::Vector2d edge_bc;
+                query_segment qs_new;
+                if (intersectSegmentEdge(p0, p1, a, b, edge_bc)) {
+                    next_edge_id = edge_id;
+                    qs_new.f_id = id_map_before[current_fid];
+                    qs_new.bcs[0] = Eigen::Vector3d(0, 0, 0);
+                    qs_new.bcs[1] = Eigen::Vector3d(0, 0, 0);
+
+                    qs_new.bcs[0](current_edge_id) = last_edge_bc(1);
+                    qs_new.bcs[0]((current_edge_id + 1) % 3) = last_edge_bc(0);
+                    qs_new.bcs[1](next_edge_id) = edge_bc(0);
+                    qs_new.bcs[1]((next_edge_id + 1) % 3) = edge_bc(1);
+
+                    qs_new.fv_ids << v_id_map_joint[F_before(current_fid, 0)],
+                        v_id_map_joint[F_before(current_fid, 1)],
+                        v_id_map_joint[F_before(current_fid, 2)];
+
+                    // push the new segment
+                    curve.segments.push_back(qs_new);
+                    curve.next_segment_ids.push_back(curve.next_segment_ids.size());
+
+                    // record the last edge
+                    last_edge_bc = edge_bc;
+                    break;
+                }
+            }
+
+            if (next_edge_id == -1) {
+                std::cout << "no intersection found" << std::endl;
+                throw std::runtime_error("no intersection found");
+                continue;
+            }
+            // else {
+            //     std::cout << "next_edge_id: " << next_edge_id << std::endl;
+            //     std::cout << "TT(current_fid): " << TT.row(current_fid) << std::endl;
+            //     std::cout << "TTi(current_fid): " << TTi.row(current_fid) << std::endl;
+            //     std::cout << std::endl;
+            // }
+            current_edge_id = TTi(current_fid, next_edge_id);
+            current_fid = TT(current_fid, next_edge_id);
+        }
+
+        // add last segment
+        {
+            query_segment qs_new;
+            qs_new.f_id = query_points[1].f_id;
+            qs_new.bcs[0] = Eigen::Vector3d(0, 0, 0);
+            qs_new.bcs[1] = query_points[1].bc;
+            qs_new.bcs[0](current_edge_id) = last_edge_bc(1);
+            qs_new.bcs[0]((current_edge_id + 1) % 3) = last_edge_bc(0);
+            qs_new.fv_ids = query_points[1].fv_ids;
+
+            // push the new segment
+            curve.segments.push_back(qs_new);
+            curve.next_segment_ids.push_back(old_next_seg);
+        }
+
+        // std::cout << "finish one segment\n" << std::endl;
+    }
+}
+
+
 void handle_collapse_edge_curve(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
@@ -367,6 +578,9 @@ void handle_collapse_edge_curve(
     std::cout << "Handling EdgeCollapse curve" << std::endl;
     int curve_length = curve.segments.size();
     for (int id = 0; id < curve_length; id++) {
+        ////////////////////////////////////
+        // map the two end points of one segment
+        ////////////////////////////////////
         query_segment& qs = curve.segments[id];
         query_point qp0 = {qs.f_id, qs.bcs[0], qs.fv_ids};
         query_point qp1 = {qs.f_id, qs.bcs[1], qs.fv_ids};
@@ -384,185 +598,14 @@ void handle_collapse_edge_curve(
             id_map_after,
             query_points);
 
-        // std::cout << "query_points[0].f_id: " << query_points[0].f_id << std::endl;
-        // std::cout << "query_points[0].bc:\n" << query_points[0].bc << std::endl;
-        // std::cout << "query_points[1].f_id: " << query_points[1].f_id << std::endl;
-        // std::cout << "query_points[1].bc:\n" << query_points[1].bc << std::endl;
-
-        if (query_points[0].f_id == query_points[1].f_id) {
-            // std::cout << "no intersections" << std::endl;
-            // no intersections
-            qs.f_id = query_points[0].f_id;
-            qs.bcs[0] = query_points[0].bc;
-            qs.bcs[1] = query_points[1].bc;
-            qs.fv_ids = query_points[0].fv_ids;
-        } else {
-            double eps = 1e-8;
-            // std::cout << "need compute intersections" << std::endl;
-            // compute intersections
-            int old_next_seg = curve.next_segment_ids[id];
-
-            Eigen::MatrixXi TT, TTi;
-            igl::triangle_triangle_adjacency(F_before, TT, TTi);
-
-            // check vertex_on_edge case
-            for (int i = 0; i < 3; i++) {
-                if (query_points[0].bc(i) < eps) {
-                    if (TT(query_points[0].f_id, (i + 1) % 3) == query_points[1].f_id) {
-                        // TODO: implement this
-                    }
-                }
-            }
-            // compute the two end points
-            auto it = std::find(id_map_before.begin(), id_map_before.end(), query_points[0].f_id);
-            if (it == id_map_before.end()) {
-                std::cout << "query_points[0] not found" << std::endl;
-                throw std::runtime_error("query_points[0] not found");
-            }
-            int current_fid = std::distance(id_map_before.begin(), it);
-            Eigen::Vector2d p0(0, 0);
-            for (int i = 0; i < 3; i++) {
-                p0 += UV_joint.row(F_before(current_fid, i)) * query_points[0].bc(i);
-            }
-
-            it = std::find(id_map_before.begin(), id_map_before.end(), query_points[1].f_id);
-            if (it == id_map_before.end()) {
-                std::cout << "query_points[1] not found" << std::endl;
-                throw std::runtime_error("query_points[1] not found");
-            }
-            int target_fid = std::distance(id_map_before.begin(), it);
-            Eigen::Vector2d p1(0, 0);
-            for (int i = 0; i < 3; i++) {
-                p1 += UV_joint.row(F_before(target_fid, i)) * query_points[1].bc(i);
-            }
-
-            // std::cout << "current fid: " << current_fid << std::endl;
-            // std::cout << "current bc: " << query_points[0].bc << std::endl;
-            // std::cout << "target fid: " << target_fid << std::endl;
-            // std::cout << "target bc: " << query_points[1].bc << std::endl;
-
-            // std::cout << "TT(current_fid): " << TT.row(current_fid) << std::endl;
-            // std::cout << "TTi(current_fid): " << TTi.row(current_fid) << std::endl;
-            int current_edge_id = -1;
-
-            // case that the first point is on the edge
-            for (int eid = 0; eid < 3; eid++) {
-                if (query_points[0].bc(eid) == 0) {
-                    current_edge_id = (eid + 1) % 3;
-                }
-            }
-
-            Eigen::Vector2d last_edge_bc;
-            {
-                int next_edge_id0 = -1;
-                // find the first intersection
-                for (int edge_id = 0; edge_id < 3; edge_id++) {
-                    if (edge_id == current_edge_id)
-                        continue; // we need to find the other intersection
-
-                    Eigen::VectorXd a = UV_joint.row(F_before(current_fid, edge_id));
-                    Eigen::VectorXd b = UV_joint.row(F_before(current_fid, (edge_id + 1) % 3));
-                    // std::cout << "a:\n" << a << std::endl;
-                    // std::cout << "b:\n" << b << std::endl;
-
-                    Eigen::Vector2d edge_bc;
-                    if (intersectSegmentEdge(p0, p1, a, b, edge_bc)) {
-                        // std::cout << "intersection found" << std::endl;
-                        // std::cout << edge_bc << std::endl;
-
-                        next_edge_id0 = edge_id;
-                        qs.f_id = query_points[0].f_id;
-                        qs.bcs[0] = query_points[0].bc;
-                        qs.bcs[1] << 0, 0, 0;
-                        qs.bcs[1](edge_id) = edge_bc(0);
-                        qs.bcs[1]((edge_id + 1) % 3) = edge_bc(1);
-                        qs.fv_ids = query_points[0].fv_ids;
-                        last_edge_bc = edge_bc;
-                        curve.next_segment_ids[id] =
-                            curve.segments.size(); // next segment will add to the end
-                        break;
-                    }
-                }
-
-                if (next_edge_id0 == -1) {
-                    std::cout << "no intersection found" << std::endl;
-                    throw std::runtime_error("no intersection found");
-                    continue;
-                } else {
-                    std::cout << "next_edge_id0: " << next_edge_id0 << std::endl;
-                }
-                current_edge_id = TTi(current_fid, next_edge_id0);
-                current_fid = TT(current_fid, next_edge_id0);
-                std::cout << "last_edge_bc:\n" << last_edge_bc << std::endl;
-            }
-            // find the rest intersections
-            while (current_fid != target_fid) {
-                std::cout << "current fid: " << current_fid << std::endl;
-                std::cout << "target fid: " << target_fid << std::endl;
-                std::cout << "current edge id: " << current_edge_id << std::endl;
-                std::cout << "last_edge_bc: " << last_edge_bc << std::endl;
-
-                int next_edge_id = -1;
-                for (int edge_id = 0; edge_id < 3; edge_id++) {
-                    if (edge_id == current_edge_id) continue;
-                    Eigen::VectorXd a = UV_joint.row(F_before(current_fid, edge_id));
-                    Eigen::VectorXd b = UV_joint.row(F_before(current_fid, (edge_id + 1) % 3));
-                    Eigen::Vector2d edge_bc;
-                    query_segment qs_new;
-                    if (intersectSegmentEdge(p0, p1, a, b, edge_bc)) {
-                        next_edge_id = edge_id;
-                        qs_new.f_id = id_map_before[current_fid];
-                        qs_new.bcs[0] = Eigen::Vector3d(0, 0, 0);
-                        qs_new.bcs[1] = Eigen::Vector3d(0, 0, 0);
-
-                        qs_new.bcs[0](current_edge_id) = last_edge_bc(1);
-                        qs_new.bcs[0]((current_edge_id + 1) % 3) = last_edge_bc(0);
-                        qs_new.bcs[1](next_edge_id) = edge_bc(0);
-                        qs_new.bcs[1]((next_edge_id + 1) % 3) = edge_bc(1);
-
-                        qs_new.fv_ids << v_id_map_joint[F_before(current_fid, 0)],
-                            v_id_map_joint[F_before(current_fid, 1)],
-                            v_id_map_joint[F_before(current_fid, 2)];
-
-                        // push the new segment
-                        curve.segments.push_back(qs_new);
-                        curve.next_segment_ids.push_back(curve.next_segment_ids.size());
-
-                        // record the last edge
-                        last_edge_bc = edge_bc;
-                        break;
-                    }
-                }
-
-                if (next_edge_id == -1) {
-                    std::cout << "no intersection found" << std::endl;
-                    throw std::runtime_error("no intersection found");
-                    continue;
-                } else {
-                    std::cout << "next_edge_id: " << next_edge_id << std::endl;
-                    std::cout << "TT(current_fid): " << TT.row(current_fid) << std::endl;
-                    std::cout << "TTi(current_fid): " << TTi.row(current_fid) << std::endl;
-                    std::cout << std::endl;
-                }
-                current_edge_id = TTi(current_fid, next_edge_id);
-                current_fid = TT(current_fid, next_edge_id);
-            }
-
-            // add last segment
-            {
-                query_segment qs_new;
-                qs_new.f_id = query_points[1].f_id;
-                qs_new.bcs[0] = Eigen::Vector3d(0, 0, 0);
-                qs_new.bcs[1] = query_points[1].bc;
-                qs_new.bcs[0](current_edge_id) = last_edge_bc(1);
-                qs_new.bcs[0]((current_edge_id + 1) % 3) = last_edge_bc(0);
-                qs_new.fv_ids = query_points[1].fv_ids;
-
-                // push the new segment
-                curve.segments.push_back(qs_new);
-                curve.next_segment_ids.push_back(old_next_seg);
-            }
-        }
+        handle_one_segment(
+            curve,
+            id,
+            query_points,
+            UV_joint,
+            F_before,
+            v_id_map_joint,
+            id_map_before);
     }
 }
 
@@ -783,6 +826,7 @@ void handle_swap_edge_curve(
     const std::vector<int64_t>& v_id_map_after,
     query_curve& curve)
 {
+    double eps = 1e-8;
     std::cout << "Handling swap/smooth curve" << std::endl;
     int curve_length = curve.segments.size();
     for (int id = 0; id < curve_length; id++) {
@@ -802,180 +846,184 @@ void handle_swap_edge_curve(
             v_id_map_after,
             query_points);
 
-        if (query_points[0].f_id == query_points[1].f_id) {
-            // std::cout << "no intersections" << std::endl;
-            // no intersections
-            qs.f_id = query_points[0].f_id;
-            qs.bcs[0] = query_points[0].bc;
-            qs.bcs[1] = query_points[1].bc;
-            qs.fv_ids = query_points[0].fv_ids;
-        } else {
-            double eps = 1e-8;
-            // std::cout << "need compute intersections" << std::endl;
-            // compute intersections
-            int old_next_seg = curve.next_segment_ids[id];
+        handle_one_segment(
+            curve,
+            id,
+            query_points,
+            V_before,
+            F_before,
+            v_id_map_before,
+            id_map_before);
 
-            Eigen::MatrixXi TT, TTi;
-            igl::triangle_triangle_adjacency(F_before, TT, TTi);
-
-            // check vertex_on_edge case
-            for (int i = 0; i < 3; i++) {
-                if (query_points[0].bc(i) < eps) {
-                    if (TT(query_points[0].f_id, (i + 1) % 3) == query_points[1].f_id) {
-                        // TODO: implement this
-                    }
-                }
-            }
-            // compute the two end points
-            auto it = std::find(id_map_before.begin(), id_map_before.end(), query_points[0].f_id);
-            if (it == id_map_before.end()) {
-                std::cout << "query_points[0] not found" << std::endl;
-                throw std::runtime_error("query_points[0] not found");
-            }
-            int current_fid = std::distance(id_map_before.begin(), it);
-            Eigen::Vector2d p0(0, 0);
-            for (int i = 0; i < 3; i++) {
-                p0 += V_before.row(F_before(current_fid, i)) * query_points[0].bc(i);
-            }
-
-            it = std::find(id_map_before.begin(), id_map_before.end(), query_points[1].f_id);
-            if (it == id_map_before.end()) {
-                std::cout << "query_points[1] not found" << std::endl;
-                throw std::runtime_error("query_points[1] not found");
-            }
-            int target_fid = std::distance(id_map_before.begin(), it);
-            Eigen::Vector2d p1(0, 0);
-            for (int i = 0; i < 3; i++) {
-                p1 += V_before.row(F_before(target_fid, i)) * query_points[1].bc(i);
-            }
-
-            // std::cout << "current fid: " << current_fid << std::endl;
-            // std::cout << "current bc: " << query_points[0].bc << std::endl;
-            // std::cout << "target fid: " << target_fid << std::endl;
-            // std::cout << "target bc: " << query_points[1].bc << std::endl;
-
-            // std::cout << "TT(current_fid): " << TT.row(current_fid) << std::endl;
-            // std::cout << "TTi(current_fid): " << TTi.row(current_fid) << std::endl;
-            int current_edge_id = -1;
-
-            // case that the first point is on the edge
-            for (int eid = 0; eid < 3; eid++) {
-                if (query_points[0].bc(eid) == 0) {
-                    current_edge_id = (eid + 1) % 3;
-                }
-            }
-
-            Eigen::Vector2d last_edge_bc;
-            {
-                int next_edge_id0 = -1;
-                // find the first intersection
-                for (int edge_id = 0; edge_id < 3; edge_id++) {
-                    if (edge_id == current_edge_id)
-                        continue; // we need to find the other intersection
-
-                    Eigen::VectorXd a = V_before.row(F_before(current_fid, edge_id));
-                    Eigen::VectorXd b = V_before.row(F_before(current_fid, (edge_id + 1) % 3));
-                    // std::cout << "a:\n" << a << std::endl;
-                    // std::cout << "b:\n" << b << std::endl;
-
-                    Eigen::Vector2d edge_bc;
-                    if (intersectSegmentEdge(p0, p1, a, b, edge_bc)) {
-                        // std::cout << "intersection found" << std::endl;
-                        // std::cout << edge_bc << std::endl;
-
-                        next_edge_id0 = edge_id;
-                        qs.f_id = query_points[0].f_id;
-                        qs.bcs[0] = query_points[0].bc;
-                        qs.bcs[1] << 0, 0, 0;
-                        qs.bcs[1](edge_id) = edge_bc(0);
-                        qs.bcs[1]((edge_id + 1) % 3) = edge_bc(1);
-                        qs.fv_ids = query_points[0].fv_ids;
-                        last_edge_bc = edge_bc;
-                        curve.next_segment_ids[id] =
-                            curve.segments.size(); // next segment will add to the end
-                        break;
-                    }
-                }
-
-                if (next_edge_id0 == -1) {
-                    std::cout << "no intersection found" << std::endl;
-                    throw std::runtime_error("no intersection found");
-                    continue;
+        /*
+                if (query_points[0].f_id == query_points[1].f_id) {
+                    // std::cout << "no intersections" << std::endl;
+                    // no intersections
+                    qs.f_id = query_points[0].f_id;
+                    qs.bcs[0] = query_points[0].bc;
+                    qs.bcs[1] = query_points[1].bc;
+                    qs.fv_ids = query_points[0].fv_ids;
                 } else {
-                    std::cout << "next_edge_id0: " << next_edge_id0 << std::endl;
-                }
-                current_edge_id = TTi(current_fid, next_edge_id0);
-                current_fid = TT(current_fid, next_edge_id0);
-                std::cout << "last_edge_bc:\n" << last_edge_bc << std::endl;
-            }
-            // find the rest intersections
-            while (current_fid != target_fid) {
-                std::cout << "current fid: " << current_fid << std::endl;
-                std::cout << "target fid: " << target_fid << std::endl;
-                std::cout << "current edge id: " << current_edge_id << std::endl;
-                std::cout << "last_edge_bc: " << last_edge_bc << std::endl;
+                    // std::cout << "need compute intersections" << std::endl;
+                    // compute intersections
+                    int old_next_seg = curve.next_segment_ids[id];
 
-                int next_edge_id = -1;
-                for (int edge_id = 0; edge_id < 3; edge_id++) {
-                    if (edge_id == current_edge_id) continue;
-                    Eigen::VectorXd a = V_before.row(F_before(current_fid, edge_id));
-                    Eigen::VectorXd b = V_before.row(F_before(current_fid, (edge_id + 1) % 3));
-                    Eigen::Vector2d edge_bc;
-                    query_segment qs_new;
-                    if (intersectSegmentEdge(p0, p1, a, b, edge_bc)) {
-                        next_edge_id = edge_id;
-                        qs_new.f_id = id_map_before[current_fid];
+                    Eigen::MatrixXi TT, TTi;
+                    igl::triangle_triangle_adjacency(F_before, TT, TTi);
+
+                    // check vertex_on_edge case
+                    for (int i = 0; i < 3; i++) {
+                        if (query_points[0].bc(i) < eps) {
+                            if (TT(query_points[0].f_id, (i + 1) % 3) == query_points[1].f_id) {
+                                // TODO: implement this
+                            }
+                        }
+                    }
+                    // compute the two end points
+                    auto it = std::find(id_map_before.begin(), id_map_before.end(),
+           query_points[0].f_id); if (it == id_map_before.end()) { std::cout << "query_points[0] not
+           found" << std::endl; throw std::runtime_error("query_points[0] not found");
+                    }
+                    int current_fid = std::distance(id_map_before.begin(), it);
+                    Eigen::Vector2d p0(0, 0);
+                    for (int i = 0; i < 3; i++) {
+                        p0 += V_before.row(F_before(current_fid, i)) * query_points[0].bc(i);
+                    }
+
+                    it = std::find(id_map_before.begin(), id_map_before.end(),
+           query_points[1].f_id); if (it == id_map_before.end()) { std::cout << "query_points[1] not
+           found" << std::endl; throw std::runtime_error("query_points[1] not found");
+                    }
+                    int target_fid = std::distance(id_map_before.begin(), it);
+                    Eigen::Vector2d p1(0, 0);
+                    for (int i = 0; i < 3; i++) {
+                        p1 += V_before.row(F_before(target_fid, i)) * query_points[1].bc(i);
+                    }
+
+                    std::cout << "current fid: " << current_fid << std::endl;
+                    std::cout << "current bc: " << query_points[0].bc << std::endl;
+                    std::cout << "target fid: " << target_fid << std::endl;
+                    std::cout << "target bc: " << query_points[1].bc << std::endl;
+
+                    std::cout << "TT(current_fid): " << TT.row(current_fid) << std::endl;
+                    std::cout << "TTi(current_fid): " << TTi.row(current_fid) << std::endl;
+                    int current_edge_id = -1;
+
+                    // case that the first point is on the edge
+                    for (int eid = 0; eid < 3; eid++) {
+                        if (abs(query_points[0].bc(eid)) < eps) {
+                            current_edge_id = (eid + 1) % 3;
+                        }
+                    }
+
+                    Eigen::Vector2d last_edge_bc;
+                    {
+                        int next_edge_id0 = -1;
+                        // find the first intersection
+                        for (int edge_id = 0; edge_id < 3; edge_id++) {
+                            if (edge_id == current_edge_id)
+                                continue; // we need to find the other intersection
+
+                            Eigen::VectorXd a = V_before.row(F_before(current_fid, edge_id));
+                            Eigen::VectorXd b = V_before.row(F_before(current_fid, (edge_id + 1) %
+           3)); std::cout << "a:\n" << a << std::endl; std::cout << "b:\n" << b << std::endl;
+
+                            Eigen::Vector2d edge_bc;
+                            if (intersectSegmentEdge(p0, p1, a, b, edge_bc)) {
+                                std::cout << "intersection found" << std::endl;
+                                std::cout << edge_bc << std::endl;
+
+                                next_edge_id0 = edge_id;
+                                qs.f_id = query_points[0].f_id;
+                                qs.bcs[0] = query_points[0].bc;
+                                qs.bcs[1] << 0, 0, 0;
+                                qs.bcs[1](edge_id) = edge_bc(0);
+                                qs.bcs[1]((edge_id + 1) % 3) = edge_bc(1);
+                                qs.fv_ids = query_points[0].fv_ids;
+                                last_edge_bc = edge_bc;
+                                curve.next_segment_ids[id] =
+                                    curve.segments.size(); // next segment will add to the end
+                                break;
+                            }
+                        }
+
+                        if (next_edge_id0 == -1) {
+                            std::cout << "no intersection found" << std::endl;
+                            throw std::runtime_error("no intersection found");
+                            continue;
+                        } else {
+                            std::cout << "next_edge_id0: " << next_edge_id0 << std::endl;
+                        }
+                        current_edge_id = TTi(current_fid, next_edge_id0);
+                        current_fid = TT(current_fid, next_edge_id0);
+                        std::cout << "last_edge_bc:\n" << last_edge_bc << std::endl;
+                    }
+                    // find the rest intersections
+                    while (current_fid != target_fid) {
+                        std::cout << "current fid: " << current_fid << std::endl;
+                        std::cout << "target fid: " << target_fid << std::endl;
+                        std::cout << "current edge id: " << current_edge_id << std::endl;
+                        std::cout << "last_edge_bc: " << last_edge_bc << std::endl;
+
+                        int next_edge_id = -1;
+                        for (int edge_id = 0; edge_id < 3; edge_id++) {
+                            if (edge_id == current_edge_id) continue;
+                            Eigen::VectorXd a = V_before.row(F_before(current_fid, edge_id));
+                            Eigen::VectorXd b = V_before.row(F_before(current_fid, (edge_id + 1) %
+           3)); Eigen::Vector2d edge_bc; query_segment qs_new; if (intersectSegmentEdge(p0, p1, a,
+           b, edge_bc)) { next_edge_id = edge_id; qs_new.f_id = id_map_before[current_fid];
+                                qs_new.bcs[0] = Eigen::Vector3d(0, 0, 0);
+                                qs_new.bcs[1] = Eigen::Vector3d(0, 0, 0);
+
+                                qs_new.bcs[0](current_edge_id) = last_edge_bc(1);
+                                qs_new.bcs[0]((current_edge_id + 1) % 3) = last_edge_bc(0);
+                                qs_new.bcs[1](next_edge_id) = edge_bc(0);
+                                qs_new.bcs[1]((next_edge_id + 1) % 3) = edge_bc(1);
+
+                                qs_new.fv_ids << v_id_map_before[F_before(current_fid, 0)],
+                                    v_id_map_before[F_before(current_fid, 1)],
+                                    v_id_map_before[F_before(current_fid, 2)];
+
+                                // push the new segment
+                                curve.segments.push_back(qs_new);
+                                curve.next_segment_ids.push_back(curve.next_segment_ids.size());
+
+                                // record the last edge
+                                last_edge_bc = edge_bc;
+                                break;
+                            }
+                        }
+
+                        if (next_edge_id == -1) {
+                            std::cout << "no intersection found" << std::endl;
+                            throw std::runtime_error("no intersection found");
+                            continue;
+                        } else {
+                            std::cout << "next_edge_id: " << next_edge_id << std::endl;
+                            std::cout << "TT(current_fid): " << TT.row(current_fid) << std::endl;
+                            std::cout << "TTi(current_fid): " << TTi.row(current_fid) << std::endl;
+                            std::cout << std::endl;
+                        }
+                        current_edge_id = TTi(current_fid, next_edge_id);
+                        current_fid = TT(current_fid, next_edge_id);
+                    }
+
+                    // add last segment
+                    {
+                        query_segment qs_new;
+                        qs_new.f_id = query_points[1].f_id;
                         qs_new.bcs[0] = Eigen::Vector3d(0, 0, 0);
-                        qs_new.bcs[1] = Eigen::Vector3d(0, 0, 0);
-
+                        qs_new.bcs[1] = query_points[1].bc;
                         qs_new.bcs[0](current_edge_id) = last_edge_bc(1);
                         qs_new.bcs[0]((current_edge_id + 1) % 3) = last_edge_bc(0);
-                        qs_new.bcs[1](next_edge_id) = edge_bc(0);
-                        qs_new.bcs[1]((next_edge_id + 1) % 3) = edge_bc(1);
-
-                        qs_new.fv_ids << v_id_map_before[F_before(current_fid, 0)],
-                            v_id_map_before[F_before(current_fid, 1)],
-                            v_id_map_before[F_before(current_fid, 2)];
+                        qs_new.fv_ids = query_points[1].fv_ids;
 
                         // push the new segment
                         curve.segments.push_back(qs_new);
-                        curve.next_segment_ids.push_back(curve.next_segment_ids.size());
-
-                        // record the last edge
-                        last_edge_bc = edge_bc;
-                        break;
+                        curve.next_segment_ids.push_back(old_next_seg);
                     }
                 }
-
-                if (next_edge_id == -1) {
-                    std::cout << "no intersection found" << std::endl;
-                    throw std::runtime_error("no intersection found");
-                    continue;
-                } else {
-                    std::cout << "next_edge_id: " << next_edge_id << std::endl;
-                    std::cout << "TT(current_fid): " << TT.row(current_fid) << std::endl;
-                    std::cout << "TTi(current_fid): " << TTi.row(current_fid) << std::endl;
-                    std::cout << std::endl;
-                }
-                current_edge_id = TTi(current_fid, next_edge_id);
-                current_fid = TT(current_fid, next_edge_id);
-            }
-
-            // add last segment
-            {
-                query_segment qs_new;
-                qs_new.f_id = query_points[1].f_id;
-                qs_new.bcs[0] = Eigen::Vector3d(0, 0, 0);
-                qs_new.bcs[1] = query_points[1].bc;
-                qs_new.bcs[0](current_edge_id) = last_edge_bc(1);
-                qs_new.bcs[0]((current_edge_id + 1) % 3) = last_edge_bc(0);
-                qs_new.fv_ids = query_points[1].fv_ids;
-
-                // push the new segment
-                curve.segments.push_back(qs_new);
-                curve.next_segment_ids.push_back(old_next_seg);
-            }
-        }
+                */
     }
 }
 

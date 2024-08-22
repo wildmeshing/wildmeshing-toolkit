@@ -405,7 +405,8 @@ void set_operation_energy_filter_after_sizing_field(
 
 void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
-    // opt_logger().set_level(spdlog::level::info);
+    // TODO: add this into options
+    bool lock_boundary = true;
 
     //////////////////////////////////
     // Load mesh from settings
@@ -546,69 +547,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     }();
     const double target_max_amips = options.target_max_amips;
 
-    // Target Edge length update
-    // auto compute_target_edge_length = [&](const Eigen::Vector2d& P) -> double {
-    //     return (P[0] + P[1]) / 2 * target_edge_length;
-    // };
-    // auto target_edge_length_update =
-    //     std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-    //         target_edge_length_attribute,
-    //         sizing_field_scalar_attribute,
-    //         compute_target_edge_length);
-
-    // auto compute_target_edge_length =
-    //     [target_edge_length,
-    //      target_max_amips,
-    //      min_edge_length,
-    //      target_edge_length_attribute,
-    //      &mesh](const Eigen::MatrixXd& P, const std::vector<Tuple>& neighs) ->
-    //      Eigen::VectorXd {
-    //     auto target_edge_length_accessor =
-    //         mesh->create_accessor(target_edge_length_attribute.as<double>());
-
-    //     assert(P.rows() == 1); // rows --> attribute dimension
-    //     assert(!neighs.empty());
-    //     assert(P.cols() == neighs.size());
-    //     const double current_target_edge_length =
-    //         target_edge_length_accessor.const_scalar_attribute(neighs[0]);
-    //     const double max_amips = P.maxCoeff();
-
-    //     double new_target_edge_length = current_target_edge_length;
-    //     if (max_amips > target_max_amips) {
-    //         new_target_edge_length *= 0.5;
-    //     } else {
-    //         new_target_edge_length *= 1.5;
-    //     }
-    //     new_target_edge_length =
-    //         std::min(new_target_edge_length, target_edge_length); // upper bound
-    //     new_target_edge_length = std::max(new_target_edge_length, min_edge_length); // lower bound
-
-    //     return Eigen::VectorXd::Constant(1, new_target_edge_length);
-    // };
-    // auto target_edge_length_update =
-    //     std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-    //         target_edge_length_attribute,
-    //         amips_attribute,
-    //         compute_target_edge_length);
-
-
-    //// Example for some other target edge length
-    // auto compute_target_edge_length = [](const Eigen::MatrixX<double>& P) ->
-    // Eigen::VectorXd {
-    //    assert(P.cols() == 2); // cols --> number of neighbors
-    //    assert(P.rows() == 2 || P.rows() == 3); // rows --> attribute dimension
-    //    const double x_avg = 0.5 * (P(0, 0) + P(0, 1));
-    //    const double target_length = x_avg * x_avg;
-    //    return Eigen::VectorXd::Constant(1, target_length);
-    //};
-    // auto target_edge_length_update =
-    //    std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-    //        target_edge_length_attribute,
-    //        rpt_attribute,
-    //        compute_target_edge_length);
-    // target_edge_length_update->run_on_all();
-
-
     //////////////////////////////////
     // Storing edge lengths
     auto edge_length_attribute =
@@ -632,8 +570,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto pass_through_attributes = base::get_attributes(cache, *mesh, options.pass_through);
     pass_through_attributes.push_back(edge_length_attribute);
     pass_through_attributes.push_back(amips_attribute);
-    // pass_through_attributes.push_back(target_edge_length_attribute);
-
 
     //////////////////////////////////
     // Lambdas for priority
@@ -869,80 +805,18 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     split->add_transfer_strategy(tag_update); // for renew the queue
     split->add_transfer_strategy(energy_filter_update);
 
-    // split->add_transfer_strategy(target_edge_length_update);
-
-    auto split_then_round = std::make_shared<AndOperationSequence>(*mesh);
-    split_then_round->add_operation(split);
-
     for (auto& s : update_child_position) {
-        split_then_round->add_transfer_strategy(s);
+        split->add_transfer_strategy(s);
     }
 
-    // split unrounded
-    auto split_unrounded = std::make_shared<EdgeSplit>(*mesh);
-    split_unrounded->set_priority(long_edges_first);
-
-    split_unrounded->add_invariant(todo_larger);
-
-    auto split_unrounded_transfer_strategy =
-        std::make_shared<SplitNewAttributeStrategy<double>>(pt_attribute);
-    split_unrounded_transfer_strategy->set_strategy(
-        [](const Eigen::VectorX<double>& a, const std::bitset<2>&) {
-            return std::array<Eigen::VectorX<double>, 2>{{a, a}};
-        });
-    split_unrounded_transfer_strategy->set_rib_strategy(
-        [](const Eigen::VectorX<double>& p0_d,
-           const Eigen::VectorX<double>& p1_d,
-           const std::bitset<2>& bs) -> Eigen::VectorX<double> {
-            Eigen::VectorX<double> p0(p0_d.size());
-            Eigen::VectorX<double> p1(p1_d.size());
-            for (int i = 0; i < p0_d.size(); ++i) {
-                p0[i] = p0_d[i];
-                p1[i] = p1_d[i];
-            }
-            if (bs[0] == bs[1]) {
-                return (p0 + p1) / 2.0;
-            } else if (bs[0]) {
-                return p0;
-
-            } else {
-                return p1;
-            }
-        });
-
-    split_unrounded->set_new_attribute_strategy(pt_attribute, split_unrounded_transfer_strategy);
-    split_unrounded->set_new_attribute_strategy(sizing_field_scalar_attribute);
-    split_unrounded->set_new_attribute_strategy(
-        visited_edge_flag,
-        wmtk::operations::SplitBasicStrategy::None,
-        wmtk::operations::SplitRibBasicStrategy::None);
-    for (const auto& attr : pass_through_attributes) {
-        split_unrounded->set_new_attribute_strategy(
-            attr,
-            wmtk::operations::SplitBasicStrategy::None,
-            wmtk::operations::SplitRibBasicStrategy::None);
-    }
-    split_unrounded->set_new_attribute_strategy(
-        target_edge_length_attribute,
-        wmtk::operations::SplitBasicStrategy::Copy,
-        wmtk::operations::SplitRibBasicStrategy::Mean);
-
-    split_unrounded->add_transfer_strategy(amips_update);
-    split_unrounded->add_transfer_strategy(edge_length_update);
-    split_unrounded->add_transfer_strategy(tag_update); // for renew the queue
-    split_unrounded->add_transfer_strategy(energy_filter_update);
-
-    // split->add_transfer_strategy(target_edge_length_update);
-
-    auto split_sequence = std::make_shared<OrOperationSequence>(*mesh);
-    split_sequence->add_operation(split_then_round);
-    split_sequence->add_operation(split_unrounded);
-    split_sequence->add_invariant(
+    split->add_invariant(
         std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
 
-    split_sequence->set_priority(long_edges_first);
+    if (lock_boundary) {
+        split->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+    }
 
-    ops.emplace_back(split_sequence);
+    ops.emplace_back(split);
     ops_name.emplace_back("SPLIT");
 
 
@@ -970,6 +844,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         // collapse->add_invariant(function_invariant);
         collapse->add_invariant(envelope_invariant);
 
+        if (lock_boundary) {
+            collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+        }
         collapse->set_new_attribute_strategy(
             visited_edge_flag,
             wmtk::operations::CollapseBasicStrategy::None);
@@ -1024,19 +901,16 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     collapse->add_operation(collapse2);
     collapse->add_invariant(todo_smaller);
 
-    auto collapse_then_round = std::make_shared<AndOperationSequence>(*mesh);
-    collapse_then_round->add_operation(collapse);
-
-    collapse_then_round->set_priority(short_edges_first);
-    collapse_then_round->add_invariant(
+    collapse->set_priority(short_edges_first);
+    collapse->add_invariant(
         std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
 
 
     for (auto& s : update_child_position) {
-        collapse_then_round->add_transfer_strategy(s);
+        collapse->add_transfer_strategy(s);
     }
 
-    ops.emplace_back(collapse_then_round);
+    ops.emplace_back(collapse);
     ops_name.emplace_back("COLLAPSE");
 
     //////////////////////////////////
@@ -1538,6 +1412,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // auto smoothing = std::make_shared<OptimizationSmoothing>(energy);
     auto smoothing = std::make_shared<AMIPSOptimizationSmoothing>(*mesh, pt_attribute);
     smoothing->add_invariant(inversion_invariant);
+
+    if (lock_boundary) {
+        smoothing->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
+    }
+
     for (auto& s : update_child_position) {
         smoothing->add_transfer_strategy(s);
     }
@@ -1624,7 +1503,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     wmtk::attribute::TypedAttributeHandle<char> visited_edge_flag_t = visited_edge_flag.as<char>();
 
-    pre_stats = scheduler.run_operation_on_all(*collapse_then_round, visited_edge_flag_t);
+    pre_stats = scheduler.run_operation_on_all(*collapse, visited_edge_flag_t);
     logger().info(
         "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
         "executing: {}",
