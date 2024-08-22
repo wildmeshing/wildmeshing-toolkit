@@ -44,6 +44,9 @@ set(SRC_FILES
 
     random_seed.hpp
 
+    make_free_sv_mesh.hpp
+    make_free_sv_mesh.cpp
+
 
     MerkleTreeInteriorNode.hpp
     MerkleTreeInteriorNode.cpp
@@ -61,6 +64,9 @@ set(SRC_FILES
 
     EigenMatrixWriter.hpp
     EigenMatrixWriter.cpp
+
+    Stopwatch.hpp
+    Stopwatch.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

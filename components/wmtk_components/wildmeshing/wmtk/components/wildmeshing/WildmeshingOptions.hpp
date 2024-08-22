@@ -5,9 +5,14 @@
 namespace wmtk::components {
 struct WildmeshingOptionsAttributes
 {
-    nlohmann::json position;
+    std::string position;
+    bool replace_double_coordinate;
+    // nlohmann::json position;
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WildmeshingOptionsAttributes, position);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
+    WildmeshingOptionsAttributes,
+    position,
+    replace_double_coordinate);
 
 struct WildmeshingOptionsEnvelopeMesh
 {
@@ -35,6 +40,8 @@ public:
     std::string input;
     std::string output;
     WildmeshingOptionsAttributes attributes;
+    // the rate at which the scheduler will present update information. if 0/empty this will do nothing
+    size_t scheduler_update_frequency;
     std::vector<nlohmann::json> pass_through;
     std::vector<WildmeshingOptionsEnvelope> envelopes;
 
@@ -50,6 +57,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     pass_through,
     passes,
     input,
+    scheduler_update_frequency,
     envelopes,
     target_edge_length,
     target_max_amips,

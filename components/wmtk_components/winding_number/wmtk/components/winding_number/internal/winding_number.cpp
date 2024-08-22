@@ -5,8 +5,15 @@
 #include <wmtk/utils/EigenMatrixWriter.hpp>
 
 #include <igl/bfs_orient.h>
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
 #include <igl/fast_winding_number.h>
 #include <igl/winding_number.h>
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 #include <wmtk/utils/Rational.hpp>
 
 namespace wmtk::components::internal {

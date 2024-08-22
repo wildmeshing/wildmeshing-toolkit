@@ -35,7 +35,8 @@ public:
     bool is_boundary_vertex(const Tuple& tuple) const;
 
 
-    void initialize(Eigen::Ref<const RowVectors2l> E);
+    void initialize(Eigen::Ref<const RowVectors2l> E, bool is_free = false);
+    void initialize_free(int64_t count);
 
     void initialize(
         Eigen::Ref<const RowVectors2l> EV,

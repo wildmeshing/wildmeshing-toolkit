@@ -421,7 +421,7 @@ TEST_CASE("navigation_performance_tri", "[simplex][performance][.]")
                 } else {
                     e = (e + 1) % 3;
                 }
-                return Tuple(v, e, TI::local_fid(t), c, 0);
+                return Tuple(v, e, TI::local_fid(t), c);
             };
 
             POLYSOLVE_SCOPED_STOPWATCH("chache vertex neighbors", logger());

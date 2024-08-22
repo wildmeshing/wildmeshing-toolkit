@@ -3,4 +3,4 @@
   [{{ data|length }}]{{ print_dimensions(data[0]) }}
   {%- endif -%}
 {% endmacro -%}
-const long {{ table.name }}{{ print_dimensions(table.data) }}
+const {{table.type}} {{ table.name }}{{ print_dimensions(table.data) }}

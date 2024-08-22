@@ -9,8 +9,6 @@ set(SRC_FILES
     multi_mesh_edge_collapse.hpp
     multi_mesh_edge_split.cpp
     multi_mesh_edge_split.hpp
-    UpdateVertexMultiMeshMapHash.hpp
-    UpdateVertexMultiMeshMapHash.cpp
 
     get_local_trimesh.cpp
 

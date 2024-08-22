@@ -10,5 +10,9 @@ Tuple EdgeOperationData::tuple_from_id(const Mesh& m, const PrimitiveType type, 
 {
     return m.tuple_from_id(type, gid);
 }
+simplex::Simplex EdgeOperationData::simplex_from_id(const Mesh& m, const PrimitiveType type, const int64_t gid)
+{
+    return m.simplex_from_id(type, gid);
+}
 
 } // namespace wmtk::operations

@@ -107,9 +107,13 @@ CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
     , m_collapse_op(nullptr)
 {
     assert(h.holds<T>());
-    set_strategy(CollapseBasicStrategy::Throw);
 
     auto& mesh = m_handle.mesh();
+    if(mesh.is_free()) {
+    set_strategy(CollapseBasicStrategy::None);
+    } else {
+    set_strategy(CollapseBasicStrategy::Throw);
+    }
 
     if (mesh.top_simplex_type() == PrimitiveType::Edge) {
         m_topo_info =
@@ -133,6 +137,7 @@ void CollapseNewAttributeStrategy<T>::update(
     if (!bool(m_collapse_op)) {
         return;
     }
+    assert(!mesh().is_free()); // attribute new is not valid on free meshes
 
     if (op_datas.find(&mesh()) == op_datas.end()) return;
     const std::vector<std::array<Tuple, 2>>& tuple_pairs = op_datas.at(&mesh());
@@ -147,7 +152,7 @@ void CollapseNewAttributeStrategy<T>::update(
         const auto& return_data_variant = data.get_variant(mesh(), input_simplex);
 
         PrimitiveType pt = primitive_type();
-        //for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type()))
+        // for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type()))
         {
             auto merged_simps = m_topo_info->merged_simplices(return_data_variant, input_tuple, pt);
             auto new_simps = m_topo_info->new_simplices(return_data_variant, output_tuple, pt);

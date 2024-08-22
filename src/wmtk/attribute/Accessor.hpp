@@ -30,7 +30,6 @@ public:
     friend class wmtk::PointMesh;
     using Scalar = T;
 
-    friend class internal::AttributeMapCache<T>;
     using BaseType = AccessorBase<T, Dim>;
     using CachingBaseType = CachingAccessor<T, Dim>;
 

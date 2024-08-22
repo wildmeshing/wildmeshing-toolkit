@@ -60,6 +60,7 @@ TetMesh three_incident_tets_with_positions();
 
 TetMesh six_cycle_tets();
 
+TetMesh six_cycle_tets_with_positions();
 //
 //                   2
 //               /  / |

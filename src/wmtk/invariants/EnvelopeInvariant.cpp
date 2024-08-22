@@ -169,7 +169,7 @@ bool EnvelopeInvariant::after(
     if (m_coordinate_handle.holds<Rational>()) {
         const attribute::Accessor<Rational> accessor =
             mesh().create_const_accessor(m_coordinate_handle.as<Rational>());
-        const auto type = mesh().top_simplex_type();
+        const PrimitiveType type = mesh().top_simplex_type();
 
         if (m_envelope) {
             assert(accessor.dimension() == 3);

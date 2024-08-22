@@ -358,12 +358,12 @@ TEST_CASE("test_debug_disk_trimesh")
         CHECK(n_boundary_vertices == 1);
 
 
-        Tuple v0e1(0, 1, -1, 0, 0);
-        Tuple v0e2(0, 2, -1, 0, 0);
-        Tuple v1e0(1, 0, -1, 0, 0);
-        Tuple v1e2(1, 2, -1, 0, 0);
-        Tuple v2e0(2, 0, -1, 0, 0);
-        Tuple v2e1(2, 1, -1, 0, 0);
+        Tuple v0e1(0, 1, -1, 0);
+        Tuple v0e2(0, 2, -1, 0);
+        Tuple v1e0(1, 0, -1, 0);
+        Tuple v1e2(1, 2, -1, 0);
+        Tuple v2e0(2, 0, -1, 0);
+        Tuple v2e1(2, 1, -1, 0);
 
 
         CHECK(m.switch_face(v0e1) == v0e2);

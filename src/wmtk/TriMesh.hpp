@@ -63,10 +63,10 @@ public:
         Eigen::Ref<const RowVectors3l> FF,
         Eigen::Ref<const VectorXl> VF,
         Eigen::Ref<const VectorXl> EF);
-    void initialize(Eigen::Ref<const RowVectors3l> F);
+    void initialize(Eigen::Ref<const RowVectors3l> F, bool make_free = false);
+    void initialize_free(int64_t count);
 
-    bool is_valid(const Tuple& tuple)
-        const final override;
+    bool is_valid(const Tuple& tuple) const final override;
 
     bool is_connectivity_valid() const final override;
 

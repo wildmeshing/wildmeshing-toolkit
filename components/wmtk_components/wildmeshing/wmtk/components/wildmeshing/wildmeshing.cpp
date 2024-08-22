@@ -6,6 +6,7 @@
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/utils/cast_attribute.hpp>
 
 #include <wmtk/components/base/get_attributes.hpp>
 #include <wmtk/multimesh/consolidate.hpp>
@@ -14,6 +15,7 @@
 
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
+#include <wmtk/operations/attribute_update/make_cast_attribute_transfer_strategy.hpp>
 
 #include <wmtk/operations/AMIPSOptimizationSmoothing.hpp>
 #include <wmtk/operations/AndOperationSequence.hpp>
@@ -94,7 +96,7 @@ void write(
             const std::filesystem::path data_dir = "";
             wmtk::io::ParaviewWriter writer(
                 data_dir / (name + "_" + std::to_string(index)),
-                "vertices",
+                vname,
                 *mesh,
                 true,
                 true,
@@ -106,7 +108,7 @@ void write(
             const std::filesystem::path data_dir = "";
             wmtk::io::ParaviewWriter writer(
                 data_dir / (name + "_" + std::to_string(index)),
-                "vertices",
+                vname,
                 *mesh,
                 true,
                 true,
@@ -118,7 +120,7 @@ void write(
             const std::filesystem::path data_dir = "";
             wmtk::io::ParaviewWriter writer(
                 data_dir / (name + "_" + std::to_string(index)),
-                "vertices",
+                vname,
                 *mesh,
                 true,
                 true,
@@ -415,15 +417,15 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
     }
 
-    //
 
     //////////////////////////////////
     // Retriving vertices
-    attribute::MeshAttributeHandle pt_attribute =
+
+    auto pt_attribute =
         mesh->get_attribute_handle<double>(options.attributes.position, PrimitiveType::Vertex);
     auto pt_accessor = mesh->create_accessor(pt_attribute.as<double>());
 
-
+    wmtk::logger().trace("Computing bounding box diagonal");
     //////////////////////////////////
     // computing bbox diagonal
     Eigen::VectorXd bmin(mesh->top_cell_dimension());
@@ -529,10 +531,19 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         target_edge_length); // defaults to target edge length
 
     // Target edge length update
-    const double min_edge_length =
-        options.envelopes.empty()
-            ? 1e-6 // some default value if no envelope exists
-            : options.envelopes[0].thickness; // use envelope thickness if available
+    const double min_edge_length = [&]() -> double {
+        if (options.envelopes.empty()) {
+            return 1e-6; // some default value if no envelope exists
+        } else {
+            // use envelope thickness if available
+            double r = 0;
+            for (const auto& e : options.envelopes) {
+                r = std::max(r, e.thickness);
+            }
+            assert(r > 0);
+            return r;
+        }
+    }();
     const double target_max_amips = options.target_max_amips;
 
     // Target Edge length update
@@ -641,26 +652,19 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // envelopes
     //////////////////////////////////
 
-    auto propagate_to_child_position =
-        [](const Eigen::MatrixX<double>& P) -> Eigen::VectorX<double> { return P; };
-
-    auto propagate_to_parent_position =
-        [](const Eigen::MatrixX<double>& P) -> Eigen::VectorX<double> {
-        assert(P.cols() == 1);
-        return P.col(0);
-    };
     using MeshConstrainPair = ProjectOperation::MeshConstrainPair;
 
     auto envelope_invariant = std::make_shared<InvariantCollection>(*mesh);
-    std::vector<std::shared_ptr<SingleAttributeTransferStrategy<double, double>>>
-        update_child_positon, update_parent_positon;
+    std::vector<std::shared_ptr<AttributeTransferStrategyBase>> update_child_position,
+        update_parent_position;
     std::vector<std::shared_ptr<Mesh>> envelopes;
     std::vector<MeshConstrainPair> mesh_constraint_pairs;
 
     std::vector<std::shared_ptr<Mesh>> multimesh_meshes;
 
-    assert(options.envelopes.size() == 4); // four kind of envelopes in tetwild [surface_mesh,
-                                           // open_boudnary, nonmanifold_edges, is_boundary(bbox)]
+    // assert(options.envelopes.size() == 4);
+    // four kind of envelopes in tetwild [surface_mesh,
+    // open_boudnary, nonmanifold_edges, is_boundary(bbox)]
     // TODO: add nonmanifold vertex point mesh
 
     for (const auto& v : options.envelopes) {
@@ -673,13 +677,29 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         }
         envelopes.emplace_back(envelope);
 
+        wmtk::logger().trace(
+            "TetWild: getting constrained position {} from {}",
+            v.constrained_position,
+            v.geometry.mesh);
         auto constrained = base::get_attributes(cache, *mesh, v.constrained_position);
         multimesh_meshes.push_back(constrained.front().mesh().shared_from_this());
         assert(constrained.size() == 1);
         pass_through_attributes.emplace_back(constrained.front());
 
+        wmtk::logger().trace(
+            "TetWild: Constructing envelope position handle {} == input = {}",
+            v.geometry.mesh,
+            v.geometry.mesh == "input");
+
+        const bool has_double_pos =
+            envelope->has_attribute<double>(v.geometry.position, PrimitiveType::Vertex);
+        const bool has_rational_pos =
+            envelope->has_attribute<Rational>(v.geometry.position, PrimitiveType::Vertex);
+        assert(has_double_pos || has_rational_pos);
+        assert(!(v.geometry.mesh == "input") || has_double_pos);
+
         auto envelope_position_handle =
-            v.geometry.mesh == "input"
+            has_double_pos
                 ? envelope->get_attribute_handle<double>(v.geometry.position, PrimitiveType::Vertex)
                 : envelope->get_attribute_handle<double>(
                       v.geometry.position,
@@ -694,17 +714,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             v.thickness * bbdiag,
             constrained.front()));
 
-        update_parent_positon.emplace_back(
-            std::make_shared<SingleAttributeTransferStrategy<double, double>>(
-                pt_attribute,
-                constrained.front(),
-                propagate_to_parent_position));
+        update_parent_position.emplace_back(attribute_update::make_cast_attribute_transfer_strategy(
+            /*source=*/constrained.front(),
+            /*target=*/pt_attribute));
 
-        update_child_positon.emplace_back(
-            std::make_shared<SingleAttributeTransferStrategy<double, double>>(
-                constrained.front(),
-                pt_attribute,
-                propagate_to_child_position));
+        update_child_position.emplace_back(attribute_update::make_cast_attribute_transfer_strategy(
+            /*source=*/pt_attribute,
+            /*target=*/constrained.front()));
     }
 
     //////////////////////////////////
@@ -714,6 +730,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // Invariants
     //////////////////////////////////
 
+    wmtk::logger().trace("Going through invariants");
     auto inversion_invariant =
         std::make_shared<SimplexInversionInvariant<double>>(*mesh, pt_attribute.as<double>());
 
@@ -857,7 +874,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto split_then_round = std::make_shared<AndOperationSequence>(*mesh);
     split_then_round->add_operation(split);
 
-    for (auto& s : update_child_positon) {
+    for (auto& s : update_child_position) {
         split_then_round->add_transfer_strategy(s);
     }
 
@@ -975,7 +992,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         collapse->add_transfer_strategy(edge_length_update);
         // collapse->add_transfer_strategy(target_edge_length_update);
 
-        for (auto& s : update_child_positon) {
+        for (auto& s : update_child_position) {
             collapse->add_transfer_strategy(s);
         }
     };
@@ -1015,7 +1032,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
 
 
-    for (auto& s : update_child_positon) {
+    for (auto& s : update_child_position) {
         collapse_then_round->add_transfer_strategy(s);
     }
 
@@ -1040,7 +1057,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         op.add_transfer_strategy(amips_update);
         op.add_transfer_strategy(edge_length_update);
         // op.add_transfer_strategy(target_edge_length_update);
-        // for (auto& s : update_child_positon) {
+        // for (auto& s : update_child_position) {
         //     op.add_transfer_strategy(s);
         // }
 
@@ -1060,7 +1077,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             wmtk::operations::CollapseBasicStrategy::None);
 
         // this might not be necessary
-        // for (auto& s : update_child_positon) {
+        // for (auto& s : update_child_position) {
         //     collapse.add_transfer_strategy(s);
         //     split.add_transfer_strategy(s);
         // }
@@ -1464,7 +1481,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
 
         // swap_then_round->add_invariant(inversion_invariant);
-        for (auto& s : update_child_positon) {
+        for (auto& s : update_child_position) {
             swap_then_round->add_transfer_strategy(s);
         }
 
@@ -1504,10 +1521,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     //         proj_lap_smoothing->add_transfer_strategy(amips_update);
     //         proj_lap_smoothing->add_transfer_strategy(edge_length_update);
-    //         for (auto& s : update_parent_positon) { // TODO::this should from only one child
+    //         for (auto& s : update_parent_position) { // TODO::this should from only one child
     //             proj_lap_smoothing->add_transfer_strategy(s);
     //         }
-    //         for (auto& s : update_child_positon) {
+    //         for (auto& s : update_child_position) {
     //             proj_lap_smoothing->add_transfer_strategy(s);
     //         }
 
@@ -1521,7 +1538,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // auto smoothing = std::make_shared<OptimizationSmoothing>(energy);
     auto smoothing = std::make_shared<AMIPSOptimizationSmoothing>(*mesh, pt_attribute);
     smoothing->add_invariant(inversion_invariant);
-    for (auto& s : update_child_positon) {
+    for (auto& s : update_child_position) {
         smoothing->add_transfer_strategy(s);
     }
 
@@ -1543,11 +1560,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     proj_smoothing->add_transfer_strategy(amips_update);
     proj_smoothing->add_transfer_strategy(edge_length_update);
-    for (auto& s : update_parent_positon) {
+    for (auto& s : update_parent_position) {
         proj_smoothing->add_transfer_strategy(s);
     }
 
-    for (auto& s : update_child_positon) {
+    for (auto& s : update_child_position) {
         proj_smoothing->add_transfer_strategy(s);
     }
     // proj_smoothing->add_transfer_strategy(target_edge_length_update);
@@ -1579,6 +1596,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
     // Running all ops in order n times
     Scheduler scheduler;
+    {
+        const size_t freq = options.scheduler_update_frequency;
+        scheduler.set_update_frequency(freq == 0 ? std::optional<size_t>{} : freq);
+    }
     int64_t success = 10;
 
     //////////////////////////////////
@@ -1600,7 +1621,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     }
     logger().info("Executing collapse ...");
 
-    pre_stats = scheduler.run_operation_on_all(*collapse_then_round, visited_edge_flag.as<char>());
+
+    wmtk::attribute::TypedAttributeHandle<char> visited_edge_flag_t = visited_edge_flag.as<char>();
+
+    pre_stats = scheduler.run_operation_on_all(*collapse_then_round, visited_edge_flag_t);
     logger().info(
         "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
         "executing: {}",
@@ -1666,7 +1690,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             logger().info("Executing {} ...", ops_name[jj]);
             SchedulerStats stats;
             if (op->primitive_type() == PrimitiveType::Edge) {
-                stats = scheduler.run_operation_on_all(*op, visited_edge_flag.as<char>());
+                stats = scheduler.run_operation_on_all(*op, visited_edge_flag_t);
                 // } else if (ops_name[jj] == "SMOOTHING") {
                 //     // stats = scheduler.run_operation_on_all(*op);
                 //     stats =
