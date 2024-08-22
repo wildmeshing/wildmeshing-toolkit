@@ -12,9 +12,9 @@ class CacheStack
 public:
     friend class SubCacheHandle;
     // a small singleton stack that anyone can request at any time
-    static CacheStack& default_stack();
+    // static CacheStack& default_stack();
     // reset the default cache stack to be something else.
-    static void set_default_stack(CacheStack&& stack);
+    // static void set_default_stack(CacheStack&& stack);
     // default creates a stack with the current folder as the cache
     CacheStack();
     CacheStack(Cache&& cache);

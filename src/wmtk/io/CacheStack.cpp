@@ -2,27 +2,27 @@
 
 
 namespace wmtk::io {
-namespace {
-CacheStack _default_stack;
-}
-CacheStack& CacheStack::default_stack()
-{
-    return _default_stack;
-}
-void CacheStack::set_default_stack(CacheStack&& stack)
-{
-    if (_default_stack.has_sub_caches()) {
-        throw std::runtime_error("Cannot change the default stack when it still has subcaches");
-    }
-    if (stack.has_sub_caches()) {
-        throw std::runtime_error("Cannot change the default stack to a stack with sub_caches");
-    }
-    if (!stack.has_sub_caches()) {
-        _default_stack = std::move(stack);
-    }
-}
+// namespace {
+//  CacheStack _default_stack;
+//  }
+//  CacheStack& CacheStack::default_stack()
+//{
+//      return _default_stack;
+//  }
+//  void CacheStack::set_default_stack(CacheStack&& stack)
+//{
+//     if (_default_stack.has_sub_caches()) {
+//         throw std::runtime_error("Cannot change the default stack when it still has subcaches");
+//     }
+//     if (stack.has_sub_caches()) {
+//         throw std::runtime_error("Cannot change the default stack to a stack with sub_caches");
+//     }
+//     if (!stack.has_sub_caches()) {
+//         _default_stack = std::move(stack);
+//     }
+// }
 CacheStack::CacheStack()
-    : CacheStack(Cache("wmtk_cache", std::filesystem::temp_directory_path()))
+    : CacheStack(Cache("wmtk_cache"))
 {}
 
 CacheStack::CacheStack(Cache&& cache)

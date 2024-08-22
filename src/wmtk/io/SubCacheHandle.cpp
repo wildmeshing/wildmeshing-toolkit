@@ -3,9 +3,9 @@
 
 namespace wmtk::io {
 
-SubCacheHandle::SubCacheHandle(std::string_view cache_name)
-    : SubCacheHandle(cache_name, CacheStack::default_stack())
-{}
+// SubCacheHandle::SubCacheHandle(std::string_view cache_name)
+//     : SubCacheHandle(cache_name, CacheStack::default_stack())
+//{}
 SubCacheHandle::SubCacheHandle(std::string_view cache_name, CacheStack& stack)
 {
     stack.create_sub_cache(cache_name);
