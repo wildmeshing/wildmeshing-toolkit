@@ -4,6 +4,8 @@
 #include <wmtk/autogen/is_ccw.hpp>
 #include <wmtk/autogen/local_dart_action.hpp>
 #include <wmtk/autogen/local_switch_tuple.hpp>
+#include <wmtk/autogen/utils/subdart_maximal_action_to_face.hpp>
+#include "tools/DEBUG_Tuple.hpp"
 #include "tools/all_valid_local_tuples.hpp"
 using namespace wmtk;
 using namespace wmtk::autogen;
@@ -175,40 +177,142 @@ TEST_CASE("tuple_autogen_index_dart_map_between_simplices", "[tuple]")
     }
 }
 
+namespace {
+int8_t equal_subdart_dimension(PrimitiveType mesh_type, const Tuple& a, const Tuple& b)
+{
+    const auto& a_ = reinterpret_cast<const DEBUG_Tuple&>(a);
+    const auto& b_ = reinterpret_cast<const DEBUG_Tuple&>(b);
+    if (a_.local_vid() != b_.local_vid() || mesh_type == PrimitiveType::Vertex) {
+        return 0;
+    }
+    if (a_.local_eid() != b_.local_eid() || mesh_type == PrimitiveType::Edge) {
+        return 1;
+    }
+    if (a_.local_fid() != b_.local_fid() || mesh_type == PrimitiveType::Triangle) {
+        return 2;
+    }
+    return 3;
+}
+int8_t equal_subdart_dimension(PrimitiveType mesh_type, int8_t a, int8_t b)
+{
+    const auto& sd = autogen::SimplexDart::get_singleton(mesh_type);
+
+    return equal_subdart_dimension(
+        mesh_type,
+        sd.tuple_from_valid_index(0, a),
+        sd.tuple_from_valid_index(0, b));
+}
+
+constexpr int fact(int n)
+{
+    return n <= 1 ? 1 : n * fact(n - 1);
+}
+
+constexpr int8_t simplex_count(PrimitiveType mesh_type, PrimitiveType type)
+{
+    int lower = int(type) + 1;
+    int upper = int(mesh_type) + 1;
+    // n! * r! / (n-r)!
+
+    return fact(upper) / (fact(lower) * fact(upper - lower));
+}
+} // namespace
+
+TEST_CASE("maximal_subdart_switches_checker_checker", "[tuple]")
+{
+    CHECK(
+        equal_subdart_dimension(PrimitiveType::Vertex, Tuple(0, 0, 0, 0), Tuple(0, 0, 0, 0)) == 0);
+    CHECK(
+        equal_subdart_dimension(PrimitiveType::Vertex, Tuple(0, 0, 0, 0), Tuple(1, 0, 0, 0)) == 0);
+    CHECK(
+        equal_subdart_dimension(PrimitiveType::Vertex, Tuple(0, 0, 0, 0), Tuple(0, 1, 0, 0)) == 0);
+    CHECK(
+        equal_subdart_dimension(PrimitiveType::Vertex, Tuple(0, 0, 0, 0), Tuple(0, 0, 1, 0)) == 0);
+    CHECK(equal_subdart_dimension(PrimitiveType::Edge, Tuple(0, 0, 0, 0), Tuple(0, 0, 0, 0)) == 1);
+    CHECK(equal_subdart_dimension(PrimitiveType::Edge, Tuple(0, 0, 0, 0), Tuple(1, 0, 0, 0)) == 0);
+    CHECK(equal_subdart_dimension(PrimitiveType::Edge, Tuple(0, 0, 0, 0), Tuple(0, 1, 0, 0)) == 1);
+    CHECK(equal_subdart_dimension(PrimitiveType::Edge, Tuple(0, 0, 0, 0), Tuple(0, 0, 1, 0)) == 1);
+    CHECK(
+        equal_subdart_dimension(PrimitiveType::Triangle, Tuple(0, 0, 0, 0), Tuple(0, 0, 0, 0)) ==
+        2);
+    CHECK(
+        equal_subdart_dimension(PrimitiveType::Triangle, Tuple(0, 0, 0, 0), Tuple(1, 0, 0, 0)) ==
+        0);
+    CHECK(
+        equal_subdart_dimension(PrimitiveType::Triangle, Tuple(0, 0, 0, 0), Tuple(0, 1, 0, 0)) ==
+        1);
+    CHECK(
+        equal_subdart_dimension(PrimitiveType::Triangle, Tuple(0, 0, 0, 0), Tuple(0, 0, 1, 0)) ==
+        2);
+    CHECK(
+        equal_subdart_dimension(PrimitiveType::Tetrahedron, Tuple(0, 0, 0, 0), Tuple(0, 0, 0, 0)) ==
+        3);
+    CHECK(
+        equal_subdart_dimension(PrimitiveType::Tetrahedron, Tuple(0, 0, 0, 0), Tuple(1, 0, 0, 0)) ==
+        0);
+    CHECK(
+        equal_subdart_dimension(PrimitiveType::Tetrahedron, Tuple(0, 0, 0, 0), Tuple(0, 1, 0, 0)) ==
+        1);
+    CHECK(
+        equal_subdart_dimension(PrimitiveType::Tetrahedron, Tuple(0, 0, 0, 0), Tuple(0, 0, 1, 0)) ==
+        2);
+
+
+    CHECK(simplex_count(PrimitiveType::Vertex, PrimitiveType::Vertex) == 1);
+
+    CHECK(simplex_count(PrimitiveType::Edge, PrimitiveType::Vertex) == 2);
+    CHECK(simplex_count(PrimitiveType::Edge, PrimitiveType::Edge) == 1);
+
+    CHECK(simplex_count(PrimitiveType::Triangle, PrimitiveType::Vertex) == 3);
+    CHECK(simplex_count(PrimitiveType::Triangle, PrimitiveType::Edge) == 3);
+    CHECK(simplex_count(PrimitiveType::Triangle, PrimitiveType::Triangle) == 1);
+
+    CHECK(simplex_count(PrimitiveType::Tetrahedron, PrimitiveType::Vertex) == 4);
+    CHECK(simplex_count(PrimitiveType::Tetrahedron, PrimitiveType::Edge) == 6);
+    CHECK(simplex_count(PrimitiveType::Tetrahedron, PrimitiveType::Triangle) == 4);
+    CHECK(simplex_count(PrimitiveType::Tetrahedron, PrimitiveType::Tetrahedron) == 1);
+}
+
 TEST_CASE("maximal_subdart_switches", "[tuple]")
 {
     // when other meshes are available add them here
     for (PrimitiveType mesh_type :
          {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
+        spdlog::info("Checking out {}", primitive_type_name(mesh_type));
         autogen::SimplexDart sd(mesh_type);
-        for (PrimitiveType mesh_type2 :
-             {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
-            if (mesh_type > mesh_type2) {
-                continue;
-            }
-
-            autogen::SimplexDart sd2(mesh_type2);
-            for (int8_t index = 0; index < sd.size(); ++index) {
-                REQUIRE(sd.convert(index, sd2) != -1);
-                REQUIRE(sd2.convert(sd.convert(index, sd2), sd) == index);
-            }
-
-            for (int8_t index = 0; index < sd.size(); ++index) {
-                const int8_t inv = sd.inverse(index);
-
-                int8_t index2 = sd.convert(index, sd2);
-                int8_t inv2 = sd.convert(inv, sd2);
-                CHECK(sd2.product(index2, inv2) == sd2.identity());
-            }
-            for (int8_t index = 0; index < sd.size(); ++index) {
-                for (int8_t index_ = 0; index_ < sd.size(); ++index_) {
-                    int8_t p = sd.product(index, index_);
+        for (int8_t index = 0; index < sd.size(); ++index) {
+            for (PrimitiveType simplex_type :
+                 {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
+                if (mesh_type <= simplex_type) {
+                    continue;
+                }
+                int8_t num_simplices = simplex_count(mesh_type, simplex_type);
+                for (int8_t simplex_index = 0; simplex_index < num_simplices; ++simplex_index) {
+                    // check basic functions are doing the right things
 
 
-                    int8_t index2 = sd.convert(index, sd2);
-                    int8_t index_2 = sd.convert(index_, sd2);
-                    int8_t p2 = sd2.product(index2, index_2);
-                    CHECK(sd.convert(p, sd2) == p2);
+                    auto [act, size] = wmtk::autogen::utils::subdart_maximal_action_to_face(
+                        mesh_type,
+                        index,
+                        simplex_type,
+                        simplex_index);
+                    auto a = wmtk::autogen::utils::subdart_maximal_action_to_face_action(
+                        mesh_type,
+                        index,
+                        simplex_type,
+                        simplex_index);
+                    auto s = wmtk::autogen::utils::subdart_maximal_action_to_face_size(
+                        mesh_type,
+                        index,
+                        simplex_type,
+                        simplex_index);
+
+                    REQUIRE(act == a);
+                    REQUIRE(size == s);
+
+
+                    int8_t mapped_index = sd.product(act, index);
+                    CHECK(equal_subdart_dimension(mesh_type, index, mapped_index) == size);
                 }
             }
         }

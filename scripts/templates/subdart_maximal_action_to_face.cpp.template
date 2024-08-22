@@ -47,6 +47,11 @@ std::array<int8_t,2> subdart_maximal_action_to_face(int8_t dart_index, int8_t si
         max_subdart_preservation_dimension_{{ dim + 1 }}[dart_index][simplex_index]
         {{ '}}' }};
         {% endfor %}
+        case {{ dimension }}:
+        return std::array<int8_t,2> {{ '{{' }}
+        SimplexDart::identity(), {{ dimension }}
+        {{ '}}' }};
+
         default:
         break;
     }

@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <wmtk/PrimitiveType.hpp>
 
-namespace wmtk::autogen::tet_mesh {
+namespace wmtk::autogen::utils {
 int8_t subdart_maximal_action_to_face_action(
     PrimitiveType mesh_type,
     int8_t dart_index,
@@ -38,4 +38,4 @@ std::array<int8_t, 2> subdart_maximal_action_to_face(
     int8_t dart_index,
     int8_t simplex_dimension,
     int8_t simplex_index);
-} // namespace wmtk::autogen::tet_mesh
+} // namespace wmtk::autogen::utils
