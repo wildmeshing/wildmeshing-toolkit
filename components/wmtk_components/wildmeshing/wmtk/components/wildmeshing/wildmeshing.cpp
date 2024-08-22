@@ -35,8 +35,7 @@
 #include <wmtk/function/simplex/AMIPS.hpp>
 
 #include <wmtk/function/utils/amips.hpp>
-#include <wmtk/invariants/CollapseEnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/CollapseSoftEnergyBeforeInvariant.hpp>
+#include <wmtk/invariants/CollapseEnergyBeforeInvariantDouble.hpp>
 #include <wmtk/invariants/EdgeValenceInvariant.hpp>
 #include <wmtk/invariants/EnergyFilterInvariant.hpp>
 #include <wmtk/invariants/EnvelopeInvariant.hpp>
@@ -51,10 +50,10 @@
 #include <wmtk/invariants/RoundedInvariant.hpp>
 #include <wmtk/invariants/SeparateSubstructuresInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
-#include <wmtk/invariants/Swap23EnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/Swap32EnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/Swap44EnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/Swap56EnergyBeforeInvariant.hpp>
+#include <wmtk/invariants/Swap23EnergyBeforeInvariantDouble.hpp>
+#include <wmtk/invariants/Swap32EnergyBeforeInvariantDouble.hpp>
+#include <wmtk/invariants/Swap44EnergyBeforeInvariantDouble.hpp>
+#include <wmtk/invariants/Swap56EnergyBeforeInvariantDouble.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
@@ -134,7 +133,7 @@ void write(
 
 void adjust_sizing_field(
     Mesh& m,
-    const TypedAttributeHandle<Rational>& coordinate_handle,
+    const TypedAttributeHandle<double>& coordinate_handle,
     const TypedAttributeHandle<double>& edge_length_handle,
     const TypedAttributeHandle<double>& sizing_field_scalar_handle,
     const TypedAttributeHandle<double>& energy_handle,
@@ -149,7 +148,7 @@ void adjust_sizing_field(
 
     std::cout << "in here" << std::endl;
 
-    const auto coordinate_accessor = m.create_const_accessor<Rational>(coordinate_handle);
+    const auto coordinate_accessor = m.create_const_accessor<double>(coordinate_handle);
     const auto edge_length_accessor = m.create_const_accessor<double>(edge_length_handle);
     const auto energy_accessor = m.create_const_accessor<double>(energy_handle);
 
@@ -182,7 +181,7 @@ void adjust_sizing_field(
         auto vertices = m.orient_vertices(t);
         Vector3d c(0, 0, 0);
         for (int i = 0; i < 4; ++i) {
-            c += coordinate_accessor.const_vector_attribute(vertices[i]).cast<double>();
+            c += coordinate_accessor.const_vector_attribute(vertices[i]);
             v_queue.emplace(vertices[i]);
         }
         centroids.emplace_back(c / 4.0);
@@ -203,7 +202,7 @@ void adjust_sizing_field(
     auto get_nearest_dist = [&](const Tuple& v) -> double {
         Tuple nearest_tuple;
         double min_dist = std::numeric_limits<double>::max();
-        const Vector3d v_pos = coordinate_accessor.const_vector_attribute(v).cast<double>();
+        const Vector3d v_pos = coordinate_accessor.const_vector_attribute(v);
         for (const auto& c_pos : centroids) {
             double dist = (c_pos - v_pos).norm();
             min_dist = std::min(min_dist, dist);
@@ -272,7 +271,7 @@ void adjust_sizing_field(
 
 void set_operation_energy_filter(
     Mesh& m,
-    const TypedAttributeHandle<Rational>& coordinate_handle,
+    const TypedAttributeHandle<double>& coordinate_handle,
     const TypedAttributeHandle<double>& energy_handle,
     const TypedAttributeHandle<char>& energy_filter_handle,
     const TypedAttributeHandle<char>& visited_handle,
@@ -283,7 +282,7 @@ void set_operation_energy_filter(
     // two ring version
     if (m.top_simplex_type() != PrimitiveType::Tetrahedron) return;
 
-    const auto coordinate_accessor = m.create_const_accessor<Rational>(coordinate_handle);
+    const auto coordinate_accessor = m.create_const_accessor<double>(coordinate_handle);
     const auto energy_accessor = m.create_const_accessor<double>(energy_handle);
 
     auto energy_filter_accessor = m.create_accessor<char>(energy_filter_handle);
@@ -319,7 +318,7 @@ void set_operation_energy_filter(
 
 void set_operation_energy_filter_after_sizing_field(
     Mesh& m,
-    const TypedAttributeHandle<Rational>& coordinate_handle,
+    const TypedAttributeHandle<double>& coordinate_handle,
     const TypedAttributeHandle<double>& energy_handle,
     const TypedAttributeHandle<char>& energy_filter_handle,
     const TypedAttributeHandle<char>& visited_handle,
@@ -329,7 +328,7 @@ void set_operation_energy_filter_after_sizing_field(
 {
     if (m.top_simplex_type() != PrimitiveType::Tetrahedron) return;
 
-    const auto coordinate_accessor = m.create_const_accessor<Rational>(coordinate_handle);
+    const auto coordinate_accessor = m.create_const_accessor<double>(coordinate_handle);
     const auto energy_accessor = m.create_const_accessor<double>(energy_handle);
 
     auto energy_filter_accessor = m.create_accessor<char>(energy_filter_handle);
@@ -352,7 +351,7 @@ void set_operation_energy_filter_after_sizing_field(
         auto vertices = m.orient_vertices(t);
         Vector3d c(0, 0, 0);
         for (int i = 0; i < 4; ++i) {
-            c += coordinate_accessor.const_vector_attribute(vertices[i]).cast<double>();
+            c += coordinate_accessor.const_vector_attribute(vertices[i]);
             v_queue.emplace(vertices[i]);
         }
         centroids.emplace_back(c / 4.0);
@@ -369,7 +368,7 @@ void set_operation_energy_filter_after_sizing_field(
     auto get_nearest_dist = [&](const Tuple& v) -> double {
         Tuple nearest_tuple;
         double min_dist = std::numeric_limits<double>::max();
-        const Vector3d v_pos = coordinate_accessor.const_vector_attribute(v).cast<double>();
+        const Vector3d v_pos = coordinate_accessor.const_vector_attribute(v);
         for (const auto& c_pos : centroids) {
             double dist = (c_pos - v_pos).norm();
             min_dist = std::min(min_dist, dist);
@@ -416,12 +415,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         throw std::runtime_error("input mesh for wildmeshing connectivity invalid");
     }
 
+    //
 
     //////////////////////////////////
     // Retriving vertices
-    auto pt_attribute =
-        mesh->get_attribute_handle<Rational>(options.attributes.position, PrimitiveType::Vertex);
-    auto pt_accessor = mesh->create_accessor(pt_attribute.as<Rational>());
+    attribute::MeshAttributeHandle pt_attribute =
+        mesh->get_attribute_handle<double>(options.attributes.position, PrimitiveType::Vertex);
+    auto pt_accessor = mesh->create_accessor(pt_attribute.as<double>());
+
 
     //////////////////////////////////
     // computing bbox diagonal
@@ -432,7 +433,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     const auto vertices = mesh->get_all(PrimitiveType::Vertex);
     for (const auto& v : vertices) {
-        const auto p = pt_accessor.vector_attribute(v).cast<double>();
+        const auto p = pt_accessor.vector_attribute(v);
         for (int64_t d = 0; d < bmax.size(); ++d) {
             bmin[d] = std::min(bmin[d], p[d]);
             bmax[d] = std::max(bmax[d], p[d]);
@@ -460,7 +461,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         mesh->register_attribute<double>("wildmeshing_amips", mesh->top_simplex_type(), 1);
     auto amips_accessor = mesh->create_accessor(amips_attribute.as<double>());
     // amips update
-    auto compute_amips = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorXd {
+    auto compute_amips = [](const Eigen::MatrixX<double>& P) -> Eigen::VectorXd {
         assert(P.rows() == 2 || P.rows() == 3); // rows --> attribute dimension
         assert(P.cols() == P.rows() + 1);
         if (P.cols() == 3) {
@@ -469,7 +470,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             std::array<double, 6> pts;
             for (size_t i = 0; i < 3; ++i) {
                 for (size_t j = 0; j < 2; ++j) {
-                    pts[2 * i + j] = P(j, i).to_double();
+                    pts[2 * i + j] = P(j, i);
                 }
             }
             const double a = Tri_AMIPS_energy(pts);
@@ -480,7 +481,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             std::array<double, 12> pts;
             for (size_t i = 0; i < 4; ++i) {
                 for (size_t j = 0; j < 3; ++j) {
-                    pts[3 * i + j] = P(j, i).to_double();
+                    pts[3 * i + j] = P(j, i);
                 }
             }
             const double a = Tet_AMIPS_energy(pts);
@@ -488,7 +489,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         }
     };
     auto amips_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>(
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
             amips_attribute,
             pt_attribute,
             compute_amips);
@@ -581,16 +582,16 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
 
     //// Example for some other target edge length
-    // auto compute_target_edge_length = [](const Eigen::MatrixX<Rational>& P) ->
+    // auto compute_target_edge_length = [](const Eigen::MatrixX<double>& P) ->
     // Eigen::VectorXd {
     //    assert(P.cols() == 2); // cols --> number of neighbors
     //    assert(P.rows() == 2 || P.rows() == 3); // rows --> attribute dimension
-    //    const double x_avg = 0.5 * (P(0, 0) + P(0, 1)).to_double();
+    //    const double x_avg = 0.5 * (P(0, 0) + P(0, 1));
     //    const double target_length = x_avg * x_avg;
     //    return Eigen::VectorXd::Constant(1, target_length);
     //};
     // auto target_edge_length_update =
-    //    std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>(
+    //    std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
     //        target_edge_length_attribute,
     //        rpt_attribute,
     //        compute_target_edge_length);
@@ -603,13 +604,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         mesh->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
     auto edge_length_accessor = mesh->create_accessor(edge_length_attribute.as<double>());
     // Edge length update
-    auto compute_edge_length = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorXd {
+    auto compute_edge_length = [](const Eigen::MatrixX<double>& P) -> Eigen::VectorXd {
         assert(P.cols() == 2);
         assert(P.rows() == 2 || P.rows() == 3);
-        return Eigen::VectorXd::Constant(1, sqrt((P.col(0) - P.col(1)).squaredNorm().to_double()));
+        return Eigen::VectorXd::Constant(1, sqrt((P.col(0) - P.col(1)).squaredNorm()));
     };
     auto edge_length_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, Rational>>(
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
             edge_length_attribute,
             pt_attribute,
             compute_edge_length);
@@ -641,17 +642,17 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
 
     auto propagate_to_child_position =
-        [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<Rational> { return P; };
+        [](const Eigen::MatrixX<double>& P) -> Eigen::VectorX<double> { return P; };
 
     auto propagate_to_parent_position =
-        [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<Rational> {
+        [](const Eigen::MatrixX<double>& P) -> Eigen::VectorX<double> {
         assert(P.cols() == 1);
         return P.col(0);
     };
     using MeshConstrainPair = ProjectOperation::MeshConstrainPair;
 
     auto envelope_invariant = std::make_shared<InvariantCollection>(*mesh);
-    std::vector<std::shared_ptr<SingleAttributeTransferStrategy<Rational, Rational>>>
+    std::vector<std::shared_ptr<SingleAttributeTransferStrategy<double, double>>>
         update_child_positon, update_parent_positon;
     std::vector<std::shared_ptr<Mesh>> envelopes;
     std::vector<MeshConstrainPair> mesh_constraint_pairs;
@@ -680,10 +681,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         auto envelope_position_handle =
             v.geometry.mesh == "input"
                 ? envelope->get_attribute_handle<double>(v.geometry.position, PrimitiveType::Vertex)
-                : envelope->get_attribute_handle<Rational>(
+                : envelope->get_attribute_handle<double>(
                       v.geometry.position,
                       PrimitiveType::Vertex);
-        // envelope->get_attribute_handle<Rational>(v.geometry.position, PrimitiveType::Vertex);
+        // envelope->get_attribute_handle<double>(v.geometry.position, PrimitiveType::Vertex);
 
 
         mesh_constraint_pairs.emplace_back(envelope_position_handle, constrained.front());
@@ -694,13 +695,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             constrained.front()));
 
         update_parent_positon.emplace_back(
-            std::make_shared<SingleAttributeTransferStrategy<Rational, Rational>>(
+            std::make_shared<SingleAttributeTransferStrategy<double, double>>(
                 pt_attribute,
                 constrained.front(),
                 propagate_to_parent_position));
 
         update_child_positon.emplace_back(
-            std::make_shared<SingleAttributeTransferStrategy<Rational, Rational>>(
+            std::make_shared<SingleAttributeTransferStrategy<double, double>>(
                 constrained.front(),
                 pt_attribute,
                 propagate_to_child_position));
@@ -714,7 +715,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
 
     auto inversion_invariant =
-        std::make_shared<SimplexInversionInvariant<Rational>>(*mesh, pt_attribute.as<Rational>());
+        std::make_shared<SimplexInversionInvariant<double>>(*mesh, pt_attribute.as<double>());
 
     std::shared_ptr<function::PerSimplexFunction> amips =
         std::make_shared<AMIPS>(*mesh, pt_attribute);
@@ -749,13 +750,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto valence_3 = std::make_shared<EdgeValenceInvariant>(*mesh, 3);
     auto valence_4 = std::make_shared<EdgeValenceInvariant>(*mesh, 4);
     auto swap44_energy_before =
-        std::make_shared<Swap44EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>(), 0);
+        std::make_shared<Swap44EnergyBeforeInvariantDouble>(*mesh, pt_attribute.as<double>(), 0);
     auto swap44_2_energy_before =
-        std::make_shared<Swap44EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>(), 1);
+        std::make_shared<Swap44EnergyBeforeInvariantDouble>(*mesh, pt_attribute.as<double>(), 1);
     auto swap32_energy_before =
-        std::make_shared<Swap32EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>());
+        std::make_shared<Swap32EnergyBeforeInvariantDouble>(*mesh, pt_attribute.as<double>());
     auto swap23_energy_before =
-        std::make_shared<Swap23EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>());
+        std::make_shared<Swap23EnergyBeforeInvariantDouble>(*mesh, pt_attribute.as<double>());
 
     auto invariant_separate_substructures =
         std::make_shared<invariants::SeparateSubstructuresInvariant>(*mesh);
@@ -766,13 +767,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto visited_edge_flag =
         mesh->register_attribute<char>("visited_edge", PrimitiveType::Edge, 1, false, char(1));
 
-    auto update_flag_func = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<char> {
+    auto update_flag_func = [](const Eigen::MatrixX<double>& P) -> Eigen::VectorX<char> {
         assert(P.cols() == 2);
         assert(P.rows() == 2 || P.rows() == 3);
         return Eigen::VectorX<char>::Constant(1, char(1));
     };
     auto tag_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<char, Rational>>(
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<char, double>>(
             visited_edge_flag,
             pt_attribute,
             update_flag_func);
@@ -792,13 +793,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     auto energy_filter_accessor = mesh->create_accessor<char>(energy_filter_attribute);
 
-    auto update_energy_filter_func = [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<char> {
+    auto update_energy_filter_func = [](const Eigen::MatrixX<double>& P) -> Eigen::VectorX<char> {
         // assert(P.cols() == 2);
         // assert(P.rows() == 2 || P.rows() == 3);
         return Eigen::VectorX<char>::Constant(1, char(1));
     };
     auto energy_filter_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<char, Rational>>(
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<char, double>>(
             energy_filter_attribute,
             pt_attribute,
             update_energy_filter_func);
@@ -818,18 +819,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
     std::vector<std::shared_ptr<Operation>> ops;
     std::vector<std::string> ops_name;
-
-    //////////////////////////////////
-    // 0) Rounding
-    //////////////////////////////////
-    auto rounding_pt_attribute = mesh->get_attribute_handle_typed<Rational>(
-        options.attributes.position,
-        PrimitiveType::Vertex);
-    auto rounding = std::make_shared<Rounding>(*mesh, rounding_pt_attribute);
-    rounding->add_invariant(
-        std::make_shared<RoundedInvariant>(*mesh, pt_attribute.as<Rational>(), true));
-    rounding->add_invariant(inversion_invariant);
-
 
     //////////////////////////////////
     // 1) EdgeSplit
@@ -867,7 +856,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     auto split_then_round = std::make_shared<AndOperationSequence>(*mesh);
     split_then_round->add_operation(split);
-    split_then_round->add_operation(rounding);
 
     for (auto& s : update_child_positon) {
         split_then_round->add_transfer_strategy(s);
@@ -880,23 +868,23 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     split_unrounded->add_invariant(todo_larger);
 
     auto split_unrounded_transfer_strategy =
-        std::make_shared<SplitNewAttributeStrategy<Rational>>(pt_attribute);
+        std::make_shared<SplitNewAttributeStrategy<double>>(pt_attribute);
     split_unrounded_transfer_strategy->set_strategy(
-        [](const Eigen::VectorX<Rational>& a, const std::bitset<2>&) {
-            return std::array<Eigen::VectorX<Rational>, 2>{{a, a}};
+        [](const Eigen::VectorX<double>& a, const std::bitset<2>&) {
+            return std::array<Eigen::VectorX<double>, 2>{{a, a}};
         });
     split_unrounded_transfer_strategy->set_rib_strategy(
-        [](const Eigen::VectorX<Rational>& p0_d,
-           const Eigen::VectorX<Rational>& p1_d,
-           const std::bitset<2>& bs) -> Eigen::VectorX<Rational> {
-            Eigen::VectorX<Rational> p0(p0_d.size());
-            Eigen::VectorX<Rational> p1(p1_d.size());
+        [](const Eigen::VectorX<double>& p0_d,
+           const Eigen::VectorX<double>& p1_d,
+           const std::bitset<2>& bs) -> Eigen::VectorX<double> {
+            Eigen::VectorX<double> p0(p0_d.size());
+            Eigen::VectorX<double> p1(p1_d.size());
             for (int i = 0; i < p0_d.size(); ++i) {
-                p0[i] = Rational(p0_d[i], false);
-                p1[i] = Rational(p1_d[i], false);
+                p0[i] = p0_d[i];
+                p1[i] = p1_d[i];
             }
             if (bs[0] == bs[1]) {
-                return (p0 + p1) / Rational(2, false);
+                return (p0 + p1) / 2.0;
             } else if (bs[0]) {
                 return p0;
 
@@ -940,19 +928,16 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     ops.emplace_back(split_sequence);
     ops_name.emplace_back("SPLIT");
 
-    ops.emplace_back(rounding);
-    ops_name.emplace_back("rounding");
-
 
     //////////////////////////////////
     // collapse transfer
     //////////////////////////////////
-    auto clps_strat1 = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
+    auto clps_strat1 = std::make_shared<CollapseNewAttributeStrategy<double>>(pt_attribute);
     // clps_strat1->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
     // clps_strat1->set_strategy(CollapseBasicStrategy::Default);
     clps_strat1->set_strategy(CollapseBasicStrategy::CopyOther);
 
-    auto clps_strat2 = std::make_shared<CollapseNewAttributeStrategy<Rational>>(pt_attribute);
+    auto clps_strat2 = std::make_shared<CollapseNewAttributeStrategy<double>>(pt_attribute);
     // clps_strat2->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
     // clps_strat2->set_strategy(CollapseBasicStrategy::Default);
     clps_strat2->set_strategy(CollapseBasicStrategy::CopyTuple);
@@ -996,9 +981,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     };
 
     auto collapse1 = std::make_shared<EdgeCollapse>(*mesh);
-    collapse1->add_invariant(std::make_shared<CollapseEnergyBeforeInvariant>(
+    collapse1->add_invariant(std::make_shared<CollapseEnergyBeforeInvariantDouble>(
         *mesh,
-        pt_attribute.as<Rational>(),
+        pt_attribute.as<double>(),
         amips_attribute.as<double>(),
         1));
 
@@ -1007,9 +992,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     setup_collapse(collapse1);
 
     auto collapse2 = std::make_shared<EdgeCollapse>(*mesh);
-    collapse2->add_invariant(std::make_shared<CollapseEnergyBeforeInvariant>(
+    collapse2->add_invariant(std::make_shared<CollapseEnergyBeforeInvariantDouble>(
         *mesh,
-        pt_attribute.as<Rational>(),
+        pt_attribute.as<double>(),
         amips_attribute.as<double>(),
         0));
 
@@ -1024,7 +1009,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     auto collapse_then_round = std::make_shared<AndOperationSequence>(*mesh);
     collapse_then_round->add_operation(collapse);
-    collapse_then_round->add_operation(rounding);
 
     collapse_then_round->set_priority(short_edges_first);
     collapse_then_round->add_invariant(
@@ -1037,9 +1021,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     ops.emplace_back(collapse_then_round);
     ops_name.emplace_back("COLLAPSE");
-
-    ops.emplace_back(rounding);
-    ops_name.emplace_back("rounding");
 
     //////////////////////////////////
     // 3) Swap
@@ -1104,9 +1085,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         ops.push_back(swap);
         ops_name.push_back("swap");
 
-        ops.emplace_back(rounding);
-        ops_name.emplace_back("rounding");
-
     } else if (mesh->top_simplex_type() == PrimitiveType::Tetrahedron) {
         auto swap56 = std::make_shared<MinOperationSequence>(*mesh);
         for (int i = 0; i < 5; ++i) {
@@ -1139,9 +1117,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 target_edge_length_attribute,
                 wmtk::operations::CollapseBasicStrategy::None);
 
-            swap->add_invariant(std::make_shared<Swap56EnergyBeforeInvariant>(
+            swap->add_invariant(std::make_shared<Swap56EnergyBeforeInvariantDouble>(
                 *mesh,
-                pt_attribute.as<Rational>(),
+                pt_attribute.as<double>(),
                 i));
 
             swap->add_transfer_strategy(amips_update);
@@ -1170,7 +1148,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             constexpr static PrimitiveType PF = PrimitiveType::Triangle;
             constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
 
-            auto accessor = mesh->create_const_accessor(pt_attribute.as<Rational>());
+            auto accessor = mesh->create_const_accessor(pt_attribute.as<double>());
 
             const Tuple e0 = t.tuple();
             const Tuple e1 = mesh->switch_tuple(e0, PV);
@@ -1186,7 +1164,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
             // five iterable vertices remap to 0-4 by m_collapse_index, 0: m_collapse_index, 5:
             // e0, 6: e1
-            std::array<Eigen::Vector3<Rational>, 7> positions = {
+            std::array<Eigen::Vector3<double>, 7> positions = {
                 {accessor.const_vector_attribute(v[(idx + 0) % 5]),
                  accessor.const_vector_attribute(v[(idx + 1) % 5]),
                  accessor.const_vector_attribute(v[(idx + 2) % 5]),
@@ -1196,13 +1174,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                  accessor.const_vector_attribute(e1)}};
 
             std::array<Eigen::Vector3d, 7> positions_double = {
-                {positions[0].cast<double>(),
-                 positions[1].cast<double>(),
-                 positions[2].cast<double>(),
-                 positions[3].cast<double>(),
-                 positions[4].cast<double>(),
-                 positions[5].cast<double>(),
-                 positions[6].cast<double>()}};
+                {positions[0],
+                 positions[1],
+                 positions[2],
+                 positions[3],
+                 positions[4],
+                 positions[5],
+                 positions[6]}};
 
             std::array<std::array<int, 4>, 6> new_tets = {
                 {{{0, 1, 2, 5}},
@@ -1300,9 +1278,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
             swap->add_transfer_strategy(amips_update);
 
-            swap->add_invariant(std::make_shared<Swap44EnergyBeforeInvariant>(
+            swap->add_invariant(std::make_shared<Swap44EnergyBeforeInvariantDouble>(
                 *mesh,
-                pt_attribute.as<Rational>(),
+                pt_attribute.as<double>(),
                 i));
 
             // swap->add_invariant(inversion_invariant);
@@ -1329,7 +1307,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             constexpr static PrimitiveType PF = PrimitiveType::Triangle;
             constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
 
-            auto accessor = mesh->create_const_accessor(pt_attribute.as<Rational>());
+            auto accessor = mesh->create_const_accessor(pt_attribute.as<double>());
 
             // get the coords of the vertices
             // input edge end points
@@ -1346,7 +1324,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             if (iter_tuple != e0) return 0;
             assert(iter_tuple == e0);
 
-            std::array<Eigen::Vector3<Rational>, 6> positions = {
+            std::array<Eigen::Vector3<double>, 6> positions = {
                 {accessor.const_vector_attribute(v[(idx + 0) % 4]),
                  accessor.const_vector_attribute(v[(idx + 1) % 4]),
                  accessor.const_vector_attribute(v[(idx + 2) % 4]),
@@ -1354,12 +1332,12 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                  accessor.const_vector_attribute(e0),
                  accessor.const_vector_attribute(e1)}};
             std::array<Eigen::Vector3d, 6> positions_double = {
-                {positions[0].cast<double>(),
-                 positions[1].cast<double>(),
-                 positions[2].cast<double>(),
-                 positions[3].cast<double>(),
-                 positions[4].cast<double>(),
-                 positions[5].cast<double>()}};
+                {positions[0],
+                 positions[1],
+                 positions[2],
+                 positions[3],
+                 positions[4],
+                 positions[5]}};
 
             std::array<std::array<int, 4>, 4> new_tets = {
                 {{{0, 1, 2, 4}}, {{0, 2, 3, 4}}, {{0, 1, 2, 5}}, {{0, 2, 3, 5}}}};
@@ -1418,7 +1396,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         auto swap32 = std::make_shared<TetEdgeSwap>(*mesh, 0);
         swap32->add_invariant(std::make_shared<EdgeValenceInvariant>(*mesh, 3));
         swap32->add_invariant(
-            std::make_shared<Swap32EnergyBeforeInvariant>(*mesh, pt_attribute.as<Rational>()));
+            std::make_shared<Swap32EnergyBeforeInvariantDouble>(*mesh, pt_attribute.as<double>()));
 
         swap32->collapse().add_invariant(invariant_separate_substructures);
         swap32->collapse().add_invariant(link_condition);
@@ -1477,7 +1455,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         auto swap_then_round = std::make_shared<AndOperationSequence>(*mesh);
         swap_then_round->add_operation(swap_all);
-        swap_then_round->add_operation(rounding);
         swap_then_round->add_invariant(
             std::make_shared<EnergyFilterInvariant>(*mesh, energy_filter_attribute.as<char>()));
         swap_then_round->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
@@ -1493,8 +1470,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         ops.push_back(swap_then_round);
         ops_name.push_back("EDGE SWAP");
-        ops.emplace_back(rounding);
-        ops_name.emplace_back("rounding");
     }
 
     // 4) Smoothing
@@ -1511,10 +1486,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     //         auto lap_smoothing = std::make_shared<TetWildTangentialLaplacianSmoothing>(
     //             child_mesh,
-    //             child_position_handle.as<Rational>());
+    //             child_position_handle.as<double>());
     //         lap_smoothing->add_invariant(std::make_shared<RoundedInvariant>(
     //             child_mesh,
-    //             child_position_handle.as<Rational>()));
+    //             child_position_handle.as<double>()));
     //         lap_smoothing->add_invariant(inversion_invariant);
 
     //         auto proj_lap_smoothing =
@@ -1545,8 +1520,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //     std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
     // auto smoothing = std::make_shared<OptimizationSmoothing>(energy);
     auto smoothing = std::make_shared<AMIPSOptimizationSmoothing>(*mesh, pt_attribute);
-    smoothing->add_invariant(
-        std::make_shared<RoundedInvariant>(*mesh, pt_attribute.as<Rational>()));
     smoothing->add_invariant(inversion_invariant);
     for (auto& s : update_child_positon) {
         smoothing->add_transfer_strategy(s);
@@ -1558,8 +1531,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // smoothing->add_transfer_strategy(edge_length_update);
     // ops.push_back(smoothing);
     // ops_name.push_back("SMOOTHING");
-    // ops.emplace_back(rounding);
-    // ops_name.emplace_back("rounding");
     //--------
 
     auto proj_smoothing = std::make_shared<ProjectOperation>(smoothing, mesh_constraint_pairs);
@@ -1586,8 +1557,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         ops_name.push_back("SMOOTHING");
     }
 
-    ops.emplace_back(rounding);
-    ops_name.emplace_back("rounding");
 
     write(
         mesh,
@@ -1621,7 +1590,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     logger().info("----------------------- Preprocess Collapse -----------------------");
     for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
         const auto vertices = mesh->orient_vertices(t);
-        std::vector<Vector3r> pos;
+        std::vector<Vector3d> pos;
         for (int i = 0; i < vertices.size(); ++i) {
             pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
         }
@@ -1644,20 +1613,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         pre_stats.executing_time);
 
     success = pre_stats.number_of_successful_operations();
-
-    // verbose logger, can be removed
-    int64_t unrounded = 0;
-    for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
-        const auto p = pt_accessor.vector_attribute(v);
-        for (int64_t d = 0; d < 3; ++d) {
-            if (!p[d].is_rounded()) {
-                ++unrounded;
-                break;
-            }
-        }
-    }
-
-    logger().info("Mesh has {} unrounded vertices", unrounded);
 
     // compute max energy
     double max_energy = std::numeric_limits<double>::lowest();
@@ -1700,7 +1655,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         for (auto& op : ops) {
             for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
                 const auto vertices = mesh->orient_vertices(t);
-                std::vector<Vector3r> pos;
+                std::vector<Vector3d> pos;
                 for (int i = 0; i < vertices.size(); ++i) {
                     pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
                 }
@@ -1733,20 +1688,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 stats.executing_time);
 
             success = stats.number_of_successful_operations();
-
-            // verbose logger, can be removed
-            int64_t unrounded = 0;
-            for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
-                const auto p = pt_accessor.vector_attribute(v);
-                for (int64_t d = 0; d < 3; ++d) {
-                    if (!p[d].is_rounded()) {
-                        ++unrounded;
-                        break;
-                    }
-                }
-            }
-
-            logger().info("Mesh has {} unrounded vertices", unrounded);
 
             avg_energy = 0;
 
@@ -1816,24 +1757,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         avg_energy = avg_energy / mesh->get_all(mesh->top_simplex_type()).size();
 
-        int64_t unrounded = 0;
-        if (!is_double) {
-            bool rational = false;
-            for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
-                const auto p = pt_accessor.vector_attribute(v);
-                for (int64_t d = 0; d < bmax.size(); ++d) {
-                    if (!p[d].is_rounded()) {
-                        rational = true;
-                        ++unrounded;
-                        break;
-                    }
-                }
-            }
+        is_double = true;
 
-            is_double = !rational;
-        }
-
-        logger().info("Mesh has {} unrounded vertices", unrounded);
         logger().info(
             "Max AMIPS Energy: {}, Min AMIPS Energy: {}, Avg AMIPS Energy: {}",
             max_energy,
@@ -1848,7 +1773,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
             adjust_sizing_field(
                 *mesh,
-                pt_attribute.as<Rational>(),
+                pt_attribute.as<double>(),
                 edge_length_attribute.as<double>(),
                 sizing_field_scalar_attribute.as<double>(),
                 amips_attribute.as<double>(),
@@ -1864,7 +1789,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             // wmtk::logger().info("setting energy filter ...");
             // set_operation_energy_filter_after_sizing_field(
             //     *mesh,
-            //     pt_attribute.as<Rational>(),
+            //     pt_attribute.as<double>(),
             //     amips_attribute.as<double>(),
             //     energy_filter_attribute.as<char>(),
             //     visited_vertex_flag.as<char>(),
@@ -1894,7 +1819,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             wmtk::logger().info("setting energy filter ...");
             set_operation_energy_filter(
                 *mesh,
-                pt_attribute.as<Rational>(),
+                pt_attribute.as<double>(),
                 amips_attribute.as<double>(),
                 energy_filter_attribute.as<char>(),
                 visited_vertex_flag.as<char>(),
