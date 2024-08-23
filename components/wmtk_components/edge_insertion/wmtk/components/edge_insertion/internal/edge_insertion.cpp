@@ -10,6 +10,9 @@
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
+#include <wmtk/operations/attribute_update/make_cast_attribute_transfer_strategy.hpp>
 
 #include <igl/edges.h>
 
@@ -126,7 +129,7 @@ bool segment_segment_inter(
 #ifndef NDEBUG
     const Vector2r p1 = (1 - t1) * s1 + t1 * e1;
 
-    assert(res[0] == p1[0] && res[1] == p1[1] && res[2] == p1[2]);
+    assert(res[0] == p1[0] && res[1] == p1[1]);
 #endif
     return true;
 }
@@ -236,9 +239,9 @@ std::vector<int64_t> cyclic_order(const std::vector<Vector2r>& V)
         if (qa == qb) {
             auto a = V[ai];
             auto b = V[bi];
-            return b[0] * a[1] < a[0] * b[1];
+            return b[0] * a[1] > a[0] * b[1];
         } else {
-            return qa < qb;
+            return qa > qb;
         }
     };
     // we need to sort D and quadrants simultaneously, easier to just sort
@@ -257,101 +260,149 @@ void dfs_triangulate_aux(
     std::vector<std::vector<std::tuple<int64_t, bool, bool>>>& VV,
     std::vector<Vector2r>& V_pos,
     std::vector<int64_t>& stack,
-    std::vector<bool>& in_stack,
-    std::vector<bool>& is_on_input,
-    std::vector<int64_t>& in_stack_idx,
+    std::vector<int>& in_stack,
+    std::vector<int>& is_on_input,
+    std::vector<int>& is_used,
+    std::vector<std::vector<int64_t>>& in_stack_idx,
     const Vector2r& prev_vector,
     const int64_t v_prev,
     std::vector<std::array<int64_t, 3>>& FV,
-    std::vector<std::array<bool, 3>>& local_e_on_input)
+    std::vector<std::array<int, 3>>& local_e_on_input)
 {
-    if (in_stack[v]) {
+    if (in_stack[v] == 1) {
         // got a polygon, triangulate it
-        const int64_t begin_idx = in_stack_idx[v];
+        const int64_t begin_idx = in_stack_idx[v].back();
         const int64_t end_idx = stack.size() - 1;
 
-        assert(end_idx - begin_idx >= 2);
+        bool new_poly = true;
+        for (int64_t i = begin_idx; i < end_idx; ++i) {
+            if (is_used[i]) {
+                new_poly = false;
+                break;
+            }
+        }
 
-        if (end_idx - begin_idx == 2) {
-            // triangle case
-            FV.push_back({{stack[begin_idx], stack[begin_idx + 1], stack[end_idx]}});
-            local_e_on_input.push_back(
-                {{is_on_input[begin_idx + 1], is_on_input[end_idx], is_on_input[begin_idx]}});
-        } else {
-            // polygon case
-            // add vertex in the center
-            Vector2r centroid(0, 0);
-            int64_t centroid_idx = V_pos.size();
-            for (int64_t i = begin_idx; i < end_idx + 1; ++i) {
-                centroid = centroid + V_pos[stack[i]];
-                FV.push_back({{stack[i], stack[begin_idx + (i + 1) % stack.size()], centroid_idx}});
-                local_e_on_input.push_back({{false, false, is_on_input[i]}});
+        if (new_poly) {
+            assert(end_idx - begin_idx >= 2);
+
+            // set used
+            for (int64_t i = begin_idx; i < end_idx; ++i) {
+                is_used[i] = true;
             }
 
-            V_pos.push_back(centroid / double(end_idx - begin_idx + 1));
+            if (end_idx - begin_idx == 2) {
+                // triangle case
+                FV.push_back({{stack[begin_idx], stack[begin_idx + 1], stack[end_idx]}});
+                local_e_on_input.push_back(
+                    {{is_on_input[begin_idx + 1], is_on_input[end_idx], is_on_input[begin_idx]}});
+            } else {
+                // polygon case
+                // add vertex in the center
+                Vector2r centroid(0, 0);
+                int64_t centroid_idx = V_pos.size();
+                for (int64_t i = begin_idx; i < end_idx + 1; ++i) {
+                    centroid = centroid + V_pos[stack[i]];
+                    int64_t next_stack_idx = (i == end_idx) ? begin_idx : i + 1;
+                    FV.push_back({{stack[i], stack[next_stack_idx], centroid_idx}});
+                    local_e_on_input.push_back({{0, 0, is_on_input[i]}});
+                }
+
+                V_pos.push_back(centroid / double(end_idx - begin_idx + 1));
+            }
+
+            return;
         }
-        return;
     }
 
     stack.push_back(v);
-    in_stack[v] = true;
-    in_stack_idx[v] = stack.size() - 1;
+    in_stack[v] = 1;
+    in_stack_idx[v].push_back(stack.size() - 1);
+
+    std::map<int64_t, int64_t> global_to_local_idx;
+    for (int64_t i = 0; i < VV[v].size(); ++i) {
+        global_to_local_idx[std::get<0>(VV[v][i])] = i;
+    }
 
 
     std::vector<Vector2r> out_vec;
     std::vector<int64_t> out_vertices;
 
+    // debug use
+    std::vector<std::array<double, 2>> out_vec_double;
+    std::array<double, 2> prev_vec_double = {
+        {prev_vector[0].to_double(), prev_vector[1].to_double()}};
+
     // compute cyclic order (cw)
     for (int64_t i = 0; i < VV[v].size(); ++i) {
+        if (std::get<0>(VV[v][i]) == v_prev) {
+            // skip prev vertex
+            continue;
+        }
         out_vec.push_back(V_pos[std::get<0>(VV[v][i])] - V_pos[v]);
+        out_vec_double.push_back(
+            {{(V_pos[std::get<0>(VV[v][i])] - V_pos[v])[0].to_double(),
+              (V_pos[std::get<0>(VV[v][i])] - V_pos[v])[1].to_double()}});
         out_vertices.push_back(std::get<0>(VV[v][i]));
     }
+
+    // also send prev_vec into sort
+    out_vec.push_back(prev_vector);
+    out_vertices.push_back(-1);
+
+    int64_t base_idx = out_vec.size() - 1;
 
     auto cyclic_order_idx = cyclic_order(out_vec);
 
     // get all ccw vertices
     std::vector<int64_t> ccw_vertices;
     std::vector<Vector2r> ccw_vec;
+    std::vector<int64_t> ccw_local_idx;
 
-    int64_t first_ccw = 0;
-    while (prev_vector[0] * out_vec[cyclic_order_idx[first_ccw]][1] -
-               prev_vector[1] * out_vec[cyclic_order_idx[first_ccw]][0] >=
-           0) {
-        // get to the fisrt cw
-        first_ccw++;
+    int64_t start_idx = -1;
+    for (int64_t i = 0; i < cyclic_order_idx.size(); ++i) {
+        if (cyclic_order_idx[i] == base_idx) {
+            start_idx = i;
+            break;
+        }
     }
+    assert(start_idx > -1);
 
-    while (prev_vector[0] * out_vec[cyclic_order_idx[first_ccw]][1] -
-               prev_vector[1] * out_vec[cyclic_order_idx[first_ccw]][0] <
-           0) {
-        // get to the fisrt ccw
-        first_ccw++;
-    }
+    // handle colinear out, should be at most one
 
-    int64_t last_ccw = (first_ccw + 1) % out_vec.size();
+    bool has_colinear_out = false;
+    int64_t colinear_out_idx = -1;
+    int64_t iter = (start_idx + 1) % out_vec.size();
 
-    while (prev_vector[0] * out_vec[cyclic_order_idx[last_ccw]][1] -
-               prev_vector[1] * out_vec[cyclic_order_idx[last_ccw]][0] >=
-           0) {
-        // get to the last ccw
-        last_ccw = (last_ccw + 1) % out_vec.size();
-    }
-    last_ccw = (last_ccw + out_vec.size() - 1) % out_vec.size();
-
-    int64_t iter = first_ccw;
-    while (iter != last_ccw) {
-        ccw_vertices.push_back(out_vertices[cyclic_order_idx[iter]]);
-        ccw_vec.push_back(out_vec[cyclic_order_idx[iter]]);
+    if (prev_vector[0] * out_vec[cyclic_order_idx[iter]][1] ==
+        prev_vector[1] * out_vec[cyclic_order_idx[iter]][0]) {
+        has_colinear_out = true;
+        colinear_out_idx = iter;
         iter = (iter + 1) % out_vec.size();
     }
-    ccw_vertices.push_back(out_vertices[cyclic_order_idx[iter]]);
-    ccw_vec.push_back(out_vec[cyclic_order_idx[iter]]);
+
+    while (iter != start_idx) {
+        if (prev_vector[0] * out_vec[cyclic_order_idx[iter]][1] >=
+            prev_vector[1] * out_vec[cyclic_order_idx[iter]][0]) {
+            ccw_vertices.push_back(out_vertices[cyclic_order_idx[iter]]);
+            ccw_vec.push_back(out_vec[cyclic_order_idx[iter]]);
+        }
+        iter = (iter + 1) % out_vec.size();
+    }
+
+    if (has_colinear_out) {
+        ccw_vertices.push_back(out_vertices[cyclic_order_idx[colinear_out_idx]]);
+        ccw_vec.push_back(out_vec[cyclic_order_idx[colinear_out_idx]]);
+    }
 
     // dfs on all ccw vertices
 
     for (int64_t i = 0; i < ccw_vertices.size(); ++i) {
-        if (!std::get<2>(VV[v][ccw_vertices[i]])) {
-            is_on_input.push_back(std::get<1>(VV[v][ccw_vertices[i]]));
+        if (!std::get<2>(VV[v][global_to_local_idx[ccw_vertices[i]]]) &&
+            ccw_vertices[i] != v_prev) {
+            is_on_input.push_back(
+                (std::get<1>(VV[v][global_to_local_idx[ccw_vertices[i]]])) ? 1 : 0);
+            is_used.push_back(0);
+            std::get<2>(VV[v][global_to_local_idx[ccw_vertices[i]]]) = true;
             dfs_triangulate_aux(
                 ccw_vertices[i],
                 VV,
@@ -359,32 +410,35 @@ void dfs_triangulate_aux(
                 stack,
                 in_stack,
                 is_on_input,
+                is_used,
                 in_stack_idx,
                 ccw_vec[i],
                 v,
                 FV,
                 local_e_on_input);
-            std::get<2>(VV[v][ccw_vertices[i]]) = true;
+            // std::get<2>(VV[v][ccw_vertices[i]]) = true;
+            is_on_input.pop_back();
+            is_used.pop_back();
         }
     }
 
     stack.pop_back();
-    in_stack[v] = false;
-    in_stack_idx[v] = -1;
-    is_on_input.pop_back();
+    in_stack[v] = 0;
+    in_stack_idx[v].pop_back();
 }
 
 void dfs_triangulate(
     std::vector<std::vector<std::tuple<int64_t, bool, bool>>>& VV,
     std::vector<Vector2r>& V_pos,
     std::vector<std::array<int64_t, 3>>& FV,
-    std::vector<std::array<bool, 3>>& local_e_on_input)
+    std::vector<std::array<int, 3>>& local_e_on_input)
 {
-    std::vector<bool> in_stack(VV.size(), false);
-    std::vector<int64_t> in_stack_idx(VV.size(), -1);
+    std::vector<int> in_stack(VV.size(), 0);
+    std::vector<std::vector<int64_t>> in_stack_idx(VV.size());
 
     std::vector<int64_t> stack;
-    std::vector<bool> is_on_input;
+    std::vector<int> is_on_input;
+    std::vector<int> is_used;
 
     Vector2r prev_vector(1, 0);
     int64_t v_cur = -1;
@@ -392,11 +446,14 @@ void dfs_triangulate(
 
     for (int64_t i = 0; i < VV.size(); ++i) {
         stack.push_back(i);
-        in_stack[i] = true;
-        in_stack_idx[i] = stack.size() - 1;
+        in_stack[i] = 1;
+        in_stack_idx[i].push_back(stack.size() - 1);
 
         for (int64_t j = 0; j < VV[i].size(); ++j) {
             if (!std::get<2>(VV[i][j])) {
+                is_on_input.push_back((std::get<1>(VV[i][j])) ? 1 : 0);
+                is_used.push_back(0);
+                std::get<2>(VV[i][j]) = true;
                 dfs_triangulate_aux(
                     std::get<0>(VV[i][j]),
                     VV,
@@ -404,18 +461,21 @@ void dfs_triangulate(
                     stack,
                     in_stack,
                     is_on_input,
+                    is_used,
                     in_stack_idx,
                     V_pos[std::get<0>(VV[i][j])] - V_pos[i],
                     i,
                     FV,
                     local_e_on_input);
-                std::get<2>(VV[i][j]) = true;
+                // std::get<2>(VV[i][j]) = true;
+                is_on_input.pop_back();
+                is_used.pop_back();
             }
         }
 
         stack.pop_back();
-        in_stack[i] = false;
-        in_stack_idx[i] = -1;
+        in_stack[i] = 0;
+        in_stack_idx[i].pop_back();
     }
 }
 
@@ -424,7 +484,7 @@ void edge_insertion(
     EdgeMesh& edgemesh,
     std::vector<Vector2r>& v_final,
     std::vector<std::array<int64_t, 3>>& FV_new,
-    std::vector<std::array<bool, 3>>& local_e_on_input)
+    std::vector<std::array<int, 3>>& local_e_on_input)
 {
     TriMesh trimesh(
         std::move(_trimesh)); // make a full copy here. we may not want to change the input
@@ -506,8 +566,14 @@ void edge_insertion(
     auto position_accessor = trimesh.create_accessor<Rational>(position_handle);
 
     auto segment_index_handle =
-        trimesh.register_attribute<int64_t>("segment_index", PrimitiveType::Vertex, 1, -1);
+        trimesh.register_attribute<int64_t>("segment_index", PrimitiveType::Vertex, 1, false, -1);
     auto segment_index_accessor = trimesh.create_accessor<int64_t>(segment_index_handle);
+
+    std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
+    pass_through_attributes.push_back(bbox_min_handle);
+    pass_through_attributes.push_back(bbox_max_handle);
+    pass_through_attributes.push_back(position_handle);
+    pass_through_attributes.push_back(segment_index_handle);
 
     for (const auto& f : trimesh.get_all(PrimitiveType::Triangle)) {
         // compute bounding box
@@ -558,6 +624,20 @@ void edge_insertion(
                 case 0: {
                     // inside
                     wmtk::operations::composite::TriFaceSplit facesplit(trimesh);
+
+                    for (const auto& attr : pass_through_attributes) {
+                        facesplit.split().set_new_attribute_strategy(
+                            attr,
+                            wmtk::operations::SplitBasicStrategy::None,
+                            wmtk::operations::SplitRibBasicStrategy::None);
+                    }
+
+                    for (const auto& attr : pass_through_attributes) {
+                        facesplit.collapse().set_new_attribute_strategy(
+                            attr,
+                            wmtk::operations::CollapseBasicStrategy::None);
+                    }
+
                     const auto new_v =
                         facesplit(wmtk::simplex::Simplex::face(trimesh, f)).front().tuple();
 
@@ -589,8 +669,17 @@ void edge_insertion(
                 case 1: {
                     // on 01
                     wmtk::operations::EdgeSplit split(trimesh);
+
+                    for (const auto& attr : pass_through_attributes) {
+                        split.set_new_attribute_strategy(
+                            attr,
+                            wmtk::operations::SplitBasicStrategy::None,
+                            wmtk::operations::SplitRibBasicStrategy::None);
+                    }
+
                     const auto new_v =
                         split(wmtk::simplex::Simplex::edge(trimesh, f)).front().tuple();
+
 
                     // assign position
                     position_accessor.vector_attribute(new_v) = p;
@@ -637,6 +726,13 @@ void edge_insertion(
                     // on 12
 
                     wmtk::operations::EdgeSplit split(trimesh);
+                    for (const auto& attr : pass_through_attributes) {
+                        split.set_new_attribute_strategy(
+                            attr,
+                            wmtk::operations::SplitBasicStrategy::None,
+                            wmtk::operations::SplitRibBasicStrategy::None);
+                    }
+
                     const auto new_v = split(wmtk::simplex::Simplex::edge(
                                                  trimesh,
                                                  trimesh.switch_tuples(
@@ -689,6 +785,13 @@ void edge_insertion(
                 case 3: {
                     // on 23
                     wmtk::operations::EdgeSplit split(trimesh);
+
+                    for (const auto& attr : pass_through_attributes) {
+                        split.set_new_attribute_strategy(
+                            attr,
+                            wmtk::operations::SplitBasicStrategy::None,
+                            wmtk::operations::SplitRibBasicStrategy::None);
+                    }
                     const auto new_v = split(wmtk::simplex::Simplex::edge(
                                                  trimesh,
                                                  trimesh.switch_tuple(f, PrimitiveType::Edge)))
@@ -762,6 +865,8 @@ void edge_insertion(
         }
     }
 
+    trimesh.consolidate();
+
     // get vertex map segment -> trimesh
     std::vector<int64_t> v_map_seg_to_tri(V_edge.rows());
 
@@ -802,11 +907,15 @@ void edge_insertion(
         segments.emplace_back(v_final[edges(i, 0)], v_final[edges(i, 1)], edges(i, 0), edges(i, 1));
     }
 
-    const int64_t not_on_input_cnt = segments.size();
+    // remap EV
+    for (int i = 0; i < EV.size(); ++i) {
+        EV[i][0] = v_map_seg_to_tri[EV[i][0]];
+        EV[i][1] = v_map_seg_to_tri[EV[i][1]];
+    }
 
     for (int64_t i = 0; i < EV.size(); ++i) {
-        const int64_t idx0 = v_map_seg_to_tri[EV[i][0]];
-        const int64_t idx1 = v_map_seg_to_tri[EV[i][1]];
+        const int64_t idx0 = EV[i][0];
+        const int64_t idx1 = EV[i][1];
         const Vector2r p0 = v_final[idx0];
         const Vector2r p1 = v_final[idx1];
 
@@ -830,14 +939,15 @@ void edge_insertion(
                 if ((s.p0 == seg.p0 && s.p1 == seg.p1) || (s.p0 == seg.p1 && s.p1 == seg.p0)) {
                     // s exists in segments, break
                     s_already_exist = true;
+                    seg.is_on_input = true;
                     break;
                 }
 
                 // deprecate seg, adding new segments
                 seg.deprecated = true;
 
-                std::vector<std::pair<int64_t, Vector2r>> all_points(
-                    s.points_on_segment.size() + seg.points_on_segment.size());
+                std::vector<std::pair<int64_t, Vector2r>> all_points;
+                all_points.reserve(s.points_on_segment.size() + seg.points_on_segment.size());
 
                 for (const auto& p : s.points_on_segment) {
                     all_points.push_back(p);
@@ -900,6 +1010,8 @@ void edge_insertion(
                         s0.points_on_segment.push_back(all_points[k]);
                     }
 
+                    s0.is_on_input = seg.is_on_input;
+
                     new_segments.push_back(s0);
                 }
 
@@ -917,6 +1029,8 @@ void edge_insertion(
                     for (int64_t k = end_idx + 1; k < all_points.size() - 1; ++k) {
                         s1.points_on_segment.push_back(all_points[k]);
                     }
+
+                    s1.is_on_input = seg.is_on_input;
 
                     new_segments.push_back(s1);
                 }
@@ -958,7 +1072,7 @@ void edge_insertion(
 
             if (!v_exist_on_0 && !v_exist_on_1) {
                 v_final.push_back(res);
-                new_v_idx = v_final.size();
+                new_v_idx = v_final.size() - 1;
             }
 
             assert(new_v_idx > -1);

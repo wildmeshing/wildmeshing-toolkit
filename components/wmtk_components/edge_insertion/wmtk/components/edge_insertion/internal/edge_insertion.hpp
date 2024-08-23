@@ -132,6 +132,6 @@ void edge_insertion(
     EdgeMesh& edgemesh,
     std::vector<Vector2r>& v_final,
     std::vector<std::array<int64_t, 3>>& FV_new,
-    std::vector<std::array<bool, 3>>& local_e_on_input);
+    std::vector<std::array<int, 3>>& local_e_on_input);
 
 } // namespace wmtk::components::internal

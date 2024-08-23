@@ -4,6 +4,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/components/multimesh_from_tag/internal/MultiMeshFromTag.hpp>
+#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
@@ -27,7 +28,7 @@ void edge_insertion(const base::Paths& paths, const nlohmann::json& j, io::Cache
 
     std::vector<Vector2r> v_final;
     std::vector<std::array<int64_t, 3>> FV_new;
-    std::vector<std::array<bool, 3>> local_e_on_input;
+    std::vector<std::array<int, 3>> local_e_on_input;
 
     wmtk::logger().info("start edge insertion ...");
 
@@ -67,9 +68,9 @@ void edge_insertion(const base::Paths& paths, const nlohmann::json& j, io::Cache
         const auto& e02 = m->switch_tuple(e01, PrimitiveType::Edge);
         const auto& e12 = m->switch_tuples(e01, {PrimitiveType::Vertex, PrimitiveType::Edge});
 
-        input_accessor.scalar_attribute(e01) = local_e_on_input[i][2] ? 1 : 0;
-        input_accessor.scalar_attribute(e02) = local_e_on_input[i][1] ? 1 : 0;
-        input_accessor.scalar_attribute(e12) = local_e_on_input[i][0] ? 1 : 0;
+        input_accessor.scalar_attribute(e01) = local_e_on_input[i][2];
+        input_accessor.scalar_attribute(e02) = local_e_on_input[i][1];
+        input_accessor.scalar_attribute(e12) = local_e_on_input[i][0];
     }
 
     std::shared_ptr<Mesh> input_mesh;
@@ -80,6 +81,25 @@ void edge_insertion(const base::Paths& paths, const nlohmann::json& j, io::Cache
     input_mesh = m->get_child_meshes().back();
 
     mmft.remove_soup();
+
+    auto pt_attribute = m->get_attribute_handle<Rational>("vertices", PrimitiveType::Vertex);
+
+    for (auto child : m->get_child_meshes()) {
+        auto child_position_handle = child->register_attribute<Rational>(
+            "vertices",
+            PrimitiveType::Vertex,
+            m->get_attribute_dimension(pt_attribute.as<Rational>()));
+
+        auto propagate_to_child_position =
+            [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<Rational> { return P; };
+        auto update_child_positon =
+            std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<Rational, Rational>>(
+                child_position_handle,
+                pt_attribute,
+                propagate_to_child_position);
+        update_child_positon->run_on_all();
+    }
+
 
     std::map<std::string, std::vector<int64_t>> names;
 
