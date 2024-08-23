@@ -26,6 +26,32 @@ std::string number_to_hex(int64_t l)
     return fmt::format("{0:x}", l);
 }
 
+const std::filesystem::path create_unique_file(
+    const std::string& filename,
+    const std::string& extension,
+    size_t max_tries = 1000)
+{
+    const std::string timestamp = number_to_hex(nanoseconds_timestamp());
+
+    for (size_t i = 0; i < max_tries; ++i) {
+        const fs::path p = filename + "_" + timestamp + "_" + number_to_hex(i) + extension;
+
+        if (fs::exists(p)) {
+            continue;
+        }
+
+        // try to touch the file
+        std::ofstream ofs(p);
+        if (ofs.is_open()) {
+            ofs.close();
+            return p;
+        }
+        ofs.close();
+    }
+
+    wmtk::log_and_throw_error("Could not generate unique file with name `{}`", filename);
+}
+
 namespace wmtk::io {
 
 Cache::Cache(Cache&& o)
@@ -185,12 +211,13 @@ void Cache::load_multimesh(const std::string& name) const
                 // cmm.load(it->second);
 
                 // HACK because Mesh cannot be copied
+                const fs::path dummy = create_unique_file("cache_dummy", ".hdf5");
                 Mesh& m = *(it->second);
-                HDF5Writer writer("dummy.hdf5");
+                HDF5Writer writer(dummy);
                 m.serialize(writer, &m);
-                cmm.load("dummy.hdf5");
+                cmm.load(dummy);
 
-                fs::remove("dummy.hdf5");
+                fs::remove(dummy);
             }
         }
     }
