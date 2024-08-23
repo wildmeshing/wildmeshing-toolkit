@@ -43,6 +43,8 @@ subdart_maximal_action_to_face(int8_t dart_index, int8_t simplex_dimension, int8
             {subdart_preserving_action_1[dart_index][simplex_index],
              max_subdart_preservation_dimension_1[dart_index][simplex_index]}};
 
+    case 2: return std::array<int8_t, 2>{{SimplexDart::identity(), 2}};
+
     default: break;
     }
     assert(false);

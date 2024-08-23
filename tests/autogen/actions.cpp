@@ -1,4 +1,3 @@
-#include <spdlog/spdlog.h>
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/autogen/is_ccw.hpp>
@@ -278,7 +277,6 @@ TEST_CASE("maximal_subdart_switches", "[tuple]")
     // when other meshes are available add them here
     for (PrimitiveType mesh_type :
          {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
-        spdlog::info("Checking out {}", primitive_type_name(mesh_type));
         autogen::SimplexDart sd(mesh_type);
         for (int8_t index = 0; index < sd.size(); ++index) {
             for (PrimitiveType simplex_type :
@@ -313,6 +311,7 @@ TEST_CASE("maximal_subdart_switches", "[tuple]")
 
                     int8_t mapped_index = sd.product(act, index);
                     CHECK(equal_subdart_dimension(mesh_type, index, mapped_index) == size);
+                    CHECK(sd.simplex_index(mapped_index, simplex_type) == simplex_index);
                 }
             }
         }

@@ -170,14 +170,26 @@ def face_changing_subdart_tables(sc, dimension):
     #print(dimension)
     # for each valid tuple, find the best way to map it to another simplex
 
+
+        
+    def compute_preserved_dim(action):
+        act = sc.valid_tuple_from_valid_index(action)
+        s = sc.valid_tuple_as_simplicial_set(act)
+        for i,j in enumerate(s):
+            if i != j:
+                return i
+        return len(s) - 1
     num_valid = sc.valid_tuple_size()
     num_faces = len(sc[dimension])
     action = [[-1 for _ in range(num_faces)] for _ in range(num_valid)]
     max_dim = [[-1 for _ in range(num_faces)] for _ in range(num_valid)]
     
+    # for each tuple, for each simplex at the given dimension
     for vindex, vt in enumerate(sc.valid_tuples()):
         ss = sc.valid_tuple_as_simplicial_set(vt)
         target = frozenset(ss[:dimension+1])
+
+
         for index, s in enumerate(sc[dimension]):
             #print(f"Mapping {ss} to {s}")
             subss = None
@@ -225,7 +237,10 @@ def face_changing_subdart_tables(sc, dimension):
 
                 #print(f"Found Permutation {aindex}:", p, "preserves", max_s)
                 action[vindex][index] = aindex
-                max_dim[vindex][index] = preserved_dims
+                # max_dim[vindex][index] = preserved_dims
+                max_dim[vindex][index] = compute_preserved_dim(aindex) 
+
+                # print(preserved_dims,compute_preserved_dim(aindex),  p)
                 if aindex == sc.identity_valid_index():
                     break
             #print()
