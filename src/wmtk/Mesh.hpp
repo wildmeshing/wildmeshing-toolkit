@@ -123,7 +123,6 @@ public:
     friend class operations::EdgeOperationData;
 
 
-
     int64_t top_cell_dimension() const;
     PrimitiveType top_simplex_type() const;
     bool is_free() const;
@@ -132,8 +131,12 @@ public:
     std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
     std::map<std::string, std::size_t> child_hashes() const override;
 
-    // dimension is the dimension of the top level simplex in this mesh
-    // That is, a TriMesh is a 2, a TetMesh is a 3
+    /*
+     * @brief Construct a mesh with a given simplex dimension.
+     *
+     * @param dimension The dimension of the top level simplex in this mesh. That is, a TriMesh is a
+     * 2, a TetMesh is a 3.
+     */
     Mesh(const int64_t& dimension);
     // maximum primitive type id for supported attribute primitive locations
     Mesh(const int64_t& dimension, const int64_t& max_primitive_type_id, PrimitiveType hash_type);
@@ -142,6 +145,11 @@ public:
     Mesh& operator=(const Mesh& other) = delete;
     Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
+
+    /**
+     * @brief Creates a copy of the mesh.
+     */
+    std::shared_ptr<Mesh> copy() const;
 
     void serialize(MeshWriter& writer, const Mesh* local_root = nullptr) const;
 

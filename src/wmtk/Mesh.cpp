@@ -41,6 +41,24 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted)
     return ret;
 }
 
+std::shared_ptr<Mesh> Mesh::copy() const
+{
+    std::shared_ptr<Mesh> other;
+    switch (top_cell_dimension()) {
+    case 0: other = std::make_shared<PointMesh>(); break;
+    case 1: other = std::make_shared<EdgeMesh>(); break;
+    case 2: other = std::make_shared<TriMesh>(); break;
+    case 3: other = std::make_shared<TetMesh>(); break;
+    default: break;
+    }
+
+    other->m_attribute_manager = this->m_attribute_manager;
+    other->m_multi_mesh_manager = this->m_multi_mesh_manager;
+    other->m_is_free = this->m_is_free;
+
+    return other;
+}
+
 void Mesh::serialize(MeshWriter& writer, const Mesh* local_root) const
 {
     if (local_root == nullptr) {
@@ -61,7 +79,6 @@ bool Mesh::is_boundary(const simplex::Simplex& s) const
 }
 
 
-
 bool Mesh::is_valid(const Tuple& tuple) const
 {
     return !tuple.is_null() && !is_removed(tuple);
@@ -79,8 +96,9 @@ bool Mesh::is_removed(const Tuple& t, PrimitiveType pt) const
         return false;
     }
 }
-simplex::Simplex Mesh::simplex_from_id(const PrimitiveType pt, const int64_t gid) const {
-    return simplex::Simplex(pt, tuple_from_id(pt,gid),gid);
+simplex::Simplex Mesh::simplex_from_id(const PrimitiveType pt, const int64_t gid) const
+{
+    return simplex::Simplex(pt, tuple_from_id(pt, gid), gid);
 }
 bool Mesh::is_removed(int64_t index) const
 {
@@ -111,8 +129,6 @@ attribute::Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
 {
     return create_accessor(m_flag_handles.at(get_primitive_type_id(type)));
 }
-
-
 
 
 void Mesh::set_capacities_from_flags()
@@ -158,7 +174,6 @@ Tuple Mesh::switch_tuples_unsafe(
 {
     return switch_tuples_unsafe<std::initializer_list<PrimitiveType>>(tuple, op_sequence);
 }
-
 
 
 void Mesh::assert_capacity_valid() const

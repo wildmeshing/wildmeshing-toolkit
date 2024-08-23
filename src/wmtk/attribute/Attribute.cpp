@@ -34,6 +34,16 @@ template <typename T>
 Attribute<T>::Attribute(Attribute&& o) = default;
 
 template <typename T>
+Attribute<T>::Attribute(const Attribute& o)
+{
+    m_data = o.m_data;
+    m_scope_stacks = o.m_scope_stacks;
+    m_dimension = o.m_dimension;
+    m_default_value = o.m_default_value;
+    m_name = o.m_name;
+}
+
+template <typename T>
 std::map<std::string, size_t> Attribute<T>::child_hashes() const
 {
     std::map<std::string, size_t> hashes;

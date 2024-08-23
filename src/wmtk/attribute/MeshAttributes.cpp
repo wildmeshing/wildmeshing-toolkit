@@ -14,7 +14,32 @@
 #include <utility>
 
 namespace wmtk::attribute {
+template <typename T>
+MeshAttributes<T>::MeshAttributes(const MeshAttributes& o)
+    : m_handles(o.m_handles)
+    , m_reserved_size(o.m_reserved_size)
+{
+    m_attributes.clear();
+    m_attributes.resize(o.m_attributes.size());
+    for (size_t i = 0; i < o.m_attributes.size(); ++i) {
+        m_attributes[i] = std::make_unique<Attribute<T>>(*o.m_attributes[i]);
+    }
+}
 
+template <typename T>
+MeshAttributes<T>& MeshAttributes<T>::operator=(const MeshAttributes& o)
+{
+    m_handles = o.m_handles;
+    m_reserved_size = o.m_reserved_size;
+
+    m_attributes.clear();
+    m_attributes.resize(o.m_attributes.size());
+    for (size_t i = 0; i < o.m_attributes.size(); ++i) {
+        m_attributes[i] = std::make_unique<Attribute<T>>(*o.m_attributes[i]);
+    }
+
+    return *this;
+}
 
 template <typename T>
 void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer) const

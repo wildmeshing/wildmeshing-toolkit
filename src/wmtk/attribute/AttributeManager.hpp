@@ -22,7 +22,7 @@ public:
     ~AttributeManager();
     AttributeManager(const AttributeManager& o) = delete;
     AttributeManager(AttributeManager&& o) = default;
-    AttributeManager& operator=(const AttributeManager& o) = delete;
+    AttributeManager& operator=(const AttributeManager& o) = default;
     AttributeManager& operator=(AttributeManager&& o) = default;
 
     //=========================================================
@@ -122,8 +122,7 @@ public:
      */
     void clear_attributes(
         const std::vector<attribute::MeshAttributeHandle::HandleVariant>& custom_attributes);
-    void delete_attribute(
-        const attribute::MeshAttributeHandle::HandleVariant& to_delete);
+    void delete_attribute(const attribute::MeshAttributeHandle::HandleVariant& to_delete);
 };
 
 template <typename T>

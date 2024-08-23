@@ -10,6 +10,7 @@ public:
     PerThreadAttributeScopeStacks() = default;
     PerThreadAttributeScopeStacks(PerThreadAttributeScopeStacks&&) = default;
     PerThreadAttributeScopeStacks& operator=(PerThreadAttributeScopeStacks&&) = default;
+    PerThreadAttributeScopeStacks& operator=(const PerThreadAttributeScopeStacks& o) = default;
     internal::AttributeTransactionStack<T>& local();
     const internal::AttributeTransactionStack<T>& local() const;
 
@@ -17,7 +18,6 @@ private:
     // single stack so far
     mutable internal::AttributeTransactionStack<T> m_stack;
 };
-
 
 template <typename T>
 inline internal::AttributeTransactionStack<T>& PerThreadAttributeScopeStacks<T>::local()
