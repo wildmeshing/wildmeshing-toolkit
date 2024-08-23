@@ -131,13 +131,15 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
     }
 }
 
-TEST_CASE("mesh_copy", "[mesh]")
+TEST_CASE("mesh_copy", "[mesh][.]")
 {
     std::shared_ptr<Mesh> m1 = std::make_shared<TriMesh>(tests::single_triangle());
     std::shared_ptr<Mesh> m2 = m1->copy();
 
     CHECK(*m1 == *m2);
     CHECK_FALSE(m1 == m2);
+
+    CHECK(m2->get_all(PrimitiveType::Vertex).size() == 3);
 
     m1->register_attribute<int64_t>("a", PrimitiveType::Triangle, 1);
     CHECK_FALSE(*m1 == *m2);

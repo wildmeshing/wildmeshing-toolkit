@@ -208,16 +208,16 @@ void Cache::load_multimesh(const std::string& name) const
             if (it == m_meshes.end()) {
                 log_and_throw_error("A mesh with the name {} does not exist", mm_name);
             } else {
-                // cmm.load(it->second);
-
                 // HACK because Mesh cannot be copied
                 const fs::path dummy = create_unique_file("cache_dummy", ".hdf5");
                 Mesh& m = *(it->second);
                 HDF5Writer writer(dummy);
                 m.serialize(writer, &m);
                 cmm.load(dummy);
-
                 fs::remove(dummy);
+
+                //// the proper way but the copy function is broken
+                // cmm.load(it->second->copy());
             }
         }
     }
