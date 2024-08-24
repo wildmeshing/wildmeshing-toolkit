@@ -3,6 +3,7 @@
 #include <wmtk/autogen/is_ccw.hpp>
 #include <wmtk/autogen/local_dart_action.hpp>
 #include <wmtk/autogen/local_switch_tuple.hpp>
+#include <wmtk/autogen/utils/largest_shared_subdart_size.hpp>
 #include <wmtk/autogen/utils/subdart_maximal_action_to_face.hpp>
 #include "tools/DEBUG_Tuple.hpp"
 #include "tools/all_valid_local_tuples.hpp"
@@ -299,7 +300,7 @@ TEST_CASE("maximal_subdart_switches", "[tuple]")
                         index,
                         simplex_type,
                         simplex_index);
-                    auto s = wmtk::autogen::utils::subdart_maximal_action_to_face_size(
+                    auto s = wmtk::autogen::utils::largest_shared_subdart_size(
                         mesh_type,
                         index,
                         simplex_type,
