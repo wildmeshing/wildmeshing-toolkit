@@ -20,7 +20,29 @@
 
 namespace wmtk::multimesh {
 
-namespace {} // namespace
+namespace {
+
+
+Tuple find_valid_tuple(
+    Mesh& my_mesh,
+    const wmtk::autogen::Dart& old_dart,
+    const wmtk::operations::EdgeOperationData& data){return std::visit}
+
+Tuple find_valid_tuple(
+    Mesh& my_mesh,
+    const wmtk::autogen::Dart& old_dart,
+    const wmtk::operations::internal::SplitAlternateFacetData& data)
+{
+    data.find_valid_tuple();
+}
+Tuple find_valid_tuple(
+    Mesh& my_mesh,
+    const wmtk::autogen::Dart& old_dart,
+    const wmtk::operations::internal::CollapseAlternateFacetData& data)
+{
+    data.find_valid_tuple();
+}
+} // namespace
 
 
 void MultiMeshManager::update_child_handles(Mesh& my_mesh)
@@ -330,5 +352,17 @@ int64_t MultiMeshManager::parent_local_fid(
 #endif
 }
 
+
+Tuple MultiMeshManager::find_valid_tuple(
+    Mesh& my_mesh,
+    const wmtk::Simplex& old_simplex,
+    const wmtk::operations::EdgeOperationData& data) const
+{
+    const auto& sd = autogen::SimplexDart::get_singletone(my_mesh.top_simplex_type());
+    const PrimitiveType pt = old_simplex.primitive_type();
+    const autogen::Dart dart = sd.dart_from_tuple(old_simplex.tuple());
+
+    return find_valid_tuple(sd, pt, dart);
+}
 
 } // namespace wmtk::multimesh

@@ -497,6 +497,17 @@ protected: // protected to enable unit testing
         const wmtk::attribute::Accessor<int64_t>& child_to_parent,
         int64_t child_gid);
 
+    Tuple find_valid_tuple(
+        Mesh& my_mesh,
+        const wmtk::Simplex& old_simplex,
+        const wmtk::operations::EdgeOperationData& data) const;
+
+
+    // ===============================================================================
+    // ===============================================================================
+    // ===============================================================================
+    // ===============================================================================
+
 
     // internal function for mapping up a multimesh tree by a certain number of edges
     //
