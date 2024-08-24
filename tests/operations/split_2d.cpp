@@ -236,6 +236,7 @@ TEST_CASE("operation_state", "[operations][2D]")
         for (Tuple edge : m.get_all(PrimitiveType::Edge)) {
             REQUIRE(m.is_connectivity_valid());
             auto executor = m.get_tmoe(edge);
+            executor.split_edge_precompute();
 
             REQUIRE(executor.flag_accessors.size() == 3);
             REQUIRE(executor.incident_face_datas().size() == 1);
