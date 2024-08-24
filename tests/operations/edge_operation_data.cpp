@@ -42,6 +42,8 @@ TEST_CASE("split_facet_maps", "[operations][data]")
     CHECK(data.get_alternative_facets_it(1) == scm.cend());
     CHECK(data.get_alternative_facets_it(6) == scm.cend());
     CHECK(data.get_alternative_facets_it(7) == scm.cend());
+
+    //CHECK(data.get_alternate_dart());
 }
 
 
