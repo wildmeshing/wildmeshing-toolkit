@@ -2,8 +2,12 @@
 #include <numeric>
 #include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/autogen/utils/local_id_table_offset.hpp>
+#include <wmtk/autogen/utils/simplex_index_from_valid_index.hpp>
+
+#include <wmtk/utils/TupleInspector.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 #include "tools/all_valid_local_tuples.hpp"
+#include "tools/darts_using_faces.hpp"
 using namespace wmtk;
 using namespace wmtk::autogen;
 using namespace wmtk::tests;
@@ -45,6 +49,14 @@ TEST_CASE("tuple_autogen_index_dart_tuple_conversion", "[tuple]")
             int8_t i = sd.valid_index_from_tuple(t);
             Tuple nt = sd.tuple_from_valid_index(0, i);
 
+            for (PrimitiveType pt = PrimitiveType::Vertex; pt < mesh_type; pt = pt + 1) {
+                CHECK(
+                    sd.simplex_index(i, pt) ==
+                    wmtk::autogen::utils::simplex_index_from_valid_index(mesh_type, i, pt));
+                CHECK(sd.simplex_index(i, pt) == wmtk::utils::TupleInspector::local_id(nt, pt));
+            }
+
+
             CHECK(t == nt);
         }
     }
@@ -78,5 +90,4 @@ TEST_CASE("tuple_autogen_index_dart_group_structure", "[tuple]")
         }
     }
 }
-
 
