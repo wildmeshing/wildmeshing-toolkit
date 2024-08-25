@@ -22,6 +22,10 @@ public:
     const std::array<int64_t, 2>& get_alternative_facets(const int64_t& input_facet) const;
 
     AltData::const_iterator get_alternative_facets_it(const int64_t& input_facet) const;
+    Tuple get_alternative(
+        const PrimitiveType mesh_pt,
+        const Tuple& t,
+        const PrimitiveType simplex_dimension) const;
 };
 
 } // namespace wmtk::operations::internal

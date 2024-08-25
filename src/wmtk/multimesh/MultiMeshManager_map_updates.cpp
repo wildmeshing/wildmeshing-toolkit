@@ -1,14 +1,13 @@
 
 #include <cassert>
-#include <wmtk/utils/vector_hash.hpp>
-#include "MultiMeshManager.hpp"
-//#include <fmt/ranges.h>
 #include <functional>
 #include <wmtk/Mesh.hpp>
-#include <wmtk/attribute/internal/hash.hpp>
+#include <wmtk/autogen/Dart.hpp>
+#include <wmtk/autogen/SimplexDart.hpp>
+#include <wmtk/operations/EdgeOperationData.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
-#include <wmtk/utils/vector_hash.hpp>
+#include "MultiMeshManager.hpp"
 #include "utils/local_switch_tuple.hpp"
 #include "utils/transport_tuple.hpp"
 #include "utils/tuple_map_attribute_io.hpp"
@@ -18,16 +17,19 @@ namespace wmtk::multimesh {
 namespace {
 
 
-wmtk::autogen::Dart find_valid_tuple(
+Tuple find_valid_tuple(
     const Mesh& my_mesh,
-    const wmtk::autogen::Dart& old_dart,
-    PrimitiveType primitive_type,
+    const wmtk::simplex::Simplex& old_simplex,
     const wmtk::operations::EdgeOperationData& data)
 {
-    return std::visit([&](const auto& facet_data) -> wmtk::autogen::Dart {
-        return facet_data.find_alternative(my_mesh.top_simplex_type(), old_dart, dart_type);
-    });
-}
+    return std::visit(
+        [&](const auto& facet_data) -> wmtk::Tuple {
+            return facet_data.find_alternative(
+                my_mesh.top_simplex_type(),
+                old_simplex.tuple(),
+                old_simplex.primitive_type());
+        },
+        data.m_op_data);
 }
 
 } // namespace
@@ -57,7 +59,7 @@ void MultiMeshManager::update_child_handles(Mesh& my_mesh)
 void MultiMeshManager::update_maps_from_edge_operation(
     Mesh& my_mesh,
     PrimitiveType primitive_type,
-    const EdgeOperationData& operation_data)
+    const operations::EdgeOperationData& operation_data)
 {
     auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
     // auto& update_tuple = [&](const auto& flag_accessor, Tuple& t) -> bool {
@@ -463,17 +465,5 @@ int64_t MultiMeshManager::parent_local_fid(
 #endif
 }
 
-
-Tuple MultiMeshManager::find_valid_tuple(
-    Mesh& my_mesh,
-    const wmtk::Simplex& old_simplex,
-    const wmtk::operations::EdgeOperationData& data) const
-{
-    const auto& sd = autogen::SimplexDart::get_singletone(my_mesh.top_simplex_type());
-    const PrimitiveType pt = old_simplex.primitive_type();
-    const autogen::Dart dart = sd.dart_from_tuple(old_simplex.tuple());
-
-    return sd.tuple_from_dart(find_valid_tuple(sd, pt, dart));
-}
 
 } // namespace wmtk::multimesh

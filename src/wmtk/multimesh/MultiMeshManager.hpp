@@ -17,9 +17,12 @@ namespace wmtk {
 
 class Mesh;
 class HDF5Reader;
-namespace operations::utils {
+namespace operations {
+class EdgeOperationData;
+namespace utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
+} // namespace operations
 namespace attribute {
 template <typename T, typename MeshType, int Dim>
 class Accessor;
@@ -447,7 +450,7 @@ protected: // protected to enable unit testing
     void update_maps_from_edge_operation(
         Mesh& my_mesh,
         PrimitiveType primitive_type,
-        const EdgeOperationData& operation_data);
+        const operations::EdgeOperationData& operation_data);
 
 
     // uses the available parameters to find a tuple that is equivalent to old_smiplex but using
@@ -501,11 +504,6 @@ protected: // protected to enable unit testing
     static int64_t parent_local_fid(
         const wmtk::attribute::Accessor<int64_t>& child_to_parent,
         int64_t child_gid);
-
-    Tuple find_valid_tuple(
-        const Mesh& my_mesh,
-        const wmtk::Simplex& old_simplex,
-        const wmtk::operations::EdgeOperationData& data) const;
 
 
     // ===============================================================================
