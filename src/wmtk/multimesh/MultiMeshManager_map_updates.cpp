@@ -6,11 +6,6 @@
 #include <functional>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/attribute/internal/hash.hpp>
-#include <wmtk/simplex/closed_star.hpp>
-#include <wmtk/simplex/cofaces_single_dimension.hpp>
-#include <wmtk/simplex/top_dimension_cofaces.hpp>
-#include <wmtk/simplex/utils/make_unique.hpp>
-#include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 #include <wmtk/utils/vector_hash.hpp>
@@ -23,25 +18,18 @@ namespace wmtk::multimesh {
 namespace {
 
 
-Tuple find_valid_tuple(
-    Mesh& my_mesh,
+wmtk::autogen::Dart find_valid_tuple(
+    const Mesh& my_mesh,
     const wmtk::autogen::Dart& old_dart,
-    const wmtk::operations::EdgeOperationData& data){return std::visit}
+    PrimitiveType primitive_type,
+    const wmtk::operations::EdgeOperationData& data)
+{
+    return std::visit([&](const auto& facet_data) -> wmtk::autogen::Dart {
+        return facet_data.find_alternative(my_mesh.top_simplex_type(), old_dart, dart_type);
+    });
+}
+}
 
-Tuple find_valid_tuple(
-    Mesh& my_mesh,
-    const wmtk::autogen::Dart& old_dart,
-    const wmtk::operations::internal::SplitAlternateFacetData& data)
-{
-    data.find_valid_tuple();
-}
-Tuple find_valid_tuple(
-    Mesh& my_mesh,
-    const wmtk::autogen::Dart& old_dart,
-    const wmtk::operations::internal::CollapseAlternateFacetData& data)
-{
-    data.find_valid_tuple();
-}
 } // namespace
 
 
@@ -66,6 +54,128 @@ void MultiMeshManager::update_child_handles(Mesh& my_mesh)
     }
 }
 
+void MultiMeshManager::update_maps_from_edge_operation(
+    Mesh& my_mesh,
+    PrimitiveType primitive_type,
+    const EdgeOperationData& operation_data)
+{
+    auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
+    // auto& update_tuple = [&](const auto& flag_accessor, Tuple& t) -> bool {
+    //     if(acc.index_access().
+    // };
+
+
+    // go over every child mesh and try to update their hashes
+    for (auto& child_data : children()) {
+        auto& child_mesh = *child_data.mesh;
+        // ignore ones whos map are the wrong dimension
+        if (child_mesh.top_simplex_type() != primitive_type) {
+            continue;
+        }
+        // logger().trace(
+        //     "[{}->{}] Doing a child mesh",
+        //     fmt::join(my_mesh.absolute_multi_mesh_id(), ","),
+        //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
+        //  get accessors to the maps
+        auto maps = get_map_accessors(my_mesh, child_data);
+        auto& [parent_to_child_accessor, child_to_parent_accessor] = maps;
+
+        auto child_flag_accessor = child_mesh.get_const_flag_accessor(primitive_type);
+
+
+        std::vector<bool> is_gid_visited(my_mesh.capacity(primitive_type), false);
+        for (const auto& [original_parent_gid, equivalent_parent_tuples] : simplices_to_update) {
+            if (is_gid_visited.at(original_parent_gid)) {
+                continue;
+            } else {
+                is_gid_visited[original_parent_gid] = true;
+            }
+
+            // logger.trace()(
+            //     "[{}->{}] Trying to update {}",
+            //     fmt::join(my_mesh.absolute_multi_mesh_id(), ","),
+            //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
+            //     original_parent_gid);
+            //  read off the original map's data
+            auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
+                                            .const_vector_attribute(original_parent_gid);
+            // wmtk::attribute::TupleAccessor<wmtk::Mesh> tuple_accessor(m, int64_t_handle);
+
+            // read off the data in the Tuple format
+            Tuple parent_tuple, child_tuple;
+            std::tie(parent_tuple, child_tuple) =
+                wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
+
+            // If the parent tuple is valid, it means this parent-child pair has already been
+            // handled, so we can skip it
+            // If the parent tuple is invalid then there was no map so we can try the next cell
+            if (parent_tuple.is_null()) {
+                continue;
+            }
+
+
+            // check if the map is handled in the ear case
+            // if the child simplex is deleted then we can skip it
+            const bool child_exists = !child_mesh.is_removed(child_tuple);
+            if (!child_exists) {
+                logger().debug("child doesnt exist, skip!");
+                continue;
+            }
+            std::vector<Tuple> equivalent_parent_tuples_good_hash = equivalent_parent_tuples;
+
+            // Find a valid representation of this simplex representation of the original tupl
+            Tuple old_tuple;
+            std::optional<Tuple> old_tuple_opt = find_tuple_from_gid(
+                my_mesh,
+                my_mesh.top_simplex_type(),
+                equivalent_parent_tuples_good_hash,
+                parent_tuple.m_global_cid);
+            // assert(old_tuple_opt.has_value());
+            if (!old_tuple_opt.has_value()) {
+                continue;
+            }
+            simplex::Simplex old_simplex = my_mesh.parent_scope(
+                [&] { return simplex::Simplex(my_mesh, primitive_type, old_tuple_opt.value()); });
+
+            std::optional<Tuple> new_parent_shared_opt = find_valid_tuple(
+                my_mesh,
+                old_simplex,
+                original_parent_gid,
+                equivalent_parent_tuples_good_hash,
+                split_cell_maps);
+
+
+            if (!new_parent_shared_opt.has_value()) {
+                // std::cout << "get skipped, someting is wrong?" << std::endl;
+                continue;
+            }
+            // assert(new_parent_shared_opt.has_value());
+
+            Tuple new_parent_tuple_shared = new_parent_shared_opt.value();
+            // logger().trace(
+            //     "{} => {} ==> {}",
+            //     wmtk::utils::TupleInspector::as_string(old_simplex.tuple()),
+            //     wmtk::utils::TupleInspector::as_string(parent_tuple),
+            //     wmtk::utils::TupleInspector::as_string(child_tuple));
+
+            parent_tuple = wmtk::multimesh::utils::transport_tuple(
+                old_simplex.tuple(),
+                parent_tuple,
+                my_mesh.top_simplex_type(),
+                new_parent_tuple_shared,
+                my_mesh.top_simplex_type());
+            assert(my_mesh.is_valid(parent_tuple));
+            assert(child_mesh.is_valid(child_tuple));
+
+
+            wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
+                parent_to_child_accessor,
+                child_to_parent_accessor,
+                parent_tuple,
+                child_tuple);
+        }
+    }
+}
 
 void MultiMeshManager::update_map_tuple_hashes(
     Mesh& my_mesh,
@@ -173,6 +283,7 @@ void MultiMeshManager::update_map_tuple_hashes(
                 original_parent_gid,
                 equivalent_parent_tuples_good_hash,
                 split_cell_maps);
+
 
             if (!new_parent_shared_opt.has_value()) {
                 // std::cout << "get skipped, someting is wrong?" << std::endl;
@@ -362,7 +473,7 @@ Tuple MultiMeshManager::find_valid_tuple(
     const PrimitiveType pt = old_simplex.primitive_type();
     const autogen::Dart dart = sd.dart_from_tuple(old_simplex.tuple());
 
-    return find_valid_tuple(sd, pt, dart);
+    return sd.tuple_from_dart(find_valid_tuple(sd, pt, dart));
 }
 
 } // namespace wmtk::multimesh

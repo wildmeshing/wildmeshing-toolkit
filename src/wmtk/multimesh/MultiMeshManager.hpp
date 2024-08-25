@@ -444,6 +444,11 @@ protected: // protected to enable unit testing
         const std::vector<std::tuple<int64_t, std::vector<Tuple>>>& simplices_to_update,
         const std::vector<std::tuple<int64_t, std::array<int64_t, 2>>>& split_cell_maps = {});
 
+    void update_maps_from_edge_operation(
+        Mesh& my_mesh,
+        PrimitiveType primitive_type,
+        const EdgeOperationData& operation_data);
+
 
     // uses the available parameters to find a tuple that is equivalent to old_smiplex but using
     // still-existing top level simplices. by equivalent each sub-simplex of old_simplex's tuple
@@ -498,7 +503,7 @@ protected: // protected to enable unit testing
         int64_t child_gid);
 
     Tuple find_valid_tuple(
-        Mesh& my_mesh,
+        const Mesh& my_mesh,
         const wmtk::Simplex& old_simplex,
         const wmtk::operations::EdgeOperationData& data) const;
 
