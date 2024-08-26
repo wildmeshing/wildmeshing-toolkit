@@ -5,40 +5,9 @@
 #include <wmtk/autogen/local_dart_action.hpp>
 #include <wmtk/autogen/local_switch_tuple.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
+#include "ear_actions.hpp"
 namespace wmtk::operations::internal {
 
-namespace {
-auto make_opp_actions() -> std::array<int8_t, 4>
-{
-    std::array<int8_t, 4> darts;
-    darts[0] = 0;
-    for (int8_t j = 1; j < darts.size(); ++j) {
-        PrimitiveType pt = get_primitive_type_from_id(j);
-        wmtk::autogen::SimplexDart sd(pt);
-        darts[j] = sd.opposite();
-    }
-    //
-    return darts;
-}
-auto make_right_ear_darts() -> std::array<int8_t, 4>
-{
-    return make_opp_actions();
-}
-auto make_left_ear_darts() -> std::array<int8_t, 4>
-{
-    auto darts = make_opp_actions();
-    for (int8_t j = 1; j < darts.size(); ++j) {
-        PrimitiveType pt = get_primitive_type_from_id(j);
-        wmtk::autogen::SimplexDart sd(pt);
-        int8_t& action = darts[j];
-        action = sd.product(action, sd.primitive_as_index(wmtk::PrimitiveType::Vertex));
-    }
-    return darts;
-}
-const static std::array<int8_t, 4> left_ear_darts = make_left_ear_darts();
-const static std::array<int8_t, 4> right_ear_darts = make_right_ear_darts();
-
-} // namespace
 CollapseAlternateFacetOptionData::CollapseAlternateFacetOptionData(
     const Mesh& m,
     const autogen::SimplexDart& sd,
@@ -51,8 +20,7 @@ CollapseAlternateFacetOptionData::CollapseAlternateFacetOptionData(
               m.switch_tuple(input_tuple, PrimitiveType::Vertex),
               m.top_simplex_type() - 1),
       }})
-{
-}
+{}
 
 CollapseAlternateFacetOptionData::CollapseAlternateFacetOptionData(
     const Mesh& m,
@@ -66,12 +34,12 @@ CollapseAlternateFacetOptionData::CollapseAlternateFacetOptionData(
 auto CollapseAlternateFacetOptionData::left_switches(const Mesh& m, const Tuple& t) const -> Dart
 {
     const PrimitiveType mesh_type = m.top_simplex_type();
-    return get_neighbor_action(m, t, left_ear_darts[get_primitive_type_id(mesh_type)]);
+    return get_neighbor_action(m, t, left_ear_action(mesh_type));
 }
 auto CollapseAlternateFacetOptionData::right_switches(const Mesh& m, const Tuple& t) const -> Dart
 {
     const PrimitiveType mesh_type = m.top_simplex_type();
-    return get_neighbor_action(m, t, right_ear_darts[get_primitive_type_id(mesh_type)]);
+    return get_neighbor_action(m, t, right_ear_action(mesh_type));
 }
 
 auto CollapseAlternateFacetOptionData::get_neighbor_action(

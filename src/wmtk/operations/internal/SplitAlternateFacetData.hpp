@@ -3,6 +3,7 @@
 #include <array>
 #include <vector>
 #include <wmtk/Tuple.hpp>
+#include "SplitAlternateFacetOptionData.hpp"
 
 namespace wmtk {
 class Mesh;
@@ -13,7 +14,8 @@ namespace wmtk::operations::internal {
 class SplitAlternateFacetData
 {
 public:
-    using AltData = std::vector<std::tuple<int64_t, std::array<int64_t, 2>>>;
+    using Data = SplitAlternateFacetOptionData;
+    using AltData = std::vector<Data>;
     AltData m_facet_maps;
 
     void sort();

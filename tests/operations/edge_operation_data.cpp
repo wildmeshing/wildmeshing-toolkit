@@ -11,39 +11,51 @@
 #include <wmtk/operations/internal/CollapseAlternateFacetData.hpp>
 #include <wmtk/operations/internal/SplitAlternateFacetData.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
+#include <wmtk/utils/primitive_range.hpp>
 #include "../tools/EdgeMesh_examples.hpp"
 #include "tools/DEBUG_Mesh.hpp"
 
 
 TEST_CASE("split_facet_maps", "[operations][data]")
 {
-    wmtk::operations::internal::SplitAlternateFacetData data;
+    for (wmtk::PrimitiveType mesh_pt : wmtk::utils::primitive_range(
+             wmtk::PrimitiveType::Edge,
+             wmtk::PrimitiveType::Tetrahedron)) {
+        wmtk::autogen::SimplexDart sd(mesh_pt);
+        wmtk::operations::internal::SplitAlternateFacetData data;
 
-    auto& scm = data.m_facet_maps;
+        auto& scm = data.m_facet_maps;
 
-    scm.emplace_back(std::tuple{0, std::array<int64_t, 2>{{1, 2}}});
-    scm.emplace_back(std::tuple{4, std::array<int64_t, 2>{{9, 4}}});
-    scm.emplace_back(std::tuple{3, std::array<int64_t, 2>{{8, 5}}});
-    scm.emplace_back(std::tuple{2, std::array<int64_t, 2>{{10, 3}}});
+        const int8_t identity = sd.identity();
+
+        auto add = [&](int64_t index, const std::array<int64_t, 2>& pr) {
+            scm.emplace_back(wmtk::autogen::Dart(index, identity), pr);
+        };
+
+        add(0, std::array<int64_t, 2>{{1, 2}});
+        add(4, std::array<int64_t, 2>{{9, 4}});
+        add(3, std::array<int64_t, 2>{{8, 5}});
+        add(2, std::array<int64_t, 2>{{10, 3}});
 
 
-    data.sort();
+        data.sort();
 
-    CHECK(std::get<0>(scm[0]) == 0);
-    CHECK(std::get<0>(scm[1]) == 2);
-    CHECK(std::get<0>(scm[2]) == 3);
-    CHECK(std::get<0>(scm[3]) == 4);
+        CHECK(scm[0].input.global_id() == 0);
+        CHECK(scm[1].input.global_id() == 2);
+        CHECK(scm[2].input.global_id() == 3);
+        CHECK(scm[3].input.global_id() == 4);
 
-    CHECK(data.get_alternative_facets(0) == std::array<int64_t, 2>{{1, 2}});
-    CHECK(data.get_alternative_facets(4) == std::array<int64_t, 2>{{9, 4}});
-    CHECK(data.get_alternative_facets(3) == std::array<int64_t, 2>{{8, 5}});
-    CHECK(data.get_alternative_facets(2) == std::array<int64_t, 2>{{10, 3}});
+        CHECK(data.get_alternative_facets(0) == std::array<int64_t, 2>{{1, 2}});
+        CHECK(data.get_alternative_facets(4) == std::array<int64_t, 2>{{9, 4}});
+        CHECK(data.get_alternative_facets(3) == std::array<int64_t, 2>{{8, 5}});
+        CHECK(data.get_alternative_facets(2) == std::array<int64_t, 2>{{10, 3}});
 
-    CHECK(data.get_alternative_facets_it(1) == scm.cend());
-    CHECK(data.get_alternative_facets_it(6) == scm.cend());
-    CHECK(data.get_alternative_facets_it(7) == scm.cend());
+        CHECK(data.get_alternative_facets_it(1) == scm.cend());
+        CHECK(data.get_alternative_facets_it(6) == scm.cend());
+        CHECK(data.get_alternative_facets_it(7) == scm.cend());
+    }
 
-    //CHECK(data.get_alternate_dart());
+    // CHECK(data.get_alternate_dart());
 }
 
 
