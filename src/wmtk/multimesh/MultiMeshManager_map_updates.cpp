@@ -11,6 +11,8 @@
 #include "utils/local_switch_tuple.hpp"
 #include "utils/transport_tuple.hpp"
 #include "utils/tuple_map_attribute_io.hpp"
+#include <wmtk/operations/internal/SplitAlternateFacetData.hpp>
+#include <wmtk/operations/internal/CollapseAlternateFacetData.hpp>
 
 namespace wmtk::multimesh {
 
@@ -19,15 +21,16 @@ namespace {
 
 Tuple find_valid_tuple(
     const Mesh& my_mesh,
-    const wmtk::simplex::Simplex& old_simplex,
+    const wmtk::Tuple& tuple,
+    wmtk::PrimitiveType primitive_type,
     const wmtk::operations::EdgeOperationData& data)
 {
     return std::visit(
         [&](const auto& facet_data) -> wmtk::Tuple {
-            return facet_data.find_alternative(
+            return facet_data->get_alternative(
                 my_mesh.top_simplex_type(),
-                old_simplex.tuple(),
-                old_simplex.primitive_type());
+                tuple,
+                primitive_type);
         },
         data.m_op_data);
 }
@@ -94,13 +97,12 @@ void MultiMeshManager::update_maps_from_edge_operation(
 
 
         for (const auto& gid : gids) {
-            const bool parent_exists = !my_mesh.is_removed(parent_tuple);
+            const bool parent_exists = !my_mesh.is_removed(gid);
             if (!parent_exists) {
                 logger().debug("parent doesnt exist, skip!");
                 continue;
             }
 
-            const bool can_map = my_mesh.can_map(simplex, child);
             auto parent_to_child_data =
                 Mesh::get_index_access(parent_to_child_accessor).const_vector_attribute(gid);
 
@@ -130,7 +132,7 @@ void MultiMeshManager::update_maps_from_edge_operation(
             }
 
 
-            child_tuple = find_valid_tuple(my_mesh, gid, operation_data);
+            parent_tuple = wmtk::multimesh::find_valid_tuple(my_mesh, parent_tuple, primitive_type, operation_data);
 
 
             wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
