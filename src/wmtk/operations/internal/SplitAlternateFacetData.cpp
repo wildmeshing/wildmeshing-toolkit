@@ -9,11 +9,12 @@
 #include "ear_actions.hpp"
 namespace wmtk::operations::internal {
 namespace {
-constexpr auto sort_op = [](const SplitAlternateFacetData::Data& a,
-                            const SplitAlternateFacetData::Data& b) -> bool {
+auto sort_op = [](const SplitAlternateFacetData::Data& a,
+                  const SplitAlternateFacetData::Data& b) -> bool {
     return a.input.global_id() < b.input.global_id();
-} constexpr auto sort_int_op = [](const SplitAlternateFacetData::Data& value,
-                                  const int64_t& facet_id) -> bool {
+};
+
+auto sort_int_op = [](const SplitAlternateFacetData::Data& value, const int64_t& facet_id) -> bool {
     return value.input.global_id() < facet_id;
 };
 } // namespace
@@ -44,7 +45,7 @@ auto SplitAlternateFacetData::get_alternative_facets(const int64_t& input_cell) 
 {
     auto it = get_alternative_facets_it(input_cell);
     assert(it != m_facet_maps.cend());
-    return it->alts;
+    return it->new_facet_indices;
 }
 auto SplitAlternateFacetData::get_alternative(
     const PrimitiveType mesh_pt,
@@ -57,7 +58,7 @@ auto SplitAlternateFacetData::get_alternative(
 
     const auto& sd = wmtk::autogen::SimplexDart::get_singleton(mesh_pt);
 
-    int64_t new_global_cid = alts_it->select(sd.valid_index_from_tuple());
+    int64_t new_global_cid = alts_it->new_gid(mesh_pt, sd.valid_index_from_tuple());
 
 
     return {

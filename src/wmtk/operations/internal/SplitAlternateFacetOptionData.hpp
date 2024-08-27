@@ -13,12 +13,8 @@ class SplitAlternateFacetOptionData
 {
 public:
     using Dart = autogen::Dart;
-    SplitAlternateFacetOptionData(const Mesh& m, const Tuple& input_tuple);
-    SplitAlternateFacetOptionData(
-        const Mesh& m,
-        const autogen::SimplexDart& sd,
-        const Tuple& input_tuple);
-    autogen::Dart input;
+    SplitAlternateFacetOptionData(const autogen::SimplexDart& sd, const Dart& input_tuple);
+    Dart input;
 
     // Stores {ear_global_id, M}
     // where M is defined by:
@@ -31,8 +27,7 @@ public:
     // Let M be  Ob = M Oa.
     // Note that for D-1 subdart encoded on G, M will return the equivalent D-1 subdart on Ge
     //
-    std::array<int8_t, 2> alts;
-    std::array<int8_t, 2> local_boundary_indices;
+    std::array<int64_t, 2> new_facet_indices;
 
     // Let d be a dart where every D-simplex for D <the input mesh dimension
     // lies in left/index=0 (equivalently right/index=1) ear then
@@ -42,13 +37,9 @@ public:
     // Let {G, Od} be d
     // We compute {G, M Od}
     //
-    Dart convert(const Dart& d, size_t index) const;
+    int8_t new_gid(PrimitiveType primitive_type, int8_t index) const;
 
 
 private:
-    Dart left_switches(const Mesh& m, const Tuple& t) const;
-    Dart right_switches(const Mesh& m, const Tuple& t) const;
-    // given an ear tuple reports the relative orientation across the edge
-    Dart get_neighbor_action(const Mesh& m, const Tuple& t, int8_t local_action) const;
 };
 } // namespace wmtk::operations::internal
