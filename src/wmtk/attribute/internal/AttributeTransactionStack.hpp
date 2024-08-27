@@ -25,7 +25,7 @@ public:
     AttributeTransactionStack();
     ~AttributeTransactionStack();
     AttributeTransactionStack(const AttributeTransactionStack&) = delete;
-    AttributeTransactionStack& operator=(const AttributeTransactionStack&) = default;
+    AttributeTransactionStack& operator=(const AttributeTransactionStack&) = delete;
     AttributeTransactionStack(AttributeTransactionStack&&) = default;
     AttributeTransactionStack& operator=(AttributeTransactionStack&&) = default;
 

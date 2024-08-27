@@ -37,9 +37,9 @@ class MeshAttributes : public wmtk::utils::MerkleTreeInteriorNode
 
 public:
     MeshAttributes() = default;
-    MeshAttributes(const MeshAttributes& o);
+    MeshAttributes(const MeshAttributes& o) = delete;
     MeshAttributes(MeshAttributes&& o) = default;
-    MeshAttributes& operator=(const MeshAttributes& o);
+    MeshAttributes& operator=(const MeshAttributes& o) = delete;
     MeshAttributes& operator=(MeshAttributes&& o) = default;
 
     void serialize(const int dim, MeshWriter& writer) const;

@@ -54,14 +54,14 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
 
         const int64_t edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid_with_hash(edge, hash_accessor));
 #else
         REQUIRE(m.is_valid(edge));
 #endif
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         auto executor = m.get_emoe(edge, hash_accessor);
 #else
         auto executor = m.get_emoe(edge);
@@ -85,7 +85,7 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-#if defined(WMTK_ENABLE_HASH_UPDATE)
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
@@ -129,16 +129,4 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 1);
     }
-}
-
-TEST_CASE("mesh_copy", "[mesh]")
-{
-    std::shared_ptr<Mesh> m1 = std::make_shared<TriMesh>(tests::single_triangle());
-    std::shared_ptr<Mesh> m2 = m1->copy();
-
-    CHECK(*m1 == *m2);
-    CHECK_FALSE(m1 == m2);
-
-    m1->register_attribute<int64_t>("a", PrimitiveType::Triangle, 1);
-    CHECK_FALSE(*m1 == *m2);
 }

@@ -59,7 +59,6 @@ public:
     Attribute(const std::string& name, int64_t dimension, T default_value = T(0), int64_t size = 0);
 
     Attribute(Attribute&& o);
-    Attribute(const Attribute& o);
     ~Attribute();
     Attribute& operator=(Attribute&& o);
 
