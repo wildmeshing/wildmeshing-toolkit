@@ -10,6 +10,7 @@
 #include <wmtk/operations/EdgeOperationData.hpp>
 #include <wmtk/operations/internal/CollapseAlternateFacetData.hpp>
 #include <wmtk/operations/internal/SplitAlternateFacetData.hpp>
+#include <wmtk/operations/internal/ear_actions.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 #include "../tools/EdgeMesh_examples.hpp"
@@ -26,16 +27,15 @@ TEST_CASE("split_facet_maps", "[operations][data]")
 
         auto& scm = data.m_facet_maps;
 
-        const int8_t identity = sd.identity();
 
-        auto add = [&](int64_t index, const std::array<int64_t, 2>& pr) {
-            scm.emplace_back(wmtk::autogen::Dart(index, identity), pr);
+        auto add = [&](int64_t index, int8_t s, const std::array<int64_t, 2>& pr) {
+            scm.emplace_back(wmtk::autogen::Dart(index, s % sd.size()), pr);
         };
 
-        add(0, std::array<int64_t, 2>{{1, 2}});
-        add(4, std::array<int64_t, 2>{{9, 4}});
-        add(3, std::array<int64_t, 2>{{8, 5}});
-        add(2, std::array<int64_t, 2>{{10, 3}});
+        add(0, 2, std::array<int64_t, 2>{{1, 2}});
+        add(4, 20, std::array<int64_t, 2>{{9, 4}});
+        add(3, 30, std::array<int64_t, 2>{{8, 5}});
+        add(2, 5, std::array<int64_t, 2>{{10, 3}});
 
 
         data.sort();
@@ -53,6 +53,25 @@ TEST_CASE("split_facet_maps", "[operations][data]")
         CHECK(data.get_alternative_facets_it(1) == scm.cend());
         CHECK(data.get_alternative_facets_it(6) == scm.cend());
         CHECK(data.get_alternative_facets_it(7) == scm.cend());
+
+
+        const int8_t LA = wmtk::operations::internal::left_ear_action(mesh_type);
+        const int8_t RA = wmtk::operations::internal::right_ear_action(mesh_type);
+        std::array<int8_t, 2> actions;
+
+        const wmtk::PrimitiveType boundary_type = mesh_type - 1;
+        for (const auto& data : scm) {
+            std::array<int8_t, 2> boundaries;
+            for (size_t j = 0; j < 2; ++j) {
+                boundaries[j] = sd.simplex_index(
+                    sd.product(actions[j], data.input.local_orientation()),
+                    boundary_type);
+            }
+            for (int8_t j = 0; j < sd.size(); ++j) {
+                if (sd.) {
+                }
+            }
+        }
     }
 
     // CHECK(data.get_alternate_dart());

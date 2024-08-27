@@ -6,6 +6,8 @@ target_sources(wildmeshing_toolkit PRIVATE
     CollapseAlternateFacetData.cpp
     CollapseAlternateFacetOptionData.hpp
     CollapseAlternateFacetOptionData.cpp
+    SplitAlternateFacetOptionData.hpp
+    SplitAlternateFacetOptionData.cpp
 
     ear_actions.hpp
     ear_actions.cpp

@@ -1,4 +1,5 @@
 #include "SplitAlternateFacetOptionData.hpp"
+#include <wmtk/autogen/utils/largest_shared_subdart_size.hpp>
 
 
 namespace wmtk::operations::internal {
@@ -30,7 +31,7 @@ auto make_inds()
     }
 }
 
-const std::array<int8_t, 2>& boundary_indices(
+const std::array<int8_t, 2>& boundary_indices_(
     const wmtk::autogen::SimplexDart& sd,
     int8_t orientation)
 {
@@ -63,12 +64,20 @@ const std::array<int8_t, 2>& boundary_indices(
     assert(false);
     return empty;
 }
+} // namespace
+auto SplitAlternateFacetOptionData::boundary_indices(PrimitiveType mesh_type) const
+    -> const std::array<int8_t, 2>&
+{
+    const auto& sd = wmtk::autogen::SimplexDart::get_singleton(mesh_type);
+    const auto& boundary_inds = boundary_indices_(sd, input.local_orientation());
+    return boundary_inds;
 }
 
 SplitAlternateFacetOptionData::SplitAlternateFacetOptionData(
-    const autogen::SimplexDart& sd,
-    const Dart& input)
-    : input(input)
+    const Dart& i,
+    const std::array<int64_t, 2>& n)
+    : input(i)
+    , new_facet_indices(n)
 {}
 
 
@@ -76,29 +85,26 @@ auto SplitAlternateFacetOptionData::new_gid(PrimitiveType mesh_type, int8_t orie
     -> int64_t
 {
     const auto& sd = wmtk::autogen::SimplexDart::get_singleton(mesh_type);
-    const auto& boundaries = boundary_indices(sd, input.local_orientation());
+    const auto& boundary_simplex_indices = boundary_indices(mesh_type);
 
-    // sd.simplex_index(orientation, wmtk::PrimitiveType::Edge);
-    wmtk::autogen::Dart dart = sd.dart_from_tuple(t);
 
-    const PrimitiveType boundary_type = mesh_pt - 1;
-    auto get_ear_max_subdart_size = [&](int8_t action) {
-        const int8_t orientation = sd.product(action, dart.local_orientation());
-        const int8_t simplex = sd.simplex_index(orientation, boundary_type);
+    const PrimitiveType boundary_type = mesh_type - 1;
+    // the local indices of the ears of faces
+
+    auto get_size = [&](size_t index) {
+        return wmtk::autogen::utils::largest_shared_subdart_size(
+            mesh_type,
+            orientation,
+            boundary_type,
+            boundary_simplex_indices[index]);
     };
-
-    const int8_t left_ear_max_subdart_size = get_ear_max_subdart_size(left_ear_action(mesh_pt));
-    const int8_t right_ear_max_subdart_size = get_ear_max_subdart_size(right_ear_action(mesh_pt));
-
-
-    else if (int8_t preserved_subdarts_to_face = 0; preserved_subdarts_to_face > 0)
-    { // TODO: make this do something
-
-        new_global_cid = alts[0];
+    const std::array<int8_t, 2> sizes{{get_size(0), get_size(1)}};
+    if (sizes[0] >= sizes[1]) {
+        return new_facet_indices[0];
+    } else {
+        return new_facet_indices[1];
     }
-    else
-    {
-        new_global_cid = alts[1];
-    }
+}
+
 
 } // namespace wmtk::operations::internal

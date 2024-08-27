@@ -13,7 +13,10 @@ class SplitAlternateFacetOptionData
 {
 public:
     using Dart = autogen::Dart;
-    SplitAlternateFacetOptionData(const autogen::SimplexDart& sd, const Dart& input_tuple);
+    SplitAlternateFacetOptionData(
+        const Dart& input_tuple,
+        const std::array<int64_t, 2>& new_facet_indices);
+
     Dart input;
 
     // Stores {ear_global_id, M}
@@ -37,9 +40,11 @@ public:
     // Let {G, Od} be d
     // We compute {G, M Od}
     //
-    int8_t new_gid(PrimitiveType primitive_type, int8_t index) const;
+    int64_t new_gid(PrimitiveType primitive_type, int8_t index) const;
 
 
 private:
+    // returns the indices of the ear boundary simplices
+    const std::array<int8_t, 2>& boundary_indices(PrimitiveType pt) const;
 };
 } // namespace wmtk::operations::internal
