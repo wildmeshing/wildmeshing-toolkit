@@ -34,7 +34,6 @@ int8_t subdart_maximal_action_to_face_size(
     case 3: return 3;
     default: break;
     }
-    assert(false);
     return 0;
 }
 

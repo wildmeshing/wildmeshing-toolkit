@@ -503,6 +503,7 @@ void TriMesh::TriMeshOperationExecutor::split_edge_precompute()
 void TriMesh::TriMeshOperationExecutor::split_edge()
 {
 
+    set_split();
     split_edge_precompute();
 
     if(m_mesh.is_free()) {
@@ -576,6 +577,7 @@ void TriMesh::TriMeshOperationExecutor::split_edge()
 
 void TriMesh::TriMeshOperationExecutor::collapse_edge_precompute()
 {
+    set_collapse();
     is_collapse = true;
 
     const simplex::SimplexCollection edge_closed_star =
@@ -697,9 +699,7 @@ std::vector<int64_t> TriMesh::TriMeshOperationExecutor::request_simplex_indices(
     const PrimitiveType type,
     int64_t count)
 {
-    m_mesh.guarantee_more_attributes(type, count);
-
-    return m_mesh.request_simplex_indices(type, count);
+    return EdgeOperationData::request_simplex_indices(m_mesh, type, count);
 }
 
 } // namespace wmtk

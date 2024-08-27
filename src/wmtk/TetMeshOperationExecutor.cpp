@@ -140,7 +140,6 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     faces.reserve(hash_update_region.simplex_vector().size() * 15);
 
     for (const simplex::Simplex& t : hash_update_region.simplex_vector()) {
-
         faces.add(wmtk::simplex::faces(m, t, false));
         faces.add(t);
     }
@@ -176,9 +175,7 @@ void TetMesh::TetMeshOperationExecutor::delete_simplices()
     }
 }
 
-void TetMesh::TetMeshOperationExecutor::update_cell_hash()
-{
-}
+void TetMesh::TetMeshOperationExecutor::update_cell_hash() {}
 
 const std::array<std::vector<int64_t>, 4>
 TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete(
@@ -238,6 +235,7 @@ void TetMesh::TetMeshOperationExecutor::update_ear_connectivity(
 
 void TetMesh::TetMeshOperationExecutor::split_edge()
 {
+    set_split();
     simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
 
     // create new vertex (center)
@@ -736,8 +734,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     assert(return_local_vid == utils::TupleInspector::local_vid(m_operating_tuple));
     assert(return_local_eid == utils::TupleInspector::local_eid(m_operating_tuple));
     assert(return_local_fid == utils::TupleInspector::local_fid(m_operating_tuple));
-    m_output_tuple =
-        Tuple(return_local_vid, return_local_eid, return_local_fid, return_tid);
+    m_output_tuple = Tuple(return_local_vid, return_local_eid, return_local_fid, return_tid);
 
     assert(m_split_new_vid == m_mesh.id(simplex::Simplex::vertex(m_mesh, m_output_tuple)));
     assert(m_split_new_spine_eids[1] == m_mesh.id(simplex::Simplex::edge(m_mesh, m_output_tuple)));
@@ -757,6 +754,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 
 void TetMesh::TetMeshOperationExecutor::collapse_edge()
 {
+    set_collapse();
     is_collapse = true;
     simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
 
@@ -1054,8 +1052,7 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
     assert(return_local_fid > -1);
     assert(return_local_eid > -1);
     assert(return_local_vid > -1);
-    m_output_tuple =
-        Tuple(return_local_vid, return_local_eid, return_local_fid, return_tid);
+    m_output_tuple = Tuple(return_local_vid, return_local_eid, return_local_fid, return_tid);
 
     assert(m_mesh.id_vertex(m_output_tuple) == v1);
 }

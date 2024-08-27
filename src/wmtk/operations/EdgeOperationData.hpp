@@ -19,6 +19,8 @@ class CollapseAlternateFacetData;
 class EdgeOperationData
 {
 public:
+    friend class internal::SplitAlternateFacetData;
+    friend class internal::CollapseAlternateFacetData;
     EdgeOperationData();
     ~EdgeOperationData();
     EdgeOperationData(EdgeOperationData&&);
@@ -47,6 +49,9 @@ public:
         m_op_data;
 
 
+    void set_split();
+    void set_collapse();
+
     /// Returns facet data held if the edge operation was a split - throws if data does not exist
     const internal::SplitAlternateFacetData& split_facet_data() const;
     /// Returns facet data held if the edge operation was a collapse- throws if data does not exist
@@ -54,6 +59,9 @@ public:
 
 protected:
     static Tuple tuple_from_id(const Mesh& m, const PrimitiveType type, const int64_t gid);
-    static simplex::Simplex simplex_from_id(const Mesh& m, const PrimitiveType type, const int64_t gid);
+    static simplex::Simplex
+    simplex_from_id(const Mesh& m, const PrimitiveType type, const int64_t gid);
+    static std::vector<int64_t>
+    request_simplex_indices(Mesh& mesh, const PrimitiveType type, int64_t count);
 };
 } // namespace wmtk::operations

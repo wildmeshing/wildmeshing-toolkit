@@ -18,6 +18,13 @@ public:
     using AltData = std::vector<Data>;
     AltData m_facet_maps;
 
+
+    const Data& add_facet(
+        const wmtk::Mesh& mesh,
+        const wmtk::Tuple& edge_tuple,
+        const std::array<int64_t, 2>& new_facet_indices);
+    const Data& add_facet(wmtk::Mesh& mesh, const wmtk::Tuple& edge_tuple);
+
     void sort();
 
     // assumes the split facet map has been sorted

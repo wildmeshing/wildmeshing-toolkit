@@ -31,7 +31,6 @@ int8_t subdart_maximal_action_to_face_size(int8_t dart_index, int8_t simplex_dim
         default:
         break;
     }
-    assert(false);
     return 0;
 
 }

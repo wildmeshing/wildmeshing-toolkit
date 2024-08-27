@@ -9,9 +9,19 @@
 
 namespace wmtk::operations::utils {
 
-void MultiMeshEdgeSplitFunctor::operator()(const Mesh&, const simplex::Simplex&) const
+wmtk::operations::EdgeOperationData MultiMeshEdgeSplitFunctor::run(
+    Mesh& mesh,
+    const simplex::Simplex& s) const
 {
-    throw std::runtime_error("Unimplemented!");
+    switch (mesh.top_simplex_type()) {
+    case PrimitiveType::Vertex: break;
+    case PrimitiveType::Edge: return (*this)(static_cast<EdgeMesh&>(mesh), s);
+    case PrimitiveType::Triangle: return (*this)(static_cast<TriMesh&>(mesh), s);
+    case PrimitiveType::Tetrahedron: return (*this)(static_cast<TetMesh&>(mesh), s);
+    default: break;
+    }
+    assert(false);
+    return {};
 }
 
 edge_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(

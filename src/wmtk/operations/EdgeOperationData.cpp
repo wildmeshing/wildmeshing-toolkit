@@ -18,9 +18,18 @@ auto EdgeOperationData::tuple_from_id(const Mesh& m, const PrimitiveType type, c
 {
     return m.tuple_from_id(type, gid);
 }
-simplex::Simplex EdgeOperationData::simplex_from_id(const Mesh& m, const PrimitiveType type, const int64_t gid)
+simplex::Simplex
+EdgeOperationData::simplex_from_id(const Mesh& m, const PrimitiveType type, const int64_t gid)
 {
     return m.simplex_from_id(type, gid);
+}
+void EdgeOperationData::set_split()
+{
+    m_op_data = std::make_unique<internal::SplitAlternateFacetData>();
+}
+void EdgeOperationData::set_collapse()
+{
+    m_op_data = std::make_unique<internal::CollapseAlternateFacetData>();
 }
 
 const internal::SplitAlternateFacetData& EdgeOperationData::split_facet_data() const
@@ -40,6 +49,13 @@ const internal::CollapseAlternateFacetData& EdgeOperationData::collapse_facet_da
             "Collapse alternate facet data does not exist, ptr in variant was null");
     }
     return *ptr;
+}
+std::vector<int64_t>
+EdgeOperationData::request_simplex_indices(Mesh& mesh, const PrimitiveType type, int64_t count)
+{
+    mesh.guarantee_more_attributes(type, count);
+
+    return mesh.request_simplex_indices(type, count);
 }
 
 } // namespace wmtk::operations

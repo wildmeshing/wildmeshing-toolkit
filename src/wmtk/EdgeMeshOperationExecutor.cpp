@@ -42,9 +42,7 @@ void EdgeMesh::EdgeMeshOperationExecutor::delete_simplices()
     }
 }
 
-void EdgeMesh::EdgeMeshOperationExecutor::update_cell_hash()
-{
-}
+void EdgeMesh::EdgeMeshOperationExecutor::update_cell_hash() {}
 
 const std::array<std::vector<int64_t>, 2>
 EdgeMesh::EdgeMeshOperationExecutor::get_split_simplices_to_delete(
@@ -73,6 +71,7 @@ EdgeMesh::EdgeMeshOperationExecutor::get_collapse_simplices_to_delete(
 
 void EdgeMesh::EdgeMeshOperationExecutor::split_edge()
 {
+    set_split();
     m_output_tuple = split_edge_single_mesh();
     // TODO: Implement for multi_mesh in the future
 }
@@ -193,6 +192,7 @@ void EdgeMesh::EdgeMeshOperationExecutor::update_hash_in_map(EdgeMesh& child_mes
 
 void EdgeMesh::EdgeMeshOperationExecutor::collapse_edge()
 {
+    set_collapse();
     m_output_tuple = collapse_edge_single_mesh();
     // TODO: Implement for multi_mesh in the future
 }
@@ -204,7 +204,8 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
         simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
         update_cell_hash();
         delete_simplices();
-        return Tuple();;
+        return Tuple();
+        ;
     }
     // check if the collapse is valid
     if (m_is_self_loop || (m_mesh.is_boundary_vertex(m_operating_tuple) &&

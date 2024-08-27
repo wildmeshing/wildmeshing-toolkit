@@ -5,6 +5,7 @@
 #include <vector>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/autogen/SimplexDart.hpp>
+#include <wmtk/operations/EdgeOperationData.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 #include "ear_actions.hpp"
 namespace wmtk::operations::internal {
@@ -38,6 +39,20 @@ auto SplitAlternateFacetData::get_alternative_facets_it(const int64_t& input_cel
         it = end;
     }
     return it;
+}
+auto SplitAlternateFacetData::add_facet(wmtk::Mesh& mesh, const wmtk::Tuple& edge_tuple)
+    -> const Data&
+{
+    const PrimitiveType pt = mesh.top_simplex_type();
+    const std::vector<int64_t> new_eids = EdgeOperationData::request_simplex_indices(mesh, pt, 2);
+    std::array<int64_t,2> 
+    return add_facet(mesh, edge_tuple,
+}
+auto SplitAlternateFacetData::add_facet(const wmtk::Mesh& mesh, const wmtk::Tuple& edge_tuple)
+    -> const Data&
+{
+    std::array<int64_t, 2> arr;
+    return m_facet_maps.emplace_back(dart, pr);
 }
 
 auto SplitAlternateFacetData::get_alternative_facets(const int64_t& input_cell) const
