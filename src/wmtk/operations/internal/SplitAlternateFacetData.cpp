@@ -45,14 +45,16 @@ auto SplitAlternateFacetData::add_facet(wmtk::Mesh& mesh, const wmtk::Tuple& edg
 {
     const PrimitiveType pt = mesh.top_simplex_type();
     const std::vector<int64_t> new_eids = EdgeOperationData::request_simplex_indices(mesh, pt, 2);
-    std::array<int64_t,2> 
-    return add_facet(mesh, edge_tuple,
+    std::array<int64_t,2>  dat;
+    std::copy(new_eids.begin(),new_eids.end(),dat.begin());
+    return add_facet(mesh, edge_tuple,dat);
 }
-auto SplitAlternateFacetData::add_facet(const wmtk::Mesh& mesh, const wmtk::Tuple& edge_tuple)
+auto SplitAlternateFacetData::add_facet(const wmtk::Mesh& mesh, const wmtk::Tuple& edge_tuple, const std::array<int64_t,2>& nfa)
     -> const Data&
 {
-    std::array<int64_t, 2> arr;
-    return m_facet_maps.emplace_back(dart, pr);
+    const PrimitiveType mesh_pt = mesh.top_simplex_type();
+    const auto& sd = wmtk::autogen::SimplexDart::get_singleton(mesh_pt);
+    return m_facet_maps.emplace_back(sd.dart_from_tuple(edge_tuple), nfa);
 }
 
 auto SplitAlternateFacetData::get_alternative_facets(const int64_t& input_cell) const

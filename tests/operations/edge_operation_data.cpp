@@ -84,37 +84,6 @@ TEST_CASE("split_facet_maps", "[operations][data]")
                     j,
                     boundary_type,
                     boundaries[1]);
-                spdlog::info(
-                    "{} ({} {})",
-                    fmt::join(boundaries, ","),
-                    left_efficacy,
-                    right_efficacy);
-
-                wmtk::Tuple t = sd.tuple_from_dart(wmtk::autogen::Dart(0, j));
-
-                auto mesh_ptr = wmtk::tests::tools::single_simplex_mesh(mesh_type);
-
-                const auto original_global_ids = wmtk::tests::tools::global_ids(*mesh_ptr, t);
-
-                wmtk::operations::utils::MultiMeshEdgeSplitFunctor split;
-                auto data = split.run(*mesh_ptr, wmtk::simplex::Simplex::edge(*mesh_ptr, t));
-
-                wmtk::Tuple left_tuple =
-                    sd.tuple_from_dart(wmtk::autogen::Dart(scm_data.new_facet_indices[0], j));
-                wmtk::Tuple right_tuple =
-                    sd.tuple_from_dart(wmtk::autogen::Dart(scm_data.new_facet_indices[1], j));
-
-                const auto left_global_ids = wmtk::tests::tools::global_ids(*mesh_ptr, left_tuple);
-                const auto right_global_ids =
-                    wmtk::tests::tools::global_ids(*mesh_ptr, right_tuple);
-
-                int8_t left_size = wmtk::tests::tools::global_index_max_subdart_size(
-                    original_global_ids,
-                    left_global_ids);
-                int8_t right_size = wmtk::tests::tools::global_index_max_subdart_size(
-                    original_global_ids,
-                    right_global_ids);
-
                 // CHECK(
                 //     left_efficacy ==
                 // CHECK(
@@ -151,6 +120,92 @@ TEST_CASE("split_facet_maps", "[operations][data]")
     // CHECK(data.get_alternate_dart());
 }
 
+TEST_CASE("split_facet_maps", "[operations][data]")
+{
+    for (wmtk::PrimitiveType mesh_type : wmtk::utils::primitive_range(
+             wmtk::PrimitiveType::Edge,
+             wmtk::PrimitiveType::Tetrahedron)) {
+        wmtk::autogen::SimplexDart sd(mesh_type);
+
+
+        const int8_t LA = wmtk::operations::internal::left_ear_action(mesh_type);
+        const int8_t RA = wmtk::operations::internal::right_ear_action(mesh_type);
+        const std::array<int8_t, 2> actions{{LA, RA}};
+
+        const wmtk::PrimitiveType boundary_type = mesh_type - 1;
+        for (int8_t edge_orientation = 0; edge_orientation < sd.size(); ++edge_orientation) {
+            auto mesh_ptr = wmtk::tests::tools::single_simplex_mesh(mesh_type);
+            scm.clear();
+
+            wmtk::Tuple t = sd.tuple_from_dart(wmtk::autogen::Dart(0, edge_orientation));
+            // data.add(*mesh_ptr, t);
+            //  std::array<int8_t, 2> boundaries;
+            //   for (size_t j = 0; j < 2; ++j) {
+            //       boundaries[j] = sd.simplex_index(
+            //           sd.product(actions[j], scm_data.input.local_orientation()),
+            //           boundary_type);
+            //   }
+
+
+            const auto original_global_ids = wmtk::tests::tools::global_ids(*mesh_ptr, t);
+
+            wmtk::operations::utils::MultiMeshEdgeSplitFunctor split;
+            auto data = split.run(*mesh_ptr, wmtk::simplex::Simplex::edge(*mesh_ptr, t));
+            const auto& split_data = data.split_facet_data();
+
+            wmtk::Tuple left_tuple =
+                sd.tuple_from_dart(wmtk::autogen::Dart(scm_data.new_facet_indices[0], j));
+            wmtk::Tuple right_tuple =
+                sd.tuple_from_dart(wmtk::autogen::Dart(scm_data.new_facet_indices[1], j));
+            spdlog::info(
+                "{} {}",
+                wmtk::utils::TupleInspector::as_string(left_tuple),
+                wmtk::utils::TupleInspector::as_string(right_tuple));
+
+            const auto left_global_ids = wmtk::tests::tools::global_ids(*mesh_ptr, left_tuple);
+            const auto right_global_ids = wmtk::tests::tools::global_ids(*mesh_ptr, right_tuple);
+
+            int8_t left_size = wmtk::tests::tools::global_index_max_subdart_size(
+                original_global_ids,
+                left_global_ids);
+            int8_t right_size = wmtk::tests::tools::global_index_max_subdart_size(
+                original_global_ids,
+                right_global_ids);
+
+            // CHECK(
+            //     left_efficacy ==
+            // CHECK(
+            //     right_efficacy ==
+
+            if (left_efficacy <= 0 && right_efficacy <= 0) {
+                continue;
+            } else {
+                int64_t new_gid = scm_data.new_gid(mesh_type, j);
+                spdlog::info(
+                    "{} ({} {}), {}",
+                    fmt::join(scm_data.new_facet_indices, ","),
+                    left_efficacy,
+                    right_efficacy,
+                    new_gid);
+                if (left_efficacy > right_efficacy) {
+                    CHECK(new_gid == scm_data.new_facet_indices[0]);
+                } else if (left_efficacy < right_efficacy) {
+                    CHECK(new_gid == scm_data.new_facet_indices[1]);
+                } else {
+                    const bool either = new_gid == scm_data.new_facet_indices[0] ||
+                                        new_gid == scm_data.new_facet_indices[1];
+                    CHECK(either);
+                }
+            }
+
+            {
+                // test against a mesh
+            }
+        }
+    }
+
+    // CHECK(data.get_alternate_dart());
+}
 
 namespace {
 void collapse_facet_maps_impl(
