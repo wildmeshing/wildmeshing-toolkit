@@ -32,7 +32,7 @@ void EdgeOperationData::set_collapse()
     m_op_data = std::make_unique<internal::CollapseAlternateFacetData>();
 }
 
-const internal::SplitAlternateFacetData& EdgeOperationData::split_facet_data() const
+const internal::SplitAlternateFacetData& EdgeOperationData::const_split_facet_data() const
 {
     const auto& ptr = std::get<std::unique_ptr<internal::SplitAlternateFacetData>>(m_op_data);
     if (!bool(ptr)) {
@@ -41,9 +41,27 @@ const internal::SplitAlternateFacetData& EdgeOperationData::split_facet_data() c
     }
     return *ptr;
 }
-const internal::CollapseAlternateFacetData& EdgeOperationData::collapse_facet_data() const
+const internal::CollapseAlternateFacetData& EdgeOperationData::const_collapse_facet_data() const
 {
     const auto& ptr = std::get<std::unique_ptr<internal::CollapseAlternateFacetData>>(m_op_data);
+    if (!bool(ptr)) {
+        throw std::runtime_error(
+            "Collapse alternate facet data does not exist, ptr in variant was null");
+    }
+    return *ptr;
+}
+internal::SplitAlternateFacetData& EdgeOperationData::split_facet_data()
+{
+    auto& ptr = std::get<std::unique_ptr<internal::SplitAlternateFacetData>>(m_op_data);
+    if (!bool(ptr)) {
+        throw std::runtime_error(
+            "Split alternate facet data does not exist, ptr in variant was null");
+    }
+    return *ptr;
+}
+internal::CollapseAlternateFacetData& EdgeOperationData::collapse_facet_data()
+{
+    auto& ptr = std::get<std::unique_ptr<internal::CollapseAlternateFacetData>>(m_op_data);
     if (!bool(ptr)) {
         throw std::runtime_error(
             "Collapse alternate facet data does not exist, ptr in variant was null");

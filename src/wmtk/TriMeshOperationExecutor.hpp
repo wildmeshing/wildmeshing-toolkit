@@ -14,11 +14,11 @@ public:
     void update_cell_hash();
 
     std::array<attribute::Accessor<char>, 3> flag_accessors;
-    attribute::Accessor<int64_t,TriMesh>& ff_accessor;
-    attribute::Accessor<int64_t,TriMesh>& fe_accessor;
-    attribute::Accessor<int64_t,TriMesh>& fv_accessor;
-    attribute::Accessor<int64_t,TriMesh>& vf_accessor;
-    attribute::Accessor<int64_t,TriMesh>& ef_accessor;
+    attribute::Accessor<int64_t, TriMesh>& ff_accessor;
+    attribute::Accessor<int64_t, TriMesh>& fe_accessor;
+    attribute::Accessor<int64_t, TriMesh>& fv_accessor;
+    attribute::Accessor<int64_t, TriMesh>& vf_accessor;
+    attribute::Accessor<int64_t, TriMesh>& ef_accessor;
 
     /**
      * @brief jump to the next edge
@@ -69,6 +69,7 @@ public:
      */
     // return the two new fids in order
     void replace_incident_face(IncidentFaceData& face_data);
+    void create_spine_simplices();
     void connect_faces_across_spine();
     std::vector<int64_t> request_simplex_indices(const PrimitiveType type, int64_t count);
 

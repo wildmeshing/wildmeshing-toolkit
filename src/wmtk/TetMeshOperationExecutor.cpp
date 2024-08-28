@@ -1,4 +1,5 @@
 #include "TetMeshOperationExecutor.hpp"
+#include <wmtk/operations/internal/SplitAlternateFacetData.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/simplex/boundary.hpp>
 #include <wmtk/simplex/closed_star.hpp>
@@ -237,6 +238,20 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 {
     set_split();
     simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
+
+
+    const size_t facet_size = m_incident_face_datas.size();
+    std::vector<int64_t> new_facet_ids =
+        this->request_simplex_indices(PrimitiveType::Tetrahedron, 2 * facet_size);
+    assert(new_facet_ids.size() == 2 * facet_size);
+    for (size_t j = 0; j < facet_size; ++j) {
+        std::array<int64_t, 2> arr;
+        std::copy(new_facet_ids.begin() + 2 * j, new_fids.begin() + 2 * (j + 1), arr);
+        // const auto& data =
+        split_facet_data().add_facet(m_mesh, m_operating_tuple, arr);
+        m_incident_face_datas[j].split_f = arr;
+    }
+
 
     // create new vertex (center)
     std::vector<int64_t> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);

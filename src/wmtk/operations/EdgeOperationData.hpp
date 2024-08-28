@@ -53,9 +53,15 @@ public:
     void set_collapse();
 
     /// Returns facet data held if the edge operation was a split - throws if data does not exist
-    const internal::SplitAlternateFacetData& split_facet_data() const;
+    const internal::SplitAlternateFacetData& const_split_facet_data() const;
     /// Returns facet data held if the edge operation was a collapse- throws if data does not exist
-    const internal::CollapseAlternateFacetData& collapse_facet_data() const;
+    const internal::CollapseAlternateFacetData& const_collapse_facet_data() const;
+
+protected:
+    /// Returns facet data held if the edge operation was a split - throws if data does not exist
+    internal::SplitAlternateFacetData& split_facet_data();
+    /// Returns facet data held if the edge operation was a collapse- throws if data does not exist
+    internal::CollapseAlternateFacetData& collapse_facet_data();
 
 protected:
     static Tuple tuple_from_id(const Mesh& m, const PrimitiveType type, const int64_t gid);

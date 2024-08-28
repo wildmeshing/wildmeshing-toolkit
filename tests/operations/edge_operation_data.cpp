@@ -120,7 +120,7 @@ TEST_CASE("split_facet_maps", "[operations][data]")
     // CHECK(data.get_alternate_dart());
 }
 
-TEST_CASE("split_facet_maps", "[operations][data]")
+TEST_CASE("split_facet_maps_mesh", "[operations][data]")
 {
     for (wmtk::PrimitiveType mesh_type : wmtk::utils::primitive_range(
              wmtk::PrimitiveType::Edge,
@@ -135,7 +135,6 @@ TEST_CASE("split_facet_maps", "[operations][data]")
         const wmtk::PrimitiveType boundary_type = mesh_type - 1;
         for (int8_t edge_orientation = 0; edge_orientation < sd.size(); ++edge_orientation) {
             auto mesh_ptr = wmtk::tests::tools::single_simplex_mesh(mesh_type);
-            scm.clear();
 
             wmtk::Tuple t = sd.tuple_from_dart(wmtk::autogen::Dart(0, edge_orientation));
             // data.add(*mesh_ptr, t);
@@ -151,12 +150,15 @@ TEST_CASE("split_facet_maps", "[operations][data]")
 
             wmtk::operations::utils::MultiMeshEdgeSplitFunctor split;
             auto data = split.run(*mesh_ptr, wmtk::simplex::Simplex::edge(*mesh_ptr, t));
-            const auto& split_data = data.split_facet_data();
+            const auto& split_data = data.const_split_facet_data();
 
-            wmtk::Tuple left_tuple =
-                sd.tuple_from_dart(wmtk::autogen::Dart(scm_data.new_facet_indices[0], j));
-            wmtk::Tuple right_tuple =
-                sd.tuple_from_dart(wmtk::autogen::Dart(scm_data.new_facet_indices[1], j));
+            REQUIRE(split_data.m_facet_maps.size() == 1);
+            const auto& scm_data = split_data.m_facet_maps[0];
+
+            wmtk::Tuple left_tuple = sd.tuple_from_dart(
+                wmtk::autogen::Dart(scm_data.new_facet_indices[0], edge_orientation));
+            wmtk::Tuple right_tuple = sd.tuple_from_dart(
+                wmtk::autogen::Dart(scm_data.new_facet_indices[1], edge_orientation));
             spdlog::info(
                 "{} {}",
                 wmtk::utils::TupleInspector::as_string(left_tuple),
@@ -176,31 +178,6 @@ TEST_CASE("split_facet_maps", "[operations][data]")
             //     left_efficacy ==
             // CHECK(
             //     right_efficacy ==
-
-            if (left_efficacy <= 0 && right_efficacy <= 0) {
-                continue;
-            } else {
-                int64_t new_gid = scm_data.new_gid(mesh_type, j);
-                spdlog::info(
-                    "{} ({} {}), {}",
-                    fmt::join(scm_data.new_facet_indices, ","),
-                    left_efficacy,
-                    right_efficacy,
-                    new_gid);
-                if (left_efficacy > right_efficacy) {
-                    CHECK(new_gid == scm_data.new_facet_indices[0]);
-                } else if (left_efficacy < right_efficacy) {
-                    CHECK(new_gid == scm_data.new_facet_indices[1]);
-                } else {
-                    const bool either = new_gid == scm_data.new_facet_indices[0] ||
-                                        new_gid == scm_data.new_facet_indices[1];
-                    CHECK(either);
-                }
-            }
-
-            {
-                // test against a mesh
-            }
         }
     }
 

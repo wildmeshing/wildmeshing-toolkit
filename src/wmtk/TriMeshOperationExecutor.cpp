@@ -23,6 +23,7 @@
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include "TriMeshOperationExecutor.hpp"
 
+#include <wmtk/operations/internal/SplitAlternateFacetData.hpp>
 
 namespace wmtk {
 
@@ -297,11 +298,7 @@ void TriMesh::TriMeshOperationExecutor::connect_faces_across_spine()
 
 void TriMesh::TriMeshOperationExecutor::replace_incident_face(IncidentFaceData& face_data)
 {
-    // create new faces
-    std::vector<int64_t> new_fids = this->request_simplex_indices(PrimitiveType::Triangle, 2);
-    assert(new_fids.size() == 2);
-
-    std::copy(new_fids.begin(), new_fids.end(), face_data.split_f.begin());
+    const auto& new_fids = face_data.split_f;
 
     if(!m_mesh.is_free()) {
         std::vector<int64_t> splitting_edges = this->request_simplex_indices(PrimitiveType::Edge, 1);
@@ -506,34 +503,22 @@ void TriMesh::TriMeshOperationExecutor::split_edge()
     set_split();
     split_edge_precompute();
 
-    if(m_mesh.is_free()) {
-        // create new vertex (center)
-        std::vector<int64_t> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 3);
-        assert(new_vids.size() == 3);
 
-        std::copy(new_vids.begin()+1, new_vids.end(), m_free_split_v.begin());
-        split_new_vid = new_vids[0];
+    const size_t facet_size = m_incident_face_datas.size();
+    std::vector<int64_t> new_facet_ids = this->request_simplex_indices(PrimitiveType::Triangle, 2 * facet_size);
+    assert(new_facet_ids.size() == 2 * facet_size);
+    for(size_t j = 0; j < facet_size; ++j) {
+        
+        std::array<int64_t,2> arr;
+        std::copy(new_facet_ids.begin() + 2 * j, new_fids.begin() + 2*(j+1), arr
+                );
+        //const auto& data = 
+            split_facet_data().add_facet(m_mesh, m_operating_tuple, arr);
+        m_incident_face_datas[j].split_f = arr;
 
-        // create new edges (spine)
-        std::vector<int64_t> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 4);
-        assert(new_eids.size() == 4);
 
-        auto midpoint = new_eids.begin() + 2;
-        std::copy(new_eids.begin(), midpoint, split_spine_eids.begin());
-        std::copy(midpoint, new_eids.end(), m_free_split_e.begin());
-
-    } else {
-        // create new vertex (center)
-        std::vector<int64_t> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
-        assert(new_vids.size() == 1);
-        split_new_vid = new_vids[0];
-
-        // create new edges (spine)
-        std::vector<int64_t> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
-        assert(new_eids.size() == 2);
-
-        std::copy(new_eids.begin(), new_eids.end(), split_spine_eids.begin());
     }
+
 
     for (IncidentFaceData& face_data : m_incident_face_datas) {
         replace_incident_face(face_data);
@@ -574,6 +559,36 @@ void TriMesh::TriMeshOperationExecutor::split_edge()
     delete_simplices();
 }
 
+    void TriMesh::TriMeshOperationExecutor::create_spine_simplices() {
+    if(m_mesh.is_free()) {
+        // create new vertex (center)
+        std::vector<int64_t> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 3);
+        assert(new_vids.size() == 3);
+
+        std::copy(new_vids.begin()+1, new_vids.end(), m_free_split_v.begin());
+        split_new_vid = new_vids[0];
+
+        // create new edges (spine)
+        std::vector<int64_t> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 4);
+        assert(new_eids.size() == 4);
+
+        auto midpoint = new_eids.begin() + 2;
+        std::copy(new_eids.begin(), midpoint, split_spine_eids.begin());
+        std::copy(midpoint, new_eids.end(), m_free_split_e.begin());
+
+    } else {
+        // create new vertex (center)
+        std::vector<int64_t> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
+        assert(new_vids.size() == 1);
+        split_new_vid = new_vids[0];
+
+        // create new edges (spine)
+        std::vector<int64_t> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
+        assert(new_eids.size() == 2);
+
+        std::copy(new_eids.begin(), new_eids.end(), split_spine_eids.begin());
+    }
+    }
 
 void TriMesh::TriMeshOperationExecutor::collapse_edge_precompute()
 {
