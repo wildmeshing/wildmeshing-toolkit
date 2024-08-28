@@ -43,7 +43,7 @@ void extract_triangle_soup_from_image(
     double min_range_in_axis =
         (double)std::min(std::min(data.size(), data[0].size()), data[0][0].size());
     int max_level_tmp = std::floor(std::log(min_range_in_axis) / std::log(2.0)) - 2;
-    int max_level_tmp = std::max<int>(max_level, 1);
+    max_level_tmp = std::max<int>(max_level, 1);
     max_level = max_level_tmp;
     spdlog::info("level picked: {}\n", max_level);
 
