@@ -42,8 +42,9 @@ void extract_triangle_soup_from_image(
 
     double min_range_in_axis =
         (double)std::min(std::min(data.size(), data[0].size()), data[0][0].size());
-    max_level = std::floor(std::log(min_range_in_axis) / std::log(2.0)) - 2;
-    max_level = std::max<unsigned int>(max_level, 1);
+    int max_level_tmp = std::floor(std::log(min_range_in_axis) / std::log(2.0)) - 2;
+    int max_level_tmp = std::max<int>(max_level, 1);
+    max_level = max_level_tmp;
     spdlog::info("level picked: {}\n", max_level);
 
     int target_value;
@@ -536,8 +537,10 @@ void gmsh2hdf_tag(
             int64_t intValue = volumetric_data[idx_0][idx_1][idx_2];
             acc_tag.scalar_attribute(t) = intValue;
             // for bc_tag
-            int64_t intBCValue = volumetric_bc_data[idx_0][idx_1][idx_2];
-            acc_bc_tag.scalar_attribute(t) = intBCValue;
+            if (has_bc) {
+                int64_t intBCValue = volumetric_bc_data[idx_0][idx_1][idx_2];
+                acc_bc_tag.scalar_attribute(t) = intBCValue;
+            }
         }
     }
 
