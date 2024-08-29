@@ -4,8 +4,7 @@ function(add_component_test ...)
         return()
     endif()
 
-    message(STATUS "Tested component: ${COMPONENT_TARGET_NAME}")
-    message(STATUS "Adding files to component tests: ${ARGV}")
+    message(STATUS "Add test files for component ${COMPONENT_TARGET_NAME}: ${ARGV}")
 
     target_sources(${WMTK_COMPONENT_TEST_TARGET} PUBLIC ${ARGV})
     target_link_libraries(${WMTK_COMPONENT_TEST_TARGET} PRIVATE ${COMPONENT_TARGET_NAME})
