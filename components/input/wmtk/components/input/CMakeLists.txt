@@ -8,8 +8,8 @@ set(SRC_FILES
 
 
 include(stb)
-#CURRENT_COMPONENT_LIB_NAME is set from the main cmake
-target_sources(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${SRC_FILES})
-target_link_libraries(${CURRENT_COMPONENT_LIB_NAME} PRIVATE stb::image)
-:vsp
+#COMPONENT_TARGET_NAME is set from the main cmake
+target_sources(${COMPONENT_TARGET_NAME} PRIVATE ${SRC_FILES})
+target_link_libraries(${COMPONENT_TARGET_NAME} PRIVATE stb::image wmtk::component_utils)
 
+add_component_test(tests/input.cpp)

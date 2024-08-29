@@ -13,6 +13,6 @@ set(SRC_FILES
 
 
 include(delaunay_psm)
-#CURRENT_COMPONENT_LIB_NAME is set from the main cmake
-target_sources(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${SRC_FILES})
-target_link_libraries(${CURRENT_COMPONENT_LIB_NAME} PRIVATE geogram::delaunay_psm)
+#COMPONENT_TARGET_NAME is set from the main cmake
+target_sources(${COMPONENT_TARGET_NAME} PRIVATE ${SRC_FILES})
+target_link_libraries(${COMPONENT_TARGET_NAME} PRIVATE wmtk::component_utils geogram::delaunay_psm)
