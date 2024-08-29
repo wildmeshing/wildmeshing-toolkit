@@ -135,6 +135,7 @@ TEST_CASE("split_facet_maps_mesh", "[operations][data]")
         const wmtk::PrimitiveType boundary_type = mesh_type - 1;
         for (int8_t edge_orientation = 0; edge_orientation < sd.size(); ++edge_orientation) {
             auto mesh_ptr = wmtk::tests::tools::single_simplex_mesh(mesh_type);
+            spdlog::info("Mesh dimension: {}", mesh_ptr->top_cell_dimension());
 
             wmtk::Tuple t = sd.tuple_from_dart(wmtk::autogen::Dart(0, edge_orientation));
             // data.add(*mesh_ptr, t);
@@ -166,6 +167,13 @@ TEST_CASE("split_facet_maps_mesh", "[operations][data]")
 
             const auto left_global_ids = wmtk::tests::tools::global_ids(*mesh_ptr, left_tuple);
             const auto right_global_ids = wmtk::tests::tools::global_ids(*mesh_ptr, right_tuple);
+
+            spdlog::info(
+                "{}:{} {}:{}",
+                wmtk::utils::TupleInspector::as_string(left_tuple),
+                fmt::join(left_global_ids, ","),
+                wmtk::utils::TupleInspector::as_string(right_tuple),
+                fmt::join(right_global_ids, ","));
 
             int8_t left_size = wmtk::tests::tools::global_index_max_subdart_size(
                 original_global_ids,

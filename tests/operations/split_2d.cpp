@@ -40,7 +40,7 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][2D]")
     SECTION("single_triangle")
     {
         const DEBUG_TriMesh m = single_triangle();
-        const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
 
         std::array<std::vector<int64_t>, 3> ids_to_delete =
             TMOE::get_split_simplices_to_delete(edge, m);
@@ -57,7 +57,7 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][2D]")
     SECTION("hex_plus_two")
     {
         const DEBUG_TriMesh m = hex_plus_two();
-        const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(4, 5, 2);
 
         std::array<std::vector<int64_t>, 3> ids_to_delete =
             TMOE::get_split_simplices_to_delete(edge, m);
@@ -118,7 +118,7 @@ TEST_CASE("delete_simplices", "[operations][2D]")
     // things can be marked as deleted but will still have the connectivity information
     DEBUG_TriMesh m = two_neighbors();
     REQUIRE(m.is_connectivity_valid());
-    Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+    Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
     std::vector<std::vector<int64_t>> simplices_to_delete(3);
     const int64_t edge_index = m.id(edge, PE);
     const int64_t face_index = m.id(edge, PF);
@@ -147,7 +147,7 @@ TEST_CASE("operation_state", "[operations][2D]")
         DEBUG_TriMesh m = single_triangle();
 
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
+        Tuple edge = m.edge_tuple_with_vs_and_t(0, 2, 0);
         REQUIRE(m.id(edge, PV) == 0);
         REQUIRE(m.id(edge, PF) == 0);
         REQUIRE(m.id(m.switch_tuple(edge, PV), PV) == 2);
@@ -166,7 +166,7 @@ TEST_CASE("operation_state", "[operations][2D]")
         DEBUG_TriMesh m = one_ear();
 
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
         auto executor = m.get_tmoe(edge);
 
         executor.split_edge_precompute();
@@ -195,7 +195,7 @@ TEST_CASE("operation_state", "[operations][2D]")
         DEBUG_TriMesh m = interior_edge();
 
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
         auto executor = m.get_tmoe(edge);
 
         executor.split_edge_precompute();
@@ -261,7 +261,7 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     DEBUG_TriMesh m = hex_plus_two();
 
     REQUIRE(m.is_connectivity_valid());
-    const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+    const Tuple edge = m.edge_tuple_with_vs_and_t(4, 5, 2);
     const Tuple left_ear_edge = m.switch_tuple(edge, PE);
     REQUIRE(m.id(left_ear_edge, PV) == 4);
     REQUIRE(m.id(m.switch_tuple(left_ear_edge, PV), PV) == 1);
@@ -282,7 +282,7 @@ TEST_CASE("connect_faces_across_spine", "[operations][split][2D]")
     DEBUG_TriMesh m = interior_edge();
     m.reserve_attributes(PF, 10);
     REQUIRE(m.is_connectivity_valid());
-    const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+    const Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
     auto executor = m.get_tmoe(edge);
     executor.split_edge_precompute();
     auto& incident_face_datas = executor.m_incident_face_datas;
@@ -318,7 +318,7 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
     {
         DEBUG_TriMesh m = single_triangle();
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
         auto executor = m.get_tmoe(edge);
         executor.split_edge_precompute();
         auto& incident_face_datas = executor.m_incident_face_datas;
@@ -401,7 +401,7 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         // old faces are not recycled
         DEBUG_TriMesh m = interior_edge();
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
         auto executor = m.get_tmoe(edge);
         executor.split_edge_precompute();
         auto& incident_face_datas = executor.m_incident_face_datas;
@@ -545,7 +545,7 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
             m = single_triangle();
         }
         REQUIRE(m.is_connectivity_valid());
-        const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
         const int64_t edge_id = m.id(edge, PE);
         auto executor = m.get_tmoe(edge);
 
@@ -582,7 +582,7 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
             m.initialize(tris);
         }
         REQUIRE(m.is_connectivity_valid());
-        const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
         const int64_t edge_id = m.id(edge, PE);
         auto executor = m.get_tmoe(edge);
 
@@ -613,24 +613,24 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     REQUIRE(m.is_connectivity_valid());
     EdgeSplit split(m);
 
-    Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+    Tuple edge = m.edge_tuple_with_vs_and_t(4, 5, 2);
     split(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 
-    Tuple edge2 = m.edge_tuple_between_v1_v2(3, 0, 0);
+    Tuple edge2 = m.edge_tuple_with_vs_and_t(3, 0, 0);
     split(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 
-    Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
+    Tuple edge3 = m.edge_tuple_with_vs_and_t(4, 7, 6);
     REQUIRE(m.is_valid(edge3));
     split(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 
-    Tuple edge4 = m.edge_tuple_between_v1_v2(4, 9, 8);
+    Tuple edge4 = m.edge_tuple_with_vs_and_t(4, 9, 8);
     split(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 
-    Tuple edge5 = m.edge_tuple_between_v1_v2(5, 6, 4);
+    Tuple edge5 = m.edge_tuple_with_vs_and_t(5, 6, 4);
     split(Simplex::edge(m, edge));
     REQUIRE(m.is_connectivity_valid());
 }
@@ -644,7 +644,7 @@ TEST_CASE("split_edge_operation", "[operations][split][2D]")
     REQUIRE(m.is_connectivity_valid());
     EdgeSplit op(m);
 
-    const Tuple e = m.edge_tuple_between_v1_v2(0, 1, 1);
+    const Tuple e = m.edge_tuple_with_vs_and_t(0, 1, 1);
     bool split_boundary_edges;
     SECTION("split_boundary_true")
     {
@@ -672,7 +672,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         DEBUG_TriMesh m = single_triangle();
         REQUIRE(m.is_connectivity_valid());
 
-        const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
         EdgeSplit split(m);
         auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
@@ -688,7 +688,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         DEBUG_TriMesh m = single_triangle();
         REQUIRE(m.is_connectivity_valid());
 
-        const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 0);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(2, 1, 0);
         EdgeSplit split(m);
         auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
@@ -704,7 +704,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         DEBUG_TriMesh m = three_neighbors();
         REQUIRE(m.is_connectivity_valid());
 
-        const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(2, 1, 1);
         EdgeSplit split(m);
         auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
@@ -721,7 +721,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         DEBUG_TriMesh m = three_neighbors();
         REQUIRE(m.is_connectivity_valid());
 
-        const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 3);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(2, 1, 3);
         EdgeSplit split(m);
         auto res = split(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
@@ -775,7 +775,7 @@ TEST_CASE("split_modified_primitives", "[operations][split]")
     DEBUG_TriMesh m = edge_region();
     EdgeSplit op(m);
 
-    const Tuple e = m.edge_tuple_between_v1_v2(4, 5, 2);
+    const Tuple e = m.edge_tuple_with_vs_and_t(4, 5, 2);
     const auto ret = op(Simplex::edge(m, e));
     REQUIRE(!ret.empty());
     CHECK(ret.size() == 1);

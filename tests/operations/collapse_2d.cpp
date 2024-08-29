@@ -55,7 +55,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 
     SECTION("interior_edge")
     {
-        const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(4, 5, 2);
         EdgeCollapse collapse(m);
         collapse(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
@@ -75,7 +75,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     }
     SECTION("edge_to_boundary")
     {
-        const Tuple edge = m.edge_tuple_between_v1_v2(4, 0, 0);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(4, 0, 0);
         EdgeCollapse collapse(m);
         collapse(Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());
@@ -94,7 +94,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     }
     SECTION("edge_from_boundary_allowed")
     {
-        const Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(0, 4, 0);
 
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
@@ -104,7 +104,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     }
     SECTION("edge_from_boundary_prohibited")
     {
-        const Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(0, 4, 0);
 
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
@@ -115,7 +115,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     }
     SECTION("boundary_edge")
     {
-        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(0, 1, 1);
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         op(Simplex::edge(m, edge));
@@ -131,7 +131,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     }
     SECTION("boundary_edge_allowed")
     {
-        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(0, 1, 1);
 
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
@@ -141,7 +141,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     }
     SECTION("boundary_edge_prohibited")
     {
-        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(0, 1, 1);
 
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
@@ -159,7 +159,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
     {
         REQUIRE(m.is_connectivity_valid());
 
-        const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(4, 5, 2);
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         auto res = op(Simplex::edge(m, edge));
@@ -182,7 +182,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
     {
         REQUIRE(m.is_connectivity_valid());
 
-        const Tuple edge = m.edge_tuple_between_v1_v2(3, 4, 0);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(3, 4, 0);
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         auto res = op(Simplex::edge(m, edge));
@@ -199,7 +199,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
     {
         REQUIRE(m.is_connectivity_valid());
 
-        const Tuple edge = m.edge_tuple_between_v1_v2(4, 3, 0);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(4, 3, 0);
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         auto res = op(Simplex::edge(m, edge));
@@ -246,7 +246,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
             SplitRibBasicStrategy::None);
         op.set_new_attribute_strategy(pos_handle);
 
-        const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
         {
             auto acc_tag_e = m.create_accessor<int64_t>(edge_tag_handle);
             acc_tag_e.scalar_attribute(t) = 1;
@@ -346,7 +346,7 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
     SECTION("interior_edge")
     {
         const DEBUG_TriMesh m = edge_region();
-        Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+        Tuple edge = m.edge_tuple_with_vs_and_t(4, 5, 2);
 
         std::array<std::vector<int64_t>, 3> ids_to_delete =
             TMOE::get_collapse_simplices_to_delete(edge, m);
@@ -387,7 +387,7 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
     SECTION("boundary_edge")
     {
         const DEBUG_TriMesh m = edge_region();
-        Tuple edge = m.edge_tuple_between_v1_v2(7, 8, 6);
+        Tuple edge = m.edge_tuple_with_vs_and_t(7, 8, 6);
 
         std::array<std::vector<int64_t>, 3> ids_to_delete =
             TMOE::get_collapse_simplices_to_delete(edge, m);
@@ -419,7 +419,7 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
     SECTION("interior_edge_incident_to_boundary")
     {
         const DEBUG_TriMesh m = edge_region();
-        Tuple edge = m.edge_tuple_between_v1_v2(7, 4, 5);
+        Tuple edge = m.edge_tuple_with_vs_and_t(7, 4, 5);
 
         std::array<std::vector<int64_t>, 3> sc_to_delete =
             TMOE::get_collapse_simplices_to_delete(edge, m);

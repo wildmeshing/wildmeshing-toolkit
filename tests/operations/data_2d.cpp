@@ -55,7 +55,7 @@ TEST_CASE("incident_face_data", "[operations][2D]")
         DEBUG_TriMesh m = single_triangle();
         REQUIRE(m.is_connectivity_valid());
 
-        const Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(0, 2, 0);
         REQUIRE(m.id(edge, PV) == 0);
         REQUIRE(m.id(edge, PF) == 0);
         REQUIRE(m.id(m.switch_tuple(edge, PV), PV) == 2);
@@ -92,7 +92,7 @@ TEST_CASE("incident_face_data", "[operations][2D]")
         DEBUG_TriMesh m = one_ear();
 
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
 #if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
@@ -125,7 +125,7 @@ TEST_CASE("incident_face_data", "[operations][2D]")
         DEBUG_TriMesh m = two_neighbors();
 
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
 #if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);

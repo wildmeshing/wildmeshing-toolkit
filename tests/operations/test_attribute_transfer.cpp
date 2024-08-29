@@ -78,28 +78,28 @@ TEST_CASE("split_edge_attr_update", "[operations][split][2D]")
         SplitRibBasicStrategy::None); // the edge length attribute is updated
                                       // in the update strategy
     op.set_new_attribute_strategy(pos_handle);
-    const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+    const Tuple edge = m.edge_tuple_with_vs_and_t(4, 5, 2);
     bool success = !op(Simplex::edge(m, edge)).empty();
     CHECK(success);
     check_lengths();
 
-    const Tuple edge2 = m.edge_tuple_between_v1_v2(3, 0, 0);
+    const Tuple edge2 = m.edge_tuple_with_vs_and_t(3, 0, 0);
     success = !op(Simplex::edge(m, edge2)).empty();
     CHECK(success);
     check_lengths();
 
-    const Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
+    const Tuple edge3 = m.edge_tuple_with_vs_and_t(4, 7, 6);
     success = !op(Simplex::edge(m, edge3)).empty();
     CHECK(success);
     REQUIRE(m.is_connectivity_valid());
     check_lengths();
 
-    const Tuple edge4 = m.edge_tuple_between_v1_v2(4, 9, 8);
+    const Tuple edge4 = m.edge_tuple_with_vs_and_t(4, 9, 8);
     success = !op(Simplex::edge(m, edge4)).empty();
     CHECK(success);
     check_lengths();
 
-    const Tuple edge5 = m.edge_tuple_between_v1_v2(5, 6, 4);
+    const Tuple edge5 = m.edge_tuple_with_vs_and_t(5, 6, 4);
     success = !op(Simplex::edge(m, edge5)).empty();
     CHECK(success);
     check_lengths();
@@ -169,19 +169,19 @@ TEST_CASE("collapse_edge_new_attr", "[operations][collapse][2D]")
 
     SECTION("interior_edge")
     {
-        edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+        edge = m.edge_tuple_with_vs_and_t(4, 5, 2);
     }
     SECTION("edge_to_boundary")
     {
-        edge = m.edge_tuple_between_v1_v2(4, 0, 0);
+        edge = m.edge_tuple_with_vs_and_t(4, 0, 0);
     }
     SECTION("edge_from_boundary_allowed")
     {
-        edge = m.edge_tuple_between_v1_v2(0, 4, 0);
+        edge = m.edge_tuple_with_vs_and_t(0, 4, 0);
     }
     SECTION("boundary_edge")
     {
-        edge = m.edge_tuple_between_v1_v2(0, 1, 1);
+        edge = m.edge_tuple_with_vs_and_t(0, 1, 1);
     }
 
     const bool success = !op(Simplex::edge(m, edge)).empty();
@@ -206,7 +206,7 @@ TEST_CASE("attribute_strategy_missing", "[operations][split]")
 
     EdgeSplit op(m);
 
-    const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+    const Tuple edge = m.edge_tuple_with_vs_and_t(4, 5, 2);
 
     // attributes without update strategy cause an exception in the operation
     CHECK_THROWS(op(Simplex::edge(m, edge)));

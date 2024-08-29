@@ -568,7 +568,7 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
         std::make_shared<invariants::InteriorSimplexInvariant>(mesh, PrimitiveType::Edge));
     op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(mesh));
 
-    Tuple swap_edge = mesh.edge_tuple_between_v1_v2(6, 7, 5);
+    Tuple swap_edge = mesh.edge_tuple_with_vs_and_t(6, 7, 5);
 
     auto vertex_one_ring = [](TriMesh& m, const Tuple& t) {
         return simplex::link(m, simplex::Simplex::vertex(m, t))
@@ -635,7 +635,7 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
     }
     SECTION("swap_fail")
     {
-        const Tuple e = mesh.edge_tuple_between_v1_v2(6, 7, 5);
+        const Tuple e = mesh.edge_tuple_with_vs_and_t(6, 7, 5);
         op.add_invariant(std::make_shared<invariants::ValenceImprovementInvariant>(mesh));
         const bool success = !op(Simplex::edge(mesh, e)).empty();
         CHECK(!success);
