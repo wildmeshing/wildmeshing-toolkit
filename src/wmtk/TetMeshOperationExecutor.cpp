@@ -240,17 +240,6 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
 
 
-    const size_t facet_size = m_incident_face_datas.size();
-    std::vector<int64_t> new_facet_ids =
-        this->request_simplex_indices(PrimitiveType::Tetrahedron, 2 * facet_size);
-    assert(new_facet_ids.size() == 2 * facet_size);
-    for (size_t j = 0; j < facet_size; ++j) {
-        std::array<int64_t, 2> arr;
-        std::copy(new_facet_ids.begin() + 2 * j, new_fids.begin() + 2 * (j + 1), arr);
-        // const auto& data =
-        split_facet_data().add_facet(m_mesh, m_operating_tuple, arr);
-        m_incident_face_datas[j].split_f = arr;
-    }
 
 
     // create new vertex (center)
@@ -272,17 +261,23 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     const auto [incident_tets, incident_faces] = get_incident_tets_and_faces(m_operating_tuple);
     const bool loop_flag = (incident_tets.size() == incident_faces.size());
 
+    const size_t facet_size = incident_tets.size();
+    std::vector<int64_t> new_facet_ids =
+        this->request_simplex_indices(PrimitiveType::Tetrahedron, 2 * facet_size);
+    assert(new_facet_ids.size() == 2 * facet_size);
+    const size_t face_size = incident_faces.size();
+    std::vector<int64_t> new_face_ids =
+        this->request_simplex_indices(PrimitiveType::Triangle, 2 * face_size);
+    assert(new_face_ids.size() == 2 * face_size);
 
     // create new faces and edges
     std::vector<FaceSplitData> new_incident_face_data;
     for (int64_t i = 0; i < incident_faces.size(); ++i) {
-        std::vector<int64_t> new_fids = this->request_simplex_indices(PrimitiveType::Triangle, 2);
         std::vector<int64_t> splitting_eids = this->request_simplex_indices(PrimitiveType::Edge, 1);
 
         FaceSplitData fsd;
         fsd.fid_old = m_mesh.id_face(incident_faces[i]);
-        fsd.fid_new[0] = new_fids[0];
-        fsd.fid_new[1] = new_fids[1];
+        std::copy(new_face_ids.begin() + 2 * i, new_face_ids.begin() + 2 * (i + 1), fsd.fid_new.begin());
         fsd.eid_spine_old = m_operating_edge_id;
         fsd.eid_spine_new[0] = new_eids[0]; // redundant
         fsd.eid_spine_new[1] = new_eids[1]; // redundant
@@ -297,17 +292,16 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     // create new tets
     m_incident_tet_datas.clear();
     for (int64_t i = 0; i < incident_tets.size(); ++i) {
-        std::vector<int64_t> new_tids =
-            this->request_simplex_indices(PrimitiveType::Tetrahedron, 2);
         std::vector<int64_t> split_fids = this->request_simplex_indices(PrimitiveType::Triangle, 1);
 
         IncidentTetData tsd;
         tsd.local_operating_tuple = incident_tets[i];
         tsd.tid = m_mesh.id_tet(incident_tets[i]);
-        tsd.split_t[0] = new_tids[0];
-        tsd.split_t[1] = new_tids[1];
+        std::copy(new_facet_ids.begin() + 2 * i, new_facet_ids.begin() + 2 * (i + 1), tsd.split_t.begin());
         tsd.rib_f = split_fids[0];
         tsd.new_face_id = split_fids[0];
+
+        split_facet_data().add_facet(m_mesh, m_operating_tuple, tsd.split_t);
 
         // get ears here
         Tuple ear1 = m_mesh.switch_face(m_mesh.switch_edge(incident_tets[i]));

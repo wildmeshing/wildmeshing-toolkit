@@ -123,6 +123,7 @@ inline Tuple TriMesh::switch_face(const Tuple& tuple) const
 }
 inline int64_t TriMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
+    assert(!Mesh::is_removed(tuple));
     switch (type) {
     case PrimitiveType::Vertex: {
         int64_t v = m_fv_accessor->const_topological_scalar_attribute(tuple, PrimitiveType::Vertex);

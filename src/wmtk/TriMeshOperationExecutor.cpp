@@ -510,7 +510,7 @@ void TriMesh::TriMeshOperationExecutor::split_edge()
     for(size_t j = 0; j < facet_size; ++j) {
         
         std::array<int64_t,2> arr;
-        std::copy(new_facet_ids.begin() + 2 * j, new_fids.begin() + 2*(j+1), arr
+        std::copy(new_facet_ids.begin() + 2 * j, new_facet_ids.begin() + 2*(j+1), arr.begin()
                 );
         //const auto& data = 
             split_facet_data().add_facet(m_mesh, m_operating_tuple, arr);

@@ -74,16 +74,16 @@ public:
         std::array<int64_t, 2> split_t = std::array<int64_t, 2>{{-1, -1}}; // tid_new_1/2
         int64_t rib_f = -1; // fid_split
 
-        int64_t v0;
-        int64_t v1;
-        int64_t v2;
-        int64_t v3;
-        int64_t e01;
-        int64_t e02;
-        int64_t e03;
-        int64_t e12;
-        int64_t e13;
-        int64_t e23;
+        int64_t v0 = -1;
+        int64_t v1 = -1;
+        int64_t v2 = -1;
+        int64_t v3 = -1;
+        int64_t e01 = -1;
+        int64_t e02 = -1;
+        int64_t e03 = -1;
+        int64_t e12 = -1;
+        int64_t e13 = -1;
+        int64_t e23 = -1;
 
         std::array<EarTet, 2> ears; // ear_tet_1/2
 
