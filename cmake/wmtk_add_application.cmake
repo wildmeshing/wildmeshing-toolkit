@@ -7,7 +7,7 @@ function(wmtk_add_application APP_NAME ...)
 
     set_target_properties(${APP_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/applications)
 
-    target_link_libraries(${APP_NAME} PRIVATE wmtk::toolkit CLI11::CLI11)
+    target_link_libraries(${APP_NAME} PRIVATE wmtk::toolkit wmtk::warnings CLI11::CLI11)
 
     set_target_properties(${APP_NAME} PROPERTIES FOLDER wmtk_applications)
 

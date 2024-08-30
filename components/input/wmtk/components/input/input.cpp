@@ -9,7 +9,7 @@ namespace wmtk::components {
 std::shared_ptr<Mesh> input(
     const std::filesystem::path& file,
     const bool ignore_z,
-    const std::vector<std::string> tetrahedron_attributes)
+    const std::vector<std::string>& tetrahedron_attributes)
 {
     if (!std::filesystem::exists(file)) {
         log_and_throw_error("file {} not found", file);
