@@ -14,7 +14,7 @@
 
 namespace wmtk::components {
 
-void winding_number(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void winding_number(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 

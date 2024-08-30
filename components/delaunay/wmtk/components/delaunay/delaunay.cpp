@@ -80,7 +80,7 @@ void delaunay_exec(const internal::DelaunayOptions& options, io::Cache& cache)
     cache.write_mesh(mesh, options.output);
 }
 
-void delaunay(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void delaunay(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 

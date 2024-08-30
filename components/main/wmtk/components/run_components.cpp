@@ -5,8 +5,8 @@
 #include <wmtk/utils/Stopwatch.hpp>
 
 
-#include <wmtk/components/base/Paths.hpp>
-#include <wmtk/components/base/resolve_path.hpp>
+#include <wmtk/components/utils/Paths.hpp>
+#include <wmtk/components/utils/resolve_path.hpp>
 
 #include <fstream>
 
@@ -61,21 +61,21 @@ wmtk::io::Cache run_components(const nlohmann::json& json_input_file, bool stric
     const std::string root_path = spec_json["root_path"];
 
     const std::string output_dir =
-        wmtk::components::base::resolve_path(spec_json["output"]["directory"], root_path, false);
+        wmtk::utils::resolve_path(spec_json["output"]["directory"], root_path, false);
     if (!output_dir.empty()) {
         std::filesystem::create_directories(output_dir);
     }
 
     std::map<
         std::string,
-        std::function<void(const base::Paths&, const nlohmann::json&, wmtk::io::Cache&)>>
+        std::function<void(const utils::Paths&, const nlohmann::json&, wmtk::io::Cache&)>>
         components;
 
 // register components
 // inside ${CMAKE_CURRENT_BINARY_DIR}/autogen
 #include <components_map.hpp>
 
-    base::Paths paths;
+    utils::Paths paths;
     paths.root_path = root_path;
     paths.output_dir = output_dir;
 

@@ -8,7 +8,7 @@
 
 namespace wmtk::components {
 
-void mesh_info(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void mesh_info(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 

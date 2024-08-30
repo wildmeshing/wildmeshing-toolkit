@@ -16,7 +16,7 @@ namespace wmtk::components {
 
 using namespace simplex;
 
-void to_points(const base::Paths& paths, const nlohmann::json& json, io::Cache& cache)
+void to_points(const utils::Paths& paths, const nlohmann::json& json, io::Cache& cache)
 {
     ToPtsOptions options = json.get<ToPtsOptions>();
 

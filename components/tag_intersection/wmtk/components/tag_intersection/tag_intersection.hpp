@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <map>
 #include <nlohmann/json.hpp>
-#include <wmtk/components/base/Paths.hpp>
+#include <wmtk/components/utils/Paths.hpp>
 #include <wmtk/io/Cache.hpp>
 
 namespace wmtk::components {
@@ -13,6 +13,6 @@ namespace wmtk::components {
  * @param j setting [please check the TagIntersectionOptions.hpp]
  * @param cache used for io write/read
  */
-void tag_intersection(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache);
+void tag_intersection(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache);
 
 } // namespace wmtk::components

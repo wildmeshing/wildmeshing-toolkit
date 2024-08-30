@@ -9,7 +9,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 
-namespace wmtk::components::base {
+namespace wmtk::components::utils {
 
 attribute::MeshAttributeHandle get_attribute(const Mesh& m, const std::string& name)
 {
@@ -17,7 +17,7 @@ attribute::MeshAttributeHandle get_attribute(const Mesh& m, const std::string& n
 
     std::vector<attribute::MeshAttributeHandle> handles;
 
-    for (const PrimitiveType& ptype : utils::primitive_below(m.top_simplex_type())) {
+    for (const PrimitiveType& ptype : wmtk::utils::primitive_below(m.top_simplex_type())) {
         if (m.has_attribute<char>(name, ptype)) {
             handles.emplace_back(m.get_attribute_handle<char>(name, ptype));
         }
@@ -81,4 +81,4 @@ get_attributes(const io::Cache& cache, const Mesh& m, const nlohmann::json& attr
     return handles;
 }
 
-} // namespace wmtk::components::base
+} // namespace wmtk::components::utils

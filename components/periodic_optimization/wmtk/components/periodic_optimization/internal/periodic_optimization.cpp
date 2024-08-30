@@ -5,7 +5,7 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 
-#include <wmtk/components/base/get_attributes.hpp>
+#include <wmtk/components/utils/get_attributes.hpp>
 #include <wmtk/multimesh/consolidate.hpp>
 #include <wmtk/utils/Logger.hpp>
 

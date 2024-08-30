@@ -1,12 +1,15 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
-#include <wmtk/io/Cache.hpp>
-
-#include <wmtk/components/base/Paths.hpp>
+#include <wmtk/Mesh.hpp>
 
 namespace wmtk::components {
 
-void input(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache);
+// std::shared_ptr<Mesh> input(nlohmann::json j);
+
+std::shared_ptr<Mesh> input(
+    const std::filesystem::path& file,
+    const bool ignore_z = false,
+    const std::vector<std::string> tetrahedron_attributes = {});
 
 } // namespace wmtk::components

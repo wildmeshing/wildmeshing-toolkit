@@ -1,7 +1,7 @@
 #include "procedural.hpp"
 
 #include <wmtk/Mesh.hpp>
-#include <wmtk/components/base/resolve_path.hpp>
+#include <wmtk/components/utils/resolve_path.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
@@ -10,7 +10,7 @@
 
 namespace wmtk::components {
 
-void procedural(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void procedural(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 

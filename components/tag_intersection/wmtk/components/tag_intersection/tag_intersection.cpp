@@ -2,7 +2,7 @@
 
 #include <deque>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/components/base/get_attributes.hpp>
+#include <wmtk/components/utils/get_attributes.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -107,12 +107,12 @@ auto gather_attributes(
         output_tags.emplace_back(std::make_tuple(handle, value));
     }
 
-    AttrVec pass_through_attributes = base::get_attributes(cache, mesh, options.pass_through);
+    AttrVec pass_through_attributes = utils::get_attributes(cache, mesh, options.pass_through);
 
     return std::make_tuple(input_tags, output_tags, pass_through_attributes);
 }
 
-void tag_intersection(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void tag_intersection(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 

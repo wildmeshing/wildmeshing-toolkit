@@ -2,7 +2,7 @@
 
 #include <nlohmann/json.hpp>
 
-namespace wmtk::components::base {
+namespace wmtk::components::utils {
 
 struct ComponentOptionsBase
 {
@@ -12,4 +12,4 @@ struct ComponentOptionsBase
     std::vector<std::string> pass_through; // further attributes that should not be deleted
 };
 
-} // namespace wmtk::components::base
+} // namespace wmtk::components::utils

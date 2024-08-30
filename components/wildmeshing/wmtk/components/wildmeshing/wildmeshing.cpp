@@ -8,7 +8,7 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/utils/cast_attribute.hpp>
 
-#include <wmtk/components/base/get_attributes.hpp>
+#include <wmtk/components/utils/get_attributes.hpp>
 #include <wmtk/multimesh/consolidate.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -404,7 +404,7 @@ void set_operation_energy_filter_after_sizing_field(
     }
 }
 
-void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void wildmeshing(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     // opt_logger().set_level(spdlog::level::info);
 
@@ -652,7 +652,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     //////////////////////////////////
     // default transfer
-    auto pass_through_attributes = base::get_attributes(cache, *mesh, options.pass_through);
+    auto pass_through_attributes = utils::get_attributes(cache, *mesh, options.pass_through);
     pass_through_attributes.push_back(edge_length_attribute);
     pass_through_attributes.push_back(amips_attribute);
     // pass_through_attributes.push_back(target_edge_length_attribute);
@@ -704,7 +704,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             "TetWild: getting constrained position {} from {}",
             v.constrained_position,
             v.geometry.mesh);
-        auto constrained = base::get_attributes(cache, *mesh, v.constrained_position);
+        auto constrained = utils::get_attributes(cache, *mesh, v.constrained_position);
         multimesh_meshes.push_back(constrained.front().mesh().shared_from_this());
         assert(constrained.size() == 1);
         pass_through_attributes.emplace_back(constrained.front());

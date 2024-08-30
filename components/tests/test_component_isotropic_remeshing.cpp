@@ -7,12 +7,12 @@
 #include <tools/TriMesh_examples.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/Types.hpp>
-#include <wmtk/components/base/Paths.hpp>
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/components/isotropic_remeshing/internal/IsotropicRemeshing.hpp>
 #include <wmtk/components/isotropic_remeshing/internal/IsotropicRemeshingOptions.hpp>
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
 #include <wmtk/components/output/output.hpp>
+#include <wmtk/components/utils/Paths.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
 #include <wmtk/invariants/MinEdgeLengthInvariant.hpp>
@@ -34,7 +34,7 @@
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/utils/merkle_tree_diff.hpp>
 
-using namespace wmtk::components::base;
+using namespace wmtk::components::utils;
 
 using json = nlohmann::json;
 using namespace wmtk;

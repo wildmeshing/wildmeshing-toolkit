@@ -1,7 +1,7 @@
 #include "output.hpp"
 
 #include <wmtk/Mesh.hpp>
-#include <wmtk/components/base/resolve_path.hpp>
+#include <wmtk/components/utils/resolve_path.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -9,7 +9,7 @@
 
 namespace wmtk::components {
 
-void output(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void output(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 
@@ -22,8 +22,7 @@ void output(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
         out[d] = true;
     }
 
-    std::filesystem::path file(
-        wmtk::components::base::resolve_path(options.file.string(), paths.output_dir));
+    std::filesystem::path file(utils::resolve_path(options.file.string(), paths.output_dir));
 
 
     if (file.extension().empty()) {

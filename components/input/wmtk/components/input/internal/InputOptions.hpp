@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wmtk/components/base/json_utils.hpp>
+#include <wmtk/components/utils/json_utils.hpp>
 
 #include <nlohmann/json.hpp>
 
@@ -10,13 +10,12 @@ namespace internal {
 
 struct InputOptions
 {
-    std::string name;
     std::filesystem::path file;
-    bool ignore_z;
+    bool ignore_z = false;
     std::vector<std::string> tetrahedron_attributes;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputOptions, name, file, ignore_z, tetrahedron_attributes);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputOptions, file, ignore_z, tetrahedron_attributes);
 
 } // namespace internal
 } // namespace components

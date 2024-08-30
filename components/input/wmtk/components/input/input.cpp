@@ -1,29 +1,47 @@
 #include "input.hpp"
 
 #include <wmtk/Mesh.hpp>
-#include <wmtk/components/base/resolve_path.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
+
+#include <jse/jse.h>
 
 #include "internal/InputOptions.hpp"
 
+#include "input_spec.hpp"
+
 namespace wmtk::components {
 
-void input(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+std::shared_ptr<Mesh> input(nlohmann::json j)
 {
     using namespace internal;
 
-    InputOptions options = j.get<InputOptions>();
+    jse::JSE spec_engine;
+    spec_engine.strict = true;
 
-    std::string file = wmtk::components::base::resolve_path(options.file.string(), paths.root_path);
-
-    if (!std::filesystem::exists(file)) {
-        throw std::runtime_error(std::string("file") + file + " not found");
+    bool r = spec_engine.verify_json(j, input_spec);
+    if (!r) {
+        log_and_throw_error("{}", spec_engine.log2str());
+    } else {
+        j = spec_engine.inject_defaults(j, input_spec);
     }
 
-    std::shared_ptr<Mesh> mesh = read_mesh(file, options.ignore_z, options.tetrahedron_attributes);
+    const InputOptions options = j.get<InputOptions>();
+
+    return input(options.file, options.ignore_z, options.tetrahedron_attributes);
+}
+
+std::shared_ptr<Mesh>
+input(const std::filesystem::path& file, const bool ignore_z, const std::vector<std::string> tetrahedron_attributes)
+{
+    if (!std::filesystem::exists(file)) {
+        log_and_throw_error("file {} not found", file);
+    }
+
+    const std::shared_ptr<Mesh> mesh = read_mesh(file, ignore_z, tetrahedron_attributes);
     assert(mesh->is_connectivity_valid());
 
-    cache.write_mesh(*mesh, options.name);
+    return mesh;
 }
 } // namespace wmtk::components

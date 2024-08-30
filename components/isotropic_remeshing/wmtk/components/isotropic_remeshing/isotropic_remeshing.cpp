@@ -1,7 +1,7 @@
 #include "isotropic_remeshing.hpp"
 
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/components/base/get_attributes.hpp>
+#include <wmtk/components/utils/get_attributes.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <Eigen/Geometry>
@@ -29,7 +29,7 @@ double relative_to_absolute_length(
 }
 
 
-void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void isotropic_remeshing(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 
@@ -38,7 +38,7 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
     std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
 
 
-    auto pos_handles = base::get_attributes(cache, *mesh_in, options.attributes.position);
+    auto pos_handles = utils::get_attributes(cache, *mesh_in, options.attributes.position);
     assert(pos_handles.size() == 1);
     auto pos_handle = pos_handles.front();
 
@@ -48,9 +48,9 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
             mesh_in->top_simplex_type());
     }
 
-    auto pass_through_attributes = base::get_attributes(cache, *mesh_in, options.pass_through);
+    auto pass_through_attributes = utils::get_attributes(cache, *mesh_in, options.pass_through);
     auto other_positions =
-        base::get_attributes(cache, *mesh_in, options.attributes.other_positions);
+        utils::get_attributes(cache, *mesh_in, options.attributes.other_positions);
 
     if (options.length_abs < 0) {
         if (options.length_rel < 0) {
@@ -68,20 +68,20 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
     // mesh_in->clear_attributes(keeps);
 
     // gather handles again as they were invalidated by clear_attributes
-    // pos_handles = base::get_attributes(cache, *mesh_in, options.attributes.position);
-    // assert(pos_handles.size() == 1);
-    // pos_handle = pos_handles.front();
-    // pass_through_attributes = base::get_attributes(cache, *mesh_in, options.pass_through);
+    // pos_handles = utils::get_attributes(cache, *mesh_in,
+    // options.attributes.position); assert(pos_handles.size() == 1); pos_handle =
+    // pos_handles.front(); pass_through_attributes = utils::get_attributes(cache,
+    // *mesh_in, options.pass_through);
 
     std::optional<attribute::MeshAttributeHandle> position_for_inversion;
 
     if (!options.attributes.inversion_position.empty()) {
-        auto tmp = base::get_attributes(cache, *mesh_in, options.attributes.inversion_position);
+        auto tmp = utils::get_attributes(cache, *mesh_in, options.attributes.inversion_position);
         assert(tmp.size() == 1);
         position_for_inversion = tmp.front();
     }
 
-    other_positions = base::get_attributes(cache, *mesh_in, options.attributes.other_positions);
+    other_positions = utils::get_attributes(cache, *mesh_in, options.attributes.other_positions);
 
 
     internal::isotropic_remeshing(

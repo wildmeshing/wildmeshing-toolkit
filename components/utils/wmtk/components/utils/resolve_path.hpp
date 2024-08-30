@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace wmtk::components::base {
+namespace wmtk::components::utils {
 
 std::string resolve_path(
     const std::string& path,

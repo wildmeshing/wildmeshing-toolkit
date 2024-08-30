@@ -15,7 +15,7 @@
 
 namespace wmtk::components {
 
-void fusion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void fusion(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     // load mesh
     FusionOptions options = j.get<FusionOptions>();

@@ -10,7 +10,7 @@
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/components/base/resolve_path.hpp>
+#include <wmtk/components/utils/resolve_path.hpp>
 #include <wmtk/utils/EigenMatrixWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
@@ -902,7 +902,7 @@ void simplify(
     logger().debug("#f = {}", input_faces.size());
 }
 
-void tetwild_simplification(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void tetwild_simplification(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 

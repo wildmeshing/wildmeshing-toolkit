@@ -5,7 +5,7 @@
 
 #include <nlohmann/json.hpp>
 
-namespace wmtk::components::base {
+namespace wmtk::components::utils {
 
 attribute::MeshAttributeHandle get_attribute(const Mesh& m, const std::string& name);
 
@@ -15,4 +15,4 @@ get_attribute(const io::Cache& cache, const Mesh& m, const nlohmann::json& attri
 std::vector<attribute::MeshAttributeHandle>
 get_attributes(const io::Cache& cache, const Mesh& m, const nlohmann::json& attribute_names);
 
-} // namespace wmtk::components::base
+} // namespace wmtk::components::utils

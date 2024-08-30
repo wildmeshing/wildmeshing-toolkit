@@ -2,7 +2,7 @@
 
 #include "MultimeshOptions.hpp"
 
-#include <wmtk/components/base/get_attributes.hpp>
+#include <wmtk/components/utils/get_attributes.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
@@ -10,7 +10,7 @@
 
 
 namespace wmtk::components {
-void multimesh(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void multimesh(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     const std::string type = j["type"];
 
@@ -50,7 +50,7 @@ void multimesh(const base::Paths& paths, const nlohmann::json& j, io::Cache& cac
             name = options.mesh;
             out_name = options.name;
             mesh_in = cache.read_mesh(options.mesh);
-            auto tmp = base::get_attributes(cache, *mesh_in, options.position);
+            auto tmp = utils::get_attributes(cache, *mesh_in, options.position);
             assert(tmp.size() == 1);
             position = tmp.front();
             auto& mesh = position.mesh();
@@ -72,7 +72,7 @@ void multimesh(const base::Paths& paths, const nlohmann::json& j, io::Cache& cac
             name = options.mesh;
             out_name = options.name;
 
-            auto tmp = base::get_attributes(cache, *mesh_in, options.position);
+            auto tmp = utils::get_attributes(cache, *mesh_in, options.position);
             assert(tmp.size() == 1);
             position = tmp.front();
 

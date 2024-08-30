@@ -1,8 +1,8 @@
 #include "marching.hpp"
 
 #include <wmtk/Mesh.hpp>
-#include <wmtk/components/base/get_attributes.hpp>
-#include <wmtk/components/base/resolve_path.hpp>
+#include <wmtk/components/utils/get_attributes.hpp>
+#include <wmtk/components/utils/resolve_path.hpp>
 
 #include "internal/Marching.hpp"
 #include "internal/MarchingOptions.hpp"
@@ -21,7 +21,7 @@ auto gather_attributes(io::Cache& cache, const Mesh& mesh, const internal::March
         filter_labels.emplace_back(handle);
     }
 
-    auto pass_through_attributes = base::get_attributes(cache, mesh, options.pass_through);
+    auto pass_through_attributes = utils::get_attributes(cache, mesh, options.pass_through);
 
     return std::make_tuple(vertex_tag_handle, filter_labels, pass_through_attributes);
 }
@@ -58,7 +58,7 @@ auto get_marching_attributes(io::Cache& cache, Mesh& mesh, const internal::March
     return std::make_tuple(edge_tag_handle, face_tag_handle);
 }
 
-void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void marching(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 

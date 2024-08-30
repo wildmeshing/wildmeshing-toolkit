@@ -15,7 +15,7 @@
 
 namespace wmtk::components {
 
-void periodic_optimization(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void periodic_optimization(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 

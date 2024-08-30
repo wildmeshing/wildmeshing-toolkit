@@ -1,13 +1,12 @@
+namespace {
+
+nlohmann::json input_spec = R"(
 [
   {
     "pointer": "/",
     "type": "object",
-    "required": ["name", "file"],
+    "required": ["file"],
     "optional": ["ignore_z", "tetrahedron_attributes"]
-  },
-  {
-    "pointer": "/name",
-    "type": "string"
   },
   {
     "pointer": "/file",
@@ -29,3 +28,6 @@
     "type": "string"
   }
 ]
+)"_json;
+
+}

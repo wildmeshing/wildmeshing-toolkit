@@ -3,7 +3,7 @@
 
 #include <filesystem>
 
-namespace wmtk::components::base {
+namespace wmtk::components::utils {
 std::string
 resolve_path(const std::string& path, const std::string& input_file_path, const bool only_if_exists)
 {
@@ -30,4 +30,4 @@ resolve_path(const std::string& path, const std::string& input_file_path, const 
     return resolved_path.string();
 }
 
-} // namespace wmtk::components::base
+} // namespace wmtk::components::utils

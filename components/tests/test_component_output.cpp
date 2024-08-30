@@ -1,10 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
-#include <wmtk/components/base/Paths.hpp>
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/components/output/output.hpp>
+#include <wmtk/components/utils/Paths.hpp>
 
-using namespace wmtk::components::base;
+using namespace wmtk::components::utils;
 
 using json = nlohmann::json;
 

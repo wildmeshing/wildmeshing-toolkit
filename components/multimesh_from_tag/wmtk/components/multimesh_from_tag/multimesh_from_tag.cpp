@@ -2,7 +2,7 @@
 
 #include <deque>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/components/base/get_attributes.hpp>
+#include <wmtk/components/utils/get_attributes.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -18,7 +18,7 @@ namespace components {
 
 using namespace internal;
 
-void multimesh_from_tag(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void multimesh_from_tag(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     MultiMeshFromTagOptions options = j.get<MultiMeshFromTagOptions>();
 
@@ -27,7 +27,7 @@ void multimesh_from_tag(const base::Paths& paths, const nlohmann::json& j, io::C
     Mesh& mesh = static_cast<Mesh&>(*mesh_in);
 
     attribute::MeshAttributeHandle substructure_label =
-        base::get_attribute(mesh, options.substructure_label);
+        utils::get_attribute(mesh, options.substructure_label);
 
     const int64_t substructure_value = options.substructure_value;
 
@@ -38,7 +38,7 @@ void multimesh_from_tag(const base::Paths& paths, const nlohmann::json& j, io::C
     // clear attributes
     {
         std::vector<attribute::MeshAttributeHandle> keeps =
-            base::get_attributes(cache, mesh, options.pass_through);
+            utils::get_attributes(cache, mesh, options.pass_through);
         keeps.emplace_back(substructure_label);
         mesh.clear_attributes(keeps);
     }

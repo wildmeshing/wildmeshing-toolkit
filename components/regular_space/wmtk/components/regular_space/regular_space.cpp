@@ -1,7 +1,7 @@
 #include "regular_space.hpp"
 
 #include <wmtk/Mesh.hpp>
-#include <wmtk/components/base/get_attributes.hpp>
+#include <wmtk/components/utils/get_attributes.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/primitive_range.hpp>
@@ -50,12 +50,12 @@ auto gather_attributes(io::Cache& cache, Mesh& mesh, const internal::RegularSpac
         }
     }
 
-    auto pass_through_attributes = base::get_attributes(cache, mesh, options.pass_through);
+    auto pass_through_attributes = utils::get_attributes(cache, mesh, options.pass_through);
 
     return std::make_tuple(original_attributes, label_attributes, pass_through_attributes);
 }
 
-void regular_space(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void regular_space(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 

@@ -14,7 +14,7 @@
 
 namespace wmtk::components {
 
-void get_all_meshes(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void get_all_meshes(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 
