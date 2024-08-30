@@ -618,20 +618,20 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge2 = m.edge_tuple_with_vs_and_t(3, 0, 0);
-    split(Simplex::edge(m, edge));
+    split(Simplex::edge(m, edge2));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge3 = m.edge_tuple_with_vs_and_t(4, 7, 6);
     REQUIRE(m.is_valid(edge3));
-    split(Simplex::edge(m, edge));
+    split(Simplex::edge(m, edge3));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge4 = m.edge_tuple_with_vs_and_t(4, 9, 8);
-    split(Simplex::edge(m, edge));
+    split(Simplex::edge(m, edge4));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge5 = m.edge_tuple_with_vs_and_t(5, 6, 4);
-    split(Simplex::edge(m, edge));
+    split(Simplex::edge(m, edge5));
     REQUIRE(m.is_connectivity_valid());
 }
 

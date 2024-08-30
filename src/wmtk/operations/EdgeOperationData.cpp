@@ -2,6 +2,7 @@
 #include <array>
 #include <vector>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 #include <wmtk/Mesh.hpp>
 #include "EdgeOperationData.hpp"
@@ -73,7 +74,10 @@ EdgeOperationData::request_simplex_indices(Mesh& mesh, const PrimitiveType type,
 {
     mesh.guarantee_more_attributes(type, count);
 
-    return mesh.request_simplex_indices(type, count);
+    auto ret = mesh.request_simplex_indices(type, count);
+    wmtk::logger()
+        .trace("Requesting {} {}-simplices. got [{}]", count, int(type), fmt::join(ret, ","));
+    return ret;
 }
 
 } // namespace wmtk::operations
