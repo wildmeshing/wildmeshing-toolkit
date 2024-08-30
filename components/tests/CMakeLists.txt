@@ -10,7 +10,8 @@ add_executable(${WMTK_COMPONENT_TEST_TARGET})
 
 target_link_libraries(${WMTK_COMPONENT_TEST_TARGET} PUBLIC
 wmtk_test_tools
-Catch2::Catch2WithMain)
+Catch2::Catch2WithMain
+wmtk::component_utils)
 target_compile_definitions(${WMTK_COMPONENT_TEST_TARGET} PRIVATE WMTK_TEST_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\")
 
 

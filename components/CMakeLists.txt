@@ -7,19 +7,21 @@ include(add_component_test)
 
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     add_subdirectory(tests)
-    include(jse)
-    include(cli11)
 endif()
 
 # wmtk::component_utils
 add_subdirectory(utils)
 
 # list of all components
-add_component("input")
-add_component("output")
+add_subdirectory("input/wmtk/components/input")
+add_subdirectory("output/wmtk/components/output")
+add_subdirectory("delaunay/wmtk/components/delaunay")
+
+
+# add_component("output")
 # add_component("export_cache")
 # add_component("import_cache")
-add_component("delaunay")
+# add_component("delaunay")
 # add_component("isotropic_remeshing")
 # add_component("marching")
 # add_component("mesh_info")

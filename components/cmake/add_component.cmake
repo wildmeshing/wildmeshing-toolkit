@@ -13,15 +13,13 @@ function(add_component COMPONENT_NAME)
     add_library(wmtk::${COMPONENT_NAME} ALIAS ${COMPONENT_TARGET_NAME})
 
 
-    target_link_libraries(${COMPONENT_TARGET_NAME} PRIVATE wmtk::warnings wmtk::toolkit)
+    target_link_libraries(${COMPONENT_TARGET_NAME} PRIVATE wmtk::warnings wmtk::toolkit wmtk::component_utils)
 
-    target_include_directories(${COMPONENT_TARGET_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/${COMPONENT_NAME}")
-
-    add_subdirectory("${COMPONENT_NAME}/wmtk/components/${COMPONENT_NAME}")
+    target_include_directories(${COMPONENT_TARGET_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 
     # Group source files for IDEs
-    file(GLOB_RECURSE COMPONENTS_FILES_FOR_SOURCE_GROUP "${CMAKE_CURRENT_SOURCE_DIR}/${COMPONENT_NAME}/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/${COMPONENT_NAME}/*.hpp")
-    source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/${COMPONENT_NAME}/wmtk/components/${COMPONENT_NAME}" PREFIX "src" FILES ${COMPONENTS_FILES_FOR_SOURCE_GROUP})
+    file(GLOB_RECURSE COMPONENTS_FILES_FOR_SOURCE_GROUP "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
+    source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" PREFIX "src" FILES ${COMPONENTS_FILES_FOR_SOURCE_GROUP})
 
     set_target_properties(${COMPONENT_TARGET_NAME} PROPERTIES FOLDER wmtk_components)
 

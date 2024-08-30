@@ -6,8 +6,12 @@ set(SRC_FILES
     input.cpp
 	input.hpp)
 
-#COMPONENT_TARGET_NAME is set from the main cmake
-target_sources(${COMPONENT_TARGET_NAME} PRIVATE ${SRC_FILES})
-target_link_libraries(${COMPONENT_TARGET_NAME} PRIVATE)
+include(stb)
 
-add_component_test(tests/input.cpp)
+
+add_component("input")
+
+target_sources(wmtk_input PRIVATE ${SRC_FILES})
+target_link_libraries(wmtk_input PRIVATE stb::image)
+
+add_component_test(wmtk::input tests/input.cpp)

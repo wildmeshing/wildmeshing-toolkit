@@ -5,6 +5,6 @@ set(SRC_FILES
 	output.hpp)
 
 
-#COMPONENT_TARGET_NAME is set from the main cmake
-target_sources(${COMPONENT_TARGET_NAME} PRIVATE ${SRC_FILES})
-target_link_libraries(${COMPONENT_TARGET_NAME} PRIVATE wmtk::component_utils)
+add_component("output")
+
+target_sources(wmtk_output PRIVATE ${SRC_FILES})
