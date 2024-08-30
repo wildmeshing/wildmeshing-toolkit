@@ -1,12 +1,15 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
-#include <wmtk/io/Cache.hpp>
+#include <wmtk/Mesh.hpp>
 
-#include <wmtk/components/utils/Paths.hpp>
+#include <filesystem>
+
 
 namespace wmtk::components {
 
-void output(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache);
+void output(
+    const Mesh& mesh,
+    const std::filesystem::path& file,
+    const std::string& position_attr_name = "vertices");
 
 } // namespace wmtk::components

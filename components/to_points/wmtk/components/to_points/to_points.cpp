@@ -1,12 +1,9 @@
 #include "to_points.hpp"
 
 
-#include "ToPtsOptions.hpp"
-
 #include <bitset>
 
 #include <SimpleBVH/BVH.hpp>
-#include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -16,22 +13,18 @@ namespace wmtk::components {
 
 using namespace simplex;
 
-void to_points(const utils::Paths& paths, const nlohmann::json& json, io::Cache& cache)
+std::shared_ptr<PointMesh> to_points(
+    const Mesh& mesh,
+    const attribute::MeshAttributeHandle& pts_attr,
+    const ToPtsOptions& options,
+    const std::string& output_pos_attr_name)
 {
-    ToPtsOptions options = json.get<ToPtsOptions>();
-
-    const std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
-    const Mesh& mesh = *mesh_in;
-
-    const auto pts_attr =
-        mesh.get_attribute_handle<double>(options.position, PrimitiveType::Vertex);
     const auto pts_acc = mesh.create_const_accessor<double>(pts_attr);
     const auto vs = mesh.get_all(PrimitiveType::Vertex);
 
     Eigen::AlignedBox<double, Eigen::Dynamic> bbox(pts_acc.dimension());
 
     int64_t box_size = std::pow(2, pts_acc.dimension());
-
 
     Eigen::MatrixXd pts(vs.size() + (options.add_box ? box_size : 0), pts_acc.dimension());
 
@@ -112,7 +105,7 @@ void to_points(const utils::Paths& paths, const nlohmann::json& json, io::Cache&
 
         if (options.min_dist >= 0) {
             int64_t count = 0;
-            int64_t index = 0;
+            int64_t findex = 0;
 
             const std::vector<Tuple>& facest = mesh.get_all(mesh.top_simplex_type());
             const int64_t dim = int64_t(mesh.top_simplex_type()) + 1;
@@ -129,12 +122,12 @@ void to_points(const utils::Paths& paths, const nlohmann::json& json, io::Cache&
                 assert(tmp.size() == dim);
                 for (int64_t j = 0; j < tmp.size(); ++j) {
                     auto p = pts_acc.const_vector_attribute(tmp[j]);
-                    faces(index, j) = count;
-                    vertices.row(dim * index + j) = p;
+                    faces(findex, j) = count;
+                    vertices.row(dim * findex + j) = p;
 
                     ++count;
                 }
-                ++index;
+                ++findex;
             }
 
             SimpleBVH::BVH bvh;
@@ -191,9 +184,9 @@ void to_points(const utils::Paths& paths, const nlohmann::json& json, io::Cache&
     wmtk::logger().info("generated {} vertices", pts.rows());
     std::shared_ptr<PointMesh> pts_mesh = std::make_shared<PointMesh>(pts.rows());
 
-    mesh_utils::set_matrix_attribute(pts, options.position, PrimitiveType::Vertex, *pts_mesh);
+    mesh_utils::set_matrix_attribute(pts, output_pos_attr_name, PrimitiveType::Vertex, *pts_mesh);
 
-    cache.write_mesh(*pts_mesh, options.name);
+    return pts_mesh;
 }
 
 } // namespace wmtk::components

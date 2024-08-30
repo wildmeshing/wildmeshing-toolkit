@@ -6,17 +6,17 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
-#include "internal/DelaunayOptions.hpp"
 #include "internal/delaunay_2d.hpp"
 #include "internal/delaunay_3d.hpp"
 
 namespace wmtk::components {
 
 template <int D>
-RowVectors<double, D> points_to_rowvectors(const std::string& position, PointMesh& point_cloud)
+RowVectors<double, D> points_to_rowvectors(
+    const PointMesh& point_cloud,
+    const attribute::MeshAttributeHandle& pts_attr)
 {
-    auto pts_attr = point_cloud.get_attribute_handle<double>(position, PrimitiveType::Vertex);
-    auto pts_acc = point_cloud.create_accessor<double>(pts_attr);
+    auto pts_acc = point_cloud.create_const_accessor<double>(pts_attr);
 
     const auto vertices = point_cloud.get_all(PrimitiveType::Vertex);
 
@@ -32,30 +32,15 @@ RowVectors<double, D> points_to_rowvectors(const std::string& position, PointMes
 }
 
 template <int D, typename MeshT>
-void delaunay_exec(const internal::DelaunayOptions& options, io::Cache& cache)
+std::shared_ptr<MeshT> delaunay_exec(
+    const PointMesh& point_cloud,
+    const attribute::MeshAttributeHandle& pts_attr,
+    const std::string& output_pos_attr_name)
 {
     // 2d --> TriMesh
     // 3d --> TetMesh
     static_assert(
         (D == 2 && std::is_same<MeshT, TriMesh>()) || (D == 3 && std::is_same<MeshT, TetMesh>()));
-
-    // input
-    std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
-    if (mesh_in->top_simplex_type() != PrimitiveType::Vertex) {
-        log_and_throw_error(
-            "Delaunay works only for point meshes: {}",
-            mesh_in->top_simplex_type());
-    }
-
-    PointMesh& point_cloud = static_cast<PointMesh&>(*mesh_in);
-
-    // make sure dimensions fit
-    {
-        auto pts_attr =
-            point_cloud.get_attribute_handle<double>(options.position, PrimitiveType::Vertex);
-        auto pts_acc = point_cloud.create_accessor<double>(pts_attr);
-        assert(pts_acc.dimension() == options.cell_dimension);
-    }
 
     if constexpr (D == 2) {
         throw std::runtime_error("not tested for 2d");
@@ -65,7 +50,7 @@ void delaunay_exec(const internal::DelaunayOptions& options, io::Cache& cache)
     MeshT& mesh = *meshptr;
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
-    const auto pts_vec = points_to_rowvectors<D>(options.position, point_cloud);
+    const auto pts_vec = points_to_rowvectors<D>(point_cloud, pts_attr);
     if constexpr (D == 2) {
         std::tie(vertices, faces) = internal::delaunay_2d(pts_vec);
     } else if constexpr (D == 3) {
@@ -75,25 +60,30 @@ void delaunay_exec(const internal::DelaunayOptions& options, io::Cache& cache)
     }
 
     mesh.initialize(faces.cast<int64_t>());
-    mesh_utils::set_matrix_attribute(vertices, options.position, PrimitiveType::Vertex, mesh);
+    mesh_utils::set_matrix_attribute(vertices, output_pos_attr_name, PrimitiveType::Vertex, mesh);
 
-    cache.write_mesh(mesh, options.output);
+    return meshptr;
 }
 
-void delaunay(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+std::shared_ptr<Mesh> delaunay(
+    const PointMesh& point_cloud,
+    const attribute::MeshAttributeHandle& pts_attr,
+    const std::string& output_pos_attr_name)
 {
     using namespace internal;
 
-    DelaunayOptions options = j.get<DelaunayOptions>();
+    auto pts_acc = point_cloud.create_const_accessor<double>(pts_attr);
+    const auto cell_dimension = pts_acc.dimension();
+
 
     // delaunay
-    switch (options.cell_dimension) {
+    switch (cell_dimension) {
     case 2: {
-        delaunay_exec<2, TriMesh>(options, cache);
+        return delaunay_exec<2, TriMesh>(point_cloud, pts_attr, output_pos_attr_name);
         break;
     }
     case 3: {
-        delaunay_exec<3, TetMesh>(options, cache);
+        return delaunay_exec<3, TetMesh>(point_cloud, pts_attr, output_pos_attr_name);
         break;
     }
     default: {

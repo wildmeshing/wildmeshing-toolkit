@@ -8,8 +8,6 @@ set(SRC_FILES
 
     wmtk/components/utils/resolve_path.cpp
     wmtk/components/utils/resolve_path.hpp
-
-    wmtk/components/utils/Paths.hpp
     )
 
 add_library(wmtk_component_utils ${SRC_FILES})

@@ -1,12 +1,12 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
-#include <wmtk/io/Cache.hpp>
-
-#include <wmtk/components/utils/Paths.hpp>
+#include <wmtk/Mesh.hpp>
 
 namespace wmtk::components {
 
-void delaunay(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache);
+std::shared_ptr<Mesh> delaunay(
+    const PointMesh& point_cloud,
+    const attribute::MeshAttributeHandle& pts_attr,
+    const std::string& output_pos_attr_name = "vertices");
 
 } // namespace wmtk::components

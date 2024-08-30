@@ -14,6 +14,7 @@ function(add_component COMPONENT_NAME)
 
 
     target_link_libraries(${COMPONENT_TARGET_NAME} PRIVATE wmtk::warnings wmtk::toolkit wmtk::component_utils)
+    target_link_libraries(${COMPONENT_TARGET_NAME} PUBLIC wmtk::component_utils)
 
     target_include_directories(${COMPONENT_TARGET_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 

@@ -1,6 +1,5 @@
 
 set(SRC_FILES
-    internal/DelaunayOptions.hpp
     internal/delaunay_2d.hpp
     internal/delaunay_2d.cpp
     internal/delaunay_3d.hpp
