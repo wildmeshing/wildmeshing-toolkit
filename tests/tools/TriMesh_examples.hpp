@@ -119,11 +119,21 @@ TriMesh tetrahedron_with_position();
 TriMesh interior_edge();
 
 
+//    .---.---.
+//   /0\l/2\3/4\ .
+//  .---.---.---.
+//   \5/6\7/  .
+//    .---.
 //    0---1---2
 //   / \ / \ / \ .
 //  3---4---5---6
-//   \ / \ /  .
+//   \ / \ /
 //    7---8
+//    .-0-.-3-.
+//   1 2 4 5 6 7 .
+//  .-8-.-a-.-d-.
+//   9 b c e  .
+//    .-f-.
 TriMesh hex_plus_two();
 
 TriMesh hex_plus_two_with_position();

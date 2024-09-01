@@ -38,10 +38,13 @@
 
 
 namespace wmtk {
-namespace tests::tools {
+    namespace tests {
+        class DEBUG_Mesh;
+namespace tools {
 
 class TestTools;
 
+}
 }
 // thread management tool that we will PImpl
 namespace attribute {
@@ -100,6 +103,7 @@ class Mesh : public std::enable_shared_from_this<Mesh>, public wmtk::utils::Merk
 {
 public:
     friend class tests::tools::TestTools;
+    friend class tests::DEBUG_Mesh;
     template <typename T, int Dim>
     friend class attribute::AccessorBase;
     template <typename T, typename MeshType, int Dim>

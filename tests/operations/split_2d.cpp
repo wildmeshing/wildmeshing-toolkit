@@ -323,18 +323,23 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         executor.split_edge_precompute();
         auto& incident_face_datas = executor.m_incident_face_datas;
 
-        //  create new vertex
-        std::vector<int64_t> new_vids = executor.request_simplex_indices(PV, 1);
-        REQUIRE(new_vids.size() == 1);
-        executor.split_new_vid = new_vids[0];
 
-        // create new edges
-        std::vector<int64_t> spine_eids = executor.request_simplex_indices(PE, 2);
-        REQUIRE(spine_eids.size() == 2);
-        std::copy(spine_eids.begin(), spine_eids.end(), executor.split_spine_eids.begin());
+        CHECK(executor.split_new_vid == 3);
 
-        std::vector<std::array<int64_t, 2>> new_fids;
+        CHECK(executor.split_spine_eids[0] == 3);
+        CHECK(executor.split_spine_eids[1] == 4);
+
         REQUIRE(incident_face_datas.size() == 1);
+
+
+        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
+        auto ff_accessor = m.create_base_accessor<int64_t>(m.f_handle(PF));
+
+
+        std::cout << "FV: " << fv_accessor.const_vector_attribute(0).transpose() << std::endl;
+        std::cout << "FF: " << ff_accessor.const_vector_attribute(0).transpose() << std::endl;
+
+
         for (size_t i = 0; i < incident_face_datas.size(); ++i) {
             auto& face_data = incident_face_datas[i];
             executor.replace_incident_face(face_data);
@@ -343,14 +348,13 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
 
         const int64_t& f0 = incident_face_datas[0].split_f[0];
         const int64_t& f1 = incident_face_datas[0].split_f[1];
-        const int64_t& se0 = spine_eids[0];
-        const int64_t& se1 = spine_eids[1];
+        const int64_t& se0 = executor.split_spine_eids[0];
+        const int64_t& se1 = executor.split_spine_eids[1];
         const int64_t& ee0 = incident_face_datas[0].ears[0].eid;
         const int64_t& ee1 = incident_face_datas[0].ears[1].eid;
 
-        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
-        const auto fv0 = fv_accessor.vector_attribute(f0);
-        const auto fv1 = fv_accessor.vector_attribute(f1);
+        const auto fv0 = fv_accessor.const_vector_attribute(f0);
+        const auto fv1 = fv_accessor.const_vector_attribute(f1);
         CHECK(fv0[0] == 0);
         CHECK(fv0[1] == 1);
         CHECK(fv0[2] == executor.split_new_vid);
@@ -360,9 +364,8 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         CHECK(fv1[2] == 2);
 
         // the new fids generated are in top-down left-right order
-        auto ff_accessor = m.create_base_accessor<int64_t>(m.f_handle(PF));
-        const auto ff0 = ff_accessor.vector_attribute(f0);
-        const auto ff1 = ff_accessor.vector_attribute(f1);
+        const auto ff0 = ff_accessor.const_vector_attribute(f0);
+        const auto ff1 = ff_accessor.const_vector_attribute(f1);
         CHECK(ff0[0] == -1);
         CHECK(ff0[1] == f1);
         CHECK(ff0[2] == -1);
@@ -406,16 +409,11 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         executor.split_edge_precompute();
         auto& incident_face_datas = executor.m_incident_face_datas;
 
-        // create new vertex
-        std::vector<int64_t> new_vids = executor.request_simplex_indices(PV, 1);
-        REQUIRE(new_vids.size() == 1);
-        const int64_t v_new = new_vids[0];
-        executor.split_new_vid = new_vids[0];
+        CHECK(executor.split_new_vid == 5);
 
-        // create new edges
-        std::vector<int64_t> spine_eids = executor.request_simplex_indices(PE, 2);
-        REQUIRE(spine_eids.size() == 2);
-        std::copy(spine_eids.begin(), spine_eids.end(), executor.split_spine_eids.begin());
+        CHECK(executor.split_spine_eids[0] == 7);
+        CHECK(executor.split_spine_eids[1] == 8);
+
 
         for (size_t i = 0; i < incident_face_datas.size(); ++i) {
             auto& face_data = incident_face_datas[i];
@@ -431,8 +429,8 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
 
         auto ef_accessor = m.create_base_accessor<int64_t>(m.ef_handle());
 
-        const int64_t& se0 = spine_eids[0];
-        const int64_t& se1 = spine_eids[1];
+        const int64_t& se0 = executor.split_spine_eids[0];
+        const int64_t& se1 = executor.split_spine_eids[1];
 
         // top
         {
@@ -445,10 +443,10 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
             const auto fv1 = fv_accessor.vector_attribute(f1);
             CHECK(fv0[0] == 0);
             CHECK(fv0[1] == 1);
-            CHECK(fv0[2] == v_new);
+            CHECK(fv0[2] == executor.split_new_vid);
 
             CHECK(fv1[0] == 0);
-            CHECK(fv1[1] == v_new);
+            CHECK(fv1[1] == executor.split_new_vid);
             CHECK(fv1[2] == 2);
 
             const auto ff0 = ff_accessor.vector_attribute(f0);
@@ -462,11 +460,11 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
 
             const auto fe0 = fe_accessor.vector_attribute(f0);
             const auto fe1 = fe_accessor.vector_attribute(f1);
-            CHECK(fe0[0] == spine_eids[0]);
+            CHECK(fe0[0] == executor.split_spine_eids[0]);
             CHECK(fe0[1] == 9);
             CHECK(fe0[2] == ee0);
 
-            CHECK(fe1[0] == spine_eids[1]);
+            CHECK(fe1[0] == executor.split_spine_eids[1]);
             CHECK(fe1[1] == ee1);
             CHECK(fe1[2] == 9);
 
@@ -488,9 +486,9 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
 
             CHECK(fv0[0] == 1);
             CHECK(fv0[1] == 4);
-            CHECK(fv0[2] == v_new);
+            CHECK(fv0[2] == executor.split_new_vid);
 
-            CHECK(fv1[0] == v_new);
+            CHECK(fv1[0] == executor.split_new_vid);
             CHECK(fv1[1] == 4);
             CHECK(fv1[2] == 2);
 
@@ -514,7 +512,7 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
             CHECK(fe1[1] == se1);
             CHECK(fe1[2] == 10);
 
-            CHECK(vf_accessor.scalar_attribute(v_new) == f0);
+            CHECK(vf_accessor.scalar_attribute(executor.split_new_vid) == f0);
             CHECK(vf_accessor.scalar_attribute(4) == f0);
             CHECK(vf_accessor.scalar_attribute(1) == f0);
             CHECK(vf_accessor.scalar_attribute(2) == f1);

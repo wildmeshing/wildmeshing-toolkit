@@ -4,6 +4,7 @@
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/attribute_update/CastAttributeTransferStrategy.hpp>
+#include <wmtk/utils/TupleInspector.hpp>
 #include <wmtk/utils/cast_attribute.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
@@ -207,9 +208,25 @@ TEST_CASE("attribute_strategy_missing", "[operations][split]")
     EdgeSplit op(m);
 
     const Tuple edge = m.edge_tuple_with_vs_and_t(4, 5, 2);
+    REQUIRE(m.is_valid(edge));
 
     // attributes without update strategy cause an exception in the operation
-    CHECK_THROWS(op(Simplex::edge(m, edge)));
+    std::vector<simplex::Simplex> ret;
+    auto valid_gids = [&](const PrimitiveType& pt) -> std::vector<int64_t>{
+        std::vector<int64_t> ret;
+        const auto tups = m.get_all(pt);
+        std::transform(tups.begin(),tups.end(), std::back_inserter(ret), [&](const Tuple& t) {
+                return m.id(t,pt);
+                });
+        return ret;
+    };
+    const std::vector<int64_t> orig_tris  = valid_gids(PrimitiveType::Triangle);
+
+    CHECK_THROWS(ret = op(Simplex::edge(m, edge)));
+    const std::vector<int64_t> new_tris  = valid_gids(PrimitiveType::Triangle);
+    REQUIRE(orig_tris == new_tris);
+    logger().trace("{} {}", wmtk::utils::TupleInspector::as_string(edge), ret.size());
+    REQUIRE(m.is_valid(edge));
 
     op.set_new_attribute_strategy(pos_handle);
     CHECK_NOTHROW(op(Simplex::edge(m, edge)));
