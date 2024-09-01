@@ -236,6 +236,7 @@ TEST_CASE("operation_state", "[operations][2D]")
         for (Tuple edge : m.get_all(PrimitiveType::Edge)) {
             REQUIRE(m.is_connectivity_valid());
             auto executor = m.get_tmoe(edge);
+            auto s = m.create_scope();
             executor.split_edge_precompute();
 
             REQUIRE(executor.flag_accessors.size() == 3);
@@ -247,6 +248,8 @@ TEST_CASE("operation_state", "[operations][2D]")
             REQUIRE(ear1.eid > -1);
             REQUIRE(ear2.fid == -1);
             REQUIRE(ear2.eid > -1);
+            // executor enables faces that we don't want enabled so lets deactivate them
+            s.mark_failed();
         }
     }
 }

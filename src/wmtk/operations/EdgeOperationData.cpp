@@ -75,8 +75,8 @@ EdgeOperationData::request_simplex_indices(Mesh& mesh, const PrimitiveType type,
     mesh.guarantee_more_attributes(type, count);
 
     auto ret = mesh.request_simplex_indices(type, count);
-    wmtk::logger()
-        .trace("Requesting {} {}-simplices. got [{}]", count, int(type), fmt::join(ret, ","));
+    // wmtk::logger()
+    //     .trace("Requesting {} {}-simplices. got [{}]", count, int(type), fmt::join(ret, ","));
     return ret;
 }
 

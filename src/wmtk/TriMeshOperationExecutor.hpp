@@ -11,7 +11,6 @@ class TriMesh::TriMeshOperationExecutor : public operations::tri_mesh::EdgeOpera
 public:
     TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple);
     void delete_simplices();
-    void update_cell_hash();
 
     std::array<attribute::Accessor<char>, 3> flag_accessors;
     attribute::Accessor<int64_t, TriMesh>& ff_accessor;

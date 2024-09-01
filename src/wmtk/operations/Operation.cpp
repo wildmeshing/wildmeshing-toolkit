@@ -59,7 +59,9 @@ void Operation::add_transfer_strategy(
 
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
-    assert(mesh().is_valid(simplex));
+    if (!mesh().is_valid(simplex)) {
+        return {};
+    }
     if (!before(simplex)) {
         return {};
     }

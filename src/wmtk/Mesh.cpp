@@ -61,7 +61,6 @@ bool Mesh::is_boundary(const simplex::Simplex& s) const
 }
 
 
-
 bool Mesh::is_valid(const Tuple& tuple) const
 {
     return !tuple.is_null() && !is_removed(tuple);
@@ -79,8 +78,9 @@ bool Mesh::is_removed(const Tuple& t, PrimitiveType pt) const
         return false;
     }
 }
-simplex::Simplex Mesh::simplex_from_id(const PrimitiveType pt, const int64_t gid) const {
-    return simplex::Simplex(pt, tuple_from_id(pt,gid),gid);
+simplex::Simplex Mesh::simplex_from_id(const PrimitiveType pt, const int64_t gid) const
+{
+    return simplex::Simplex(pt, tuple_from_id(pt, gid), gid);
 }
 bool Mesh::is_removed(int64_t index) const
 {
@@ -94,8 +94,12 @@ bool Mesh::is_removed(int64_t index, PrimitiveType pt) const
 
 bool Mesh::is_valid(const simplex::Simplex& s) const
 {
-    const int64_t id_tuple = id(s.tuple(), s.primitive_type());
-    return id_tuple == s.m_index;
+    if (!is_valid(s.tuple())) {
+        return false;
+    } else {
+        const int64_t id_tuple = id(s.tuple(), s.primitive_type());
+        return id_tuple == s.m_index;
+    }
 }
 
 
@@ -111,8 +115,6 @@ attribute::Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
 {
     return create_accessor(m_flag_handles.at(get_primitive_type_id(type)));
 }
-
-
 
 
 void Mesh::set_capacities_from_flags()
@@ -158,7 +160,6 @@ Tuple Mesh::switch_tuples_unsafe(
 {
     return switch_tuples_unsafe<std::initializer_list<PrimitiveType>>(tuple, op_sequence);
 }
-
 
 
 void Mesh::assert_capacity_valid() const
