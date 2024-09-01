@@ -15,7 +15,8 @@ size_t wmtk::hash<wmtk::attribute::MeshAttributeHandle>::operator()(
     data.emplace_back(handle_hash(handle));
     data.emplace_back(mesh_hash(handle));
     data.emplace_back(size_t(handle.held_type()));
-    return wmtk::utils::vector_hash(data);
+    const size_t r = wmtk::utils::vector_hash(data);
+    return r;
 }
 size_t wmtk::hash<wmtk::attribute::MeshAttributeHandle>::handle_hash(
     const wmtk::attribute::MeshAttributeHandle& handle) const noexcept

@@ -22,9 +22,9 @@ namespace wmtk::multimesh {
 namespace {} // namespace
 
 
-void MultiMeshManager::detach_children() {
-    for(auto& data: m_children) {
-
+void MultiMeshManager::detach_children()
+{
+    for (auto& data : m_children) {
         auto& m = *data.mesh;
         m.m_multi_mesh_manager.m_parent = nullptr;
         m.m_multi_mesh_manager.m_child_id = -1;
@@ -862,7 +862,7 @@ void MultiMeshManager::update_map_tuple_hashes(
                 split_cell_maps);
 
             if (!new_parent_shared_opt.has_value()) {
-                //std::cout << "get skipped, someting is wrong?" << std::endl;
+                // std::cout << "get skipped, someting is wrong?" << std::endl;
                 continue;
             }
             // assert(new_parent_shared_opt.has_value());
@@ -1038,8 +1038,6 @@ int64_t MultiMeshManager::parent_local_fid(
     return vptr[2];
 #endif
 }
-
-
 
 
 // remove after bug fix

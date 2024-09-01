@@ -38,6 +38,14 @@
 
 
 namespace wmtk {
+    namespace tests {
+        class DEBUG_Mesh;
+namespace tools {
+
+class TestTools;
+
+}
+}
 // thread management tool that we will PImpl
 namespace attribute {
 class AttributeManager;
@@ -50,6 +58,9 @@ class Operation;
 class EdgeCollapse;
 class EdgeSplit;
 class EdgeOperationData;
+namespace internal {
+class CollapseAlternateFacetData;
+}
 namespace utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
@@ -91,6 +102,8 @@ class TupleTag;
 class Mesh : public std::enable_shared_from_this<Mesh>, public wmtk::utils::MerkleTreeInteriorNode
 {
 public:
+    friend class tests::tools::TestTools;
+    friend class tests::DEBUG_Mesh;
     template <typename T, int Dim>
     friend class attribute::AccessorBase;
     template <typename T, typename MeshType, int Dim>
@@ -121,7 +134,7 @@ public:
     friend class operations::EdgeCollapse;
     friend class operations::EdgeSplit;
     friend class operations::EdgeOperationData;
-
+    friend class operations::internal::CollapseAlternateFacetData;
 
 
     int64_t top_cell_dimension() const;
