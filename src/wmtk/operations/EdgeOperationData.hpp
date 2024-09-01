@@ -52,6 +52,7 @@ public:
     void set_split();
     void set_collapse();
 
+
     /// Returns facet data held if the edge operation was a split - throws if data does not exist
     const internal::SplitAlternateFacetData& const_split_facet_data() const;
     /// Returns facet data held if the edge operation was a collapse- throws if data does not exist
