@@ -43,7 +43,7 @@ void extract_triangle_soup_from_image(
     double min_range_in_axis =
         (double)std::min(std::min(data.size(), data[0].size()), data[0][0].size());
     int max_level_tmp = std::floor(std::log(min_range_in_axis) / std::log(2.0)) - 2;
-    max_level_tmp = std::max<int>(max_level, 1);
+    max_level_tmp = std::max<int>(max_level_tmp, 1);
     max_level = max_level_tmp;
     spdlog::info("level picked: {}\n", max_level);
 
@@ -478,7 +478,8 @@ void gmsh2hdf_tag(
 
     read_array_data(volumetric_data, volumetric_file);
     readGmsh(gmsh_file, vertices, tetrahedras);
-    if (volumetric_bc_file != "") {
+    if (volumetric_bc_file != "dummy") {
+        spdlog::info("boundary_selection is used, {}", volumetric_bc_file);
         has_bc = true;
         read_array_data(volumetric_bc_data, volumetric_bc_file);
     }
