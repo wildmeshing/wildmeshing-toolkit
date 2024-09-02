@@ -255,7 +255,7 @@ TEST_CASE("integration_benchmark", "[.][benchmark][integration]")
         run("isotropic_remeshing_mm_timing");
     }
     js["total_time"] = total_time;
-    js["geometric_mean_time"] = std::pow(total_time, 1.0 / count);
+    js["geometric_mean_time"] = std::pow(prod, 1.0 / count);
 
     fmt::print("{}\n", js.dump());
 }

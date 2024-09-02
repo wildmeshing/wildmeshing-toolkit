@@ -13,6 +13,7 @@
 #include "utils/tuple_map_attribute_io.hpp"
 #include <wmtk/operations/internal/SplitAlternateFacetData.hpp>
 #include <wmtk/operations/internal/CollapseAlternateFacetData.hpp>
+#include <set>
 
 namespace wmtk::multimesh {
 
@@ -190,14 +191,7 @@ void MultiMeshManager::update_map_tuple_hashes(
         auto child_flag_accessor = child_mesh.get_const_flag_accessor(primitive_type);
 
 
-        std::vector<bool> is_gid_visited(my_mesh.capacity(primitive_type), false);
         for (const auto& [original_parent_gid, equivalent_parent_tuples] : simplices_to_update) {
-            if (is_gid_visited.at(original_parent_gid)) {
-                continue;
-            } else {
-                is_gid_visited[original_parent_gid] = true;
-            }
-
             // logger.trace()(
             //     "[{}->{}] Trying to update {}",
             //     fmt::join(my_mesh.absolute_multi_mesh_id(), ","),
@@ -223,19 +217,14 @@ void MultiMeshManager::update_map_tuple_hashes(
 
             // check if the map is handled in the ear case
             // if the child simplex is deleted then we can skip it
-            const bool child_exists = !child_mesh.is_removed(child_tuple);
-            if (!child_exists) {
-                logger().debug("child doesnt exist, skip!");
-                continue;
-            }
-            std::vector<Tuple> equivalent_parent_tuples_good_hash = equivalent_parent_tuples;
+            assert(!child_mesh.is_removed(child_tuple));
 
             // Find a valid representation of this simplex representation of the original tupl
             Tuple old_tuple;
             std::optional<Tuple> old_tuple_opt = find_tuple_from_gid(
                 my_mesh,
                 my_mesh.top_simplex_type(),
-                equivalent_parent_tuples_good_hash,
+                equivalent_parent_tuples,
                 parent_tuple.m_global_cid);
             // assert(old_tuple_opt.has_value());
             if (!old_tuple_opt.has_value()) {
@@ -248,7 +237,7 @@ void MultiMeshManager::update_map_tuple_hashes(
                 my_mesh,
                 old_simplex,
                 original_parent_gid,
-                equivalent_parent_tuples_good_hash,
+                equivalent_parent_tuples,
                 split_cell_maps);
 
 
