@@ -313,7 +313,11 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         // should perform two iterations to split the two interior edges once
         for (int i = 0; i < 5; i++) {
             for (const Tuple& t : m.get_all(PE)) {
+                if(!m.is_valid(t)) {
+                    continue;
+                }
                 const auto res = op(Simplex::edge(m, t));
+
                 if (!res.empty()) {
                     const Tuple spine1 = res.front().tuple();
                     const Tuple rib1 = m.switch_edge(m.switch_face(spine1));
