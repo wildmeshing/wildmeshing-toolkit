@@ -97,8 +97,12 @@ bool Mesh::is_valid(const simplex::Simplex& s) const
     if (!is_valid(s.tuple())) {
         return false;
     } else {
+#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
         const int64_t id_tuple = id(s.tuple(), s.primitive_type());
         return id_tuple == s.m_index;
+#else
+        return true;
+#endif
     }
 }
 
