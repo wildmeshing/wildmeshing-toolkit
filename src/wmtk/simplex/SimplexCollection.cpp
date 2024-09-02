@@ -100,7 +100,7 @@ void SimplexCollection::sort_and_clean()
     //     [&](const SimplexIdPair& p) { return p.second; });
 
     std::sort(m_simplices.begin(), m_simplices.end(), m_simplex_is_less);
-    const auto last = std::unique(m_simplices.begin(), m_simplices.end(), m_simplex_is_less);
+    const auto last = std::unique(m_simplices.begin(), m_simplices.end(), m_simplex_is_equal);
     m_simplices.erase(last, m_simplices.end());
 }
 
