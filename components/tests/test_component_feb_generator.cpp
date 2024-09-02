@@ -14,14 +14,14 @@ TEST_CASE("json_test_temp", "[.]")
     wmtk::io::Cache cache("wmtk_cache", ".");
     wmtk::HDF5Reader reader;
     auto mesh_in = reader.read(
-        "/home/zhouyuan/workplace/slicer_extract/wildmeshing-toolkit/data/tag_mesh.out.hdf5");
+        "/home/zhouyuan/workplace/slicer_extract/wildmeshing-toolkit/mydata/tag_mesh.out.hdf5");
 
     wmtk::TetMesh& m = static_cast<wmtk::TetMesh&>(*mesh_in);
 
     json res = wmtk::components::internal::read_json_settings(
-        "/home/zhouyuan/workplace/slicer_extract/wildmeshing-toolkit/data/Selections_Info.json");
+        "/home/zhouyuan/workplace/slicer_extract/wildmeshing-toolkit/mydata/Selections_Info.json");
 
-    std::string output = "";
+    std::string output = "/home/zhouyuan/workplace/slicer_extract/wildmeshing-toolkit/mydata/";
     wmtk::components::internal::generate_feb_files(m, res, output);
 }
 //
