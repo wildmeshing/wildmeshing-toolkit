@@ -46,9 +46,9 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 517;
+var viewWidth = 701;
 var viewHeight = 143;
-var sectionId = 'dynsection-3';
+var sectionId = 'dynsection-4';
 </script>
 <script xlink:href="svgpan.js"/>
 <svg id="graph" class="graph">
@@ -128,6 +128,22 @@ var sectionId = 'dynsection-3';
 <title>Node4&#45;&gt;Node5</title>
 <path fill="none" stroke="midnightblue" d="M351.2,-21C359.79,-21 368.45,-21 376.86,-21"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="376.98,-24.5 386.98,-21 376.98,-17.5 376.98,-24.5"/>
+</g>
+<!-- Node6 -->
+<g id="node6" class="node">
+<title>Node6</title>
+<g id="a_node6"><a xlink:href="classwmtk_1_1utils_1_1_tuple_inspector.html#a92f5faa08a7f78424f5cd1ec79dcedbb" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="545,-6 545,-36 693,-36 693,-6 545,-6"/>
+<text text-anchor="start" x="553" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::utils::TupleInspector</text>
+<text text-anchor="middle" x="619" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">::local_vid</text>
+</a>
+</g>
+</g>
+<!-- Node5&#45;&gt;Node6 -->
+<g id="edge5" class="edge">
+<title>Node5&#45;&gt;Node6</title>
+<path fill="none" stroke="midnightblue" d="M509.06,-21C517.38,-21 526.04,-21 534.69,-21"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="534.81,-24.5 544.81,-21 534.81,-17.5 534.81,-24.5"/>
 </g>
 </g>
 </svg>

@@ -15,6 +15,7 @@ var classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor =
     [ "execute_from_root", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#ad4359b5c36f328c241da00f5fc6d93a7", null ],
     [ "execute_mesh", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#acca9f40b78de111eaae6ce7d4c7e547e", null ],
     [ "node_events", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#a6f6509cc1129a3ea0db46f14a5369b25", null ],
+    [ "take_cache", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#a999caec592b9c1e0934940d824bff4b8", null ],
     [ "MultiMeshSimplexVisitorExecutor", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#a9b296c6200617a678782de462d8b0143", null ],
     [ "m_cache", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#a9779d9864a6e3ae4c44ab2be4ad81c47", null ],
     [ "m_edge_events", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#a60833e261bdad146a9b4dcd4dc20d5e3", null ],

@@ -10,6 +10,8 @@ var _primitive_type_8hpp =
     [ "get_primitive_type_from_id", "_primitive_type_8hpp.html#a3b08a5d7fb42f02c54bae85758b39f59", null ],
     [ "get_primitive_type_id", "_primitive_type_8hpp.html#a5cf45c152e856196bb734c6f48919a24", null ],
     [ "operator!=", "_primitive_type_8hpp.html#a3075bfd0661202be17cc2ada8e8f4791", null ],
+    [ "operator+", "_primitive_type_8hpp.html#ae0be06e6baca3ef10d4d963e9030f344", null ],
+    [ "operator-", "_primitive_type_8hpp.html#a79cca18cd26ba3e868151125118d25a2", null ],
     [ "operator<", "_primitive_type_8hpp.html#a856de97c0666837a63748fea7e3f5873", null ],
     [ "operator<=", "_primitive_type_8hpp.html#a0718510ab8656a7188b524d3c0f8a0ae", null ],
     [ "operator==", "_primitive_type_8hpp.html#a30df55e46119b5c04be285308bcceb08", null ],

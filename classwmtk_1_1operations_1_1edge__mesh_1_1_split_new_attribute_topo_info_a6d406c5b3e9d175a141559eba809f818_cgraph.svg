@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 760;
+var viewWidth = 574;
 var viewHeight = 149;
 var sectionId = 'dynsection-6';
 </script>
@@ -117,7 +117,7 @@ var sectionId = 'dynsection-6';
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
-<g id="a_node5"><a xlink:href="classwmtk_1_1operations_1_1_edge_operation_data.html#a24a9fb4d4eb3904a1dc33914d3c4bafd" target="_top" xlink:title=" ">
+<g id="a_node5"><a xlink:href="classwmtk_1_1operations_1_1_edge_operation_data.html#a37bc93fecbc4e30649298de051eee7ed" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="386,-6 386,-36 566,-36 566,-6 386,-6"/>
 <text text-anchor="start" x="394" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::EdgeOperation</text>
 <text text-anchor="middle" x="476" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">Data::tuple_from_id</text>
@@ -129,21 +129,6 @@ var sectionId = 'dynsection-6';
 <title>Node4&#45;&gt;Node5</title>
 <path fill="none" stroke="midnightblue" d="M350.1,-21C358.44,-21 367.03,-21 375.63,-21"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="375.7,-24.5 385.7,-21 375.7,-17.5 375.7,-24.5"/>
-</g>
-<!-- Node6 -->
-<g id="node6" class="node">
-<title>Node6</title>
-<g id="a_node6"><a xlink:href="classwmtk_1_1_mesh.html#a60165ceb4c2db2731df90e4ac100637d" target="_top" xlink:title="internal function that returns the tuple of requested type, and has the global index cid">
-<polygon fill="none" stroke="black" points="602,-11.5 602,-30.5 752,-30.5 752,-11.5 602,-11.5"/>
-<text text-anchor="middle" x="677" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::tuple_from_id</text>
-</a>
-</g>
-</g>
-<!-- Node5&#45;&gt;Node6 -->
-<g id="edge5" class="edge">
-<title>Node5&#45;&gt;Node6</title>
-<path fill="none" stroke="midnightblue" d="M566.02,-21C574.56,-21 583.2,-21 591.68,-21"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="591.94,-24.5 601.94,-21 591.94,-17.5 591.94,-24.5"/>
 </g>
 </g>
 </svg>

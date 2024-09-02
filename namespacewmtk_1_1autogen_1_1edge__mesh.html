@@ -145,6 +145,15 @@ Functions</h2></td></tr>
 <tr class="separator:a31f57ece5d376a6b13f38500d5fc34dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4a05a2b6b2c2456ec5c1713ae96fd854"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#a4a05a2b6b2c2456ec5c1713ae96fd854">local_switch_tuple</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t, int8_t index)</td></tr>
 <tr class="separator:a4a05a2b6b2c2456ec5c1713ae96fd854"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a76e9a88b353dcde30081482e504d9cef"><td class="memItemLeft" align="right" valign="top">int8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#a76e9a88b353dcde30081482e504d9cef">simplex_index_from_valid_index</a> (int8_t valid_index, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">wmtk::PrimitiveType</a> type)</td></tr>
+<tr class="separator:a76e9a88b353dcde30081482e504d9cef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81c9035b863ca51c932ccf9a4f604ae7"><td class="memItemLeft" align="right" valign="top">int8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#a81c9035b863ca51c932ccf9a4f604ae7">subdart_maximal_action_to_face_action</a> (int8_t dart_index, int8_t simplex_dimension, int8_t simplex_index)</td></tr>
+<tr class="separator:a81c9035b863ca51c932ccf9a4f604ae7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d16e098b2116bfbfc4ecf56d2e99657"><td class="memItemLeft" align="right" valign="top">int8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#a4d16e098b2116bfbfc4ecf56d2e99657">subdart_maximal_action_to_face_size</a> (int8_t dart_index, int8_t simplex_dimension, int8_t simplex_index)</td></tr>
+<tr class="separator:a4d16e098b2116bfbfc4ecf56d2e99657"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a58b7c9f5f1fc673713b8292fc0a5f1bb"><td class="memItemLeft" align="right" valign="top">std::array&lt; int8_t, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#a58b7c9f5f1fc673713b8292fc0a5f1bb">subdart_maximal_action_to_face</a> (int8_t dart_index, int8_t simplex_dimension, int8_t simplex_index)</td></tr>
+<tr class="memdesc:a58b7c9f5f1fc673713b8292fc0a5f1bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a dart action that maximizes the number of sub-darts preserved.  <a href="namespacewmtk_1_1autogen_1_1edge__mesh.html#a58b7c9f5f1fc673713b8292fc0a5f1bb">More...</a><br /></td></tr>
+<tr class="separator:a58b7c9f5f1fc673713b8292fc0a5f1bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad40c19fe80f32212cb9c23a3313cd16c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#ad40c19fe80f32212cb9c23a3313cd16c">tuple_from_valid_index</a> (int64_t global_cid, int8_t valid_tuple_index)</td></tr>
 <tr class="separator:ad40c19fe80f32212cb9c23a3313cd16c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad8db449e7b22a064811821ad935d2554"><td class="memItemLeft" align="right" valign="top">int8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#ad8db449e7b22a064811821ad935d2554">valid_index_from_tuple</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
@@ -164,8 +173,8 @@ Variables</h2></td></tr>
 <tr class="separator:a67974a351a01f20a835911d70bf1bbee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd31c5be99e62185e7cab98e4b27e39a"><td class="memItemLeft" align="right" valign="top">const int8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#acd31c5be99e62185e7cab98e4b27e39a">auto_valid_switch_inverse_table</a> [2] = {0, 1}</td></tr>
 <tr class="separator:acd31c5be99e62185e7cab98e4b27e39a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a629784bc38d51ace376754e13180b250"><td class="memItemLeft" align="right" valign="top">const int8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#a629784bc38d51ace376754e13180b250">auto_valid_tuple_switch_indices</a> [2] = {1, 0}</td></tr>
-<tr class="separator:a629784bc38d51ace376754e13180b250"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec20051bc7c7a8c4b980c4d7e453e029"><td class="memItemLeft" align="right" valign="top">const int8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#aec20051bc7c7a8c4b980c4d7e453e029">auto_valid_tuple_switch_indices</a> [3] = {1, 0, 1}</td></tr>
+<tr class="separator:aec20051bc7c7a8c4b980c4d7e453e029"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="ae81f8da85475a6ccd7e65b4350abe0dc"></a>
@@ -238,11 +247,19 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="edge__mesh_2local__id__table__offset_8hxx_source.html#l00007">7</a> of file <a class="el" href="edge__mesh_2local__id__table__offset_8hxx_source.html">local_id_table_offset.hxx</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="edge__mesh_2valid__index__from__tuple_8hxx_source.html#l00008">valid_index_from_tuple()</a>.</p>
+<p class="reference">References <a class="el" href="_tuple_inspector_8hpp_source.html#l00013">wmtk::utils::TupleInspector::local_vid()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="local__id__table__offset_8cpp_source.html#l00007">wmtk::autogen::utils::local_id_table_offset()</a>, and <a class="el" href="edge__mesh_2valid__index__from__tuple_8hxx_source.html#l00007">valid_index_from_tuple()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_a98217b7273dcb36d27cdf2723bc25c48_cgraph.svg" width="419" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_a98217b7273dcb36d27cdf2723bc25c48_icgraph.svg" width="100%" height="412"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_a98217b7273dcb36d27cdf2723bc25c48_icgraph.svg" width="100%" height="485"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -284,7 +301,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="edge__mesh_2local__switch__tuple_8hxx_source.html#l00031">31</a> of file <a class="el" href="edge__mesh_2local__switch__tuple_8hxx_source.html">local_switch_tuple.hxx</a>.</p>
 
-<p class="reference">References <a class="el" href="edge__mesh_2autogenerated__tables_8cpp_source.html#l00014">auto_valid_switch_product_table</a>, <a class="el" href="_tuple_inspector_8hpp_source.html#l00028">wmtk::utils::TupleInspector::global_cid()</a>, <a class="el" href="edge__mesh_2tuple__from__valid__index_8hxx_source.html#l00007">tuple_from_valid_index()</a>, and <a class="el" href="edge__mesh_2valid__index__from__tuple_8hxx_source.html#l00008">valid_index_from_tuple()</a>.</p>
+<p class="reference">References <a class="el" href="edge__mesh_2autogenerated__tables_8cpp_source.html#l00014">auto_valid_switch_product_table</a>, <a class="el" href="_tuple_inspector_8hpp_source.html#l00039">wmtk::utils::TupleInspector::global_cid()</a>, <a class="el" href="edge__mesh_2tuple__from__valid__index_8hxx_source.html#l00007">tuple_from_valid_index()</a>, and <a class="el" href="edge__mesh_2valid__index__from__tuple_8hxx_source.html#l00007">valid_index_from_tuple()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -336,7 +353,7 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_a31f57ece5d376a6b13f38500d5fc34dc_icgraph.svg" width="647" height="118"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_a31f57ece5d376a6b13f38500d5fc34dc_icgraph.svg" width="100%" height="400"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -366,7 +383,211 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="edge__mesh_2local__id__table__offset_8hxx_source.html#l00013">13</a> of file <a class="el" href="edge__mesh_2local__id__table__offset_8hxx_source.html">local_id_table_offset.hxx</a>.</p>
+<p class="definition">Definition at line <a class="el" href="edge__mesh_2local__id__table__offset_8hxx_source.html#l00012">12</a> of file <a class="el" href="edge__mesh_2local__id__table__offset_8hxx_source.html">local_id_table_offset.hxx</a>.</p>
+
+</div>
+</div>
+<a id="a76e9a88b353dcde30081482e504d9cef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a76e9a88b353dcde30081482e504d9cef">&#9670;&nbsp;</a></span>simplex_index_from_valid_index()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int8_t wmtk::autogen::edge_mesh::simplex_index_from_valid_index </td>
+          <td>(</td>
+          <td class="paramtype">int8_t&#160;</td>
+          <td class="paramname"><em>valid_index</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">wmtk::PrimitiveType</a>&#160;</td>
+          <td class="paramname"><em>type</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="edge__mesh_2simplex__index__from__valid__index_8hxx_source.html#l00007">7</a> of file <a class="el" href="edge__mesh_2simplex__index__from__valid__index_8hxx_source.html">simplex_index_from_valid_index.hxx</a>.</p>
+
+<p class="reference">References <a class="el" href="edge__mesh_2autogenerated__tables_8cpp_source.html#l00006">auto_valid_tuples</a>, and <a class="el" href="_primitive_type_8hpp_source.html#l00018">wmtk::get_primitive_type_id()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="utils_2simplex__index__from__valid__index_8cpp_source.html#l00007">wmtk::autogen::utils::simplex_index_from_valid_index()</a>, <a class="el" href="simplex__index__from__valid__index_8cpp_source.html#l00007">wmtk::autogen::simplex_index_from_valid_index()</a>, and <a class="el" href="valid__index__to__simplex__index_8cpp_source.html#l00011">wmtk::autogen::utils::valid_index_to_simplex_index()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_a76e9a88b353dcde30081482e504d9cef_cgraph.svg" width="382" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_a76e9a88b353dcde30081482e504d9cef_icgraph.svg" width="100%" height="449"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a58b7c9f5f1fc673713b8292fc0a5f1bb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a58b7c9f5f1fc673713b8292fc0a5f1bb">&#9670;&nbsp;</a></span>subdart_maximal_action_to_face()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt; int8_t, 2 &gt; wmtk::autogen::edge_mesh::subdart_maximal_action_to_face </td>
+          <td>(</td>
+          <td class="paramtype">int8_t&#160;</td>
+          <td class="paramname"><em>dart_index</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int8_t&#160;</td>
+          <td class="paramname"><em>simplex_dimension</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int8_t&#160;</td>
+          <td class="paramname"><em>simplex_index</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns a dart action that maximizes the number of sub-darts preserved. </p>
+
+<p class="definition">Definition at line <a class="el" href="edge__mesh_2subdart__maximal__action__to__face_8cpp_source.html#l00033">33</a> of file <a class="el" href="edge__mesh_2subdart__maximal__action__to__face_8cpp_source.html">subdart_maximal_action_to_face.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="edge__mesh_2_simplex_dart_8hpp_source.html#l00021">wmtk::autogen::edge_mesh::SimplexDart::identity()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="utils_2subdart__maximal__action__to__face_8cpp_source.html#l00008">wmtk::autogen::utils::subdart_maximal_action_to_face()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_a58b7c9f5f1fc673713b8292fc0a5f1bb_cgraph.svg" width="611" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_a58b7c9f5f1fc673713b8292fc0a5f1bb_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a81c9035b863ca51c932ccf9a4f604ae7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a81c9035b863ca51c932ccf9a4f604ae7">&#9670;&nbsp;</a></span>subdart_maximal_action_to_face_action()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int8_t wmtk::autogen::edge_mesh::subdart_maximal_action_to_face_action </td>
+          <td>(</td>
+          <td class="paramtype">int8_t&#160;</td>
+          <td class="paramname"><em>dart_index</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int8_t&#160;</td>
+          <td class="paramname"><em>simplex_dimension</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int8_t&#160;</td>
+          <td class="paramname"><em>simplex_index</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="edge__mesh_2subdart__maximal__action__to__face_8cpp_source.html#l00007">7</a> of file <a class="el" href="edge__mesh_2subdart__maximal__action__to__face_8cpp_source.html">subdart_maximal_action_to_face.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="edge__mesh_2_simplex_dart_8hpp_source.html#l00021">wmtk::autogen::edge_mesh::SimplexDart::identity()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="utils_2subdart__maximal__action__to__face_8cpp_source.html#l00036">wmtk::autogen::utils::subdart_maximal_action_to_face_action()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_a81c9035b863ca51c932ccf9a4f604ae7_cgraph.svg" width="611" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_a81c9035b863ca51c932ccf9a4f604ae7_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a4d16e098b2116bfbfc4ecf56d2e99657"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d16e098b2116bfbfc4ecf56d2e99657">&#9670;&nbsp;</a></span>subdart_maximal_action_to_face_size()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int8_t wmtk::autogen::edge_mesh::subdart_maximal_action_to_face_size </td>
+          <td>(</td>
+          <td class="paramtype">int8_t&#160;</td>
+          <td class="paramname"><em>dart_index</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int8_t&#160;</td>
+          <td class="paramname"><em>simplex_dimension</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int8_t&#160;</td>
+          <td class="paramname"><em>simplex_index</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="edge__mesh_2subdart__maximal__action__to__face_8cpp_source.html#l00020">20</a> of file <a class="el" href="edge__mesh_2subdart__maximal__action__to__face_8cpp_source.html">subdart_maximal_action_to_face.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="largest__shared__subdart__size_8cpp_source.html#l00008">wmtk::autogen::utils::largest_shared_subdart_size()</a>, and <a class="el" href="utils_2subdart__maximal__action__to__face_8cpp_source.html#l00063">wmtk::autogen::utils::subdart_maximal_action_to_face_size()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_a4d16e098b2116bfbfc4ecf56d2e99657_icgraph.svg" width="100%" height="460"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
 
 </div>
 </div>
@@ -486,7 +707,7 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="edge__mesh_2valid__index__from__tuple_8hxx_source.html#l00008">8</a> of file <a class="el" href="edge__mesh_2valid__index__from__tuple_8hxx_source.html">valid_index_from_tuple.hxx</a>.</p>
+<p class="definition">Definition at line <a class="el" href="edge__mesh_2valid__index__from__tuple_8hxx_source.html#l00007">7</a> of file <a class="el" href="edge__mesh_2valid__index__from__tuple_8hxx_source.html">valid_index_from_tuple.hxx</a>.</p>
 
 <p class="reference">References <a class="el" href="edge__mesh_2autogenerated__tables_8cpp_source.html#l00010">auto_all_to_valid_tuple_indices</a>, and <a class="el" href="edge__mesh_2local__id__table__offset_8hxx_source.html#l00007">local_id_table_offset()</a>.</p>
 
@@ -494,13 +715,13 @@ Here is the caller graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_ad8db449e7b22a064811821ad935d2554_cgraph.svg" width="448" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_ad8db449e7b22a064811821ad935d2554_cgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_ad8db449e7b22a064811821ad935d2554_icgraph.svg" width="100%" height="412"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1autogen_1_1edge__mesh_ad8db449e7b22a064811821ad935d2554_icgraph.svg" width="100%" height="461"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -521,7 +742,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="edge__mesh_2autogenerated__tables_8cpp_source.html#l00010">10</a> of file <a class="el" href="edge__mesh_2autogenerated__tables_8cpp_source.html">autogenerated_tables.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="edge__mesh_2valid__index__from__tuple_8hxx_source.html#l00008">valid_index_from_tuple()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="edge__mesh_2valid__index__from__tuple_8hxx_source.html#l00007">valid_index_from_tuple()</a>.</p>
 
 </div>
 </div>
@@ -591,25 +812,25 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="edge__mesh_2autogenerated__tables_8cpp_source.html#l00008">8</a> of file <a class="el" href="edge__mesh_2autogenerated__tables_8cpp_source.html">autogenerated_tables.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="edge__mesh_2_simplex_dart_8hpp_source.html#l00022">wmtk::autogen::edge_mesh::SimplexDart::size()</a>, <a class="el" href="edge__mesh_2_simplex_dart_8hpp_source.html#l00024">wmtk::autogen::edge_mesh::SimplexDart::valid_indices()</a>, and <a class="el" href="edge__mesh_2_simplex_dart_8hpp_source.html#l00025">wmtk::autogen::edge_mesh::SimplexDart::valid_indices_dynamic()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="edge__mesh_2_simplex_dart_8hpp_source.html#l00030">wmtk::autogen::edge_mesh::SimplexDart::size()</a>, <a class="el" href="edge__mesh_2_simplex_dart_8hpp_source.html#l00032">wmtk::autogen::edge_mesh::SimplexDart::valid_indices()</a>, and <a class="el" href="edge__mesh_2_simplex_dart_8hpp_source.html#l00033">wmtk::autogen::edge_mesh::SimplexDart::valid_indices_dynamic()</a>.</p>
 
 </div>
 </div>
-<a id="a629784bc38d51ace376754e13180b250"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a629784bc38d51ace376754e13180b250">&#9670;&nbsp;</a></span>auto_valid_tuple_switch_indices</h2>
+<a id="aec20051bc7c7a8c4b980c4d7e453e029"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aec20051bc7c7a8c4b980c4d7e453e029">&#9670;&nbsp;</a></span>auto_valid_tuple_switch_indices</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const int8_t wmtk::autogen::edge_mesh::auto_valid_tuple_switch_indices = {1, 0}</td>
+          <td class="memname">const int8_t wmtk::autogen::edge_mesh::auto_valid_tuple_switch_indices = {1, 0, 1}</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="edge__mesh_2autogenerated__tables_8cpp_source.html#l00018">18</a> of file <a class="el" href="edge__mesh_2autogenerated__tables_8cpp_source.html">autogenerated_tables.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="edge__mesh_2_simplex_dart_8hpp_source.html#l00017">wmtk::autogen::edge_mesh::SimplexDart::primitive_to_index()</a>, and <a class="el" href="edge__mesh_2local__switch__tuple_8hxx_source.html#l00040">wmtk::autogen::edge_mesh::internal::switch_primitive_to_valid_tuple_index()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="edge__mesh_2_simplex_dart_8hpp_source.html#l00021">wmtk::autogen::edge_mesh::SimplexDart::identity()</a>, <a class="el" href="edge__mesh_2_simplex_dart_8hpp_source.html#l00025">wmtk::autogen::edge_mesh::SimplexDart::opposite()</a>, <a class="el" href="edge__mesh_2_simplex_dart_8hpp_source.html#l00017">wmtk::autogen::edge_mesh::SimplexDart::primitive_to_index()</a>, and <a class="el" href="edge__mesh_2local__switch__tuple_8hxx_source.html#l00040">wmtk::autogen::edge_mesh::internal::switch_primitive_to_valid_tuple_index()</a>.</p>
 
 </div>
 </div>
@@ -627,7 +848,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="edge__mesh_2autogenerated__tables_8cpp_source.html#l00006">6</a> of file <a class="el" href="edge__mesh_2autogenerated__tables_8cpp_source.html">autogenerated_tables.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="edge__mesh_2tuple__from__valid__index_8hxx_source.html#l00007">tuple_from_valid_index()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="edge__mesh_2_simplex_dart_8hpp_source.html#l00038">wmtk::autogen::edge_mesh::SimplexDart::simplex_index()</a>, <a class="el" href="edge__mesh_2simplex__index__from__valid__index_8hxx_source.html#l00007">simplex_index_from_valid_index()</a>, and <a class="el" href="edge__mesh_2tuple__from__valid__index_8hxx_source.html#l00007">tuple_from_valid_index()</a>.</p>
 
 </div>
 </div>

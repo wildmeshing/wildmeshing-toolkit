@@ -57,6 +57,7 @@ var classwmtk_1_1multimesh_1_1_multi_mesh_manager =
     [ "try_updating_map_tuple_from_split", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#a8c944f139e4ed696dee6c16fb3778a3a", null ],
     [ "update_child_handles", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ab71befacebd0a22bb8e75ca5640d9d45", null ],
     [ "update_map_tuple_hashes", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#abe80ff5ed63ac45969a4d7d087a5ffd8", null ],
+    [ "update_maps_from_edge_operation", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#af9c47d7844feea21e37c259942446d08", null ],
     [ "multimesh::MultiMeshSimplexVisitor", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#aa719cbea5d32f6cc40db26f5427c9f40", null ],
     [ "multimesh::MultiMeshSimplexVisitorExecutor", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ad9a13c0ea4d5c720e07247ab082f535c", null ],
     [ "multimesh::MultiMeshVisitor", "classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#af7fc43432accd107d1b9de25240a04bd", null ],

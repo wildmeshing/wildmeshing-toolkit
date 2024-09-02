@@ -46,9 +46,9 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 507;
+var viewWidth = 534;
 var viewHeight = 88;
-var sectionId = 'dynsection-4';
+var sectionId = 'dynsection-12';
 </script>
 <script xlink:href="svgpan.js"/>
 <svg id="graph" class="graph">
@@ -58,9 +58,9 @@ var sectionId = 'dynsection-4';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="378,-24.5 378,-54.5 499,-54.5 499,-24.5 378,-24.5"/>
-<text text-anchor="start" x="386" y="-42.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::tuple</text>
-<text text-anchor="middle" x="438.5" y="-31.5" font-family="Helvetica,sans-Serif" font-size="10.00">_from_valid_index</text>
+<polygon fill="#bfbfbf" stroke="black" points="405,-24.5 405,-54.5 526,-54.5 526,-24.5 405,-24.5"/>
+<text text-anchor="start" x="413" y="-42.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::tuple</text>
+<text text-anchor="middle" x="465.5" y="-31.5" font-family="Helvetica,sans-Serif" font-size="10.00">_from_valid_index</text>
 </a>
 </g>
 </g>
@@ -68,49 +68,65 @@ var sectionId = 'dynsection-4';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classwmtk_1_1autogen_1_1_simplex_dart.html#ae8d66ad4c172866649e46e37435d0717" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="175.5,-49.5 175.5,-79.5 332.5,-79.5 332.5,-49.5 175.5,-49.5"/>
-<text text-anchor="start" x="183.5" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::SimplexDart</text>
-<text text-anchor="middle" x="254" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">::tuple_from_valid_index</text>
+<polygon fill="none" stroke="black" points="202.5,-49.5 202.5,-79.5 359.5,-79.5 359.5,-49.5 202.5,-49.5"/>
+<text text-anchor="start" x="210.5" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::SimplexDart</text>
+<text text-anchor="middle" x="281" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">::tuple_from_valid_index</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M368,-49.02C356.46,-50.6 344.43,-52.25 332.7,-53.86"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="368.56,-52.48 378,-47.65 367.61,-45.54 368.56,-52.48"/>
-</g>
-<!-- Node3 -->
-<g id="node3" class="node">
-<title>Node3</title>
-<g id="a_node3"><a xlink:href="classwmtk_1_1autogen_1_1_simplex_dart.html#a4ccdc5dc677a964c256bf5f2054d5500" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="166,-0.5 166,-30.5 342,-30.5 342,-0.5 166,-0.5"/>
-<text text-anchor="start" x="174" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::SimplexDart</text>
-<text text-anchor="middle" x="254" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">::update_tuple_from_valid_index</text>
-</a>
-</g>
-</g>
-<!-- Node1&#45;&gt;Node3 -->
-<g id="edge2" class="edge">
-<title>Node1&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M367.9,-30.35C359.51,-29.24 350.85,-28.1 342.24,-26.97"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="367.62,-33.84 378,-31.67 368.54,-26.9 367.62,-33.84"/>
+<path fill="none" stroke="midnightblue" d="M395,-49.02C383.46,-50.6 371.43,-52.25 359.7,-53.86"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="395.56,-52.48 405,-47.65 394.61,-45.54 395.56,-52.48"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:href="namespacewmtk_1_1multimesh_1_1utils.html#af803d30f20f8182d97c4e298c0bd7d59" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="0,-0.5 0,-30.5 130,-30.5 130,-0.5 0,-0.5"/>
-<text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::utils</text>
-<text text-anchor="middle" x="65" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">::transport_tuple</text>
+<g id="a_node4"><a xlink:href="classwmtk_1_1autogen_1_1_simplex_dart.html#a4ccdc5dc677a964c256bf5f2054d5500" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="193,-0.5 193,-30.5 369,-30.5 369,-0.5 193,-0.5"/>
+<text text-anchor="start" x="201" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::SimplexDart</text>
+<text text-anchor="middle" x="281" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">::update_tuple_from_valid_index</text>
 </a>
 </g>
 </g>
-<!-- Node3&#45;&gt;Node4 -->
+<!-- Node1&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
-<title>Node3&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M155.66,-15.5C147.02,-15.5 138.43,-15.5 130.18,-15.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="155.8,-19 165.8,-15.5 155.8,-12 155.8,-19"/>
+<title>Node1&#45;&gt;Node4</title>
+<path fill="none" stroke="midnightblue" d="M394.9,-30.35C386.51,-29.24 377.85,-28.1 369.24,-26.97"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="394.62,-33.84 405,-31.67 395.54,-26.9 394.62,-33.84"/>
+</g>
+<!-- Node3 -->
+<g id="node3" class="node">
+<title>Node3</title>
+<g id="a_node3"><a xlink:href="classwmtk_1_1autogen_1_1_simplex_dart.html#a05e188f1fafc9fb7067843de4b5c09a5" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="0,-49.5 0,-79.5 157,-79.5 157,-49.5 0,-49.5"/>
+<text text-anchor="start" x="8" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::SimplexDart</text>
+<text text-anchor="middle" x="78.5" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">::tuple_from_dart</text>
+</a>
+</g>
+</g>
+<!-- Node2&#45;&gt;Node3 -->
+<g id="edge2" class="edge">
+<title>Node2&#45;&gt;Node3</title>
+<path fill="none" stroke="midnightblue" d="M192.28,-64.5C180.58,-64.5 168.65,-64.5 157.14,-64.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="192.48,-68 202.48,-64.5 192.48,-61 192.48,-68"/>
+</g>
+<!-- Node5 -->
+<g id="node5" class="node">
+<title>Node5</title>
+<g id="a_node5"><a xlink:href="namespacewmtk_1_1multimesh_1_1utils.html#af803d30f20f8182d97c4e298c0bd7d59" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="13.5,-0.5 13.5,-30.5 143.5,-30.5 143.5,-0.5 13.5,-0.5"/>
+<text text-anchor="start" x="21.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::multimesh::utils</text>
+<text text-anchor="middle" x="78.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">::transport_tuple</text>
+</a>
+</g>
+</g>
+<!-- Node4&#45;&gt;Node5 -->
+<g id="edge4" class="edge">
+<title>Node4&#45;&gt;Node5</title>
+<path fill="none" stroke="midnightblue" d="M182.78,-15.5C169.46,-15.5 156.07,-15.5 143.55,-15.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="182.93,-19 192.93,-15.5 182.93,-12 182.93,-19"/>
 </g>
 </g>
 </svg>

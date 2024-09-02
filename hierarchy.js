@@ -52,6 +52,8 @@ var hierarchy =
     [ "wmtk::simplex::ClosedStarIterable", "classwmtk_1_1simplex_1_1_closed_star_iterable.html", null ],
     [ "wmtk::components::cmp_l", "structwmtk_1_1components_1_1cmp__l.html", null ],
     [ "wmtk::components::cmp_s", "structwmtk_1_1components_1_1cmp__s.html", null ],
+    [ "wmtk::operations::internal::CollapseAlternateFacetData", "classwmtk_1_1operations_1_1internal_1_1_collapse_alternate_facet_data.html", null ],
+    [ "wmtk::operations::internal::CollapseAlternateFacetOptionData", "classwmtk_1_1operations_1_1internal_1_1_collapse_alternate_facet_option_data.html", null ],
     [ "wmtk::operations::CollapseNewAttributeTopoInfo", "classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html", [
       [ "wmtk::operations::edge_mesh::CollapseNewAttributeTopoInfo", "classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_topo_info.html", null ],
       [ "wmtk::operations::tet_mesh::CollapseNewAttributeTopoInfo", "classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_topo_info.html", null ],
@@ -222,6 +224,7 @@ var hierarchy =
     [ "wmtk::attribute::internal::is_typed_attribute_handle< TypedAttributeHandle< T > >", "structwmtk_1_1attribute_1_1internal_1_1is__typed__attribute__handle_3_01_typed_attribute_handle_3_01_t_01_4_01_4.html", null ],
     [ "wmtk::components::internal::IsotropicRemeshingAttributes", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes.html", null ],
     [ "wmtk::components::internal::IsotropicRemeshingOptions", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_options.html", null ],
+    [ "wmtk::utils::detail::PrimitiveTypeRange< Start, End, Inverted >::iterator", "classwmtk_1_1utils_1_1detail_1_1_primitive_type_range_1_1iterator.html", null ],
     [ "wmtk::simplex::utils::MeshSimplexComparator::Less", "classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator_1_1_less.html", null ],
     [ "wmtk::utils::metaprogramming::detail::DefaultComparatorType::Less", "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type_1_1_less.html", null ],
     [ "wmtk::simplex::LinkIterable", "classwmtk_1_1simplex_1_1_link_iterable.html", null ],
@@ -309,6 +312,7 @@ var hierarchy =
     [ "wmtk::attribute::PerThreadAttributeScopeStacks< T >", "classwmtk_1_1attribute_1_1_per_thread_attribute_scope_stacks.html", null ],
     [ "wmtk::function::utils::PositionMapEvaluator", "classwmtk_1_1function_1_1utils_1_1_position_map_evaluator.html", null ],
     [ "wmtk::Primitive", "classwmtk_1_1_primitive.html", null ],
+    [ "wmtk::utils::detail::PrimitiveTypeRange< Start, End, Inverted >", "classwmtk_1_1utils_1_1detail_1_1_primitive_type_range.html", null ],
     [ "polysolve::nonlinear::Problem", null, [
       [ "wmtk::operations::AMIPSOptimizationSmoothing::WMTKAMIPSProblem< S >", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing_1_1_w_m_t_k_a_m_i_p_s_problem.html", null ],
       [ "wmtk::operations::AMIPSOptimizationSmoothingPeriodic::WMTKAMIPSProblem< S >", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing_periodic_1_1_w_m_t_k_a_m_i_p_s_problem.html", null ],
@@ -354,6 +358,8 @@ var hierarchy =
     [ "wmtk::autogen::tri_mesh::SimplexDart", "classwmtk_1_1autogen_1_1tri__mesh_1_1_simplex_dart.html", null ],
     [ "wmtk::simplex::internal::SimplexEqualFunctor", "structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html", null ],
     [ "wmtk::simplex::internal::SimplexLessFunctor", "structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html", null ],
+    [ "wmtk::operations::internal::SplitAlternateFacetData", "classwmtk_1_1operations_1_1internal_1_1_split_alternate_facet_data.html", null ],
+    [ "wmtk::operations::internal::SplitAlternateFacetOptionData", "classwmtk_1_1operations_1_1internal_1_1_split_alternate_facet_option_data.html", null ],
     [ "wmtk::operations::SplitNewAttributeTopoInfo", "classwmtk_1_1operations_1_1_split_new_attribute_topo_info.html", [
       [ "wmtk::operations::edge_mesh::SplitNewAttributeTopoInfo", "classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html", null ],
       [ "wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo", "classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_topo_info.html", null ],
@@ -376,7 +382,8 @@ var hierarchy =
     [ "wmtk::components::internal::TriangleFanOptions", "classwmtk_1_1components_1_1internal_1_1_triangle_fan_options.html", null ],
     [ "wmtk::components::TriInsOptions", "structwmtk_1_1components_1_1_tri_ins_options.html", null ],
     [ "std::tuple", null, [
-      [ "wmtk::attribute::utils::HybridRationalAttribute< D >", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html", null ]
+      [ "wmtk::attribute::utils::HybridRationalAttribute< D >", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html", null ],
+      [ "wmtk::autogen::Dart", "classwmtk_1_1autogen_1_1_dart.html", null ]
     ] ],
     [ "wmtk::Tuple", "classwmtk_1_1_tuple.html", null ],
     [ "wmtk::attribute::TupleAccessor< MeshType, Dim >", "classwmtk_1_1attribute_1_1_tuple_accessor.html", null ],

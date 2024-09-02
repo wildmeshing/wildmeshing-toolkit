@@ -132,28 +132,29 @@ $(document).ready(function(){initNavTree('hash_8cpp_source.html',''); initResiza
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    data.emplace_back(handle_hash(handle));</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    data.emplace_back(mesh_hash(handle));</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    data.emplace_back(<span class="keywordtype">size_t</span>(handle.held_type()));</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacewmtk_1_1utils.html#aa9921982a676a496296f2d90452ddede">wmtk::utils::vector_hash</a>(data);</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;}</div>
-<div class="line"><a name="l00020"></a><span class="lineno"><a class="line" href="classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4.html#a7f0415f68d225ba64737052e8a6c0d35">   20</a></span>&#160;<span class="keywordtype">size_t</span> <a class="code" href="classwmtk_1_1hash.html">wmtk::hash&lt;wmtk::attribute::MeshAttributeHandle&gt;::handle_hash</a>(</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&amp; handle) <span class="keyword">const</span> noexcept</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;{</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keywordflow">return</span> std::visit(</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        [&amp;](<span class="keyword">const</span> <span class="keyword">auto</span>&amp; h) noexcept -&gt; <span class="keywordtype">size_t</span> {</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;            <span class="keyword">using</span> T = std::decay_t&lt;decltype(h)&gt;;</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="classwmtk_1_1hash.html">hash&lt;T&gt;</a>{}(h);</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        },</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        handle.m_handle);</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;}</div>
-<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4.html#ae0414ed707e0bc6bee07025e8e031822">   30</a></span>&#160;<span class="keywordtype">size_t</span> <a class="code" href="classwmtk_1_1hash.html">wmtk::hash&lt;wmtk::attribute::MeshAttributeHandle&gt;::mesh_hash</a>(</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&amp; handle) <span class="keyword">const</span> noexcept</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;{</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keywordflow">if</span> (!handle.is_valid()) {</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="keywordflow">return</span> -1; <span class="comment">// TODO: this assumes the vector hash never returns a value of -1</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    }</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="comment">// here we hash off of the absolute mesh id rather than the mesh itself to prevent cyclic</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="comment">// hashing</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacewmtk_1_1utils.html#aa9921982a676a496296f2d90452ddede">wmtk::utils::vector_hash</a>(handle.mesh().absolute_multi_mesh_id());</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;}</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">size_t</span> r = <a class="code" href="namespacewmtk_1_1utils.html#aa9921982a676a496296f2d90452ddede">wmtk::utils::vector_hash</a>(data);</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keywordflow">return</span> r;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;}</div>
+<div class="line"><a name="l00021"></a><span class="lineno"><a class="line" href="classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4.html#a7f0415f68d225ba64737052e8a6c0d35">   21</a></span>&#160;<span class="keywordtype">size_t</span> <a class="code" href="classwmtk_1_1hash.html">wmtk::hash&lt;wmtk::attribute::MeshAttributeHandle&gt;::handle_hash</a>(</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&amp; handle) <span class="keyword">const</span> noexcept</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;{</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keywordflow">return</span> std::visit(</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        [&amp;](<span class="keyword">const</span> <span class="keyword">auto</span>&amp; h) noexcept -&gt; <span class="keywordtype">size_t</span> {</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;            <span class="keyword">using</span> T = std::decay_t&lt;decltype(h)&gt;;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="classwmtk_1_1hash.html">hash&lt;T&gt;</a>{}(h);</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        },</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        handle.m_handle);</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;}</div>
+<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4.html#ae0414ed707e0bc6bee07025e8e031822">   31</a></span>&#160;<span class="keywordtype">size_t</span> <a class="code" href="classwmtk_1_1hash.html">wmtk::hash&lt;wmtk::attribute::MeshAttributeHandle&gt;::mesh_hash</a>(</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&amp; handle) <span class="keyword">const</span> noexcept</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;{</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keywordflow">if</span> (!handle.is_valid()) {</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <span class="keywordflow">return</span> -1; <span class="comment">// TODO: this assumes the vector hash never returns a value of -1</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    }</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="comment">// here we hash off of the absolute mesh id rather than the mesh itself to prevent cyclic</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="comment">// hashing</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacewmtk_1_1utils.html#aa9921982a676a496296f2d90452ddede">wmtk::utils::vector_hash</a>(handle.mesh().absolute_multi_mesh_id());</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;}</div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="a_mesh_attribute_handle_8hpp_html"><div class="ttname"><a href="_mesh_attribute_handle_8hpp.html">MeshAttributeHandle.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_handle.html">wmtk::attribute::AttributeHandle</a></div><div class="ttdoc">Internal handle representation used by MeshAttributes.</div><div class="ttdef"><b>Definition:</b> <a href="_attribute_handle_8hpp_source.html#l00023">AttributeHandle.hpp:24</a></div></div>

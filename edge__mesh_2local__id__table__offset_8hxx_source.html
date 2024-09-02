@@ -123,25 +123,25 @@ $(document).ready(function(){initNavTree('edge__mesh_2local__id__table__offset_8
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment">// computes the offset of a tuple&#39;s local ids in the tables</span></div>
 <div class="line"><a name="l00007"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#a98217b7273dcb36d27cdf2723bc25c48">    7</a></span>&#160;<span class="keyword">inline</span> int64_t <a class="code" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#a98217b7273dcb36d27cdf2723bc25c48">local_id_table_offset</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; tuple)</div>
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;{</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    <span class="keyword">using namespace </span>utils;</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;    <span class="keywordflow">return</span> TupleInspector::local_vid(tuple);</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;}</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
-<div class="line"><a name="l00013"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#ac04a108f56e158f66ba4ca69c519dfd3">   13</a></span>&#160;<span class="keyword">inline</span> std::array&lt;int64_t, 1&gt; <a class="code" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#ac04a108f56e158f66ba4ca69c519dfd3">lvid_from_table_offset</a>(int64_t table_offset)</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;{</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    std::array&lt;int64_t, 1&gt; r;</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="keyword">auto</span>&amp; [lvid] = r;</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    lvid = table_offset;</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keywordflow">return</span> r;</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;}</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;} <span class="comment">// namespace wmtk::autogen::edge_mesh</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classwmtk_1_1utils_1_1_tuple_inspector.html#a92f5faa08a7f78424f5cd1ec79dcedbb">wmtk::utils::TupleInspector::local_vid</a>(tuple);</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;}</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160; </div>
+<div class="line"><a name="l00012"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#ac04a108f56e158f66ba4ca69c519dfd3">   12</a></span>&#160;<span class="keyword">inline</span> std::array&lt;int64_t, 1&gt; <a class="code" href="namespacewmtk_1_1autogen_1_1edge__mesh.html#ac04a108f56e158f66ba4ca69c519dfd3">lvid_from_table_offset</a>(int64_t table_offset)</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;{</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    std::array&lt;int64_t, 1&gt; r;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">auto</span>&amp; [lvid] = r;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    lvid = table_offset;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keywordflow">return</span> r;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;}</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;} <span class="comment">// namespace wmtk::autogen::edge_mesh</span></div>
 <div class="ttc" id="a_tuple_inspector_8hpp_html"><div class="ttname"><a href="_tuple_inspector_8hpp.html">TupleInspector.hpp</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00036">Tuple.hpp:37</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00041">Tuple.hpp:42</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1utils_1_1_tuple_inspector_html_a92f5faa08a7f78424f5cd1ec79dcedbb"><div class="ttname"><a href="classwmtk_1_1utils_1_1_tuple_inspector.html#a92f5faa08a7f78424f5cd1ec79dcedbb">wmtk::utils::TupleInspector::local_vid</a></div><div class="ttdeci">static int8_t local_vid(const Tuple &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="_tuple_inspector_8hpp_source.html#l00013">TupleInspector.hpp:13</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1autogen_1_1edge__mesh_html"><div class="ttname"><a href="namespacewmtk_1_1autogen_1_1edge__mesh.html">wmtk::autogen::edge_mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="edge__mesh_2autogenerated__tables_8cpp_source.html#l00004">autogenerated_tables.cpp:4</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1autogen_1_1edge__mesh_html_a98217b7273dcb36d27cdf2723bc25c48"><div class="ttname"><a href="namespacewmtk_1_1autogen_1_1edge__mesh.html#a98217b7273dcb36d27cdf2723bc25c48">wmtk::autogen::edge_mesh::local_id_table_offset</a></div><div class="ttdeci">int64_t local_id_table_offset(const Tuple &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="edge__mesh_2local__id__table__offset_8hxx_source.html#l00007">local_id_table_offset.hxx:7</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1autogen_1_1edge__mesh_html_ac04a108f56e158f66ba4ca69c519dfd3"><div class="ttname"><a href="namespacewmtk_1_1autogen_1_1edge__mesh.html#ac04a108f56e158f66ba4ca69c519dfd3">wmtk::autogen::edge_mesh::lvid_from_table_offset</a></div><div class="ttdeci">std::array&lt; int64_t, 1 &gt; lvid_from_table_offset(int64_t table_offset)</div><div class="ttdef"><b>Definition:</b> <a href="edge__mesh_2local__id__table__offset_8hxx_source.html#l00013">local_id_table_offset.hxx:13</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1autogen_1_1edge__mesh_html_ac04a108f56e158f66ba4ca69c519dfd3"><div class="ttname"><a href="namespacewmtk_1_1autogen_1_1edge__mesh.html#ac04a108f56e158f66ba4ca69c519dfd3">wmtk::autogen::edge_mesh::lvid_from_table_offset</a></div><div class="ttdeci">std::array&lt; int64_t, 1 &gt; lvid_from_table_offset(int64_t table_offset)</div><div class="ttdef"><b>Definition:</b> <a href="edge__mesh_2local__id__table__offset_8hxx_source.html#l00012">local_id_table_offset.hxx:12</a></div></div>
 <div class="ttc" id="atri__mesh_2autogenerated__tables_8hpp_html"><div class="ttname"><a href="tri__mesh_2autogenerated__tables_8hpp.html">autogenerated_tables.hpp</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

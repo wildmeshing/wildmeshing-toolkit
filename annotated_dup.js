@@ -57,6 +57,7 @@ var annotated_dup =
         [ "tri_mesh", "namespacewmtk_1_1autogen_1_1tri__mesh.html", [
           [ "SimplexDart", "classwmtk_1_1autogen_1_1tri__mesh_1_1_simplex_dart.html", "classwmtk_1_1autogen_1_1tri__mesh_1_1_simplex_dart" ]
         ] ],
+        [ "Dart", "classwmtk_1_1autogen_1_1_dart.html", "classwmtk_1_1autogen_1_1_dart" ],
         [ "SimplexDart", "classwmtk_1_1autogen_1_1_simplex_dart.html", "classwmtk_1_1autogen_1_1_simplex_dart" ]
       ] ],
       [ "components", "namespacewmtk_1_1components.html", [
@@ -211,6 +212,12 @@ var annotated_dup =
           [ "EdgeOperationData", "classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html", "classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data" ],
           [ "SplitNewAttributeTopoInfo", "classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html", "classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info" ]
         ] ],
+        [ "internal", "namespacewmtk_1_1operations_1_1internal.html", [
+          [ "CollapseAlternateFacetData", "classwmtk_1_1operations_1_1internal_1_1_collapse_alternate_facet_data.html", "classwmtk_1_1operations_1_1internal_1_1_collapse_alternate_facet_data" ],
+          [ "CollapseAlternateFacetOptionData", "classwmtk_1_1operations_1_1internal_1_1_collapse_alternate_facet_option_data.html", "classwmtk_1_1operations_1_1internal_1_1_collapse_alternate_facet_option_data" ],
+          [ "SplitAlternateFacetData", "classwmtk_1_1operations_1_1internal_1_1_split_alternate_facet_data.html", "classwmtk_1_1operations_1_1internal_1_1_split_alternate_facet_data" ],
+          [ "SplitAlternateFacetOptionData", "classwmtk_1_1operations_1_1internal_1_1_split_alternate_facet_option_data.html", "classwmtk_1_1operations_1_1internal_1_1_split_alternate_facet_option_data" ]
+        ] ],
         [ "tet_mesh", "namespacewmtk_1_1operations_1_1tet__mesh.html", [
           [ "CollapseNewAttributeTopoInfo", "classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_topo_info.html", "classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_topo_info" ],
           [ "EdgeOperationData", "classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html", "classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data" ],
@@ -277,6 +284,9 @@ var annotated_dup =
         [ "SimplexCollection", "classwmtk_1_1simplex_1_1_simplex_collection.html", "classwmtk_1_1simplex_1_1_simplex_collection" ]
       ] ],
       [ "utils", "namespacewmtk_1_1utils.html", [
+        [ "detail", "namespacewmtk_1_1utils_1_1detail.html", [
+          [ "PrimitiveTypeRange", "classwmtk_1_1utils_1_1detail_1_1_primitive_type_range.html", "classwmtk_1_1utils_1_1detail_1_1_primitive_type_range" ]
+        ] ],
         [ "metaprogramming", "namespacewmtk_1_1utils_1_1metaprogramming.html", [
           [ "detail", "namespacewmtk_1_1utils_1_1metaprogramming_1_1detail.html", [
             [ "as_variant_impl", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl.html", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl" ],

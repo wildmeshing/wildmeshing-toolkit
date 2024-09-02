@@ -34,6 +34,7 @@ var dir_9f42d488f21f30bdc75c62948fa574ea =
     [ "orient.hpp", "orient_8hpp.html", "orient_8hpp" ],
     [ "primitive_range.cpp", "primitive__range_8cpp.html", "primitive__range_8cpp" ],
     [ "primitive_range.hpp", "primitive__range_8hpp.html", "primitive__range_8hpp" ],
+    [ "primitive_range_iter.hpp", "primitive__range__iter_8hpp.html", "primitive__range__iter_8hpp" ],
     [ "random_seed.hpp", "random__seed_8hpp.html", "random__seed_8hpp" ],
     [ "Rational.cpp", "_rational_8cpp.html", "_rational_8cpp" ],
     [ "Rational.hpp", "_rational_8hpp.html", [

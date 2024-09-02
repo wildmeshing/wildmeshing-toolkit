@@ -1,5 +1,6 @@
 var namespacewmtk_1_1utils =
 [
+    [ "detail", "namespacewmtk_1_1utils_1_1detail.html", "namespacewmtk_1_1utils_1_1detail" ],
     [ "metaprogramming", "namespacewmtk_1_1utils_1_1metaprogramming.html", "namespacewmtk_1_1utils_1_1metaprogramming" ],
     [ "EigenMatrixWriter", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html", "classwmtk_1_1utils_1_1_eigen_matrix_writer" ],
     [ "Hashable", "classwmtk_1_1utils_1_1_hashable.html", "classwmtk_1_1utils_1_1_hashable" ],
@@ -27,8 +28,11 @@ var namespacewmtk_1_1utils =
     [ "get_random_seed", "namespacewmtk_1_1utils.html#a3c36f4ea039196043ac93202181d91e1", null ],
     [ "merkle_tree", "namespacewmtk_1_1utils.html#a0dca8cd0cb666277e80d2b93286cfb65", null ],
     [ "merkle_tree_diff", "namespacewmtk_1_1utils.html#aa8bd6cb2e566ee2d1badbff8eec034ea", null ],
+    [ "primitive_above", "namespacewmtk_1_1utils.html#a350a75a4b0759b8d8c5b738fe03e94ba", null ],
     [ "primitive_above", "namespacewmtk_1_1utils.html#a2f4fed1ebdeb2d5c03a59b1760a30f61", null ],
+    [ "primitive_below", "namespacewmtk_1_1utils.html#ab1009236b2d65476aff078f0223d0c86", null ],
     [ "primitive_below", "namespacewmtk_1_1utils.html#ad4153e2c24f98b817e39406defdc9f7e", null ],
+    [ "primitive_range", "namespacewmtk_1_1utils.html#aad86a1efd04407e94f9bd5f92b3ed5d0", null ],
     [ "primitive_range", "namespacewmtk_1_1utils.html#a8dab5bd8df4c7c658413914f37210244", null ],
     [ "set_random_seed", "namespacewmtk_1_1utils.html#a64740d03539293929ff81b84cd082485", null ],
     [ "triangle_3d_area", "namespacewmtk_1_1utils.html#a8f0aa51f02854bf0163c6baa0301f576", null ],

@@ -1,7 +1,8 @@
 var searchData=
 [
-  ['geometry_4671',['geometry',['../structwmtk_1_1components_1_1_wildmeshing_options_envelope.html#a202597e0ededc1d721174c591e8b53da',1,'wmtk::components::WildmeshingOptionsEnvelope']]],
-  ['global_5fsimplex_5fids_5fwith_5fpotentially_5fmodified_5fhashes_4672',['global_simplex_ids_with_potentially_modified_hashes',['../classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a7833c30ddade625c3b602cdad4017339',1,'wmtk::operations::tet_mesh::EdgeOperationData::global_simplex_ids_with_potentially_modified_hashes()'],['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a8db686728bc0a5c93151750a714d1f74',1,'wmtk::operations::tri_mesh::EdgeOperationData::global_simplex_ids_with_potentially_modified_hashes()']]],
-  ['grad_4673',['grad',['../struct_d_scalar1.html#ab47f13cbffdaff53d8d630a9abba26b0',1,'DScalar1::grad()'],['../struct_d_scalar2.html#ab6a69ad53cc7b6a98f20559e8875a005',1,'DScalar2::grad()']]],
-  ['grid_5fspacing_4674',['grid_spacing',['../structwmtk_1_1components_1_1_to_pts_options.html#a1bd41fb7e777ce8615f3ed9359cdb808',1,'wmtk::components::ToPtsOptions']]]
+  ['geometry_4880',['geometry',['../structwmtk_1_1components_1_1_wildmeshing_options_envelope.html#a202597e0ededc1d721174c591e8b53da',1,'wmtk::components::WildmeshingOptionsEnvelope']]],
+  ['global_5fids_5fto_5fpotential_5ftuples_4881',['global_ids_to_potential_tuples',['../classwmtk_1_1operations_1_1_edge_operation_data.html#a46996078702aaa4c9f74f8f4f3d7bafa',1,'wmtk::operations::EdgeOperationData']]],
+  ['global_5fids_5fto_5fupdate_4882',['global_ids_to_update',['../classwmtk_1_1operations_1_1_edge_operation_data.html#a227b86248f90a144459163c575fbb46c',1,'wmtk::operations::EdgeOperationData']]],
+  ['grad_4883',['grad',['../struct_d_scalar1.html#ab47f13cbffdaff53d8d630a9abba26b0',1,'DScalar1::grad()'],['../struct_d_scalar2.html#ab6a69ad53cc7b6a98f20559e8875a005',1,'DScalar2::grad()']]],
+  ['grid_5fspacing_4884',['grid_spacing',['../structwmtk_1_1components_1_1_to_pts_options.html#a1bd41fb7e777ce8615f3ed9359cdb808',1,'wmtk::components::ToPtsOptions']]]
 ];

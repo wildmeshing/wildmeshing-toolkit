@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 760;
+var viewWidth = 574;
 var viewHeight = 121;
 var sectionId = 'dynsection-5';
 </script>
@@ -118,7 +118,7 @@ var sectionId = 'dynsection-5';
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
-<g id="a_node5"><a xlink:href="classwmtk_1_1operations_1_1_edge_operation_data.html#a24a9fb4d4eb3904a1dc33914d3c4bafd" target="_top" xlink:title=" ">
+<g id="a_node5"><a xlink:href="classwmtk_1_1operations_1_1_edge_operation_data.html#a37bc93fecbc4e30649298de051eee7ed" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="386,-0.5 386,-30.5 566,-30.5 566,-0.5 386,-0.5"/>
 <text text-anchor="start" x="394" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::EdgeOperation</text>
 <text text-anchor="middle" x="476" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">Data::tuple_from_id</text>
@@ -130,21 +130,6 @@ var sectionId = 'dynsection-5';
 <title>Node3&#45;&gt;Node5</title>
 <path fill="none" stroke="midnightblue" d="M350.1,-32.45C358.44,-31.31 367.03,-30.15 375.63,-28.98"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="376.26,-32.43 385.7,-27.62 375.32,-25.49 376.26,-32.43"/>
-</g>
-<!-- Node6 -->
-<g id="node6" class="node">
-<title>Node6</title>
-<g id="a_node6"><a xlink:href="classwmtk_1_1_mesh.html#a60165ceb4c2db2731df90e4ac100637d" target="_top" xlink:title="internal function that returns the tuple of requested type, and has the global index cid">
-<polygon fill="none" stroke="black" points="602,-6 602,-25 752,-25 752,-6 602,-6"/>
-<text text-anchor="middle" x="677" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::tuple_from_id</text>
-</a>
-</g>
-</g>
-<!-- Node5&#45;&gt;Node6 -->
-<g id="edge5" class="edge">
-<title>Node5&#45;&gt;Node6</title>
-<path fill="none" stroke="midnightblue" d="M566.02,-15.5C574.56,-15.5 583.2,-15.5 591.68,-15.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="591.94,-19 601.94,-15.5 591.94,-12 591.94,-19"/>
 </g>
 </g>
 </svg>
