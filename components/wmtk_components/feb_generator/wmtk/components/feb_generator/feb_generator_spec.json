@@ -1,0 +1,48 @@
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": [
+      "input",
+      "output",
+      "mode",
+      "delta_x"
+    ],
+    "optional": [
+      "volumetric_encoded_file",
+      "volumetric_encoded_bc_file",
+      "level"
+    ]
+  },
+  {
+    "pointer": "/input",
+    "type": "string"
+  },
+  {
+    "pointer": "/output",
+    "type": "string"
+  },
+  {
+    "pointer": "/mode",
+    "type": "bool"
+  },
+  {
+    "pointer": "/delta_x",
+    "type": "float"
+  },
+  {
+    "pointer": "/volumetric_encoded_file",
+    "type": "string",
+    "default": "dummy"
+  },
+  {
+    "pointer": "/volumetric_encoded_bc_file",
+    "type": "string",
+    "default": "dummy"
+  },
+  {
+    "pointer": "/level",
+    "type": "int",
+    "default": 1
+  }
+]
