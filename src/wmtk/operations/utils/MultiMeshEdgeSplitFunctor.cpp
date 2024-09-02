@@ -30,7 +30,7 @@ edge_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
 {
     EdgeMesh::EdgeMeshOperationExecutor exec(m, s.tuple());
     exec.split_edge();
-    return exec;
+    return std::move(static_cast<edge_mesh::EdgeOperationData&>(exec));
 }
 tri_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
     TriMesh& m,
@@ -47,7 +47,7 @@ tri_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
             fmt::join(id.split_f, ","));
     }
 
-    return exec;
+    return std::move(static_cast<tri_mesh::EdgeOperationData&>(exec));
 }
 tet_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
     TetMesh& m,
@@ -55,6 +55,6 @@ tet_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
 {
     TetMesh::TetMeshOperationExecutor exec(m, s.tuple());
     exec.split_edge();
-    return exec;
+    return std::move(static_cast<tet_mesh::EdgeOperationData&>(exec));
 }
 } // namespace wmtk::operations::utils
