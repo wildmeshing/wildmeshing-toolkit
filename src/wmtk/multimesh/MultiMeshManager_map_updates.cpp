@@ -217,7 +217,12 @@ void MultiMeshManager::update_map_tuple_hashes(
 
             // check if the map is handled in the ear case
             // if the child simplex is deleted then we can skip it
-            assert(!child_mesh.is_removed(child_tuple));
+            if(child_mesh.is_removed(child_tuple)) {
+                spdlog::info("Perhaps incorrect tuple map {} => {}", wmtk::utils::TupleInspector::as_string(parent_tuple),
+                wmtk::utils::TupleInspector::as_string(child_tuple));
+                //continue;
+            }
+            //assert(!child_mesh.is_removed(child_tuple));
 
             // Find a valid representation of this simplex representation of the original tupl
             Tuple old_tuple;

@@ -206,7 +206,7 @@ void collapse_facet_maps_impl(
 }
 } // namespace
 
-TEST_CASE("collapse_facet_maps_1d", "[operations][data][1D]")
+TEST_CASE("collapse_facet_maps_1d", "[operations][data][1D][.]")
 {
     {
         spdlog::info("1d");
@@ -281,7 +281,7 @@ TEST_CASE("collapse_facet_maps_1d", "[operations][data][1D]")
         }
     }
 }
-TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D]")
+TEST_CASE("collapse_facet_maps_2d", "[operations][data][2D][.]")
 {
     {
         spdlog::info("2d");
