@@ -58,3 +58,4 @@ add_subdirectory(composite)
 #
 add_subdirectory(utils)
 #
+add_subdirectory(internal)

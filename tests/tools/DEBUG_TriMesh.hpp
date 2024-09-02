@@ -13,6 +13,11 @@ public:
 
     using TriMesh::id;
     using TriMesh::id_vertex;
+    using TriMesh::m_fe_accessor;
+    using TriMesh::m_ff_accessor;
+    using TriMesh::m_fv_accessor;
+    using TriMesh::tuple_from_global_ids;
+    using TriMesh::tuple_from_id;
 
 
     DEBUG_TriMesh& operator=(TriMesh&& o);
@@ -36,7 +41,7 @@ public:
     void print_vf() const;
     Eigen::Matrix<int64_t, 3, 1> fv_from_fid(const int64_t fid) const;
 
-    auto edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2, const int64_t fid) const
+    auto edge_tuple_with_vs_and_t(const int64_t v1, const int64_t v2, const int64_t fid) const
         -> Tuple;
 
     using TriMesh::vertex_tuple_from_id;
@@ -76,7 +81,6 @@ public:
     /**
      * @brief returns the TriMeshOperationExecutor
      */
-    using TriMesh::tuple_from_id;
 
     using TriMesh::custom_attributes;
 

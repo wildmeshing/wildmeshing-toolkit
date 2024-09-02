@@ -11,5 +11,7 @@ namespace wmtk::autogen::{{ namespace }} {
     extern {%  include "templates/array_declaration.template" -%};
     {% endfor %}
     extern const int8_t *remap_table[ {{ dimensions }} ][ {{dimensions }}];
+
+    // extern const int8_t **subdart_preserving_actions [ {{ dimensions }} ];
 }
 

@@ -8,6 +8,7 @@ set(SRC_FILES
 
     MultiMeshManager.hpp
     MultiMeshManager.cpp
+    MultiMeshManager_map_updates.cpp
     BoundaryChecker.cpp
     BoundaryChecker.hpp
     consolidate.hpp

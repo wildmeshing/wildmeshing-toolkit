@@ -22,8 +22,9 @@ extern const int8_t auto_valid_switch_product_table[2][2];
 // Tuple group product inverse using valid tuple indices
 extern const int8_t auto_valid_switch_inverse_table[2];
 
-// Which tuples are associated with switching. Last entry is the identity tuple
-extern const int8_t auto_valid_tuple_switch_indices[2];
+// Which tuples are associated with switching. Last two entries are the identity action and opp
+// action
+extern const int8_t auto_valid_tuple_switch_indices[3];
 
 
 } // namespace wmtk::autogen::edge_mesh

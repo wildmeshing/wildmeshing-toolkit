@@ -55,7 +55,7 @@ TEST_CASE("incident_face_data", "[operations][2D]")
         DEBUG_TriMesh m = single_triangle();
         REQUIRE(m.is_connectivity_valid());
 
-        const Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(0, 2, 0);
         REQUIRE(m.id(edge, PV) == 0);
         REQUIRE(m.id(edge, PF) == 0);
         REQUIRE(m.id(m.switch_tuple(edge, PV), PV) == 2);
@@ -65,6 +65,7 @@ TEST_CASE("incident_face_data", "[operations][2D]")
 #else
         auto executor = m.get_tmoe(edge);
 #endif
+        executor.split_edge_precompute();
 
         const std::vector<TMOE::IncidentFaceData>& face_datas = executor.incident_face_datas();
         REQUIRE(face_datas.size() == 1);
@@ -91,13 +92,14 @@ TEST_CASE("incident_face_data", "[operations][2D]")
         DEBUG_TriMesh m = one_ear();
 
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
 #if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
         auto executor = m.get_tmoe(edge);
 #endif
+        executor.split_edge_precompute();
         const std::vector<TMOE::IncidentFaceData>& face_datas = executor.incident_face_datas();
         REQUIRE(face_datas.size() == 1);
         const TMOE::IncidentFaceData& face_data = face_datas[0];
@@ -123,13 +125,14 @@ TEST_CASE("incident_face_data", "[operations][2D]")
         DEBUG_TriMesh m = two_neighbors();
 
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
 #if defined(WMTK_ENABLE_HASH_UPDATE)
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 #else
         auto executor = m.get_tmoe(edge);
 #endif
+        executor.split_edge_precompute();
         const std::vector<TMOE::IncidentFaceData>& face_datas = executor.incident_face_datas();
         REQUIRE(face_datas.size() == 1);
         const TMOE::IncidentFaceData& face_data = face_datas[0];

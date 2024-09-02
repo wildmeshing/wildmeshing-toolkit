@@ -16,7 +16,7 @@ TEST_CASE("simplex_tuples_preserving_primitive_types", "[simplex_collection]")
     {
         DEBUG_TriMesh m = single_triangle();
 
-        const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
 
         const auto fci = simplex::tuples_preserving_primitive_types(
             m,
@@ -34,7 +34,7 @@ TEST_CASE("simplex_tuples_preserving_primitive_types", "[simplex_collection]")
     {
         DEBUG_TriMesh m = single_triangle();
 
-        const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
 
         const auto fci = simplex::tuples_preserving_primitive_types(
             m,
@@ -52,7 +52,7 @@ TEST_CASE("simplex_tuples_preserving_primitive_types", "[simplex_collection]")
     {
         DEBUG_TriMesh m = single_triangle();
 
-        const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
 
         const auto fci = simplex::tuples_preserving_primitive_types(
             m,
@@ -70,7 +70,7 @@ TEST_CASE("simplex_tuples_preserving_primitive_types", "[simplex_collection]")
     {
         DEBUG_TetMesh m = single_tet();
 
-        const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
 
         const auto fci = simplex::tuples_preserving_primitive_types(
             m,
@@ -88,7 +88,7 @@ TEST_CASE("simplex_tuples_preserving_primitive_types", "[simplex_collection]")
     {
         DEBUG_TetMesh m = single_tet();
 
-        const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
 
         const auto fci = simplex::tuples_preserving_primitive_types(
             m,
@@ -106,7 +106,7 @@ TEST_CASE("simplex_tuples_preserving_primitive_types", "[simplex_collection]")
     {
         DEBUG_TetMesh m = single_tet();
 
-        const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
 
         const auto fci = simplex::tuples_preserving_primitive_types(
             m,
@@ -124,7 +124,7 @@ TEST_CASE("simplex_tuples_preserving_primitive_types", "[simplex_collection]")
     {
         DEBUG_TetMesh m = single_tet();
 
-        const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
 
         const auto fci = simplex::tuples_preserving_primitive_types(
             m,
@@ -142,7 +142,7 @@ TEST_CASE("simplex_tuples_preserving_primitive_types", "[simplex_collection]")
     {
         DEBUG_TetMesh m = single_tet();
 
-        const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
 
         const auto fci = simplex::tuples_preserving_primitive_types(
             m,
@@ -160,7 +160,7 @@ TEST_CASE("simplex_tuples_preserving_primitive_types", "[simplex_collection]")
     {
         DEBUG_TetMesh m = single_tet();
 
-        const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
 
         const auto fci = simplex::tuples_preserving_primitive_types(
             m,
@@ -178,7 +178,7 @@ TEST_CASE("simplex_tuples_preserving_primitive_types", "[simplex_collection]")
     {
         DEBUG_TetMesh m = single_tet();
 
-        const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
 
         const auto fci = simplex::tuples_preserving_primitive_types(
             m,
@@ -196,7 +196,7 @@ TEST_CASE("simplex_tuples_preserving_primitive_types", "[simplex_collection]")
     {
         DEBUG_TetMesh m = single_tet();
 
-        const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
 
         const auto fci = simplex::tuples_preserving_primitive_types(
             m,

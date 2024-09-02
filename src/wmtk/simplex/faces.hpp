@@ -26,4 +26,5 @@ void faces(
     SimplexCollection& simplex_collection,
     const Simplex& simplex,
     const bool sort_and_clean = true);
+
 } // namespace wmtk::simplex

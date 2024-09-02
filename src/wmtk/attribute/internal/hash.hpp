@@ -28,7 +28,8 @@ public:
         std::vector<size_t> data;
         data.emplace_back(handle_hash(handle));
         data.emplace_back(primitive_hash(handle));
-        return wmtk::utils::vector_hash(data);
+        const size_t r = wmtk::utils::vector_hash(data);
+        return r;
     }
     size_t handle_hash(const wmtk::attribute::TypedAttributeHandle<T>& handle) const noexcept
     {

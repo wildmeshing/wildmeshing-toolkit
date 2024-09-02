@@ -77,13 +77,13 @@ TEST_CASE("test_extract_child_edge_mesh", "[multimesh][extract_childmesh]")
                 .as<int64_t>();
         auto tag_accessor = parent.create_accessor(tag_handle);
 
-        const Tuple& e01 = parent.edge_tuple_between_v1_v2(0, 1, 0);
-        const Tuple& e02 = parent.edge_tuple_between_v1_v2(0, 2, 0);
-        const Tuple& e12 = parent.edge_tuple_between_v1_v2(1, 2, 0);
-        const Tuple& e03 = parent.edge_tuple_between_v1_v2(0, 3, 1);
-        const Tuple& e13 = parent.edge_tuple_between_v1_v2(1, 3, 1);
-        const Tuple& e04 = parent.edge_tuple_between_v1_v2(0, 4, 2);
-        const Tuple& e24 = parent.edge_tuple_between_v1_v2(2, 4, 2);
+        const Tuple& e01 = parent.edge_tuple_with_vs_and_t(0, 1, 0);
+        const Tuple& e02 = parent.edge_tuple_with_vs_and_t(0, 2, 0);
+        const Tuple& e12 = parent.edge_tuple_with_vs_and_t(1, 2, 0);
+        const Tuple& e03 = parent.edge_tuple_with_vs_and_t(0, 3, 1);
+        const Tuple& e13 = parent.edge_tuple_with_vs_and_t(1, 3, 1);
+        const Tuple& e04 = parent.edge_tuple_with_vs_and_t(0, 4, 2);
+        const Tuple& e24 = parent.edge_tuple_with_vs_and_t(2, 4, 2);
 
         tag_accessor.scalar_attribute(e01) = 1;
         tag_accessor.scalar_attribute(e02) = 1;

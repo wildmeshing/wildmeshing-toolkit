@@ -125,10 +125,12 @@ inline int64_t TriMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
+        assert(Mesh::is_valid(tuple));
         int64_t v = m_fv_accessor->const_topological_scalar_attribute(tuple, PrimitiveType::Vertex);
         return v;
     }
     case PrimitiveType::Edge: {
+        assert(Mesh::is_valid(tuple));
         int64_t v = m_fe_accessor->const_topological_scalar_attribute(tuple, PrimitiveType::Edge);
         return v;
     }

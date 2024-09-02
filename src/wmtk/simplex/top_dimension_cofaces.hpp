@@ -36,6 +36,11 @@ void top_dimension_cofaces_tuples(
     SimplexCollection& collection);
 
 void top_dimension_cofaces_tuples(
+    const PointMesh& mesh,
+    const Simplex& simplex,
+    SimplexCollection& collection);
+
+void top_dimension_cofaces_tuples(
     const EdgeMesh& mesh,
     const Simplex& simplex,
     SimplexCollection& collection);
@@ -50,6 +55,11 @@ void top_dimension_cofaces_tuples(
     const Simplex& simplex,
     SimplexCollection& collection);
 
+
+void top_dimension_cofaces_tuples(
+    const PointMesh& mesh,
+    const Simplex& simplex,
+    std::vector<Tuple>& collection);
 
 void top_dimension_cofaces_tuples(
     const EdgeMesh& mesh,
@@ -106,6 +116,8 @@ SimplexCollection top_dimension_cofaces(
  * just return the vector of tuples instead of creating a SimplexCollection.
  */
 std::vector<Tuple> top_dimension_cofaces_tuples(const Mesh& mesh, const Simplex& simplex);
+
+std::vector<Tuple> top_dimension_cofaces_tuples(const PointMesh& mesh, const Simplex& simplex);
 
 std::vector<Tuple> top_dimension_cofaces_tuples(const EdgeMesh& mesh, const Simplex& simplex);
 
