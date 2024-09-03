@@ -351,8 +351,26 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
 
                     std::set<int64_t> selected_points_set;
                     for (const auto& t : tet_tuple_list[main_idx]) {
-                        int64_t id_value = id_acc.scalar_attribute(t);
-                        selected_points_set.insert(static_cast<int64_t>(id_value));
+                        Tuple temp_t = t;
+                        // in include set and the filter set
+                        if (std::find(
+                                filter_tags.begin(),
+                                filter_tags.end(),
+                                bctag_acc.scalar_attribute(temp_t)) == filter_tags.end()) {
+                            continue;
+                        }
+
+                        int64_t id0 = id_acc.scalar_attribute(t);
+                        int64_t id1 = id_acc.scalar_attribute(mesh.switch_vertex(t));
+                        int64_t id2 = id_acc.scalar_attribute(
+                            mesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Vertex}));
+                        int64_t id3 = id_acc.scalar_attribute(mesh.switch_tuples(
+                            t,
+                            {PrimitiveType::Triangle, PrimitiveType::Edge, PrimitiveType::Vertex}));
+                        selected_points_set.insert(static_cast<int64_t>(id0));
+                        selected_points_set.insert(static_cast<int64_t>(id1));
+                        selected_points_set.insert(static_cast<int64_t>(id2));
+                        selected_points_set.insert(static_cast<int64_t>(id3));
                     }
                     std::vector<int64_t> selected_points(
                         selected_points_set.begin(),
