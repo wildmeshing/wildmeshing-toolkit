@@ -2,6 +2,9 @@
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/components/base/resolve_path.hpp>
+#include <wmtk/components/feb_generator/internal/FEBGenerator.hpp>
+#include <wmtk/components/feb_generator/internal/FEBGeneratorOptions.hpp>
+#include <wmtk/io/HDF5Reader.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
@@ -12,30 +15,18 @@ void feb_generator(const base::Paths& paths, const nlohmann::json& j, io::Cache&
 {
     using namespace internal;
 
-    // ExtractOptions options = j.get<ExtractOptions>();
+    FEBGeneratorOptions options = j.get<FEBGeneratorOptions>();
 
-    // std::string input_file = options.input;
-    // std::string output_file = options.output;
+    std::string input_file = options.input;
+    std::string json_file = options.settings_input;
+    std::string output_folder = options.output_folder;
 
-    // if (!std::filesystem::exists(input_file)) {
-    //     throw std::runtime_error(std::string("file") + input_file + " not found");
-    // }
+    wmtk::HDF5Reader reader;
+    auto mesh_in = reader.read(input_file);
+    wmtk::TetMesh& m = static_cast<wmtk::TetMesh&>(*mesh_in);
 
-    // if (options.mode == true) {
-    //     // extract_triangle_soup_from_image
-    //     unsigned int level = options.level;
-    //     internal::extract_triangle_soup_from_image(output_file, input_file, level);
-    // } else {
-    //     // gmsh2hdf_tag
-    //     std::string encoded_file = options.volumetric_encoded_file;
-    //     std::string encoded_bc_file = options.volumetric_encoded_bc_file;
-    //     double delta_x = options.delta_x;
-    //     if (encoded_bc_file == "dummy") {
-    //         internal::gmsh2hdf_tag(encoded_file, input_file, output_file, delta_x);
-    //     } else {
-    //         internal::gmsh2hdf_tag(encoded_file, encoded_bc_file, input_file, output_file,
-    //         delta_x);
-    //     }
-    // }
+    json jsons = wmtk::components::internal::read_json_settings(json_file);
+
+    wmtk::components::internal::generate_feb_files(m, jsons, output_folder);
 }
 } // namespace wmtk::components
