@@ -20,71 +20,6 @@ json read_json_settings(std::string path)
     return j;
 }
 
-bool read_fullsurface_from_json(
-    json& j,
-    int64_t main_idx_find,
-    std::vector<std::string>& name_list,
-    std::vector<std::vector<int64_t>>& exclude_ids_list)
-{
-    bool found = false;
-    for (const auto& full_surface : j["FullSurfaces"]) {
-        std::string name = full_surface["name"];
-        int64_t main_idx = full_surface["main_idx"];
-        std::vector<int64_t> exclude_ids = full_surface["exclude_ids"];
-        if (main_idx_find == main_idx) {
-            found = true;
-            name_list.push_back(name);
-            exclude_ids_list.push_back(exclude_ids);
-        }
-    }
-    return found;
-}
-
-bool read_sharedsurface_from_json(
-    json& j,
-    int64_t main_idx_find,
-    std::vector<std::string>& name_list,
-    std::vector<int64_t>& shared_idx_list)
-{
-    bool found = false;
-    for (const auto& shared_surface : j["SharedSurfaces"]) {
-        std::string name = shared_surface["name"];
-        if (main_idx_find == shared_surface["main_idx"]) {
-            found = true;
-            name_list.push_back(shared_surface["name"]);
-            shared_idx_list.push_back(shared_surface["shared_idx"]);
-        } else if (main_idx_find == shared_surface["shared_idx"]) {
-            found = true;
-            name = name + "_shared";
-            name_list.push_back(name);
-            shared_idx_list.push_back(shared_surface["main_idx"]);
-        }
-    }
-    return found;
-}
-
-bool read_custompart_from_json(
-    json& j,
-    int64_t main_idx_find,
-    std::vector<std::string>& name_list,
-    std::vector<std::vector<int64_t>>& shared_idx_list,
-    int64_t& filter_tag)
-{
-    bool found = false;
-    for (const auto& full_surface : j["CustomParts"]) {
-        std::string name = full_surface["name"];
-        int main_idx = full_surface["main_idx"];
-        if (main_idx_find == main_idx) {
-            found = true;
-            name_list.push_back(name);
-            std::vector<int64_t> include_ids = full_surface["exclude_ids"];
-            shared_idx_list.push_back(include_ids);
-            filter_tag = full_surface["filter_tag"];
-        }
-    }
-    return found;
-}
-
 void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_folder)
 {
     clock_t start, end;
@@ -218,12 +153,16 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                 std::string name = item["name"];
                 int64_t main_idx = item["main_idx"];
                 std::vector<int64_t> exclude_ids = item["exclude_ids"].get<std::vector<int64_t>>();
+                std::vector<int64_t> filter_tags = item["filter_tags"];
+
                 if (main_idx == id) {
                     spdlog::info(
-                        "FullSurfaces Settings: Name: {}, Main Index: {}, Exlude IDs: {}",
+                        "FullSurfaces Settings: Name: {}, Main Index: {}, Exlude IDs: {}, Filter "
+                        "Tag {}",
                         name,
                         main_idx,
-                        exclude_ids);
+                        exclude_ids,
+                        filter_tags);
                     const auto& face_tuples = face_tuple_list[main_idx];
 
                     f << "\t\t<Surface name=\"" << name << "\">\n";
@@ -244,9 +183,15 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                         int64_t another_side_tag =
                             tag_acc.scalar_attribute(mesh.switch_tetrahedron(temp_t));
                         if (std::find(exclude_ids.begin(), exclude_ids.end(), another_side_tag) !=
-                            exclude_ids.end()) {
+                                exclude_ids.end() ||
+                            std::find(
+                                filter_tags.begin(),
+                                filter_tags.end(),
+                                bctag_acc.scalar_attribute(temp_t)) == filter_tags.end()) {
                             continue;
                         }
+
+                        // in filter
 
                         // write into surface
                         f << "\t\t\t<tri3 id=\"" << cnt++ << "\">";
@@ -269,21 +214,26 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                 std::string name = item["name"];
                 int64_t main_idx = item["main_idx"];
                 int64_t shared_idx = item["shared_idx"];
+                std::vector<int64_t> filter_tags = item["filter_tags"];
 
                 bool need_compute = false;
                 if (main_idx == id) {
                     spdlog::info(
-                        "SharedSurfaces Settings: Name: {}, Main Index: {}, Shared Index: {}",
+                        "SharedSurfaces Settings: Name: {}, Main Index: {}, Shared Index: {}, "
+                        "Filter Tag {}",
                         name,
                         main_idx,
-                        shared_idx);
+                        shared_idx,
+                        filter_tags);
                     need_compute = true;
                 } else if (shared_idx == id) {
                     spdlog::info(
-                        "SharedSurfaces Settings: Name: {}, Main Index: {}, Shared Index: {}",
+                        "SharedSurfaces Settings: Name: {}, Main Index: {}, Shared Index: {}, "
+                        "Filter Tag {}",
                         name,
                         shared_idx,
-                        main_idx);
+                        main_idx,
+                        filter_tags);
                     need_compute = true;
                     std::swap(main_idx, shared_idx);
                 }
@@ -305,10 +255,14 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                             temp_t = mesh.switch_vertex(temp_t);
                         }
 
-                        // in shared set
+                        // in shared set and filter
                         int64_t another_side_tag =
                             tag_acc.scalar_attribute(mesh.switch_tetrahedron(temp_t));
-                        if (another_side_tag != shared_idx) {
+                        if (another_side_tag != shared_idx ||
+                            std::find(
+                                filter_tags.begin(),
+                                filter_tags.end(),
+                                bctag_acc.scalar_attribute(temp_t)) == filter_tags.end()) {
                             continue;
                         }
 
@@ -334,7 +288,8 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                 int64_t main_idx = item["main_idx"];
                 std::vector<int64_t> include_ids = item["include_ids"];
                 std::string type = item["custom_type"];
-                int64_t filter_tag = item["filter_tag"];
+                std::vector<int64_t> filter_tags = item["filter_tags"];
+
                 if (id == main_idx && type == "surface") {
                     spdlog::info(
                         "CustomParts Settings: Name: {}, Main Index: {}, Include Index: {}, Type "
@@ -343,7 +298,7 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                         main_idx,
                         include_ids,
                         type,
-                        filter_tag);
+                        filter_tags);
 
                     const auto& face_tuples = face_tuple_list[main_idx];
 
@@ -366,7 +321,10 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                             tag_acc.scalar_attribute(mesh.switch_tetrahedron(temp_t));
                         if (std::find(include_ids.begin(), include_ids.end(), another_side_tag) ==
                                 include_ids.end() ||
-                            bctag_acc.scalar_attribute(temp_t) != filter_tag) {
+                            std::find(
+                                filter_tags.begin(),
+                                filter_tags.end(),
+                                bctag_acc.scalar_attribute(temp_t)) == filter_tags.end()) {
                             continue;
                         }
 
@@ -389,7 +347,7 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                         main_idx,
                         include_ids,
                         type,
-                        filter_tag);
+                        filter_tags);
 
                     std::set<int64_t> selected_points_set;
                     for (const auto& t : tet_tuple_list[main_idx]) {
