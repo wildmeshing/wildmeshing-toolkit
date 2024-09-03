@@ -17,7 +17,7 @@ ExternalProject_Add(
 
     GIT_REPOSITORY https://github.com/wildmeshing/data.git
     GIT_TAG
-    bc3b356
+    152a561697a6e923451ca8535309cbe1e116a9fa
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

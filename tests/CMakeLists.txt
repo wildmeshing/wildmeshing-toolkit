@@ -26,6 +26,14 @@ tools/TetMesh_examples.hpp
 tools/TetMesh_examples.cpp
 tools/DEBUG_TetMesh.hpp
 tools/DEBUG_TetMesh.cpp
+tools/single_simplex_mesh.hpp
+tools/single_simplex_mesh.cpp
+tools/global_index_max_subdart_size.hpp
+tools/global_index_max_subdart_size.cpp
+tools/global_ids.hpp
+tools/global_ids.cpp
+tools/TestTools.hpp
+tools/TestTools.cpp
 
 tools/DEBUG_Mesh.hpp
 tools/DEBUG_Mesh.cpp
@@ -96,6 +104,7 @@ add_subdirectory_with_source_group(utils)
 add_subdirectory_with_source_group(multimesh)
 add_subdirectory_with_source_group(operations)
 add_subdirectory_with_source_group(attributes)
+add_subdirectory_with_source_group(autogen)
 
 
 

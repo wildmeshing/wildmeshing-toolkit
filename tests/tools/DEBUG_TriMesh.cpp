@@ -53,7 +53,7 @@ void DEBUG_TriMesh::reserve_more_attributes(const std::vector<int64_t>& sizes)
     Mesh::reserve_more_attributes(sizes);
 }
 
-auto DEBUG_TriMesh::edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2, const int64_t fid)
+auto DEBUG_TriMesh::edge_tuple_with_vs_and_t(const int64_t v1, const int64_t v2, const int64_t fid)
     const -> Tuple
 {
     const attribute::Accessor<int64_t> fv = create_const_accessor<int64_t>(m_fv_handle);

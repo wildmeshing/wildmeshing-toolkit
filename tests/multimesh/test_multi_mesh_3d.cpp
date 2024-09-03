@@ -780,12 +780,12 @@ TEST_CASE("test_multi_mesh_navigation_3D", "[multimesh][3D]")
     };
 
     // check edges
-    Tuple edge = parent.edge_tuple_between_v1_v2(0, 1, 2, 0);
+    Tuple edge = parent.face_tuple_with_vs_and_t(0, 1, 2, 0);
     Tuple edge_child0 = get_single_child_tuple(child0, edge);
     Tuple edge_child1 = get_single_child_tuple(child1, edge);
 
-    CHECK(edge_child0 == child0.edge_tuple_between_v1_v2(0, 1, 2, 0));
-    CHECK(edge_child1 == child1.edge_tuple_between_v1_v2(0, 1, 2, 0));
+    CHECK(edge_child0 == child0.face_tuple_with_vs_and_t(0, 1, 2, 0));
+    CHECK(edge_child1 == child1.face_tuple_with_vs_and_t(0, 1, 2, 0));
 
     for (PrimitiveType pt : {PV, PE, PF}) {
         CHECK(

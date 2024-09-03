@@ -84,7 +84,7 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
         DEBUG_TriMesh m = hex_plus_two();
         REQUIRE(m.is_connectivity_valid());
 
-        const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(4, 5, 2);
 #if defined(WMTK_ENABLE_HASH_UPDATE) 
         wmtk::attribute::Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
@@ -119,7 +119,7 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
 
 
         REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
+        Tuple edge = m.face_tuple_with_vs_and_t(1, 2, 0, 0);
         EdgeCollapse collapse(m);
         collapse(simplex::Simplex::edge(m, edge));
         REQUIRE(m.is_connectivity_valid());

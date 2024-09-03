@@ -123,6 +123,7 @@ public:
     }
 
     const CacheType& cache() const { return m_cache; }
+    CacheType take_cache() { return std::move(m_cache); }
     auto node_events() const { return m_cache.keys(); }
     const auto& edge_events() const { return m_edge_events; }
 
@@ -309,7 +310,7 @@ private:
         if constexpr (CurHasReturn) {
             auto current_return = visitor.m_node_functor(current_mesh, simplex);
 
-            m_return_data.add(current_return, current_mesh, simplex);
+            m_return_data.add(std::move(current_return), current_mesh, simplex);
         } else {
             visitor.m_node_functor(current_mesh, simplex);
         }

@@ -1,5 +1,3 @@
-
-
 #pragma once
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Tuple.hpp>
@@ -12,3 +10,4 @@ Tuple tuple_from_valid_index(
     int8_t valid_tuple_index);
 
 } // namespace wmtk::autogen
+ 

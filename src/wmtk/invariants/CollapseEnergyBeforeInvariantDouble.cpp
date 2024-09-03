@@ -3,6 +3,7 @@
 #include <wmtk/function/utils/amips.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
+#include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include <wmtk/utils/orient.hpp>
 
 #include <wmtk/utils/Logger.hpp>
@@ -61,7 +62,10 @@ bool CollapseEnergyBeforeInvariantDouble::before(const simplex::Simplex& s) cons
                 // skip if incident both vertices
                 bool incident_both = false;
                 for (int i = 0; i < 4; ++i) {
-                    if (simplex::Simplex::vertex(mesh(), lv[i]) == v0_s) {
+                    if (simplex::utils::SimplexComparisons::equal(
+                            mesh(),
+                            simplex::Simplex::vertex(mesh(), lv[i]),
+                            v0_s)) {
                         incident_both = true;
                         break;
                     }
@@ -76,7 +80,10 @@ bool CollapseEnergyBeforeInvariantDouble::before(const simplex::Simplex& s) cons
                      position_accessor.const_vector_attribute(lv[3])}};
 
                 for (int i = 0; i < 4; ++i) {
-                    if (simplex::Simplex::vertex(mesh(), lv[i]) == v1_s) {
+                    if (simplex::utils::SimplexComparisons::equal(
+                            mesh(),
+                            simplex::Simplex::vertex(mesh(), lv[i]),
+                            v1_s)) {
                         // change the v1 entry to v0
                         lv_pos[i] = position_accessor.const_vector_attribute(v0);
                         break;
@@ -113,7 +120,10 @@ bool CollapseEnergyBeforeInvariantDouble::before(const simplex::Simplex& s) cons
                 // skip if incident both vertices
                 bool incident_both = false;
                 for (int i = 0; i < 4; ++i) {
-                    if (simplex::Simplex::vertex(mesh(), lv[i]) == v1_s) {
+                    if (simplex::utils::SimplexComparisons::equal(
+                            mesh(),
+                            simplex::Simplex::vertex(mesh(), lv[i]),
+                            v1_s)) {
                         incident_both = true;
                         break;
                     }
@@ -156,7 +166,10 @@ bool CollapseEnergyBeforeInvariantDouble::before(const simplex::Simplex& s) cons
                 // skip if incident both vertices
                 bool incident_both = false;
                 for (int i = 0; i < 4; ++i) {
-                    if (simplex::Simplex::vertex(mesh(), lv[i]) == v1_s) {
+                    if (simplex::utils::SimplexComparisons::equal(
+                            mesh(),
+                            simplex::Simplex::vertex(mesh(), lv[i]),
+                            v1_s)) {
                         incident_both = true;
                         break;
                     }
@@ -171,7 +184,10 @@ bool CollapseEnergyBeforeInvariantDouble::before(const simplex::Simplex& s) cons
                      position_accessor.const_vector_attribute(lv[3])}};
 
                 for (int i = 0; i < 4; ++i) {
-                    if (simplex::Simplex::vertex(mesh(), lv[i]) == v0_s) {
+                    if (simplex::utils::SimplexComparisons::equal(
+                            mesh(),
+                            simplex::Simplex::vertex(mesh(), lv[i]),
+                            v0_s)) {
                         // change the v0 entry to v1
                         lv_pos[i] = position_accessor.const_vector_attribute(v1);
                         break;
@@ -207,7 +223,10 @@ bool CollapseEnergyBeforeInvariantDouble::before(const simplex::Simplex& s) cons
                 // skip if incident both vertices
                 bool incident_both = false;
                 for (int i = 0; i < 4; ++i) {
-                    if (simplex::Simplex::vertex(mesh(), lv[i]) == v0_s) {
+                    if (simplex::utils::SimplexComparisons::equal(
+                            mesh(),
+                            simplex::Simplex::vertex(mesh(), lv[i]),
+                            v0_s)) {
                         incident_both = true;
                         break;
                     }

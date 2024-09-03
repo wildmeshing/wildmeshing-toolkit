@@ -115,11 +115,11 @@ TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2
             acc_vertex_tag.scalar_attribute(vertex_tuples[6]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[7]) = tag_value;
             attribute::Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
-            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(4, 5, 2)) = tag_value;
-            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(5, 1, 2)) = tag_value;
-            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 4, 2)) = tag_value;
-            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(7, 4, 5)) = tag_value;
-            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(7, 3, 5)) = tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(4, 5, 2)) = tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(5, 1, 2)) = tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(1, 4, 2)) = tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(7, 4, 5)) = tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(7, 3, 5)) = tag_value;
         }
 
         components::internal::RegularSpace rs(
@@ -229,13 +229,13 @@ TEST_CASE("regular_space_component_tet", "[components][regular_space][tetmesh][3
             acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[7]) = tag_value;
             attribute::Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
-            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = tag_value;
-            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 2, 0)) = tag_value;
-            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 3, 0)) = tag_value;
-            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = tag_value;
-            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(2, 3, 0)) = tag_value;
-            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(3, 1, 0)) = tag_value;
-            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(2, 5, 2)) = tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(0, 1, 0)) = tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(0, 2, 0)) = tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(0, 3, 0)) = tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(1, 2, 0)) = tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(2, 3, 0)) = tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(3, 1, 0)) = tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(2, 5, 2)) = tag_value;
         }
         components::internal::RegularSpace rs(
             m,
