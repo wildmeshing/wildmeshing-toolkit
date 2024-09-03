@@ -8,6 +8,7 @@ namespace wmtk {
 
 enum class PrimitiveType : int8_t { Vertex = 0, Edge = 1, Triangle = 2, Tetrahedron = 3 };
 
+
 /**
  * @brief Get a unique integer id corresponding to each primitive type
  *
@@ -17,6 +18,13 @@ enum class PrimitiveType : int8_t { Vertex = 0, Edge = 1, Triangle = 2, Tetrahed
 constexpr inline int8_t get_primitive_type_id(PrimitiveType t)
 {
     return static_cast<int8_t>(t);
+}
+
+constexpr inline PrimitiveType operator-(PrimitiveType pt, int8_t n) {
+    return static_cast<PrimitiveType>(static_cast<int8_t>(pt)-n);
+}
+constexpr inline PrimitiveType operator+(PrimitiveType pt, int8_t n) {
+    return static_cast<PrimitiveType>(static_cast<int8_t>(pt)+n);
 }
 
 constexpr inline bool operator==(PrimitiveType a, PrimitiveType b)

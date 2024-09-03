@@ -5,6 +5,8 @@
 
 // NOTE: this header primarily exists to simplify unit testing, not really for use
 namespace wmtk::autogen {
+    class SimplexDart ;
+    class Dart;
 Tuple local_switch_tuple(PrimitiveType mesh_type, const Tuple& t, PrimitiveType pt);
 Tuple local_switch_tuple(PrimitiveType mesh_type, const Tuple& t, int8_t valid_tuple_index);
 

@@ -5,9 +5,9 @@ namespace wmtk::autogen::tet_mesh {
 // computes the offset of a tuple's local ids in the tables
 inline int64_t local_id_table_offset(const Tuple& tuple)
 {
-    using namespace utils;
-    int64_t value = TupleInspector::local_vid(tuple) * 6 * 4 +
-                    TupleInspector::local_eid(tuple) * 4 + TupleInspector::local_fid(tuple);
+    int64_t value = wmtk::utils::TupleInspector::local_vid(tuple) * 6 * 4 +
+                    wmtk::utils::TupleInspector::local_eid(tuple) * 4 +
+                    wmtk::utils::TupleInspector::local_fid(tuple);
 
 
     // value = (TupleInspector::local_vid(tuple) * 6 + TupleInspector::local_eid(tuple)) * 4 +

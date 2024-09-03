@@ -9,9 +9,19 @@
 
 namespace wmtk::operations::utils {
 
-void MultiMeshEdgeSplitFunctor::operator()(const Mesh&, const simplex::Simplex&) const
+wmtk::operations::EdgeOperationData MultiMeshEdgeSplitFunctor::run(
+    Mesh& mesh,
+    const simplex::Simplex& s) const
 {
-    throw std::runtime_error("Unimplemented!");
+    switch (mesh.top_simplex_type()) {
+    case PrimitiveType::Vertex: break;
+    case PrimitiveType::Edge: return (*this)(static_cast<EdgeMesh&>(mesh), s);
+    case PrimitiveType::Triangle: return (*this)(static_cast<TriMesh&>(mesh), s);
+    case PrimitiveType::Tetrahedron: return (*this)(static_cast<TetMesh&>(mesh), s);
+    default: break;
+    }
+    assert(false);
+    return {};
 }
 
 edge_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
@@ -20,7 +30,7 @@ edge_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
 {
     EdgeMesh::EdgeMeshOperationExecutor exec(m, s.tuple());
     exec.split_edge();
-    return exec;
+    return std::move(static_cast<edge_mesh::EdgeOperationData&>(exec));
 }
 tri_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
     TriMesh& m,
@@ -37,7 +47,7 @@ tri_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
             fmt::join(id.split_f, ","));
     }
 
-    return exec;
+    return std::move(static_cast<tri_mesh::EdgeOperationData&>(exec));
 }
 tet_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
     TetMesh& m,
@@ -45,6 +55,6 @@ tet_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
 {
     TetMesh::TetMeshOperationExecutor exec(m, s.tuple());
     exec.split_edge();
-    return exec;
+    return std::move(static_cast<tet_mesh::EdgeOperationData&>(exec));
 }
 } // namespace wmtk::operations::utils

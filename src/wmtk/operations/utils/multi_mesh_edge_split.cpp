@@ -34,7 +34,7 @@ SplitReturnData multi_mesh_edge_split(
     event_visitor.run_on_nodes(UpdateEdgeOperationMultiMeshMapFunctor{});
 
 
-    auto cache = visitor.cache();
+    auto cache = visitor.take_cache();
 
     auto tuples = wmtk::multimesh::operations::extract_operation_tuples(cache);
     auto update_attributes = [&](auto&& m) {

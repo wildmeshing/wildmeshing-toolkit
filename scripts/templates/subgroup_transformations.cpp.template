@@ -26,5 +26,15 @@ namespace wmtk::autogen::{{ namespace }} {
     },
     {% endfor %}
     };
+
+    // const int8_t ***subdart_preserving_actions[ {{ dimensions }} ]= {
+    // {% for row in range( 2, dimensions + 1 ) %} 
+    // {
+    // {% for col in range( 1, row ) %} 
+    // subdart_preserving_action_{{ row }}_{{ col}},
+    // {% endfor %}
+    // },
+    // {% endfor %}
+    // };
 }
 

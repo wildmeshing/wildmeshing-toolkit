@@ -117,7 +117,10 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 set(WMTK_MAX_ATTRIBUTE_DIMENSION Eigen::Dynamic CACHE STRING "Set the largest size a vector can be in an attribute")
 target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_MAX_ATTRIBUTE_DIMENSION=${WMTK_MAX_ATTRIBUTE_DIMENSION})
 
-
+option(WMTK_ENABLE_SIMPLEX_ID_CACHING "Enable coverage reporting" OFF)
+if(WMTK_ENABLE_SIMPLEX_ID_CACHING)
+    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_SIMPLEX_ID_CACHING)
+endif()
 
 
 

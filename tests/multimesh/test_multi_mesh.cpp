@@ -7,6 +7,7 @@
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
+#include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include "../tools/DEBUG_EdgeMesh.hpp"
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/DEBUG_Tuple.hpp"
@@ -373,14 +374,14 @@ TEST_CASE("test_multi_mesh_navigation", "[multimesh][2D]")
         return tups[0];
     };
 
-    Tuple edge = parent.edge_tuple_between_v1_v2(1, 0, 0);
+    Tuple edge = parent.edge_tuple_with_vs_and_t(1, 0, 0);
     Tuple edge_child0 = get_single_child_tuple(child0, edge);
     Tuple edge_child1 = get_single_child_tuple(child1, edge);
     Tuple edge_child2 = get_single_child_tuple(child2, edge);
 
-    CHECK(edge_child0 == child0.edge_tuple_between_v1_v2(1, 0, 0));
-    CHECK(edge_child1 == child1.edge_tuple_between_v1_v2(1, 0, 0));
-    CHECK(edge_child2 == child2.edge_tuple_between_v1_v2(1, 0, 0));
+    CHECK(edge_child0 == child0.edge_tuple_with_vs_and_t(1, 0, 0));
+    CHECK(edge_child1 == child1.edge_tuple_with_vs_and_t(1, 0, 0));
+    CHECK(edge_child2 == child2.edge_tuple_with_vs_and_t(1, 0, 0));
 
     for (PrimitiveType pt : {PV, PE}) {
         CHECK(
@@ -832,7 +833,7 @@ TEST_CASE("test_split_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     // const auto& c1_mul_manager = child1.multi_mesh_manager();
 
     {
-        Tuple edge = parent.edge_tuple_between_v1_v2(0, 1, 0);
+        Tuple edge = parent.edge_tuple_with_vs_and_t(0, 1, 0);
         operations::EdgeSplit op(parent);
         REQUIRE(!op(Simplex::edge(parent, edge)).empty());
     }
@@ -849,7 +850,7 @@ TEST_CASE("test_split_multi_mesh_1D_2D", "[multimesh][1D][2D]")
 
     // Do another edge_split
     {
-        Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 3);
+        Tuple edge = parent.edge_tuple_with_vs_and_t(1, 2, 3);
 #if defined(WMTK_ENABLE_HASH_UPDATE) 
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
@@ -885,10 +886,10 @@ TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {0, 1, 2});
 
     std::vector<std::array<Tuple, 2>> child1_map(2);
-    child1_map[0] = {child1.tuple_from_edge_id(0), parent.edge_tuple_between_v1_v2(0, 1, 0)};
-    child1_map[1] = {child1.tuple_from_edge_id(1), parent.edge_tuple_between_v1_v2(1, 2, 0)};
+    child1_map[0] = {child1.tuple_from_edge_id(0), parent.edge_tuple_with_vs_and_t(0, 1, 0)};
+    child1_map[1] = {child1.tuple_from_edge_id(1), parent.edge_tuple_with_vs_and_t(1, 2, 0)};
     std::vector<std::array<Tuple, 2>> child2_map(1);
-    child2_map[0] = {child2.tuple_from_edge_id(0), parent.edge_tuple_between_v1_v2(0, 4, 2)};
+    child2_map[0] = {child2.tuple_from_edge_id(0), parent.edge_tuple_with_vs_and_t(0, 4, 2)};
 
     // parent.register_child_mesh(child0_ptr, child0_map);
     // parent.register_child_mesh(child1_ptr, child1_map);
@@ -902,7 +903,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     SECTION("collapse case 1")
     {
         {
-            Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
+            Tuple edge = parent.edge_tuple_with_vs_and_t(1, 2, 0);
             operations::EdgeCollapse collapse(parent);
             collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
 
@@ -916,7 +917,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     SECTION("collapse case 2")
     {
         {
-            Tuple edge = parent.edge_tuple_between_v1_v2(2, 4, 2);
+            Tuple edge = parent.edge_tuple_with_vs_and_t(2, 4, 2);
             operations::EdgeCollapse collapse(parent);
             collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
             REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
@@ -973,10 +974,10 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
         // face = f1
         // (XXXX indicates the edge)
         //
-        Tuple edge = parent.edge_tuple_between_v1_v2(1, 0, 1);
+        Tuple edge = parent.edge_tuple_with_vs_and_t(1, 0, 1);
         simplex::Simplex edge_simplex = simplex::Simplex(parent, PrimitiveType::Edge, edge);
 
-        Tuple edge_f0 = parent.edge_tuple_between_v1_v2(1, 0, 0);
+        Tuple edge_f0 = parent.edge_tuple_with_vs_and_t(1, 0, 0);
         simplex::Simplex edge_f0_simplex = simplex::Simplex(parent, PrimitiveType::Edge, edge_f0);
 
         // CHILD0:
@@ -995,7 +996,7 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
 #else
             REQUIRE(child0.is_valid(cs.tuple()));
 #endif
-            REQUIRE(cs == edge_f0_simplex);
+            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child0,cs ,edge_f0_simplex));
         }
 
         // CHILD1:
@@ -1015,7 +1016,7 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
 #else
             REQUIRE(child1.is_valid(cs.tuple()));
 #endif
-            REQUIRE(cs == edge_simplex);
+            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child1,cs ,edge_simplex));
         }
 
         // CHILD2:
@@ -1050,7 +1051,7 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             REQUIRE(child2.is_valid(cs0.tuple()));
             REQUIRE(child2.is_valid(cs1.tuple()));
 #endif
-            REQUIRE(cs0 == edge_f0_simplex);
+            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child2,cs0 ,edge_f0_simplex));
             REQUIRE(cs1.tuple() == edge_simplex.tuple());
             REQUIRE(cs1.primitive_type() == edge_simplex.primitive_type());
         }
@@ -1085,7 +1086,7 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
 
     // Do another edge_split
     {
-        Tuple edge = parent.edge_tuple_between_v1_v2(0, 5, 4);
+        Tuple edge = parent.edge_tuple_with_vs_and_t(0, 5, 4);
         operations::EdgeSplit split(parent);
         REQUIRE(!split(Simplex::edge(parent, edge)).empty());
     }
@@ -1150,7 +1151,7 @@ TEST_CASE("test_collapse_multi_mesh", "[multimesh][2D]")
     p_mul_manager.check_map_valid(parent);
 
     {
-        Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
+        Tuple edge = parent.edge_tuple_with_vs_and_t(1, 2, 0);
         operations::EdgeCollapse collapse(parent);
         collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
         REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
@@ -1201,13 +1202,13 @@ TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
     std::vector<std::array<Tuple, 2>> edge_child1_map(2);
     edge_child0_map[0] = {
         edge_child0.tuple_from_edge_id(0),
-        parent.edge_tuple_between_v1_v2(0, 1, 0)};
+        parent.edge_tuple_with_vs_and_t(0, 1, 0)};
     edge_child1_map[0] = {
         edge_child1.tuple_from_edge_id(0),
-        parent.edge_tuple_between_v1_v2(0, 1, 0)};
+        parent.edge_tuple_with_vs_and_t(0, 1, 0)};
     edge_child1_map[1] = {
         edge_child1.tuple_from_edge_id(1),
-        parent.edge_tuple_between_v1_v2(1, 2, 0)};
+        parent.edge_tuple_with_vs_and_t(1, 2, 0)};
 
 
     const auto& p_mul_manager = parent.multi_mesh_manager();
@@ -1220,7 +1221,7 @@ TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
         parent.register_child_mesh(tri_child2_ptr, tri_child2_map);
         p_mul_manager.check_map_valid(parent);
         {
-            Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
+            Tuple edge = parent.edge_tuple_with_vs_and_t(1, 2, 0);
             operations::EdgeCollapse collapse(parent);
             collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
             REQUIRE(!collapse(Simplex::edge(parent, edge)).empty());
@@ -1241,7 +1242,7 @@ TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
         parent.register_child_mesh(tri_child2_ptr, tri_child2_map);
         p_mul_manager.check_map_valid(parent);
         {
-            Tuple edge = parent.edge_tuple_between_v1_v2(0, 2, 0);
+            Tuple edge = parent.edge_tuple_with_vs_and_t(0, 2, 0);
             operations::EdgeCollapse collapse(parent);
             collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
             bool is_collapse_fail = collapse(Simplex::edge(parent, edge)).empty();
@@ -1275,7 +1276,7 @@ TEST_CASE("test_split_multi_mesh_1D_2D_single_triangle", "[multimesh][1D][2D]")
     const auto& p_mul_manager = parent.multi_mesh_manager();
 
     {
-        Tuple edge = parent.edge_tuple_between_v1_v2(0, 2, 0);
+        Tuple edge = parent.edge_tuple_with_vs_and_t(0, 2, 0);
         operations::EdgeSplit split(parent);
         REQUIRE(!split(Simplex::edge(parent, edge)).empty());
     }

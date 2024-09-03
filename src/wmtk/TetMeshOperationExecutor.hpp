@@ -12,13 +12,13 @@ public:
     void update_cell_hash();
 
     std::array<attribute::Accessor<char>, 4> flag_accessors;
-    attribute::Accessor<int64_t,TetMesh> tt_accessor;
-    attribute::Accessor<int64_t,TetMesh> tf_accessor;
-    attribute::Accessor<int64_t,TetMesh> te_accessor;
-    attribute::Accessor<int64_t,TetMesh> tv_accessor;
-    attribute::Accessor<int64_t,TetMesh> vt_accessor;
-    attribute::Accessor<int64_t,TetMesh> et_accessor;
-    attribute::Accessor<int64_t,TetMesh> ft_accessor;
+    attribute::Accessor<int64_t,TetMesh>& tt_accessor;
+    attribute::Accessor<int64_t,TetMesh>& tf_accessor;
+    attribute::Accessor<int64_t,TetMesh>& te_accessor;
+    attribute::Accessor<int64_t,TetMesh>& tv_accessor;
+    attribute::Accessor<int64_t,TetMesh>& vt_accessor;
+    attribute::Accessor<int64_t,TetMesh>& et_accessor;
+    attribute::Accessor<int64_t,TetMesh>& ft_accessor;
 
 
     /**
