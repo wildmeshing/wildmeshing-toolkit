@@ -351,8 +351,8 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
 
                     std::set<int64_t> selected_points_set;
                     for (const auto& t : tet_tuple_list[main_idx]) {
-                        int64_t tag_value = tag_acc.scalar_attribute(t);
-                        selected_points_set.insert(static_cast<int64_t>(tag_value));
+                        int64_t id_value = id_acc.scalar_attribute(t);
+                        selected_points_set.insert(static_cast<int64_t>(id_value));
                     }
                     std::vector<int64_t> selected_points(
                         selected_points_set.begin(),
