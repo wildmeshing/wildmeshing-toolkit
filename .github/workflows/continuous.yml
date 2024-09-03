@@ -66,6 +66,9 @@ jobs:
       - name: Tests
         run: cd build; ctest --verbose --output-on-failure
 
+      - name: Integration Tests
+        run: cd applications; mkdir test_output; cd test_output; python ../integration_test.py "build/applications"
+
   ####################
   # MacOS
   ####################
