@@ -1,0 +1,10 @@
+{
+    "data_folder": "data/unit_test",
+    "executable": "delaunay_app",
+    "tests": [
+        "delaunay_out.json"
+    ],
+    "input_tag": "input",
+    "oracle_tag": "report",
+    "root_tag": "root"
+}
