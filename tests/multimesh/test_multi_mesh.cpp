@@ -7,6 +7,7 @@
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
+#include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include "../tools/DEBUG_EdgeMesh.hpp"
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/DEBUG_Tuple.hpp"
@@ -995,7 +996,7 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
 #else
             REQUIRE(child0.is_valid(cs.tuple()));
 #endif
-            REQUIRE(cs == edge_f0_simplex);
+            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child0,cs ,edge_f0_simplex));
         }
 
         // CHILD1:
@@ -1015,7 +1016,7 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
 #else
             REQUIRE(child1.is_valid(cs.tuple()));
 #endif
-            REQUIRE(cs == edge_simplex);
+            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child1,cs ,edge_simplex));
         }
 
         // CHILD2:
@@ -1050,7 +1051,7 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             REQUIRE(child2.is_valid(cs0.tuple()));
             REQUIRE(child2.is_valid(cs1.tuple()));
 #endif
-            REQUIRE(cs0 == edge_f0_simplex);
+            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child2,cs0 ,edge_f0_simplex));
             REQUIRE(cs1.tuple() == edge_simplex.tuple());
             REQUIRE(cs1.primitive_type() == edge_simplex.primitive_type());
         }

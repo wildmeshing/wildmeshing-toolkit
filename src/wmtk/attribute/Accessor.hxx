@@ -92,6 +92,7 @@ template <typename T, typename MeshType, int Dim>
 int64_t Accessor<T, MeshType, Dim>::index(const simplex::Simplex& t) const
 {
     assert(t.primitive_type() == primitive_type());
+#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
     int64_t i = t.m_index;
     if (i == -1) {
         assert(mesh().is_valid(t.tuple()));
@@ -101,6 +102,10 @@ int64_t Accessor<T, MeshType, Dim>::index(const simplex::Simplex& t) const
         const_cast<simplex::Simplex&>(t).m_index = i;
     }
     return i;
+#else
+    return index(t.tuple());
+#endif
+
 }
 
 template <typename T, typename MeshType, int Dim>

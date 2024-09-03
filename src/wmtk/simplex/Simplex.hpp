@@ -24,13 +24,22 @@ class Simplex
     PrimitiveType m_primitive_type;
     Tuple m_tuple;
     // the mesh class can use this index value to cache/accelerate operations
+#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
     mutable int64_t m_index = -1;
+#endif
 
+    // private constructor mesh might want to use if it knows the ids beforehand
+    Simplex(const PrimitiveType& ptype, const Tuple& t)
+        : m_primitive_type{ptype}
+        , m_tuple{t}
+    {}
     // private constructor mesh might want to use if it knows the ids beforehand
     Simplex(const PrimitiveType& ptype, const Tuple& t, int64_t index)
         : m_primitive_type{ptype}
         , m_tuple{t}
+#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
         , m_index(index)
+#endif
     {}
 
 public:
@@ -63,7 +72,10 @@ public:
         return Simplex(m, PrimitiveType::Tetrahedron, t);
     }
 
+    // these operations are only internally defined if caching is enabled to make sure there's a consistent semantic when simplex id caching is enabled vs not
+#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
     bool operator==(const Simplex& o) const;
     bool operator<(const Simplex& o) const;
+#endif
 };
 } // namespace wmtk::simplex
