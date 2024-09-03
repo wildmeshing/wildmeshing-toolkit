@@ -8,6 +8,14 @@
 using json = nlohmann::json;
 
 namespace wmtk::components::internal {
+struct FullSurface
+{
+    std::string name;
+    int64_t main_idx;
+    std::vector<int64_t> exclude_ids;
+};
+
+
 json read_json_settings(std::string path);
 
 bool read_fullsurface_from_json(

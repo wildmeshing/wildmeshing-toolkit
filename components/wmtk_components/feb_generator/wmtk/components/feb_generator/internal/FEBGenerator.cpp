@@ -1,6 +1,7 @@
 #include "FEBGenerator.hpp"
 #include <time.h>
 #include <fstream>
+#include <map>
 #include <set>
 #include <unordered_set>
 #include "wmtk/utils/Logger.hpp"
@@ -118,11 +119,38 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
     }
     std::vector<int64_t> ids_list(unique_tags.begin(), unique_tags.end());
 
-    // begin to write feb files
-    for (int64_t id : ids_list) {
+    std::map<int64_t, std::vector<Tuple>> tet_tuple_list;
+    for (const auto& t : mesh.get_all(PrimitiveType::Tetrahedron)) {
+        int64_t tag = tag_acc.scalar_attribute(t);
+        if (tag == 0) continue;
+        tet_tuple_list[tag].push_back(t);
+    }
+
+    std::map<int64_t, std::vector<Tuple>> face_tuple_list;
+    for (const auto& t : mesh.get_all(PrimitiveType::Triangle)) {
+        int64_t tag0, tag1;
+        tag0 = tag_acc.scalar_attribute(t);
+        if (mesh.is_boundary_face(t)) {
+            continue;
+        }
+        tag1 = tag_acc.scalar_attribute(mesh.switch_tetrahedron(t));
+        if (tag0 != tag1) {
+            if (tag0 != 0) {
+                face_tuple_list[tag0].push_back(t);
+            }
+            if (tag1 != 0) {
+                face_tuple_list[tag1].push_back(t);
+            }
+        }
+    }
+
+    for (const auto& tag_list : tet_tuple_list) {
+        int64_t id = tag_list.first;
+        const std::vector<Tuple>& tets_tuples = tag_list.second;
+
         spdlog::info("current id: {}", id);
         std::vector<std::vector<int64_t>> tets;
-        for (const auto& t : mesh.get_all(PrimitiveType::Tetrahedron)) {
+        for (const auto& t : tets_tuples) {
             if (tag_acc.scalar_attribute(t) == id) {
                 int64_t id0, id1, id2, id3;
                 id0 = id_acc.scalar_attribute(t);
@@ -163,6 +191,7 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
 
         {
             // original mesh
+            // mesh vertices
             f << "\t\t<Nodes name=\"Obj" << id << "\">\n";
             for (size_t i = 0; i < target_vertices_ids.size(); ++i) {
                 int64_t v_id = target_vertices_ids[i];
@@ -172,23 +201,220 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                   << point[1] << "," << point[2] << "</node>\n";
             }
             f << "\t\t</Nodes>\n";
+
+            // Write Elements
+            f << "\t\t<Elements type=\"tet4\" name=\"part" << id << "\">\n";
+            for (size_t i = 0; i < tets.size(); ++i) {
+                f << "\t\t\t<elem id=\"" << i + 1 << "\">" << tets[i][0] + 1 << ","
+                  << tets[i][1] + 1 << "," << tets[i][2] + 1 << "," << tets[i][3] + 1
+                  << "</elem>\n";
+            }
+            f << "\t\t</Elements>\n";
         }
+
         {
             // full surfaces
+            for (const auto& item : j["FullSurfaces"]) {
+                std::string name = item["name"];
+                int64_t main_idx = item["main_idx"];
+                std::vector<int64_t> exclude_ids = item["exclude_ids"].get<std::vector<int64_t>>();
+                if (main_idx == id) {
+                    spdlog::info(
+                        "FullSurfaces Settings: Name: {}, Main Index: {}, Exlude IDs: {}",
+                        name,
+                        main_idx,
+                        exclude_ids);
+                    const auto& face_tuples = face_tuple_list[main_idx];
+
+                    f << "\t\t<Surface name=\"" << name << "\">\n";
+                    int64_t cnt = 1;
+                    for (const auto& t : face_tuples) {
+                        Tuple temp_t = t;
+                        if (tag_acc.scalar_attribute(temp_t) != main_idx) {
+                            temp_t = mesh.switch_tetrahedron(t);
+                        }
+                        if (tag_acc.scalar_attribute(temp_t) != main_idx) {
+                            continue;
+                        }
+                        if (!mesh.is_ccw(temp_t)) {
+                            temp_t = mesh.switch_vertex(temp_t);
+                        }
+
+                        // in exclusion set
+                        int64_t another_side_tag =
+                            tag_acc.scalar_attribute(mesh.switch_tetrahedron(temp_t));
+                        if (std::find(exclude_ids.begin(), exclude_ids.end(), another_side_tag) !=
+                            exclude_ids.end()) {
+                            continue;
+                        }
+
+                        // write into surface
+                        f << "\t\t\t<tri3 id=\"" << cnt++ << "\">";
+                        f << id_acc.scalar_attribute(temp_t) + 1 << ","
+                          << id_acc.scalar_attribute(mesh.switch_tuples(
+                                 temp_t,
+                                 {PrimitiveType::Edge, PrimitiveType::Vertex})) +
+                                 1
+                          << "," << id_acc.scalar_attribute(mesh.switch_vertex(temp_t)) + 1;
+                        f << "</tri3>\n";
+                    }
+                    f << "\t\t</Surface>\n";
+                }
+            }
         }
 
         {
             // shared surfaces
+            for (const auto& item : j["SharedSurfaces"]) {
+                std::string name = item["name"];
+                int64_t main_idx = item["main_idx"];
+                int64_t shared_idx = item["shared_idx"];
+
+                bool need_compute = false;
+                if (main_idx == id) {
+                    spdlog::info(
+                        "SharedSurfaces Settings: Name: {}, Main Index: {}, Shared Index: {}",
+                        name,
+                        main_idx,
+                        shared_idx);
+                    need_compute = true;
+                } else if (shared_idx == id) {
+                    spdlog::info(
+                        "SharedSurfaces Settings: Name: {}, Main Index: {}, Shared Index: {}",
+                        name,
+                        shared_idx,
+                        main_idx);
+                    need_compute = true;
+                    std::swap(main_idx, shared_idx);
+                }
+
+                if (need_compute) {
+                    const auto& face_tuples = face_tuple_list[main_idx];
+
+                    f << "\t\t<Surface name=\"" << name << "(" << main_idx << ")" << "\">\n";
+                    int64_t cnt = 1;
+                    for (const auto& t : face_tuples) {
+                        Tuple temp_t = t;
+                        if (tag_acc.scalar_attribute(temp_t) != main_idx) {
+                            temp_t = mesh.switch_tetrahedron(t);
+                        }
+                        if (tag_acc.scalar_attribute(temp_t) != main_idx) {
+                            continue;
+                        }
+                        if (!mesh.is_ccw(temp_t)) {
+                            temp_t = mesh.switch_vertex(temp_t);
+                        }
+
+                        // in shared set
+                        int64_t another_side_tag =
+                            tag_acc.scalar_attribute(mesh.switch_tetrahedron(temp_t));
+                        if (another_side_tag != shared_idx) {
+                            continue;
+                        }
+
+                        // write into surface
+                        f << "\t\t\t<tri3 id=\"" << cnt++ << "\">";
+                        f << id_acc.scalar_attribute(temp_t) + 1 << ","
+                          << id_acc.scalar_attribute(mesh.switch_tuples(
+                                 temp_t,
+                                 {PrimitiveType::Edge, PrimitiveType::Vertex})) +
+                                 1
+                          << "," << id_acc.scalar_attribute(mesh.switch_vertex(temp_t)) + 1;
+                        f << "</tri3>\n";
+                    }
+                    f << "\t\t</Surface>\n";
+                }
+            }
         }
 
         {
-            // custom surfaces or points
+            for (const auto& item : j["CustomParts"]) {
+                // custom surfaces or points
+                std::string name = item["name"];
+                int64_t main_idx = item["main_idx"];
+                std::vector<int64_t> include_ids = item["include_ids"];
+                std::string type = item["custom_type"];
+                int64_t filter_tag = item["filter_tag"];
+                if (id == main_idx && type == "surface") {
+                    spdlog::info(
+                        "CustomParts Settings: Name: {}, Main Index: {}, Include Index: {}, Type "
+                        "{}, Filter Tag {}",
+                        name,
+                        main_idx,
+                        include_ids,
+                        type,
+                        filter_tag);
+
+                    const auto& face_tuples = face_tuple_list[main_idx];
+
+                    f << "\t\t<Surface name=\"" << name << "(" << main_idx << ")" << "\">\n";
+                    int64_t cnt = 1;
+                    for (const auto& t : face_tuples) {
+                        Tuple temp_t = t;
+                        if (tag_acc.scalar_attribute(temp_t) != main_idx) {
+                            temp_t = mesh.switch_tetrahedron(t);
+                        }
+                        if (tag_acc.scalar_attribute(temp_t) != main_idx) {
+                            continue;
+                        }
+                        if (!mesh.is_ccw(temp_t)) {
+                            temp_t = mesh.switch_vertex(temp_t);
+                        }
+
+                        // in include set and the filter set
+                        int64_t another_side_tag =
+                            tag_acc.scalar_attribute(mesh.switch_tetrahedron(temp_t));
+                        if (std::find(include_ids.begin(), include_ids.end(), another_side_tag) ==
+                                include_ids.end() ||
+                            bctag_acc.scalar_attribute(temp_t) != filter_tag) {
+                            continue;
+                        }
+
+                        // write into surface
+                        f << "\t\t\t<tri3 id=\"" << cnt++ << "\">";
+                        f << id_acc.scalar_attribute(temp_t) + 1 << ","
+                          << id_acc.scalar_attribute(mesh.switch_tuples(
+                                 temp_t,
+                                 {PrimitiveType::Edge, PrimitiveType::Vertex})) +
+                                 1
+                          << "," << id_acc.scalar_attribute(mesh.switch_vertex(temp_t)) + 1;
+                        f << "</tri3>\n";
+                    }
+                    f << "\t\t</Surface>\n";
+                } else if (id == main_idx && type == "points") {
+                    spdlog::info(
+                        "CustomParts Settings: Name: {}, Main Index: {}, Include Index: {}, Type "
+                        "{}, Filter Tag {}",
+                        name,
+                        main_idx,
+                        include_ids,
+                        type,
+                        filter_tag);
+
+                    std::set<int64_t> selected_points_set;
+                    for (const auto& t : tet_tuple_list[main_idx]) {
+                        int64_t tag_value = tag_acc.scalar_attribute(t);
+                        selected_points_set.insert(static_cast<int64_t>(tag_value));
+                    }
+                    std::vector<int64_t> selected_points(
+                        selected_points_set.begin(),
+                        selected_points_set.end());
+                    f << "\t\t<NodeSet name=\"" << name << "\">\n";
+                    if (selected_points.size() >= 1) {
+                        f << selected_points[0] + 1;
+                    }
+                    for (int64_t i = 1; i < selected_points.size(); i++) {
+                        f << "," << selected_points[i] + 1;
+                    }
+                    f << "\n\t\t</NodeSet>\n";
+                }
+            }
         }
 
         {
             f << "\t</Mesh>\n";
             f << "\t<MeshDomains>\n";
-            f << "\t\t<SolidDomain name=\"Obj" << id << "\" mat=\"\"/>\n";
+            f << "\t\t<SolidDomain name=\"part" << id << "\" mat=\"\"/>\n";
             f << "\t</MeshDomains>\n";
             f << "\t<Step>\n";
             f << "\t</Step>\n";
