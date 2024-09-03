@@ -1,8 +1,5 @@
 var NAVTREEINDEX24 =
 {
-"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#aca383fd44e2a274550c825004259251c":[5,0,2,7,5,1,1,4],
-"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#adbbdecff8f4b755e94f2bda157db5055":[5,0,2,7,5,1,1,1],
-"structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_equal_functor.html":[5,0,2,8,0,0],
 "structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_equal_functor.html#a11c73b0efcb6ade6021ef2a8cb8aa42a":[5,0,2,8,0,0,1],
 "structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_equal_functor.html#a6fb73fd1aad1ce5c2e5e5918676ee8eb":[5,0,2,8,0,0,2],
 "structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_equal_functor.html#a7455faebc3cf30944cbf4027fbec1468":[5,0,2,8,0,0,0],
@@ -249,5 +246,8 @@ var NAVTREEINDEX24 =
 "test__component__wildmeshing_8cpp.html#aa7eb9e08aaba7f6635ea47c52c3a5b18":[6,0,0,0,19,9],
 "test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d":[6,0,0,0,19,0],
 "test__component__wildmeshing_8cpp.html#ae863e9e7f7c6acebcbf17764a3670866":[6,0,0,0,19,4],
-"test__component__wildmeshing_8cpp_source.html":[6,0,0,0,19]
+"test__component__wildmeshing_8cpp_source.html":[6,0,0,0,19],
+"test__component__winding__number_8cpp.html":[6,0,0,0,20],
+"test__component__winding__number_8cpp_source.html":[6,0,0,0,20],
+"tet__mesh_2_collapse_new_attribute_topo_info_8cpp.html":[6,0,2,0,6,5,0]
 };

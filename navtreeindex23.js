@@ -1,8 +1,5 @@
 var NAVTREEINDEX23 =
 {
-"structwmtk_1_1components_1_1_multimesh_t_options.html#a1cd16975cc5ed344b881dbfdb0347706":[5,0,2,2,6,2],
-"structwmtk_1_1components_1_1_multimesh_t_options.html#a212591a03c65410817f55ee3db34ba11":[5,0,2,2,6,4],
-"structwmtk_1_1components_1_1_multimesh_t_options.html#a2e8e019e2c5940bb72f8ac271801a5fd":[5,0,2,2,6,0],
 "structwmtk_1_1components_1_1_multimesh_t_options.html#a80912a2fba4ac515a8f006f082c2c125":[5,0,2,2,6,6],
 "structwmtk_1_1components_1_1_multimesh_t_options.html#ab59de2f7cad731def4afac893bc8ee8c":[5,0,2,2,6,3],
 "structwmtk_1_1components_1_1_multimesh_t_options.html#aeb0ebc7aca85dbddf10ec1d9af8a12b2":[5,0,2,2,6,1],
@@ -249,5 +246,8 @@ var NAVTREEINDEX23 =
 "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a2e3ff816d8cce4fb6dcac5a63a6d2945":[5,0,2,7,5,1,1,0],
 "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a4ae2440cf98c2519c1824413ad6ea7c5":[5,0,2,7,5,1,1,5],
 "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a7fca6b23000c636492fd3ff2878c3e8d":[5,0,2,7,5,1,1,3],
-"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a80f06bf189539933acaf3e203c00cf90":[5,0,2,7,5,1,1,2]
+"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a80f06bf189539933acaf3e203c00cf90":[5,0,2,7,5,1,1,2],
+"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#aca383fd44e2a274550c825004259251c":[5,0,2,7,5,1,1,4],
+"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#adbbdecff8f4b755e94f2bda157db5055":[5,0,2,7,5,1,1,1],
+"structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_equal_functor.html":[5,0,2,8,0,0]
 };
