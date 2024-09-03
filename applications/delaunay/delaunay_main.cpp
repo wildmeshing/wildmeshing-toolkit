@@ -48,7 +48,11 @@ int main(int argc, char* argv[])
         }
     }
 
-    std::string input_file = wmtk::components::utils::resolve_path(j["input"], json_input_file);
+    const std::string root_in = j["root"];
+
+    const std::string root = root_in.empty() ? std::string(json_input_file) : root_in;
+
+    std::string input_file = wmtk::components::utils::resolve_path(j["input"], root);
 
     auto mesh = wmtk::components::input(input_file);
     wmtk::logger().info("mesh has {} vertices", mesh->get_all(PrimitiveType::Vertex).size());

@@ -7,6 +7,7 @@ nlohmann::json delaunay_spec = R"(
         "type": "object",
         "required": ["input", "output"],
         "optional": [
+          "root",
           "report",
           "add_box",
           "box_scale",
@@ -62,6 +63,11 @@ nlohmann::json delaunay_spec = R"(
 },
 {
     "pointer": "/report",
+    "type": "string",
+    "default": ""
+},
+{
+    "pointer": "/root",
     "type": "string",
     "default": ""
 }
