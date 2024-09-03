@@ -25,8 +25,8 @@ MultiMeshFromTag::MultiMeshFromTag(
     const attribute::MeshAttributeHandle& tag_handle,
     const int64_t tag_value)
     : m_mesh(mesh)
-    , m_tag_value(tag_value)
     , m_tag_acc(m_mesh.create_const_accessor<int64_t>(tag_handle))
+    , m_tag_value(tag_value)
     , m_tag_ptype(tag_handle.primitive_type())
 {
     // assert(m_mesh.get_child_meshes().empty());
@@ -87,11 +87,11 @@ void MultiMeshFromTag::compute_substructure_ids()
         };
 
         auto get_id =
-            [pt, &local_id](const attribute::Accessor<int64_t>& acc, const Tuple& t) -> int64_t {
+            [&local_id](const attribute::Accessor<int64_t>& acc, const Tuple& t) -> int64_t {
             return acc.const_vector_attribute(t)(local_id(t));
         };
 
-        auto set_id = [pt, &local_id](
+        auto set_id = [&local_id](
                           attribute::Accessor<int64_t>& acc,
                           const Tuple& t,
                           const int64_t val) -> void {
@@ -235,15 +235,14 @@ void MultiMeshFromTag::build_adjacency_matrix()
         return local_id;
     };
 
-    auto get_id = [connecting_ptype,
-                   &local_id](const attribute::Accessor<int64_t>& acc, const Tuple& t) -> int64_t {
+    auto get_id = [&local_id](const attribute::Accessor<int64_t>& acc, const Tuple& t) -> int64_t {
         return acc.const_vector_attribute(t)(local_id(t));
     };
 
-    auto set_id = [connecting_ptype, &local_id](
-                      attribute::Accessor<int64_t>& acc,
-                      const Tuple& t,
-                      const int64_t val) -> void { acc.vector_attribute(t)(local_id(t)) = val; };
+    auto set_id =
+        [&local_id](attribute::Accessor<int64_t>& acc, const Tuple& t, const int64_t val) -> void {
+        acc.vector_attribute(t)(local_id(t)) = val;
+    };
 
     m_adjacency_handle = child.register_attribute<int64_t>(
         "multimesh_from_tag_adjacency",

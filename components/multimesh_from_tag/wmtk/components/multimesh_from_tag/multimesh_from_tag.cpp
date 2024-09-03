@@ -11,44 +11,22 @@
 #include <wmtk/utils/Logger.hpp>
 
 #include "internal/MultiMeshFromTag.hpp"
-#include "internal/MultiMeshFromTagOptions.hpp"
 
 namespace wmtk {
 namespace components {
 
 using namespace internal;
 
-void multimesh_from_tag(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void multimesh_from_tag(
+    std::shared_ptr<Mesh>& mesh_in,
+    attribute::MeshAttributeHandle& substructure_label,
+    int64_t substructure_value)
 {
-    MultiMeshFromTagOptions options = j.get<MultiMeshFromTagOptions>();
-
-    auto mesh_in = cache.read_mesh(options.input);
-
     Mesh& mesh = static_cast<Mesh&>(*mesh_in);
-
-    attribute::MeshAttributeHandle substructure_label =
-        utils::get_attribute(mesh, options.substructure_label);
-
-    const int64_t substructure_value = options.substructure_value;
 
     MultiMeshFromTag mmft(mesh, substructure_label, substructure_value);
     mmft.compute_substructure_mesh();
     mmft.remove_soup();
-
-    // clear attributes
-    {
-        std::vector<attribute::MeshAttributeHandle> keeps =
-            utils::get_attributes(cache, mesh, options.pass_through);
-        keeps.emplace_back(substructure_label);
-        mesh.clear_attributes(keeps);
-    }
-
-    {
-        std::map<std::string, std::vector<int64_t>> names;
-        names[options.input] = mesh.absolute_multi_mesh_id();
-        names[options.output] = mmft.substructure()->absolute_multi_mesh_id();
-        cache.write_mesh(mesh, options.output, names); // TODOfix: not sure if that is sufficient
-    }
 }
 } // namespace components
 } // namespace wmtk

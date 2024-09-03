@@ -1,11 +1,11 @@
 
 set(SRC_FILES
-    TriInsOptions.hpp
     triangle_insertion.hpp
     triangle_insertion.cpp)
 
 
-#CURRENT_COMPONENT_LIB_NAME is set from the main cmake
-target_sources(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${SRC_FILES})
+add_component("triangle_insertion")
 
-target_link_libraries(${CURRENT_COMPONENT_LIB_NAME} PRIVATE wmtkc_multimesh_from_tag)
+target_sources(wmtk_triangle_insertion PRIVATE ${SRC_FILES})
+
+target_link_libraries(wmtk_triangle_insertion PRIVATE wmtk::multimesh_from_tag)

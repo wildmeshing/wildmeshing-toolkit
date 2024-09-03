@@ -1,6 +1,5 @@
 #include "triangle_insertion.hpp"
 
-#include "TriInsOptions.hpp"
 
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
@@ -24,13 +23,13 @@
 
 namespace wmtk::components {
 
-void triangle_insertion(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+std::shared_ptr<wmtk::TetMesh> triangle_insertion(
+    const std::shared_ptr<Mesh>& mesh_in,
+    const std::string& in_position,
+    const std::shared_ptr<Mesh>& bg_mesh,
+    const std::string& bg_position,
+    bool make_child_free)
 {
-    TriInsOptions options = j.get<TriInsOptions>();
-
-    std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
-    std::shared_ptr<Mesh> bg_mesh = cache.read_mesh(options.background);
-
     if (mesh_in->top_simplex_type() != PrimitiveType::Triangle)
         log_and_throw_error("triangle_insertion supports only triangle meshes");
     if (bg_mesh->top_simplex_type() != PrimitiveType::Tetrahedron)
@@ -45,14 +44,14 @@ void triangle_insertion(const utils::Paths& paths, const nlohmann::json& j, io::
     bg_mesh->serialize(writer_bg);
 
     Eigen::MatrixXd V;
-    writer.get_double_matrix(options.input_position, PrimitiveType::Vertex, V);
+    writer.get_double_matrix(in_position, PrimitiveType::Vertex, V);
 
     Eigen::MatrixX<int64_t> F;
     writer.get_FV_matrix(F);
 
 
     Eigen::MatrixXd Vbg;
-    writer_bg.get_double_matrix(options.background_position, PrimitiveType::Vertex, Vbg);
+    writer_bg.get_double_matrix(bg_position, PrimitiveType::Vertex, Vbg);
 
     Eigen::MatrixX<int64_t> Fbg;
     writer_bg.get_TV_matrix(Fbg);
@@ -72,9 +71,8 @@ void triangle_insertion(const utils::Paths& paths, const nlohmann::json& j, io::
     /* -------------rounding------------ */
 
 
-    auto rounding_pt_attribute = tetmesh->get_attribute_handle_typed<Rational>(
-        options.input_position,
-        PrimitiveType::Vertex);
+    auto rounding_pt_attribute =
+        tetmesh->get_attribute_handle_typed<Rational>(in_position, PrimitiveType::Vertex);
 
     std::shared_ptr<Mesh> m_ptr = tetmesh;
 
@@ -130,7 +128,7 @@ void triangle_insertion(const utils::Paths& paths, const nlohmann::json& j, io::
     // get multimesh from tag
     std::shared_ptr<Mesh> surface_mesh;
 
-    if (options.make_child_free) {
+    if (make_child_free) {
         logger().error("Making free child surface mesh");
         surface_mesh = wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
             *tetmesh,
@@ -185,14 +183,14 @@ void triangle_insertion(const utils::Paths& paths, const nlohmann::json& j, io::
         }
     }
 
-    const bool process_nonmanifold_edges = !options.make_child_free && has_nonmanifold_edge;
+    const bool process_nonmanifold_edges = !make_child_free && has_nonmanifold_edge;
 
     // get multimeshes from tag
 
     std::shared_ptr<Mesh> open_boundary_mesh, nonmanifold_edge_mesh;
 
     if (has_openboundary) {
-        if (options.make_child_free) {
+        if (make_child_free) {
             logger().error("Creating free open boundary child mesh");
             open_boundary_mesh =
                 wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
@@ -285,12 +283,11 @@ void triangle_insertion(const utils::Paths& paths, const nlohmann::json& j, io::
 
     logger().error("Propagating position to child meshes");
     // propagate position to all child meshes
-    auto pt_attribute =
-        tetmesh->get_attribute_handle<Rational>(options.input_position, PrimitiveType::Vertex);
+    auto pt_attribute = tetmesh->get_attribute_handle<Rational>(in_position, PrimitiveType::Vertex);
 
     for (auto child : tetmesh->get_child_meshes()) {
         auto child_position_handle = child->register_attribute<Rational>(
-            options.input_position,
+            in_position,
             PrimitiveType::Vertex,
             tetmesh->get_attribute_dimension(pt_attribute.as<Rational>()));
 
@@ -334,7 +331,7 @@ void triangle_insertion(const utils::Paths& paths, const nlohmann::json& j, io::
     names["bbox"] = bbox_mesh->absolute_multi_mesh_id();
     logger().info("Bbox child TriMesh registered");
 
-    cache.write_mesh(*tetmesh, options.name, names);
+    return tetmesh;
 
     /* -------------------- new code end ----------------------- */
     /* ----don't forget to comment out/ delete the old code----- */
@@ -343,9 +340,9 @@ void triangle_insertion(const utils::Paths& paths, const nlohmann::json& j, io::
     //     utils::generate_raw_tetmesh_with_surface_from_input(V, F, 0.1, Vbg, Fbg);
 
     // auto pt_attribute =
-    //     tetmesh->get_attribute_handle<double>(options.input_position, PrimitiveType::Vertex);
+    //     tetmesh->get_attribute_handle<double>(in_position, PrimitiveType::Vertex);
     // auto child_position_handle = facemesh->register_attribute<double>(
-    //     options.input_position,
+    //     in_position,
     //     PrimitiveType::Vertex,
     //     tetmesh->get_attribute_dimension(pt_attribute.as<double>()));
 
@@ -363,8 +360,6 @@ void triangle_insertion(const utils::Paths& paths, const nlohmann::json& j, io::
 
     // names["tetmesh"] = tetmesh->absolute_multi_mesh_id();
     // names["surface_mesh"] = facemesh->absolute_multi_mesh_id();
-
-    // cache.write_mesh(*tetmesh, options.name, names);
 }
 
 } // namespace wmtk::components
