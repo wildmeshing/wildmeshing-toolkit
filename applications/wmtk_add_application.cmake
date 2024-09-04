@@ -9,6 +9,10 @@ function(wmtk_add_application APP_NAME ...)
 
     target_link_libraries(${APP_NAME} PRIVATE wmtk::toolkit wmtk::warnings CLI11::CLI11)
 
+    # Group source files for IDEs
+    file(GLOB_RECURSE COMPONENTS_FILES_FOR_SOURCE_GROUP "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp")
+    source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" PREFIX "src" FILES ${COMPONENTS_FILES_FOR_SOURCE_GROUP})
+
     set_target_properties(${APP_NAME} PROPERTIES FOLDER wmtk_applications)
 
     if(MSVC)
