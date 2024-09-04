@@ -34,6 +34,6 @@ namespace wmtk::components::utils {
 std::filesystem::path resolve_path(
     const std::filesystem::path& path,
     const std::filesystem::path& input_file_path,
-    const bool only_if_exists = false);
+    const bool only_if_not_exists = false);
 
 } // namespace wmtk::components::utils

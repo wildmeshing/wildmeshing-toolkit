@@ -4,7 +4,10 @@
 #include <nlohmann/json.hpp>
 
 namespace nlohmann {
-// json serialization of path
+/**
+ * JSON serialization of std::filesystem::path.
+ * Include this file if you need to serialize a path from or to JSON.
+ */
 template <>
 struct adl_serializer<std::filesystem::path>
 {
