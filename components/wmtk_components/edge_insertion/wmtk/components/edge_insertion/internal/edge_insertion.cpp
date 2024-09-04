@@ -662,6 +662,24 @@ void edge_insertion(
                     bbox_min_accessor.vector_attribute(new_f2) = bbox_2[0];
                     bbox_max_accessor.vector_attribute(new_f2) = bbox_2[1];
 
+                    // resurrect neighbor bbox
+                    const auto original_edge =
+                        trimesh.switch_tuples(new_v, {PrimitiveType::Vertex, PrimitiveType::Edge});
+                    if (!trimesh.is_boundary(PrimitiveType::Edge, original_edge)) {
+                        const Tuple neighbor_f =
+                            trimesh.switch_tuple(original_edge, PrimitiveType::Triangle);
+                        const Tuple oppo_v = trimesh.switch_tuples(
+                            neighbor_f,
+                            {PrimitiveType::Edge, PrimitiveType::Vertex});
+                        const Vector2r& pn = position_accessor.const_vector_attribute(oppo_v);
+
+                        const auto bbox_n = compute_bbox(p0, p1, pn);
+                        bbox_min_accessor.vector_attribute(neighbor_f) = bbox_n[0];
+                        bbox_max_accessor.vector_attribute(neighbor_f) = bbox_n[1];
+                    }
+
+
+                    // record id
                     segment_index_accessor.scalar_attribute(new_v) = i;
 
                     break;
