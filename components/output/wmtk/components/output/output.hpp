@@ -15,6 +15,7 @@ namespace wmtk::components {
  * .vtu: Do not add a file extension, if you want to write in .vtu format. This writes a file for
  * each dimension. For example, specifying the file "abc" will create "abc_vertices.vtu",
  * "abc_edges.vtu", and "abc_triangles.vtu", if the mesh is a triangle mesh.
+ * Note that .vtu output is meant for visualization. We do not support reading from .vtu files!
  *
  * .hdf5: Write the entire mesh in .hdf5 file format. The file contains all attributes of the mesh
  * and can be loaded again using the input component.
@@ -39,6 +40,7 @@ void output(
  * .vtu: Do not add a file extension, if you want to write in .vtu format. This writes a file for
  * each dimension. For example, specifying the file "abc" will create "abc_vertices.vtu",
  * "abc_edges.vtu", and "abc_triangles.vtu", if the mesh is a triangle mesh.
+ * Note that .vtu output is meant for visualization. We do not support reading from .vtu files!
  *
  * .hdf5: Write the entire mesh in .hdf5 file format. The file contains all attributes of the mesh
  * and can be loaded again using the input component.
