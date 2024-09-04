@@ -1,7 +1,15 @@
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/applications")
 
+include(wmtk_add_application)
+include(wmtk_download_test_data)
+include(wmtk_generate_test_config)
 
 option(WMTK_ENABLE_APPLICATION_delaunay "Runs delaunay application" ON)
 if(WMTK_ENABLE_APPLICATION_delaunay)
 add_subdirectory(delaunay)
 endif()
+
+
+
+
+wmtk_generate_test_config(${WMTK_TEST_CONFIG})

@@ -1,4 +1,3 @@
-include(wmtk_add_application)
 wmtk_add_application(delaunay_app
     delaunay_main.cpp
     delaunay_spec.hpp
@@ -13,3 +12,8 @@ wmtk::input
 wmtk::delaunay
 wmtk::output
 wmtk::to_points)
+
+wmtk_download_test_data(delaunay
+    delaunay_app
+    "https://github.com/wildmeshing/data.git"
+    152a561697a6e923451ca8535309cbe1e116a9fa)
