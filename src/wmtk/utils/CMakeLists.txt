@@ -67,6 +67,9 @@ set(SRC_FILES
 
     Stopwatch.hpp
     Stopwatch.cpp
+
+    p_n_bases.hpp
+    p_n_bases.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
