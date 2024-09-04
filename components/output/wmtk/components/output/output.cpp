@@ -14,8 +14,6 @@ void output(
     const std::filesystem::path& file,
     const std::string& position_attr_name)
 {
-    using namespace internal;
-
     wmtk::logger().info("Saving on {}", file.string());
 
     if (file.extension().empty()) {
@@ -31,4 +29,14 @@ void output(
     } else
         throw std::runtime_error(std::string("Unknown file type: ") + file.string());
 }
+
+void output(
+    const Mesh& mesh,
+    const std::filesystem::path& file,
+    const attribute::MeshAttributeHandle& position_attr)
+{
+    const std::string attr_name = mesh.get_attribute_name(position_attr.as<double>());
+    output(mesh, file, attr_name);
+}
+
 } // namespace wmtk::components

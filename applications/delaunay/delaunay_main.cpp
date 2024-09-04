@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 
     const std::string root_in = j["root"];
 
-    const std::string root = root_in.empty() ? std::string(json_input_file) : root_in;
+    const std::string root = root_in.empty() ? json_input_file.string() : root_in;
 
     std::string input_file = wmtk::components::utils::resolve_path(j["input"], root);
 
