@@ -4,18 +4,22 @@
 #include <filesystem>
 
 namespace wmtk::components::utils {
-std::string
-resolve_path(const std::string& path, const std::string& input_file_path, const bool only_if_exists)
+
+std::filesystem::path resolve_path(
+    const std::filesystem::path& path,
+    const std::filesystem::path& input_file_path,
+    const bool only_not_if_exists)
 {
     if (path.empty()) {
         return path;
     }
 
-    std::filesystem::path resolved_path(path);
+    std::filesystem::path resolved_path = path;
     if (resolved_path.is_absolute()) {
         return resolved_path.string();
     } else if (std::filesystem::exists(resolved_path)) {
-        return std::filesystem::weakly_canonical(resolved_path).string();
+        // TODOfix: I don't understand the reasoning behind this if-statement.
+        return std::filesystem::weakly_canonical(resolved_path);
     }
 
     std::filesystem::path input_dir_path(input_file_path);
@@ -24,7 +28,7 @@ resolve_path(const std::string& path, const std::string& input_file_path, const 
 
     resolved_path = std::filesystem::weakly_canonical(input_dir_path / resolved_path);
 
-    if (only_if_exists && !std::filesystem::exists(resolved_path)) {
+    if (only_not_if_exists && !std::filesystem::exists(resolved_path)) {
         return path; // return path unchanged
     }
     return resolved_path.string();
