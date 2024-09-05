@@ -4,7 +4,8 @@ set(SRC_FILES
 	tetwild_simplification.hpp)
 
 
-#CURRENT_COMPONENT_LIB_NAME is set from the main cmake
-target_sources(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${SRC_FILES})
-target_link_libraries(${CURRENT_COMPONENT_LIB_NAME} PRIVATE igl::core TBB::tbb)
-target_compile_definitions(${CURRENT_COMPONENT_LIB_NAME} PRIVATE -DWMTK_WITH_TBB)
+add_component("tetwild_simplification")
+
+target_sources(wmtk_tetwild_simplification PRIVATE ${SRC_FILES})
+target_link_libraries(wmtk_tetwild_simplification PRIVATE igl::core TBB::tbb)
+target_compile_definitions(wmtk_tetwild_simplification PRIVATE -DWMTK_WITH_TBB)

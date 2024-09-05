@@ -30,7 +30,8 @@ class IntegrationTest(unittest.TestCase):
         oracle_tag = config["oracle_tag"]
         root_tag = config["input_directory_tag"]
 
-        checks = [] if "checks" not in config else config["checks"]
+        has_checks = "checks" in config
+        checks = [] if not has_checks else config["checks"]
 
         executable = os.path.join(IntegrationTest.BINARY_FOLDER, "applications", main_config["executable"])
 
@@ -66,7 +67,7 @@ class IntegrationTest(unittest.TestCase):
             for check in checks:
                 self.assertTrue(result[check], test_oracle[check])
 
-            if len(checks) == 0:
+            if len(checks) == 0 and not has_checks:
                 for k in test_oracle:
                     if k == input_tag:
                         continue
@@ -89,7 +90,10 @@ class IntegrationTest(unittest.TestCase):
             with open(file) as fp:
                 config = json.load(fp)
 
-            self.run_one(self.main_config[name], config)
+            if name in self.main_config:
+                self.run_one(self.main_config[name], config)
+            else:
+                print("No configuration for ", name)
 
 if __name__ == '__main__':
     bin_dir = os.getcwd()

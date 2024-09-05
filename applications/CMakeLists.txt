@@ -14,6 +14,9 @@ if(WMTK_ENABLE_APPLICATION_marching)
 add_subdirectory(marching)
 endif()
 
+option(WMTK_ENABLE_APPLICATION_tetwild_simplification "Runs tetwild_simplification application" ON)
+if(WMTK_ENABLE_APPLICATION_tetwild_simplification)
+add_subdirectory(tetwild_simplification)
+endif()
 
-
-wmtk_generate_test_config(${WMTK_TEST_CONFIG})
+wmtk_generate_test_config("${WMTK_TEST_CONFIG}")
