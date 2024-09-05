@@ -1,4 +1,5 @@
 #include "SplitNewAttributeStrategy.hpp"
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 
 #include <wmtk/operations/edge_mesh/SplitNewAttributeTopoInfo.hpp>
@@ -28,7 +29,7 @@ SplitNewAttributeStrategy<T>::standard_split_strategy(SplitBasicStrategy optype)
         };
     case SplitBasicStrategy::Throw:
         return [](const VT&, const std::bitset<2>&) -> std::array<VT, 2> {
-            throw std::runtime_error("Split should have a new attribute");
+            log_and_throw_error("Split should have a new attribute");
         };
     case SplitBasicStrategy::None: return {};
     }
@@ -54,7 +55,7 @@ SplitNewAttributeStrategy<Rational>::standard_split_strategy(SplitBasicStrategy 
         };
     case SplitBasicStrategy::Throw:
         return [](const VT&, const std::bitset<2>&) -> std::array<VT, 2> {
-            throw std::runtime_error("Split should have a new attribute");
+            log_and_throw_error("Split should have a new attribute");
         };
     case SplitBasicStrategy::None: return {};
     }
@@ -107,7 +108,7 @@ SplitNewAttributeStrategy<T>::standard_split_rib_strategy(SplitRibBasicStrategy 
         };
     case SplitRibBasicStrategy::Throw:
         return [](const VT&, const VT&, const std::bitset<2>&) -> VT {
-            throw std::runtime_error("Split should have a new attribute");
+            log_and_throw_error("Split should have a new attribute");
         };
     case SplitRibBasicStrategy::None: return {};
     }
@@ -154,7 +155,7 @@ SplitNewAttributeStrategy<Rational>::standard_split_rib_strategy(SplitRibBasicSt
         };
     case SplitRibBasicStrategy::Throw:
         return [](const VT&, const VT&, const std::bitset<2>&) -> VT {
-            throw std::runtime_error("Split should have a new attribute");
+            log_and_throw_error("Split should have a new attribute");
         };
     case SplitRibBasicStrategy::None: return {};
     }
@@ -188,7 +189,7 @@ SplitNewAttributeStrategy<T>::SplitNewAttributeStrategy(
         m_topo_info =
             std::make_unique<tet_mesh::SplitNewAttributeTopoInfo>(static_cast<TetMesh&>(mesh));
     } else {
-        throw std::runtime_error("Invalid mesh");
+        log_and_throw_error("Invalid mesh");
     }
 }
 
