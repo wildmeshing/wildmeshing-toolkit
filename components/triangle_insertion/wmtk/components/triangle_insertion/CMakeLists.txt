@@ -1,11 +1,15 @@
+set(COMPONENT_NAME triangle_insertion)
+add_component(${COMPONENT_NAME})
+if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
+    return()
+endif()
 
 set(SRC_FILES
     triangle_insertion.hpp
     triangle_insertion.cpp)
 
 
-add_component("triangle_insertion")
 
-target_sources(wmtk_triangle_insertion PRIVATE ${SRC_FILES})
+target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 
-target_link_libraries(wmtk_triangle_insertion PRIVATE wmtk::multimesh_from_tag)
+target_link_libraries(wmtk_${COMPONENT_NAME} PRIVATE wmtk::multimesh_from_tag)

@@ -1,3 +1,8 @@
+set(COMPONENT_NAME procedural)
+add_component(${COMPONENT_NAME})
+if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
+    return()
+endif()
 
 set(SRC_FILES
     ProceduralOptions.hpp
@@ -15,9 +20,8 @@ set(SRC_FILES
     grid_utils.cpp
     )
 
-add_component("procedural")
 
 include(stb)
-target_sources(wmtk_procedural PRIVATE ${SRC_FILES})
-target_link_libraries(wmtk_procedural PRIVATE stb::image)
+target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
+target_link_libraries(wmtk_${COMPONENT_NAME} PRIVATE stb::image)
 

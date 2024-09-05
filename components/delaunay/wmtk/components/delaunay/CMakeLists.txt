@@ -1,3 +1,8 @@
+set(COMPONENT_NAME delaunay)
+add_component(${COMPONENT_NAME})
+if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
+    return()
+endif()
 
 set(SRC_FILES
     internal/delaunay_2d.hpp
@@ -11,9 +16,8 @@ set(SRC_FILES
     )
 
 
-add_component("delaunay")
 
 include(delaunay_psm)
 #COMPONENT_TARGET_NAME is set from the main cmake
-target_sources(wmtk_delaunay PRIVATE ${SRC_FILES})
-target_link_libraries(wmtk_delaunay PRIVATE geogram::delaunay_psm)
+target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
+target_link_libraries(wmtk_${COMPONENT_NAME} PRIVATE geogram::delaunay_psm)
