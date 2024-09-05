@@ -46,36 +46,36 @@ attribute::MeshAttributeHandle get_attribute(const Mesh& m, const std::string& n
     return handles.front();
 }
 
-attribute::MeshAttributeHandle
-get_attribute(const io::Cache& cache, const Mesh& m, const nlohmann::json& attribute)
+attribute::MeshAttributeHandle get_attribute(const Mesh& m, const nlohmann::json& attribute)
 {
     if (attribute.is_string()) {
-        // TODO: is this appropriate? the mesh passed in should probably be ignored
         return get_attribute(m, attribute.get<std::string>());
     } else if (attribute.is_object()) {
-        const std::string name = attribute["name"];
-        const std::string mesh = attribute["mesh"];
-
-        const auto& child_ptr = cache.read_mesh(mesh);
-
-        return get_attribute(*child_ptr, name);
+        log_and_throw_error("Outdated branch that needs to be deleted.");
+        // const std::string name = attribute["name"];
+        // const std::string mesh = attribute["mesh"];
+        //
+        // const auto& child_ptr = cache.read_mesh(mesh);
+        //
+        // return get_attribute(*child_ptr, name);
     }
 
     log_and_throw_error("Invalid type for {}.", attribute);
 }
 
 
-std::vector<attribute::MeshAttributeHandle>
-get_attributes(const io::Cache& cache, const Mesh& m, const nlohmann::json& attribute_names)
+std::vector<attribute::MeshAttributeHandle> get_attributes(
+    const Mesh& m,
+    const nlohmann::json& attribute_names)
 {
     std::vector<attribute::MeshAttributeHandle> handles;
 
     if (attribute_names.is_array()) {
         for (const auto& name : attribute_names) {
-            handles.push_back(get_attribute(cache, m, name));
+            handles.push_back(get_attribute(m, name));
         }
     } else {
-        handles.push_back(get_attribute(cache, m, attribute_names));
+        handles.push_back(get_attribute(m, attribute_names));
     }
 
     return handles;

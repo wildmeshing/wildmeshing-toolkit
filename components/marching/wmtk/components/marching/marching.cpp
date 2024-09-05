@@ -1,6 +1,5 @@
 #include "marching.hpp"
 
-#include <wmtk/Mesh.hpp>
 #include <wmtk/components/utils/get_attributes.hpp>
 #include <wmtk/components/utils/resolve_path.hpp>
 
@@ -9,7 +8,7 @@
 
 namespace wmtk::components {
 
-auto gather_attributes(io::Cache& cache, const Mesh& mesh, const internal::MarchingOptions& options)
+auto gather_attributes(const Mesh& mesh, const internal::MarchingOptions& options)
 {
     attribute::MeshAttributeHandle vertex_tag_handle =
         mesh.get_attribute_handle<int64_t>(options.attributes.vertex_label, PrimitiveType::Vertex);
@@ -21,12 +20,12 @@ auto gather_attributes(io::Cache& cache, const Mesh& mesh, const internal::March
         filter_labels.emplace_back(handle);
     }
 
-    auto pass_through_attributes = utils::get_attributes(cache, mesh, options.pass_through);
+    auto pass_through_attributes = utils::get_attributes(mesh, options.pass_through);
 
     return std::make_tuple(vertex_tag_handle, filter_labels, pass_through_attributes);
 }
 
-auto get_marching_attributes(io::Cache& cache, Mesh& mesh, const internal::MarchingOptions& options)
+auto get_marching_attributes(Mesh& mesh, const internal::MarchingOptions& options)
 {
     std::optional<attribute::MeshAttributeHandle> edge_tag_handle;
     std::optional<attribute::MeshAttributeHandle> face_tag_handle;
@@ -58,23 +57,18 @@ auto get_marching_attributes(io::Cache& cache, Mesh& mesh, const internal::March
     return std::make_tuple(edge_tag_handle, face_tag_handle);
 }
 
-void marching(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void marching(Mesh& mesh, const nlohmann::json& j)
 {
     using namespace internal;
 
     MarchingOptions options = j.get<MarchingOptions>();
 
-    // input
-    auto x = options.input;
-    std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
-
-    Mesh& mesh = static_cast<Mesh&>(*mesh_in);
     assert(options.input_values.size() == 2);
 
     auto [vertex_tag_handle, filter_labels, pass_through_attributes] =
-        gather_attributes(cache, mesh, options);
+        gather_attributes(mesh, options);
 
-    auto [edge_tag_handle, face_tag_handle] = get_marching_attributes(cache, mesh, options);
+    auto [edge_tag_handle, face_tag_handle] = get_marching_attributes(mesh, options);
 
     // clear attributes
     {
@@ -91,9 +85,9 @@ void marching(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cac
     }
 
     std::tie(vertex_tag_handle, filter_labels, pass_through_attributes) =
-        gather_attributes(cache, mesh, options);
+        gather_attributes(mesh, options);
 
-    std::tie(edge_tag_handle, face_tag_handle) = get_marching_attributes(cache, mesh, options);
+    std::tie(edge_tag_handle, face_tag_handle) = get_marching_attributes(mesh, options);
 
     assert(
         mesh.top_simplex_type() == PrimitiveType::Triangle ||
@@ -152,8 +146,6 @@ void marching(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cac
         keeps.insert(keeps.end(), filter_labels.begin(), filter_labels.end());
         mesh.clear_attributes(keeps);
     }
-
-    cache.write_mesh(*mesh_in, options.output);
 }
 
 } // namespace wmtk::components

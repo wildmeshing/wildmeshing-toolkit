@@ -21,10 +21,11 @@ add_subdirectory("to_points/wmtk/components/to_points")
 add_subdirectory("multimesh_from_tag/wmtk/components/multimesh_from_tag")
 add_subdirectory("triangle_insertion/wmtk/components/triangle_insertion")
 
+add_subdirectory("marching/wmtk/components/marching")
+
 # add_component("export_cache")
 # add_component("import_cache")
 # add_component("isotropic_remeshing")
-# add_component("marching")
 # add_component("mesh_info")
 # add_component("multimesh")
 # add_component("regular_space")

@@ -8,5 +8,5 @@ wmtk_add_application(marching_app
 # marching requires the input component and the marching component
 target_link_libraries(marching_app PRIVATE
 wmtk::input
-#wmtk::marching
+wmtk::marching
 wmtk::output)
