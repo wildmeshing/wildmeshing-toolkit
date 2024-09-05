@@ -1,24 +1,23 @@
 
 set(SRC_FILES
-    internal/ProceduralOptions.hpp
-    internal/Grid2Options.hpp
-    internal/Grid2Options.cpp
-    internal/Grid3Options.hpp
-    internal/Grid3Options.cpp
-    internal/GridOptions.hpp
-    internal/GridOptions.cpp
-    internal/TriangleFanOptions.hpp
-    internal/TriangleFanOptions.cpp
-    internal/DiskOptions.hpp
-    internal/DiskOptions.cpp
-    internal/grid_utils.hpp
-    internal/grid_utils.cpp
-    procedural.cpp
-	procedural.hpp)
+    ProceduralOptions.hpp
+    Grid2Options.hpp
+    Grid2Options.cpp
+    Grid3Options.hpp
+    Grid3Options.cpp
+    GridOptions.hpp
+    GridOptions.cpp
+    TriangleFanOptions.hpp
+    TriangleFanOptions.cpp
+    DiskOptions.hpp
+    DiskOptions.cpp
+    grid_utils.hpp
+    grid_utils.cpp
+    )
 
+add_component("procedural")
 
 include(stb)
-#CURRENT_COMPONENT_LIB_NAME is set from the main cmake
-target_sources(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${SRC_FILES})
-target_link_libraries(${CURRENT_COMPONENT_LIB_NAME} PRIVATE stb::image)
+target_sources(wmtk_procedural PRIVATE ${SRC_FILES})
+target_link_libraries(wmtk_procedural PRIVATE stb::image)
 

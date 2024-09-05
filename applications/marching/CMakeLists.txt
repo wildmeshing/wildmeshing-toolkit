@@ -9,4 +9,6 @@ wmtk_add_application(marching_app
 target_link_libraries(marching_app PRIVATE
 wmtk::input
 wmtk::marching
-wmtk::output)
+wmtk::output 
+nlohmann_json::nlohmann_json
+)

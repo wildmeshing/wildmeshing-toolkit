@@ -22,6 +22,7 @@ add_subdirectory("multimesh_from_tag/wmtk/components/multimesh_from_tag")
 add_subdirectory("triangle_insertion/wmtk/components/triangle_insertion")
 
 add_subdirectory("marching/wmtk/components/marching")
+add_subdirectory("procedural/wmtk/components/procedural")
 
 # add_component("export_cache")
 # add_component("import_cache")

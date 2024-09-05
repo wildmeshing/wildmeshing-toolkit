@@ -14,6 +14,10 @@ if(WMTK_ENABLE_APPLICATION_marching)
 add_subdirectory(marching)
 endif()
 
+option(WMTK_ENABLE_APPLICATION_procedural "Runs procedural application" ON)
+if(WMTK_ENABLE_APPLICATION_procedural)
+add_subdirectory(procedural)
+endif()
 
 
 wmtk_generate_test_config(${WMTK_TEST_CONFIG})
