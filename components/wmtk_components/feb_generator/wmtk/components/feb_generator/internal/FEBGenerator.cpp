@@ -95,7 +95,7 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                 id3 = id_acc.scalar_attribute(mesh.switch_tuples(
                     t,
                     {PrimitiveType::Triangle, PrimitiveType::Edge, PrimitiveType::Vertex}));
-                tets.push_back(std::vector<int64_t>({id0, id1, id2, id3}));
+                tets.push_back(std::vector<int64_t>({id0, id1, id3, id2}));
             }
         }
 
@@ -175,7 +175,7 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                         if (tag_acc.scalar_attribute(temp_t) != main_idx) {
                             continue;
                         }
-                        if (!mesh.is_ccw(temp_t)) {
+                        if (mesh.is_ccw(temp_t)) {
                             temp_t = mesh.switch_vertex(temp_t);
                         }
 
@@ -251,7 +251,7 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                         if (tag_acc.scalar_attribute(temp_t) != main_idx) {
                             continue;
                         }
-                        if (!mesh.is_ccw(temp_t)) {
+                        if (mesh.is_ccw(temp_t)) {
                             temp_t = mesh.switch_vertex(temp_t);
                         }
 
@@ -312,7 +312,7 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                         if (tag_acc.scalar_attribute(temp_t) != main_idx) {
                             continue;
                         }
-                        if (!mesh.is_ccw(temp_t)) {
+                        if (mesh.is_ccw(temp_t)) {
                             temp_t = mesh.switch_vertex(temp_t);
                         }
 
