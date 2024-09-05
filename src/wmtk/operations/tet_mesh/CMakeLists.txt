@@ -1,15 +1,11 @@
 set(SRC_FILES
-    TetMeshOperation.hpp
-    TetMeshOperation.cpp
-    EdgeSplit.hpp
-    EdgeSplit.cpp
-    EdgeCollapse.hpp
-    EdgeCollapse.cpp
-    TetSplit.hpp
-    TetSplit.cpp
-    TetSplitWithTags.hpp
-    TetSplitWithTags.cpp
-    EdgeSplitWithTags.hpp
-    EdgeSplitWithTags.cpp
+    EdgeOperationData.hpp
+    EdgeOperationData.cpp
+
+    CollapseNewAttributeTopoInfo.hpp
+    CollapseNewAttributeTopoInfo.cpp
+
+    SplitNewAttributeTopoInfo.hpp
+    SplitNewAttributeTopoInfo.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

@@ -18,7 +18,7 @@ tetmesh_topology_initialization(Eigen::Ref<const RowVectors4l> T)
     VectorXl VT;
 
     // First pass is identifying faces, and filling VT
-    std::vector<std::vector<long>> TTT;
+    std::vector<std::vector<int64_t>> TTT;
 
     char iv0 = 0;
     char iv1 = 1;
@@ -27,23 +27,23 @@ tetmesh_topology_initialization(Eigen::Ref<const RowVectors4l> T)
     char ii = 4;
 
 
-    long vertex_count = T.maxCoeff() + 1;
+    int64_t vertex_count = T.maxCoeff() + 1;
 
     // Build a table for finding Faces and populate the corresponding
     // topology relations
     {
         TTT.resize(T.rows() * 4);
-        for (int t = 0; t < T.rows(); ++t) {
-            for (int i = 0; i < 4; ++i) {
+        for (int64_t t = 0; t < T.rows(); ++t) {
+            for (int64_t i = 0; i < 4; ++i) {
                 // v1 v2 v3 f ei
-                long x = T(t, static_cast<long>(autogen::tet_mesh::auto_3d_faces[i][0]));
-                long y = T(t, static_cast<long>(autogen::tet_mesh::auto_3d_faces[i][1]));
-                long z = T(t, static_cast<long>(autogen::tet_mesh::auto_3d_faces[i][2]));
+                int64_t x = T(t, static_cast<int64_t>(autogen::tet_mesh::auto_3d_faces[i][0]));
+                int64_t y = T(t, static_cast<int64_t>(autogen::tet_mesh::auto_3d_faces[i][1]));
+                int64_t z = T(t, static_cast<int64_t>(autogen::tet_mesh::auto_3d_faces[i][2]));
                 if (x > y) std::swap(x, y);
                 if (y > z) std::swap(y, z);
                 if (x > y) std::swap(x, y);
 
-                std::vector<long> r(5);
+                std::vector<int64_t> r(5);
                 r[iv0] = x;
                 r[iv1] = y;
                 r[iv2] = z;
@@ -65,8 +65,8 @@ tetmesh_topology_initialization(Eigen::Ref<const RowVectors4l> T)
 
         // VT
         VT.resize(vertex_count, 1);
-        for (int i = 0; i < T.rows(); ++i) {
-            for (int j = 0; j < T.cols(); ++j) {
+        for (int64_t i = 0; i < T.rows(); ++i) {
+            for (int64_t j = 0; j < T.cols(); ++j) {
                 VT[T(i, j)] = i;
             }
         }
@@ -74,12 +74,12 @@ tetmesh_topology_initialization(Eigen::Ref<const RowVectors4l> T)
         // Compute TF, TT, and FT
         TF.resize(T.rows(), 4);
         TT.resize(T.rows(), 4);
-        std::vector<long> FT_temp;
+        std::vector<int64_t> FT_temp;
 
         // iterate over TTT to find faces
         // for every entry check if the next is the same, and update the connectivity accordingly
 
-        for (int i = 0; i < TTT.size(); ++i) {
+        for (int64_t i = 0; i < TTT.size(); ++i) {
             if ((i == TTT.size() - 1) || (TTT[i][0] != TTT[i + 1][0]) ||
                 (TTT[i][1] != TTT[i + 1][1]) || (TTT[i][2] != TTT[i + 1][2])) {
                 // If the next tuple is empty, then this is a boundary face
@@ -105,21 +105,21 @@ tetmesh_topology_initialization(Eigen::Ref<const RowVectors4l> T)
 
         // copy FT
         FT.resize(FT_temp.size());
-        for (long i = 0; i < FT_temp.size(); ++i) FT(i) = FT_temp[i];
+        for (int64_t i = 0; i < FT_temp.size(); ++i) FT(i) = FT_temp[i];
     }
 
     // Build a table for finding edges and populate the corresponding
     // topology relations
     {
         TTT.resize(T.rows() * 6);
-        for (int t = 0; t < T.rows(); ++t) {
-            for (int i = 0; i < 6; ++i) {
+        for (int64_t t = 0; t < T.rows(); ++t) {
+            for (int64_t i = 0; i < 6; ++i) {
                 // v1 v2 f ei
-                long x = T(t, static_cast<long>(autogen::tet_mesh::auto_3d_edges[i][0]));
-                long y = T(t, static_cast<long>(autogen::tet_mesh::auto_3d_edges[i][1]));
+                int64_t x = T(t, static_cast<int64_t>(autogen::tet_mesh::auto_3d_edges[i][0]));
+                int64_t y = T(t, static_cast<int64_t>(autogen::tet_mesh::auto_3d_edges[i][1]));
                 if (x > y) std::swap(x, y);
 
-                std::vector<long> r(5);
+                std::vector<int64_t> r(5);
                 r[iv0] = x;
                 r[iv1] = y;
                 r[iv2] = 0; // unused
@@ -142,12 +142,12 @@ tetmesh_topology_initialization(Eigen::Ref<const RowVectors4l> T)
 
         // Compute TE, ET
         TE.resize(T.rows(), 6);
-        std::vector<long> ET_temp;
+        std::vector<int64_t> ET_temp;
 
 
         // iterate over TTT to find edges
         // for every entry check if the next is the same, and update the connectivity accordingly
-        for (int i = 0; i < TTT.size(); ++i) {
+        for (int64_t i = 0; i < TTT.size(); ++i) {
             if ((i == TTT.size() - 1) || (TTT[i][0] != TTT[i + 1][0]) ||
                 (TTT[i][1] != TTT[i + 1][1])) {
                 // new edge found
@@ -163,7 +163,7 @@ tetmesh_topology_initialization(Eigen::Ref<const RowVectors4l> T)
                 TE(TTT[i][it], TTT[i][ii]) = ET_temp.size() - 1;
 
                 // loop over all the copies
-                long j = 1;
+                int64_t j = 1;
                 while ((i + j < TTT.size()) && (TTT[i][0] == TTT[i + j][0]) &&
                        (TTT[i][1] == TTT[i + j][1])) {
                     TE(TTT[i + j][it], TTT[i + j][ii]) = ET_temp.size() - 1;
@@ -177,7 +177,7 @@ tetmesh_topology_initialization(Eigen::Ref<const RowVectors4l> T)
 
         // copy ET
         ET.resize(ET_temp.size());
-        for (long i = 0; i < ET_temp.size(); ++i) ET(i) = ET_temp[i];
+        for (int64_t i = 0; i < ET_temp.size(); ++i) ET(i) = ET_temp[i];
     }
 
     return {TE, TF, TT, VT, ET, FT};

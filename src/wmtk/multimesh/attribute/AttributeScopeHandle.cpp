@@ -19,7 +19,6 @@ AttributeScopeHandle::AttributeScopeHandle(Mesh& m)
     MultiMeshVisitor(get_handles).execute_from_root(m);
 }
 
-AttributeScopeHandle::~AttributeScopeHandle() = default;
 
 void AttributeScopeHandle::mark_failed()
 {

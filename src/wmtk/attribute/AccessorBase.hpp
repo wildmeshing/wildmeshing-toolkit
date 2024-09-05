@@ -2,15 +2,22 @@
 
 #include <memory>
 #include <type_traits>
-#include "Attribute.hpp"
 #include "MeshAttributeHandle.hpp"
+#include "internal/MapTypes.hpp"
 #include "wmtk/Tuple.hpp"
 #include "wmtk/Types.hpp"
 
 #include <Eigen/Dense>
 
+namespace wmtk {
+class AttributeManager;
+}
 namespace wmtk::attribute {
 
+template <typename T>
+class Attribute;
+template <typename T, typename MeshType, int Dim>
+class Accessor;
 template <typename T>
 class MeshAttributes;
 template <typename T>
@@ -19,32 +26,42 @@ class AccessorCache;
 // The basic implementation of an accessor using indices.
 // This should never be externally used except within the main accessor
 // interface, in unit tests, or in topological updates
-template <typename _T>
+template <typename _T, int Dim = Eigen::Dynamic>
 class AccessorBase
 {
 public:
     using T = _T;
     friend class AccessorCache<T>;
     using MeshAttributesType = MeshAttributes<T>;
+    template <typename U, typename MeshType, int D>
+    friend class Accessor;
     using AttributeType = Attribute<T>;
 
-    using MapResult = typename VectorX<T>::MapType;
-    using ConstMapResult = typename VectorX<T>::ConstMapType;
+    template <int D = Dim>
+    using MapResult = internal::MapResult<T, D>;
+    template <int D = Dim>
+    using ConstMapResult = internal::ConstMapResult<T, D>;
 
 
 public:
     // returns the size of the underlying attribute
-    long reserved_size() const;
-    long dimension() const;
+    int64_t reserved_size() const;
+    int64_t dimension() const;
+    const T& default_value() const;
 
 
     void set_attribute(std::vector<T> value);
 
-    ConstMapResult const_vector_attribute(const long index) const;
-    MapResult vector_attribute(const long index);
+    template <int D = Dim>
+    ConstMapResult<D> const_vector_attribute(const int64_t index) const;
+    template <int D = Dim>
+    MapResult<D> vector_attribute(const int64_t index);
 
-    T const_scalar_attribute(const long index) const;
-    T& scalar_attribute(const long index);
+    T const_scalar_attribute(const int64_t index) const;
+    T& scalar_attribute(const int64_t index);
+
+    T const_scalar_attribute(const int64_t index, const int8_t offset) const;
+    T& scalar_attribute(const int64_t index, const int8_t offset);
 
     MeshAttributes<T>& attributes();
     const MeshAttributes<T>& attributes() const;
@@ -55,9 +72,10 @@ public:
 
     ~AccessorBase();
     AccessorBase(Mesh& m, const TypedAttributeHandle<T>& handle);
-    AccessorBase(const MeshAttributeHandle<T>& handle);
+    AccessorBase(const Mesh& m, const TypedAttributeHandle<T>& handle);
 
-    const MeshAttributeHandle<T>& handle() const;
+    MeshAttributeHandle handle() const;
+    const TypedAttributeHandle<T>& typed_handle() const;
     PrimitiveType primitive_type() const;
 
     Mesh& mesh();
@@ -65,7 +83,9 @@ public:
 
 
 protected:
-    MeshAttributeHandle<T> m_handle;
+    TypedAttributeHandle<T> m_handle;
+    Mesh& m_mesh;
+    Attribute<T>& m_attribute;
 
     const AttributeManager& attribute_manager() const;
     AttributeManager& attribute_manager();
@@ -73,3 +93,4 @@ protected:
 
 
 } // namespace wmtk::attribute
+#include "AccessorBase.hxx"

@@ -1,3 +1,5 @@
+#include <wmtk/simplex/Simplex.hpp>
+#include "Cell.hpp"
 #include "Primitive.hpp"
 #include <tuple>
 
@@ -8,7 +10,7 @@ Primitive::Primitive(const PrimitiveType& primitive_type, const Tuple& t)
     : m_primitive_type{primitive_type}
     , m_tuple{t}
 {}
-Primitive::Primitive(const Simplex& simplex)
+Primitive::Primitive(const simplex::Simplex& simplex)
     : m_primitive_type{simplex.primitive_type()}
     , m_tuple{simplex.tuple()}
 {}
@@ -36,15 +38,11 @@ Primitive Primitive::edge(const Tuple& t)
 }
 Primitive Primitive::face(const Tuple& t)
 {
-    return Primitive(PrimitiveType::Face, t);
+    return Primitive(PrimitiveType::Triangle, t);
 }
 Primitive Primitive::tetrahedron(const Tuple& t)
 {
     return Primitive(PrimitiveType::Tetrahedron, t);
-}
-Primitive Primitive::halfedge(const Tuple& t)
-{
-    return Primitive(PrimitiveType::HalfEdge, t);
 }
 
 bool Primitive::operator==(const Primitive& o) const

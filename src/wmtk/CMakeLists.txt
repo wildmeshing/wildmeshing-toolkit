@@ -1,10 +1,13 @@
 
 set(SRC_FILES
-    Accessor.hpp
     Cell.cpp
     Cell.hpp
     Mesh.cpp
+    Mesh_attributes.cpp #the attribute parts of Mesh class
+    Mesh_construction.cpp #the construction/destruction parts of Mesh class
     Mesh.hpp
+    Mesh_hash.cpp
+    Mesh_multimesh.cpp
     PointMesh.cpp
     PointMesh.hpp
     EdgeMesh.hpp
@@ -23,16 +26,12 @@ set(SRC_FILES
     PrimitiveType.cpp
     Primitive.hpp
     Primitive.cpp
-    Tuple.cpp
+    Tuple.hxx
     Tuple.hpp
     Types.hpp
-    Simplex.hpp
-    SimplicialComplex.hpp
-    SimplicialComplex.cpp
     Scheduler.hpp
     Scheduler.cpp
     MultiMeshManager.hpp
-    MultiMeshManager.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
@@ -41,12 +40,10 @@ add_subdirectory(utils)
 add_subdirectory(attribute)
 add_subdirectory(simplex)
 add_subdirectory(operations)
-add_subdirectory(optimization)
 add_subdirectory(autogen)
-
+#
 add_subdirectory(invariants)
 add_subdirectory(multimesh)
-
+#
 add_subdirectory(function)
 
-# add_subdirectory(image)

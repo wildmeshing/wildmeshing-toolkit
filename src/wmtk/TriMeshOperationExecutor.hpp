@@ -1,7 +1,6 @@
 #pragma once
 #include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include "SimplicialComplex.hpp"
 #include "TriMesh.hpp"
 #include "Tuple.hpp"
 namespace wmtk {
@@ -10,25 +9,31 @@ namespace wmtk {
 class TriMesh::TriMeshOperationExecutor : public operations::tri_mesh::EdgeOperationData
 {
 public:
-    TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple, Accessor<long>& hash_acc);
+    TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple);
     void delete_simplices();
-    void update_cell_hash();
 
-    std::array<Accessor<char>, 3> flag_accessors;
-    Accessor<long> ff_accessor;
-    Accessor<long> fe_accessor;
-    Accessor<long> fv_accessor;
-    Accessor<long> vf_accessor;
-    Accessor<long> ef_accessor;
-    Accessor<long>& hash_accessor;
+    std::array<attribute::Accessor<char>, 3> flag_accessors;
+    attribute::Accessor<int64_t, TriMesh>& ff_accessor;
+    attribute::Accessor<int64_t, TriMesh>& fe_accessor;
+    attribute::Accessor<int64_t, TriMesh>& fv_accessor;
+    attribute::Accessor<int64_t, TriMesh>& vf_accessor;
+    attribute::Accessor<int64_t, TriMesh>& ef_accessor;
 
+    /**
+     * @brief jump to the next edge
+     */
+    Tuple next_edge(const Tuple& tuple) const;
+    /**
+     * @brief jump to the previous edge
+     */
+    Tuple prev_edge(const Tuple& tuple) const;
 
     /**
      * @brief gather all simplices that are deleted in a split
      *
      * The deleted simplices are exactly the open star of the edge
      */
-    static const std::array<std::vector<long>, 3> get_split_simplices_to_delete(
+    static const std::array<std::vector<int64_t>, 3> get_split_simplices_to_delete(
         const Tuple& tuple,
         const TriMesh& m);
 
@@ -39,19 +44,21 @@ public:
      * of the edge. This comes down to one vertex, three edges, and two faces if the edge is on the
      * interior. On the boundary it is one vertex, two edges, and one face.
      */
-    static const std::array<std::vector<long>, 3> get_collapse_simplices_to_delete(
+    static const std::array<std::vector<int64_t>, 3> get_collapse_simplices_to_delete(
         const Tuple& tuple,
         const TriMesh& m);
 
 
-    void update_ids_in_ear(const EarData& ear, const long new_fid, const long old_fid);
+    void update_ids_in_ear(const EarData& ear, const int64_t new_fid, const int64_t old_fid);
 
     void connect_ears();
 
+    // historical precompute tooling
+    void split_edge_precompute();
+    void collapse_edge_precompute();
+
     void split_edge();
     void collapse_edge();
-    void split_edge_single_mesh();
-    void collapse_edge_single_mesh();
 
     /**
      * @brief
@@ -61,11 +68,12 @@ public:
      */
     // return the two new fids in order
     void replace_incident_face(IncidentFaceData& face_data);
+    void create_spine_simplices();
+    void fill_split_facet_data();
     void connect_faces_across_spine();
-    std::vector<long> request_simplex_indices(const PrimitiveType type, long count);
+    std::vector<int64_t> request_simplex_indices(const PrimitiveType type, int64_t count);
 
     TriMesh& m_mesh;
-
 
 
     IncidentFaceData get_incident_face_data(Tuple t);

@@ -19,5 +19,8 @@ set(SRC_FILES
     MshReader.cpp
     ParaviewWriter.hpp
     ParaviewWriter.cpp
+
+    CachedMultiMesh.hpp
+    CachedMultiMesh.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

@@ -1,45 +1,25 @@
 #include "PerSimplexFunction.hpp"
 
+#include <wmtk/Mesh.hpp>
+
 namespace wmtk::function {
-
-PerSimplexFunction::PerSimplexFunction(const Mesh& mesh, const PrimitiveType& domain_simplex_type)
-    : m_mesh(mesh)
-    , m_domain_simplex_type(domain_simplex_type)
-{}
-
-PerSimplexFunction::~PerSimplexFunction() = default;
-
-const Mesh& PerSimplexFunction::mesh() const
+PerSimplexFunction::PerSimplexFunction(
+    const Mesh& mesh,
+    const PrimitiveType primitive_type,
+    const attribute::MeshAttributeHandle& variable_attribute_handle)
+    : m_handle(variable_attribute_handle)
+    , m_mesh(mesh)
+    , m_primitive_type(primitive_type)
 {
-    return m_mesh;
+    assert(variable_attribute_handle.is_same_mesh(m_mesh));
+    assert(m_handle.holds<double>() || m_handle.holds<Rational>());
 }
 
-PrimitiveType PerSimplexFunction::get_domain_simplex_type() const
-{
-    return m_domain_simplex_type;
-}
 
-double PerSimplexFunction::get_value_sum(const std::vector<Simplex>& simplices) const
+int64_t PerSimplexFunction::embedded_dimension() const
 {
-    double v = 0;
-    for (const Simplex& cell : simplices) {
-        v += get_value(cell);
-    }
-    return v;
+    auto res = attribute_handle().dimension();
+    assert(res > 0);
+    return res;
 }
-
-double PerSimplexFunction::get_value_sum(const std::vector<Tuple>& simplices) const
-{
-    double v = 0;
-    for (const Tuple& cell : simplices) {
-        v += get_value(as_domain_simplex(cell));
-    }
-    return v;
-}
-
-Simplex PerSimplexFunction::as_domain_simplex(const Tuple& t) const
-{
-    return Simplex(get_domain_simplex_type(), t);
-}
-
 } // namespace wmtk::function

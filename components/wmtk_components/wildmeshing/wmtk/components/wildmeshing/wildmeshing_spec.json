@@ -1,0 +1,119 @@
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": ["input", "output", "attributes", "envelopes"],
+    "optional": [
+      "pass_through",
+      "passes",
+      "target_edge_length",
+      "target_max_amips",
+      "intermediate_output",
+      "scheduler_update_frequency"
+    ]
+  },
+  {
+    "pointer": "/input",
+    "type": "string"
+  },
+  {
+    "pointer": "/output",
+    "type": "string"
+  },
+  {
+    "pointer": "/attributes",
+    "type": "object",
+    "required": "position",
+    "optional": "replace_double_coordinate",
+    "doc": "all attributes required for this component"
+  },
+  {
+    "pointer": "/attributes/position",
+    "type": "string",
+    "doc": "Position attribute"
+  },
+  {
+    "pointer": "/attributes/replace_double_coordinate",
+    "type": "bool",
+    "default": false,
+    "doc": "Specifies whether to replace a double coordinate with a rational one. If the coordinate is already rational nothing needs to be done."
+  },
+  {
+    "pointer": "/envelopes",
+    "type": "list",
+    "doc": "all active envelopes"
+  },
+  {
+    "pointer": "/envelopes/*",
+    "type": "object",
+    "doc": "envelope",
+    "required": ["geometry", "constrained_position"],
+    "optional": ["thickness"]
+  },
+  {
+    "pointer": "/envelopes/*/geometry",
+    "type": "object",
+    "required": ["mesh", "position"],
+    "doc": "name of the mesh to build the envelope"
+  },
+  {
+    "pointer": "/envelopes/*/geometry/mesh",
+    "type": "string",
+    "doc": "name of the mesh to build the envelope"
+  },
+  {
+    "pointer": "/envelopes/*/geometry/position",
+    "type": "string",
+    "doc": "name of the attribute for the position of mesh to build the envelope"
+  },
+  {
+    "pointer": "/envelopes/*/thickness",
+    "type": "float",
+    "min": 0,
+    "default": 1e-3,
+    "doc": "thickness of the envelope"
+  },
+  {
+    "pointer": "/envelopes/*/constrained_position",
+    "type": "include",
+    "spec_file": "attribute_spec.json",
+    "doc": "name of the attribute in the main mesh hierarcy that need to be checked"
+  },
+  {
+    "pointer": "/pass_through",
+    "type": "list",
+    "default": [],
+    "doc": "all attributes that are not deleted by the component but also not required"
+  },
+  {
+    "pointer": "/pass_through/*",
+    "type": "include",
+    "spec_file": "attribute_spec.json"
+  },
+  {
+    "pointer": "/passes",
+    "type": "int",
+    "default": 10
+  },
+  {
+    "pointer": "/scheduler_update_frequency",
+    "type": "int",
+    "default": 0,
+    "doc": "Frequency of which the scheduler updates on how many operations have occured"
+  },
+  {
+    "pointer": "/target_edge_length",
+    "type": "float",
+    "default": 0.1
+  },
+  {
+    "pointer": "/target_max_amips",
+    "type": "float",
+    "default": 8
+  },
+  {
+    "pointer": "/intermediate_output",
+    "type": "bool",
+    "default": false
+  }
+]

@@ -51,17 +51,54 @@ void SimplexCollection::add(const SimplexCollection& simplex_collection)
     m_simplices.insert(m_simplices.end(), s.begin(), s.end());
 }
 
-void SimplexCollection::add(const PrimitiveType& ptype, const std::vector<Tuple>& tuple_vec)
+void SimplexCollection::add(const PrimitiveType ptype, const std::vector<Tuple>& tuple_vec)
 {
     m_simplices.reserve(m_simplices.size() + tuple_vec.size());
 
     for (const Tuple& t : tuple_vec) {
-        m_simplices.emplace_back(Simplex(ptype, t));
+        m_simplices.emplace_back(Simplex(mesh(), ptype, t));
     }
+}
+
+void SimplexCollection::add(const PrimitiveType ptype, const Tuple& tuple)
+{
+    m_simplices.emplace_back(Simplex(mesh(), ptype, tuple));
 }
 
 void SimplexCollection::sort_and_clean()
 {
+    // using SimplexIdPair = std::pair<int64_t, Simplex>;
+    //
+    // std::vector<SimplexIdPair> tmp;
+    // tmp.reserve(m_simplices.size());
+    //
+    // std::transform(
+    //     m_simplices.begin(),
+    //     m_simplices.end(),
+    //     std::back_inserter(tmp),
+    //     [&](const Simplex& s) { return std::make_pair(m_mesh.id(s), s); });
+    //
+    // auto cmp = [](const SimplexIdPair& a, const SimplexIdPair& b) {
+    //     if (a.second.primitive_type() == b.second.primitive_type()) {
+    //         return a.first < b.first;
+    //     } else {
+    //         return a.second.primitive_type() < b.second.primitive_type();
+    //     }
+    // };
+    // auto equal = [](const SimplexIdPair& a, const SimplexIdPair& b) {
+    //     return a.first == b.first && a.second.primitive_type() == b.second.primitive_type();
+    // };
+    // std::sort(tmp.begin(), tmp.end(), cmp);
+    // const auto last = std::unique(tmp.begin(), tmp.end(), equal);
+    // tmp.erase(last, tmp.end());
+    //
+    // m_simplices.clear();
+    // std::transform(
+    //     tmp.begin(),
+    //     tmp.end(),
+    //     std::back_inserter(m_simplices),
+    //     [&](const SimplexIdPair& p) { return p.second; });
+
     std::sort(m_simplices.begin(), m_simplices.end(), m_simplex_is_less);
     const auto last = std::unique(m_simplices.begin(), m_simplices.end(), m_simplex_is_equal);
     m_simplices.erase(last, m_simplices.end());
@@ -128,6 +165,16 @@ bool SimplexCollection::are_simplex_collections_equal(
     }
     SimplexCollection sc_union = SimplexCollection::get_union(collection_a, collection_b);
     return sc_union.m_simplices.size() == collection_a.m_simplices.size();
+}
+
+bool SimplexCollection::operator==(const SimplexCollection& other) const
+{
+    return are_simplex_collections_equal(*this, other);
+}
+
+void SimplexCollection::reserve(const size_t new_cap)
+{
+    m_simplices.reserve(new_cap);
 }
 
 } // namespace wmtk::simplex

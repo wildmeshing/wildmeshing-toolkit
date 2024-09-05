@@ -11,18 +11,19 @@ RawSimplex::RawSimplex(const Mesh& mesh, const std::vector<Tuple>& vertices)
 {
     m_vertices.reserve(vertices.size());
 
-    ConstAccessor<long> hash_accessor = mesh.get_const_cell_hash_accessor();
 
     for (size_t i = 0; i < vertices.size(); ++i) {
         m_vertices.emplace_back(
-            mesh.is_valid(vertices[i], hash_accessor) ? mesh.id(vertices[i], PrimitiveType::Vertex)
-                                                      : -1);
+            mesh.is_valid(vertices[i]) ? 
+            mesh.id(vertices[i], PrimitiveType::Vertex)
+                                                      : -1
+                                                      );
     }
 
     std::sort(m_vertices.begin(), m_vertices.end());
 }
 
-RawSimplex::RawSimplex(std::vector<long>&& vertices)
+RawSimplex::RawSimplex(std::vector<int64_t>&& vertices)
     : m_vertices{std::move(vertices)}
 {
     std::sort(m_vertices.begin(), m_vertices.end());
@@ -36,7 +37,7 @@ RawSimplex::RawSimplex(const Mesh& mesh, const Simplex& simplex)
               : faces_single_dimension_tuples(mesh, simplex, PrimitiveType::Vertex))
 {}
 
-long RawSimplex::dimension() const
+int64_t RawSimplex::dimension() const
 {
     return m_vertices.size() - 1;
 }
@@ -63,12 +64,12 @@ bool RawSimplex::operator<(const RawSimplex& o) const
         o.m_vertices.end());
 }
 
-RawSimplex RawSimplex::opposite_face(const long excluded_id)
+RawSimplex RawSimplex::opposite_face(const int64_t excluded_id)
 {
-    std::vector<long> face_ids;
+    std::vector<int64_t> face_ids;
     face_ids.reserve(m_vertices.size() - 1);
 
-    for (const long& v : m_vertices) {
+    for (const int64_t& v : m_vertices) {
         if (v != excluded_id) {
             face_ids.emplace_back(v);
         }
@@ -82,10 +83,9 @@ RawSimplex RawSimplex::opposite_face(const long excluded_id)
 
 RawSimplex RawSimplex::opposite_face(const Mesh& mesh, const Tuple& vertex)
 {
-    ConstAccessor<long> hash_accessor = mesh.get_const_cell_hash_accessor();
 
-    long excluded_id =
-        mesh.is_valid(vertex, hash_accessor) ? mesh.id(vertex, PrimitiveType::Vertex) : -1;
+    int64_t excluded_id =
+        mesh.is_valid(vertex) ? mesh.id(vertex, PrimitiveType::Vertex) : -1;
 
     return opposite_face(excluded_id);
 }
@@ -97,7 +97,7 @@ RawSimplex RawSimplex::opposite_face(const RawSimplex& face)
 
     assert(f_v.size() <= s_v.size());
 
-    std::vector<long> o_v;
+    std::vector<int64_t> o_v;
     o_v.reserve(s_v.size() - f_v.size());
 
     std::set_difference(
@@ -156,7 +156,7 @@ RawSimplexCollection RawSimplex::faces()
         faces.emplace_back(RawSimplex({v[1], v[2], v[3]}));
         break;
     }
-    default: throw std::runtime_error("Unexpected dimension in RawSimplex."); break;
+    default: assert(false); // "Unexpected dimension in RawSimplex."
     }
 
     return RawSimplexCollection(std::move(faces));

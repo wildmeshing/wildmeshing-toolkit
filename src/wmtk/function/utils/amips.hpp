@@ -14,7 +14,7 @@ extern const Eigen::Matrix2d amips_reference_to_barycentric;
 
 
 // Given an basis vectors following a "v1-v0,v2-v0" convention for a triangle (v0,v1,v2)
-// return the AMIPS energy.
+// return the AMIPS energy for a triangle.
 // Input are assumed to be column vectors, opposite of the standard IGL formation
 template <typename Derived>
 auto amips(const Eigen::MatrixBase<Derived>& B)
@@ -38,6 +38,8 @@ auto amips(const Eigen::MatrixBase<Derived>& B)
     if (abs(Jdet) < std::numeric_limits<double>::denorm_min()) {
         return static_cast<Scalar>(std::numeric_limits<double>::infinity());
     }
+    assert(Jdet >= 0);
+
     return (J * J.transpose()).trace() / Jdet;
 }
 
@@ -106,4 +108,9 @@ auto amips(
 
     return amips(Dm);
 }
+
+double Tet_AMIPS_energy(const std::array<double, 12>& T);
+void Tet_AMIPS_hessian(const std::array<double, 12>& T, Eigen::Matrix3d& result_0);
+void Tet_AMIPS_jacobian(const std::array<double, 12>& T, Eigen::Vector3d& result_0);
+
 } // namespace wmtk::function::utils

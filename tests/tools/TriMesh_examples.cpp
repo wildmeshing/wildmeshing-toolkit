@@ -1,5 +1,6 @@
 #include "TriMesh_examples.hpp"
 #include <random>
+#include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk/utils/triangle_areas.hpp>
@@ -323,7 +324,7 @@ TriMesh embedded_diamond()
     return m;
 }
 
-TriMesh strip(long size)
+TriMesh strip(int64_t size)
 {
     TriMesh m;
 
@@ -337,9 +338,9 @@ TriMesh strip(long size)
     for (int j = 0; j < size; ++j) {
         auto t = tris.row(j);
         if (j % 2 == 0) {
-            t = Vector<long, 3>(j, j + 1, j + 2);
+            t = Vector<int64_t, 3>(j, j + 1, j + 2);
         } else {
-            t = Vector<long, 3>(j, j + 2, j + 1);
+            t = Vector<int64_t, 3>(j, j + 2, j + 1);
         }
     }
     tris.row(0) << 0, 1, 2;
@@ -429,4 +430,48 @@ TriMesh three_individuals()
     return m;
 }
 
+std::shared_ptr<TriMesh> disk(int number)
+{
+    assert(number >= 1);
+    auto mptr = std::make_shared<TriMesh>();
+    TriMesh& m = *mptr;
+    RowVectors3l tris;
+    tris.resize(number, 3);
+    tris.rowwise() = Vector3l(0, 1, 2).transpose();
+    auto mut = tris.rightCols<2>();
+    for (int j = 0; j < number; ++j) {
+        mut.row(j).array() += j;
+    }
+
+    tris(number - 1, 2) = 1;
+    m.initialize(tris);
+    return mptr;
+}
+
+// N triangles of
+std::shared_ptr<TriMesh> individual_triangles(int number)
+{
+    assert(number >= 1);
+
+    auto mptr = std::make_shared<TriMesh>();
+    TriMesh& m = *mptr;
+    RowVectors3l tris;
+    tris.resize(number, 3);
+    tris.rowwise() = Vector3l(0, 1, 2).transpose();
+    for (int j = 0; j < number; ++j) {
+        tris.row(j).array() += 3 * j;
+    }
+    m.initialize(tris);
+    return mptr;
+}
+
+std::shared_ptr<TriMesh> disk_to_individual_multimesh(int number)
+{
+    auto d = disk(number);
+    auto i = individual_triangles(number);
+    auto map = multimesh::same_simplex_dimension_bijection(*d, *i);
+
+    d->register_child_mesh(i, map);
+    return d;
+}
 } // namespace wmtk::tests

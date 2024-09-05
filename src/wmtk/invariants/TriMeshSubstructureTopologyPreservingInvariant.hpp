@@ -1,22 +1,22 @@
 #pragma once
 
-#include <wmtk/attribute/AttributeHandle.hpp>
-#include "MeshInvariant.hpp"
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
+#include "Invariant.hpp"
 
 namespace wmtk::invariants {
 
-class TriMeshSubstructureTopologyPreservingInvariant : public MeshInvariant
+class TriMeshSubstructureTopologyPreservingInvariant : public Invariant
 {
 public:
     TriMeshSubstructureTopologyPreservingInvariant(
         const Mesh& m,
-        const MeshAttributeHandle<long>& substructure_edge_tag_handle,
-        const long substructure_tag_value);
-    bool before(const Simplex& input_simplex) const override;
+        const TypedAttributeHandle<int64_t>& substructure_edge_tag_handle,
+        const int64_t substructure_tag_value);
+    bool before(const simplex::Simplex& input_simplex) const override;
 
 private:
-    MeshAttributeHandle<long> m_substructure_edge_tag_handle;
-    long m_substructure_tag_value;
+    TypedAttributeHandle<int64_t> m_substructure_edge_tag_handle;
+    int64_t m_substructure_tag_value;
 };
 
 } // namespace wmtk::invariants

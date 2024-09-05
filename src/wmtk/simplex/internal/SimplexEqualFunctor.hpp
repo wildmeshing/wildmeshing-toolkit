@@ -18,4 +18,5 @@ struct SimplexEqualFunctor
         return utils::SimplexComparisons::equal(m, s0, s1);
     }
 };
+
 } // namespace wmtk::simplex::internal

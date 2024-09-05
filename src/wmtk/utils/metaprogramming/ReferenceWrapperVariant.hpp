@@ -7,7 +7,7 @@
 namespace wmtk::utils::metaprogramming {
 
 // My target application's "Input" class is quite heavy and the Input objects
-// persist for long periods of time relative to what this is being used for, so
+// persist for int64_t periods of time relative to what this is being used for, so
 // I want to use a variant of references rather than values
 //
 // Here's a helper definition for making variants of references

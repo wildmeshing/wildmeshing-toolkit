@@ -5,12 +5,19 @@
 #include <initializer_list>
 
 #include <memory>
-#include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
-#include "Accessor.hpp"
+#include <tuple>
+// just includes function prorotypes to befriend
+//#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
+
+
+// need to return this header
+#include "attribute/Accessor.hpp"
+
+// is a member of the Mesh class
 #include "MultiMeshManager.hpp"
-#include "Primitive.hpp"
-#include "Simplex.hpp"
+
+// basic data for the class
+#include <wmtk/simplex/Simplex.hpp>
 #include "Tuple.hpp"
 #include "Types.hpp"
 #include "attribute/AttributeManager.hpp"
@@ -19,6 +26,7 @@
 #include "attribute/MeshAttributes.hpp"
 #include "multimesh/attribute/AttributeScopeHandle.hpp"
 
+#include "multimesh/attribute/UseParentScopeRAII.hpp"
 
 #include "simplex/Simplex.hpp"
 
@@ -30,15 +38,29 @@
 
 
 namespace wmtk {
+    namespace tests {
+        class DEBUG_Mesh;
+namespace tools {
+
+class TestTools;
+
+}
+}
 // thread management tool that we will PImpl
 namespace attribute {
 class AttributeManager;
-template <typename T>
-class TupleAccessor;
+template <typename T, typename MeshType, int Dim>
+class Accessor;
 
 } // namespace attribute
 namespace operations {
 class Operation;
+class EdgeCollapse;
+class EdgeSplit;
+class EdgeOperationData;
+namespace internal {
+class CollapseAlternateFacetData;
+}
 namespace utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
@@ -51,8 +73,11 @@ class SimplexComparisons;
 }
 } // namespace simplex
 
+namespace io {
+class ParaviewWriter;
+}
 namespace multimesh {
-template <long cell_dimension, typename NodeFunctor>
+template <int64_t cell_dimension, typename NodeFunctor>
 class MultiMeshSimplexVisitor;
 template <typename NodeFunctor>
 class MultiMeshVisitor;
@@ -61,70 +86,77 @@ class MultiMeshSimplexVisitorExecutor;
 template <typename Visitor>
 class MultiMeshVisitorExecutor;
 
-namespace utils::internal {
+namespace utils {
+namespace internal {
 class TupleTag;
 }
+} // namespace utils
 } // namespace multimesh
 
-class SimplicialComplex;
 
-class Mesh : public std::enable_shared_from_this<Mesh>
+// NOTE: the implementation of this class is split into several files to improve clang-format
+// performance
+// * Mesh.cpp
+// * Mesh_attributes.cpp
+// * Mesh_construction.cpp
+class Mesh : public std::enable_shared_from_this<Mesh>, public wmtk::utils::MerkleTreeInteriorNode
 {
 public:
-    template <typename T>
+    friend class tests::tools::TestTools;
+    friend class tests::DEBUG_Mesh;
+    template <typename T, int Dim>
     friend class attribute::AccessorBase;
-    template <typename T>
-    friend class attribute::TupleAccessor;
-    friend class ParaviewWriter;
+    template <typename T, typename MeshType, int Dim>
+    friend class attribute::Accessor;
+    friend class io::ParaviewWriter;
     friend class HDF5Reader;
-    friend class MultiMeshManager;
+    friend class multimesh::attribute::UseParentScopeRAII;
+    friend class multimesh::MultiMeshManager;
     friend class attribute::AttributeManager;
-    template <long cell_dimension, typename NodeFunctor>
+    template <int64_t cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshSimplexVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshSimplexVisitorExecutor;
     template <typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
+    friend bool multimesh::utils::check_child_maps_valid(const Mesh& m);
+    friend bool multimesh::utils::check_parent_map_valid(const Mesh& m);
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class multimesh::attribute::AttributeScopeHandle;
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::RawSimplex;
+    friend class simplex::Simplex;
+    friend class simplex::SimplexCollection;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
+    friend class operations::EdgeCollapse;
+    friend class operations::EdgeSplit;
+    friend class operations::EdgeOperationData;
+    friend class operations::internal::CollapseAlternateFacetData;
 
-    friend void operations::utils::update_vertex_operation_multimesh_map_hash(
-        Mesh& m,
-        const SimplicialComplex& vertex_closed_star,
-        Accessor<long>& parent_hash_accessor);
 
-    friend void operations::utils::update_vertex_operation_hashes(
-        Mesh& m,
-        const Tuple& vertex,
-        Accessor<long>& hash_accessor);
-
-    friend std::shared_ptr<Mesh> multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
-        Mesh& m,
-        const MeshAttributeHandle<long>& tag_handle,
-        const long tag_value);
-
-    virtual long top_cell_dimension() const = 0;
+    int64_t top_cell_dimension() const;
     PrimitiveType top_simplex_type() const;
+    bool is_free() const;
 
+    // attribute directly hashes its "children" components so it overrides "child_hashes"
+    std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
+    std::map<std::string, std::size_t> child_hashes() const override;
 
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3
-    Mesh(const long& dimension);
+    Mesh(const int64_t& dimension);
     // maximum primitive type id for supported attribute primitive locations
-    Mesh(const long& dimension, const long& max_primitive_type_id, PrimitiveType hash_type);
+    Mesh(const int64_t& dimension, const int64_t& max_primitive_type_id, PrimitiveType hash_type);
     Mesh(Mesh&& other);
-    Mesh(const Mesh& other);
-    Mesh& operator=(const Mesh& other);
+    Mesh(const Mesh& other) = delete;
+    Mesh& operator=(const Mesh& other) = delete;
     Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
-    void serialize(MeshWriter& writer);
+    void serialize(MeshWriter& writer, const Mesh* local_root = nullptr) const;
 
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
@@ -134,51 +166,102 @@ public:
     std::vector<Tuple> get_all(PrimitiveType type) const;
 
     /**
-     * Removes all unset space
+     * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding
+     * vector
      */
-    void clean();
+    virtual std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
+    consolidate();
+
+    /**
+     * Returns a vector of vectors of attribute handles. The first index denotes the type of simplex
+     * pointed by the attribute (i.e. the index type). As an example, the FV relationship points to
+     * vertices so it should be returned in the slot [0].
+     */
+    virtual std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
+        const = 0;
 
 
-    template <typename T>
-    MeshAttributeHandle<T> register_attribute(
-        const std::string& name,
-        PrimitiveType type,
-        long size,
-        bool replace = false,
-        T default_value = T(0));
+    std::vector<attribute::MeshAttributeHandle::HandleVariant> builtin_attributes() const;
+    std::vector<attribute::MeshAttributeHandle::HandleVariant> custom_attributes() const;
+
 
     /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
-    TypedAttributeHandle<T> register_attribute_nomesh(
+    [[nodiscard]] attribute::MeshAttributeHandle register_attribute(
         const std::string& name,
         PrimitiveType type,
-        long size,
+        int64_t size,
         bool replace = false,
         T default_value = T(0));
 
+    /* @brief registers an attribute without assuming the mesh exists, returns a typed attribute */
+    template <typename T>
+    [[nodiscard]] attribute::TypedAttributeHandle<T> register_attribute_typed(
+        const std::string& name,
+        PrimitiveType type,
+        int64_t size,
+        bool replace = false,
+        T default_value = T(0));
+
+
+public:
     template <typename T>
     bool has_attribute(
         const std::string& name,
         const PrimitiveType ptype) const; // block standard topology tools
 
     template <typename T>
-    MeshAttributeHandle<T> get_attribute_handle(
+    attribute::MeshAttributeHandle get_attribute_handle(
         const std::string& name,
         const PrimitiveType ptype) const; // block standard topology tools
 
     template <typename T>
-    Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
+    attribute::TypedAttributeHandle<T> get_attribute_handle_typed(
+        const std::string& name,
+        const PrimitiveType ptype) const; // block standard topology tools
+
+
+    template <typename T, int D = Eigen::Dynamic>
+    attribute::Accessor<T, Mesh, D> create_accessor(const attribute::MeshAttributeHandle& handle);
+
+
+    template <typename T, int D = Eigen::Dynamic>
+    const attribute::Accessor<T, Mesh, D> create_const_accessor(
+        const attribute::MeshAttributeHandle& handle) const;
+
+    template <typename T, int D = Eigen::Dynamic>
+    attribute::Accessor<T, Mesh, D> create_accessor(const TypedAttributeHandle<T>& handle);
+
+    template <typename T, int D = Eigen::Dynamic>
+    const attribute::Accessor<T, Mesh, D> create_const_accessor(
+        const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
-    ConstAccessor<T> create_const_accessor(const TypedAttributeHandle<T>& handle) const;
-    template <typename T>
-    ConstAccessor<T> create_accessor(const TypedAttributeHandle<T>& handle) const;
+    int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
-    long get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
+    const T& get_attribute_default_value(const TypedAttributeHandle<T>& handle) const;
+
+    template <typename T>
+    std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;
+
+    std::string get_attribute_name(
+        const attribute::MeshAttributeHandle::HandleVariant& handle) const;
+
+    /**
+     * @brief Remove all custom attributes besides the one passed in.
+     *
+     * @param custom_attributes Vector of attributes that should be kept
+     */
+    void clear_attributes(
+        const std::vector<attribute::MeshAttributeHandle::HandleVariant>& keep_attributes);
+    void clear_attributes();
+    void clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes);
+    void delete_attribute(const attribute::MeshAttributeHandle& to_delete);
+    void delete_attribute(const attribute::MeshAttributeHandle::HandleVariant& to_delete);
 
 
-    // creates a scope as long as the AttributeScopeHandle exists
+    // creates a scope as int64_t as the AttributeScopeHandle exists
     [[nodiscard]] multimesh::attribute::AttributeScopeHandle create_scope();
 
 
@@ -191,84 +274,22 @@ public:
      * @returns The return value of f.
      */
     template <typename Functor, typename... Args>
-    decltype(auto) parent_scope(Functor&& f, Args&&... args);
+    decltype(auto) parent_scope(Functor&& f, Args&&... args) const;
 
 
-    ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
-    ConstAccessor<long> get_cell_hash_accessor() const;
-    ConstAccessor<char> get_const_flag_accessor(PrimitiveType type) const;
-    ConstAccessor<long> get_const_cell_hash_accessor() const;
-
-
-    long get_cell_hash(long cell_index, const ConstAccessor<long>& hash_accessor) const;
-    // utility function for getting a cell's hash - slow because it creates a new accessor
-    long get_cell_hash_slow(long cell_index) const;
+    const attribute::Accessor<char> get_flag_accessor(PrimitiveType type) const;
+    const attribute::Accessor<char> get_const_flag_accessor(PrimitiveType type) const;
 
 
     bool operator==(const Mesh& other) const;
 
+    void assert_capacity_valid() const;
     virtual bool is_connectivity_valid() const = 0;
 
+    virtual std::vector<Tuple> orient_vertices(const Tuple& t) const = 0;
+
 protected: // member functions
-    Accessor<char> get_flag_accessor(PrimitiveType type);
-    Accessor<long> get_cell_hash_accessor();
-
-    /**
-     * @brief update hash in given cell
-     *
-     * @param cell tuple in which the hash should be updated
-     * @param hash_accessor hash accessor
-     */
-    void update_cell_hash(const Tuple& cell, Accessor<long>& hash_accessor);
-
-    /**
-     * @brief update hashes in given cells
-     *
-     * @param cells vector of tuples in which the hash should be updated
-     * @param hash_accessor hash accessor
-     */
-    void update_cell_hashes(const std::vector<Tuple>& cells, Accessor<long>& hash_accessor);
-    /**
-     * @brief same as `update_cell_hashes` but slow because it creates a new accessor
-     */
-    /**
-     * @brief update hash in given cell
-     *
-     * @param cell tuple in which the hash should be updated
-     * @param hash_accessor hash accessor
-     */
-    void update_cell_hash(const long cell_index, Accessor<long>& hash_accessor);
-
-    /**
-     * @brief update hashes in given cells
-     *
-     * @param cells vector of tuples in which the hash should be updated
-     * @param hash_accessor hash accessor
-     */
-    void update_cell_hashes(const std::vector<long>& cell_indices, Accessor<long>& hash_accessor);
-
-    void update_cell_hashes_slow(const std::vector<Tuple>& cells);
-
-    /**
-     * @brief return the same tuple but with updated hash
-     *
-     * This function should only be used in operations to create a valid return tuple in a known
-     * position.
-     *
-     * @param tuple tuple with potentially outdated hash
-     * @param hash_accessor hash accessor
-     * @return tuple with updated hash
-     */
-    Tuple resurrect_tuple(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const;
-
-    /**
-     * @brief same as `resurrect_tuple` but slow because it creates a new accessor
-     */
-    Tuple resurrect_tuple_slow(const Tuple& tuple);
-
-    // provides new simplices - should ONLY be called in our atomic topological operations
-    // all returned simplices are active (i.e their flags say they exist)
-    [[nodiscard]] std::vector<long> request_simplex_indices(PrimitiveType type, long count);
+    attribute::Accessor<char> get_flag_accessor(PrimitiveType type);
 
 
 protected:
@@ -279,18 +300,41 @@ protected:
      * @param gid
      * @return Tuple
      */
-    virtual Tuple tuple_from_id(const PrimitiveType type, const long gid) const = 0;
-    std::vector<std::vector<long>> simplices_to_gids(
-        const std::vector<std::vector<Simplex>>& simplices) const;
+    virtual Tuple tuple_from_id(const PrimitiveType type, const int64_t gid) const = 0;
+    simplex::Simplex simplex_from_id(const PrimitiveType type, const int64_t gid) const;
+    std::vector<std::vector<int64_t>> simplices_to_gids(
+        const std::vector<std::vector<simplex::Simplex>>& simplices) const;
     /**
      * @brief reserve space for all attributes data types for all dimensional simplices
      *
      * @param top_d the top dimensional simplex
      */
     void reserve_attributes_to_fit();
-    void reserve_attributes(PrimitiveType type, long size);
-    void reserve_attributes(long dimension, long size);
+    void reserve_attributes(PrimitiveType type, int64_t size);
+    void reserve_attributes(int64_t dimension, int64_t size);
 
+
+    // specifies the number of simplices of each type and resizes attributes appropritely
+    void set_capacities(std::vector<int64_t> capacities);
+
+    // reserves extra attributes than necessary right now
+    void reserve_more_attributes(PrimitiveType type, int64_t size);
+    // reserves extra attributes than necessary right now, does not pay attention
+    void reserve_more_attributes(const std::vector<int64_t>& sizes);
+
+    // makes sure that there are at least `size` simples of type `type` avialable
+    void guarantee_more_attributes(PrimitiveType type, int64_t size);
+    // makes sure that there are at least `size` simplices avialable at every dimension
+    void guarantee_more_attributes(const std::vector<int64_t>& sizes);
+
+    // makes sure that there are at least `size` simples of type `type` avialable
+    void guarantee_at_least_attributes(PrimitiveType type, int64_t size);
+    // makes sure that there are at least `size` simplices avialable at every dimension
+    void guarantee_at_least_attributes(const std::vector<int64_t>& sizes);
+
+    // provides new simplices - should ONLY be called in our atomic topological operations
+    // all returned simplices are active (i.e their flags say they exist)
+    [[nodiscard]] std::vector<int64_t> request_simplex_indices(PrimitiveType type, int64_t count);
 
 public:
     /**
@@ -305,10 +349,7 @@ public:
     */
     virtual Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const = 0;
 
-    Tuple switch_vertex(const Tuple& tuple) const;
-    Tuple switch_edge(const Tuple& tuple) const;
-    Tuple switch_face(const Tuple& tuple) const;
-    Tuple switch_tetrahedron(const Tuple& tuple) const;
+    // NOTE: adding per-simplex utility functions here is _wrong_ and will be removed
 
 
     // Performs a sequence of switch_tuple operations in the order specified in op_sequence.
@@ -343,7 +384,7 @@ public:
      * @param type
      * @return int
      */
-    long capacity(PrimitiveType type) const;
+    int64_t capacity(PrimitiveType type) const;
 
     /**
      * @brief TODO this needs dimension?
@@ -353,15 +394,6 @@ public:
      * @return false
      */
     virtual bool is_ccw(const Tuple& tuple) const = 0;
-    /**
-     * @brief check if a simplex of codimension 1 is a boundary simplex
-     *
-     * @param tuple
-     * @return true if all tuple simplices besides the cell are on the boundary
-     * @return false otherwise
-     */
-    [[deprecated("use is_boundary(Tuple,PrimitiveType) instead")]] bool is_boundary(
-        const Tuple& codim_1_simplex) const;
 
     /**
      * @brief check if a simplex lies on a boundary or not
@@ -370,7 +402,7 @@ public:
      * @return true if this simplex lies on the boundary of the mesh
      * @return false otherwise
      */
-    bool is_boundary(const Simplex& tuple) const;
+    bool is_boundary(const simplex::Simplex& tuple) const;
     /**
      * @brief check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not
      *
@@ -378,10 +410,11 @@ public:
      * @return true if this simplex lies on the boundary of the mesh
      * @return false otherwise
      */
-    virtual bool is_boundary(const Tuple& tuple, PrimitiveType pt) const = 0;
+    virtual bool is_boundary(PrimitiveType, const Tuple& tuple) const = 0;
 
 
-    bool is_hash_valid(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const;
+    bool is_hash_valid(const Tuple& tuple, const attribute::Accessor<int64_t>& hash_accessor) const;
+    bool is_hash_valid(const Tuple& tuple) const;
 
     /**
      * @brief check validity of tuple including its hash
@@ -392,8 +425,24 @@ public:
      * @return true if is valid
      * @return false
      */
-    virtual bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const = 0;
-    bool is_valid_slow(const Tuple& tuple) const;
+    virtual bool is_valid(const Tuple& tuple) const;
+
+    // whether the tuple refers to a removed / invalid dart in the mesh
+    bool is_removed(const Tuple& tuple) const;
+    // whether the tuple refers to a removed / invalid simplex in the mesh
+    bool is_removed(const Tuple& tuple, PrimitiveType pt) const;
+
+protected:
+    // whether the tuple refers to a removed / invalid facet
+    bool is_removed(int64_t index) const;
+    // whether the tuple refers to a removed / invalid simplex
+    bool is_removed(int64_t index, PrimitiveType pt) const;
+
+public:
+    /**
+     * @brief Check if the cached id in a simplex is up-to-date.
+     */
+    bool is_valid(const simplex::Simplex& s) const;
 
 
     //============================
@@ -413,10 +462,23 @@ public:
      */
     const Mesh& get_multi_mesh_root() const;
 
+    Mesh& get_multi_mesh_mesh(const std::vector<int64_t>& absolute_id);
+    const Mesh& get_multi_mesh_mesh(const std::vector<int64_t>& absolute_id) const;
+
+
+    Mesh& get_multi_mesh_child_mesh(const std::vector<int64_t>& relative_id);
+    const Mesh& get_multi_mesh_child_mesh(const std::vector<int64_t>& relative_id) const;
+
     /**
      * @brief returns the direct multimesh child meshes for the current mesh
      */
     std::vector<std::shared_ptr<Mesh>> get_child_meshes() const;
+
+    /**
+     * @brief returns all multimesh child meshes
+     */
+    std::vector<std::shared_ptr<Mesh>> get_all_child_meshes() const;
+
 
     /**
      * @brief returns a unique identifier for this mesh within a single multimesh structure
@@ -426,7 +488,7 @@ public:
      * Its second child will have an id of {1}
      * Its first child's second child will have an id of {0,1}
      */
-    std::vector<long> absolute_multi_mesh_id() const;
+    std::vector<int64_t> absolute_multi_mesh_id() const;
 
 
     /**
@@ -442,9 +504,26 @@ public:
      * @param mesh_tuples a sequence of corresponding tuples between meshes
      */
     void register_child_mesh(
-        const std::shared_ptr<Mesh>& child_mesh,
+        const std::shared_ptr<Mesh>& child_mesh_ptr,
         const std::vector<std::array<Tuple, 2>>& map_tuples);
 
+    /**
+     * @brief Deregister a child mesh.
+     *
+     * The child mesh is not deleted. It is only detached from the multi-mesh structure. The child
+     * mesh becomes the new root for its own children. Attribute handles for the child and parent
+     * mesh will be invalidated by deregistration.
+     */
+    void deregister_child_mesh(const std::shared_ptr<Mesh>& child_mesh_ptr);
+
+
+private:
+    /**
+     * @brief Update the child handles after clearing attributes.
+     */
+    void update_child_handles();
+
+public:
     /**
      * @brief maps a simplex from this mesh to any other mesh
      *
@@ -462,7 +541,8 @@ public:
      * @param simplex the simplex being mapped to the child mesh
      * @returns every simplex that corresponds to this simplex
      * */
-    std::vector<Simplex> map(const Mesh& other_mesh, const Simplex& my_simplex) const;
+    std::vector<simplex::Simplex> map(const Mesh& other_mesh, const simplex::Simplex& my_simplex)
+        const;
 
 
     /*
@@ -472,8 +552,38 @@ public:
      * @param simplices the simplices being mapped to the child mesh
      * @returns every simplex that corresponds to the passed simplices
      * */
-    std::vector<Simplex> map(const Mesh& other_mesh, const std::vector<Simplex>& my_simplices)
-        const;
+    std::vector<simplex::Simplex> map(
+        const Mesh& other_mesh,
+        const std::vector<simplex::Simplex>& my_simplices) const;
+
+    /**
+     * @brief maps a simplex from this mesh to any other mesh using LUB mesh as root
+     *
+     *
+     * Satisfies the same properties of standard map, but uses a the LUB as the root
+     *
+     *
+     * @param mesh the mesh a simplex should be mapped to
+     * @param simplex the simplex being mapped to the child mesh
+     * @returns every simplex that corresponds to this simplex
+     * */
+    std::vector<simplex::Simplex> lub_map(
+        const Mesh& other_mesh,
+        const simplex::Simplex& my_simplex) const;
+
+
+    /*
+     * @brief maps a collection of simplices from this mesh to any other mesh using LUB mesh as root
+     *
+     * Satisfies the same properties of standard map, but uses a the LUB as the root
+     *
+     * @param mesh the mesh the simplices should be mapped to
+     * @param simplices the simplices being mapped to the child mesh
+     * @returns every simplex that corresponds to the passed simplices
+     * */
+    std::vector<simplex::Simplex> lub_map(
+        const Mesh& other_mesh,
+        const std::vector<simplex::Simplex>& my_simplices) const;
 
     /**
      * @brief optimized map from a simplex from this mesh to its direct parent
@@ -487,7 +597,7 @@ public:
      * @param my_simplex the simplex being mapped to the parent mesh
      * @return the unique parent mesh's simplex that is parent to the input one
      * */
-    Simplex map_to_parent(const Simplex& my_simplex) const;
+    simplex::Simplex map_to_parent(const simplex::Simplex& my_simplex) const;
 
     /**
      * @brief maps a simplex from this mesh to the root mesh
@@ -497,7 +607,7 @@ public:
      * @param my_simplex the simplex being mapped to the parent mesh
      * @return the unique root mesh's simplex that is the root to the input one
      * */
-    Simplex map_to_root(const Simplex& my_simplex) const;
+    simplex::Simplex map_to_root(const simplex::Simplex& my_simplex) const;
 
     /**
      * @brief optimized map fromsimplex from this mesh to one of its direct children
@@ -508,7 +618,9 @@ public:
      * @param my_simplex the simplex being mapped to the child mesh
      * @param the set of child mesh's simplices that are equivalent to the input simplex
      * */
-    std::vector<Simplex> map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const;
+    std::vector<simplex::Simplex> map_to_child(
+        const Mesh& child_mesh,
+        const simplex::Simplex& my_simplex) const;
 
 
     /**
@@ -528,7 +640,7 @@ public:
      * @param my_simplex the simplex being mapped to the child mesh
      * @returns every simplex that corresponds to this simplex, without the dimension encoded
      * */
-    std::vector<Tuple> map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const;
+    std::vector<Tuple> map_tuples(const Mesh& other_mesh, const simplex::Simplex& my_simplex) const;
 
     /*
      * @brief map a collection of homogeneous simplices to another mesh
@@ -539,6 +651,35 @@ public:
      * @returns every simplex that corresponds to the passed simplices
      * */
     std::vector<Tuple> map_tuples(
+        const Mesh& other_mesh,
+        PrimitiveType pt,
+        const std::vector<Tuple>& my_simplices) const;
+
+    /**
+     * @brief maps a simplex from this mesh to any other mesh using LUB mesh as root
+     *
+     *
+     * Satisfies the same properties of standard map_tuples, but uses a the LUB as the root
+     *
+     *
+     * @param mesh the mesh a simplex should be mapped to
+     * @param simplex the simplex being mapped to the child mesh
+     * @returns every simplex that corresponds to this simplex
+     * */
+    std::vector<Tuple> lub_map_tuples(const Mesh& other_mesh, const simplex::Simplex& my_simplex)
+        const;
+
+
+    /*
+     * @brief maps a collection of simplices from this mesh to any other mesh using LUB mesh as root
+     *
+     * Satisfies the same properties of standard map_tuples, but uses a the LUB as the root
+     *
+     * @param mesh the mesh the simplices should be mapped to
+     * @param simplices the simplices being mapped to the child mesh
+     * @returns every simplex that corresponds to the passed simplices
+     * */
+    std::vector<Tuple> lub_map_tuples(
         const Mesh& other_mesh,
         PrimitiveType pt,
         const std::vector<Tuple>& my_simplices) const;
@@ -556,7 +697,7 @@ public:
      * @return the unique parent mesh's simplex that is parent to the input one, without the
      * dimension encoded
      * */
-    Tuple map_to_parent_tuple(const Simplex& my_simplex) const;
+    Tuple map_to_parent_tuple(const simplex::Simplex& my_simplex) const;
 
     /**
      * @brief maps a simplex from this mesh to the root mesh
@@ -567,7 +708,7 @@ public:
      * @return the unique root mesh's simplex that is the root to the input one, without the
      * dimension encoded
      * */
-    Tuple map_to_root_tuple(const Simplex& my_simplex) const;
+    Tuple map_to_root_tuple(const simplex::Simplex& my_simplex) const;
 
     /**
      * @brief optimized map fromsimplex from this mesh to one of its direct children
@@ -579,8 +720,19 @@ public:
      * @param my_simplex the set of child mesh's simplices that are equivalent to the input simplex,
      * without the dimension encoded
      * */
-    std::vector<Tuple> map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex) const;
+    std::vector<Tuple> map_to_child_tuples(
+        const Mesh& child_mesh,
+        const simplex::Simplex& my_simplex) const;
 
+
+    /*
+     * @brief identifies if this simplex can be mapped to another mesh
+     *
+     * This tries to map a simplex to another mesh and wil return true if a simplex is found.
+     * Note that the cost of this is almost hte same as mapping, so it is more efficient to map and
+     * check if the returned vector is empty rather than call this function.
+     */
+    bool can_map(const Mesh& other_mesh, const simplex::Simplex& my_simplex) const;
 
     /**
      * @brief wrapper function to update hashes (for parent mesh *this and its child meshes) after
@@ -589,9 +741,23 @@ public:
      * @param vertex operating vertex tuple
      * @param hash_accessor hash accesor of the parent mesh (*this)
      */
-    void update_vertex_operation_hashes(const Tuple& vertex, Accessor<long>& hash_accessor);
+    void update_vertex_operation_hashes(
+        const Tuple& vertex,
+        attribute::Accessor<int64_t>& hash_accessor);
 
-private:
+
+    /**
+     * @brief returns if the mesh has a child mesh in the given dimension
+     *
+     * @param dimension
+     * @return true
+     * @return false
+     */
+    bool has_child_mesh_in_dimension(int64_t dimension) const
+    {
+        return m_multi_mesh_manager.has_child_mesh_in_dimension(dimension);
+    }
+
     /*
      * @brief returns if the other mesh is part of the same multi-mesh structure
      * @param other the other being mesh being checked
@@ -600,42 +766,41 @@ private:
     bool is_from_same_multi_mesh_structure(const Mesh& other) const;
 
 protected:
-    // creates a scope as long as the AttributeScopeHandle exists
+    // creates a scope as int64_t as the AttributeScopeHandle exists
     [[nodiscard]] attribute::AttributeScopeHandle create_single_mesh_scope();
 
 protected:
     /**
      * @brief return the global id of the Tuple of the given dimension
      *
+     * This function uses the implementation defined in a derived class (like a Tri/TetMesh) using a virtual function, but to enable more opportunities teh actual virtual function is id_virtual
+     *
      * @param m
      * @param type  d-0 -> vertex
                     d-1 -> edge
                     d-2 -> face
                     d-3 -> tetrahedron
-        * @return long id of the entity
+        * @return int64_t id of the entity
     */
-    virtual long id(const Tuple& tuple, PrimitiveType type) const = 0;
-    long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
+    int64_t id(const Tuple& tuple, PrimitiveType type) const;
+    /// Forwarding version of id on simplices that does id caching
+    virtual int64_t id(const simplex::Simplex& s) const = 0;
+    /// Internal utility to allow id to be virtual with a non-virtual overload in derived -Mesh classes.
+    /// Mesh::id invokes Mesh::id_virtual which is final overriden by MeshCRTP<TriMesh>::id_virtual, which in turn invokes MeshCRTP<TriMesh>::id, and then TriMesh::id.
+    /// This circuitous mechanism makes MeshCRTP<TriMesh>::id and TriMesh::id fully inlineable, so code that wants to take in any derived class can get optimized results with MeshCRTP, or for cases where classes want to utilize just TriMesh they can get inline/accelerated usage as well.
+    virtual int64_t id_virtual(const Tuple& tuple, PrimitiveType type) const = 0;
 
 
-    template <typename T>
-    static auto& get_index_access(attribute::MutableAccessor<T>& attr)
+    template <typename T, typename MeshType>
+    static auto& get_index_access(attribute::Accessor<T, MeshType>& attr)
     {
         return attr.index_access();
     }
-    template <typename T>
-    static auto& get_index_access(const attribute::ConstAccessor<T>& attr)
+    template <typename T, typename MeshType>
+    static auto& get_index_access(const attribute::Accessor<T, MeshType>& attr)
     {
         return attr.index_access();
     }
-
-    // specifies the number of simplices of each type and resizes attributes appropritely
-    void set_capacities(std::vector<long> capacities);
-
-    // reserves extra attributes than necessary right now
-    void reserve_more_attributes(PrimitiveType type, long size);
-    // reserves extra attributes than necessary right now
-    void reserve_more_attributes(const std::vector<long>& sizes);
 
 
     // std::shared_ptr<AccessorCache> request_accesor_cache();
@@ -645,7 +810,12 @@ protected: // THese are protected so unit tests can access - do not use manually
            // classes?
     attribute::AttributeManager m_attribute_manager;
 
-    MultiMeshManager m_multi_mesh_manager;
+    multimesh::MultiMeshManager m_multi_mesh_manager;
+
+    int64_t m_top_cell_dimension = -1;
+
+    // assumes no adjacency data exists
+    bool m_is_free = false;
 
 private:
     // PImpl'd manager of per-thread update stacks
@@ -654,7 +824,7 @@ private:
     // std::unique_ptr<AttributeScopeManager> m_attribute_scope_manager;
 
     //=========================================================
-    // Simplex Attribute
+    // simplex::Simplex Attribute
     //=========================================================
 
 
@@ -667,7 +837,7 @@ private:
 
     // hashes for top level simplices (i.e cells) to identify whether tuples
     // are invalid or not
-    TypedAttributeHandle<long> m_cell_hash_handle;
+    TypedAttributeHandle<int64_t> m_cell_hash_handle;
 
 
     /**
@@ -680,84 +850,102 @@ private:
 };
 
 
-template <typename T>
-Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
+template <typename T, int D>
+inline auto Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
+    -> attribute::Accessor<T, Mesh, D>
 {
-    return Accessor<T>(*this, handle);
+    return attribute::Accessor<T, Mesh, D>(*this, handle);
 }
-template <typename T>
-ConstAccessor<T> Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
+template <typename T, int D>
+inline auto Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
+    -> const attribute::Accessor<T, Mesh, D>
 {
-    return ConstAccessor<T>(*this, handle);
+    return attribute::Accessor<T, Mesh, D>(*this, handle);
 }
-template <typename T>
-ConstAccessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle) const
+
+template <typename T, int D>
+inline auto Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
+    -> attribute::Accessor<T, Mesh, D>
 {
-    return create_const_accessor(handle);
+    assert(&handle.mesh() == this);
+    assert(handle.holds<T>());
+    return create_accessor<T, D>(handle.as<T>());
+}
+
+
+template <typename T, int D>
+inline auto Mesh::create_const_accessor(const attribute::MeshAttributeHandle& handle) const
+    -> const attribute::Accessor<T, Mesh, D>
+{
+    assert(&handle.mesh() == this);
+    assert(handle.holds<T>());
+    return create_const_accessor<T, D>(handle.as<T>());
 }
 
 template <typename T>
-MeshAttributeHandle<T> Mesh::get_attribute_handle(
+inline attribute::MeshAttributeHandle Mesh::get_attribute_handle(
     const std::string& name,
     const PrimitiveType ptype) const
 {
-    MeshAttributeHandle<T> r;
-    r.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
-    r.m_primitive_type = ptype;
-    r.m_mesh = const_cast<Mesh*>(this);
-
-    return r;
+    return wmtk::attribute::MeshAttributeHandle(
+        *const_cast<Mesh*>(this),
+        get_attribute_handle_typed<T>(name, ptype));
 }
 
 template <typename T>
-bool Mesh::has_attribute(const std::string& name, const PrimitiveType ptype) const
+inline attribute::TypedAttributeHandle<T> Mesh::get_attribute_handle_typed(
+    const std::string& name,
+    const PrimitiveType ptype) const
+{
+    wmtk::attribute::TypedAttributeHandle<T> h;
+    h.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
+    h.m_primitive_type = ptype;
+    return h;
+}
+template <typename T>
+inline bool Mesh::has_attribute(const std::string& name, const PrimitiveType ptype) const
 {
     return m_attribute_manager.get<T>(ptype).has_attribute(name);
 }
 
 template <typename T>
-long Mesh::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
+inline int64_t Mesh::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
 {
     return m_attribute_manager.get_attribute_dimension(handle);
 }
 
+template <typename T>
+inline std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) const
+{
+    return m_attribute_manager.get_name(handle);
+}
 
 template <typename Functor, typename... Args>
-decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args)
+inline decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args) const
 {
-    return m_attribute_manager.parent_scope(std::forward<Functor>(f), std::forward<Args>(args)...);
+    multimesh::attribute::UseParentScopeRAII raii(const_cast<Mesh&>(*this));
+
+    return std::invoke(std::forward<Functor>(f), std::forward<Args>(args)...);
 }
 
-inline Tuple Mesh::switch_vertex(const Tuple& tuple) const
-{
-    return switch_tuple(tuple, PrimitiveType::Vertex);
-}
-inline Tuple Mesh::switch_edge(const Tuple& tuple) const
-{
-    return switch_tuple(tuple, PrimitiveType::Edge);
-}
-inline Tuple Mesh::switch_face(const Tuple& tuple) const
-{
-    return switch_tuple(tuple, PrimitiveType::Face);
-}
-inline Tuple Mesh::switch_tetrahedron(const Tuple& tuple) const
-{
-    return switch_tuple(tuple, PrimitiveType::Tetrahedron);
-}
 #if defined(__cpp_concepts)
 template <std::forward_iterator ContainerType>
 #else
 template <typename ContainerType>
 #endif
-Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequence) const
+inline Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequence) const
 {
     static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
     Tuple r = tuple;
     const PrimitiveType top_type = top_simplex_type();
+
+    const int64_t boundary_dim = top_cell_dimension() - 1;
+    const PrimitiveType boundary_pt = static_cast<PrimitiveType>(boundary_dim);
+
     for (const PrimitiveType primitive : sequence) {
         // for top level simplices we cannot navigate across boundaries
-        if (primitive == top_type && is_boundary(r)) {
-            assert(!is_boundary(r));
+        if (primitive == top_type && is_boundary(boundary_pt, r)) {
+            assert(!is_boundary(boundary_pt, r));
             r = {};
             return r;
         }
@@ -765,13 +953,30 @@ Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequence) con
     }
     return r;
 }
+inline bool Mesh::is_free() const
+{
+    return m_is_free;
+}
+
+inline int64_t Mesh::top_cell_dimension() const
+{
+    return m_top_cell_dimension;
+}
+inline PrimitiveType Mesh::top_simplex_type() const
+{
+    int64_t dimension = top_cell_dimension();
+    assert(dimension >= 0);
+    assert(dimension < 4);
+    return static_cast<PrimitiveType>(dimension);
+}
+
 
 #if defined(__cpp_concepts)
 template <std::forward_iterator ContainerType>
 #else
 template <typename ContainerType>
 #endif
-Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType& sequence) const
+inline Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType& sequence) const
 {
     static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
     Tuple r = tuple;
@@ -781,4 +986,8 @@ Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType& sequen
     return r;
 }
 
+inline int64_t Mesh::id(const Tuple& tuple, PrimitiveType type) const
+{
+    return id_virtual(tuple, type);
+}
 } // namespace wmtk

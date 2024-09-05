@@ -1,5 +1,5 @@
 #include "PositionMapEvaluator.hpp"
-#include <wmtk/function/AutodiffFunction.hpp>
+#include <wmtk/function/PerSimplexDifferentiableAutodiffFunction.hpp>
 #include <wmtk/image/Image.hpp>
 #include <wmtk/image/Sampling.hpp>
 #include <wmtk/image/bicubic_interpolation.hpp>
@@ -45,7 +45,8 @@ Vector3<double> PositionMapEvaluator::uv_to_pos(const Vector2<double>& uv) const
 
 
 template <>
-auto PositionMapEvaluator::uv_to_pos(const Vector2<wmtk::function::AutodiffFunction::DScalar>& uv)
-    const -> Vector3<wmtk::function::AutodiffFunction::DScalar>;
+auto PositionMapEvaluator::uv_to_pos(const
+Vector2<wmtk::function::PerSimplexDifferentiableAutodiffFunction::DScalar>& uv) const ->
+Vector3<wmtk::function::PerSimplexDifferentiableAutodiffFunction::DScalar>;
     */
 } // namespace wmtk::function::utils

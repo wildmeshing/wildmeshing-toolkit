@@ -21,4 +21,10 @@ namespace wmtk::simplex {
  * @return `SimplexCollection` holding the faces
  */
 SimplexCollection faces(const Mesh& mesh, const Simplex& simplex, const bool sort_and_clean = true);
+
+void faces(
+    SimplexCollection& simplex_collection,
+    const Simplex& simplex,
+    const bool sort_and_clean = true);
+
 } // namespace wmtk::simplex

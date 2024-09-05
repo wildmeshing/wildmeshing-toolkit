@@ -1,21 +1,25 @@
 #pragma once
 
-#include "Simplex.hpp"
+#include "PrimitiveType.hpp"
 #include "Tuple.hpp"
 
 namespace wmtk {
+    namespace simplex {
+        class Simplex;
+    }
 
 class Cell
 {
-    long m_dimension;
     Tuple m_tuple;
+    int64_t m_dimension;
 
 public:
-    Cell(const long& dimension, const Tuple& t);
-    Cell(const Simplex& simplex);
+    Cell(const Tuple& t, int64_t dimension);
+    Cell(const simplex::Simplex& simplex);
+    Cell(const Tuple& t, PrimitiveType pt);
 
 
-    long dimension() const;
+    int64_t dimension() const;
     const Tuple& tuple() const;
 
     static Cell vertex(const Tuple& t);

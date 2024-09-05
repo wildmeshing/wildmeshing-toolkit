@@ -1,0 +1,69 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "doc": "Settings for a fan mesh (a single interior vertex surrounded by triangles like a pie)",
+        "required": [
+            "size",
+            "coordinates"
+        ]
+    },
+    {
+        "pointer": "/size",
+        "type": "int",
+        "min": 2,
+        "doc": "The number of triangles used. Assumes at least 2 triangles for now, but this should change later on"
+    },
+    {
+        "pointer": "/coordinates",
+        "type": "object",
+        "required": [
+            "name",
+            "degrees",
+            "radius"
+        ],
+        "optional": [
+            "center"
+        ],
+        "doc": "The coordinates of the triangle fan. uses (center + radius * (cos(degree),sin(degree)))"
+    },
+    {
+        "pointer": "/coordinates/name",
+        "type": "string"
+    },
+    {
+        "pointer": "/coordinates/center",
+        "type": "list",
+        "min": 2,
+        "max": 2,
+        "default": [
+            0,
+            0
+        ],
+        "doc": "The coordinates for the center"
+    },
+    {
+        "pointer": "/coordinates/center/*",
+        "type": "float"
+    },
+    {
+        "pointer": "/coordinates/radius",
+        "type": "float"
+    },
+    {
+        "pointer": "/coordinates/degrees",
+        "type": "list",
+        "min": 2,
+        "max": 2,
+        "doc": "The range of degrees the fan should use"
+    },
+    {
+        "pointer": "/coordinates/degrees",
+        "type": "float",
+        "doc": "The max degree should use (assumes the range starts at 0)"
+    },
+    {
+        "pointer": "/coordinates/degrees/*",
+        "type": "float"
+    }
+]

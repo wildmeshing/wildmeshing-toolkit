@@ -1,62 +1,106 @@
 #pragma once
-#include <string>
-#include <type_traits>
-#include <vector>
-#include <wmtk/Accessor.hpp>
+
+#include "attribute_new/NewAttributeStrategy.hpp"
+#include "attribute_update/AttributeTransferStrategyBase.hpp"
+
 #include <wmtk/Tuple.hpp>
-#include "OperationSettings.hpp"
+#include <wmtk/attribute/Accessor.hpp>
+#include <wmtk/invariants/InvariantCollection.hpp>
+
 
 namespace wmtk {
 class Mesh;
-class InvariantCollection;
 
 namespace operations {
 
 
-namespace utils {
-class MultiMeshEdgeSplitFunctor;
-class MultiMeshEdgeCollapseFunctor;
+// namespace utils {
+// class MultiMeshEdgeSplitFunctor;
+// class MultiMeshEdgeCollapseFunctor;
 
-} // namespace utils
+// } // namespace utils
 
 class Operation
 {
 public:
-    friend class utils::MultiMeshEdgeSplitFunctor;
-    friend class utils::MultiMeshEdgeCollapseFunctor;
-    friend class OperationQueue;
-    // main entry point of the operator by the scheduler
-    bool operator()();
-    virtual std::string name() const = 0;
+    // friend class utils::MultiMeshEdgeSplitFunctor;
+    // friend class utils::MultiMeshEdgeCollapseFunctor;
 
-
+    Operation(Mesh& mesh);
     virtual ~Operation();
 
-    virtual std::vector<double> priority() const { return {0}; }
+    // main entry point of the operator by the scheduler
+    virtual std::vector<simplex::Simplex> operator()(const simplex::Simplex& simplex);
+
+    virtual double priority(const simplex::Simplex& simplex) const
+    {
+        return m_priority == nullptr ? 0 : m_priority(simplex);
+    }
+
+    virtual bool use_random_priority() const { return m_use_random_priority; }
+    virtual bool& use_random_priority() { return m_use_random_priority; }
+
+    virtual PrimitiveType primitive_type() const = 0;
+
+    const Mesh& mesh() const { return m_mesh; }
+    Mesh& mesh() { return m_mesh; }
+
+    void add_invariant(std::shared_ptr<Invariant> invariant) { m_invariants.add(invariant); }
+
+    void set_priority(const std::function<double(const simplex::Simplex&)>& func)
+    {
+        m_priority = func;
+    }
+
+    std::shared_ptr<operations::AttributeTransferStrategyBase> get_transfer_strategy(
+        const attribute::MeshAttributeHandle& attribute);
 
 
-    // TODO: spaceship things?
-    bool operator<(const Operation& o) const;
-    bool operator==(const Operation& o) const;
+    void add_transfer_strategy(
+        const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
+
+    void set_transfer_strategy(
+        const attribute::MeshAttributeHandle& attribute,
+        const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
+
+    virtual void reserve_enough_simplices();
 
 protected:
-    virtual bool execute() = 0;
+    /**
+     * @brief returns an empty vector in case of failure
+     */
+    virtual std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) = 0;
+
+    /**
+     * Returns all simplices that will be potentially affected by the operation
+     */
+    virtual std::vector<simplex::Simplex> unmodified_primitives(
+        const simplex::Simplex& simplex) const = 0;
+
     // does invariant pre-checks
-    virtual bool before() const;
+    virtual bool before(const simplex::Simplex& simplex) const;
     // does invariant pre-checks
-    virtual bool after() const;
-
-    void update_cell_hashes(const std::vector<Tuple>& cells);
-
-    Tuple resurrect_tuple(const Tuple& tuple) const;
-
-    virtual Mesh& base_mesh() const = 0;
-    virtual Accessor<long>& hash_accessor() = 0;
-    // implements a quiet const_cast to extract a const hash_accessor from the non-const one
-    const Accessor<long>& hash_accessor() const;
+    virtual bool after(
+        const std::vector<simplex::Simplex>& unmods,
+        const std::vector<simplex::Simplex>& mods) const;
 
 
-    static Accessor<long> get_hash_accessor(Mesh& m);
+
+    void apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods);
+
+
+private:
+    Mesh& m_mesh;
+    bool m_use_random_priority = false;
+
+
+protected:
+    std::function<double(const simplex::Simplex&)> m_priority = nullptr;
+
+    invariants::InvariantCollection m_invariants;
+
+    std::vector<std::shared_ptr<operations::AttributeTransferStrategyBase>>
+        m_attr_transfer_strategies;
 };
 
 } // namespace operations

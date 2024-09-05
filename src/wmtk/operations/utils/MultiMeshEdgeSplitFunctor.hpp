@@ -18,7 +18,8 @@ namespace wmtk::operations::utils {
 class MultiMeshEdgeSplitFunctor
 {
 public:
-    void operator()(const Mesh&, const simplex::Simplex&) const;
+    void operator()(const Mesh&, const simplex::Simplex&) const {}
+    wmtk::operations::EdgeOperationData run(Mesh&, const simplex::Simplex&) const;
     edge_mesh::EdgeOperationData operator()(EdgeMesh& m, const simplex::Simplex& s) const;
     tri_mesh::EdgeOperationData operator()(TriMesh& m, const simplex::Simplex& s) const;
     tet_mesh::EdgeOperationData operator()(TetMesh& m, const simplex::Simplex& s) const;

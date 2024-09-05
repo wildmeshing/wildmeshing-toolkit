@@ -33,8 +33,7 @@ public:
 
     using ReturnDataType = wmtk::utils::metaprogramming::
         ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits>;
-    using CacheType = wmtk::utils::metaprogramming::
-        ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits>;
+    using CacheType = ReturnDataType;
 
     using TypeHelper = wmtk::utils::metaprogramming::detail::
         ReferenceWrappedFunctorReturnType<NodeFunctor, MeshVariantTraits::AllReferenceTuple>;
@@ -132,7 +131,7 @@ private:
 
 
         // short circuit operations that happen below the desired dimension
-        constexpr static long MeshDim = wmtk::utils::metaprogramming::cell_dimension_v<MeshType>;
+        constexpr static int64_t MeshDim = wmtk::utils::metaprogramming::cell_dimension_v<MeshType>;
 
 
         // pre-compute all of  the child tuples in case the node functor changes the mesh that
@@ -153,7 +152,7 @@ private:
                     auto&& child_mesh = child_mesh_.get();
                     using ChildType = std::decay_t<decltype(child_mesh)>;
 
-                    constexpr static long ChildDim =
+                    constexpr static int64_t ChildDim =
                         wmtk::utils::metaprogramming::cell_dimension_v<ChildType>;
 
                     // std::visit compiles all combinations of meshes, and

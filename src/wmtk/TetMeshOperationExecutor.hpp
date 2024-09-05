@@ -1,26 +1,24 @@
 #pragma once
 #include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include "SimplicialComplex.hpp"
 #include "TetMesh.hpp"
 #include "Tuple.hpp"
 namespace wmtk {
 class TetMesh::TetMeshOperationExecutor : public operations::tet_mesh::EdgeOperationData
 {
 public:
-    TetMeshOperationExecutor(TetMesh& m, const Tuple& operating_tuple, Accessor<long>& hash_acc);
+    TetMeshOperationExecutor(TetMesh& m, const Tuple& operating_tuple);
     void delete_simplices();
     void update_cell_hash();
 
-    std::array<Accessor<char>, 4> flag_accessors;
-    Accessor<long> tt_accessor;
-    Accessor<long> tf_accessor;
-    Accessor<long> te_accessor;
-    Accessor<long> tv_accessor;
-    Accessor<long> vt_accessor;
-    Accessor<long> et_accessor;
-    Accessor<long> ft_accessor;
-    Accessor<long>& hash_accessor;
+    std::array<attribute::Accessor<char>, 4> flag_accessors;
+    attribute::Accessor<int64_t,TetMesh>& tt_accessor;
+    attribute::Accessor<int64_t,TetMesh>& tf_accessor;
+    attribute::Accessor<int64_t,TetMesh>& te_accessor;
+    attribute::Accessor<int64_t,TetMesh>& tv_accessor;
+    attribute::Accessor<int64_t,TetMesh>& vt_accessor;
+    attribute::Accessor<int64_t,TetMesh>& et_accessor;
+    attribute::Accessor<int64_t,TetMesh>& ft_accessor;
 
 
     /**
@@ -29,7 +27,7 @@ public:
      * The deleted simplices are the one ring tets AND the one ring faces of the edge AND the edge
      * itself. That is, the open star of the edge.
      */
-    static const std::array<std::vector<long>, 4> get_split_simplices_to_delete(
+    static const std::array<std::vector<int64_t>, 4> get_split_simplices_to_delete(
         const Tuple& tuple,
         const TetMesh& m);
 
@@ -44,16 +42,18 @@ public:
      *
      * For boundary case:
      * Same as above.
+     *
+     * @return a pair of vector of ids (int64_t) and tuples(tuple)
      */
-    static const std::array<std::vector<long>, 4> get_collapse_simplices_to_delete(
+    static const std::array<std::vector<int64_t>, 4> get_collapse_simplices_to_delete(
         const Tuple& tuple,
         const TetMesh& m);
 
     void update_ear_connectivity(
-        const long ear_tid,
-        const long new_tid,
-        const long old_tid,
-        const long common_fid);
+        const int64_t ear_tid,
+        const int64_t new_tid,
+        const int64_t old_tid,
+        const int64_t common_fid);
 
 
     /*
@@ -77,7 +77,7 @@ public:
      *
      * This function will return the tuple that has: the same vertex as the input, a new edge
      * along the input edge, a new face on the input face, and a new tet with is half of the input
-     * tet. In the illustration it will return Tuple(v1, v1-v_new, v1-v_new-v4, v1-v_new-v4-v3)
+     * tet. In the illustration it will return Tuple(v_new, v_new-v2, v_new-v2-v4, v_new-v2-v4-v3)
      *
      */
     void split_edge();
@@ -102,13 +102,13 @@ public:
      */
     void collapse_edge();
 
-    std::vector<long> request_simplex_indices(const PrimitiveType type, long count);
+    std::vector<int64_t> request_simplex_indices(const PrimitiveType type, int64_t count);
 
 
     TetMesh& m_mesh;
 
 private:
-    IncidentTetData get_incident_tet_data(Tuple t);
+    // IncidentTetData get_incident_tet_data(Tuple t);
 
 
 public:

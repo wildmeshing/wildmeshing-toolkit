@@ -29,12 +29,21 @@ TriMesh single_2d_triangle_with_random_positions(size_t seed = 123);
 TriMesh one_ear(); // an alias for quad
 TriMesh quad();
 
-//  3--1--- 0 --1- 4
+// global indices:
+//  3--2--- 0 --3- 4
 //   |     / \     |
-//   2 f1 /2 1\ f2 |
-//   |  0/ f0  \1  0
+//   5 f1 0   1 f2 |
+//   |   / f0  \   6
 //   |  /       \  |
-//   1  ----0----  2
+//   1  ----4----  2
+//
+// local indices:
+//  0x-----2x0---- x2
+//   |  1  /0\  1  |
+//   |2   /2 1\   0|
+//   |  0/     \2  |
+//   |  /1  0  2\  |
+//  1x  ---------  x1
 //
 TriMesh two_neighbors();
 
@@ -110,11 +119,21 @@ TriMesh tetrahedron_with_position();
 TriMesh interior_edge();
 
 
+//    .---.---.
+//   /0\l/2\3/4\ .
+//  .---.---.---.
+//   \5/6\7/  .
+//    .---.
 //    0---1---2
 //   / \ / \ / \ .
 //  3---4---5---6
-//   \ / \ /  .
+//   \ / \ /
 //    7---8
+//    .-0-.-3-.
+//   1 2 4 5 6 7 .
+//  .-8-.-a-.-d-.
+//   9 b c e  .
+//    .-f-.
 TriMesh hex_plus_two();
 
 TriMesh hex_plus_two_with_position();
@@ -181,5 +200,25 @@ TriMesh embedded_diamond();
 //         \ /     .
 //          5
 TriMesh three_individuals();
+
+
+// NOTE: in the future please create shared_ptr of meshes
+
+//    6---1
+//   / \ / \ .
+//  5---0---2
+//   \ / \ /  .
+//    4---3
+// creates N triangles surrounding a single interior vertex 0
+std::shared_ptr<TriMesh> disk(int number);
+
+// N triangles
+std::shared_ptr<TriMesh> individual_triangles(int number);
+
+
+// creates N triangles surrounding a single interior vertex 0
+std::shared_ptr<TriMesh> disk_to_individual_multimesh(int number);
+
+std::shared_ptr<TriMesh> grid(int num_rows, bool set_double_);
 
 } // namespace wmtk::tests

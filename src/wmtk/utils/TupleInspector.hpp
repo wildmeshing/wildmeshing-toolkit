@@ -1,6 +1,8 @@
 #pragma once
-#include <wmtk/Tuple.hpp>
+#include <cassert>
 #include <string>
+#include <wmtk/PrimitiveType.hpp>
+#include <wmtk/Tuple.hpp>
 
 
 namespace wmtk::utils {
@@ -8,12 +10,33 @@ namespace wmtk::utils {
 class TupleInspector
 {
 public:
-    static long local_vid(const Tuple& t) { return t.m_local_vid; }
-    static long local_eid(const Tuple& t) { return t.m_local_eid; }
-    static long local_fid(const Tuple& t) { return t.m_local_fid; }
+    static int8_t local_vid(const Tuple& t) { return t.m_local_vid; }
+    static int8_t local_eid(const Tuple& t) { return t.m_local_eid; }
+    static int8_t local_fid(const Tuple& t) { return t.m_local_fid; }
+    static int8_t local_id(const Tuple& t, const PrimitiveType pt)
+    {
+        switch (pt) {
+        case PrimitiveType::Vertex: return local_vid(t);
+        case PrimitiveType::Edge: return local_eid(t);
+        case PrimitiveType::Triangle: return local_fid(t);
+        case PrimitiveType::Tetrahedron:
+        default: assert(false);
+        }
+        return -1;
+    }
 
-    static long global_cid(const Tuple& t) { return t.m_global_cid; }
-    static long hash(const Tuple& t) { return t.m_hash; }
+    static int8_t local_id(const PrimitiveType pt, const Tuple& t)
+    {
+        switch (pt) {
+        case PrimitiveType::Triangle: return local_fid(t);
+        case PrimitiveType::Edge: return local_eid(t);
+        case PrimitiveType::Vertex: return local_vid(t);
+        case PrimitiveType::Tetrahedron: assert(false);
+        default: return -1;
+        }
+    }
+
+    static int64_t global_cid(const Tuple& t) { return t.m_global_cid; }
     static std::string as_string(const Tuple& t);
 };
 } // namespace wmtk::utils

@@ -1,4 +1,5 @@
 #include "link_condition.hpp"
+#include <wmtk/utils/metaprogramming/as_mesh_variant.hpp>
 #include "cofaces_single_dimension.hpp"
 #include "link.hpp"
 #include "open_star.hpp"
@@ -7,9 +8,9 @@
 namespace wmtk::simplex {
 bool link_condition_closed_trimesh(const TriMesh& mesh, const Tuple& edge)
 {
-    const Simplex v_a = Simplex::vertex(edge);
-    const Simplex v_b = Simplex::vertex(mesh.switch_tuple(edge, PrimitiveType::Vertex));
-    const Simplex e_ab = Simplex::edge(edge);
+    const Simplex v_a = Simplex::vertex(mesh, edge);
+    const Simplex v_b = Simplex::vertex(mesh, mesh.switch_tuple(edge, PrimitiveType::Vertex));
+    const Simplex e_ab = Simplex::edge(mesh, edge);
     const SimplexCollection link_a = link(mesh, v_a); // link(a)
     const SimplexCollection link_b = link(mesh, v_b); // link(b)
     const SimplexCollection link_ab = link(mesh, e_ab); // link(ab)
@@ -48,15 +49,15 @@ bool link_condition(const TriMesh& mesh, const Tuple& edge)
 
     // check if dummy vertex w is included in the lhs
     auto get_boundary_edges = [&mesh](const Tuple& _v) {
-        const Simplex input_v(PrimitiveType::Vertex, _v);
+        const Simplex input_v(mesh, PrimitiveType::Vertex, _v);
         std::vector<Tuple> ret;
         // get incident_edges from open_star
         auto incident_edges = open_star(mesh, input_v).simplex_vector(PrimitiveType::Edge);
         for (const Simplex& _e : incident_edges) {
-            if (mesh.is_boundary(_e.tuple(), PrimitiveType::Edge)) {
+            if (mesh.is_boundary(PrimitiveType::Edge, _e.tuple())) {
                 if (utils::SimplexComparisons::equal(
                         mesh,
-                        Simplex(PrimitiveType::Vertex, _e.tuple()),
+                        Simplex(mesh, PrimitiveType::Vertex, _e.tuple()),
                         input_v)) {
                     ret.push_back(mesh.switch_tuple(_e.tuple(), PrimitiveType::Vertex));
                 } else {
@@ -79,8 +80,8 @@ bool link_condition(const TriMesh& mesh, const Tuple& edge)
             for (auto e_b : boundary_neighbors_b) {
                 if (utils::SimplexComparisons::equal(
                         mesh,
-                        Simplex(PrimitiveType::Vertex, e_a),
-                        Simplex(PrimitiveType::Vertex, e_b))) {
+                        Simplex(mesh, PrimitiveType::Vertex, e_a),
+                        Simplex(mesh, PrimitiveType::Vertex, e_b))) {
                     // find common edge, link condition fails
                     return false;
                 }
@@ -102,9 +103,9 @@ bool link_condition(const TriMesh& mesh, const Tuple& edge)
 bool link_condition_closed_tetmesh(const TetMesh& mesh, const Tuple& edge)
 {
     // for closed mesh, if link(a) \intersect link(b) == link(ab)
-    const Simplex v_a = Simplex::vertex(edge);
-    const Simplex v_b = Simplex::vertex(mesh.switch_vertex(edge));
-    const Simplex e_ab = Simplex::edge(edge);
+    const Simplex v_a = Simplex::vertex(mesh, edge);
+    const Simplex v_b = Simplex::vertex(mesh, mesh.switch_vertex(edge));
+    const Simplex e_ab = Simplex::edge(mesh, edge);
     const SimplexCollection link_a = link(mesh, v_a); // link(a)
     const SimplexCollection link_b = link(mesh, v_b); // link(b)
     const SimplexCollection link_ab = link(mesh, e_ab); // link(ab)
@@ -130,12 +131,12 @@ bool link_condition(const TetMesh& mesh, const Tuple& edge)
     // boundary or b is not on boundary, return true, otherwise false
 
     auto get_boundary_faces = [&mesh](const Tuple& _v) {
-        const Simplex input_v(PrimitiveType::Vertex, _v);
+        const Simplex input_v(mesh, PrimitiveType::Vertex, _v);
         std::vector<Tuple> ret;
         // get incident_faces from open_star
-        auto incident_faces = cofaces_single_dimension(mesh, input_v, PrimitiveType::Face);
+        auto incident_faces = cofaces_single_dimension(mesh, input_v, PrimitiveType::Triangle);
         for (const Simplex& _f : incident_faces) {
-            if (mesh.is_boundary(_f.tuple(), PrimitiveType::Face)) {
+            if (mesh.is_boundary(PrimitiveType::Triangle, _f.tuple())) {
                 // if (utils::SimplexComparisons::equal(
                 //         mesh,
                 //         Simplex(PrimitiveType::Vertex, _f.tuple()),
@@ -169,8 +170,8 @@ bool link_condition(const TetMesh& mesh, const Tuple& edge)
             for (const Tuple& f_b : boundary_neighbors_b) {
                 if (utils::SimplexComparisons::equal(
                         mesh,
-                        Simplex(PrimitiveType::Edge, f_a),
-                        Simplex(PrimitiveType::Edge, f_b))) {
+                        Simplex(mesh, PrimitiveType::Edge, f_a),
+                        Simplex(mesh, PrimitiveType::Edge, f_b))) {
                     // find common face (with dummy vertex), link condition fails
                     return false;
                 }
@@ -190,4 +191,20 @@ bool link_condition(const TetMesh& mesh, const Tuple& edge)
     return true;
 }
 
+bool link_condition(const Mesh& mesh, const Tuple& edge)
+{
+    return std::visit(
+        [&edge](auto&& m) noexcept {
+            using MType = std::decay_t<decltype(m.get())>;
+            if constexpr (std::is_same_v<MType, Mesh>) {
+                throw std::runtime_error("Link condition called on an unknown type of mesh - could "
+                                         "only cast it to Mesh");
+            } else if constexpr (std::is_same_v<MType, PointMesh>) {
+                return true;
+            } else {
+                return link_condition(m.get(), edge);
+            }
+        },
+        wmtk::utils::metaprogramming::as_const_mesh_variant(mesh));
+}
 } // namespace wmtk::simplex

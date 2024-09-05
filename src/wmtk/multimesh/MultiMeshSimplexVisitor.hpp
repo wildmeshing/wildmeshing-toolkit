@@ -5,6 +5,7 @@
 #include <wmtk/Primitive.hpp>
 #include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/simplex/utils/MeshSimplexComparator.hpp>
 #include <wmtk/utils/mesh_type_from_primitive_type.hpp>
 #include <wmtk/utils/metaprogramming/MeshVariantTraits.hpp>
 #include <wmtk/utils/metaprogramming/ReferenceWrappedFunctorReturnCache.hpp>
@@ -24,20 +25,24 @@ namespace wmtk::multimesh {
 template <typename MMVisitor>
 class MultiMeshSimplexVisitorExecutor;
 
-template <long cell_dimension_, typename NodeFunctor_>
+template <int64_t cell_dimension_, typename NodeFunctor_>
 class MultiMeshSimplexVisitor
 {
 public:
     using MeshVariantTraits = wmtk::utils::metaprogramming::MeshVariantTraits;
     using NodeFunctor = NodeFunctor_;
-    constexpr static long cell_dimension = cell_dimension_;
+    constexpr static int64_t cell_dimension = cell_dimension_;
 
     constexpr static bool HasReturnCache =
-        !wmtk::utils::metaprogramming::all_return_void_v<NodeFunctor, MeshVariantTraits, Simplex>;
-    using ReturnDataType = wmtk::utils::metaprogramming::
-        ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, Simplex>;
-    using CacheType = wmtk::utils::metaprogramming::
-        ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, Simplex>;
+        !wmtk::utils::metaprogramming::
+            all_return_void_v<NodeFunctor, MeshVariantTraits, simplex::Simplex>;
+    using ReturnDataType =
+        wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCacheCustomComparator<
+            NodeFunctor,
+            MeshVariantTraits,
+            wmtk::simplex::utils::MeshSimplexComparator,
+            simplex::Simplex>;
+    using CacheType = ReturnDataType;
 
     using TypeHelper = wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType<
         NodeFunctor,
@@ -68,14 +73,15 @@ public:
      * @param _ deduction hint that helps pick cell_dimension
      * @param f The functor that will be run on each mesh in the tree
      * */
-    MultiMeshSimplexVisitor(std::integral_constant<long, cell_dimension>, NodeFunctor&& f)
+    MultiMeshSimplexVisitor(std::integral_constant<int64_t, cell_dimension>, NodeFunctor&& f)
         : MultiMeshSimplexVisitor(std::forward<NodeFunctor>(f))
     {}
 
 
     template <typename MMVisitor_>
     friend class MultiMeshSimplexVisitorExecutor;
-    using Executor = MultiMeshSimplexVisitorExecutor<MultiMeshSimplexVisitor<cell_dimension, NodeFunctor>>;
+    using Executor =
+        MultiMeshSimplexVisitorExecutor<MultiMeshSimplexVisitor<cell_dimension, NodeFunctor>>;
 
     /* @brief executes the node functor (and potentially edge functor) from the subtree of the input
      * node
@@ -111,12 +117,13 @@ public:
         Mesh& root_base_mesh = mesh.get_multi_mesh_root();
         auto mesh_root_variant = wmtk::utils::metaprogramming::as_mesh_variant(root_base_mesh);
         const simplex::Simplex root_simplex = mesh.map_to_root(simplex);
-        assert(root_base_mesh.is_valid_slow(root_simplex.tuple()));
+        assert(root_base_mesh.is_valid(root_simplex.tuple()));
         Executor exec(*this);
         std::visit([&](auto&& root) { execute_mesh(root.get(), root_simplex); }, mesh_root_variant);
     }
 
     const CacheType& cache() const { return m_cache; }
+    CacheType take_cache() { return std::move(m_cache); }
     auto node_events() const { return m_cache.keys(); }
     const auto& edge_events() const { return m_edge_events; }
 
@@ -137,17 +144,22 @@ template <typename MMVisitor>
 class MultiMeshSimplexVisitorExecutor
 {
 public:
-    constexpr static long cell_dimension = MMVisitor::cell_dimension;
+    constexpr static int64_t cell_dimension = MMVisitor::cell_dimension;
     using MeshVariantTraits = wmtk::utils::metaprogramming::MeshVariantTraits;
     using NodeFunctor = typename MMVisitor::NodeFunctor;
     template <typename T>
     using GetReturnType_t = typename MMVisitor::template GetReturnType_t<T>;
     // template <bool IsConst, typename MeshType>
 
-    using ReturnDataType = wmtk::utils::metaprogramming::
-        ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, Simplex>;
+    using ReturnDataType =
+        wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCacheCustomComparator<
+            NodeFunctor,
+            MeshVariantTraits,
+            wmtk::simplex::utils::MeshSimplexComparator,
+            simplex::Simplex>;
     constexpr static bool HasReturnCache =
-        !wmtk::utils::metaprogramming::all_return_void_v<NodeFunctor, MeshVariantTraits, Simplex>;
+        !wmtk::utils::metaprogramming::
+            all_return_void_v<NodeFunctor, MeshVariantTraits, simplex::Simplex>;
 
     MultiMeshSimplexVisitorExecutor(const MMVisitor& v)
         : visitor(v)
@@ -184,12 +196,12 @@ private:
     template <typename MeshType_>
     void run(MeshType_&& current_mesh, const simplex::Simplex& simplex)
     {
-        assert(current_mesh.is_valid_slow(simplex.tuple()));
+        assert(current_mesh.is_valid(simplex.tuple()));
         using MeshType = std::decay_t<MeshType_>;
 
 
         // short circuit operations that happen below the desired dimension
-        constexpr static long MeshDim = wmtk::utils::metaprogramming::cell_dimension_v<MeshType>;
+        constexpr static int64_t MeshDim = wmtk::utils::metaprogramming::cell_dimension_v<MeshType>;
         if constexpr (cell_dimension > MeshDim) {
             return;
         }
@@ -205,7 +217,7 @@ private:
         // pre-compute all of  the child tuples in case the node functor changes the mesh that
         // breaks the traversal down
         auto& child_datas = current_mesh.m_multi_mesh_manager.children();
-        std::vector<std::vector<Simplex>> mapped_child_simplices;
+        std::vector<std::vector<simplex::Simplex>> mapped_child_simplices;
         mapped_child_simplices.reserve(child_datas.size());
 
 
@@ -222,7 +234,7 @@ private:
                 auto r = current_mesh.map_to_child(child_mesh, simplex);
 #if !defined(NDEBUG)
                 for (const auto& s : r) {
-                    assert(child_mesh.is_valid_slow(s.tuple()));
+                    assert(child_mesh.is_valid(s.tuple()));
                 }
 #endif
 
@@ -239,7 +251,7 @@ private:
 
 #if !defined(NDEBUG)
             for (const auto& s : simplices) {
-                assert(child_mesh_base.is_valid_slow(s.tuple()));
+                assert(child_mesh_base.is_valid(s.tuple()));
             }
 #endif
 
@@ -257,7 +269,7 @@ private:
 #endif
 
                     constexpr static bool ChildHasReturn = !std::is_void_v<ChildReturnType>;
-                    constexpr static long ChildDim =
+                    constexpr static int64_t ChildDim =
                         wmtk::utils::metaprogramming::cell_dimension_v<ChildType>;
 
                     // std::visit compiles all combinations of meshes, and
@@ -270,17 +282,16 @@ private:
 
                     if constexpr (MeshDim >= ChildDim) {
                         for (const simplex::Simplex& child_simplex : simplices) {
-#if !defined(NDEBUG)
-                            assert(child_mesh.is_valid_slow(child_simplex.tuple()));
-#endif
+                            assert(child_mesh.is_valid(child_simplex.tuple()));
+
                             run(child_mesh, child_simplex);
 
                             if constexpr (HasReturnCache && ChildHasReturn && CurHasReturn) {
                                 auto parent_id = m_return_data.get_id(current_mesh, simplex);
                                 auto child_id = m_return_data.get_id(child_mesh, child_simplex);
-                                // spdlog::info(
-                                //     "MultiMeshSimplexVisitor[{}=>{}] adding to edges edge simplex {}
-                                //     " "child " "simplex{}",
+                                // logger().trace(
+                                //     "MultiMeshSimplexVisitor[{}=>{}] adding to edges edge simplex
+                                //     {} " "child " "simplex{}",
                                 //     fmt::join(current_mesh.absolute_multi_mesh_id(), ","),
                                 //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
                                 //     wmtk::utils::TupleInspector::as_string(
@@ -299,17 +310,16 @@ private:
         if constexpr (CurHasReturn) {
             auto current_return = visitor.m_node_functor(current_mesh, simplex);
 
-            m_return_data.add(current_return, current_mesh, simplex);
+            m_return_data.add(std::move(current_return), current_mesh, simplex);
         } else {
             visitor.m_node_functor(current_mesh, simplex);
         }
     }
-
 };
 
 
-template <long cell_dimension, typename NodeFunctor>
-MultiMeshSimplexVisitor(std::integral_constant<long, cell_dimension>, NodeFunctor&&)
+template <int64_t cell_dimension, typename NodeFunctor>
+MultiMeshSimplexVisitor(std::integral_constant<int64_t, cell_dimension>, NodeFunctor&&)
     -> MultiMeshSimplexVisitor<cell_dimension, NodeFunctor>;
 
 template <typename NodeFunctor>

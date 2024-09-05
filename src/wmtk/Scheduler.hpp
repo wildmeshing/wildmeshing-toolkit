@@ -1,113 +1,114 @@
 #pragma once
-#include <string_view>
-#include <unordered_map>
-#include "Mesh.hpp"
+
+#include <spdlog/common.h>
 #include "operations/Operation.hpp"
-#include "operations/OperationFactory.hpp"
 
 namespace wmtk {
 
-//  Scheduler scheduler;
-// if (use_basic_split) {
-//     scheduler.add_operation_type<SplitEdgeOperation>("split_edge");
-// } else if (use_seamed_mesh_split) {
-//     scheduler.add_operation_type<SeamedTriMeshSplitEdgeOperation>("split_edge");
-// }
-
-namespace operations {
-class OperationQueue;
-}
-class Scheduler
+class SchedulerStats
 {
 public:
-    Scheduler(Mesh& m);
-    ~Scheduler();
-    // user specifies a sort of operation they want
-    // template <typename OperationType, typename... Args>
-    // void add_operation_type(const std::string& name, PrimitiveType primitive_type, Args... args)
-    //{
-    //    m_factories[name] = std::make_unique<OperationFactory<OperationType>>(
-    //        primitive_type,
-    //        std::forward<Args>(args)...);
-    //}
-
-    /**
-     * @brief Add an operation factory to the scheduler.
-     *
-     * This function also calls `OperationFactoryBase::initialize_invariants()`.
-     */
-    const operations::OperationFactoryBase& add_operation_factory(
-        const std::string& name,
-        std::unique_ptr<operations::OperationFactoryBase>&& ptr)
-    {
-        m_factories[name] = std::move(ptr);
-        m_factories[name]->initialize_invariants();
-        return *(m_factories[name]);
-    }
-    template <typename OperationType>
-    const operations::OperationFactory<OperationType>& add_operation_type(
-        const std::string& name,
-        const operations::OperationSettings<OperationType>& settings)
-    {
-        return static_cast<const operations::OperationFactory<OperationType>&>(
-            add_operation_factory(
-                name,
-                std::make_unique<operations::OperationFactory<OperationType>>(settings)));
-    }
-
-    template <typename OperationType>
-    const operations::OperationFactory<OperationType>& add_operation_type(
-        const std::string& name,
-        operations::OperationSettings<OperationType>&& settings)
-    {
-        return static_cast<const operations::OperationFactory<OperationType>&>(
-            add_operation_factory(
-                name,
-                std::make_unique<operations::OperationFactory<OperationType>>(
-                    std::move(settings))));
-    }
-
-
-    void enqueue_operations(std::vector<std::unique_ptr<operations::Operation>>&& ops);
-
-
-    // creates all of the operations of a paritcular type to be run
-    std::vector<std::unique_ptr<operations::Operation>> create_operations(
-        PrimitiveType type,
-        const std::string& name);
-
-
-    void run_operation_on_all(PrimitiveType type, const std::string& name);
-
-    operations::OperationFactoryBase const* get_factory(const std::string_view& name) const;
-
     /**
      * @brief Returns the number of successful operations performed by the scheduler.
      *
      * The value is reset to 0 when calling `run_operation_on_all`.
      */
-    long number_of_successful_operations() const { return m_num_op_success; }
+    int64_t number_of_successful_operations() const { return m_num_op_success; }
+
     /**
      * @brief Returns the number of failed operations performed by the scheduler.
      *
      * The value is reset to 0 when calling `run_operation_on_all`.
      */
-    long number_of_failed_operations() const { return m_num_op_fail; }
+    int64_t number_of_failed_operations() const { return m_num_op_fail; }
+
     /**
      * @brief Returns the number of performed operations performed by the scheduler.
      *
      * The value is reset to 0 when calling `run_operation_on_all`.
      */
-    long number_of_performed_operations() const { return m_num_op_success + m_num_op_fail; }
+    int64_t number_of_performed_operations() const { return m_num_op_success + m_num_op_fail; }
+
+    inline double total_time() const { return collecting_time + sorting_time + executing_time; }
+
+    inline void succeed() { ++m_num_op_success; }
+    inline void fail() { ++m_num_op_fail; }
+
+    inline void operator+=(const SchedulerStats& s)
+    {
+        m_num_op_success += s.m_num_op_success;
+        m_num_op_fail += s.m_num_op_fail;
+
+        collecting_time += s.collecting_time;
+        sorting_time += s.sorting_time;
+        executing_time += s.executing_time;
+    }
+
+
+    double collecting_time = 0;
+    double sorting_time = 0;
+    double executing_time = 0;
+
+    std::vector<SchedulerStats> sub_stats;
+
+    double avg_sub_collecting_time() const
+    {
+        double res = 0;
+        for (const auto& s : sub_stats) {
+            res += s.collecting_time;
+        }
+        return res / sub_stats.size();
+    }
+
+    double avg_sub_sorting_time() const
+    {
+        double res = 0;
+        for (const auto& s : sub_stats) {
+            res += s.sorting_time;
+        }
+        return res / sub_stats.size();
+    }
+
+    double avg_sub_executing_time() const
+    {
+        double res = 0;
+        for (const auto& s : sub_stats) {
+            res += s.executing_time;
+        }
+        return res / sub_stats.size();
+    }
+
+    // private:
+    int64_t m_num_op_success = 0;
+    int64_t m_num_op_fail = 0;
+
+    void print_update_log(size_t total, spdlog::level::level_enum = spdlog::level::info) const;
+};
+
+class Scheduler
+{
+public:
+    Scheduler();
+    ~Scheduler();
+
+    SchedulerStats run_operation_on_all(operations::Operation& op);
+    SchedulerStats run_operation_on_all(
+        operations::Operation& op,
+        const TypedAttributeHandle<char>& flag_handle);
+    SchedulerStats run_operation_on_all_coloring(
+        operations::Operation& op,
+        const TypedAttributeHandle<int64_t>& color_handle);
+
+    const SchedulerStats& stats() const { return m_stats; }
+
+    void set_update_frequency(std::optional<size_t>&& freq = {});
 
 private:
-    wmtk::Mesh& m_mesh;
-    std::unordered_map<std::string, std::unique_ptr<operations::OperationFactoryBase>> m_factories;
-    //    tbb::enumerable_per_thread<OperationQueue> m_per_thread_queues;
-    std::vector<operations::OperationQueue> m_per_thread_queues;
+    SchedulerStats m_stats;
+    std::optional<size_t> m_update_frequency = {};
 
-    long m_num_op_success = 0;
-    long m_num_op_fail = 0;
+    void log(const size_t total);
+    void log(const SchedulerStats& stats, const size_t total);
 };
 
 } // namespace wmtk

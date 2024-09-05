@@ -17,14 +17,16 @@ bool DEBUG_Mesh::operator!=(const DEBUG_Mesh& o) const
 void DEBUG_Mesh::print_state() const {}
 
 
-void DEBUG_Mesh::reserve_attributes(PrimitiveType type, long size)
+void DEBUG_Mesh::reserve_attributes(PrimitiveType type, int64_t size)
 {
     Mesh::reserve_attributes(type, size);
 }
 
 
-Accessor<long> DEBUG_Mesh::get_cell_hash_accessor()
+#if defined(WMTK_ENABLE_HASH_UPDATE) 
+attribute::Accessor<int64_t> DEBUG_Mesh::get_cell_hash_accessor()
 {
     return Mesh::get_cell_hash_accessor();
 }
+#endif
 } // namespace wmtk::tests

@@ -7,7 +7,7 @@
 
 namespace wmtk::operations::utils {
 
-void MultiMeshEdgeCollapseFunctor::operator()(const Mesh&, const Simplex&) const
+void MultiMeshEdgeCollapseFunctor::operator()(const Mesh&, const simplex::Simplex&) const
 {
     throw std::runtime_error("Unimplemented!");
 }
@@ -16,26 +16,24 @@ edge_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
     EdgeMesh& m,
     const simplex::Simplex& s) const
 {
-    Accessor<long> hash_accessor = Operation::get_hash_accessor(m);
-    EdgeMesh::EdgeMeshOperationExecutor exec(m, s.tuple(), hash_accessor);
+    EdgeMesh::EdgeMeshOperationExecutor exec(m, s.tuple());
     exec.collapse_edge();
-    return exec;
+    return std::move(static_cast<edge_mesh::EdgeOperationData&>(exec));
 }
-tri_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(TriMesh& m, const Simplex& s)
-    const
+tri_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
+    TriMesh& m,
+    const simplex::Simplex& s) const
 {
-    Accessor<long> hash_accessor = Operation::get_hash_accessor(m);
-    TriMesh::TriMeshOperationExecutor exec(m, s.tuple(), hash_accessor);
+    TriMesh::TriMeshOperationExecutor exec(m, s.tuple());
     exec.collapse_edge();
-
-    return exec;
+    return std::move(static_cast<tri_mesh::EdgeOperationData&>(exec));
 }
-tet_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(TetMesh& m, const Simplex& s)
-    const
+tet_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
+    TetMesh& m,
+    const simplex::Simplex& s) const
 {
-    Accessor<long> hash_accessor = Operation::get_hash_accessor(m);
-    TetMesh::TetMeshOperationExecutor exec(m, s.tuple(), hash_accessor);
+    TetMesh::TetMeshOperationExecutor exec(m, s.tuple());
     exec.collapse_edge();
-    return exec;
+    return std::move(static_cast<tet_mesh::EdgeOperationData&>(exec));
 }
-}; // namespace wmtk::operations::utils
+} // namespace wmtk::operations::utils

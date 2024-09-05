@@ -4,6 +4,7 @@
 #include <map>
 #include <string_view>
 #include <wmtk/Mesh.hpp>
+#include "CachedMultiMesh.hpp"
 
 namespace wmtk::io {
 
@@ -80,13 +81,20 @@ public:
      */
     std::shared_ptr<Mesh> read_mesh(const std::string& name) const;
 
+    void load_multimesh(const std::string& name) const;
+
     /**
      * @brief Write a mesh to cache.
      *
      * @param mesh The mesh that is written
      * @param name The name associated with the mesh
+     * @param name The name associated with the mesh
+     * @param multimesh_names names to absolute_multi_mesh_id
      */
-    void write_mesh(Mesh& m, const std::string& name);
+    void write_mesh(
+        const Mesh& m,
+        const std::string& name,
+        const std::map<std::string, std::vector<int64_t>>& multimesh_names = {});
 
     /**
      * @brief Export the cache to the given location.
@@ -109,6 +117,15 @@ public:
      */
     bool import_cache(const std::filesystem::path& import_location);
 
+    std::vector<int64_t> absolute_multi_mesh_id(const std::string& name) const;
+
+    /**
+     * @brief Compare two caches for equality.
+     *
+     * Only compares meshes registered in the cache.
+     */
+    bool equals(const Cache& o);
+
     /**
      * @brief Create a unique directory in the given location.
      *
@@ -126,9 +143,19 @@ public:
         const std::filesystem::path& location = "",
         size_t max_tries = 10000);
 
+
+    /// Unsets the mesh held by each cached mm - useful for debugging whether cache loading works
+    void flush_multimeshes();
+
+    /**
+     * @brief Get all names of the meshes stored in cache.
+     */
+    std::vector<std::string> mesh_names();
+
 private:
     std::filesystem::path m_cache_dir;
     std::map<std::string, std::filesystem::path> m_file_paths; // name --> file location
+    mutable std::map<std::string, CachedMultiMesh> m_multimeshes;
     bool m_delete_cache = true;
 
     inline static const std::string m_cache_content_name =

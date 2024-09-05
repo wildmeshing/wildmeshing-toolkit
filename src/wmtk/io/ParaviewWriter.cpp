@@ -5,15 +5,17 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 
-#include <paraviewo/HDF5VTUWriter.hpp>
+#include <paraviewo/VTUWriter.hpp>
+// #include <paraviewo/HDF5VTUWriter.hpp>
 
 #include <sstream>
 
-namespace wmtk {
+namespace wmtk::io {
 
 ParaviewWriter::ParaviewInternalWriter::ParaviewInternalWriter()
 {
-    m_paraview_file = std::make_shared<paraviewo::HDF5VTUWriter>();
+    m_paraview_file = std::make_shared<paraviewo::VTUWriter>();
+    // m_paraview_file = std::make_shared<paraviewo::HDF5VTUWriter>();
 }
 
 void ParaviewWriter::ParaviewInternalWriter::init(
@@ -37,7 +39,7 @@ ParaviewWriter::ParaviewInternalWriter::~ParaviewInternalWriter()
 
 void ParaviewWriter::ParaviewInternalWriter::write(
     const std::string& name,
-    const long stride,
+    const int64_t stride,
     const std::vector<double>& val)
 {
     Eigen::MatrixXd tmp =
@@ -46,19 +48,19 @@ void ParaviewWriter::ParaviewInternalWriter::write(
     if (stride == 1 || stride == 2 || stride == 3) {
         m_paraview_file->add_cell_field(name, tmp);
     } else if (stride % 3 == 0) {
-        for (long i = 0; i < stride; i += 3) {
+        for (int64_t i = 0; i < stride; i += 3) {
             m_paraview_file->add_cell_field(
                 name + "_" + std::to_string(i / 3),
                 tmp.block(0, i, tmp.rows(), 3));
         }
     } else if (stride % 2 == 0) {
-        for (long i = 0; i < stride; i += 2) {
+        for (int64_t i = 0; i < stride; i += 2) {
             m_paraview_file->add_cell_field(
                 name + "_" + std::to_string(i / 2),
                 tmp.block(0, i, tmp.rows(), 2));
         }
     } else {
-        for (long i = 0; i < stride; ++i) {
+        for (int64_t i = 0; i < stride; ++i) {
             m_paraview_file->add_cell_field(name + "_" + std::to_string(i), tmp.col(i));
         }
     }
@@ -95,7 +97,7 @@ ParaviewWriter::ParaviewWriter(
                         cells[i](j, d) = 0;
                     }
                 } else {
-                    long vid = mesh.id(t, PrimitiveType::Vertex);
+                    int64_t vid = mesh.id(t, PrimitiveType::Vertex);
                     cells[i](j, 0) = vid;
                     if (i > 0) {
                         auto t1 = mesh.switch_tuple(t, PrimitiveType::Vertex);
@@ -109,7 +111,7 @@ ParaviewWriter::ParaviewWriter(
                         cells[i](j, 2) = mesh.id(t2, PrimitiveType::Vertex);
                     }
                     if (i > 2) {
-                        auto t1 = mesh.switch_tuple(t, PrimitiveType::Face);
+                        auto t1 = mesh.switch_tuple(t, PrimitiveType::Triangle);
                         auto t2 = mesh.switch_tuple(t1, PrimitiveType::Edge);
                         auto t3 = mesh.switch_tuple(t2, PrimitiveType::Vertex);
 
@@ -120,17 +122,18 @@ ParaviewWriter::ParaviewWriter(
         }
     }
 
-    m_writers[0].init(filename.string() + "_verts.hdf", vertices_name, cells[0], m_enabled[0]);
-    m_writers[1].init(filename.string() + "_edges.hdf", vertices_name, cells[1], m_enabled[1]);
-    m_writers[2].init(filename.string() + "_faces.hdf", vertices_name, cells[2], m_enabled[2]);
-    m_writers[3].init(filename.string() + "_tets.hdf", vertices_name, cells[3], m_enabled[3]);
+    m_writers[0].init(filename.string() + "_verts.vtu", vertices_name, cells[0], m_enabled[0]);
+    m_writers[1].init(filename.string() + "_edges.vtu", vertices_name, cells[1], m_enabled[1]);
+    m_writers[2].init(filename.string() + "_faces.vtu", vertices_name, cells[2], m_enabled[2]);
+    m_writers[3].init(filename.string() + "_tets.vtu", vertices_name, cells[3], m_enabled[3]);
 }
 
 void ParaviewWriter::write(
     const std::string& name,
-    const long type,
-    const long stride,
-    const std::vector<long>& val)
+    const int64_t type,
+    const int64_t stride,
+    const std::vector<int64_t>& val,
+    const int64_t default_val)
 {
     std::vector<double> tmp;
     tmp.reserve(val.size());
@@ -141,18 +144,20 @@ void ParaviewWriter::write(
 
 void ParaviewWriter::write(
     const std::string& name,
-    const long type,
-    const long stride,
-    const std::vector<double>& val)
+    const int64_t type,
+    const int64_t stride,
+    const std::vector<double>& val,
+    const double default_val)
 {
     write_internal(name, type, stride, val);
 }
 
 void ParaviewWriter::write(
     const std::string& name,
-    const long type,
-    const long stride,
-    const std::vector<char>& val)
+    const int64_t type,
+    const int64_t stride,
+    const std::vector<char>& val,
+    const char default_val)
 {
     std::vector<double> tmp;
     tmp.reserve(val.size());
@@ -164,9 +169,10 @@ void ParaviewWriter::write(
 
 void ParaviewWriter::write(
     const std::string& name,
-    const long type,
-    const long stride,
-    const std::vector<Rational>& val)
+    const int64_t type,
+    const int64_t stride,
+    const std::vector<Rational>& val,
+    const Rational& default_val)
 {
     std::vector<double> tmp;
     tmp.reserve(val.size());
@@ -177,10 +183,12 @@ void ParaviewWriter::write(
 
 void ParaviewWriter::write_internal(
     const std::string& name,
-    const long type,
-    const long stride,
+    const int64_t type,
+    const int64_t stride,
     const std::vector<double>& val)
 {
+    if (!m_write) return;
+
     if (name == m_vertices_name) {
         assert(stride == 2 || stride == 3);
 
@@ -196,4 +204,4 @@ void ParaviewWriter::write_internal(
 }
 
 
-} // namespace wmtk
+} // namespace wmtk::io

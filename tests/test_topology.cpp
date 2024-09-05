@@ -19,7 +19,7 @@ using namespace wmtk;
 
 TEST_CASE("topology_of_single_triangle", "[topology][2D]")
 {
-    Eigen::Matrix<long, 1, 3> F;
+    Eigen::Matrix<int64_t, 1, 3> F;
     F << 0, 1, 2;
     auto [FE, FF, VF, EF] = trimesh_topology_initialization(F);
 
@@ -42,7 +42,7 @@ TEST_CASE("topology_of_single_triangle", "[topology][2D]")
     // 3. Test relationship between FF and FE
     for (int i = 0; i < FF.rows(); ++i) {
         for (int j = 0; j < 3; ++j) {
-            long nb = FF(i, j);
+            int64_t nb = FF(i, j);
             if (nb < 0) continue;
 
             CHECK((FF.row(nb).array() == i).any());
@@ -64,7 +64,7 @@ TEST_CASE("topology_of_single_triangle", "[topology][2D]")
 
 TEST_CASE("topology_of_two_triangles", "[topology][2D]")
 {
-    Eigen::Matrix<long, 2, 3> F;
+    Eigen::Matrix<int64_t, 2, 3> F;
     F << 0, 1, 2, 1, 3, 2;
 
     auto [FE, FF, VF, EF] = trimesh_topology_initialization(F);
@@ -88,7 +88,7 @@ TEST_CASE("topology_of_two_triangles", "[topology][2D]")
     // 3. Test relationship between FF and FE
     for (int i = 0; i < FF.rows(); ++i) {
         for (int j = 0; j < 3; ++j) {
-            long nb = FF(i, j);
+            int64_t nb = FF(i, j);
             if (nb < 0) continue;
 
             CHECK((FF.row(nb).array() == i).any());
@@ -110,7 +110,7 @@ TEST_CASE("topology_of_two_triangles", "[topology][2D]")
 
 TEST_CASE("topology_of_complex_meshes", "[topology][2D]")
 {
-    Eigen::Matrix<long, -1, -1> F;
+    Eigen::Matrix<int64_t, -1, -1> F;
 
     std::vector<std::string> names = {
         "/Octocat.msh",
@@ -129,7 +129,7 @@ TEST_CASE("topology_of_complex_meshes", "[topology][2D]")
         path.append(name);
         auto tmp = read_mesh(path);
         const auto& mesh = static_cast<wmtk::tests::DEBUG_TriMesh&>(*tmp);
-        const auto& tris = mesh.get_all(PrimitiveType::Face);
+        const auto& tris = mesh.get_all(PrimitiveType::Triangle);
         F.resize(tris.size(), 3);
         for (size_t i = 0; i < tris.size(); ++i) {
             const auto& t = tris[i];
@@ -137,9 +137,9 @@ TEST_CASE("topology_of_complex_meshes", "[topology][2D]")
             auto t2 =
                 mesh.switch_tuple(mesh.switch_tuple(t, PrimitiveType::Edge), PrimitiveType::Vertex);
 
-            long vid0 = mesh.id(t, PrimitiveType::Vertex);
-            long vid1 = mesh.id(t1, PrimitiveType::Vertex);
-            long vid2 = mesh.id(t2, PrimitiveType::Vertex);
+            int64_t vid0 = mesh.id(t, PrimitiveType::Vertex);
+            int64_t vid1 = mesh.id(t1, PrimitiveType::Vertex);
+            int64_t vid2 = mesh.id(t2, PrimitiveType::Vertex);
             F.row(i) << vid0, vid1, vid2;
         }
 
@@ -165,7 +165,7 @@ TEST_CASE("topology_of_complex_meshes", "[topology][2D]")
         // 3. Test relationship between FF and FE
         for (int i = 0; i < FF.rows(); ++i) {
             for (int j = 0; j < 3; ++j) {
-                long nb = FF(i, j);
+                int64_t nb = FF(i, j);
                 if (nb < 0) continue;
 
                 CHECK((FF.row(nb).array() == i).any());
@@ -192,7 +192,7 @@ TEST_CASE("topology_of_two_adjacent_tets", "[topology][3D]")
     // Two tetrahedra are sharing one face
     // there are 7 unique faces and 9 unique edges
 
-    Eigen::Matrix<long, 2, 4> T;
+    Eigen::Matrix<int64_t, 2, 4> T;
     T << 0, 1, 2, 3, 1, 2, 3, 4;
 
     auto [TE, TF, TT, VT, ET, FT] = tetmesh_topology_initialization(T);
@@ -221,7 +221,7 @@ TEST_CASE("topology_of_two_adjacent_tets", "[topology][3D]")
     // 5. Test the relationship between TT and TF and TE
     for (int i = 0; i < TT.rows(); ++i) {
         for (int j = 0; j < 4; ++j) {
-            long nb = TT(i, j);
+            int64_t nb = TT(i, j);
             if (nb < 0) continue;
 
             CHECK((TT.row(nb).array() == i).any());
@@ -247,7 +247,7 @@ TEST_CASE("topology_of_two_independent_tets", "[topology][3D]")
     // Two tetrahedra not sharing anything
     // there are 8 unique faces and 12 unique edges
 
-    Eigen::Matrix<long, 2, 4> T;
+    Eigen::Matrix<int64_t, 2, 4> T;
     T << 0, 1, 2, 3, 4, 5, 6, 7;
 
     auto [TE, TF, TT, VT, ET, FT] = tetmesh_topology_initialization(T);
@@ -276,7 +276,7 @@ TEST_CASE("topology_of_two_independent_tets", "[topology][3D]")
     // 5. Test the relationship between TT and TF and TE
     for (int i = 0; i < TT.rows(); ++i) {
         for (int j = 0; j < 4; ++j) {
-            long nb = TT(i, j);
+            int64_t nb = TT(i, j);
             if (nb < 0) continue;
 
             CHECK((TT.row(nb).array() == i).any());
@@ -300,7 +300,7 @@ TEST_CASE("topology_of_two_independent_tets", "[topology][3D]")
 TEST_CASE("topology_of_tet_bunny", "[topology][3D]")
 {
     auto tmp = read_mesh(WMTK_DATA_DIR "/bunny_3d.msh");
-    Eigen::Matrix<long, -1, -1> T;
+    Eigen::Matrix<int64_t, -1, -1> T;
     const auto& mesh = static_cast<wmtk::tests_3d::DEBUG_TetMesh&>(*tmp);
     const auto& tets = mesh.get_all(PrimitiveType::Tetrahedron);
     T.resize(tets.size(), 4);
@@ -310,12 +310,12 @@ TEST_CASE("topology_of_tet_bunny", "[topology][3D]")
         auto t2 =
             mesh.switch_tuple(mesh.switch_tuple(t, PrimitiveType::Edge), PrimitiveType::Vertex);
         auto t3 = mesh.switch_tuple(
-            mesh.switch_tuple(mesh.switch_tuple(t, PrimitiveType::Face), PrimitiveType::Edge),
+            mesh.switch_tuple(mesh.switch_tuple(t, PrimitiveType::Triangle), PrimitiveType::Edge),
             PrimitiveType::Vertex);
-        long vid0 = mesh.id(t, PrimitiveType::Vertex);
-        long vid1 = mesh.id(t1, PrimitiveType::Vertex);
-        long vid2 = mesh.id(t2, PrimitiveType::Vertex);
-        long vid3 = mesh.id(t3, PrimitiveType::Vertex);
+        int64_t vid0 = mesh.id(t, PrimitiveType::Vertex);
+        int64_t vid1 = mesh.id(t1, PrimitiveType::Vertex);
+        int64_t vid2 = mesh.id(t2, PrimitiveType::Vertex);
+        int64_t vid3 = mesh.id(t3, PrimitiveType::Vertex);
         T.row(i) << vid0, vid1, vid2, vid3;
     }
 
@@ -344,7 +344,7 @@ TEST_CASE("topology_of_tet_bunny", "[topology][3D]")
     // 5. Test the relationship between TT and TF and TE
     for (int i = 0; i < TT.rows(); ++i) {
         for (int j = 0; j < 4; ++j) {
-            long nb = TT(i, j);
+            int64_t nb = TT(i, j);
             if (nb < 0) continue;
 
             CHECK((TT.row(nb).array() == i).any());
@@ -367,7 +367,7 @@ TEST_CASE("topology_of_tet_bunny", "[topology][3D]")
 
 TEST_CASE("topology_test_1d", "[topology][1D]")
 {
-    Eigen::Matrix<long, -1, 2> E;
+    Eigen::Matrix<int64_t, -1, 2> E;
     SECTION("single_line")
     {
         /*
@@ -419,7 +419,7 @@ TEST_CASE("topology_test_1d", "[topology][1D]")
     // 2. Test relationship between EV and EE
     for (int i = 0; i < EE.rows(); ++i) {
         for (int j = 0; j < 2; ++j) {
-            long nb = EE(i, j);
+            int64_t nb = EE(i, j);
             if (nb < 0) continue;
 
             CHECK((EE.row(nb).array() == i).any());

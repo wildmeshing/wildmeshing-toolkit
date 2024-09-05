@@ -1,16 +1,43 @@
 #pragma once
+#include <algorithm>
+#include <functional>
 #include <map>
 #include <stdexcept>
 #include <tuple>
-#include <algorithm>
 #include <variant>
 
 #include "ReferenceWrappedFunctorReturnType.hpp"
 namespace wmtk::utils::metaprogramming {
 
 namespace detail {
+class DefaultComparatorType
+{
+public:
+    class Equal
+    {
+    public:
+        template <typename T>
+        bool operator()(const T& a, const T& b) const
+        {
+            return std::equal_to<T>{}(a, b);
+        }
+    };
+    class Less
+    {
+    public:
+        template <typename T>
+        bool operator()(const T& a, const T& b) const
+        {
+            return std::less<T>{}(a, b);
+        }
+    };
+};
 // Interface for reading off the return values from data
-template <typename Functor, typename BaseVariantTraitsType, typename... OtherArgumentTypes>
+template <
+    typename Functor,
+    typename BaseVariantTraitsType,
+    typename ComparatorType,
+    typename... OtherArgumentTypes>
 class ReferenceWrappedFunctorReturnCache
 {
 public:
@@ -138,7 +165,7 @@ public:
     void set_enable_overwrites(bool value) { m_enable_overwrites = value; }
 
 private:
-    std::map<KeyType, ReturnVariant> m_data;
+    std::map<KeyType, ReturnVariant, typename ComparatorType::Less> m_data;
     bool m_enable_overwrites = false;
 };
 
@@ -153,10 +180,26 @@ constexpr static bool all_return_void_v = detail::ReferenceWrappedFunctorReturnT
 
 // returns void if everything returns void
 
+template <
+    typename Functor,
+    typename BaseVariantTraitsType,
+    typename ComparatorType,
+    typename... OtherArgumentTypes>
+using ReferenceWrappedFunctorReturnCacheCustomComparator = std::conditional_t<
+    all_return_void_v<Functor, BaseVariantTraitsType, OtherArgumentTypes...>,
+    std::monostate,
+    detail::ReferenceWrappedFunctorReturnCache<
+        Functor,
+        BaseVariantTraitsType,
+        ComparatorType,
+        OtherArgumentTypes...>>;
 template <typename Functor, typename BaseVariantTraitsType, typename... OtherArgumentTypes>
 using ReferenceWrappedFunctorReturnCache = std::conditional_t<
     all_return_void_v<Functor, BaseVariantTraitsType, OtherArgumentTypes...>,
     std::monostate,
-    detail::
-        ReferenceWrappedFunctorReturnCache<Functor, BaseVariantTraitsType, OtherArgumentTypes...>>;
+    detail::ReferenceWrappedFunctorReturnCache<
+        Functor,
+        BaseVariantTraitsType,
+        detail::DefaultComparatorType,
+        OtherArgumentTypes...>>;
 } // namespace wmtk::utils::metaprogramming

@@ -16,7 +16,7 @@ namespace wmtk::multimesh::utils::internal {
 class TupleTag
 {
 public:
-    TupleTag(Mesh& mesh, const std::set<long>& critical_points);
+    TupleTag(Mesh& mesh, const std::set<int64_t>& critical_points);
     const Mesh& mesh() const { return m_mesh; }
     Mesh& mesh() { return m_mesh; }
     /**
@@ -24,7 +24,7 @@ public:
      * to be -1.
      */
     void initialize();
-    std::set<long> run();
+    std::set<int64_t> run();
     /**
      * @brief Check if a vertex is a critical point.
      *
@@ -36,8 +36,8 @@ public:
     bool is_critical_vertex(const Tuple& v) const;
 
     bool vertex_is_root(const Tuple& v) const;
-    long vertex_get_root(const Tuple& v) const;
-    void vertex_set_root(const Tuple& v, long root);
+    int64_t vertex_get_root(const Tuple& v) const;
+    void vertex_set_root(const Tuple& v, int64_t root);
 
     /**
      * @brief Given two vertex tuple, join the sets that contain them.
@@ -55,16 +55,25 @@ public:
      */
     void run(const Tuple& e);
 
-    long get_vertex_tag(const Tuple& tuple) const;
-    long get_edge_tag(const Tuple& tuple) const;
-    void set_vertex_tag(const Tuple& tuple, long tag);
-    void set_edge_tag(const Tuple& tuple, long tag);
-    long vid(const Tuple& tuple) const;
-    Tuple v_tuple(long vid) const;
+    int64_t get_vertex_tag(const Tuple& tuple) const;
+    int64_t get_edge_tag(const Tuple& tuple) const;
+    void set_vertex_tag(const Tuple& tuple, int64_t tag);
+    void set_edge_tag(const Tuple& tuple, int64_t tag);
+    int64_t vid(const Tuple& tuple) const;
+    Tuple v_tuple(int64_t vid) const;
 
     Mesh& m_mesh;
-    std::set<long> m_critical_points;
-    Accessor<long> m_vertex_tag_acc;
-    Accessor<long> m_edge_tag_acc;
+    std::set<int64_t> m_critical_points;
+    wmtk::attribute::Accessor<int64_t> m_vertex_tag_acc;
+    wmtk::attribute::Accessor<int64_t> m_edge_tag_acc;
+
+
+    // this is shoved in this class to reduce the number of times we have to friend mesh - this is
+    // called by wmtk::multimesh::utils::extract_child_mesh_from_tag
+    template <typename T>
+    static std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
+        Mesh& m,
+        const wmtk::attribute::TypedAttributeHandle<T>& tag_handle,
+        const T& tag_value, bool child_is_free);
 };
 } // namespace wmtk::multimesh::utils::internal

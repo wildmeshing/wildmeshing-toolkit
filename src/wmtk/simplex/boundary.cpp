@@ -9,16 +9,16 @@ std::vector<Tuple> boundary_tuples(const Mesh& m, const Tuple& t, PrimitiveType 
     std::vector<Tuple> ret;
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
-    constexpr static PrimitiveType PF = PrimitiveType::Face;
+    constexpr static PrimitiveType PF = PrimitiveType::Triangle;
     constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
     switch (pt) {
     case PrimitiveType::Vertex: {
         // vertex does not have a boundary
     } break;
     case PrimitiveType::Edge: {
-        ret = {t, m.switch_vertex(t)};
+        ret = {t, m.switch_tuple(t, PV)};
     } break;
-    case PrimitiveType::Face: {
+    case PrimitiveType::Triangle: {
         ret = {
             t, //
             m.switch_tuples(t, {PE}),
@@ -31,7 +31,6 @@ std::vector<Tuple> boundary_tuples(const Mesh& m, const Tuple& t, PrimitiveType 
             m.switch_tuples(t, {PE, PF}), //
             m.switch_tuples(t, {PV, PE, PF})};
     } break;
-    case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
     return ret;
@@ -47,6 +46,7 @@ SimplexCollection boundary(const Mesh& mesh, const Simplex& simplex, const bool 
     SimplexCollection collection(
         mesh,
         utils::tuple_vector_to_homogeneous_simplex_vector(
+            mesh,
             boundary_tuples(mesh, simplex),
 
             get_primitive_type_from_id(get_primitive_type_id(simplex.primitive_type()) - 1)));

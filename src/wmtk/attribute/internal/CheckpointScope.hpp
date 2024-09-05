@@ -6,10 +6,10 @@ namespace wmtk::attribute::internal {
 class CheckpointScope
 {
 public:
-    CheckpointScope(wmtk::attribute::AttributeManager& manager);
+    CheckpointScope(const AttributeManager& manager);
     ~CheckpointScope();
 
 private:
-    wmtk::attribute::AttributeManager& m_manager;
+    const AttributeManager& m_manager;
 };
 } // namespace wmtk::attribute::internal

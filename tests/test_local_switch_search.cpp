@@ -1,5 +1,4 @@
 
-#include <spdlog/spdlog.h>
 #include <stdlib.h>
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
@@ -19,6 +18,7 @@
 #include <wmtk/multimesh/utils/find_local_switch_sequence.hpp>
 #include <wmtk/multimesh/utils/local_switch_tuple.hpp>
 #include <wmtk/multimesh/utils/transport_tuple.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 #include "tools/all_valid_local_tuples.hpp"
 
@@ -27,14 +27,14 @@ using namespace wmtk::tests;
 TEST_CASE("tuple_autogen_find_all_local_switches", "[tuple]")
 {
     for (wmtk::PrimitiveType pt :
-         {PrimitiveType::Edge, PrimitiveType::Face, PrimitiveType::Tetrahedron}) {
+         {PrimitiveType::Edge, PrimitiveType::Triangle, PrimitiveType::Tetrahedron}) {
         auto all = all_valid_local_tuples(pt);
         for (const Tuple& a : all) {
             for (const Tuple& b : all) {
                 auto seq = wmtk::multimesh::utils::find_local_switch_sequence(a, b, pt);
                 const Tuple myb = wmtk::multimesh::utils::local_switch_tuples(pt, a, seq);
 
-                spdlog::warn(
+                logger().trace(
                     "{}=>{} == {}",
                     wmtk::utils::TupleInspector::as_string(a),
                     wmtk::utils::TupleInspector::as_string(myb),

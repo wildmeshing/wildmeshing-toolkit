@@ -11,14 +11,20 @@ set(SRC_FILES
     getRSS.cpp
     getRSS.h
     Rational.hpp
+    Rational.cpp
     mesh_utils.hpp
     mesh_utils.cpp
     TupleInspector.hpp
 
+    orient.hpp
+    orient.cpp
+
     TupleInspector.cpp
     triangle_areas.hpp
     triangle_areas.cpp
-    
+
+    vector_hash.hpp
+    vector_hash.cpp
     #Optimization.hpp
     #Optimization.cpp
 
@@ -35,6 +41,32 @@ set(SRC_FILES
 
     primitive_range.hpp
     primitive_range.cpp
+
+    random_seed.hpp
+
+    make_free_sv_mesh.hpp
+    make_free_sv_mesh.cpp
+
+
+    MerkleTreeInteriorNode.hpp
+    MerkleTreeInteriorNode.cpp
+    Hashable.hpp
+    Hashable.cpp
+
+    merkle_tree.hpp
+    merkle_tree.cpp
+
+    merkle_tree_diff.hpp
+    merkle_tree_diff.cpp
+
+    VolumeRemesherTriangleInsertion.hpp
+    VolumeRemesherTriangleInsertion.cpp
+
+    EigenMatrixWriter.hpp
+    EigenMatrixWriter.cpp
+
+    Stopwatch.hpp
+    Stopwatch.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

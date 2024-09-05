@@ -1,0 +1,32 @@
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": [
+      "input",
+      "position",
+      "output",
+      "cell_dimension"
+    ]
+  },
+  {
+    "pointer": "/input",
+    "type": "string",
+    "doc": "input mesh"
+  },
+  {
+    "pointer": "/position",
+    "type": "string",
+    "doc": "position"
+  },
+  {
+    "pointer": "/output",
+    "type": "string",
+    "doc": "output mesh"
+  },
+  {
+    "pointer": "/cell_dimension",
+    "type": "int",
+    "doc": "2 or 3"
+  }
+]

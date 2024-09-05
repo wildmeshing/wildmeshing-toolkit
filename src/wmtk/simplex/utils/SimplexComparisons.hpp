@@ -7,8 +7,9 @@ class Mesh;
 }
 
 namespace wmtk::simplex::utils {
-struct SimplexComparisons
+class SimplexComparisons
 {
+public:
     /* @brief checks if simplex objects represent the same simplex
      * @param m the mesh these simplices belong to
      * @param s0 the first simplex compared
@@ -73,4 +74,5 @@ struct SimplexComparisons
      * */
     static bool less(const Mesh& m, PrimitiveType primitive_type, const Tuple& a, const Tuple& b);
 };
-} // namespace wmtk::simplex::internal
+} // namespace wmtk::simplex::utils
+#include "SimplexComparisons.hxx"

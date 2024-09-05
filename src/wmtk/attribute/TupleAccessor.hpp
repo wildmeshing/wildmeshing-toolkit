@@ -1,57 +1,49 @@
 #pragma once
-#include "CachingAccessor.hpp"
 
-namespace wmtk {
-class Mesh;
-class TetMesh;
-class TriMesh;
-} // namespace wmtk
+#include "Accessor.hpp"
+
+
 namespace wmtk::attribute {
-/**
- * A CachingAccessor that uses tuples for accessing attributes instead of indices.
- * As global simplex ids should not be publicly available, this accessor uses the Mesh.id() function
- * to map from a tuple to the global simplex id.
- */
-template <typename T>
-class TupleAccessor : protected CachingAccessor<T>
+
+
+template <typename MeshType, int Dim = Eigen::Dynamic>
+class TupleAccessor
 {
 public:
-    friend class wmtk::Mesh;
-    friend class wmtk::TetMesh;
-    friend class wmtk::TriMesh;
-    using Scalar = T;
+    TupleAccessor(MeshType& m, const TypedAttributeHandle<int64_t>& handle);
+    TupleAccessor(const MeshType& m, const TypedAttributeHandle<int64_t>& handle);
+    template <int Dim2>
+    TupleAccessor(const Accessor<int64_t, MeshType, Dim2>& accessor);
 
-    friend class AttributeCache<T>;
-    using BaseType = AccessorBase<T>;
-    using CachingBaseType = CachingAccessor<T>;
-
-    using ConstMapResult = typename BaseType::ConstMapResult; // Eigen::Map<const VectorX<T>>
-    using MapResult = typename BaseType::MapResult; // Eigen::Map<VectorX<T>>
-
-    using CachingBaseType::CachingBaseType;
-
-    TupleAccessor(const TupleAccessor&) = delete;
-    TupleAccessor& operator=(const TupleAccessor&) = delete;
+    // Eigen::Map<VectorX<T>>
+    template <int D = Dim>
+    using MapResult = internal::MapResult<Tuple, D>;
+    // Eigen::Map<const VectorX<T>>
+    template <int D = Dim>
+    using ConstMapResult = internal::ConstMapResult<Tuple, D>;
 
 
-    T const_scalar_attribute(const Tuple& t) const;
-    T& scalar_attribute(const Tuple& t);
+    const Tuple& const_scalar_attribute(const Tuple& t) const;
+    Tuple& scalar_attribute(const Tuple& t);
 
-    ConstMapResult const_vector_attribute(const Tuple& t) const;
-    MapResult vector_attribute(const Tuple& t);
+    template <int D = Dim>
+    ConstMapResult<D> const_vector_attribute(const Tuple& t) const;
+    template <int D = Dim>
+    MapResult<D> vector_attribute(const Tuple& t);
 
-    long index(const Tuple& t) const;
-    using BaseType::dimension; // const() -> long
-    using BaseType::reserved_size; // const() -> long
+    Eigen::Index dimension() const { return m_dimension; }
 
-    using BaseType::attribute; // access to Attribute object being used here
-    using CachingBaseType::has_stack;
-    using CachingBaseType::mesh;
-    using CachingBaseType::stack_depth;
-
-protected:
-    using CachingBaseType::base_type;
-    CachingBaseType& caching_base_type() { return *this; }
-    const CachingBaseType& caching_base_type() const { return *this; }
+private:
+    Accessor<int64_t, MeshType> m_base_accessor;
+    Eigen::Index m_dimension;
 };
+
+
+template <typename MeshType>
+TupleAccessor(MeshType& m, const TypedAttributeHandle<int64_t>& handle) -> TupleAccessor<MeshType>;
+template <typename MeshType>
+TupleAccessor(const MeshType& m, const TypedAttributeHandle<int64_t>& handle)
+    -> TupleAccessor<MeshType>;
+
 } // namespace wmtk::attribute
+#include "TupleAccessor.hxx"

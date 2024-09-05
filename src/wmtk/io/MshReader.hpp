@@ -1,7 +1,9 @@
 #pragma once
 
 #include <Eigen/Core>
-#include "MeshReader.hpp"
+#include <filesystem>
+#include <memory>
+#include <wmtk/Mesh.hpp>
 
 #include <mshio/mshio.h>
 
@@ -10,13 +12,26 @@ namespace wmtk {
 class MshReader
 {
 public:
-    std::shared_ptr<Mesh> read(const std::filesystem::path& filename);
+    std::shared_ptr<Mesh> read(
+        const std::filesystem::path& filename,
+        const bool ignore_z = false,
+        const std::vector<std::string>& attrs = {});
 
 private:
-    void set_vertex(size_t i, double x, double y, double z) { V.row(i) << x, y, z; }
+    void set_vertex(size_t i, double x, double y, double z)
+    {
+        if (m_ignore_z)
+            V.row(i) << x, y;
+        else
+            V.row(i) << x, y, z;
+    }
 
     void set_edge(size_t i, int i0, int i1) { S.row(i) << i0, i1; }
-    void set_face(size_t i, int i0, int i1, int i2) { S.row(i) << i0, i1, i2; }
+    void set_face(size_t i, int i0, int i1, int i2)
+    {
+        assert(i0 >= 0 && i1 >= 0 && i2 >= 0);
+        S.row(i) << i0, i1, i2;
+    }
     void set_tet(size_t i, int i0, int i1, int i2, int i3) { S.row(i) << i0, i1, i2, i3; }
 
 
@@ -46,18 +61,22 @@ private:
     // std::vector<std::string> get_face_attribute_names() const;
     // std::vector<std::string> get_tet_attribute_names() const;
 
+    // template <int DIM, typename Fn>
     // void extract_edge_vertex_attribute(const std::string& attr_name, Fn&& set_attr);
+    // template <int DIM, typename Fn>
     // void extract_face_vertex_attribute(const std::string& attr_name, Fn&& set_attr);
+    // template <int DIM, typename Fn>
     // void extract_tet_vertex_attribute(const std::string& attr_name, Fn&& set_attr);
+    // template <int DIM, typename Fn>
     // void extract_edge_attribute(const std::string& attr_name, Fn&& set_attr);
+    // template <int DIM, typename Fn>
     // void extract_face_attribute(const std::string& attr_name, Fn&& set_attr);
+    // template <int DIM, typename Fn>
     // void extract_tet_attribute(const std::string& attr_name, Fn&& set_attr);
 
-    template <int DIM>
-    const mshio::NodeBlock* get_vertex_block() const;
+    const mshio::NodeBlock* get_vertex_block(int DIM) const;
 
-    template <int DIM>
-    const mshio::ElementBlock* get_simplex_element_block() const;
+    const mshio::ElementBlock* get_simplex_element_block(int DIM) const;
 
     template <int DIM>
     size_t get_num_vertices() const;
@@ -72,24 +91,34 @@ private:
     void extract_simplex_elements();
 
 
-    // template <int DIM>
-    // std::vector<std::string> get_vertex_attribute_names() const;
+    // std::vector<std::string> get_vertex_attribute_names(int DIM) const;
 
-    // template <int DIM>
-    // std::vector<std::string> get_element_attribute_names() const;
+    // std::vector<std::string> get_element_attribute_names(int DIM) const;
+
+    // void extract_vertex_attribute(
+    //     std::shared_ptr<wmtk::TetMesh> m,
+    //     const std::string& attr_name,
+    //     int DIM);
+
+    void extract_element_attribute(
+        std::shared_ptr<wmtk::TetMesh> m,
+        const std::string& attr_name,
+        int DIM);
 
     // template <int DIM, typename Fn>
-    // void extract_vertex_attribute(const std::string& attr_name, Fn&& set_attr)
+    // bool extract_element_attribute(const std::string& attr_name, int DIM);
+
 
     // template <int DIM, typename Fn>
-    // void extract_element_attribute(const std::string& attr_name, Fn&& set_attr)
+    // void extract_element_attribute(const std::string& attr_name, Fn&& set_attr);
 
 private:
     mshio::MshSpec m_spec;
+    bool m_ignore_z;
 
 
     Eigen::MatrixXd V;
-    Eigen::Matrix<long, -1, -1> S;
+    Eigen::Matrix<int64_t, -1, -1> S;
 };
 
 } // namespace wmtk
