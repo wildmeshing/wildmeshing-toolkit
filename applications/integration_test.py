@@ -9,78 +9,95 @@ import tempfile
 
 class IntegrationTest(unittest.TestCase):
     BINARY_FOLDER = ""
+    CONFIG_FILE = ""
 
-    def test_run_all(self):
-        this_dir = os.path.dirname(os.path.realpath(__file__))
-        print('Running all integration tests in', this_dir)
+    def setUp(self):
+        self.working_dir_fp = tempfile.TemporaryDirectory()
+        self.working_dir = self.working_dir_fp.name
+        print('Running all integration tests in', self.working_dir)
 
-        for config_file in glob.glob(os.path.join(this_dir,'**/*.json'), recursive=True):
-            if "test_output" in config_file:
-                continue
-            with open(config_file) as f:
-                config = json.load(f)
+        with open(os.path.join(IntegrationTest.BINARY_FOLDER, IntegrationTest.CONFIG_FILE)) as fp:
+            self.main_config = json.load(fp)
 
-            test_folder = os.path.join(this_dir, "..", config["data_folder"])
+    def tearDown(self):
+        self.working_dir_fp.cleanup()
 
-            input_tag = config["input_tag"]
-            oracle_tag = config["oracle_tag"]
-            root_tag = config["root_tag"]
-            checks = [] if "checks" not in config else config["checks"]
+    def run_one(self, main_config, config):
 
-            executable = config["executable"]
-            executable = os.path.join(this_dir, "..", IntegrationTest.BINARY_FOLDER, executable)
+        test_folder = os.path.join(main_config["data_folder"], config["test_directory"])
 
-            print("Running", executable)
+        input_tag = config["input_tag"]
+        oracle_tag = config["oracle_tag"]
+        root_tag = config["input_directory_tag"]
 
-            for test_file_name in config["tests"]:
-                print("Running test ", test_file_name)
+        checks = [] if "checks" not in config else config["checks"]
 
-                test_file = os.path.join(test_folder, test_file_name)
-                self.assertTrue(os.path.exists(test_file))
+        executable = os.path.join(IntegrationTest.BINARY_FOLDER, "applications", main_config["executable"])
 
-                with open(test_file) as f:
-                    test_oracle = json.load(f)
+        for test_file_name in config["tests"]:
+            print("Running test ", test_file_name)
 
-                input = test_oracle[input_tag].copy()
-                input[oracle_tag] = f"{test_file_name}_run.json"
+            test_file = os.path.join(test_folder, test_file_name)
 
-                if root_tag in input:
-                    if not os.path.isabs(input[root_tag]):
-                        input[root_tag] = os.path.join(test_folder, input[root_tag])
-                else:
-                    input[root_tag] = test_folder
+            self.assertTrue(os.path.exists(test_file))
 
-                with tempfile.NamedTemporaryFile() as tmp:
-                    with open(tmp.name, "w") as ftmp:
-                        json.dump(input, ftmp)
+            with open(test_file) as f:
+                test_oracle = json.load(f)
 
-                    res = subprocess.run([executable, "-j", tmp.name])
+            input = test_oracle[input_tag].copy()
+            oracle_file = tempfile.NamedTemporaryFile(mode='r')
+            input[oracle_tag] = oracle_file.name
 
-                    self.assertEqual(res.returncode, 0)
+            if root_tag in input:
+                if not os.path.isabs(input[root_tag]):
+                    input[root_tag] = os.path.join(test_folder, input[root_tag])
+            else:
+                input[root_tag] = test_folder
 
-                    with open(input[oracle_tag]) as f:
-                        result = json.load(f)
+            input_json = tempfile.NamedTemporaryFile(mode='w')
+            json.dump(input, input_json)
+            input_json.flush()
 
-                    for check in checks:
-                        self.assertTrue(check(result[check], test_oracle[check]))
+            res = subprocess.run([executable, "-j", input_json.name], cwd=self.working_dir)
 
-                    if len(checks) == 0:
-                        for k in test_oracle:
-                            if k == input_tag:
-                                continue
+            self.assertEqual(res.returncode, 0)
+            result = json.load(oracle_file)
 
-                            self.assertTrue(k in result)
-                            self.assertEqual(result[k], test_oracle[k])
+            for check in checks:
+                self.assertTrue(result[check], test_oracle[check])
 
-                        # self.assertEqual(result, test_oracle)
+            if len(checks) == 0:
+                for k in test_oracle:
+                    if k == input_tag:
+                        continue
 
+                    self.assertTrue(k in result)
+                    self.assertEqual(result[k], test_oracle[k])
+
+            oracle_file.close()
+            input_json.close()
 
 
         self.assertTrue(True)
 
+    def test_all(self):
+        this_dir = os.path.dirname(os.path.realpath(__file__))
+
+        for file in glob.glob(os.path.join(this_dir,'**/*.json'), recursive=True):
+            name = os.path.basename(os.path.dirname(file))
+
+            with open(file) as fp:
+                config = json.load(fp)
+
+            self.run_one(self.main_config[name], config)
 
 if __name__ == '__main__':
+    bin_dir = os.getcwd()
+    config_file = "test_config.json"
     if len(sys.argv) > 1:
-        IntegrationTest.BINARY_FOLDER = sys.argv.pop()
+        bin_dir = os.path.append(bin_dir, sys.argv.pop())
+
+    IntegrationTest.BINARY_FOLDER = bin_dir
+    IntegrationTest.CONFIG_FILE = config_file
 
     unittest.main()

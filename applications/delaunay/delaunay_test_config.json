@@ -1,10 +1,9 @@
 {
-    "data_folder": "data/unit_test",
-    "executable": "delaunay_app",
+    "test_directory": "unit_test",
     "tests": [
         "delaunay_out.json"
     ],
     "input_tag": "input",
     "oracle_tag": "report",
-    "root_tag": "root"
+    "input_directory_tag": "root"
 }
