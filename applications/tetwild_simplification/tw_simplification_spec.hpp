@@ -1,14 +1,18 @@
+namespace {
+
+nlohmann::json tw_simplification_spec = R"(
 [
   {
     "pointer": "/",
     "type": "object",
     "required": [
       "input",
-      "position",
       "output",
       "main_eps"
     ],
     "optional": [
+      "root",
+      "report",
       "duplicate_tol",
       "sample_envelope",
       "relative"
@@ -17,11 +21,6 @@
   {
     "pointer": "/input",
     "type": "string"
-  },
-  {
-    "pointer": "/position",
-    "type": "string",
-    "doc": "name of the position attribute in input mesh"
   },
   {
     "pointer": "/output",
@@ -49,5 +48,18 @@
     "type": "bool",
     "default": false,
     "doc": "use sampling envelope"
-  }
+  },
+  {
+    "pointer": "/report",
+    "type": "string",
+    "default": ""
+},
+{
+    "pointer": "/root",
+    "type": "string",
+    "default": ""
+}
 ]
+)"_json;
+
+}
