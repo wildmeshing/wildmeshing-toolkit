@@ -8,7 +8,7 @@
 
 namespace wmtk::components {
 
-auto gather_attributes(const Mesh& mesh, const internal::MarchingOptions& options)
+auto gather_attributes(const Mesh& mesh, const MarchingOptions& options)
 {
     attribute::MeshAttributeHandle vertex_tag_handle =
         mesh.get_attribute_handle<int64_t>(options.attributes.vertex_label, PrimitiveType::Vertex);
@@ -25,7 +25,7 @@ auto gather_attributes(const Mesh& mesh, const internal::MarchingOptions& option
     return std::make_tuple(vertex_tag_handle, filter_labels, pass_through_attributes);
 }
 
-auto get_marching_attributes(Mesh& mesh, const internal::MarchingOptions& options)
+auto get_marching_attributes(Mesh& mesh, const MarchingOptions& options)
 {
     std::optional<attribute::MeshAttributeHandle> edge_tag_handle;
     std::optional<attribute::MeshAttributeHandle> face_tag_handle;
@@ -59,8 +59,6 @@ auto get_marching_attributes(Mesh& mesh, const internal::MarchingOptions& option
 
 void marching(Mesh& mesh, const nlohmann::json& j)
 {
-    using namespace internal;
-
     MarchingOptions options = j.get<MarchingOptions>();
 
     assert(options.input_values.size() == 2);
@@ -93,45 +91,24 @@ void marching(Mesh& mesh, const nlohmann::json& j)
         mesh.top_simplex_type() == PrimitiveType::Triangle ||
         mesh.top_simplex_type() == PrimitiveType::Tetrahedron);
 
+    auto pos_handle =
+        mesh.get_attribute_handle<double>(options.attributes.position, PrimitiveType::Vertex);
+
+    std::map<PrimitiveType, attribute::MeshAttributeHandle> label_handles;
+    label_handles[PrimitiveType::Vertex] = vertex_tag_handle;
     if (edge_tag_handle.has_value()) {
-        if (face_tag_handle.has_value()) {
-            Marching mc(
-                mesh,
-                vertex_tag_handle,
-                edge_tag_handle.value(),
-                face_tag_handle.value(),
-                options.input_values,
-                options.output_value,
-                options.weight,
-                filter_labels,
-                options.filter_values,
-                pass_through_attributes);
-            mc.process();
-        } else {
-            Marching mc(
-                mesh,
-                vertex_tag_handle,
-                edge_tag_handle.value(),
-                options.input_values,
-                options.output_value,
-                options.weight,
-                filter_labels,
-                options.filter_values,
-                pass_through_attributes);
-            mc.process();
-        }
-    } else {
-        Marching mc(
-            mesh,
-            vertex_tag_handle,
-            options.input_values,
-            options.output_value,
-            options.weight,
-            filter_labels,
-            options.filter_values,
-            pass_through_attributes);
-        mc.process();
+        label_handles[PrimitiveType::Edge] = edge_tag_handle.value();
     }
+    if (face_tag_handle.has_value()) {
+        label_handles[PrimitiveType::Triangle] = face_tag_handle.value();
+    }
+
+    Marching mc(pos_handle, label_handles, options.input_values, options.output_value);
+    for (size_t i = 0; i < filter_labels.size(); ++i) {
+        mc.add_filter(filter_labels[i], options.filter_values[i]);
+    }
+    mc.add_pass_through(pass_through_attributes);
+    mc.process();
 
     // clear attributes
     {

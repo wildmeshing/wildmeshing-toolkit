@@ -24,6 +24,8 @@ add_subdirectory("triangle_insertion/wmtk/components/triangle_insertion")
 add_subdirectory("marching/wmtk/components/marching")
 add_subdirectory("procedural/wmtk/components/procedural")
 
+add_subdirectory("tetwild_simplification/wmtk/components/tetwild_simplification")
+
 # add_component("export_cache")
 # add_component("import_cache")
 # add_component("isotropic_remeshing")
@@ -38,7 +40,6 @@ add_subdirectory("procedural/wmtk/components/procedural")
 # add_component("winding_number")
 # add_component("periodic_optimization")
 # add_component("shortestedge_collapse")
-# add_component("tetwild_simplification")
 
 
 

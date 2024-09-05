@@ -10,7 +10,6 @@
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/components/utils/resolve_path.hpp>
 #include <wmtk/utils/EigenMatrixWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
@@ -830,7 +829,7 @@ void swapping(
 }
 
 
-void simplify(
+nlohmann::json simplify(
     std::vector<Vector3>& input_vertices,
     std::vector<Vector3i>& input_faces,
     const AABBWrapper& tree,
@@ -900,24 +899,32 @@ void simplify(
 
     logger().debug("#v = {}", input_vertices.size());
     logger().debug("#f = {}", input_faces.size());
+
+    nlohmann::json out;
+    out["collapsing_time"] = collapsing_time;
+    out["swapping_time"] = swapping_time;
+    out["cleanup_time"] = cleanup_time;
+
+    return out;
 }
 
-void tetwild_simplification(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+std::tuple<std::shared_ptr<TriMesh>, nlohmann::json> tetwild_simplification(
+    const TriMesh& mesh,
+    const std::string& postion_attr_name,
+    double main_esp,
+    bool relative,
+    double duplicate_tol,
+    bool use_sampling)
 {
     using namespace internal;
 
-    std::shared_ptr<Mesh> mesh = cache.read_mesh(j["input"]);
-
-    if (mesh->top_simplex_type() != PrimitiveType::Triangle)
-        log_and_throw_error("Input mesh is not a triangle mesh");
-
     wmtk::utils::EigenMatrixWriter writer;
-    mesh->serialize(writer);
+    mesh.serialize(writer);
 
     Eigen::MatrixXd V;
     Eigen::MatrixX<int64_t> F;
 
-    writer.get_double_matrix(j["position"], PrimitiveType::Vertex, V);
+    writer.get_double_matrix(postion_attr_name, PrimitiveType::Vertex, V);
     writer.get_FV_matrix(F);
 
     Eigen::VectorXd bmin(V.cols());
@@ -938,20 +945,17 @@ void tetwild_simplification(const utils::Paths& paths, const nlohmann::json& j, 
 
     const double bbdiag = (bmax - bmin).norm();
 
-    double main_esp = j["main_eps"];
-    if (j["relative"]) main_esp *= bbdiag;
+    if (relative) main_esp *= bbdiag;
 
-    double duplicate_tol = j["duplicate_tol"];
     if (duplicate_tol < 0) duplicate_tol = SCALAR_ZERO;
-    if (j["relative"]) duplicate_tol *= bbdiag;
+    if (relative) duplicate_tol *= bbdiag;
 
     const double envelope_size = 2 * main_esp * (9 - 2 * sqrt(3)) / 25.0;
     const double sampling_dist = (8.0 / 15.0) * main_esp;
-    const bool use_sampling = j["sample_envelope"];
 
     AABBWrapper tree(vertices, faces, envelope_size, sampling_dist, use_sampling);
 
-    simplify(vertices, faces, tree, duplicate_tol);
+    auto out = simplify(vertices, faces, tree, duplicate_tol);
 
     V.resize(vertices.size(), 3);
     F.resize(faces.size(), 3);
@@ -960,9 +964,9 @@ void tetwild_simplification(const utils::Paths& paths, const nlohmann::json& j, 
 
     auto res = std::make_shared<TriMesh>();
     res->initialize(F);
-    mesh_utils::set_matrix_attribute(V, j["position"], PrimitiveType::Vertex, *res);
+    mesh_utils::set_matrix_attribute(V, postion_attr_name, PrimitiveType::Vertex, *res);
 
-    cache.write_mesh(*res, j["output"]);
+    return {res, out};
 }
 
 
