@@ -1,9 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
-#include <nlohmann/json.hpp>
+
 #include <tools/DEBUG_TetMesh.hpp>
 #include <tools/DEBUG_TriMesh.hpp>
 #include <tools/TetMesh_examples.hpp>
 #include <tools/TriMesh_examples.hpp>
+
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/simplex/link.hpp>
