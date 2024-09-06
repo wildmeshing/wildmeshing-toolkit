@@ -18,6 +18,8 @@
 using namespace wmtk;
 namespace fs = std::filesystem;
 
+using wmtk::components::utils::resolve_paths;
+
 int main(int argc, char* argv[])
 {
     CLI::App app{argv[0]};
@@ -45,11 +47,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    const fs::path input_path_in = j["input_path"];
-
-    const fs::path root = input_path_in.empty() ? json_input_file : input_path_in;
-
-    fs::path input_file = wmtk::components::utils::resolve_path(j["input"], root);
+    const fs::path input_file = resolve_paths(json_input_file, {j["input_path"], j["input"]});
 
     std::shared_ptr<Mesh> mesh_in = wmtk::components::input(input_file);
     Mesh& mesh = *mesh_in;
@@ -85,10 +83,10 @@ int main(int argc, char* argv[])
     const std::string report = j["report"];
     if (!report.empty()) {
         nlohmann::json out_json;
-        out_json["vertices"] = mesh.get_all(PrimitiveType::Vertex).size();
-        out_json["edges"] = mesh.get_all(PrimitiveType::Edge).size();
-        out_json["triangles"] = mesh.get_all(PrimitiveType::Triangle).size();
-        out_json["tets"] = mesh.get_all(PrimitiveType::Tetrahedron).size();
+        out_json["stats"]["vertices"] = mesh.get_all(PrimitiveType::Vertex).size();
+        out_json["stats"]["edges"] = mesh.get_all(PrimitiveType::Edge).size();
+        out_json["stats"]["triangles"] = mesh.get_all(PrimitiveType::Triangle).size();
+        out_json["stats"]["tets"] = mesh.get_all(PrimitiveType::Tetrahedron).size();
 
         out_json["input"] = j;
 
