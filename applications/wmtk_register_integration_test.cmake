@@ -2,7 +2,7 @@ macro(wmtk_register_integration_test EXEC_NAME CONFIG_FILE GIT_REPOSITORY GIT_TA
     include(CPM)
 
     CPMAddPackage(
-        NAME wmtk_${EXEC_NAME}_data
+        NAME wmtk_integration_data
         GIT_REPOSITORY ${GIT_REPOSITORY}
         GIT_TAG ${GIT_TAG}
         DOWNLOAD_ONLY True
