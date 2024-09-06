@@ -11,6 +11,7 @@
 # governing permissions and limitations under the License.
 #
 
+if(NOT CPM_SOURCE_CACHE) 
 if(DEFINED ENV{CPM_SOURCE_CACHE})
     set(CPM_SOURCE_CACHE_DEFAULT $ENV{CPM_SOURCE_CACHE})
 else()
@@ -22,4 +23,5 @@ set(CPM_SOURCE_CACHE
     ${CPM_SOURCE_CACHE_DEFAULT}
     CACHE PATH "Directory to download CPM dependencies"
 )
+endif()
 message(STATUS "Using CPM cache folder: ${CPM_SOURCE_CACHE}")
