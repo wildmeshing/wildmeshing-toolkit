@@ -22,9 +22,9 @@ class IntegrationTest(unittest.TestCase):
     def tearDown(self):
         self.working_dir_fp.cleanup()
 
-    def run_one(self, main_config, config):
+    def run_one(self, executable, data_folder, config):
 
-        test_folder = os.path.join(main_config["data_folder"], config["test_directory"])
+        test_folder = os.path.join(data_folder, config["test_directory"])
 
         input_tag = config["input_tag"]
         oracle_tag = config["oracle_tag"]
@@ -33,10 +33,10 @@ class IntegrationTest(unittest.TestCase):
         has_checks = "checks" in config
         checks = [] if not has_checks else config["checks"]
 
-        executable = os.path.join(IntegrationTest.BINARY_FOLDER, "applications", main_config["executable"])
+        executable = os.path.join(IntegrationTest.BINARY_FOLDER, "applications", executable)
 
         for test_file_name in config["tests"]:
-            print("Running test ", test_file_name)
+            print("Running test", test_file_name)
 
             test_file = os.path.join(test_folder, test_file_name)
 
@@ -82,18 +82,20 @@ class IntegrationTest(unittest.TestCase):
         self.assertTrue(True)
 
     def test_all(self):
-        this_dir = os.path.dirname(os.path.realpath(__file__))
+        for key in self.main_config:
+            if key == "skip":
+                continue
+            with self.subTest(msg=key):
+                print("Running test for", key)
 
-        for file in glob.glob(os.path.join(this_dir,'**/*.json'), recursive=True):
-            name = os.path.basename(os.path.dirname(file))
 
-            with open(file) as fp:
-                config = json.load(fp)
+                file = self.main_config[key]["config_file"]
 
-            if name in self.main_config:
-                self.run_one(self.main_config[name], config)
-            else:
-                print("No configuration for ", name)
+                with open(file) as fp:
+                    config = json.load(fp)
+
+                self.run_one(key, self.main_config[key]["data_folder"], config)
+
 
 if __name__ == '__main__':
     bin_dir = os.getcwd()

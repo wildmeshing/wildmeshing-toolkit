@@ -89,6 +89,7 @@ include(fast_envelope)
 include(bvh)
 include(volume_mesher)
 include(onetbb)
+include(CLI11)
 
 # Core library
 add_library(wildmeshing_toolkit)
