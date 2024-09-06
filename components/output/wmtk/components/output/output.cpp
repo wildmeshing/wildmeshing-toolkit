@@ -24,8 +24,7 @@ void output(
         ParaviewWriter writer(file, position_attr_name, mesh, out[0], out[1], out[2], out[3]);
         mesh.serialize(writer);
     } else if (file.extension() == ".hdf5") {
-        HDF5Writer writer(file);
-        mesh.serialize(writer);
+        output_hdf5(mesh, file);
     } else
         throw std::runtime_error(std::string("Unknown file type: ") + file.string());
 }
@@ -37,6 +36,12 @@ void output(
 {
     const std::string attr_name = mesh.get_attribute_name(position_attr.as<double>());
     output(mesh, file, attr_name);
+}
+
+void output_hdf5(const Mesh& mesh, const std::filesystem::path& file)
+{
+    HDF5Writer writer(file);
+    mesh.serialize(writer);
 }
 
 } // namespace wmtk::components

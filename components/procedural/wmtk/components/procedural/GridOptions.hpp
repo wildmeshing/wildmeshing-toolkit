@@ -6,11 +6,16 @@
 
 
 
-namespace wmtk::components::internal {
+namespace wmtk::components::procedural {
 class GridOptions
 {
     public:
     std::variant<Grid2Options,Grid3Options> opts;
+    std::optional<std::string> get_coordinate_name() const { 
+        return std::visit([&](const auto& o) {
+                return o.get_coordinate_name();
+                }, opts);
+    }
     friend void to_json(nlohmann::json& nlohmann_json_j, const GridOptions& nlohmann_json_t)
     {
         std::visit([&](const auto& o) {

@@ -5,9 +5,8 @@
 #include "grid_utils.hpp"
 
 
-namespace wmtk::components::internal {
+namespace wmtk::components::procedural {
 
-namespace procedural {
 std::shared_ptr<Mesh> make_mesh(const TriangleFanOptions& opt)
 {
     const size_t size = opt.size;
@@ -49,5 +48,4 @@ std::shared_ptr<Mesh> make_mesh(const TriangleFanOptions& opt)
     }
     return mptr;
 }
-} // namespace procedural
-} // namespace wmtk::components::internal
+} // namespace wmtk::components::procedural

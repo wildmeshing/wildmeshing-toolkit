@@ -7,7 +7,7 @@
 #include "GridOptions.hpp"
 #include "TriangleFanOptions.hpp"
 
-namespace wmtk::components::internal {
+namespace wmtk::components::procedural {
 
 
 struct ProceduralOptions
@@ -47,4 +47,4 @@ struct ProceduralOptions
 };
 
 
-} // namespace wmtk::components::internal
+} // namespace wmtk::components::procedural

@@ -5,7 +5,7 @@
 #include <optional>
 #include <string>
 
-namespace wmtk::components::internal {
+namespace wmtk::components::procedural {
 class TriangleFanOptions
 {
 public:
@@ -34,6 +34,8 @@ public:
         }
     };
     std::optional<Coordinates> coordinates;
+
+    std::optional<std::string> get_coordinate_name() const { if(coordinates.has_value()) { return coordinates.value().name;} else { return {}; } }
     friend void to_json(nlohmann::json& nlohmann_json_j, const TriangleFanOptions& nlohmann_json_t)
     {
         nlohmann_json_j["size"] = nlohmann_json_t.size;
@@ -51,4 +53,4 @@ public:
         }
     }
 };
-} // namespace wmtk::components::internal
+} // namespace wmtk::components::procedural

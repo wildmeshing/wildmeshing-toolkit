@@ -1,5 +1,5 @@
 #include "grid_utils.hpp"
-namespace wmtk::components::internal::procedural {
+namespace wmtk::components::procedural {
 
 namespace {
 template <int64_t D>
@@ -21,4 +21,4 @@ int64_t grid_index(const std::array<int64_t, 2>& d, const std::array<int64_t, 2>
 {
     return _grid_index<2>(d, i);
 }
-} // namespace wmtk::components::internal::procedural
+} // namespace wmtk::components::procedural

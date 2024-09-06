@@ -6,7 +6,7 @@
 #include "grid_utils.hpp"
 
 
-namespace wmtk::components::internal {
+namespace wmtk::components::procedural {
 const std::array<std::string, 2> Grid3Options::tiling_names = {{"bcc", "freudenthal"}};
 
 namespace {
@@ -91,7 +91,6 @@ std::shared_ptr<Mesh> make_freudenthal_mesh(const Grid3Options& opt)
 }
 } // namespace
 
-namespace procedural {
 std::shared_ptr<Mesh> make_mesh(const Grid3Options& opt)
 {
     switch (opt.tiling_type) {
@@ -104,5 +103,4 @@ std::shared_ptr<Mesh> make_mesh(const Grid3Options& opt)
     throw std::runtime_error("failed to select a tiling type");
     return nullptr;
 }
-} // namespace procedural
-} // namespace wmtk::components::internal
+} // namespace wmtk::components::procedural

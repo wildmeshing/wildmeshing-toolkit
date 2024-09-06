@@ -6,7 +6,7 @@
 #include <optional>
 #include <string>
 
-namespace wmtk::components::internal {
+namespace wmtk::components::procedural {
 class Grid3Options
 {
 public:
@@ -22,6 +22,7 @@ public:
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(Coordinates, name, spacing);
     };
     std::optional<Coordinates> coordinates;
+    std::optional<std::string> get_coordinate_name() const { if(coordinates.has_value()) { return coordinates.value().name;} else { return {}; } }
     friend void to_json(nlohmann::json& nlohmann_json_j, const Grid3Options& nlohmann_json_t)
     {
         nlohmann_json_j["tiling"] = tiling_names[static_cast<size_t>(nlohmann_json_t.tiling_type)];
@@ -67,4 +68,4 @@ public:
         }
     }
 };
-} // namespace wmtk::components::internal
+} // namespace wmtk::components::procedural

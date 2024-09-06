@@ -30,7 +30,7 @@ namespace wmtk::components {
 void output(
     const Mesh& mesh,
     const std::filesystem::path& file,
-    const std::string& position_attr_name = "vertices");
+    const std::string& position_attr_name);
 
 /**
  * @brief Write the mesh to file.
@@ -57,4 +57,16 @@ void output(
     const std::filesystem::path& file,
     const attribute::MeshAttributeHandle& position_attr);
 
+
+/**
+ * @brief Write the mesh to file.
+ *
+ * The mesh can be either outputted as .hdf5.
+ * .hdf5: Write the entire mesh in .hdf5 file format. The file contains all attributes of the mesh
+ * and can be loaded again using the input component.
+ *
+ * @param mesh The mesh that should be written to file.
+ * @param file The desired output file(s).
+ */
+void output_hdf5(const Mesh& mesh, const std::filesystem::path& file);
 } // namespace wmtk::components
