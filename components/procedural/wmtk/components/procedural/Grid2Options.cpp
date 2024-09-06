@@ -8,7 +8,7 @@ namespace wmtk::components::internal {
 const std::array<std::string, 2> Grid2Options::tiling_names = {{"bcc", "diagonal"}};
 
 namespace {
-std::shared_ptr<Mesh> make_diagonal_mesh(const Grid2Options& opt)
+std::shared_ptr<TriMesh> make_diagonal_mesh(const Grid2Options& opt)
 {
     const auto d = opt.dimensions;
     auto vertex_dimensions = opt.dimensions;
@@ -77,7 +77,7 @@ std::shared_ptr<Mesh> make_diagonal_mesh(const Grid2Options& opt)
 } // namespace
 
 namespace procedural {
-std::shared_ptr<Mesh> make_mesh(const Grid2Options& opt)
+std::shared_ptr<TriMesh> make_mesh(const Grid2Options& opt)
 {
     switch (opt.tiling_type) {
     case Grid2Options::TilingType::Diagonal: return make_diagonal_mesh(opt);

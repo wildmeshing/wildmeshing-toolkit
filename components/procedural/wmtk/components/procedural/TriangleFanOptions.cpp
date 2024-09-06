@@ -8,7 +8,7 @@
 namespace wmtk::components::internal {
 
 namespace procedural {
-std::shared_ptr<Mesh> make_mesh(const TriangleFanOptions& opt)
+std::shared_ptr<TriMesh> make_mesh(const TriangleFanOptions& opt)
 {
     const size_t size = opt.size;
 
