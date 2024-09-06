@@ -8,6 +8,7 @@
 
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/components/marching/internal/Marching.hpp>
+#include <wmtk/components/marching/marching.hpp>
 #include <wmtk/components/output/output.hpp>
 #include <wmtk/components/utils/get_attributes.hpp>
 #include <wmtk/components/utils/resolve_path.hpp>
@@ -54,28 +55,29 @@ int main(int argc, char* argv[])
     Mesh& mesh = *mesh_in;
 
 
-    auto pos_handle = mesh.get_attribute_handle<double>(j["pos_attr_name"], PrimitiveType::Vertex);
+    attribute::MeshAttributeHandle pos_handle =
+        mesh.get_attribute_handle<double>(j["pos_attr_name"], PrimitiveType::Vertex);
 
     // marching
     {
-        std::map<PrimitiveType, attribute::MeshAttributeHandle> label_handles;
-        label_handles[PrimitiveType::Vertex] =
+        wmtk::components::MarchingOptions options;
+
+        options.position_handle = pos_handle;
+
+        options.label_handles[PrimitiveType::Vertex] =
             mesh.get_attribute_handle<int64_t>(j["vertex_label"], PrimitiveType::Vertex);
-        label_handles[PrimitiveType::Edge] =
+        options.label_handles[PrimitiveType::Edge] =
             mesh.get_attribute_handle<int64_t>(j["edge_label"], PrimitiveType::Edge);
-        label_handles[PrimitiveType::Triangle] =
+        options.label_handles[PrimitiveType::Triangle] =
             mesh.get_attribute_handle<int64_t>(j["face_label"], PrimitiveType::Triangle);
 
-        const auto pass_through = wmtk::components::utils::get_attributes(mesh, j["pass_through"]);
+        options.pass_through_attributes =
+            wmtk::components::utils::get_attributes(mesh, j["pass_through"]);
 
-        const std::vector<int64_t> input_values = j["input_values"];
-        const int64_t output_value = j["output_value"];
+        options.input_values = j["input_values"].get<std::vector<int64_t>>();
+        options.output_value = j["output_value"];
 
-        wmtk::components::Marching mc(pos_handle, label_handles, input_values, output_value);
-
-        mc.add_pass_through(pass_through);
-
-        mc.process();
+        wmtk::components::marching(mesh, options);
     }
 
     wmtk::components::output(mesh, j["output"], pos_handle);

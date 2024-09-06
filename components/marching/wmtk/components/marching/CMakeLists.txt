@@ -1,9 +1,8 @@
 
 set(SRC_FILES
-    internal/MarchingOptions.hpp
-    internal/MarchingOptions.cpp
     internal/Marching.hpp
     internal/Marching.cpp
+    MarchingOptions.hpp
 	marching.hpp
     marching.cpp
     )

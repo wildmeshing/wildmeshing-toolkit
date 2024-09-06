@@ -44,7 +44,7 @@ Marching::Marching(
     , m_input_values(input_values)
     , m_output_value(output_value)
 {
-    assert(label_handles.count(PrimitiveType::Vertex) != 0);
+    assert(label_handles.count(PrimitiveType::Vertex));
 
     m_vertex_tag_handle = label_handles[PrimitiveType::Vertex];
 
