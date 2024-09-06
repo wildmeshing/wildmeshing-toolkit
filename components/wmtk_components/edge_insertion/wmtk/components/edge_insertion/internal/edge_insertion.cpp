@@ -15,6 +15,7 @@
 #include <wmtk/operations/attribute_update/make_cast_attribute_transfer_strategy.hpp>
 
 #include <igl/edges.h>
+#include <igl/remove_duplicate_vertices.h>
 
 #include <array>
 #include <numeric>
@@ -495,59 +496,86 @@ void edge_insertion(
     edgemesh.serialize(writer_edge);
 
     Eigen::MatrixX<int64_t> EV_tmp;
-    Eigen::MatrixX<Rational> V_edge;
 
     writer_edge.get_EV_matrix(EV_tmp);
-    writer_edge.get_position_matrix(V_edge);
+    // writer_edge.get_position_matrix(V_edge);
 
-    // merge colinear  and overlapping segments
+
+    // hack here for double input
+    Eigen::MatrixX<double> V_edge_double;
+    writer_edge.get_position_matrix(V_edge_double);
+
+    // cleanup duplicated vertices for edge mesh
+    Eigen::VectorX<int64_t> _SVI, _SVJ;
+    Eigen::MatrixX<int64_t> EV_in;
+    Eigen::MatrixX<double> V_edge_tmp;
+
+    igl::remove_duplicate_vertices(V_edge_double, EV_tmp, 0, V_edge_tmp, _SVI, _SVJ, EV_in);
+
+    Eigen::MatrixX<Rational> V_edge;
+
+    V_edge.resize(V_edge_tmp.rows(), V_edge_tmp.cols());
+    for (int64_t i = 0; i < V_edge_tmp.rows(); ++i) {
+        for (int64_t j = 0; j < V_edge_tmp.cols(); ++j) {
+            V_edge(i, j) = Rational(V_edge_tmp(i, j));
+        }
+    }
+
+
+    // // merge colinear  and overlapping segments
+    // // skipped now, not necessary
+    // std::vector<std::array<int64_t, 2>> EV;
+    // for (int64_t i = 0; i < EV_tmp.rows(); ++i) {
+    //     const auto& p0 = V_edge.row(EV_tmp(i, 0));
+    //     const auto& p1 = V_edge.row(EV_tmp(i, 1));
+    //     auto bbox_p = compute_bbox(p0, p1);
+
+    //     bool overlapped = false;
+    //     for (auto& e : EV) {
+    //         const auto& q0 = V_edge.row(e[0]);
+    //         const auto& q1 = V_edge.row(e[1]);
+    //         auto bbox_q = compute_bbox(q0, q1);
+
+    //         if (is_bbox_intersect(bbox_p[0], bbox_p[1], bbox_q[0], bbox_q[1]) &&
+    //             is_colinear(p0, p1, q0, q1)) {
+    //             overlapped = true;
+
+    //             // merge two segments
+    //             int64_t endpoint0 = EV_tmp(i, 0);
+    //             int64_t endpoint1 = EV_tmp(i, 1);
+
+    //             const Vector2r p0p1 = p1 - p0;
+    //             const Vector2r p0q0 = q0 - p0;
+    //             const Vector2r p0q1 = q1 - p0;
+    //             const Vector2r p1q0 = q0 - p1;
+    //             const Vector2r p1q1 = q1 - p1;
+
+    //             if (p0p1[0] * p0q0[0] < 0 || p0p1[1] * p0q0[1] < 0) {
+    //                 endpoint0 = e[0];
+    //             } else if (p0p1[0] * p0q1[0] < 0 || p0p1[1] * p0q1[1] < 0) {
+    //                 endpoint0 = e[1];
+    //             }
+
+    //             if (-p0p1[0] * p1q0[0] < 0 || -p0p1[1] * p1q0[1] < 0) {
+    //                 endpoint1 = e[0];
+    //             } else if (-p0p1[0] * p1q1[0] < 0 || -p0p1[1] * p1q1[1] < 0) {
+    //                 endpoint1 = e[1];
+    //             }
+
+    //             e[0] = endpoint0;
+    //             e[1] = endpoint1;
+
+    //             break;
+    //         }
+    //     }
+    //     if (!overlapped) {
+    //     EV.push_back({{EV_tmp(i, 0), EV_tmp(i, 1)}});
+    //     }
+    // }
+
     std::vector<std::array<int64_t, 2>> EV;
-    for (int64_t i = 0; i < EV_tmp.rows(); ++i) {
-        const auto& p0 = V_edge.row(EV_tmp(i, 0));
-        const auto& p1 = V_edge.row(EV_tmp(i, 1));
-        auto bbox_p = compute_bbox(p0, p1);
-
-        bool overlapped = false;
-        for (auto& e : EV) {
-            const auto& q0 = V_edge.row(e[0]);
-            const auto& q1 = V_edge.row(e[1]);
-            auto bbox_q = compute_bbox(q0, q1);
-
-            if (is_bbox_intersect(bbox_p[0], bbox_p[1], bbox_q[0], bbox_q[1]) &&
-                is_colinear(p0, p1, q0, q1)) {
-                overlapped = true;
-
-                // merge two segments
-                int64_t endpoint0 = EV_tmp(i, 0);
-                int64_t endpoint1 = EV_tmp(i, 1);
-
-                const Vector2r p0p1 = p1 - p0;
-                const Vector2r p0q0 = q0 - p0;
-                const Vector2r p0q1 = q1 - p0;
-                const Vector2r p1q0 = q0 - p1;
-                const Vector2r p1q1 = q1 - p1;
-
-                if (p0p1[0] * p0q0[0] < 0 || p0p1[1] * p0q0[1] < 0) {
-                    endpoint0 = e[0];
-                } else if (p0p1[0] * p0q1[0] < 0 || p0p1[1] * p0q1[1] < 0) {
-                    endpoint0 = e[1];
-                }
-
-                if (-p0p1[0] * p1q0[0] < 0 || -p0p1[1] * p1q0[1] < 0) {
-                    endpoint1 = e[0];
-                } else if (-p0p1[0] * p1q1[0] < 0 || -p0p1[1] * p1q1[1] < 0) {
-                    endpoint1 = e[1];
-                }
-
-                e[0] = endpoint0;
-                e[1] = endpoint1;
-
-                break;
-            }
-        }
-        if (!overlapped) {
-            EV.push_back({{EV_tmp(i, 0), EV_tmp(i, 1)}});
-        }
+    for (int64_t i = 0; i < EV_in.rows(); ++i) {
+        EV.push_back({{EV_in(i, 0), EV_in(i, 1)}});
     }
 
 
@@ -573,7 +601,7 @@ void edge_insertion(
     pass_through_attributes.push_back(bbox_min_handle);
     pass_through_attributes.push_back(bbox_max_handle);
     pass_through_attributes.push_back(position_handle);
-    pass_through_attributes.push_back(segment_index_handle);
+    // pass_through_attributes.push_back(segment_index_handle);
 
     for (const auto& f : trimesh.get_all(PrimitiveType::Triangle)) {
         // compute bounding box
@@ -594,6 +622,8 @@ void edge_insertion(
     // add segment vertices in to trimesh
     for (int64_t i = 0; i < V_edge.rows(); ++i) {
         const Vector2r p = V_edge.row(i);
+
+        bool found = false;
 
         for (const auto& f : trimesh.get_all(PrimitiveType::Triangle)) {
             // TODO: add hash
@@ -632,11 +662,20 @@ void edge_insertion(
                             wmtk::operations::SplitRibBasicStrategy::None);
                     }
 
+                    facesplit.split().set_new_attribute_strategy(
+                        segment_index_handle,
+                        wmtk::operations::SplitBasicStrategy::None,
+                        wmtk::operations::SplitRibBasicStrategy::None);
+
                     for (const auto& attr : pass_through_attributes) {
                         facesplit.collapse().set_new_attribute_strategy(
                             attr,
                             wmtk::operations::CollapseBasicStrategy::None);
                     }
+
+                    facesplit.collapse().set_new_attribute_strategy(
+                        segment_index_handle,
+                        wmtk::operations::CollapseBasicStrategy::CopyOther);
 
                     const auto new_v =
                         facesplit(wmtk::simplex::Simplex::face(trimesh, f)).front().tuple();
@@ -695,6 +734,11 @@ void edge_insertion(
                             wmtk::operations::SplitRibBasicStrategy::None);
                     }
 
+                    split.set_new_attribute_strategy(
+                        segment_index_handle,
+                        wmtk::operations::SplitBasicStrategy::None,
+                        wmtk::operations::SplitRibBasicStrategy::None);
+
                     const auto new_v =
                         split(wmtk::simplex::Simplex::edge(trimesh, f)).front().tuple();
 
@@ -751,6 +795,11 @@ void edge_insertion(
                             wmtk::operations::SplitRibBasicStrategy::None);
                     }
 
+                    split.set_new_attribute_strategy(
+                        segment_index_handle,
+                        wmtk::operations::SplitBasicStrategy::None,
+                        wmtk::operations::SplitRibBasicStrategy::None);
+
                     const auto new_v = split(wmtk::simplex::Simplex::edge(
                                                  trimesh,
                                                  trimesh.switch_tuples(
@@ -801,7 +850,7 @@ void edge_insertion(
                     break;
                 }
                 case 3: {
-                    // on 23
+                    // on 20
                     wmtk::operations::EdgeSplit split(trimesh);
 
                     for (const auto& attr : pass_through_attributes) {
@@ -810,6 +859,12 @@ void edge_insertion(
                             wmtk::operations::SplitBasicStrategy::None,
                             wmtk::operations::SplitRibBasicStrategy::None);
                     }
+
+                    split.set_new_attribute_strategy(
+                        segment_index_handle,
+                        wmtk::operations::SplitBasicStrategy::None,
+                        wmtk::operations::SplitRibBasicStrategy::None);
+
                     const auto new_v = split(wmtk::simplex::Simplex::edge(
                                                  trimesh,
                                                  trimesh.switch_tuple(f, PrimitiveType::Edge)))
@@ -878,9 +933,11 @@ void edge_insertion(
                 }
 
                 // found, break, go add next vertex
+                found = true;
                 break;
             }
         }
+        assert(found);
     }
 
     trimesh.consolidate();
