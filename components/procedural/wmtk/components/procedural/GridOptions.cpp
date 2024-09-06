@@ -8,7 +8,7 @@
 
 
 
-namespace wmtk::components::internal::procedural {
+namespace wmtk::components::procedural {
 std::shared_ptr<Mesh> make_mesh(const GridOptions& m) {
     return std::visit([](const auto& o)  -> std::shared_ptr<Mesh>{
             return std::static_pointer_cast<Mesh>(make_mesh(o));
