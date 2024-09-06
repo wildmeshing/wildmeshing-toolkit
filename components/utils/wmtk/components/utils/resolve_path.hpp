@@ -5,35 +5,49 @@
 namespace wmtk::components::utils {
 
 /**
- * @brief Compute an absolute path, assuming it was relative to another file.
+ * @brief Wraps the path concatenation `root / path`.
  *
- * If the path is already absolute, it is returned the way it is. If it is relative, this function
- * assumes that it is relative to the input_file_path. The input_file_path may represent an input
- * folder or a file within the input folder.
+ * If `path` is absolute it is returned the way it is and root is ignored.
+ * If `root` is a file the containing folder is considered as root path.
  *
  * Examples:
+ *      root = "a/"
  *      path = "b.txt"
- *      input_file_path = "a/"
  *      returns: "a/b.txt"
  *
+ *      root = "a/f.json"
  *      path = "o/b.txt"
- *      input_file_path = "a/f.json"
  *      returns: "a/o/b.txt"
  *
+ *      root = "a/"
  *      path = "/c/b.txt"
- *      input_file_path = "a/"
  *      returns: "/c/b.txt"
  *
+ * An exception is thrown if the root path does not exist.
  *
+ * @param root The folder used as root. If it is a file the parent folder is used as root.
  * @param path The path that should be made absolute.
- * @param input_file_path The file or folder which is the root for the relative input path.
- * @param only_if_exists Modify the path only if the modified one does not exist yet.
  *
  * @returns The absolute path.
  */
 std::filesystem::path resolve_path(
-    const std::filesystem::path& path,
-    const std::filesystem::path& input_file_path,
-    const bool only_if_not_exists = false);
+    const std::filesystem::path& root,
+    const std::filesystem::path& path);
+
+/**
+ * @brief Call `resolve_path()` to concatenate several paths.
+ *
+ * The behavior resembles: `root / path_1 / path_2 / path_3 / ...`
+ */
+std::filesystem::path resolve_paths(
+    const std::filesystem::path& root,
+    const std::initializer_list<std::filesystem::path>& paths);
+
+/**
+ * @brief Wraps `resolve_path()` but returns path directly if it is empty.
+ */
+std::filesystem::path resolve_path_if_not_empty(
+    const std::filesystem::path& root,
+    const std::filesystem::path& path);
 
 } // namespace wmtk::components::utils
