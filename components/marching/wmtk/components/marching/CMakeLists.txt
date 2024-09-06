@@ -1,4 +1,8 @@
-
+set(COMPONENT_NAME marching)
+add_component(${COMPONENT_NAME})
+if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
+    return()
+endif()
 set(SRC_FILES
     internal/Marching.hpp
     internal/Marching.cpp
@@ -8,9 +12,8 @@ set(SRC_FILES
     )
 
 
-add_component("marching")
 
-target_sources(wmtk_marching PRIVATE ${SRC_FILES})
-target_link_libraries(wmtk_marching PRIVATE stb::image)
+target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
+target_link_libraries(wmtk_${COMPONENT_NAME} PRIVATE stb::image)
 
-add_component_test(wmtk::marching tests/marching.cpp)
+add_component_test(wmtk::${COMPONENT_NAME} tests/marching.cpp)

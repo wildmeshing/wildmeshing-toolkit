@@ -1,3 +1,8 @@
+set(COMPONENT_NAME multimesh_from_tag)
+add_component(${COMPONENT_NAME})
+if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
+    return()
+endif()
 
 set(SRC_FILES
     internal/MultiMeshFromTag.hpp
@@ -6,6 +11,5 @@ set(SRC_FILES
     multimesh_from_tag.cpp
     )
 
-add_component("multimesh_from_tag")
 
-target_sources(wmtk_multimesh_from_tag PRIVATE ${SRC_FILES})
+target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

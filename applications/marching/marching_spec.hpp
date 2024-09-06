@@ -1,3 +1,5 @@
+#pragma once
+#include <nlohmann/json.hpp>
 namespace {
 
 nlohmann::json delaunay_spec = R"(

@@ -1,4 +1,8 @@
-
+set(COMPONENT_NAME input)
+add_component(${COMPONENT_NAME})
+if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
+    return()
+endif()
 set(SRC_FILES
     internal/InputOptions.hpp
     internal/mesh_with_tag_from_image.cpp
@@ -9,9 +13,8 @@ set(SRC_FILES
 include(stb)
 
 
-add_component("input")
 
-target_sources(wmtk_input PRIVATE ${SRC_FILES})
-target_link_libraries(wmtk_input PRIVATE stb::image)
+target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
+target_link_libraries(wmtk_${COMPONENT_NAME} PRIVATE stb::image)
 
-add_component_test(wmtk::input tests/input.cpp)
+add_component_test(wmtk::${COMPONENT_NAME} tests/input.cpp)
