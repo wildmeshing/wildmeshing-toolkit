@@ -11,15 +11,17 @@
 # governing permissions and limitations under the License.
 #
 
+if(NOT CPM_SOURCE_CACHE) 
 if(DEFINED ENV{CPM_SOURCE_CACHE})
     set(CPM_SOURCE_CACHE_DEFAULT $ENV{CPM_SOURCE_CACHE})
 else()
     # Set CPM cache folder if unset
-    file(REAL_PATH "~/.cache/CPM" CPM_SOURCE_CACHE_DEFAULT EXPAND_TILDE)
+    file(REAL_PATH "${CMAKE_BINARY_DIR}/CPM" CPM_SOURCE_CACHE_DEFAULT EXPAND_TILDE)
 endif()
 
 set(CPM_SOURCE_CACHE
     ${CPM_SOURCE_CACHE_DEFAULT}
     CACHE PATH "Directory to download CPM dependencies"
 )
+endif()
 message(STATUS "Using CPM cache folder: ${CPM_SOURCE_CACHE}")

@@ -21,6 +21,8 @@
 using namespace wmtk;
 namespace fs = std::filesystem;
 
+using wmtk::components::utils::resolve_paths;
+
 int main(int argc, char* argv[])
 {
     CLI::App app{argv[0]};
@@ -48,11 +50,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    const fs::path root_in = j["root"];
-
-    const fs::path root = root_in.empty() ? json_input_file : root_in;
-
-    fs::path input_file = wmtk::components::utils::resolve_path(j["input"], root);
+    fs::path input_file = resolve_paths(json_input_file, {j["root"], j["input"]});
 
     auto mesh = wmtk::components::input(input_file);
     wmtk::logger().info("mesh has {} vertices", mesh->get_all(PrimitiveType::Vertex).size());
