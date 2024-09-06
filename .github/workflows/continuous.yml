@@ -163,6 +163,7 @@ jobs:
           cmake --version
           cmake -G Ninja ^
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} ^
+            -DCPM_SOURCE_CACHE=C:\Temp\CPM
             -B build ^
             -S .
           cd build
