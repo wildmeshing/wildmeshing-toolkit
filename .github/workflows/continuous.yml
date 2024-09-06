@@ -115,11 +115,6 @@ jobs:
           ccache --max-size=10.0G
           ccache -V && ccache --show-stats && ccache --zero-stats
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
       - name: Configure
         run: |
           mkdir -p build
