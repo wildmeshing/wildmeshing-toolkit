@@ -12,7 +12,7 @@ wmtk::input
 wmtk::tetwild_simplification
 wmtk::output)
 
-wmtk_download_test_data(tetwild_simplification
-    tw_simplification_app
+wmtk_register_integration_test(tw_simplification_app
+    ${CMAKE_CURRENT_SOURCE_DIR}/tw_simplification_test_config.json
     "https://github.com/wildmeshing/data.git"
     5a74c7ffda3bf1014875944f59e42a3db39775df)
