@@ -19,6 +19,16 @@ if(WMTK_ENABLE_APPLICATION_procedural)
 add_subdirectory(procedural)
 endif()
 
+option(WMTK_ENABLE_APPLICATION_multimesh "Runs multimesh application" OFF)
+if(WMTK_ENABLE_APPLICATION_multimesh)
+add_subdirectory(multimesh)
+endif()
+
+option(WMTK_ENABLE_APPLICATION_isotropic_remeshing "Runs isotropic_remeshing application" OFF)
+if(WMTK_ENABLE_APPLICATION_isotropic_remeshing)
+add_subdirectory(isotropic_remeshing)
+endif()
+
 option(WMTK_ENABLE_APPLICATION_tetwild_simplification "Runs tetwild_simplification application" ON)
 if(WMTK_ENABLE_APPLICATION_tetwild_simplification)
 add_subdirectory(tetwild_simplification)
