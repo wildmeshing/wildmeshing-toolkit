@@ -2,18 +2,10 @@
 #include <wmtk/multimesh/operations/CollapseReturnData.hpp>
 #include <wmtk/multimesh/operations/extract_operation_tuples.hpp>
 #include "CollapseNewAttributeTopoInfo.hpp"
+#include "Enums.hpp"
 #include "NewAttributeStrategy.hpp"
 
 namespace wmtk::operations {
-// default operation types, default specifies for rational/double we use averages , o/w copytuple
-enum class CollapseBasicStrategy {
-    Default,
-    CopyTuple,
-    CopyOther, // per-dimension "other" simplex option
-    Mean,
-    Throw,
-    None
-};
 
 // This is necessary because subclass is templated
 class BaseCollapseNewAttributeStrategy : public NewAttributeStrategy
@@ -53,6 +45,11 @@ public:
     PrimitiveType primitive_type() const override;
     void update_handle_mesh(Mesh& m) override;
     bool matches_attribute(const attribute::MeshAttributeHandle&) const override;
+
+    std::vector<wmtk::attribute::MeshAttributeHandle> targets() const final override
+    {
+        return {m_handle};
+    }
 
 private:
     wmtk::attribute::MeshAttributeHandle m_handle;

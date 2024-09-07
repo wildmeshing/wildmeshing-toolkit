@@ -1,23 +1,13 @@
 #pragma once
 #include <wmtk/multimesh/operations/SplitReturnData.hpp>
 #include <wmtk/multimesh/operations/extract_operation_tuples.hpp>
+#include "Enums.hpp"
 #include "NewAttributeStrategy.hpp"
 #include "SplitNewAttributeTopoInfo.hpp"
 
 
 namespace wmtk::operations {
 
-// default operation types
-enum class SplitBasicStrategy { Default, Copy, Half, Throw, None };
-//rib and collapse have hte same prototypes / default funs available
-enum class SplitRibBasicStrategy {
-    Default,
-    CopyTuple,
-    CopyOther, // per-dimension "other" simplex option
-    Mean,
-    Throw,
-    None
-};
 
 // This is necessary because subclass is templated
 class BaseSplitNewAttributeStrategy : public NewAttributeStrategy
@@ -64,6 +54,11 @@ public:
     PrimitiveType primitive_type() const override;
     void update_handle_mesh(Mesh& m) override;
     bool matches_attribute(const attribute::MeshAttributeHandle&) const override;
+
+    std::vector<wmtk::attribute::MeshAttributeHandle> targets() const final override
+    {
+        return {m_handle};
+    }
 
 private:
     wmtk::attribute::MeshAttributeHandle m_handle;

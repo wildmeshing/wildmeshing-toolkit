@@ -1,6 +1,6 @@
 #pragma once
-#include "AttributeTransferStrategyBase.hpp"
 #include <wmtk/Mesh.hpp>
+#include "AttributeTransferStrategyBase.hpp"
 
 
 namespace wmtk::operations {
@@ -65,6 +65,11 @@ public:
         return
             [fp](const ParentMatType& a, const std::vector<Tuple>&) -> MyVecType { return fp(a); };
     }
+    std::vector<wmtk::attribute::MeshAttributeHandle> sources() const final override
+    {
+        return {m_parent_handle};
+    }
+
 
 protected:
     std::pair<ParentMatType, std::vector<Tuple>> read_parent_values(
@@ -106,9 +111,7 @@ SingleAttributeTransferStrategy<MyType, ParentType>::SingleAttributeTransferStra
     const attribute::MeshAttributeHandle& me,
     const attribute::MeshAttributeHandle& parent,
     FunctorWithoutSimplicesType&& f)
-    : SingleAttributeTransferStrategy(me
-    , parent
-    , make_nosimplices_func(std::move(f)))
+    : SingleAttributeTransferStrategy(me, parent, make_nosimplices_func(std::move(f)))
 {}
 
 template <typename MyType, typename ParentType>
