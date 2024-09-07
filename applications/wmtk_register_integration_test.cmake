@@ -36,7 +36,7 @@ macro(wmtk_register_integration_test EXEC_NAME CONFIG_FILE GIT_REPOSITORY GIT_TA
         NAME wmtk_itd_${REPO_HASH}
         GIT_REPOSITORY ${GIT_REPOSITORY}
         GIT_TAG ${GIT_TAG}
-        DOWNLOAD_ONLY True
+        DOWNLOAD_ONLY TRUE
     )
     list (APPEND WMTK_TEST_CONFIG "\"${EXEC_NAME}\":{\"data_folder\":\"${wmtk_itd_${REPO_HASH}_SOURCE_DIR}\", \"config_file\":\"${CONFIG_FILE}\"}")
 
