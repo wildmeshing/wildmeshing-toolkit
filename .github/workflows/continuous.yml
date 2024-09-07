@@ -19,7 +19,7 @@ jobs:
 
   Linux:
     name: ${{ matrix.name }} (${{ matrix.config }})
-    runs-on: [self-hosted,Linux]
+    runs-on: [self-hosted, Linux]
     #runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -163,7 +163,6 @@ jobs:
           cmake --version
           cmake -G Ninja ^
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} ^
-            -DCPM_SOURCE_CACHE=C:\Temp\CPM
             -B build ^
             -S .
           cd build
