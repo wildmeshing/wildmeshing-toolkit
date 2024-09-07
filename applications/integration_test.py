@@ -1,29 +1,30 @@
 import unittest
-import glob
-import os
+
 import sys
+import os
 import json
 import subprocess
 import tempfile
+import argparse
 
 
 class IntegrationTest(unittest.TestCase):
     BINARY_FOLDER = ""
     CONFIG_FILE = ""
+    TEST = None
 
     def setUp(self):
         self.working_dir_fp = tempfile.TemporaryDirectory()
         self.working_dir = self.working_dir_fp.name
         print('Running all integration tests in', self.working_dir)
 
-        with open(os.path.join(IntegrationTest.BINARY_FOLDER, IntegrationTest.CONFIG_FILE)) as fp:
+        with open(IntegrationTest.CONFIG_FILE) as fp:
             self.main_config = json.load(fp)
 
     def tearDown(self):
         self.working_dir_fp.cleanup()
 
     def run_one(self, executable, data_folder, config):
-
         test_folder = os.path.join(data_folder, config["test_directory"])
 
         input_tag = config["input_tag"]
@@ -33,7 +34,7 @@ class IntegrationTest(unittest.TestCase):
         has_checks = "checks" in config
         checks = [] if not has_checks else config["checks"]
 
-        executable = os.path.join(IntegrationTest.BINARY_FOLDER, "applications", executable)
+        executable = os.path.join(IntegrationTest.BINARY_FOLDER, executable)
 
         for test_file_name in config["tests"]:
             print("Running test", test_file_name)
@@ -85,6 +86,9 @@ class IntegrationTest(unittest.TestCase):
         for key in self.main_config:
             if key == "skip":
                 continue
+            if IntegrationTest.TEST and key != IntegrationTest.TEST:
+                continue
+
             with self.subTest(msg=key):
                 print("Running test for", key)
 
@@ -98,11 +102,40 @@ class IntegrationTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    bin_dir = os.getcwd()
-    config_file = "test_config.json"
-    if len(sys.argv) > 1:
-        bin_dir = os.path.append(bin_dir, sys.argv.pop())
+    parser = argparse.ArgumentParser(
+                    prog='WMTK Integration Test',
+                    description='Run integration tests for WMTK')
 
+    parser.add_argument('-c', '--test_config', help="Path to the json config file")
+    parser.add_argument('-b', '--binary_folder', help="Path to the folder that contains the apps binaries")
+    parser.add_argument('-t', '--test', help="Runs a single test")
+    args = parser.parse_args()
+
+
+
+    tcin = args.test_config
+    bfin = args.binary_folder
+
+    cwd = os.getcwd()
+    config_file = os.path.join(cwd, "test_config.json")
+    if tcin:
+        config_file = str(tcin if os.path.isabs(tcin) else os.path.join(cwd, tcin))
+        sys.argv.pop()
+        sys.argv.pop()
+
+
+    bin_dir = os.path.join(cwd, "applications")
+    if bfin:
+        bin_dir = bfin if os.path.isabs(bfin) else os.path.join(cwd, bfin)
+        sys.argv.pop()
+        sys.argv.pop()
+
+    if args.test:
+        sys.argv.pop()
+        sys.argv.pop()
+
+
+    IntegrationTest.TEST = args.test
     IntegrationTest.BINARY_FOLDER = bin_dir
     IntegrationTest.CONFIG_FILE = config_file
 
