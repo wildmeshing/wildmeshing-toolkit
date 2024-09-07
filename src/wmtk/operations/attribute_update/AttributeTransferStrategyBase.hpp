@@ -60,17 +60,18 @@ public:
 
     // const simplex::Simplex& s) const = 0;
 
-    virtual void run(const simplex::Simplex& s) = 0;
+    virtual void run(const simplex::Simplex& s) const = 0;
     // virtual void update(const simplex::Simplex& simplex) = 0;
     //  placeholder for when this turns into a DAG that needs to be linearized
     //  virtual std::vector<HandleVariant> parent_handles() const = 0;
 
     virtual PrimitiveType primitive_type() const = 0;
     virtual Mesh& mesh() = 0;
+    const Mesh& mesh() const;
 
     // runs the transfer on every simplex - good for initializing an attribute that will be
     // managed by transfer
-    void run_on_all();
+    void run_on_all() const;
 
 private:
     attribute::MeshAttributeHandle m_handle;

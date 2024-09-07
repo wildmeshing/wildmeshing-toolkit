@@ -1,5 +1,7 @@
 #include "AttributeTransferConfiguration.hpp"
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
+#include <wmtk/operations/EdgeCollapse.hpp>
+#include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_new/NewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
@@ -130,5 +132,31 @@ void AttributeTransferConfiguration::add_collapse_new(
             }
         },
         attribute.handle());
+}
+
+/// @param clear removes all prior attribute transfer behaviors
+void AttributeTransferConfiguration::apply(EdgeSplit& split, bool clear) const
+{
+    auto new_strats =
+        internal::filter_to_derived<BaseSplitNewAttributeStrategy>(linearized_strategies());
+    for (const auto& s : new_strats) {
+        const auto targets = s->targets();
+        assert(targets.size() == 1); // unclear if we ever will have more than 1 target.
+        split.set_new_attribute_strategy(targets[0], s);
+    }
+
+    for (const auto& s : linearized_transfer_strategies()) {
+        const auto targets = s->targets();
+        assert(targets.size() == 1); // unclear if we ever will have more than 1 target.
+        split.set_transfer_strategy(targets[0], s);
+    }
+    // op.set_new_attribute_strategy(edge_length_handle);
+    // op.set_new_attribute_strategy(pos_handle);
+    //
+}
+/// @param clear removes all prior attribute transfer behaviors
+void AttributeTransferConfiguration::apply(EdgeCollapse& split, bool clear) const
+{
+    //
 }
 } // namespace wmtk::operations

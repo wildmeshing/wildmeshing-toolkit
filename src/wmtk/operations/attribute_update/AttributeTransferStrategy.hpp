@@ -13,6 +13,7 @@ public:
     AttributeTransferStrategy(const attribute::MeshAttributeHandle& my_handle);
     PrimitiveType primitive_type() const override;
     Mesh& mesh() override;
+    using AttributeTransferStrategyBase::mesh;
 
 
     // bool matches_attribute(
@@ -55,7 +56,7 @@ public:
         const attribute::MeshAttributeHandle& parent_handle,
         FunctorWithoutSimplicesType&& = nullptr);
 
-    void run(const simplex::Simplex& s) override;
+    void run(const simplex::Simplex& s) const final override;
 
 
     PrimitiveType parent_primitive_type() const;
@@ -134,7 +135,7 @@ auto SingleAttributeTransferStrategy<MyType, ParentType>::read_parent_values(
     return std::make_pair(std::move(A), std::move(simps));
 }
 template <typename MyType, typename ParentType>
-void SingleAttributeTransferStrategy<MyType, ParentType>::run(const simplex::Simplex& s)
+void SingleAttributeTransferStrategy<MyType, ParentType>::run(const simplex::Simplex& s) const
 {
     assert(mesh().is_valid(s.tuple()));
     if (s.primitive_type() != primitive_type()) {
@@ -145,7 +146,7 @@ void SingleAttributeTransferStrategy<MyType, ParentType>::run(const simplex::Sim
     if (m_functor) {
         auto [parent_data, simps] = read_parent_values(s);
         if (simps.empty()) return;
-        auto acc = mesh().create_accessor(handle().template as<MyType>());
+        auto acc = const_cast<Mesh&>(mesh()).create_accessor(handle().template as<MyType>());
 
         acc.vector_attribute(s.tuple()) = m_functor(parent_data, simps);
     }

@@ -36,7 +36,8 @@ public:
     void set_simplex_predicate(SimplexPredicateType&& f);
     void set_simplex_predicate(BasicSimplexPredicate f);
 
-    std::bitset<2> evaluate_predicate(PrimitiveType pt, const std::array<Tuple, 2>& simplices);
+    std::bitset<2> evaluate_predicate(PrimitiveType pt, const std::array<Tuple, 2>& simplices)
+        const;
 
     std::vector<wmtk::attribute::MeshAttributeHandle> sources() const final override { return {}; }
 

@@ -196,7 +196,7 @@ SplitNewAttributeStrategy<T>::SplitNewAttributeStrategy(
 template <typename T>
 void SplitNewAttributeStrategy<T>::update(
     const ReturnData& data,
-    const OperationTupleData& op_datas)
+    const OperationTupleData& op_datas) const
 {
     if (!bool(m_split_rib_op) && !bool(m_split_op)) {
         return;
@@ -246,7 +246,7 @@ void SplitNewAttributeStrategy<T>::update(
             assert(m_handle.primitive_type() == PrimitiveType::Vertex);
 
             auto pairs = m_topo_info->output_duplicated_free_simplices(return_data_variant, pt);
-            auto acc = m_handle.mesh().create_accessor(m_handle.as<T>());
+            auto acc = const_cast<Mesh&>(m_handle.mesh()).create_accessor(m_handle.as<T>());
             for (const auto& [first, second] : pairs) {
                 acc.index_access().vector_attribute(second) =
                     acc.index_access().const_vector_attribute(first);
@@ -260,7 +260,7 @@ template <typename T>
 void SplitNewAttributeStrategy<T>::assign_split_ribs(
     PrimitiveType pt,
     const std::array<Tuple, 2>& input_ears,
-    const Tuple& final_simplex)
+    const Tuple& final_simplex) const
 {
     if (!bool(m_split_rib_op)) {
         return;
@@ -269,7 +269,7 @@ void SplitNewAttributeStrategy<T>::assign_split_ribs(
         return;
     }
 
-    auto acc = m_handle.mesh().create_accessor(m_handle.as<T>());
+    auto acc = const_cast<Mesh&>(m_handle.mesh()).create_accessor(m_handle.as<T>());
     auto old_values = m_handle.mesh().parent_scope([&]() {
         return std::make_tuple(
             acc.const_vector_attribute(input_ears[0]),
@@ -289,7 +289,7 @@ template <typename T>
 void SplitNewAttributeStrategy<T>::assign_split(
     PrimitiveType pt,
     const Tuple& input_simplex,
-    const std::array<Tuple, 2>& split_simplices)
+    const std::array<Tuple, 2>& split_simplices) const
 {
     if (!bool(m_split_op)) {
         return;
@@ -297,7 +297,7 @@ void SplitNewAttributeStrategy<T>::assign_split(
     if (pt != primitive_type()) {
         return;
     }
-    auto acc = m_handle.mesh().create_accessor(m_handle.as<T>());
+    auto acc = const_cast<Mesh&>(m_handle.mesh()).create_accessor(m_handle.as<T>());
     const VecType old_value =
         m_handle.mesh().parent_scope([&]() { return acc.const_vector_attribute(input_simplex); });
 
