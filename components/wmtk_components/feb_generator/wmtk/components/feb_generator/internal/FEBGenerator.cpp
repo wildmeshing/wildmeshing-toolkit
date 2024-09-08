@@ -489,9 +489,27 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
         f << "\t\t\t<Fc>96485.3</Fc>\n";
         f << "\t\t</Constants>\n";
         f << "\t</Globals>\n";
-        f << "\t<Mesh>\n";
     }
 
+    {
+        // materials
+        f << "\t<Material>";
+        int64_t cnt = 1;
+        for (const auto& item : j["RigidMaterials"]) {
+            std::string surface_name = item["name"];
+            std::string rigid_material_name = surface_name + "(rigid)";
+            f << "\t\t<material id=\"" << cnt << "\" name=\"" << rigid_material_name
+              << "\" type=\"rigid body\">\n";
+            f << "\t\t\t<density>1</density>\n";
+            f << "\t\t\t<E>1</E>\n";
+            f << "\t\t\t<v>0</v>\n";
+            f << "\t\t<material>";
+            cnt++;
+        }
+        f << "\t</Material>";
+    }
+
+    f << "\t<Mesh>\n";
     int64_t offset = mesh.get_all(PrimitiveType::Vertex).size();
     int64_t offset_tol = 0;
     for (const auto& tag_list : tet_tuple_list) {
@@ -794,7 +812,7 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
 
     // surface pairs part
     {
-        for (const auto& item : j["Contacts"]) {
+        for (const auto& item : j["NormalContacts"]) {
             std::string name = item["name"];
             std::string surface_pair_name = name + "_surface_pair";
             std::string primary = item["primary"];
@@ -818,10 +836,25 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
         f << "\t</MeshDomains>\n";
     }
 
+    // boundary condition
+    {
+        f << "\t<Boundary>\n";
+        for (const auto& item : j["RigidMaterials"]) {
+            std::string surface_name = item["name"];
+            std::string bc_name = surface_name + "(bc)";
+            std::string rigid_material_name = surface_name + "(rigid)";
+            f << "\t\t<bc name=\"" << bc_name << "\" node_set=\"@surface:" << surface_name
+              << "\" type=\"rigid\">\n";
+            f << "\t\t\t<rb>" << rigid_material_name << "</rb>\n";
+            f << "\t\t</bc>\n";
+        }
+        f << "\t</Boundary>\n";
+    }
+
     // contacts
     {
         f << "\t<Contact>\n";
-        for (const auto& item : j["Contacts"]) {
+        for (const auto& item : j["NormalContacts"]) {
             std::string name = item["name"];
             std::string surface_pair_name = name + "_surface_pair";
             std::string primary = item["primary"];
@@ -834,6 +867,26 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                 surface_pair_name);
         }
         f << "\t</Contact>\n";
+    }
+
+    // rigid contacts
+    {
+        f << "\t<Rigid>\n";
+        for (const auto& item : j["RigidContacts"]) {
+            std::string name = item["name"];
+            std::string primary = item["primary"];
+            std::string secondary = item["secondary"];
+            std::string contact_type = item["contact_type"];
+            std::string rigid_material1 = primary + "(rigid)";
+            std::string rigid_material2 = secondary + "(rigid)";
+            wmtk::components::internal::write_rigid_contact_template(
+                f,
+                contact_type,
+                name,
+                rigid_material1,
+                rigid_material2);
+        }
+        f << "\t</Rigid>\n";
     }
 
     {

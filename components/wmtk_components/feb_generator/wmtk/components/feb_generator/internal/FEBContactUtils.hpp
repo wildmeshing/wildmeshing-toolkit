@@ -182,5 +182,190 @@ void write_contact_template(
     }
 }
 
+void write_rigid_contact_template(
+    std::ofstream& stream,
+    std::string type,
+    std::string contact_name,
+    std::string material1,
+    std::string material2)
+{
+    if (type == "generic rigid joint") {
+        stream << "\t<rigid_connector name=\"" << contact_name << "\" type=\"" << type << "\">\n"
+               << "\t\t<body_a>" << material1 << "</body_a>\n"
+               << "\t\t<body_b>" << material2 << "</body_b>\n"
+               << "\t\t<laugon>PENALTY</laugon>\n"
+               << "\t\t<penalty>1</penalty>\n"
+               << "\t\t<tolerance>0</tolerance>\n"
+               << "\t\t<joint>0,0,0</joint>\n"
+               << "\t\t<prescribe_x>0</prescribe_x>\n"
+               << "\t\t<prescribe_y>0</prescribe_y>\n"
+               << "\t\t<prescribe_z>0</prescribe_z>\n"
+               << "\t\t<prescribe_Rx>0</prescribe_Rx>\n"
+               << "\t\t<prescribe_Ry>0</prescribe_Ry>\n"
+               << "\t\t<prescribe_Rz>0</prescribe_Rz>\n"
+               << "\t\t<symmetric_stiffness>0</symmetric_stiffness>\n"
+               << "\t</rigid_connector>\n";
+    } else if (type == "rigid angular damper") {
+        stream << "\t<rigid_connector name=\"" << contact_name << "\" type=\"" << type << "\">\n"
+               << "\t\t<body_a>" << material1 << "</body_a>\n"
+               << "\t\t<body_b>" << material2 << "</body_b>\n"
+               << "\t\t<c>0</c>\n"
+               << "\t</rigid_connector>\n";
+    } else if (type == "rigid contractile force") {
+        stream << "\t<rigid_connector name=\"" << contact_name << "\" type=\"" << type << "\">\n"
+               << "\t\t<body_a>" << material1 << "</body_a>\n"
+               << "\t\t<body_b>" << material2 << "</body_b>\n"
+               << "\t\t<f0>0</f0>\n"
+               << "\t\t<insertion_a>0,0,0</insertion_a>\n"
+               << "\t\t<insertion_b>0,0,0</insertion_b>\n"
+               << "\t</rigid_connector>\n";
+    } else if (type == "rigid cylindrical joint") {
+        stream << "\t<rigid_connector name=\"" << contact_name << "\" type=\"" << type << "\">\n"
+               << "\t\t<body_a>" << material1 << "</body_a>\n"
+               << "\t\t<body_b>" << material2 << "</body_b>\n"
+               << "\t\t<laugon>AUGLAG</laugon>\n"
+               << "\t\t<tolerance>0</tolerance>\n"
+               << "\t\t<gaptol>0</gaptol>\n"
+               << "\t\t<angtol>0</angtol>\n"
+               << "\t\t<force_penalty>1</force_penalty>\n"
+               << "\t\t<moment_penalty>1</moment_penalty>\n"
+               << "\t\t<joint_origin>0,0,0</joint_origin>\n"
+               << "\t\t<joint_axis>0,0,0</joint_axis>\n"
+               << "\t\t<transverse_axis>0,0,0</transverse_axis>\n"
+               << "\t\t<minaug>0</minaug>\n"
+               << "\t\t<maxaug>10</maxaug>\n"
+               << "\t\t<prescribed_translation>0</prescribed_translation>\n"
+               << "\t\t<translation>0</translation>\n"
+               << "\t\t<force>0</force>\n"
+               << "\t\t<prescribed_rotation>0</prescribed_rotation>\n"
+               << "\t\t<rotation>0</rotation>\n"
+               << "\t\t<moment>0</moment>\n"
+               << "\t\t<auto_penalty>0</auto_penalty>\n"
+               << "\t</rigid_connector>\n";
+    } else if (type == "rigid damper") {
+        stream << "\t<rigid_connector name=\"" << contact_name << "\" type=\"" << type << "\">\n"
+               << "\t\t<body_a>" << material1 << "</body_a>\n"
+               << "\t\t<body_b>" << material2 << "</body_b>\n"
+               << "\t\t<c>1</c>\n"
+               << "\t\t<insertion_a>0,0,0</insertion_a>\n"
+               << "\t\t<insertion_b>0,0,0</insertion_b>\n"
+               << "\t</rigid_connector>\n";
+    } else if (type == "rigid joint") {
+        stream << "\t<rigid_connector name=\"" << contact_name << "\" type=\"" << type << "\">\n"
+               << "\t\t<body_a>" << material1 << "</body_a>\n"
+               << "\t\t<body_b>" << material2 << "</body_b>\n"
+               << "\t\t<laugon>AUGLAG</laugon>\n"
+               << "\t\t<tolerance>0.01</tolerance>\n"
+               << "\t\t<penalty>0</penalty>\n"
+               << "\t\t<joint>0,0,0</joint>\n"
+               << "\t</rigid_connector>\n";
+    } else if (type == "rigid lock") {
+        stream << "\t<rigid_connector name=\"" << contact_name << "\" type=\"" << type << "\">\n"
+               << "\t\t<body_a>" << material1 << "</body_a>\n"
+               << "\t\t<body_b>" << material2 << "</body_b>\n"
+               << "\t\t<tolerance>0</tolerance>\n"
+               << "\t\t<gaptol>0</gaptol>\n"
+               << "\t\t<angtol>0</angtol>\n"
+               << "\t\t<force_penalty>1</force_penalty>\n"
+               << "\t\t<moment_penalty>1</moment_penalty>\n"
+               << "\t\t<joint_origin>0,0,0</joint_origin>\n"
+               << "\t\t<first_axis>0,0,0</first_axis>\n"
+               << "\t\t<second_axis>0,0,0</second_axis>\n"
+               << "\t\t<minaug>0</minaug>\n"
+               << "\t\t<maxaug>10</maxaug>\n"
+               << "\t\t<auto_penalty>0</auto_penalty>\n"
+               << "\t</rigid_connector>\n";
+    } else if (type == "rigid planar joint") {
+        stream << "\t<rigid_connector name=\"" << contact_name << "\" type=\"" << type << "\">\n"
+               << "\t\t<body_a>" << material1 << "</body_a>\n"
+               << "\t\t<body_b>" << material2 << "</body_b>\n"
+               << "\t\t<tolerance>0</tolerance>\n"
+               << "\t\t<gaptol>0</gaptol>\n"
+               << "\t\t<angtol>0</angtol>\n"
+               << "\t\t<force_penalty>1</force_penalty>\n"
+               << "\t\t<moment_penalty>1</moment_penalty>\n"
+               << "\t\t<joint_origin>0,0,0</joint_origin>\n"
+               << "\t\t<rotation_axis>0,0,0</rotation_axis>\n"
+               << "\t\t<translation_axis_1>0,0,0</translation_axis_1>\n"
+               << "\t\t<minaug>0</minaug>\n"
+               << "\t\t<maxaug>10</maxaug>\n"
+               << "\t\t<prescribed_rotation>0</prescribed_rotation>\n"
+               << "\t\t<rotation>0</rotation>\n"
+               << "\t\t<prescribed_translation_1>0</prescribed_translation_1>\n"
+               << "\t\t<translation_1>0</translation_1>\n"
+               << "\t\t<prescribed_translation_2>0</prescribed_translation_2>\n"
+               << "\t\t<translation_2>0</translation_2>\n"
+               << "\t\t<auto_penalty>0</auto_penalty>\n"
+               << "\t</rigid_connector>\n";
+    } else if (type == "rigid prismatic joint") {
+        stream << "\t<rigid_connector name=\"" << contact_name << "\" type=\"" << type << "\">\n"
+               << "\t\t<body_a>" << material1 << "</body_a>\n"
+               << "\t\t<body_b>" << material2 << "</body_b>\n"
+               << "\t\t<tolerance>0</tolerance>\n"
+               << "\t\t<gaptol>0</gaptol>\n"
+               << "\t\t<angtol>0</angtol>\n"
+               << "\t\t<force_penalty>1</force_penalty>\n"
+               << "\t\t<moment_penalty>1</moment_penalty>\n"
+               << "\t\t<joint_origin>0,0,0</joint_origin>\n"
+               << "\t\t<joint_axis>0,0,0</joint_axis>\n"
+               << "\t\t<minaug>0</minaug>\n"
+               << "\t\t<maxaug>10</maxaug>\n"
+               << "\t\t<prescribed_translation>0</prescribed_translation>\n"
+               << "\t\t<translation>0</translation>\n"
+               << "\t\t<force>0</force>\n"
+               << "\t\t<auto_penalty>0</auto_penalty>\n"
+               << "\t</rigid_connector>\n";
+    } else if (type == "rigid revolute joint") {
+        stream << "\t<rigid_connector name=\"" << contact_name << "\" type=\"" << type << "\">\n"
+               << "\t\t<body_a>" << material1 << "</body_a>\n"
+               << "\t\t<body_b>" << material2 << "</body_b>\n"
+               << "\t\t<tolerance>0</tolerance>\n"
+               << "\t\t<gaptol>0</gaptol>\n"
+               << "\t\t<angtol>0</angtol>\n"
+               << "\t\t<force_penalty>1</force_penalty>\n"
+               << "\t\t<moment_penalty>1</moment_penalty>\n"
+               << "\t\t<joint_origin>0,0,0</joint_origin>\n"
+               << "\t\t<joint_axis>0,0,0</joint_axis>\n"
+               << "\t\t<minaug>0</minaug>\n"
+               << "\t\t<maxaug>10</maxaug>\n"
+               << "\t\t<prescribed_rotation>0</prescribed_rotation>\n"
+               << "\t\t<rotation>0</rotation>\n"
+               << "\t\t<moment>0</moment>\n"
+               << "\t\t<auto_penalty>0</auto_penalty>\n"
+               << "\t</rigid_connector>\n";
+    } else if (type == "rigid spherical joint") {
+        stream << "\t<rigid_connector name=\"" << contact_name << "\" type=\"" << type << "\">\n"
+               << "\t\t<body_a>" << material1 << "</body_a>\n"
+               << "\t\t<body_b>" << material2 << "</body_b>\n"
+               << "\t\t<tolerance>0</tolerance>\n"
+               << "\t\t<gaptol>0</gaptol>\n"
+               << "\t\t<angtol>0</angtol>\n"
+               << "\t\t<force_penalty>1</force_penalty>\n"
+               << "\t\t<moment_penalty>1</moment_penalty>\n"
+               << "\t\t<joint_origin>0,0,0</joint_origin>\n"
+               << "\t\t<minaug>0</minaug>\n"
+               << "\t\t<maxaug>10</maxaug>\n"
+               << "\t\t<prescribed_rotation>0</prescribed_rotation>\n"
+               << "\t\t<rotation_x>0</rotation_x>\n"
+               << "\t\t<rotation_y>0</rotation_y>\n"
+               << "\t\t<rotation_z>0</rotation_z>\n"
+               << "\t\t<moment_x>0</moment_x>\n"
+               << "\t\t<moment_y>0</moment_y>\n"
+               << "\t\t<moment_z>0</moment_z>\n"
+               << "\t\t<auto_penalty>0</auto_penalty>\n"
+               << "\t</rigid_connector>\n";
+    } else if (type == "rigid spring") {
+        stream << "\t<rigid_connector name=\"" << contact_name << "\" type=\"" << type << "\">\n"
+               << "\t\t<body_a>" << material1 << "</body_a>\n"
+               << "\t\t<body_b>" << material2 << "</body_b>\n"
+               << "\t\t<k>1</k>\n"
+               << "\t\t<insertion_a>0,0,0</insertion_a>\n"
+               << "\t\t<insertion_b>0,0,0</insertion_b>\n"
+               << "\t\t<free_length>0</free_length>\n"
+               << "\t</rigid_connector>\n";
+    } else {
+        std::runtime_error("contact type is not supported");
+    }
+}
 
 } // namespace wmtk::components::internal
