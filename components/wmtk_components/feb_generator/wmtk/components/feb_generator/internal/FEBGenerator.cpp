@@ -4,6 +4,7 @@
 #include <map>
 #include <set>
 #include <unordered_set>
+#include "FEBContactUtils.hpp"
 #include "wmtk/utils/Logger.hpp"
 
 namespace wmtk::components::internal {
@@ -20,31 +21,31 @@ json read_json_settings(std::string path)
     return j;
 }
 
-//void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_folder)
+// void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_folder)
 //{
-//    clock_t start, end;
-//    start = clock();
+//     clock_t start, end;
+//     start = clock();
 //
-//    wmtk::attribute::MeshAttributeHandle tag_handle =
-//        mesh.get_attribute_handle<int64_t>("tag", PrimitiveType::Tetrahedron);
-//    wmtk::attribute::Accessor<int64_t> tag_acc = mesh.create_accessor<int64_t>(tag_handle);
-//    wmtk::attribute::MeshAttributeHandle bctag_handle =
-//        mesh.get_attribute_handle<int64_t>("bc_tag", PrimitiveType::Tetrahedron);
-//    wmtk::attribute::Accessor<int64_t> bctag_acc = mesh.create_accessor<int64_t>(bctag_handle);
-//    wmtk::attribute::MeshAttributeHandle id_handle =
-//        mesh.register_attribute<int64_t>("vertex_id", PrimitiveType::Vertex, 1);
-//    wmtk::attribute::Accessor<int64_t> id_acc = mesh.create_accessor<int64_t>(id_handle);
-//    wmtk::attribute::MeshAttributeHandle vertices_handle =
-//        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-//    wmtk::attribute::Accessor<double> pos_acc = mesh.create_accessor<double>(vertices_handle);
+//     wmtk::attribute::MeshAttributeHandle tag_handle =
+//         mesh.get_attribute_handle<int64_t>("tag", PrimitiveType::Tetrahedron);
+//     wmtk::attribute::Accessor<int64_t> tag_acc = mesh.create_accessor<int64_t>(tag_handle);
+//     wmtk::attribute::MeshAttributeHandle bctag_handle =
+//         mesh.get_attribute_handle<int64_t>("bc_tag", PrimitiveType::Tetrahedron);
+//     wmtk::attribute::Accessor<int64_t> bctag_acc = mesh.create_accessor<int64_t>(bctag_handle);
+//     wmtk::attribute::MeshAttributeHandle id_handle =
+//         mesh.register_attribute<int64_t>("vertex_id", PrimitiveType::Vertex, 1);
+//     wmtk::attribute::Accessor<int64_t> id_acc = mesh.create_accessor<int64_t>(id_handle);
+//     wmtk::attribute::MeshAttributeHandle vertices_handle =
+//         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+//     wmtk::attribute::Accessor<double> pos_acc = mesh.create_accessor<double>(vertices_handle);
 //
-//    auto v_tuple_list = mesh.get_all(PrimitiveType::Vertex);
+//     auto v_tuple_list = mesh.get_all(PrimitiveType::Vertex);
 //
-//    int64_t id = 0;
-//    for (const auto& t : mesh.get_all(PrimitiveType::Vertex)) {
-//        id_acc.scalar_attribute(t) = id;
-//        id++;
-//    }
+//     int64_t id = 0;
+//     for (const auto& t : mesh.get_all(PrimitiveType::Vertex)) {
+//         id_acc.scalar_attribute(t) = id;
+//         id++;
+//     }
 //
 //    // get ids list
 //    std::set<int64_t> unique_tags;
@@ -152,8 +153,9 @@ json read_json_settings(std::string path)
 //            for (const auto& item : j["FullSurfaces"]) {
 //                std::string name = item["name"];
 //                int64_t main_idx = item["main_idx"];
-//                std::vector<int64_t> exclude_ids = item["exclude_ids"].get<std::vector<int64_t>>();
-//                std::vector<int64_t> filter_tags = item["filter_tags"];
+//                std::vector<int64_t> exclude_ids =
+//                item["exclude_ids"].get<std::vector<int64_t>>(); std::vector<int64_t> filter_tags
+//                = item["filter_tags"];
 //
 //                if (main_idx == id) {
 //                    spdlog::info(
@@ -366,7 +368,8 @@ json read_json_settings(std::string path)
 //                            mesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Vertex}));
 //                        int64_t id3 = id_acc.scalar_attribute(mesh.switch_tuples(
 //                            t,
-//                            {PrimitiveType::Triangle, PrimitiveType::Edge, PrimitiveType::Vertex}));
+//                            {PrimitiveType::Triangle, PrimitiveType::Edge,
+//                            PrimitiveType::Vertex}));
 //                        selected_points_set.insert(static_cast<int64_t>(id0));
 //                        selected_points_set.insert(static_cast<int64_t>(id1));
 //                        selected_points_set.insert(static_cast<int64_t>(id2));
@@ -592,9 +595,9 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                         f << offset_tol +
                                  id_acc.scalar_attribute(mesh.switch_tuples(
                                      temp_t,
-                                     {PrimitiveType::Edge, PrimitiveType::Vertex})) + 1 << ","
-                          <<  offset_tol + id_acc.scalar_attribute(temp_t) + 1
-                          << ","
+                                     {PrimitiveType::Edge, PrimitiveType::Vertex})) +
+                                 1
+                          << "," << offset_tol + id_acc.scalar_attribute(temp_t) + 1 << ","
                           << offset_tol + id_acc.scalar_attribute(mesh.switch_vertex(temp_t)) + 1;
                         f << "</tri3>\n";
                     }
@@ -621,7 +624,7 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                         shared_idx,
                         filter_tags);
                     need_compute = true;
-                } 
+                }
                 /*
                 Shared id, disable
                 else if (shared_idx == id) {
@@ -669,9 +672,9 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                         f << offset_tol +
                                  id_acc.scalar_attribute(mesh.switch_tuples(
                                      temp_t,
-                                     {PrimitiveType::Edge, PrimitiveType::Vertex})) + 1 << ","
-                          <<  offset_tol + id_acc.scalar_attribute(temp_t) + 1
-                          << ","
+                                     {PrimitiveType::Edge, PrimitiveType::Vertex})) +
+                                 1
+                          << "," << offset_tol + id_acc.scalar_attribute(temp_t) + 1 << ","
                           << offset_tol + id_acc.scalar_attribute(mesh.switch_vertex(temp_t)) + 1;
                         f << "</tri3>\n";
                     }
@@ -732,9 +735,9 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                         f << offset_tol +
                                  id_acc.scalar_attribute(mesh.switch_tuples(
                                      temp_t,
-                                     {PrimitiveType::Edge, PrimitiveType::Vertex})) + 1 << ","
-                          <<  offset_tol + id_acc.scalar_attribute(temp_t) + 1
-                          << ","
+                                     {PrimitiveType::Edge, PrimitiveType::Vertex})) +
+                                 1
+                          << "," << offset_tol + id_acc.scalar_attribute(temp_t) + 1 << ","
                           << offset_tol + id_acc.scalar_attribute(mesh.switch_vertex(temp_t)) + 1;
                         f << "</tri3>\n";
                     }
@@ -789,7 +792,22 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
         offset_tol += offset;
     }
 
-    // end
+    // surface pairs part
+    {
+        for (const auto& item : j["Contacts"]) {
+            std::string name = item["name"];
+            std::string surface_pair_name = name + "_surface_pair";
+            std::string primary = item["primary"];
+            std::string secondary = item["secondary"];
+            std::string contact_type = item["contact_type"];
+            f << "\t\t<SurfacePair name=\"" << surface_pair_name << "\">\n";
+            f << "\t\t\t<primary>" << primary << "</primary>\n";
+            f << "\t\t\t<secondary>" << secondary << "</secondary>\n";
+            f << "\t\t</SurfacePair>\n";
+        }
+    }
+
+    // mesh end
     {
         f << "\t</Mesh>\n";
         f << "\t<MeshDomains>\n";
@@ -797,6 +815,27 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
             int64_t id = tag_list.first;
             f << "\t\t<SolidDomain name=\"part" << id << "\" mat=\"\"/>\n";
         }
+    }
+
+    // contacts
+    {
+        f << "\t<Contact>\n";
+        for (const auto& item : j["Contacts"]) {
+            std::string name = item["name"];
+            std::string surface_pair_name = name + "_surface_pair";
+            std::string primary = item["primary"];
+            std::string secondary = item["secondary"];
+            std::string contact_type = item["contact_type"];
+            wmtk::components::internal::write_contact_template(
+                f,
+                contact_type,
+                name,
+                surface_pair_name);
+        }
+        f << "\t</Contact>\n";
+    }
+
+    {
         f << "\t</MeshDomains>\n";
         f << "\t<Step>\n";
         f << "\t</Step>\n";
@@ -808,8 +847,8 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
         f << "\t\t</plotfile>\n";
         f << "\t</Output>\n";
         f << "</febio_spec>\n";
+        f.close();
     }
-    f.close();
     end = clock();
     spdlog::info("time: {}", (double)(end - start) / CLOCKS_PER_SEC);
 }

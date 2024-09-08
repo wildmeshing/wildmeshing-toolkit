@@ -2,6 +2,7 @@
 set(SRC_FILES
     internal/FEBGenerator.hpp
     internal/FEBGenerator.cpp
+    internal/FEBContactUtils.hpp
     internal/FEBGeneratorOptions.hpp
     feb_generator.cpp
 	feb_generator.hpp)
