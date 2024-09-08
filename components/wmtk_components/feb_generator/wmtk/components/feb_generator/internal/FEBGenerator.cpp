@@ -493,7 +493,7 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
 
     {
         // materials
-        f << "\t<Material>";
+        f << "\t<Material>\n";
         int64_t cnt = 1;
         for (const auto& item : j["RigidMaterials"]) {
             std::string surface_name = item["name"];
@@ -503,10 +503,10 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
             f << "\t\t\t<density>1</density>\n";
             f << "\t\t\t<E>1</E>\n";
             f << "\t\t\t<v>0</v>\n";
-            f << "\t\t<material>";
+            f << "\t\t</material>\n";
             cnt++;
         }
-        f << "\t</Material>";
+        f << "\t</Material>\n";
     }
 
     f << "\t<Mesh>\n";
