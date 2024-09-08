@@ -5,12 +5,12 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/components/cmake")
 include(add_component)
 include(add_component_test)
 
+# wmtk::component_utils
+add_subdirectory(utils)
+
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     add_subdirectory(tests)
 endif()
-
-# wmtk::component_utils
-add_subdirectory(utils)
 
 # list of all components
 add_subdirectory("input/wmtk/components/input")
