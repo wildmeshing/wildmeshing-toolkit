@@ -41,7 +41,9 @@ SplitReturnData multi_mesh_edge_split(
         using T = std::remove_reference_t<decltype(m)>;
         if constexpr (!std::is_const_v<T>) {
             for (const auto& split_ptr : new_attr_strategies) {
-                split_ptr->update(cache, tuples);
+                if (&m == &split_ptr->mesh()) {
+                    split_ptr->update(m, cache, tuples);
+                }
             }
         }
     };

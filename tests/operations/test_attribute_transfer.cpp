@@ -163,9 +163,20 @@ TEST_CASE("collapse_edge_new_attr", "[operations][collapse][2D]")
     };
     EdgeCollapse op(m);
     op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-    op.add_transfer_strategy(el_strategy);
-    op.set_new_attribute_strategy(edge_length_handle);
-    op.set_new_attribute_strategy(pos_handle);
+
+    AttributeTransferConfiguration cfg;
+    spdlog::info("Adding transfers");
+    //cfg.add(*el_strategy);
+    //spdlog::info("Adding news");
+    //cfg.add_collapse_new(edge_length_handle);
+    //cfg.add_collapse_new(pos_handle);
+
+    //cfg.apply(op);
+
+     op.add_transfer_strategy(el_strategy);
+     op.set_new_attribute_strategy(edge_length_handle);
+     op.set_new_attribute_strategy(pos_handle);
+    spdlog::info("starting to do sections");
 
     Tuple edge;
 

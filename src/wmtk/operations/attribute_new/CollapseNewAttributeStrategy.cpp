@@ -109,10 +109,10 @@ CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
     assert(h.holds<T>());
 
     auto& mesh = m_handle.mesh();
-    if(mesh.is_free()) {
-    set_strategy(CollapseBasicStrategy::None);
+    if (mesh.is_free()) {
+        set_strategy(CollapseBasicStrategy::None);
     } else {
-    set_strategy(CollapseBasicStrategy::Throw);
+        set_strategy(CollapseBasicStrategy::Throw);
     }
 
     if (mesh.top_simplex_type() == PrimitiveType::Edge) {
@@ -131,8 +131,9 @@ CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
 
 template <typename T>
 void CollapseNewAttributeStrategy<T>::update(
+    Mesh& m,
     const ReturnData& data,
-    const OperationTupleData& op_datas)
+    const OperationTupleData& op_datas) const
 {
     if (!bool(m_collapse_op)) {
         return;
@@ -140,7 +141,11 @@ void CollapseNewAttributeStrategy<T>::update(
     assert(!mesh().is_free()); // attribute new is not valid on free meshes
 
     if (op_datas.find(&mesh()) == op_datas.end()) return;
+    assert(&mesh() == &m);
     const std::vector<std::array<Tuple, 2>>& tuple_pairs = op_datas.at(&mesh());
+
+    const PrimitiveType pt = primitive_type();
+    auto acc = m.create_accessor(m_handle.as<T>());
 
     for (const auto& tuple_pair : tuple_pairs) {
         const Tuple& input_tuple = tuple_pair[0];
@@ -151,7 +156,6 @@ void CollapseNewAttributeStrategy<T>::update(
 
         const auto& return_data_variant = data.get_variant(mesh(), input_simplex);
 
-        PrimitiveType pt = primitive_type();
         // for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type()))
         {
             auto merged_simps = m_topo_info->merged_simplices(return_data_variant, input_tuple, pt);
@@ -161,7 +165,7 @@ void CollapseNewAttributeStrategy<T>::update(
             assert(merged_simps.size() == new_simps.size());
 
             for (size_t s = 0; s < merged_simps.size(); ++s) {
-                assign_collapsed(pt, merged_simps[s], new_simps[s]);
+                assign_collapsed(acc, merged_simps[s], new_simps[s]);
             }
         }
     }
@@ -170,24 +174,21 @@ void CollapseNewAttributeStrategy<T>::update(
 
 template <typename T>
 void CollapseNewAttributeStrategy<T>::assign_collapsed(
-    PrimitiveType pt,
+    wmtk::attribute::Accessor<T>& acc,
     const std::array<Tuple, 2>& input_simplices,
-    const Tuple& final_simplex)
+    const Tuple& final_simplex) const
 {
     if (!bool(m_collapse_op)) {
         return;
     }
-    if (pt != primitive_type()) {
-        return;
-    }
-    auto acc = m_handle.mesh().create_accessor(m_handle.as<T>());
+    assert(acc.primitive_type() == primitive_type());
     auto old_values = m_handle.mesh().parent_scope([&]() {
         return std::make_tuple(
             acc.const_vector_attribute(input_simplices[0]),
             acc.const_vector_attribute(input_simplices[1]));
     });
 
-    const auto old_pred = this->evaluate_predicate(pt, input_simplices);
+    const auto old_pred = this->evaluate_predicate(acc.primitive_type(), input_simplices);
 
     VecType a, b;
     std::tie(a, b) = old_values;

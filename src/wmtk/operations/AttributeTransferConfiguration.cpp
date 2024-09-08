@@ -1,4 +1,5 @@
 #include "AttributeTransferConfiguration.hpp"
+#include <spdlog/spdlog.h>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
@@ -116,7 +117,7 @@ void AttributeTransferConfiguration::add_collapse_new(
     const attribute::MeshAttributeHandle& attribute,
     const wmtk::operations::CollapseBasicStrategy& strategy)
 {
-    std::visit(
+    auto ptr = std::visit(
         [&](auto&& val) noexcept -> std::shared_ptr<const AttributeTransferEdge> {
             using HandleType = typename std::decay_t<decltype(val)>;
             if constexpr (attribute::MeshAttributeHandle::template handle_type_is_basic<
@@ -132,11 +133,16 @@ void AttributeTransferConfiguration::add_collapse_new(
             }
         },
         attribute.handle());
+    add(*ptr);
 }
 
 /// @param clear removes all prior attribute transfer behaviors
 void AttributeTransferConfiguration::apply(EdgeSplit& split, bool clear) const
 {
+    if (clear) {
+        split.clear_attribute_transfer_strategies();
+        split.clear_attribute_new_strategies();
+    }
     auto new_strats =
         internal::filter_to_derived<BaseSplitNewAttributeStrategy>(linearized_strategies());
     for (const auto& s : new_strats) {
@@ -150,13 +156,33 @@ void AttributeTransferConfiguration::apply(EdgeSplit& split, bool clear) const
         assert(targets.size() == 1); // unclear if we ever will have more than 1 target.
         split.set_transfer_strategy(targets[0], s);
     }
-    // op.set_new_attribute_strategy(edge_length_handle);
-    // op.set_new_attribute_strategy(pos_handle);
-    //
 }
 /// @param clear removes all prior attribute transfer behaviors
-void AttributeTransferConfiguration::apply(EdgeCollapse& split, bool clear) const
+void AttributeTransferConfiguration::apply(EdgeCollapse& collapse, bool clear) const
 {
-    //
+    if (clear) {
+        collapse.clear_attribute_transfer_strategies();
+        collapse.clear_attribute_new_strategies();
+    }
+
+    auto new_strats =
+        internal::filter_to_derived<BaseCollapseNewAttributeStrategy>(linearized_strategies());
+    spdlog::info(
+        "{} {} {}",
+        linearized_strategies().size(),
+        new_strats.size(),
+        linearized_transfer_strategies().size());
+
+    for (const auto& s : new_strats) {
+        const auto targets = s->targets();
+        assert(targets.size() == 1); // unclear if we ever will have more than 1 target.
+        collapse.set_new_attribute_strategy(targets[0], s);
+    }
+
+    for (const auto& s : linearized_transfer_strategies()) {
+        const auto targets = s->targets();
+        assert(targets.size() == 1); // unclear if we ever will have more than 1 target.
+        collapse.set_transfer_strategy(targets[0], s);
+    }
 }
 } // namespace wmtk::operations

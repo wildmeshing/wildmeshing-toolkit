@@ -63,6 +63,8 @@ public:
         const attribute::MeshAttributeHandle& attribute,
         const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other);
 
+    void clear_attribute_transfer_strategies();
+
     virtual void reserve_enough_simplices();
 
 protected:

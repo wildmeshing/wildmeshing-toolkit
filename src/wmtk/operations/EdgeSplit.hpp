@@ -36,6 +36,9 @@ public:
     std::vector<simplex::Simplex> unmodified_primitives(
         const simplex::Simplex& simplex) const override;
 
+
+    void clear_attribute_new_strategies();
+
 private:
     std::vector<std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>>
         m_new_attr_strategies;

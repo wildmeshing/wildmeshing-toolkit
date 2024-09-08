@@ -76,6 +76,8 @@ public:
         const std::string& name = {},
         bool load_rounded_values = true,
         bool set_rounded = false);
+
+    operator std::string() const { return "hybrid rational"; }
 };
 
 template <int D, typename MeshType>
@@ -189,9 +191,9 @@ HybridRationalAttribute<D> HybridRationalAttribute<D>::register_attribute_from_r
 }
 } // namespace wmtk::attribute::utils
 
-//template <size_t Index, int D, typename MeshType>
-//size_t std::get(const wmtk::attribute::utils::HybridRationalAttribute<D>& attr)
+// template <size_t Index, int D, typename MeshType>
+// size_t std::get(const wmtk::attribute::utils::HybridRationalAttribute<D>& attr)
 //{
-//    return 0;
+//     return 0;
 //    // static_cast <
 //}

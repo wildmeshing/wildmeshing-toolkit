@@ -15,7 +15,8 @@ public:
     using OperationTupleData = wmtk::multimesh::operations::OperationTupleData;
 
 
-    virtual void update(const ReturnData& ret_data, const OperationTupleData& tuples) = 0;
+    virtual void update(Mesh& m, const ReturnData& ret_data, const OperationTupleData& tuples)
+        const = 0;
 };
 
 template <typename T>
@@ -35,13 +36,15 @@ public:
 
     CollapseNewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle& h);
 
-    void update(const ReturnData& ret_data, const OperationTupleData& tuples) override;
+    void update(Mesh& m, const ReturnData& ret_data, const OperationTupleData& tuples)
+        const override;
 
 
     void set_strategy(CollapseFuncType&& f);
     void set_strategy(CollapseBasicStrategy t);
 
     Mesh& mesh() override;
+    using NewAttributeStrategy::mesh;
     PrimitiveType primitive_type() const override;
     void update_handle_mesh(Mesh& m) override;
     bool matches_attribute(const attribute::MeshAttributeHandle&) const override;
@@ -57,9 +60,9 @@ private:
     std::unique_ptr<CollapseNewAttributeTopoInfo> m_topo_info;
 
     void assign_collapsed(
-        PrimitiveType pt,
+        wmtk::attribute::Accessor<T>& acc,
         const std::array<Tuple, 2>& input_simplices,
-        const Tuple& final_simplex);
+        const Tuple& final_simplex) const;
 
     static CollapseFuncType standard_collapse_strategy(CollapseBasicStrategy optype);
 };

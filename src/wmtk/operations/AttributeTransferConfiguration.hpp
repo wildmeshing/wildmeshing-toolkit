@@ -55,6 +55,7 @@ public:
     /// @param clear removes all prior attribute transfer behaviors
     void apply(EdgeCollapse& split, bool clear = false) const;
 
+
 private:
     std::unique_ptr<internal::AttributeTransferConfigurationPimpl> m_impl;
 };

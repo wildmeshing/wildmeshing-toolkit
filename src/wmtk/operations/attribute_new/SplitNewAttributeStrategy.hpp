@@ -17,7 +17,8 @@ public:
     using OperationTupleData = wmtk::multimesh::operations::OperationTupleData;
 
 
-    virtual void update(const ReturnData& ret_data, const OperationTupleData& op_data) const = 0;
+    virtual void update(Mesh& m, const ReturnData& ret_data, const OperationTupleData& op_data)
+        const = 0;
 };
 
 template <typename T>
@@ -41,7 +42,8 @@ public:
 
     SplitNewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle& h);
 
-    void update(const ReturnData& ret_data, const OperationTupleData& op_data) const final override;
+    void update(Mesh& m, const ReturnData& ret_data, const OperationTupleData& op_data)
+        const final override;
 
     void set_rib_strategy(SplitRibFuncType&& f);
     void set_strategy(SplitFuncType&& f);
@@ -68,12 +70,12 @@ private:
     std::unique_ptr<SplitNewAttributeTopoInfo> m_topo_info;
 
     void assign_split(
-        PrimitiveType pt,
+        wmtk::attribute::Accessor<T>& accessor,
         const Tuple& input_simplex,
         const std::array<Tuple, 2>& split_simplices) const;
 
     void assign_split_ribs(
-        PrimitiveType pt,
+        wmtk::attribute::Accessor<T>& accessor,
         const std::array<Tuple, 2>& input_ears,
         const Tuple& final_simplex) const;
 

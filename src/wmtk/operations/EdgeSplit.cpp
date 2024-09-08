@@ -66,6 +66,11 @@ EdgeSplit::get_new_attribute_strategy(const attribute::MeshAttributeHandle& attr
     throw std::runtime_error("unable to find attribute");
 }
 
+
+void EdgeSplit::clear_attribute_new_strategies()
+{
+    m_new_attr_strategies.clear();
+}
 void EdgeSplit::set_new_attribute_strategy(
     const attribute::MeshAttributeHandle& attribute,
     const std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>& other)
