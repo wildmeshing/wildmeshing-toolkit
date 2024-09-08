@@ -815,6 +815,7 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
             int64_t id = tag_list.first;
             f << "\t\t<SolidDomain name=\"part" << id << "\" mat=\"\"/>\n";
         }
+        f << "\t</MeshDomains>\n";
     }
 
     // contacts
@@ -836,7 +837,6 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
     }
 
     {
-        f << "\t</MeshDomains>\n";
         f << "\t<Step>\n";
         f << "\t</Step>\n";
         f << "\t<Output>\n";
