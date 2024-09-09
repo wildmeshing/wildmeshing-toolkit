@@ -90,6 +90,7 @@ include(bvh)
 include(volume_mesher)
 include(onetbb)
 include(CLI11)
+include(CDT)
 
 # Core library
 add_library(wildmeshing_toolkit)
