@@ -159,6 +159,8 @@ endif()
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     # Unit tests
     enable_testing()
+    # data for unit tests
+    set(WMTK_DATA_ROOT "${CPM_SOURCE_CACHE}/wmtk_data/" CACHE PATH "Where should the toolkit download and look for test data?")
 endif()
 
 
@@ -191,7 +193,6 @@ if(WMTK_BUILD_DOCS)
         message("Doxygen need to be installed to generate the doxygen documentation")
     endif(DOXYGEN_FOUND)
 endif()
-
 
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
