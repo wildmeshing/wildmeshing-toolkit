@@ -7,7 +7,7 @@
             "output"
         ],
         "optional": [
-            "make_child_free"
+            "inner_only"
         ]
     },
     {
@@ -19,9 +19,9 @@
         "type": "string"
     },
     {
-        "pointer": "/make_child_free",
+        "pointer": "/inner_only",
         "type": "bool",
-        "default": false,
-        "doc": "Make the inserted mesh not have any topology"
+        "default": true,
+        "doc": "only need tets inside the input"
     }
 ]

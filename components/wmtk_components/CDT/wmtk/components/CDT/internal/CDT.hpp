@@ -11,6 +11,7 @@ namespace wmtk::components::internal {
 
 std::shared_ptr<wmtk::TetMesh> CDT_internal(
     const wmtk::TriMesh& m,
-    std::vector<std::array<bool, 4>>& local_f_on_input);
+    std::vector<std::array<bool, 4>>& local_f_on_input,
+    bool inner_only);
 
 } // namespace wmtk::components::internal

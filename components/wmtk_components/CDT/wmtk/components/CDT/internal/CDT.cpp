@@ -12,20 +12,28 @@ namespace wmtk::components::internal {
 
 void convert_trimesh_to_input_plc(const TriMesh& trimesh, cdt::inputPLC& plc)
 {
-    wmtk::utils::EigenMatrixWriter writer;
-    trimesh.serialize(writer);
-
     MatrixX<int64_t> F;
     MatrixX<double> V;
+    // return;
+    {
+        wmtk::utils::EigenMatrixWriter writer;
 
-    writer.get_FV_matrix(F);
-    writer.get_position_matrix(V);
+        trimesh.serialize(writer);
+
+
+        writer.get_FV_matrix(F);
+        writer.get_position_matrix(V);
+    }
 
     const uint32_t npts = V.rows();
     const uint32_t ntri = F.rows();
 
+    std::cout << "here 1" << std::endl;
+
     double* vertices_p = (double*)malloc(sizeof(double) * 3 * (npts));
     uint32_t* tri_vertices_p = (uint32_t*)malloc(sizeof(uint32_t) * 3 * (ntri));
+
+    std::cout << "here 2" << std::endl;
 
     for (uint32_t i = 0; i < npts; ++i) {
         vertices_p[i * 3] = V(i, 0);
@@ -39,7 +47,16 @@ void convert_trimesh_to_input_plc(const TriMesh& trimesh, cdt::inputPLC& plc)
         tri_vertices_p[i * 3 + 2] = F(i, 2);
     }
 
-    plc.initFromVectors(vertices_p, npts, tri_vertices_p, ntri, false);
+    std::cout << "here 3" << std::endl;
+
+    plc.initFromVectors(vertices_p, npts, tri_vertices_p, ntri, true);
+
+    std::cout << "here 4" << std::endl;
+
+    free(vertices_p);
+    free(tri_vertices_p);
+
+    std::cout << "here 5" << std::endl;
 }
 
 cdt::TetMesh* createSteinerCDT(cdt::inputPLC& plc, bool bbox, bool snap)
@@ -81,13 +98,11 @@ cdt::TetMesh* createSteinerCDT(cdt::inputPLC& plc, bool bbox, bool snap)
 
 std::shared_ptr<wmtk::TetMesh> convert_cdt_to_rational_wmtk_tetmesh(
     cdt::TetMesh& tin,
-    std::vector<std::array<bool, 4>>& local_f_on_input)
+    std::vector<std::array<bool, 4>>& local_f_on_input,
+    bool inner_only)
 {
     MatrixX<int64_t> T;
     MatrixX<Rational> V;
-
-    V.resize(tin.numVertices(), 3);
-    T.resize(tin.countNonGhostTets(), 4);
 
     uint32_t ngnt = 0;
     for (uint32_t i = 0; i < tin.numTets(); ++i) {
@@ -95,6 +110,15 @@ std::shared_ptr<wmtk::TetMesh> convert_cdt_to_rational_wmtk_tetmesh(
             ngnt++;
         }
     }
+
+    V.resize(tin.numVertices(), 3);
+
+    if (inner_only) {
+        T.resize(ngnt, 4);
+    } else {
+        T.resize(tin.countNonGhostTets(), 4);
+    }
+
 
     for (uint32_t i = 0; i < tin.numVertices(); ++i) {
         cdt::bigrational c[3];
@@ -134,26 +158,28 @@ std::shared_ptr<wmtk::TetMesh> convert_cdt_to_rational_wmtk_tetmesh(
         row++;
     }
 
-    for (uint32_t i = 0; i < tin.numTets(); ++i) {
-        assert(row < T.rows());
-        if (!tin.isGhost(i) && tin.mark_tetrahedra[i] != 2) {
-            T(row, 0) = tin.tet_node[i * 4];
-            T(row, 1) = tin.tet_node[i * 4 + 1];
-            T(row, 2) = tin.tet_node[i * 4 + 2];
-            T(row, 3) = tin.tet_node[i * 4 + 3];
+    if (!inner_only) {
+        for (uint32_t i = 0; i < tin.numTets(); ++i) {
+            assert(row < T.rows());
+            if (!tin.isGhost(i) && tin.mark_tetrahedra[i] != 2) {
+                T(row, 0) = tin.tet_node[i * 4];
+                T(row, 1) = tin.tet_node[i * 4 + 1];
+                T(row, 2) = tin.tet_node[i * 4 + 2];
+                T(row, 3) = tin.tet_node[i * 4 + 3];
 
-            // mark surfaces
-            // assuming opposite face to node
-            std::array<bool, 4> on_input = {{false, false, false, false}};
-            for (uint64_t j = i; j < i + 4; ++j) {
-                if (tin.mark_tetrahedra[tin.tet_neigh[j] >> 2] != tin.mark_tetrahedra[j >> 2]) {
-                    on_input[j] = true;
+                // mark surfaces
+                // assuming opposite face to node
+                std::array<bool, 4> on_input = {{false, false, false, false}};
+                for (uint64_t j = i; j < i + 4; ++j) {
+                    if (tin.mark_tetrahedra[tin.tet_neigh[j] >> 2] != tin.mark_tetrahedra[j >> 2]) {
+                        on_input[j] = true;
+                    }
                 }
-            }
 
-            local_f_on_input.push_back(on_input);
+                local_f_on_input.push_back(on_input);
+            }
+            row++;
         }
-        row++;
     }
 
     assert(local_f_on_input.size() == T.rows());
@@ -168,7 +194,8 @@ std::shared_ptr<wmtk::TetMesh> convert_cdt_to_rational_wmtk_tetmesh(
 
 std::shared_ptr<wmtk::TetMesh> CDT_internal(
     const wmtk::TriMesh& m,
-    std::vector<std::array<bool, 4>>& local_f_on_input)
+    std::vector<std::array<bool, 4>>& local_f_on_input,
+    bool inner_only)
 {
     cdt::inputPLC plc;
 
@@ -176,7 +203,7 @@ std::shared_ptr<wmtk::TetMesh> CDT_internal(
 
     cdt::TetMesh* tin = createSteinerCDT(plc, true, false);
 
-    return convert_cdt_to_rational_wmtk_tetmesh(*tin, local_f_on_input);
+    return convert_cdt_to_rational_wmtk_tetmesh(*tin, local_f_on_input, inner_only);
 }
 
 } // namespace wmtk::components::internal
