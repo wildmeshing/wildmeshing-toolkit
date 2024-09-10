@@ -1,7 +1,10 @@
-#include "CDT.hpp"
 
-#include <wmtk/utils/EigenMatrixWriter.hpp>
+
+//
+#include "CDT.hpp"
 #include <wmtk/utils/mesh_utils.hpp>
+#include "get_vf.hpp"
+
 
 #include <CDT/PLC.h>
 #include <CDT/delaunay.h>
@@ -12,49 +15,24 @@ namespace wmtk::components::internal {
 
 void convert_trimesh_to_input_plc(const TriMesh& trimesh, cdt::inputPLC& plc)
 {
-    MatrixX<int64_t> F;
-    MatrixX<double> V;
     // return;
-    {
-        wmtk::utils::EigenMatrixWriter writer;
 
-        trimesh.serialize(writer);
-
-
-        writer.get_FV_matrix(F);
-        writer.get_position_matrix(V);
-    }
-
-    const uint32_t npts = V.rows();
-    const uint32_t ntri = F.rows();
+    auto [vdat, fdat] = get_vf(trimesh);
+    auto [V, nvert] = vdat;
+    auto [F, ntri] = fdat;
 
     std::cout << "here 1" << std::endl;
 
-    double* vertices_p = (double*)malloc(sizeof(double) * 3 * (npts));
-    uint32_t* tri_vertices_p = (uint32_t*)malloc(sizeof(uint32_t) * 3 * (ntri));
 
     std::cout << "here 2" << std::endl;
 
-    for (uint32_t i = 0; i < npts; ++i) {
-        vertices_p[i * 3] = V(i, 0);
-        vertices_p[i * 3 + 1] = V(i, 1);
-        vertices_p[i * 3 + 2] = V(i, 2);
-    }
-
-    for (uint32_t i = 0; i < ntri; ++i) {
-        tri_vertices_p[i * 3] = F(i, 0);
-        tri_vertices_p[i * 3 + 1] = F(i, 1);
-        tri_vertices_p[i * 3 + 2] = F(i, 2);
-    }
 
     std::cout << "here 3" << std::endl;
 
-    plc.initFromVectors(vertices_p, npts, tri_vertices_p, ntri, true);
+    plc.initFromVectors(V.data(), V.size(), F.data(), ntri, true);
 
     std::cout << "here 4" << std::endl;
 
-    free(vertices_p);
-    free(tri_vertices_p);
 
     std::cout << "here 5" << std::endl;
 }
