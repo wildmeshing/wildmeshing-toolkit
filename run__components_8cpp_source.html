@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/main/wmtk/components/run_components.cpp Source File</title>
+<title>Wildmeshing Toolkit: components/main/wmtk/components/run_components.cpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -122,8 +122,8 @@ $(document).ready(function(){initNavTree('run__components_8cpp_source.html','');
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_stopwatch_8hpp.html">wmtk/utils/Stopwatch.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_paths_8hpp.html">wmtk/components/base/Paths.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="resolve__path_8hpp.html">wmtk/components/base/resolve_path.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &lt;wmtk/components/utils/Paths.hpp&gt;</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="resolve__path_8hpp.html">wmtk/components/utils/resolve_path.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &lt;fstream&gt;</span></div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
@@ -133,10 +133,10 @@ $(document).ready(function(){initNavTree('run__components_8cpp_source.html','');
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
-<div class="line"><a name="l00019"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components.html#a863104c9874d361123898889fc18074f">   19</a></span>&#160;<a class="code" href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a> <a class="code" href="namespacewmtk_1_1components.html#a863104c9874d361123898889fc18074f">run_components</a>(<span class="keyword">const</span> <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; json_input_file, <span class="keywordtype">bool</span> strict)</div>
+<div class="line"><a name="l00019"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components.html#a863104c9874d361123898889fc18074f">   19</a></span>&#160;<a class="code" href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a> <a class="code" href="namespacewmtk_1_1components.html#a863104c9874d361123898889fc18074f">run_components</a>(<span class="keyword">const</span> <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; json_input_file, <span class="keywordtype">bool</span> strict)</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;{</div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keyword">const</span> std::filesystem::path wmtk_spec_file = WMTK_APP_INPUT_SPEC;</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> rules_json;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> rules_json;</div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    {</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        std::ifstream f(wmtk_spec_file);</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        <span class="keywordflow">if</span> (!f.is_open()) {</div>
@@ -155,7 +155,7 @@ $(document).ready(function(){initNavTree('run__components_8cpp_source.html','');
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    rules_json = spec_engine.inject_include(rules_json);</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="comment">// std::cout &lt;&lt; rules_json.dump(2) &lt;&lt; std::endl;</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> spec_json;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> spec_json;</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keywordtype">bool</span> r = spec_engine.verify_json(json_input_file, rules_json);</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keywordflow">if</span> (!r) {</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <a class="code" href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">log_and_throw_error</a>(<span class="stringliteral">&quot;{}&quot;</span>, spec_engine.log2str());</div>
@@ -178,23 +178,23 @@ $(document).ready(function(){initNavTree('run__components_8cpp_source.html','');
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">const</span> std::string root_path = spec_json[<span class="stringliteral">&quot;root_path&quot;</span>];</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keyword">const</span> std::string output_dir =</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <a class="code" href="namespacewmtk_1_1components_1_1base.html#adb3c5f2a17cd1f9a8b45272b9ed91873">wmtk::components::base::resolve_path</a>(spec_json[<span class="stringliteral">&quot;output&quot;</span>][<span class="stringliteral">&quot;directory&quot;</span>], root_path, <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <a class="code" href="namespacewmtk_1_1components_1_1utils.html#a1acf8217338a8bcffd00f279a2873791">wmtk::utils::resolve_path</a>(spec_json[<span class="stringliteral">&quot;output&quot;</span>][<span class="stringliteral">&quot;directory&quot;</span>], root_path, <span class="keyword">false</span>);</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordflow">if</span> (!output_dir.empty()) {</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        std::filesystem::create_directories(output_dir);</div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    }</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    std::map&lt;</div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        std::string,</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        std::function&lt;void(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">base::Paths</a>&amp;, <span class="keyword">const</span> <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp;, <a class="code" href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a>&amp;)&gt;&gt;</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        std::function&lt;void(<span class="keyword">const</span> utils::Paths&amp;, <span class="keyword">const</span> <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp;, <a class="code" href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a>&amp;)&gt;&gt;</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        components;</div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="comment">// register components</span></div>
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="comment">// inside ${CMAKE_CURRENT_BINARY_DIR}/autogen</span></div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="preprocessor">#include &lt;components_map.hpp&gt;</span></div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">base::Paths</a> paths;</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    paths.<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html#a384c03450b5502063128a7b69e12fd25">root_path</a> = root_path;</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    paths.<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html#a9913b456cca2bbfa60a8a2fac6b25979">output_dir</a> = output_dir;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    utils::Paths paths;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    paths.root_path = root_path;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    paths.output_dir = output_dir;</div>
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">logger</a>().info(<span class="stringliteral">&quot;Root path: {}, output dir: {}&quot;</span>, root_path, output_dir);</div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
@@ -202,7 +202,7 @@ $(document).ready(function(){initNavTree('run__components_8cpp_source.html','');
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <a class="code" href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a> cache(spec_json[<span class="stringliteral">&quot;output&quot;</span>][<span class="stringliteral">&quot;cache&quot;</span>], output_dir);</div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="comment">// iterate through components array</span></div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; component_json : spec_json[<span class="stringliteral">&quot;components&quot;</span>]) {</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; component_json : spec_json[<span class="stringliteral">&quot;components&quot;</span>]) {</div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; el : component_json.items()) {</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;Component {}&quot;</span>, el.key());</div>
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            <a class="code" href="classwmtk_1_1utils_1_1_stop_watch.html">wmtk::utils::StopWatch</a> sw(el.key());</div>
@@ -215,16 +215,11 @@ $(document).ready(function(){initNavTree('run__components_8cpp_source.html','');
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;}</div>
 <div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
 <div class="ttc" id="a_logger_8hpp_html"><div class="ttname"><a href="_logger_8hpp.html">Logger.hpp</a></div></div>
-<div class="ttc" id="a_paths_8hpp_html"><div class="ttname"><a href="_paths_8hpp.html">Paths.hpp</a></div></div>
 <div class="ttc" id="a_stopwatch_8hpp_html"><div class="ttname"><a href="_stopwatch_8hpp.html">Stopwatch.hpp</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1components_1_1base_1_1_paths_html"><div class="ttname"><a href="classwmtk_1_1components_1_1base_1_1_paths.html">wmtk::components::base::Paths</a></div><div class="ttdef"><b>Definition:</b> <a href="_paths_8hpp_source.html#l00006">Paths.hpp:7</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1components_1_1base_1_1_paths_html_a384c03450b5502063128a7b69e12fd25"><div class="ttname"><a href="classwmtk_1_1components_1_1base_1_1_paths.html#a384c03450b5502063128a7b69e12fd25">wmtk::components::base::Paths::root_path</a></div><div class="ttdeci">std::string root_path</div><div class="ttdef"><b>Definition:</b> <a href="_paths_8hpp_source.html#l00009">Paths.hpp:9</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1components_1_1base_1_1_paths_html_a9913b456cca2bbfa60a8a2fac6b25979"><div class="ttname"><a href="classwmtk_1_1components_1_1base_1_1_paths.html#a9913b456cca2bbfa60a8a2fac6b25979">wmtk::components::base::Paths::output_dir</a></div><div class="ttdeci">std::string output_dir</div><div class="ttdef"><b>Definition:</b> <a href="_paths_8hpp_source.html#l00010">Paths.hpp:10</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a></div><div class="ttdef"><b>Definition:</b> <a href="_cache_8hpp_source.html#l00012">Cache.hpp:13</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html_a2bf5a723035212c5aa9c65fb4b6424e9"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html#a2bf5a723035212c5aa9c65fb4b6424e9">wmtk::io::Cache::flush_multimeshes</a></div><div class="ttdeci">void flush_multimeshes()</div><div class="ttdoc">Unsets the mesh held by each cached mm - useful for debugging whether cache loading works.</div><div class="ttdef"><b>Definition:</b> <a href="_cache_8cpp_source.html#l00176">Cache.cpp:176</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1utils_1_1_stop_watch_html"><div class="ttname"><a href="classwmtk_1_1utils_1_1_stop_watch.html">wmtk::utils::StopWatch</a></div><div class="ttdef"><b>Definition:</b> <a href="_stopwatch_8hpp_source.html#l00010">Stopwatch.hpp:11</a></div></div>
-<div class="ttc" id="aintegration__test_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="integration__test_8cpp_source.html#l00016">integration_test.cpp:16</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1base_html_adb3c5f2a17cd1f9a8b45272b9ed91873"><div class="ttname"><a href="namespacewmtk_1_1components_1_1base.html#adb3c5f2a17cd1f9a8b45272b9ed91873">wmtk::components::base::resolve_path</a></div><div class="ttdeci">std::string resolve_path(const std::string &amp;path, const std::string &amp;input_file_path, const bool only_if_exists)</div><div class="ttdef"><b>Definition:</b> <a href="resolve__path_8cpp_source.html#l00008">resolve_path.cpp:8</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1utils_html_a1acf8217338a8bcffd00f279a2873791"><div class="ttname"><a href="namespacewmtk_1_1components_1_1utils.html#a1acf8217338a8bcffd00f279a2873791">wmtk::components::utils::resolve_path</a></div><div class="ttdeci">fs::path resolve_path(const fs::path &amp;root, const fs::path &amp;path)</div><div class="ttdef"><b>Definition:</b> <a href="resolve__path_8cpp_source.html#l00010">resolve_path.cpp:10</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html_a863104c9874d361123898889fc18074f"><div class="ttname"><a href="namespacewmtk_1_1components.html#a863104c9874d361123898889fc18074f">wmtk::components::run_components</a></div><div class="ttdeci">wmtk::io::Cache run_components(const nlohmann::json &amp;json_input_file, bool strict)</div><div class="ttdef"><b>Definition:</b> <a href="run__components_8cpp_source.html#l00019">run_components.cpp:19</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_a1d15e628edf89f87be62412176114df6"><div class="ttname"><a href="namespacewmtk.html#a1d15e628edf89f87be62412176114df6">wmtk::has_user_overloaded_logger_level</a></div><div class="ttdeci">bool has_user_overloaded_logger_level()</div><div class="ttdef"><b>Definition:</b> <a href="_logger_8cpp_source.html#l00009">Logger.cpp:9</a></div></div>
@@ -233,13 +228,14 @@ $(document).ready(function(){initNavTree('run__components_8cpp_source.html','');
 <div class="ttc" id="anamespacewmtk_html_a9bf9fa5eaec03a3e61a023a35f84f0e0"><div class="ttname"><a href="namespacewmtk.html#a9bf9fa5eaec03a3e61a023a35f84f0e0">wmtk::opt_logger</a></div><div class="ttdeci">spdlog::logger &amp; opt_logger()</div><div class="ttdoc">Retrieves the logger for the optimization.</div><div class="ttdef"><b>Definition:</b> <a href="_logger_8cpp_source.html#l00075">Logger.cpp:75</a></div></div>
 <div class="ttc" id="aresolve__path_8hpp_html"><div class="ttname"><a href="resolve__path_8hpp.html">resolve_path.hpp</a></div></div>
 <div class="ttc" id="arun__components_8hpp_html"><div class="ttname"><a href="run__components_8hpp.html">run_components.hpp</a></div></div>
+<div class="ttc" id="atests_2input_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="tests_2input_8cpp_source.html#l00008">input.cpp:8</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_749fffb3726be896a01a9082e729c4a0.html">main</a></li><li class="navelem"><a class="el" href="dir_76a993f7d4f58df5842d1f1b23f4be54.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_ee649d72fcd9dfcc6d5d86fe79d66af4.html">components</a></li><li class="navelem"><a class="el" href="run__components_8cpp.html">run_components.cpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_55723cd06f2b25e55e8027257a94553b.html">main</a></li><li class="navelem"><a class="el" href="dir_c779a6452c506758d7aa0144e966cbd5.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_2d6d9b9d8acc8ca3709bf90b9975759a.html">components</a></li><li class="navelem"><a class="el" href="run__components_8cpp.html">run_components.cpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

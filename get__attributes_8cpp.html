@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/base/wmtk/components/base/get_attributes.cpp File Reference</title>
+<title>Wildmeshing Toolkit: components/utils/wmtk/components/utils/get_attributes.cpp File Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -141,17 +141,18 @@ Namespaces</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacewmtk_1_1components"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html">wmtk::components</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:namespacewmtk_1_1components_1_1base"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1base.html">wmtk::components::base</a></td></tr>
+<tr class="memitem:namespacewmtk_1_1components_1_1utils"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1utils.html">wmtk::components::utils</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a4d7843417dc993d806bba9f8715ceac3"><td class="memItemLeft" align="right" valign="top">attribute::MeshAttributeHandle&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1base.html#a4d7843417dc993d806bba9f8715ceac3">wmtk::components::base::get_attribute</a> (const Mesh &amp;m, const std::string &amp;name)</td></tr>
-<tr class="separator:a4d7843417dc993d806bba9f8715ceac3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a872176ff06472c1fa45780c696867a26"><td class="memItemLeft" align="right" valign="top">attribute::MeshAttributeHandle&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1base.html#a872176ff06472c1fa45780c696867a26">wmtk::components::base::get_attribute</a> (const io::Cache &amp;cache, const Mesh &amp;m, const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;attribute)</td></tr>
-<tr class="separator:a872176ff06472c1fa45780c696867a26"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a10f2459af7435b17959170960a9a6a27"><td class="memItemLeft" align="right" valign="top">std::vector&lt; attribute::MeshAttributeHandle &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1base.html#a10f2459af7435b17959170960a9a6a27">wmtk::components::base::get_attributes</a> (const io::Cache &amp;cache, const Mesh &amp;m, const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;attribute_names)</td></tr>
-<tr class="separator:a10f2459af7435b17959170960a9a6a27"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b716c4c4d80fa17070890be813ecb23"><td class="memItemLeft" align="right" valign="top">attribute::MeshAttributeHandle&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1utils.html#a6b716c4c4d80fa17070890be813ecb23">wmtk::components::utils::get_attribute</a> (const Mesh &amp;m, const std::string &amp;name)</td></tr>
+<tr class="memdesc:a6b716c4c4d80fa17070890be813ecb23"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get an attribute handle only by name.  <a href="namespacewmtk_1_1components_1_1utils.html#a6b716c4c4d80fa17070890be813ecb23">More...</a><br /></td></tr>
+<tr class="separator:a6b716c4c4d80fa17070890be813ecb23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a582e503d9bd8bb51b2ccb8d351367b02"><td class="memItemLeft" align="right" valign="top">attribute::MeshAttributeHandle&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1utils.html#a582e503d9bd8bb51b2ccb8d351367b02">wmtk::components::utils::get_attribute</a> (const Mesh &amp;m, const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;attribute)</td></tr>
+<tr class="separator:a582e503d9bd8bb51b2ccb8d351367b02"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6aefcc543c7737abce06f5f8bad7dbd"><td class="memItemLeft" align="right" valign="top">std::vector&lt; attribute::MeshAttributeHandle &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1utils.html#af6aefcc543c7737abce06f5f8bad7dbd">wmtk::components::utils::get_attributes</a> (const Mesh &amp;m, const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;attribute_names)</td></tr>
+<tr class="separator:af6aefcc543c7737abce06f5f8bad7dbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -159,7 +160,7 @@ Functions</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_f9bd88f53b0c297f06c5045d55a00b25.html">base</a></li><li class="navelem"><a class="el" href="dir_43502cf5350373f5f36bb843ee9201c3.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_5a41a1c7a8136f0a53030c60d5462b72.html">components</a></li><li class="navelem"><a class="el" href="dir_c6ad7867d8293f63d748973476a4823b.html">base</a></li><li class="navelem"><a class="el" href="get__attributes_8cpp.html">get_attributes.cpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_141255b66ec4604466b3430e281cf831.html">utils</a></li><li class="navelem"><a class="el" href="dir_3673f076e68f259a60362c4d9e0fd016.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_8b41c41b9efe06ae2e37b7f1c0c216d5.html">components</a></li><li class="navelem"><a class="el" href="dir_f17e2153a65e7166cfb2037e675d5562.html">utils</a></li><li class="navelem"><a class="el" href="get__attributes_8cpp.html">get_attributes.cpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

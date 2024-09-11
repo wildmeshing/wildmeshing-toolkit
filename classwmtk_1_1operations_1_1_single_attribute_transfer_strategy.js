@@ -10,7 +10,8 @@ var classwmtk_1_1operations_1_1_single_attribute_transfer_strategy =
     [ "SingleAttributeTransferStrategy", "classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#ace0810cb6960ee2a01d35b2db20006c3", null ],
     [ "parent_primitive_type", "classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#a2bcd6cb19eb8c8b9fa1994966f7304b1", null ],
     [ "read_parent_values", "classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#aa5bf8a5fdf8527d9843f3f578c646b41", null ],
-    [ "run", "classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#a13835157c1b12691850b63cb657585d6", null ],
+    [ "run", "classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#a76438300120e03d6e24b9fef14116f30", null ],
+    [ "sources", "classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#a79643dab0c66daeef563bd4019ae9a92", null ],
     [ "m_functor", "classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#a1bc42b537642167d3c4c4789b67faceb", null ],
     [ "m_parent_handle", "classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#ac5cd8fe704e6576b71278a3c4bac1296", null ]
 ];

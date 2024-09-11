@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/periodic_optimization/wmtk/components/periodic_optimization/internal/periodic_optimization.hpp Source File</title>
+<title>Wildmeshing Toolkit: components/periodic_optimization/wmtk/components/periodic_optimization/internal/periodic_optimization.hpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -132,20 +132,20 @@ $(document).ready(function(){initNavTree('internal_2periodic__optimization_8hpp_
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">bool</span> intermediate_output,</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    std::vector&lt;attribute::MeshAttributeHandle&gt;&amp; pass_through_attributes,</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    std::string output_dir,</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    std::string <a class="code" href="namespacewmtk_1_1components.html#afb654c569d4536f122b7cdfb9156c7d7">output</a>);</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    std::string <a class="code" href="namespacewmtk_1_1components.html#a50def332b20b44816cb0c8d31a808a51">output</a>);</div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;} <span class="comment">// namespace wmtk::components::internal</span></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html_a8890d5e5bb5f11779d4e40e07882253a"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html#a8890d5e5bb5f11779d4e40e07882253a">wmtk::components::internal::periodic_optimization</a></div><div class="ttdeci">void periodic_optimization(Mesh &amp;periodic_mesh, Mesh &amp;position_mesh, Mesh &amp;surface_mesh, const double target_edge_length, const double max_amips_energy, const int64_t passes, const double envelope_size, const bool intermediate_output, std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;pass_through_attributes, std::string output_dir, std::string output)</div><div class="ttdef"><b>Definition:</b> <a href="internal_2periodic__optimization_8cpp_source.html#l00112">periodic_optimization.cpp:112</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_afb654c569d4536f122b7cdfb9156c7d7"><div class="ttname"><a href="namespacewmtk_1_1components.html#afb654c569d4536f122b7cdfb9156c7d7">wmtk::components::output</a></div><div class="ttdeci">void output(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="output_8cpp_source.html#l00012">output.cpp:12</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_a50def332b20b44816cb0c8d31a808a51"><div class="ttname"><a href="namespacewmtk_1_1components.html#a50def332b20b44816cb0c8d31a808a51">wmtk::components::output</a></div><div class="ttdeci">void output(const Mesh &amp;mesh, const std::filesystem::path &amp;file, const std::string &amp;position_attr_name)</div><div class="ttdoc">Write the mesh to file.</div><div class="ttdef"><b>Definition:</b> <a href="output_8cpp_source.html#l00012">output.cpp:12</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_c1fde472f0cf5157fccfa0608cdf009a.html">periodic_optimization</a></li><li class="navelem"><a class="el" href="dir_810f3de3ed367df8c15c3ae35948e9a6.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_26805db9132b912055cb754279cf5ce6.html">components</a></li><li class="navelem"><a class="el" href="dir_436aa0e650c301e579ca908f7719ee71.html">periodic_optimization</a></li><li class="navelem"><a class="el" href="dir_905076698248e683a0ccf3a8535ba097.html">internal</a></li><li class="navelem"><a class="el" href="internal_2periodic__optimization_8hpp.html">periodic_optimization.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_69fcabe2ce4db5cdf31db52e9f6201b0.html">periodic_optimization</a></li><li class="navelem"><a class="el" href="dir_7b32fc8c5c5774dce382c6a5a3d0db46.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_ac12b3ffc44f5b27cc9f62b916ce5f90.html">components</a></li><li class="navelem"><a class="el" href="dir_a8ee3cb6c88b451dca91df934e17e515.html">periodic_optimization</a></li><li class="navelem"><a class="el" href="dir_96bd1a5e74ec6ba31a8882687d8b44ad.html">internal</a></li><li class="navelem"><a class="el" href="internal_2periodic__optimization_8hpp.html">periodic_optimization.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

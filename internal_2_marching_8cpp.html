@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/marching/wmtk/components/marching/internal/Marching.cpp File Reference</title>
+<title>Wildmeshing Toolkit: components/marching/wmtk/components/marching/internal/Marching.cpp File Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -122,11 +122,14 @@ $(document).ready(function(){initNavTree('internal_2_marching_8cpp.html',''); in
 <code>#include &lt;deque&gt;</code><br />
 <code>#include &lt;optional&gt;</code><br />
 <code>#include &lt;<a class="el" href="_scheduler_8hpp_source.html">wmtk/Scheduler.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_simplex_inversion_invariant_8hpp_source.html">wmtk/invariants/SimplexInversionInvariant.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_todo_invariant_8hpp_source.html">wmtk/invariants/TodoInvariant.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_edge_split_8hpp_source.html">wmtk/operations/EdgeSplit.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_split_new_attribute_strategy_8hpp_source.html">wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_attribute_transfer_strategy_8hpp_source.html">wmtk/operations/attribute_update/AttributeTransferStrategy.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="cofaces__single__dimension_8hpp_source.html">wmtk/simplex/cofaces_single_dimension.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="top__dimension__cofaces_8hpp_source.html">wmtk/simplex/top_dimension_cofaces.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_logger_8hpp_source.html">wmtk/utils/Logger.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for Marching.cpp:</div>
 <div class="dyncontent">
@@ -138,7 +141,7 @@ Include dependency graph for Marching.cpp:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1internal_1_1_tag_attribute.html">wmtk::components::internal::TagAttribute</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1_tag_attribute.html">wmtk::components::TagAttribute</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
@@ -147,8 +150,6 @@ Namespaces</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacewmtk_1_1components"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html">wmtk::components</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:namespacewmtk_1_1components_1_1internal"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -156,7 +157,7 @@ Namespaces</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_145469d5d06a9748959b595d0fe366d4.html">marching</a></li><li class="navelem"><a class="el" href="dir_d5eb2638408b999b7627687dc13aeda1.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_9e4886e598daa1512e4c6d38913e5aae.html">components</a></li><li class="navelem"><a class="el" href="dir_8e337b9a161fec2635378b6386653f39.html">marching</a></li><li class="navelem"><a class="el" href="dir_83b134999b838fa35ecd9dd65d631529.html">internal</a></li><li class="navelem"><a class="el" href="internal_2_marching_8cpp.html">Marching.cpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_9a5be04ba4a42993c3d4af74be2caec9.html">marching</a></li><li class="navelem"><a class="el" href="dir_10e857f26241e1f8eef6b2947ebd7496.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_ff07799b5f37e9912cfab46c79f88dfe.html">components</a></li><li class="navelem"><a class="el" href="dir_bd391d9a68160b1e5932478c38240753.html">marching</a></li><li class="navelem"><a class="el" href="dir_b6944df5856b52ec0d6ff7e0b118390b.html">internal</a></li><li class="navelem"><a class="el" href="internal_2_marching_8cpp.html">Marching.cpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

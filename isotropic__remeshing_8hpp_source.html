@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/isotropic_remeshing/wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp Source File</title>
+<title>Wildmeshing Toolkit: components/isotropic_remeshing/wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -119,25 +119,24 @@ $(document).ready(function(){initNavTree('isotropic__remeshing_8hpp_source.html'
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;nlohmann/json.hpp&gt;</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_cache_8hpp.html">wmtk/io/Cache.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_paths_8hpp.html">wmtk/components/base/Paths.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;wmtk/components/utils/Paths.hpp&gt;</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160; </div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a1a5ffb0788dc02e8b355a7a1ad447c7f">isotropic_remeshing</a>(<span class="keyword">const</span> base::Paths&amp; paths, <span class="keyword">const</span> <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; j, io::Cache&amp; cache);</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#ae6dfdbd73d7018f6f21bb2396872c796">isotropic_remeshing</a>(<span class="keyword">const</span> utils::Paths&amp; paths, <span class="keyword">const</span> <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; j, io::Cache&amp; cache);</div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
 <div class="ttc" id="a_cache_8hpp_html"><div class="ttname"><a href="_cache_8hpp.html">Cache.hpp</a></div></div>
-<div class="ttc" id="a_paths_8hpp_html"><div class="ttname"><a href="_paths_8hpp.html">Paths.hpp</a></div></div>
-<div class="ttc" id="aintegration__test_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="integration__test_8cpp_source.html#l00016">integration_test.cpp:16</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a1a5ffb0788dc02e8b355a7a1ad447c7f"><div class="ttname"><a href="namespacewmtk_1_1components.html#a1a5ffb0788dc02e8b355a7a1ad447c7f">wmtk::components::isotropic_remeshing</a></div><div class="ttdeci">void isotropic_remeshing(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="isotropic__remeshing_8cpp_source.html#l00032">isotropic_remeshing.cpp:32</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_ae6dfdbd73d7018f6f21bb2396872c796"><div class="ttname"><a href="namespacewmtk_1_1components.html#ae6dfdbd73d7018f6f21bb2396872c796">wmtk::components::isotropic_remeshing</a></div><div class="ttdeci">void isotropic_remeshing(const utils::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="isotropic__remeshing_8cpp_source.html#l00032">isotropic_remeshing.cpp:32</a></div></div>
+<div class="ttc" id="atests_2input_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="tests_2input_8cpp_source.html#l00008">input.cpp:8</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_d288396ca2ef99bf1ae7c96bebdbd65f.html">isotropic_remeshing</a></li><li class="navelem"><a class="el" href="dir_7303ae1002d7d8d8b51c65ec2ba6f99b.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_51d160206b69bd1c5ea4ccfe1777482e.html">components</a></li><li class="navelem"><a class="el" href="dir_ae3321e141b1a80bd713ccee9ac3d9bd.html">isotropic_remeshing</a></li><li class="navelem"><a class="el" href="isotropic__remeshing_8hpp.html">isotropic_remeshing.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_81e5a7a1ba2a30fb997609ae36325f79.html">isotropic_remeshing</a></li><li class="navelem"><a class="el" href="dir_678829a65ba8f0405277c8fa0c1711be.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_41f9225317195949ec49f2880c8f71cc.html">components</a></li><li class="navelem"><a class="el" href="dir_aff37d90bb9b6bc91887ffd2009a59c8.html">isotropic_remeshing</a></li><li class="navelem"><a class="el" href="isotropic__remeshing_8hpp.html">isotropic_remeshing.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

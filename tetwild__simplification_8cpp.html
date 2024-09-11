@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/tetwild_simplification/wmtk/components/tetwild_simplification/tetwild_simplification.cpp File Reference</title>
+<title>Wildmeshing Toolkit: components/tetwild_simplification/wmtk/components/tetwild_simplification/tetwild_simplification.cpp File Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -123,7 +123,6 @@ $(document).ready(function(){initNavTree('tetwild__simplification_8cpp.html','')
 <div class="textblock"><code>#include &quot;<a class="el" href="tetwild__simplification_8hpp_source.html">tetwild_simplification.hpp</a>&quot;</code><br />
 <code>#include &lt;<a class="el" href="_mesh_8hpp_source.html">wmtk/Mesh.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_tri_mesh_8hpp_source.html">wmtk/TriMesh.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="resolve__path_8hpp_source.html">wmtk/components/base/resolve_path.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_eigen_matrix_writer_8hpp_source.html">wmtk/utils/EigenMatrixWriter.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_logger_8hpp_source.html">wmtk/utils/Logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="mesh__utils_8hpp_source.html">wmtk/utils/mesh_utils.hpp</a>&gt;</code><br />
@@ -190,10 +189,10 @@ Functions</h2></td></tr>
 <tr class="separator:a75ce3ac04f8f77568dd676d12fdcc844"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9030c2868475595c9de07d942791b673"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a9030c2868475595c9de07d942791b673">wmtk::components::swapping</a> (std::vector&lt; Vector3 &gt; &amp;input_vertices, std::vector&lt; Vector3i &gt; &amp;input_faces, const AABBWrapper &amp;tree, std::vector&lt; bool &gt; &amp;v_is_removed, std::vector&lt; bool &gt; &amp;f_is_removed, std::vector&lt; std::unordered_set&lt; int &gt;&gt; &amp;conn_fs)</td></tr>
 <tr class="separator:a9030c2868475595c9de07d942791b673"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1595a621cb169b6771290e197a803619"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a1595a621cb169b6771290e197a803619">wmtk::components::simplify</a> (std::vector&lt; Vector3 &gt; &amp;input_vertices, std::vector&lt; Vector3i &gt; &amp;input_faces, const AABBWrapper &amp;tree, const double duplicate_tol)</td></tr>
-<tr class="separator:a1595a621cb169b6771290e197a803619"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a404ebbf9c93ceb68b8a5507159c074"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a8a404ebbf9c93ceb68b8a5507159c074">wmtk::components::tetwild_simplification</a> (const base::Paths &amp;paths, const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;j, io::Cache &amp;cache)</td></tr>
-<tr class="separator:a8a404ebbf9c93ceb68b8a5507159c074"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adec286f3cfd3e5764450f37dd7df619c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#adec286f3cfd3e5764450f37dd7df619c">wmtk::components::simplify</a> (std::vector&lt; Vector3 &gt; &amp;input_vertices, std::vector&lt; Vector3i &gt; &amp;input_faces, const AABBWrapper &amp;tree, const double duplicate_tol)</td></tr>
+<tr class="separator:adec286f3cfd3e5764450f37dd7df619c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd293a6a41da0ec4d15cf8f31ce1eff2"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; std::shared_ptr&lt; TriMesh &gt;, <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#abd293a6a41da0ec4d15cf8f31ce1eff2">wmtk::components::tetwild_simplification</a> (const TriMesh &amp;mesh, const std::string &amp;postion_attr_name, double main_esp, bool relative, double duplicate_tol, bool use_sampling)</td></tr>
+<tr class="separator:abd293a6a41da0ec4d15cf8f31ce1eff2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -201,7 +200,7 @@ Functions</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_b8318f041b47f0c2648687038c5f5413.html">tetwild_simplification</a></li><li class="navelem"><a class="el" href="dir_5ae3b52840f1464333b28108faa9a8fc.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_e57ed488ae3d00307ffe9a0f168c4386.html">components</a></li><li class="navelem"><a class="el" href="dir_c1019214f8f777072b9a6819668081f7.html">tetwild_simplification</a></li><li class="navelem"><a class="el" href="tetwild__simplification_8cpp.html">tetwild_simplification.cpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_25a60a1b35a21b111b76bccccd6770d7.html">tetwild_simplification</a></li><li class="navelem"><a class="el" href="dir_6dbeb5c6eeff6f587e26fd57c67fa935.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_4bfb9b77d981665a59090519515720aa.html">components</a></li><li class="navelem"><a class="el" href="dir_4b0c731c09a859adb0e4cc373993dc4e.html">tetwild_simplification</a></li><li class="navelem"><a class="el" href="tetwild__simplification_8cpp.html">tetwild_simplification.cpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

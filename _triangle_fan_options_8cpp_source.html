@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/procedural/wmtk/components/procedural/internal/TriangleFanOptions.cpp Source File</title>
+<title>Wildmeshing Toolkit: components/procedural/wmtk/components/procedural/TriangleFanOptions.cpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -122,65 +122,62 @@ $(document).ready(function(){initNavTree('_triangle_fan_options_8cpp_source.html
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="grid__utils_8hpp.html">grid_utils.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a> {</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1procedural.html">wmtk::components::procedural</a> {</div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html#a59bbaed7b26fb80218677ddfc1a94960">procedural</a> {</div>
-<div class="line"><a name="l00011"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#aa350a4628718ab75cb758b079854bc9f">   11</a></span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872">make_mesh</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1components_1_1internal_1_1_triangle_fan_options.html">TriangleFanOptions</a>&amp; opt)</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;{</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">size_t</span> size = opt.<a class="code" href="classwmtk_1_1components_1_1internal_1_1_triangle_fan_options.html#aa443c623c0e2bae162054ea421dffd63">size</a>;</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">auto</span> mptr = std::make_shared&lt;TriMesh&gt;();</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp; m = *mptr;</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <a class="code" href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">RowVectors3l</a> tris;</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    tris.resize(size, 3);</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    tris.rowwise() = <a class="code" href="namespacewmtk.html#a0266b59714942ac7443d6514b4ef9113">Vector3l</a>(0, 1, 2).transpose();</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keyword">auto</span> mut = tris.rightCols&lt;2&gt;();</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; size; ++j) {</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        mut.row(j).array() += j;</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    }</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <span class="comment">// tris(number - 1, 2) = 1;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    m.<a class="code" href="classwmtk_1_1_tri_mesh.html#a813ae302287fb113bae39b8ec0ee3937">initialize</a>(tris);</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keywordflow">if</span> (opt.<a class="code" href="classwmtk_1_1components_1_1internal_1_1_triangle_fan_options.html#a89499935443406d19c71244c19aed77e">coordinates</a>.has_value()) {</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        <span class="keywordtype">int</span> vertex_size = size + 2;</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; csettings = *opt.<a class="code" href="classwmtk_1_1components_1_1internal_1_1_triangle_fan_options.html#a89499935443406d19c71244c19aed77e">coordinates</a>;</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; name = csettings.name;</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        <span class="keywordtype">double</span> radius = csettings.radius;</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        Eigen::Vector2d::ConstMapType degree_range(csettings.degrees.data());</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <span class="keywordtype">double</span> diff = degree_range.y() - degree_range.x();</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="keywordtype">double</span> dtheta = diff * M_PI / 180.0 / size;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <span class="keywordtype">double</span> theta0 = M_PI * degree_range.x() / 18.0;</div>
+<div class="line"><a name="l00010"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1procedural.html#ad852baba2d5d7211ec55d766497089b3">   10</a></span>&#160;std::shared_ptr&lt;TriMesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1procedural.html#ab9c00d6ba2d614ba26750c3c80c6502c">make_mesh</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1components_1_1procedural_1_1_triangle_fan_options.html">TriangleFanOptions</a>&amp; opt)</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;{</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">size_t</span> size = opt.<a class="code" href="classwmtk_1_1components_1_1procedural_1_1_triangle_fan_options.html#a45e524bc8be5752c1533f224667f521c">size</a>;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keyword">auto</span> mptr = std::make_shared&lt;TriMesh&gt;();</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp; m = *mptr;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <a class="code" href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">RowVectors3l</a> tris;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    tris.resize(size, 3);</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    tris.rowwise() = <a class="code" href="namespacewmtk.html#a0266b59714942ac7443d6514b4ef9113">Vector3l</a>(0, 1, 2).transpose();</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">auto</span> mut = tris.rightCols&lt;2&gt;();</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; size; ++j) {</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;        mut.row(j).array() += j;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    }</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="comment">// tris(number - 1, 2) = 1;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    m.<a class="code" href="classwmtk_1_1_tri_mesh.html#a813ae302287fb113bae39b8ec0ee3937">initialize</a>(tris);</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keywordflow">if</span> (opt.<a class="code" href="classwmtk_1_1components_1_1procedural_1_1_triangle_fan_options.html#ad9621e5e562c31f1cca6b256c2c3c09b">coordinates</a>.has_value()) {</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        <span class="keywordtype">int</span> vertex_size = size + 2;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; csettings = *opt.<a class="code" href="classwmtk_1_1components_1_1procedural_1_1_triangle_fan_options.html#ad9621e5e562c31f1cca6b256c2c3c09b">coordinates</a>;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; name = csettings.name;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        <span class="keywordtype">double</span> radius = csettings.radius;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        Eigen::Vector2d::ConstMapType degree_range(csettings.degrees.data());</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <span class="keywordtype">double</span> diff = degree_range.y() - degree_range.x();</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <span class="keywordtype">double</span> dtheta = diff * M_PI / 180.0 / size;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="keywordtype">double</span> theta0 = M_PI * degree_range.x() / 18.0;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        Eigen::Matrix&lt;double, Eigen::Dynamic, 2&gt; P(vertex_size, 2);</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        P.row(0).setZero();</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt;= size; ++j) {</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            <span class="keywordtype">double</span> theta = dtheta * j + theta0;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            <span class="keywordtype">double</span> c = radius * std::cos(theta);</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            <span class="keywordtype">double</span> s = radius * std::sin(theta);</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;            P.row(j + 1) &lt;&lt; c, s;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        }</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        Eigen::Vector2d::ConstMapType o(csettings.center.data());</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        P.rowwise() += o.transpose();</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <a class="code" href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">wmtk::mesh_utils::set_matrix_attribute</a>(P, name, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>, m);</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    }</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keywordflow">return</span> mptr;</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;}</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;} <span class="comment">// namespace procedural</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;} <span class="comment">// namespace wmtk::components::internal</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        Eigen::Matrix&lt;double, Eigen::Dynamic, 2&gt; P(vertex_size, 2);</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        P.row(0).setZero();</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt;= size; ++j) {</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            <span class="keywordtype">double</span> theta = dtheta * j + theta0;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            <span class="keywordtype">double</span> c = radius * std::cos(theta);</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            <span class="keywordtype">double</span> s = radius * std::sin(theta);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            P.row(j + 1) &lt;&lt; c, s;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        }</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        Eigen::Vector2d::ConstMapType o(csettings.center.data());</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        P.rowwise() += o.transpose();</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <a class="code" href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">wmtk::mesh_utils::set_matrix_attribute</a>(P, name, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>, m);</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    }</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordflow">return</span> mptr;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;}</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;} <span class="comment">// namespace wmtk::components::procedural</span></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="a_tri_mesh_8hpp_html"><div class="ttname"><a href="_tri_mesh_8hpp.html">TriMesh.hpp</a></div></div>
 <div class="ttc" id="a_triangle_fan_options_8hpp_html"><div class="ttname"><a href="_triangle_fan_options_8hpp.html">TriangleFanOptions.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_8hpp_source.html#l00018">TriMesh.hpp:19</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_html_a813ae302287fb113bae39b8ec0ee3937"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html#a813ae302287fb113bae39b8ec0ee3937">wmtk::TriMesh::initialize</a></div><div class="ttdeci">void initialize(Eigen::Ref&lt; const RowVectors3l &gt; FV, Eigen::Ref&lt; const RowVectors3l &gt; FE, Eigen::Ref&lt; const RowVectors3l &gt; FF, Eigen::Ref&lt; const VectorXl &gt; VF, Eigen::Ref&lt; const VectorXl &gt; EF)</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_8cpp_source.html#l00173">TriMesh.cpp:173</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1components_1_1internal_1_1_triangle_fan_options_html"><div class="ttname"><a href="classwmtk_1_1components_1_1internal_1_1_triangle_fan_options.html">wmtk::components::internal::TriangleFanOptions</a></div><div class="ttdef"><b>Definition:</b> <a href="_triangle_fan_options_8hpp_source.html#l00009">TriangleFanOptions.hpp:10</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1components_1_1internal_1_1_triangle_fan_options_html_a89499935443406d19c71244c19aed77e"><div class="ttname"><a href="classwmtk_1_1components_1_1internal_1_1_triangle_fan_options.html#a89499935443406d19c71244c19aed77e">wmtk::components::internal::TriangleFanOptions::coordinates</a></div><div class="ttdeci">std::optional&lt; Coordinates &gt; coordinates</div><div class="ttdef"><b>Definition:</b> <a href="_triangle_fan_options_8hpp_source.html#l00036">TriangleFanOptions.hpp:36</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1components_1_1internal_1_1_triangle_fan_options_html_aa443c623c0e2bae162054ea421dffd63"><div class="ttname"><a href="classwmtk_1_1components_1_1internal_1_1_triangle_fan_options.html#aa443c623c0e2bae162054ea421dffd63">wmtk::components::internal::TriangleFanOptions::size</a></div><div class="ttdeci">int64_t size</div><div class="ttdef"><b>Definition:</b> <a href="_triangle_fan_options_8hpp_source.html#l00012">TriangleFanOptions.hpp:12</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1components_1_1procedural_1_1_triangle_fan_options_html"><div class="ttname"><a href="classwmtk_1_1components_1_1procedural_1_1_triangle_fan_options.html">wmtk::components::procedural::TriangleFanOptions</a></div><div class="ttdef"><b>Definition:</b> <a href="_triangle_fan_options_8hpp_source.html#l00009">TriangleFanOptions.hpp:10</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1components_1_1procedural_1_1_triangle_fan_options_html_a45e524bc8be5752c1533f224667f521c"><div class="ttname"><a href="classwmtk_1_1components_1_1procedural_1_1_triangle_fan_options.html#a45e524bc8be5752c1533f224667f521c">wmtk::components::procedural::TriangleFanOptions::size</a></div><div class="ttdeci">int64_t size</div><div class="ttdef"><b>Definition:</b> <a href="_triangle_fan_options_8hpp_source.html#l00012">TriangleFanOptions.hpp:12</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1components_1_1procedural_1_1_triangle_fan_options_html_ad9621e5e562c31f1cca6b256c2c3c09b"><div class="ttname"><a href="classwmtk_1_1components_1_1procedural_1_1_triangle_fan_options.html#ad9621e5e562c31f1cca6b256c2c3c09b">wmtk::components::procedural::TriangleFanOptions::coordinates</a></div><div class="ttdeci">std::optional&lt; Coordinates &gt; coordinates</div><div class="ttdef"><b>Definition:</b> <a href="_triangle_fan_options_8hpp_source.html#l00036">TriangleFanOptions.hpp:36</a></div></div>
 <div class="ttc" id="agrid__utils_8hpp_html"><div class="ttname"><a href="grid__utils_8hpp.html">grid_utils.hpp</a></div></div>
 <div class="ttc" id="amesh__utils_8hpp_html"><div class="ttname"><a href="mesh__utils_8hpp.html">mesh_utils.hpp</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_1_1procedural_html_a9f9c7ba8540630226be69470ae8ed872"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872">wmtk::components::internal::procedural::make_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; make_mesh(const DiskOptions &amp;opt)</div><div class="ttdef"><b>Definition:</b> <a href="_disk_options_8cpp_source.html#l00011">DiskOptions.cpp:11</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a59bbaed7b26fb80218677ddfc1a94960"><div class="ttname"><a href="namespacewmtk_1_1components.html#a59bbaed7b26fb80218677ddfc1a94960">wmtk::components::procedural</a></div><div class="ttdeci">void procedural(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="procedural_8cpp_source.html#l00013">procedural.cpp:13</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1procedural_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1procedural.html">wmtk::components::procedural</a></div><div class="ttdef"><b>Definition:</b> <a href="_disk_options_8cpp_source.html#l00008">DiskOptions.cpp:8</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1procedural_html_ab9c00d6ba2d614ba26750c3c80c6502c"><div class="ttname"><a href="namespacewmtk_1_1components_1_1procedural.html#ab9c00d6ba2d614ba26750c3c80c6502c">wmtk::components::procedural::make_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; make_mesh(const DiskOptions &amp;opt)</div><div class="ttdef"><b>Definition:</b> <a href="_disk_options_8cpp_source.html#l00010">DiskOptions.cpp:10</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1mesh__utils_html_ad92eb4095d516f6a20e25587f9effe80"><div class="ttname"><a href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">wmtk::mesh_utils::set_matrix_attribute</a></div><div class="ttdeci">attribute::MeshAttributeHandle set_matrix_attribute(const Mat &amp;data, const std::string &amp;name, const PrimitiveType &amp;type, Mesh &amp;mesh)</div><div class="ttdef"><b>Definition:</b> <a href="mesh__utils_8hpp_source.html#l00009">mesh_utils.hpp:9</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_a0266b59714942ac7443d6514b4ef9113"><div class="ttname"><a href="namespacewmtk.html#a0266b59714942ac7443d6514b4ef9113">wmtk::Vector3l</a></div><div class="ttdeci">Vector&lt; int64_t, 3 &gt; Vector3l</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00035">Types.hpp:35</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_a37203f2b30de348a8320e593889600ee"><div class="ttname"><a href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">wmtk::RowVectors3l</a></div><div class="ttdeci">RowVectors&lt; int64_t, 3 &gt; RowVectors3l</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00046">Types.hpp:46</a></div></div>
@@ -191,7 +188,7 @@ $(document).ready(function(){initNavTree('_triangle_fan_options_8cpp_source.html
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_8b2be0710edb097d46e1a67e80e3ee84.html">procedural</a></li><li class="navelem"><a class="el" href="dir_7664db7018d8c2401641294e38abf8e7.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_5c19f179921ea08a7b6a117596a5b3ff.html">components</a></li><li class="navelem"><a class="el" href="dir_43fe4bce1375f41726c9bdfbb6b52426.html">procedural</a></li><li class="navelem"><a class="el" href="dir_dd168ac3bdb88ef6c35c8b2b6978062a.html">internal</a></li><li class="navelem"><a class="el" href="_triangle_fan_options_8cpp.html">TriangleFanOptions.cpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_b59c7c9369294562dd241a4f76f533c3.html">procedural</a></li><li class="navelem"><a class="el" href="dir_9912003bb9781ceae3ab656b65953712.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_4d270fffc053c4addb6437249adf8038.html">components</a></li><li class="navelem"><a class="el" href="dir_2db10d7e5b0db126f5ad86e2e604f235.html">procedural</a></li><li class="navelem"><a class="el" href="_triangle_fan_options_8cpp.html">TriangleFanOptions.cpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

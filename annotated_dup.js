@@ -70,33 +70,16 @@ var annotated_dup =
             [ "SamplingBicubic", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_bicubic.html", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_bicubic" ]
           ] ]
         ] ],
-        [ "base", "namespacewmtk_1_1components_1_1base.html", [
-          [ "ComponentOptionsBase", "structwmtk_1_1components_1_1base_1_1_component_options_base.html", "structwmtk_1_1components_1_1base_1_1_component_options_base" ],
-          [ "Paths", "classwmtk_1_1components_1_1base_1_1_paths.html", "classwmtk_1_1components_1_1base_1_1_paths" ]
-        ] ],
         [ "internal", "namespacewmtk_1_1components_1_1internal.html", [
-          [ "DelaunayOptions", "structwmtk_1_1components_1_1internal_1_1_delaunay_options.html", "structwmtk_1_1components_1_1internal_1_1_delaunay_options" ],
           [ "ExportCacheOptions", "structwmtk_1_1components_1_1internal_1_1_export_cache_options.html", "structwmtk_1_1components_1_1internal_1_1_export_cache_options" ],
           [ "GetAllMeshesOptions", "structwmtk_1_1components_1_1internal_1_1_get_all_meshes_options.html", "structwmtk_1_1components_1_1internal_1_1_get_all_meshes_options" ],
           [ "ImportCacheOptions", "structwmtk_1_1components_1_1internal_1_1_import_cache_options.html", "structwmtk_1_1components_1_1internal_1_1_import_cache_options" ],
           [ "InputOptions", "structwmtk_1_1components_1_1internal_1_1_input_options.html", "structwmtk_1_1components_1_1internal_1_1_input_options" ],
           [ "IsotropicRemeshingAttributes", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes.html", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes" ],
           [ "IsotropicRemeshingOptions", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_options.html", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_options" ],
-          [ "TagAttribute", "classwmtk_1_1components_1_1internal_1_1_tag_attribute.html", "classwmtk_1_1components_1_1internal_1_1_tag_attribute" ],
-          [ "Marching", "classwmtk_1_1components_1_1internal_1_1_marching.html", "classwmtk_1_1components_1_1internal_1_1_marching" ],
-          [ "MarchingAttributes", "structwmtk_1_1components_1_1internal_1_1_marching_attributes.html", "structwmtk_1_1components_1_1internal_1_1_marching_attributes" ],
-          [ "MarchingOptions", "structwmtk_1_1components_1_1internal_1_1_marching_options.html", "structwmtk_1_1components_1_1internal_1_1_marching_options" ],
           [ "MeshInfoOptions", "structwmtk_1_1components_1_1internal_1_1_mesh_info_options.html", "structwmtk_1_1components_1_1internal_1_1_mesh_info_options" ],
           [ "MultiMeshFromTag", "classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html", "classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag" ],
-          [ "MultiMeshFromTagOptions", "structwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag_options.html", "structwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag_options" ],
-          [ "OutputAttributes", "structwmtk_1_1components_1_1internal_1_1_output_attributes.html", "structwmtk_1_1components_1_1internal_1_1_output_attributes" ],
-          [ "OutputOptions", "structwmtk_1_1components_1_1internal_1_1_output_options.html", "structwmtk_1_1components_1_1internal_1_1_output_options" ],
-          [ "DiskOptions", "classwmtk_1_1components_1_1internal_1_1_disk_options.html", "classwmtk_1_1components_1_1internal_1_1_disk_options" ],
-          [ "Grid2Options", "classwmtk_1_1components_1_1internal_1_1_grid2_options.html", "classwmtk_1_1components_1_1internal_1_1_grid2_options" ],
-          [ "Grid3Options", "classwmtk_1_1components_1_1internal_1_1_grid3_options.html", "classwmtk_1_1components_1_1internal_1_1_grid3_options" ],
-          [ "GridOptions", "classwmtk_1_1components_1_1internal_1_1_grid_options.html", "classwmtk_1_1components_1_1internal_1_1_grid_options" ],
-          [ "ProceduralOptions", "structwmtk_1_1components_1_1internal_1_1_procedural_options.html", "structwmtk_1_1components_1_1internal_1_1_procedural_options" ],
-          [ "TriangleFanOptions", "classwmtk_1_1components_1_1internal_1_1_triangle_fan_options.html", "classwmtk_1_1components_1_1internal_1_1_triangle_fan_options" ],
+          [ "TagAttribute", "classwmtk_1_1components_1_1internal_1_1_tag_attribute.html", "classwmtk_1_1components_1_1internal_1_1_tag_attribute" ],
           [ "RegularSpace", "classwmtk_1_1components_1_1internal_1_1_regular_space.html", "classwmtk_1_1components_1_1internal_1_1_regular_space" ],
           [ "RegularSpaceOptions", "structwmtk_1_1components_1_1internal_1_1_regular_space_options.html", "structwmtk_1_1components_1_1internal_1_1_regular_space_options" ],
           [ "SECAttributes", "structwmtk_1_1components_1_1internal_1_1_s_e_c_attributes.html", "structwmtk_1_1components_1_1internal_1_1_s_e_c_attributes" ],
@@ -106,20 +89,32 @@ var annotated_dup =
           [ "TagIntersectionOptions", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options" ],
           [ "WindingNumberOptions", "structwmtk_1_1components_1_1internal_1_1_winding_number_options.html", "structwmtk_1_1components_1_1internal_1_1_winding_number_options" ]
         ] ],
+        [ "procedural", "namespacewmtk_1_1components_1_1procedural.html", [
+          [ "DiskOptions", "classwmtk_1_1components_1_1procedural_1_1_disk_options.html", "classwmtk_1_1components_1_1procedural_1_1_disk_options" ],
+          [ "Grid2Options", "classwmtk_1_1components_1_1procedural_1_1_grid2_options.html", "classwmtk_1_1components_1_1procedural_1_1_grid2_options" ],
+          [ "Grid3Options", "classwmtk_1_1components_1_1procedural_1_1_grid3_options.html", "classwmtk_1_1components_1_1procedural_1_1_grid3_options" ],
+          [ "GridOptions", "classwmtk_1_1components_1_1procedural_1_1_grid_options.html", "classwmtk_1_1components_1_1procedural_1_1_grid_options" ],
+          [ "ProceduralOptions", "structwmtk_1_1components_1_1procedural_1_1_procedural_options.html", "structwmtk_1_1components_1_1procedural_1_1_procedural_options" ],
+          [ "TriangleFanOptions", "classwmtk_1_1components_1_1procedural_1_1_triangle_fan_options.html", "classwmtk_1_1components_1_1procedural_1_1_triangle_fan_options" ]
+        ] ],
+        [ "utils", "namespacewmtk_1_1components_1_1utils.html", [
+          [ "ComponentOptionsBase", "structwmtk_1_1components_1_1utils_1_1_component_options_base.html", "structwmtk_1_1components_1_1utils_1_1_component_options_base" ]
+        ] ],
         [ "FusionOptions", "structwmtk_1_1components_1_1_fusion_options.html", "structwmtk_1_1components_1_1_fusion_options" ],
+        [ "TagAttribute", "classwmtk_1_1components_1_1_tag_attribute.html", "classwmtk_1_1components_1_1_tag_attribute" ],
+        [ "Marching", "classwmtk_1_1components_1_1_marching.html", "classwmtk_1_1components_1_1_marching" ],
+        [ "MarchingOptions", "structwmtk_1_1components_1_1_marching_options.html", "structwmtk_1_1components_1_1_marching_options" ],
         [ "MultimeshUVOptions", "structwmtk_1_1components_1_1_multimesh_u_v_options.html", "structwmtk_1_1components_1_1_multimesh_u_v_options" ],
         [ "MultimeshBOptions", "structwmtk_1_1components_1_1_multimesh_b_options.html", "structwmtk_1_1components_1_1_multimesh_b_options" ],
         [ "MultimeshTOptions", "structwmtk_1_1components_1_1_multimesh_t_options.html", "structwmtk_1_1components_1_1_multimesh_t_options" ],
         [ "PeriodicOptimizationOptions", "structwmtk_1_1components_1_1_periodic_optimization_options.html", "structwmtk_1_1components_1_1_periodic_optimization_options" ],
-        [ "TagAttribute", "classwmtk_1_1components_1_1_tag_attribute.html", "classwmtk_1_1components_1_1_tag_attribute" ],
         [ "TagIntersection", "classwmtk_1_1components_1_1_tag_intersection.html", "classwmtk_1_1components_1_1_tag_intersection" ],
         [ "Random", "classwmtk_1_1components_1_1_random.html", null ],
         [ "AABBWrapper", "classwmtk_1_1components_1_1_a_a_b_b_wrapper.html", "classwmtk_1_1components_1_1_a_a_b_b_wrapper" ],
         [ "ElementInQueue", "classwmtk_1_1components_1_1_element_in_queue.html", "classwmtk_1_1components_1_1_element_in_queue" ],
         [ "cmp_s", "structwmtk_1_1components_1_1cmp__s.html", "structwmtk_1_1components_1_1cmp__s" ],
         [ "cmp_l", "structwmtk_1_1components_1_1cmp__l.html", "structwmtk_1_1components_1_1cmp__l" ],
-        [ "ToPtsOptions", "structwmtk_1_1components_1_1_to_pts_options.html", "structwmtk_1_1components_1_1_to_pts_options" ],
-        [ "TriInsOptions", "structwmtk_1_1components_1_1_tri_ins_options.html", "structwmtk_1_1components_1_1_tri_ins_options" ],
+        [ "ToPtsOptions", "classwmtk_1_1components_1_1_to_pts_options.html", "classwmtk_1_1components_1_1_to_pts_options" ],
         [ "WildmeshingOptionsAttributes", "structwmtk_1_1components_1_1_wildmeshing_options_attributes.html", "structwmtk_1_1components_1_1_wildmeshing_options_attributes" ],
         [ "WildmeshingOptionsEnvelopeMesh", "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh.html", "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh" ],
         [ "WildmeshingOptionsEnvelope", "structwmtk_1_1components_1_1_wildmeshing_options_envelope.html", "structwmtk_1_1components_1_1_wildmeshing_options_envelope" ],
@@ -168,9 +163,7 @@ var annotated_dup =
       [ "io", "namespacewmtk_1_1io.html", [
         [ "Cache", "classwmtk_1_1io_1_1_cache.html", "classwmtk_1_1io_1_1_cache" ],
         [ "CachedMultiMesh", "classwmtk_1_1io_1_1_cached_multi_mesh.html", "classwmtk_1_1io_1_1_cached_multi_mesh" ],
-        [ "CacheStack", "classwmtk_1_1io_1_1_cache_stack.html", "classwmtk_1_1io_1_1_cache_stack" ],
-        [ "ParaviewWriter", "classwmtk_1_1io_1_1_paraview_writer.html", "classwmtk_1_1io_1_1_paraview_writer" ],
-        [ "SubCacheHandle", "classwmtk_1_1io_1_1_sub_cache_handle.html", "classwmtk_1_1io_1_1_sub_cache_handle" ]
+        [ "ParaviewWriter", "classwmtk_1_1io_1_1_paraview_writer.html", "classwmtk_1_1io_1_1_paraview_writer" ]
       ] ],
       [ "multimesh", "namespacewmtk_1_1multimesh.html", [
         [ "attribute", "namespacewmtk_1_1multimesh_1_1attribute.html", [
@@ -213,6 +206,7 @@ var annotated_dup =
           [ "SplitNewAttributeTopoInfo", "classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html", "classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info" ]
         ] ],
         [ "internal", "namespacewmtk_1_1operations_1_1internal.html", [
+          [ "AttributeTransferConfigurationPimpl", "classwmtk_1_1operations_1_1internal_1_1_attribute_transfer_configuration_pimpl.html", "classwmtk_1_1operations_1_1internal_1_1_attribute_transfer_configuration_pimpl" ],
           [ "CollapseAlternateFacetData", "classwmtk_1_1operations_1_1internal_1_1_collapse_alternate_facet_data.html", "classwmtk_1_1operations_1_1internal_1_1_collapse_alternate_facet_data" ],
           [ "CollapseAlternateFacetOptionData", "classwmtk_1_1operations_1_1internal_1_1_collapse_alternate_facet_option_data.html", "classwmtk_1_1operations_1_1internal_1_1_collapse_alternate_facet_option_data" ],
           [ "SplitAlternateFacetData", "classwmtk_1_1operations_1_1internal_1_1_split_alternate_facet_data.html", "classwmtk_1_1operations_1_1internal_1_1_split_alternate_facet_data" ],
@@ -249,6 +243,8 @@ var annotated_dup =
         [ "AttributeTransferStrategyBase", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base" ],
         [ "AttributesUpdate", "classwmtk_1_1operations_1_1_attributes_update.html", "classwmtk_1_1operations_1_1_attributes_update" ],
         [ "AttributesUpdateWithFunction", "classwmtk_1_1operations_1_1_attributes_update_with_function.html", "classwmtk_1_1operations_1_1_attributes_update_with_function" ],
+        [ "AttributeTransferConfiguration", "classwmtk_1_1operations_1_1_attribute_transfer_configuration.html", "classwmtk_1_1operations_1_1_attribute_transfer_configuration" ],
+        [ "AttributeTransferEdge", "classwmtk_1_1operations_1_1_attribute_transfer_edge.html", "classwmtk_1_1operations_1_1_attribute_transfer_edge" ],
         [ "EdgeCollapse", "classwmtk_1_1operations_1_1_edge_collapse.html", "classwmtk_1_1operations_1_1_edge_collapse" ],
         [ "EdgeOperationData", "classwmtk_1_1operations_1_1_edge_operation_data.html", "classwmtk_1_1operations_1_1_edge_operation_data" ],
         [ "EdgeSplit", "classwmtk_1_1operations_1_1_edge_split.html", "classwmtk_1_1operations_1_1_edge_split" ],

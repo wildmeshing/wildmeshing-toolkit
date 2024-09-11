@@ -1,4 +1,5 @@
 var to__points_8hpp =
 [
-    [ "to_points", "to__points_8hpp.html#a9f615850a1b53a1f3bd0842e9d1ce920", null ]
+    [ "ToPtsOptions", "classwmtk_1_1components_1_1_to_pts_options.html", "classwmtk_1_1components_1_1_to_pts_options" ],
+    [ "to_points", "to__points_8hpp.html#a1703c2264e52b16281828951556f8b11", null ]
 ];

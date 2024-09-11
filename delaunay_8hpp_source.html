@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/delaunay/wmtk/components/delaunay/delaunay.hpp Source File</title>
+<title>Wildmeshing Toolkit: components/delaunay/wmtk/components/delaunay/delaunay.hpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -117,28 +117,26 @@ $(document).ready(function(){initNavTree('delaunay_8hpp_source.html',''); initRe
 <div class="contents">
 <a href="delaunay_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;nlohmann/json.hpp&gt;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_cache_8hpp.html">wmtk/io/Cache.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_paths_8hpp.html">wmtk/components/base/Paths.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a2000fd9887333564a8a9ce6e1070e6ba">delaunay</a>(<span class="keyword">const</span> base::Paths&amp; paths, <span class="keyword">const</span> <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; j, io::Cache&amp; cache);</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_8hpp.html">wmtk/Mesh.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components.html#a12bd8646c56df6a1f46dba67ab86ebd7">delaunay</a>(</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;    <span class="keyword">const</span> PointMesh&amp; point_cloud,</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    <span class="keyword">const</span> attribute::MeshAttributeHandle&amp; pts_attr,</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;    <span class="keyword">const</span> std::string&amp; output_pos_attr_name = <span class="stringliteral">&quot;vertices&quot;</span>);</div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160; </div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
-<div class="ttc" id="a_cache_8hpp_html"><div class="ttname"><a href="_cache_8hpp.html">Cache.hpp</a></div></div>
-<div class="ttc" id="a_paths_8hpp_html"><div class="ttname"><a href="_paths_8hpp.html">Paths.hpp</a></div></div>
-<div class="ttc" id="aintegration__test_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="integration__test_8cpp_source.html#l00016">integration_test.cpp:16</a></div></div>
+<div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a2000fd9887333564a8a9ce6e1070e6ba"><div class="ttname"><a href="namespacewmtk_1_1components.html#a2000fd9887333564a8a9ce6e1070e6ba">wmtk::components::delaunay</a></div><div class="ttdeci">void delaunay(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="delaunay_8cpp_source.html#l00083">delaunay.cpp:83</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_a12bd8646c56df6a1f46dba67ab86ebd7"><div class="ttname"><a href="namespacewmtk_1_1components.html#a12bd8646c56df6a1f46dba67ab86ebd7">wmtk::components::delaunay</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; delaunay(const PointMesh &amp;point_cloud, const attribute::MeshAttributeHandle &amp;pts_attr, const std::string &amp;output_pos_attr_name)</div><div class="ttdef"><b>Definition:</b> <a href="delaunay_8cpp_source.html#l00068">delaunay.cpp:68</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_120f1c8542a0cba5e040bcc9c13f01c7.html">delaunay</a></li><li class="navelem"><a class="el" href="dir_d2711e46840c411f1190d6d712f0565e.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_3465f345a6bcc8b6bd74e1488f3c0735.html">components</a></li><li class="navelem"><a class="el" href="dir_d99b861e28996c57327cd7dc3c2b8e63.html">delaunay</a></li><li class="navelem"><a class="el" href="delaunay_8hpp.html">delaunay.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_55d85f035c5a01e8a30523454f322589.html">delaunay</a></li><li class="navelem"><a class="el" href="dir_2454a91a72de30f8ef23d73b4b03ade1.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_2fd915b1ed8915385efb2525cdf302a3.html">components</a></li><li class="navelem"><a class="el" href="dir_bbd6c69411663e1f8e41efe80aaad619.html">delaunay</a></li><li class="navelem"><a class="el" href="delaunay_8hpp.html">delaunay.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

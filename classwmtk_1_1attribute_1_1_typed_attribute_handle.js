@@ -10,6 +10,7 @@ var classwmtk_1_1attribute_1_1_typed_attribute_handle =
     [ "TypedAttributeHandle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a619508c8258af45bc0e8be34b00a9d90", null ],
     [ "base_handle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a27bf9901d488828045f5d2e056e40919", null ],
     [ "is_valid", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ad473b36dc43489bad4a345dceac443fa", null ],
+    [ "operator std::string", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#abb7e339212d42fd0111f740b003aeb77", null ],
     [ "operator<", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a145ed1b8e7a9c26037ac8c6a64b04b78", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a3f51e5fc91e11a5cc506e8ecdc8c5f7e", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a68ca8cf09c1603716e510c8bc9b7ceef", null ],

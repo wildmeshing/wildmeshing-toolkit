@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/base/wmtk/components/base/resolve_path.cpp Source File</title>
+<title>Wildmeshing Toolkit: components/utils/wmtk/components/utils/resolve_path.cpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -117,39 +117,58 @@ $(document).ready(function(){initNavTree('resolve__path_8cpp_source.html',''); i
 <div class="contents">
 <a href="resolve__path_8cpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="resolve__path_8hpp.html">resolve_path.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160; </div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;filesystem&gt;</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;filesystem&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_logger_8hpp.html">wmtk/utils/Logger.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1base.html">wmtk::components::base</a> {</div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;std::string</div>
-<div class="line"><a name="l00008"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1base.html#adb3c5f2a17cd1f9a8b45272b9ed91873">    8</a></span>&#160;<a class="code" href="namespacewmtk_1_1components_1_1base.html#adb3c5f2a17cd1f9a8b45272b9ed91873">resolve_path</a>(<span class="keyword">const</span> std::string&amp; path, <span class="keyword">const</span> std::string&amp; input_file_path, <span class="keyword">const</span> <span class="keywordtype">bool</span> only_if_exists)</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;{</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;    <span class="keywordflow">if</span> (path.empty()) {</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;        <span class="keywordflow">return</span> path;</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    }</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    std::filesystem::path resolved_path(path);</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keywordflow">if</span> (resolved_path.is_absolute()) {</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;        <span class="keywordflow">return</span> resolved_path.string();</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (std::filesystem::exists(resolved_path)) {</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;        <span class="keywordflow">return</span> std::filesystem::weakly_canonical(resolved_path).string();</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    }</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">namespace </span>fs = std::filesystem;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1utils.html">wmtk::components::utils</a> {</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
+<div class="line"><a name="l00010"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1utils.html#a1acf8217338a8bcffd00f279a2873791">   10</a></span>&#160;fs::path <a class="code" href="namespacewmtk_1_1components_1_1utils.html#a1acf8217338a8bcffd00f279a2873791">resolve_path</a>(<span class="keyword">const</span> fs::path&amp; root, <span class="keyword">const</span> fs::path&amp; path)</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;{</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    <span class="keywordflow">if</span> (path.is_absolute()) {</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;        <span class="keywordflow">return</span> path;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    }</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="keyword">const</span> fs::path root_abs = fs::absolute(root);</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">const</span> fs::path root_dir =</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;        fs::exists(root_abs) &amp;&amp; !fs::is_directory(root_abs) ? root_abs.parent_path() : root_abs;</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    std::filesystem::path input_dir_path(input_file_path);</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keywordflow">if</span> (!std::filesystem::is_directory(input_dir_path))</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        input_dir_path = input_dir_path.parent_path();</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    resolved_path = std::filesystem::weakly_canonical(input_dir_path / resolved_path);</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keyword">const</span> fs::path resolved_path = fs::weakly_canonical(root_dir / path);</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keywordflow">return</span> resolved_path;</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;}</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keywordflow">if</span> (only_if_exists &amp;&amp; !std::filesystem::exists(resolved_path)) {</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        <span class="keywordflow">return</span> path; <span class="comment">// return path unchanged</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    }</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keywordflow">return</span> resolved_path.string();</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;}</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;} <span class="comment">// namespace wmtk::components::base</span></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1base_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1base.html">wmtk::components::base</a></div><div class="ttdef"><b>Definition:</b> <a href="_component_options_base_8hpp_source.html#l00005">ComponentOptionsBase.hpp:5</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1base_html_adb3c5f2a17cd1f9a8b45272b9ed91873"><div class="ttname"><a href="namespacewmtk_1_1components_1_1base.html#adb3c5f2a17cd1f9a8b45272b9ed91873">wmtk::components::base::resolve_path</a></div><div class="ttdeci">std::string resolve_path(const std::string &amp;path, const std::string &amp;input_file_path, const bool only_if_exists)</div><div class="ttdef"><b>Definition:</b> <a href="resolve__path_8cpp_source.html#l00008">resolve_path.cpp:8</a></div></div>
+<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1utils.html#a9ff846440f75e199f9f9fd3a80c4e3e8">   27</a></span>&#160;fs::path <a class="code" href="namespacewmtk_1_1components_1_1utils.html#a9ff846440f75e199f9f9fd3a80c4e3e8">resolve_paths</a>(<span class="keyword">const</span> fs::path&amp; root, <span class="keyword">const</span> std::initializer_list&lt;fs::path&gt;&amp; paths)</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;{</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    fs::path p_ret = root;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> fs::path&amp; p : paths) {</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        p_ret = <a class="code" href="namespacewmtk_1_1components_1_1utils.html#a1acf8217338a8bcffd00f279a2873791">resolve_path</a>(p_ret, p);</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    }</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keywordflow">return</span> p_ret;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;}</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1utils.html#aa3f8375d8831a2f605d476cd6b2ef473">   38</a></span>&#160;std::filesystem::path <a class="code" href="namespacewmtk_1_1components_1_1utils.html#aa3f8375d8831a2f605d476cd6b2ef473">resolve_path_if_not_empty</a>(</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keyword">const</span> std::filesystem::path&amp; root,</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keyword">const</span> std::filesystem::path&amp; path)</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;{</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keywordflow">if</span> (path.empty()) {</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keywordflow">return</span> path;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    }</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacewmtk_1_1components_1_1utils.html#a1acf8217338a8bcffd00f279a2873791">resolve_path</a>(path, root);</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;}</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;} <span class="comment">// namespace wmtk::components::utils</span></div>
+<div class="ttc" id="a_logger_8hpp_html"><div class="ttname"><a href="_logger_8hpp.html">Logger.hpp</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1utils_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1utils.html">wmtk::components::utils</a></div><div class="ttdef"><b>Definition:</b> <a href="_component_options_base_8hpp_source.html#l00005">ComponentOptionsBase.hpp:5</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1utils_html_a1acf8217338a8bcffd00f279a2873791"><div class="ttname"><a href="namespacewmtk_1_1components_1_1utils.html#a1acf8217338a8bcffd00f279a2873791">wmtk::components::utils::resolve_path</a></div><div class="ttdeci">fs::path resolve_path(const fs::path &amp;root, const fs::path &amp;path)</div><div class="ttdef"><b>Definition:</b> <a href="resolve__path_8cpp_source.html#l00010">resolve_path.cpp:10</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1utils_html_a9ff846440f75e199f9f9fd3a80c4e3e8"><div class="ttname"><a href="namespacewmtk_1_1components_1_1utils.html#a9ff846440f75e199f9f9fd3a80c4e3e8">wmtk::components::utils::resolve_paths</a></div><div class="ttdeci">fs::path resolve_paths(const fs::path &amp;root, const std::initializer_list&lt; fs::path &gt; &amp;paths)</div><div class="ttdef"><b>Definition:</b> <a href="resolve__path_8cpp_source.html#l00027">resolve_path.cpp:27</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1utils_html_aa3f8375d8831a2f605d476cd6b2ef473"><div class="ttname"><a href="namespacewmtk_1_1components_1_1utils.html#aa3f8375d8831a2f605d476cd6b2ef473">wmtk::components::utils::resolve_path_if_not_empty</a></div><div class="ttdeci">std::filesystem::path resolve_path_if_not_empty(const std::filesystem::path &amp;root, const std::filesystem::path &amp;path)</div><div class="ttdoc">Wraps resolve_path() but returns path directly if it is empty.</div><div class="ttdef"><b>Definition:</b> <a href="resolve__path_8cpp_source.html#l00038">resolve_path.cpp:38</a></div></div>
 <div class="ttc" id="aresolve__path_8hpp_html"><div class="ttname"><a href="resolve__path_8hpp.html">resolve_path.hpp</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
@@ -157,7 +176,7 @@ $(document).ready(function(){initNavTree('resolve__path_8cpp_source.html',''); i
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_f9bd88f53b0c297f06c5045d55a00b25.html">base</a></li><li class="navelem"><a class="el" href="dir_43502cf5350373f5f36bb843ee9201c3.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_5a41a1c7a8136f0a53030c60d5462b72.html">components</a></li><li class="navelem"><a class="el" href="dir_c6ad7867d8293f63d748973476a4823b.html">base</a></li><li class="navelem"><a class="el" href="resolve__path_8cpp.html">resolve_path.cpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_141255b66ec4604466b3430e281cf831.html">utils</a></li><li class="navelem"><a class="el" href="dir_3673f076e68f259a60362c4d9e0fd016.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_8b41c41b9efe06ae2e37b7f1c0c216d5.html">components</a></li><li class="navelem"><a class="el" href="dir_f17e2153a65e7166cfb2037e675d5562.html">utils</a></li><li class="navelem"><a class="el" href="resolve__path_8cpp.html">resolve_path.cpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

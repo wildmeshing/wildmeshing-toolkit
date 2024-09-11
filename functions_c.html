@@ -126,9 +126,6 @@ $(document).ready(function(){initNavTree('functions_c.html',''); initResizable()
 <li>CachedMultiMesh()
 : <a class="el" href="classwmtk_1_1io_1_1_cached_multi_mesh.html#af36bafce0fdfd68c7613da2961566916">wmtk::io::CachedMultiMesh</a>
 </li>
-<li>CacheStack()
-: <a class="el" href="classwmtk_1_1io_1_1_cache_stack.html#accc708a32853b303d5204635f5c2b25e">wmtk::io::CacheStack</a>
-</li>
 <li>CacheType
 : <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#a6f85dc8e8ad58fc1577b97c6c25f7a26">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;</a>
 , <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#a8ddc0eb145a07e5b1c938a669931ee27">wmtk::multimesh::MultiMeshVisitor&lt; NodeFunctor_ &gt;</a>
@@ -168,8 +165,7 @@ $(document).ready(function(){initNavTree('functions_c.html',''); initResizable()
 : <a class="el" href="classwmtk_1_1_cell.html#a685b9ef76cadd88c624690e2e51f6f76">wmtk::Cell</a>
 </li>
 <li>cell_dimension
-: <a class="el" href="structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a530eb32a4b9c1c76ee08970d034d1172">wmtk::components::internal::DelaunayOptions</a>
-, <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#abf58e4c610f533514b016765137cb4c0">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;</a>
+: <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#abf58e4c610f533514b016765137cb4c0">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;</a>
 , <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#a1716bae9490c2c05615bcb67633ef9ce">wmtk::multimesh::MultiMeshSimplexVisitorExecutor&lt; MMVisitor &gt;</a>
 </li>
 <li>cell_ids_to_update_hash
@@ -183,8 +179,8 @@ $(document).ready(function(){initNavTree('functions_c.html',''); initResizable()
 , <a class="el" href="classwmtk_1_1utils_1_1detail_1_1_primitive_type_range.html#a82ff400f3bc76bbdb9f82662a46928a9">wmtk::utils::detail::PrimitiveTypeRange&lt; Start, End, Inverted &gt;</a>
 </li>
 <li>center
-: <a class="el" href="structwmtk_1_1components_1_1internal_1_1_disk_options_1_1_coordinates.html#ac629c07d277b21d34bcea39521753f42">wmtk::components::internal::DiskOptions::Coordinates</a>
-, <a class="el" href="structwmtk_1_1components_1_1internal_1_1_triangle_fan_options_1_1_coordinates.html#a6ed36293e8635f77e0bc97d0db2572dd">wmtk::components::internal::TriangleFanOptions::Coordinates</a>
+: <a class="el" href="structwmtk_1_1components_1_1procedural_1_1_disk_options_1_1_coordinates.html#a33d3ffc58299b1520e5d002fde6bf4f7">wmtk::components::procedural::DiskOptions::Coordinates</a>
+, <a class="el" href="structwmtk_1_1components_1_1procedural_1_1_triangle_fan_options_1_1_coordinates.html#a5596fc68c303d0ba34ebc4d1f2b2ed65">wmtk::components::procedural::TriangleFanOptions::Coordinates</a>
 </li>
 <li>change_to_child_scope()
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_manager.html#a7011e43ae5d9d57a905b6daaf75c9ca5">wmtk::attribute::AttributeManager</a>
@@ -256,6 +252,13 @@ $(document).ready(function(){initNavTree('functions_c.html',''); initResizable()
 <li>clear()
 : <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_attribute_flat_cache.html#abfe8add429fb154d7033276bf13b36fa">wmtk::attribute::internal::AttributeFlatCache&lt; T &gt;</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#acab1e3c74ac3c95a07a50f9a63a9869d">wmtk::attribute::internal::AttributeTransactionStack&lt; T &gt;</a>
+</li>
+<li>clear_attribute_new_strategies()
+: <a class="el" href="classwmtk_1_1operations_1_1_edge_collapse.html#ab543ed81913d415e5dfcfabfcfdeeef2">wmtk::operations::EdgeCollapse</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_edge_split.html#a9f7c2cb0882244cf41cbbf820f597a98">wmtk::operations::EdgeSplit</a>
+</li>
+<li>clear_attribute_transfer_strategies()
+: <a class="el" href="classwmtk_1_1operations_1_1_operation.html#a5ed26b8a3586a5753f6a731432bcbae3">wmtk::operations::Operation</a>
 </li>
 <li>clear_attributes()
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_manager.html#a835244773a5c602c821f39e4cc730477">wmtk::attribute::AttributeManager</a>
@@ -436,10 +439,10 @@ $(document).ready(function(){initNavTree('functions_c.html',''); initResizable()
 , <a class="el" href="classwmtk_1_1operations_1_1internal_1_1_collapse_alternate_facet_option_data.html#a363a3484499ad8a9995e3f7b29a95c8d">wmtk::operations::internal::CollapseAlternateFacetOptionData</a>
 </li>
 <li>coordinates
-: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_disk_options.html#a6589e4b283afcb9cdeaa298f869f4bd5">wmtk::components::internal::DiskOptions</a>
-, <a class="el" href="classwmtk_1_1components_1_1internal_1_1_grid2_options.html#aeaf6ab36150d827a0db26fa1e3097518">wmtk::components::internal::Grid2Options</a>
-, <a class="el" href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html#a800f95797803ff400303f2fe3ca6abab">wmtk::components::internal::Grid3Options</a>
-, <a class="el" href="classwmtk_1_1components_1_1internal_1_1_triangle_fan_options.html#a89499935443406d19c71244c19aed77e">wmtk::components::internal::TriangleFanOptions</a>
+: <a class="el" href="classwmtk_1_1components_1_1procedural_1_1_disk_options.html#ada7fb5acdf3feca1391d124902de5ae7">wmtk::components::procedural::DiskOptions</a>
+, <a class="el" href="classwmtk_1_1components_1_1procedural_1_1_grid2_options.html#a85124f400dda802e87505024240613c9">wmtk::components::procedural::Grid2Options</a>
+, <a class="el" href="classwmtk_1_1components_1_1procedural_1_1_grid3_options.html#afd3a2cc1e058157cd067b07372a3e5fb">wmtk::components::procedural::Grid3Options</a>
+, <a class="el" href="classwmtk_1_1components_1_1procedural_1_1_triangle_fan_options.html#ad9621e5e562c31f1cca6b256c2c3c09b">wmtk::components::procedural::TriangleFanOptions</a>
 </li>
 <li>cos
 : <a class="el" href="struct_d_scalar1.html#a1df44cebe596309535d03dfc2530ecc8">DScalar1&lt; _Scalar, _Gradient &gt;</a>
@@ -468,9 +471,6 @@ $(document).ready(function(){initNavTree('functions_c.html',''); initResizable()
 <li>create_spine_simplices()
 : <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a54ec111e8890281195a6d2449f822f02">wmtk::TriMesh::TriMeshOperationExecutor</a>
 </li>
-<li>create_sub_cache()
-: <a class="el" href="classwmtk_1_1io_1_1_cache_stack.html#a081c07848468624d0e43b32136c6dc95">wmtk::io::CacheStack</a>
-</li>
 <li>create_substructure_soup()
 : <a class="el" href="classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#ad18667b876fc81c8cfb79a408d632b25">wmtk::components::internal::MultiMeshFromTag</a>
 </li>
@@ -487,8 +487,8 @@ $(document).ready(function(){initNavTree('functions_c.html',''); initResizable()
 : <a class="el" href="classwmtk_1_1_mesh.html#a1d3ffa74e65ca7932d7ed32c3959e2a1">wmtk::Mesh</a>
 </li>
 <li>cycles
-: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_grid2_options.html#ad8a6d00bf0433caae0916b9d3b2b19ce">wmtk::components::internal::Grid2Options</a>
-, <a class="el" href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html#affb1b2f21df2ba8103736e6e5d059a1d">wmtk::components::internal::Grid3Options</a>
+: <a class="el" href="classwmtk_1_1components_1_1procedural_1_1_grid2_options.html#ad0473afa7d71f57d3eacef55b86ca0db">wmtk::components::procedural::Grid2Options</a>
+, <a class="el" href="classwmtk_1_1components_1_1procedural_1_1_grid3_options.html#aec72e41582ee5a2cb231ba01e5b86b8e">wmtk::components::procedural::Grid3Options</a>
 </li>
 </ul>
 </div><!-- contents -->

@@ -22,6 +22,7 @@ var namespacewmtk_1_1utils =
     [ "cast_attribute", "namespacewmtk_1_1utils.html#a63f193e192f0629608e3d43f8143b6a9", null ],
     [ "cast_attribute", "namespacewmtk_1_1utils.html#a216f2306e90d409a64e86d49e5ef31e2", null ],
     [ "exactinit", "namespacewmtk_1_1utils.html#a5f6998f980cb239bfc739e9600e3d03e", null ],
+    [ "filter_pointers_to_derived", "namespacewmtk_1_1utils.html#a1ad2b2ed039a61345428e98be2347dbc", null ],
     [ "generate_background_mesh", "namespacewmtk_1_1utils.html#a81fce5e5de645986df7e56f010ca2886", null ],
     [ "generate_raw_tetmesh_from_input_surface", "namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456", null ],
     [ "generate_raw_tetmesh_with_surface_from_input", "namespacewmtk_1_1utils.html#a4ea0d7c148b4066c6692a8e31c7b7b7a", null ],

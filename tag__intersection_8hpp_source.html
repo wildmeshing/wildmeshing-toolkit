@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/tag_intersection/wmtk/components/tag_intersection/tag_intersection.hpp Source File</title>
+<title>Wildmeshing Toolkit: components/tag_intersection/wmtk/components/tag_intersection/tag_intersection.hpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -119,25 +119,24 @@ $(document).ready(function(){initNavTree('tag__intersection_8hpp_source.html',''
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;filesystem&gt;</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;map&gt;</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;nlohmann/json.hpp&gt;</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_paths_8hpp.html">wmtk/components/base/Paths.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;wmtk/components/utils/Paths.hpp&gt;</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_cache_8hpp.html">wmtk/io/Cache.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>(<span class="keyword">const</span> base::Paths&amp; paths, <span class="keyword">const</span> <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; j, io::Cache&amp; cache);</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>(<span class="keyword">const</span> utils::Paths&amp; paths, <span class="keyword">const</span> <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; j, io::Cache&amp; cache);</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
 <div class="ttc" id="a_cache_8hpp_html"><div class="ttname"><a href="_cache_8hpp.html">Cache.hpp</a></div></div>
-<div class="ttc" id="a_paths_8hpp_html"><div class="ttname"><a href="_paths_8hpp.html">Paths.hpp</a></div></div>
-<div class="ttc" id="aintegration__test_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="integration__test_8cpp_source.html#l00016">integration_test.cpp:16</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a070dcd55e46a4a33650a704d6fd1a643"><div class="ttname"><a href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">wmtk::components::tag_intersection</a></div><div class="ttdeci">void tag_intersection(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="tag__intersection_8cpp_source.html#l00115">tag_intersection.cpp:115</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_ae22ac68a5d85a281c4aeafa97f5230bc"><div class="ttname"><a href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">wmtk::components::tag_intersection</a></div><div class="ttdeci">void tag_intersection(const utils::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="tag__intersection_8cpp_source.html#l00115">tag_intersection.cpp:115</a></div></div>
+<div class="ttc" id="atests_2input_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="tests_2input_8cpp_source.html#l00008">input.cpp:8</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_236cd121496d30414baca33d30c032b6.html">tag_intersection</a></li><li class="navelem"><a class="el" href="dir_54597284f194ac0af3978555605e885e.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_5161221eb3f51fb6577e9a01add6ab86.html">components</a></li><li class="navelem"><a class="el" href="dir_3311c943091862bea531cc30baf4c8ec.html">tag_intersection</a></li><li class="navelem"><a class="el" href="tag__intersection_8hpp.html">tag_intersection.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_1da9f9998ef4ee4df08947b71783203b.html">tag_intersection</a></li><li class="navelem"><a class="el" href="dir_848bd49ebf4df1819a62760cee1f13d0.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_2261c6f443f5d5232852257c66b937f0.html">components</a></li><li class="navelem"><a class="el" href="dir_784dcec4e524f4ec36cd0bb2283be155.html">tag_intersection</a></li><li class="navelem"><a class="el" href="tag__intersection_8hpp.html">tag_intersection.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

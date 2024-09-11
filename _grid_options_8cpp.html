@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/procedural/wmtk/components/procedural/internal/GridOptions.cpp File Reference</title>
+<title>Wildmeshing Toolkit: components/procedural/wmtk/components/procedural/GridOptions.cpp File Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -119,13 +119,16 @@ $(document).ready(function(){initNavTree('_grid_options_8cpp.html',''); initResi
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &quot;<a class="el" href="make__mesh_8hpp_source.html">make_mesh.hpp</a>&quot;</code><br />
+<code>#include &lt;<a class="el" href="_mesh_8hpp_source.html">wmtk/Mesh.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_tri_mesh_8hpp_source.html">wmtk/TriMesh.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_tet_mesh_8hpp_source.html">wmtk/TetMesh.hpp</a>&gt;</code><br />
 <code>#include &quot;<a class="el" href="_grid_options_8hpp_source.html">GridOptions.hpp</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_grid2_options_8hpp_source.html">Grid2Options.hpp</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_grid3_options_8hpp_source.html">Grid3Options.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for GridOptions.cpp:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="_grid_options_8cpp__incl.svg" width="100%" height="518"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="_grid_options_8cpp__incl.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 </div>
@@ -137,15 +140,13 @@ Namespaces</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacewmtk_1_1components"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html">wmtk::components</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:namespacewmtk_1_1components_1_1internal"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:namespacewmtk_1_1components_1_1internal_1_1procedural"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html">wmtk::components::internal::procedural</a></td></tr>
+<tr class="memitem:namespacewmtk_1_1components_1_1procedural"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1procedural.html">wmtk::components::procedural</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:afc38ded3a4052aa252280a0a73ee9e69"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; Mesh &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#afc38ded3a4052aa252280a0a73ee9e69">wmtk::components::internal::procedural::make_mesh</a> (const GridOptions &amp;m)</td></tr>
-<tr class="separator:afc38ded3a4052aa252280a0a73ee9e69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae65f7700d6eefc4c80f28595d3bbef66"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; Mesh &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1procedural.html#ae65f7700d6eefc4c80f28595d3bbef66">wmtk::components::procedural::make_mesh</a> (const GridOptions &amp;m)</td></tr>
+<tr class="separator:ae65f7700d6eefc4c80f28595d3bbef66"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -153,7 +154,7 @@ Functions</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_8b2be0710edb097d46e1a67e80e3ee84.html">procedural</a></li><li class="navelem"><a class="el" href="dir_7664db7018d8c2401641294e38abf8e7.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_5c19f179921ea08a7b6a117596a5b3ff.html">components</a></li><li class="navelem"><a class="el" href="dir_43fe4bce1375f41726c9bdfbb6b52426.html">procedural</a></li><li class="navelem"><a class="el" href="dir_dd168ac3bdb88ef6c35c8b2b6978062a.html">internal</a></li><li class="navelem"><a class="el" href="_grid_options_8cpp.html">GridOptions.cpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_b59c7c9369294562dd241a4f76f533c3.html">procedural</a></li><li class="navelem"><a class="el" href="dir_9912003bb9781ceae3ab656b65953712.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_4d270fffc053c4addb6437249adf8038.html">components</a></li><li class="navelem"><a class="el" href="dir_2db10d7e5b0db126f5ad86e2e604f235.html">procedural</a></li><li class="navelem"><a class="el" href="_grid_options_8cpp.html">GridOptions.cpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

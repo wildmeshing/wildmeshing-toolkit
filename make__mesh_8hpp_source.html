@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/procedural/wmtk/components/procedural/internal/make_mesh.hpp Source File</title>
+<title>Wildmeshing Toolkit: components/procedural/wmtk/components/procedural/make_mesh.hpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -119,27 +119,29 @@ $(document).ready(function(){initNavTree('make__mesh_8hpp_source.html',''); init
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk.html">wmtk</a> {</div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="keyword">class </span>Mesh;</div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;}</div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a> {</div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">class </span>Grid2Options;</div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">class </span>Grid3Options;</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">class </span>GridOptions;</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keyword">class </span>TriangleFanOptions;</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">class </span>DiskOptions;</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html#a59bbaed7b26fb80218677ddfc1a94960">procedural</a> {</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment">// implementations lie in the options files</span></div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872">make_mesh</a>(<span class="keyword">const</span> DiskOptions&amp;);</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872">make_mesh</a>(<span class="keyword">const</span> Grid3Options&amp;);</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872">make_mesh</a>(<span class="keyword">const</span> GridOptions&amp;);</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872">make_mesh</a>(<span class="keyword">const</span> Grid2Options&amp;);</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872">make_mesh</a>(<span class="keyword">const</span> TriangleFanOptions&amp;);</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;} <span class="comment">// namespace procedural</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;} <span class="comment">// namespace wmtk::components::internal</span></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_1_1procedural_html_a9f9c7ba8540630226be69470ae8ed872"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872">wmtk::components::internal::procedural::make_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; make_mesh(const DiskOptions &amp;opt)</div><div class="ttdef"><b>Definition:</b> <a href="_disk_options_8cpp_source.html#l00011">DiskOptions.cpp:11</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a59bbaed7b26fb80218677ddfc1a94960"><div class="ttname"><a href="namespacewmtk_1_1components.html#a59bbaed7b26fb80218677ddfc1a94960">wmtk::components::procedural</a></div><div class="ttdeci">void procedural(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="procedural_8cpp_source.html#l00013">procedural.cpp:13</a></div></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="keyword">class </span>TriMesh;</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">class </span>TetMesh;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;}</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1procedural.html">wmtk::components::procedural</a> {</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">class </span>Grid2Options;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keyword">class </span>Grid3Options;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">class </span>GridOptions;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">class </span>TriangleFanOptions;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">class </span>DiskOptions;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment">// implementations lie in the options files</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;std::shared_ptr&lt;TriMesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1procedural.html#ab9c00d6ba2d614ba26750c3c80c6502c">make_mesh</a>(<span class="keyword">const</span> DiskOptions&amp;);</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;std::shared_ptr&lt;TriMesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1procedural.html#ab9c00d6ba2d614ba26750c3c80c6502c">make_mesh</a>(<span class="keyword">const</span> Grid2Options&amp;);</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;std::shared_ptr&lt;TriMesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1procedural.html#ab9c00d6ba2d614ba26750c3c80c6502c">make_mesh</a>(<span class="keyword">const</span> TriangleFanOptions&amp;);</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;std::shared_ptr&lt;TetMesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1procedural.html#ab9c00d6ba2d614ba26750c3c80c6502c">make_mesh</a>(<span class="keyword">const</span> Grid3Options&amp;);</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="comment">// Will generate a trimesh or tetmesh depending on which type of gridoptions it is passed.</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="comment">// More of a helper for parsing json  to grid options where the dimension is not predetermined</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1procedural.html#ab9c00d6ba2d614ba26750c3c80c6502c">make_mesh</a>(<span class="keyword">const</span> GridOptions&amp;);</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;} <span class="comment">// namespace wmtk::components::procedural</span></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1procedural_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1procedural.html">wmtk::components::procedural</a></div><div class="ttdef"><b>Definition:</b> <a href="_disk_options_8cpp_source.html#l00008">DiskOptions.cpp:8</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1procedural_html_ab9c00d6ba2d614ba26750c3c80c6502c"><div class="ttname"><a href="namespacewmtk_1_1components_1_1procedural.html#ab9c00d6ba2d614ba26750c3c80c6502c">wmtk::components::procedural::make_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; make_mesh(const DiskOptions &amp;opt)</div><div class="ttdef"><b>Definition:</b> <a href="_disk_options_8cpp_source.html#l00010">DiskOptions.cpp:10</a></div></div>
 <div class="ttc" id="anamespacewmtk_html"><div class="ttname"><a href="namespacewmtk.html">wmtk</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8hpp_source.html#l00005">Accessor.hpp:5</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
@@ -147,7 +149,7 @@ $(document).ready(function(){initNavTree('make__mesh_8hpp_source.html',''); init
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_8b2be0710edb097d46e1a67e80e3ee84.html">procedural</a></li><li class="navelem"><a class="el" href="dir_7664db7018d8c2401641294e38abf8e7.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_5c19f179921ea08a7b6a117596a5b3ff.html">components</a></li><li class="navelem"><a class="el" href="dir_43fe4bce1375f41726c9bdfbb6b52426.html">procedural</a></li><li class="navelem"><a class="el" href="dir_dd168ac3bdb88ef6c35c8b2b6978062a.html">internal</a></li><li class="navelem"><a class="el" href="make__mesh_8hpp.html">make_mesh.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_b59c7c9369294562dd241a4f76f533c3.html">procedural</a></li><li class="navelem"><a class="el" href="dir_9912003bb9781ceae3ab656b65953712.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_4d270fffc053c4addb6437249adf8038.html">components</a></li><li class="navelem"><a class="el" href="dir_2db10d7e5b0db126f5ad86e2e604f235.html">procedural</a></li><li class="navelem"><a class="el" href="make__mesh_8hpp.html">make_mesh.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

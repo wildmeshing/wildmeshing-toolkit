@@ -125,7 +125,7 @@ $(document).ready(function(){initNavTree('test__component__tag__intersection_8cp
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_tag_intersection_options_8hpp.html">wmtk/components/tag_intersection/internal/TagIntersectionOptions.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="tag__intersection_8hpp.html">wmtk/components/tag_intersection/tag_intersection.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
-<div class="line"><a name="l00011"></a><span class="lineno"><a class="line" href="test__component__tag__intersection_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">   11</a></span>&#160;<span class="keyword">using</span> <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> = <a class="code" href="test__component__tag__intersection_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>;</div>
+<div class="line"><a name="l00011"></a><span class="lineno"><a class="line" href="test__component__tag__intersection_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">   11</a></span>&#160;<span class="keyword">using</span> <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> = <a class="code" href="test__component__tag__intersection_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>;</div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">using namespace </span><a class="code" href="namespacewmtk.html">wmtk</a>;</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">using namespace </span>tests;</div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
@@ -133,7 +133,7 @@ $(document).ready(function(){initNavTree('test__component__tag__intersection_8cp
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;{</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keyword">using namespace </span>components::internal;</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> o = R<span class="stringliteral">&quot;(</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> o = R<span class="stringliteral">&quot;(</span></div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="stringliteral">        {</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="stringliteral">            &quot;input&quot;: &quot;input_mesh&quot;,</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="stringliteral">            &quot;output&quot;: &quot;output_mesh&quot;,</span></div>
@@ -194,8 +194,8 @@ $(document).ready(function(){initNavTree('test__component__tag__intersection_8cp
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            {v_otag, 1},</div>
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            {e_otag, 1}};</div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>;</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <span class="keyword">auto</span> v_otag_acc = m.create_accessor&lt;int64_t&gt;(v_otag);</div>
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        CHECK(v_otag_acc.const_scalar_attribute(m.edge_tuple_from_vids(4, 5)) == 1);</div>
@@ -229,8 +229,8 @@ $(document).ready(function(){initNavTree('test__component__tag__intersection_8cp
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            {v_otag, 1},</div>
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            {e_otag, 1}};</div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160; </div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>;</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
 <div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        <span class="keyword">auto</span> v_otag_acc = m.create_accessor&lt;int64_t&gt;(v_otag);</div>
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        CHECK(v_otag_acc.const_scalar_attribute(m.edge_tuple_from_vids(4, 5)) == 1);</div>
@@ -277,8 +277,8 @@ $(document).ready(function(){initNavTree('test__component__tag__intersection_8cp
 <div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;            {v_otag, 1},</div>
 <div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;            {e_otag, 1}};</div>
 <div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160; </div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>;</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>;</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
 <div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160; </div>
 <div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;        <span class="keyword">auto</span> v_otag_acc = m.create_accessor&lt;int64_t&gt;(v_otag);</div>
 <div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;        CHECK(v_otag_acc.const_scalar_attribute(m.edge_tuple_from_vids(4, 1)) == 1);</div>
@@ -319,8 +319,8 @@ $(document).ready(function(){initNavTree('test__component__tag__intersection_8cp
 <div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;            {v_otag, 1},</div>
 <div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;            {e_otag, 1}};</div>
 <div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160; </div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>;</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>;</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
 <div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160; </div>
 <div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;        <span class="keyword">auto</span> v_otag_acc = m.create_accessor&lt;int64_t&gt;(v_otag);</div>
 <div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;        CHECK(v_otag_acc.const_scalar_attribute(m.edge_tuple_from_vids(4, 5)) == 0);</div>
@@ -356,8 +356,8 @@ $(document).ready(function(){initNavTree('test__component__tag__intersection_8cp
 <div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;            {v_otag, 1},</div>
 <div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;            {e_otag, 1}};</div>
 <div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160; </div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>;</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>;</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
 <div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160; </div>
 <div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;        <span class="keyword">auto</span> v_otag_acc = m.create_accessor&lt;int64_t&gt;(v_otag);</div>
 <div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        CHECK(v_otag_acc.const_scalar_attribute(m.edge_tuple_from_vids(4, 5)) == 1);</div>
@@ -396,8 +396,8 @@ $(document).ready(function(){initNavTree('test__component__tag__intersection_8cp
 <div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;            {e_otag, 1},</div>
 <div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;            {f_otag, 1}};</div>
 <div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160; </div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>;</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>;</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
 <div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160; </div>
 <div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;        <span class="keyword">auto</span> v_otag_acc = m.create_accessor&lt;int64_t&gt;(v_otag);</div>
 <div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        CHECK(v_otag_acc.const_scalar_attribute(m.edge_tuple_from_vids(4, 5)) == 1);</div>
@@ -453,8 +453,8 @@ $(document).ready(function(){initNavTree('test__component__tag__intersection_8cp
 <div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            {f_otag, 1},</div>
 <div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            {t_otag, 1}};</div>
 <div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160; </div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>;</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>;</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
 <div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160; </div>
 <div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;        <span class="keyword">auto</span> v_otag_acc = m.create_accessor&lt;int64_t&gt;(v_otag);</div>
 <div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;        CHECK(v_otag_acc.const_scalar_attribute(m.edge_tuple_from_vids(2, 3)) == 1);</div>
@@ -506,8 +506,8 @@ $(document).ready(function(){initNavTree('test__component__tag__intersection_8cp
 <div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;            {f_otag, 1},</div>
 <div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;            {t_otag, 1}};</div>
 <div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160; </div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>;</div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>;</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
 <div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160; </div>
 <div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;        <span class="keyword">auto</span> v_otag_acc = m.create_accessor&lt;int64_t&gt;(v_otag);</div>
 <div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;        CHECK(v_otag_acc.const_scalar_attribute(m.edge_tuple_from_vids(2, 3)) == 1);</div>
@@ -566,8 +566,8 @@ $(document).ready(function(){initNavTree('test__component__tag__intersection_8cp
 <div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;            {f_otag, 1},</div>
 <div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;            {t_otag, 1}};</div>
 <div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160; </div>
-<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>;</div>
-<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
+<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>;</div>
+<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
 <div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160; </div>
 <div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;        <span class="keyword">auto</span> v_otag_acc = m.create_accessor&lt;int64_t&gt;(v_otag);</div>
 <div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;        <span class="keywordtype">int</span> sum = 0;</div>
@@ -637,8 +637,8 @@ $(document).ready(function(){initNavTree('test__component__tag__intersection_8cp
 <div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;            {f_otag, 1},</div>
 <div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;            {t_otag, 1}};</div>
 <div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160; </div>
-<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>;</div>
-<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
+<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>;</div>
+<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
 <div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160; </div>
 <div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;        <span class="keyword">auto</span> v_otag_acc = m.create_accessor&lt;int64_t&gt;(v_otag);</div>
 <div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;        <span class="keywordtype">int</span> sum = 0;</div>
@@ -724,8 +724,8 @@ $(document).ready(function(){initNavTree('test__component__tag__intersection_8cp
 <div class="line"><a name="l00607"></a><span class="lineno">  607</span>&#160;            {f_otag, 1},</div>
 <div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160;            {t_otag, 1}};</div>
 <div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160; </div>
-<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>;</div>
-<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
+<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;        <a class="code" href="classwmtk_1_1components_1_1_tag_intersection.html">components::TagIntersection</a> <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>;</div>
+<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">tag_intersection</a>.compute_intersection(m, input_tags, output_tags);</div>
 <div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160; </div>
 <div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;        <span class="keyword">auto</span> v_otag_acc = m.create_accessor&lt;int64_t&gt;(v_otag);</div>
 <div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;        <span class="keywordtype">int</span> sum = 0;</div>
@@ -767,8 +767,7 @@ $(document).ready(function(){initNavTree('test__component__tag__intersection_8cp
 <div class="ttc" id="a_tag_intersection_options_8hpp_html"><div class="ttname"><a href="_tag_intersection_options_8hpp.html">TagIntersectionOptions.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00041">Tuple.hpp:42</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1components_1_1_tag_intersection_html"><div class="ttname"><a href="classwmtk_1_1components_1_1_tag_intersection.html">wmtk::components::TagIntersection</a></div><div class="ttdef"><b>Definition:</b> <a href="_tag_intersection_8hpp_source.html#l00074">TagIntersection.hpp:75</a></div></div>
-<div class="ttc" id="aintegration__test_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="integration__test_8cpp_source.html#l00016">integration_test.cpp:16</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a070dcd55e46a4a33650a704d6fd1a643"><div class="ttname"><a href="namespacewmtk_1_1components.html#a070dcd55e46a4a33650a704d6fd1a643">wmtk::components::tag_intersection</a></div><div class="ttdeci">void tag_intersection(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="tag__intersection_8cpp_source.html#l00115">tag_intersection.cpp:115</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_ae22ac68a5d85a281c4aeafa97f5230bc"><div class="ttname"><a href="namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc">wmtk::components::tag_intersection</a></div><div class="ttdeci">void tag_intersection(const utils::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="tag__intersection_8cpp_source.html#l00115">tag_intersection.cpp:115</a></div></div>
 <div class="ttc" id="anamespacewmtk_html"><div class="ttname"><a href="namespacewmtk.html">wmtk</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8hpp_source.html#l00005">Accessor.hpp:5</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::PrimitiveType::Triangle</a></div><div class="ttdeci">@ Triangle</div></div>
 <div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a></div><div class="ttdeci">@ Vertex</div></div>
@@ -777,6 +776,7 @@ $(document).ready(function(){initNavTree('test__component__tag__intersection_8cp
 <div class="ttc" id="atag__intersection_8hpp_html"><div class="ttname"><a href="tag__intersection_8hpp.html">tag_intersection.hpp</a></div></div>
 <div class="ttc" id="atest__component__tag__intersection_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="test__component__tag__intersection_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="test__component__tag__intersection_8cpp_source.html#l00011">test_component_tag_intersection.cpp:11</a></div></div>
 <div class="ttc" id="atest__component__tag__intersection_8cpp_html_af060bb051fdbbb9438298730395c862d"><div class="ttname"><a href="test__component__tag__intersection_8cpp.html#af060bb051fdbbb9438298730395c862d">TEST_CASE</a></div><div class="ttdeci">TEST_CASE(&quot;component_tag_intersection_options&quot;, &quot;[components][tag_intersection]&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="test__component__tag__intersection_8cpp_source.html#l00015">test_component_tag_intersection.cpp:15</a></div></div>
+<div class="ttc" id="atests_2input_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="tests_2input_8cpp_source.html#l00008">input.cpp:8</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

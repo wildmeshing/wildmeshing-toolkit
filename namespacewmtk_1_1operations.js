@@ -22,6 +22,8 @@ var namespacewmtk_1_1operations =
     [ "AttributeTransferStrategyBase", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base" ],
     [ "AttributesUpdate", "classwmtk_1_1operations_1_1_attributes_update.html", "classwmtk_1_1operations_1_1_attributes_update" ],
     [ "AttributesUpdateWithFunction", "classwmtk_1_1operations_1_1_attributes_update_with_function.html", "classwmtk_1_1operations_1_1_attributes_update_with_function" ],
+    [ "AttributeTransferConfiguration", "classwmtk_1_1operations_1_1_attribute_transfer_configuration.html", "classwmtk_1_1operations_1_1_attribute_transfer_configuration" ],
+    [ "AttributeTransferEdge", "classwmtk_1_1operations_1_1_attribute_transfer_edge.html", "classwmtk_1_1operations_1_1_attribute_transfer_edge" ],
     [ "EdgeCollapse", "classwmtk_1_1operations_1_1_edge_collapse.html", "classwmtk_1_1operations_1_1_edge_collapse" ],
     [ "EdgeOperationData", "classwmtk_1_1operations_1_1_edge_operation_data.html", "classwmtk_1_1operations_1_1_edge_operation_data" ],
     [ "EdgeSplit", "classwmtk_1_1operations_1_1_edge_split.html", "classwmtk_1_1operations_1_1_edge_split" ],

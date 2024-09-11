@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/output/wmtk/components/output/output.hpp Source File</title>
+<title>Wildmeshing Toolkit: components/output/wmtk/components/output/output.hpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -117,28 +117,37 @@ $(document).ready(function(){initNavTree('output_8hpp_source.html',''); initResi
 <div class="contents">
 <a href="output_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;nlohmann/json.hpp&gt;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_cache_8hpp.html">wmtk/io/Cache.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_paths_8hpp.html">wmtk/components/base/Paths.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_8hpp.html">wmtk/Mesh.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;filesystem&gt;</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#afb654c569d4536f122b7cdfb9156c7d7">output</a>(<span class="keyword">const</span> base::Paths&amp; paths, <span class="keyword">const</span> <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; j, io::Cache&amp; cache);</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160; </div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
-<div class="ttc" id="a_cache_8hpp_html"><div class="ttname"><a href="_cache_8hpp.html">Cache.hpp</a></div></div>
-<div class="ttc" id="a_paths_8hpp_html"><div class="ttname"><a href="_paths_8hpp.html">Paths.hpp</a></div></div>
-<div class="ttc" id="aintegration__test_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="integration__test_8cpp_source.html#l00016">integration_test.cpp:16</a></div></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a50def332b20b44816cb0c8d31a808a51">output</a>(</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">const</span> Mesh&amp; mesh,</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keyword">const</span> std::filesystem::path&amp; file,</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keyword">const</span> std::string&amp; position_attr_name);</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a50def332b20b44816cb0c8d31a808a51">output</a>(</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keyword">const</span> Mesh&amp; mesh,</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keyword">const</span> std::filesystem::path&amp; file,</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">const</span> attribute::MeshAttributeHandle&amp; position_attr);</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a0ea7ecd700fbe5fa3171ce6b1050c562">output_hdf5</a>(<span class="keyword">const</span> Mesh&amp; mesh, <span class="keyword">const</span> std::filesystem::path&amp; file);</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
+<div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_afb654c569d4536f122b7cdfb9156c7d7"><div class="ttname"><a href="namespacewmtk_1_1components.html#afb654c569d4536f122b7cdfb9156c7d7">wmtk::components::output</a></div><div class="ttdeci">void output(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="output_8cpp_source.html#l00012">output.cpp:12</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_a0ea7ecd700fbe5fa3171ce6b1050c562"><div class="ttname"><a href="namespacewmtk_1_1components.html#a0ea7ecd700fbe5fa3171ce6b1050c562">wmtk::components::output_hdf5</a></div><div class="ttdeci">void output_hdf5(const Mesh &amp;mesh, const std::filesystem::path &amp;file)</div><div class="ttdoc">Write the mesh to file.</div><div class="ttdef"><b>Definition:</b> <a href="output_8cpp_source.html#l00041">output.cpp:41</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_a50def332b20b44816cb0c8d31a808a51"><div class="ttname"><a href="namespacewmtk_1_1components.html#a50def332b20b44816cb0c8d31a808a51">wmtk::components::output</a></div><div class="ttdeci">void output(const Mesh &amp;mesh, const std::filesystem::path &amp;file, const std::string &amp;position_attr_name)</div><div class="ttdoc">Write the mesh to file.</div><div class="ttdef"><b>Definition:</b> <a href="output_8cpp_source.html#l00012">output.cpp:12</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_7229508ae5de74012573e9c75a559ae0.html">output</a></li><li class="navelem"><a class="el" href="dir_adde2b116427af982c871df1f783fe76.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_075d7dbecc20a34e3532245b6e2f7648.html">components</a></li><li class="navelem"><a class="el" href="dir_c4d1db58768108f0c645cb2127d0d21a.html">output</a></li><li class="navelem"><a class="el" href="output_8hpp.html">output.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_c2a2448aa4410a2735c93a90deffb512.html">output</a></li><li class="navelem"><a class="el" href="dir_13548d34a093cf85ed109effc264279c.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_c20e222dffb132562e8327bb01cd7672.html">components</a></li><li class="navelem"><a class="el" href="dir_501d69ed04b54f8f2cd596c3df7162bc.html">output</a></li><li class="navelem"><a class="el" href="output_8hpp.html">output.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/procedural/wmtk/components/procedural/internal/grid_utils.cpp Source File</title>
+<title>Wildmeshing Toolkit: components/procedural/wmtk/components/procedural/grid_utils.cpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -116,7 +116,7 @@ $(document).ready(function(){initNavTree('grid__utils_8cpp_source.html',''); ini
 </div><!--header-->
 <div class="contents">
 <a href="grid__utils_8cpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="grid__utils_8hpp.html">grid_utils.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html">wmtk::components::internal::procedural</a> {</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1procedural.html">wmtk::components::procedural</a> {</div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160; </div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="keyword">namespace </span>{</div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">int</span>64_t D&gt;</div>
@@ -130,25 +130,25 @@ $(document).ready(function(){initNavTree('grid__utils_8cpp_source.html',''); ini
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;}</div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;} <span class="comment">// namespace</span></div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
-<div class="line"><a name="l00016"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a2a5ca17b568f0a95f3e09a50106afd70">   16</a></span>&#160;int64_t <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a2a5ca17b568f0a95f3e09a50106afd70">grid_index</a>(<span class="keyword">const</span> std::array&lt;int64_t, 3&gt;&amp; d, <span class="keyword">const</span> std::array&lt;int64_t, 3&gt;&amp; i)</div>
+<div class="line"><a name="l00016"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1procedural.html#acf0b4a33fad867bd45b43bb9cd108aa2">   16</a></span>&#160;int64_t <a class="code" href="namespacewmtk_1_1components_1_1procedural.html#acf0b4a33fad867bd45b43bb9cd108aa2">grid_index</a>(<span class="keyword">const</span> std::array&lt;int64_t, 3&gt;&amp; d, <span class="keyword">const</span> std::array&lt;int64_t, 3&gt;&amp; i)</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;{</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keywordflow">return</span> _grid_index&lt;3&gt;(d, i);</div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;}</div>
-<div class="line"><a name="l00020"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a35d1c2751f3a87c2bc71ff5b7a89d0b4">   20</a></span>&#160;int64_t <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a2a5ca17b568f0a95f3e09a50106afd70">grid_index</a>(<span class="keyword">const</span> std::array&lt;int64_t, 2&gt;&amp; d, <span class="keyword">const</span> std::array&lt;int64_t, 2&gt;&amp; i)</div>
+<div class="line"><a name="l00020"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1procedural.html#a9de8cac61a2a0437a28a86be7be80417">   20</a></span>&#160;int64_t <a class="code" href="namespacewmtk_1_1components_1_1procedural.html#acf0b4a33fad867bd45b43bb9cd108aa2">grid_index</a>(<span class="keyword">const</span> std::array&lt;int64_t, 2&gt;&amp; d, <span class="keyword">const</span> std::array&lt;int64_t, 2&gt;&amp; i)</div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;{</div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keywordflow">return</span> _grid_index&lt;2&gt;(d, i);</div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;}</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;} <span class="comment">// namespace wmtk::components::internal::procedural</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;} <span class="comment">// namespace wmtk::components::procedural</span></div>
 <div class="ttc" id="agrid__utils_8hpp_html"><div class="ttname"><a href="grid__utils_8hpp.html">grid_utils.hpp</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_1_1procedural_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal_1_1procedural.html">wmtk::components::internal::procedural</a></div><div class="ttdef"><b>Definition:</b> <a href="_disk_options_8cpp_source.html#l00010">DiskOptions.cpp:10</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_1_1procedural_html_a2a5ca17b568f0a95f3e09a50106afd70"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a2a5ca17b568f0a95f3e09a50106afd70">wmtk::components::internal::procedural::grid_index</a></div><div class="ttdeci">int64_t grid_index(const std::array&lt; int64_t, 3 &gt; &amp;d, const std::array&lt; int64_t, 3 &gt; &amp;i)</div><div class="ttdef"><b>Definition:</b> <a href="grid__utils_8cpp_source.html#l00016">grid_utils.cpp:16</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1procedural_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1procedural.html">wmtk::components::procedural</a></div><div class="ttdef"><b>Definition:</b> <a href="_disk_options_8cpp_source.html#l00008">DiskOptions.cpp:8</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1procedural_html_acf0b4a33fad867bd45b43bb9cd108aa2"><div class="ttname"><a href="namespacewmtk_1_1components_1_1procedural.html#acf0b4a33fad867bd45b43bb9cd108aa2">wmtk::components::procedural::grid_index</a></div><div class="ttdeci">int64_t grid_index(const std::array&lt; int64_t, 3 &gt; &amp;d, const std::array&lt; int64_t, 3 &gt; &amp;i)</div><div class="ttdef"><b>Definition:</b> <a href="grid__utils_8cpp_source.html#l00016">grid_utils.cpp:16</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_8b2be0710edb097d46e1a67e80e3ee84.html">procedural</a></li><li class="navelem"><a class="el" href="dir_7664db7018d8c2401641294e38abf8e7.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_5c19f179921ea08a7b6a117596a5b3ff.html">components</a></li><li class="navelem"><a class="el" href="dir_43fe4bce1375f41726c9bdfbb6b52426.html">procedural</a></li><li class="navelem"><a class="el" href="dir_dd168ac3bdb88ef6c35c8b2b6978062a.html">internal</a></li><li class="navelem"><a class="el" href="grid__utils_8cpp.html">grid_utils.cpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_b59c7c9369294562dd241a4f76f533c3.html">procedural</a></li><li class="navelem"><a class="el" href="dir_9912003bb9781ceae3ab656b65953712.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_4d270fffc053c4addb6437249adf8038.html">components</a></li><li class="navelem"><a class="el" href="dir_2db10d7e5b0db126f5ad86e2e604f235.html">procedural</a></li><li class="navelem"><a class="el" href="grid__utils_8cpp.html">grid_utils.cpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

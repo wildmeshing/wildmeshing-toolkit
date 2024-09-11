@@ -9,6 +9,7 @@ var dir_9f42d488f21f30bdc75c62948fa574ea =
     [ "EigenMatrixWriter.hpp", "_eigen_matrix_writer_8hpp.html", [
       [ "EigenMatrixWriter", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html", "classwmtk_1_1utils_1_1_eigen_matrix_writer" ]
     ] ],
+    [ "filter_pointers_to_derived.hpp", "filter__pointers__to__derived_8hpp.html", "filter__pointers__to__derived_8hpp" ],
     [ "getRSS.cpp", "get_r_s_s_8cpp.html", "get_r_s_s_8cpp" ],
     [ "getRSS.h", "get_r_s_s_8h.html", "get_r_s_s_8h" ],
     [ "Hashable.cpp", "_hashable_8cpp.html", null ],

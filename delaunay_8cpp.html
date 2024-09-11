@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/delaunay/wmtk/components/delaunay/delaunay.cpp File Reference</title>
+<title>Wildmeshing Toolkit: components/delaunay/wmtk/components/delaunay/delaunay.cpp File Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -124,7 +124,6 @@ $(document).ready(function(){initNavTree('delaunay_8cpp.html',''); initResizable
 <code>#include &lt;<a class="el" href="_tri_mesh_8hpp_source.html">wmtk/TriMesh.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_logger_8hpp_source.html">wmtk/utils/Logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="mesh__utils_8hpp_source.html">wmtk/utils/mesh_utils.hpp</a>&gt;</code><br />
-<code>#include &quot;<a class="el" href="_delaunay_options_8hpp_source.html">internal/DelaunayOptions.hpp</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="delaunay__2d_8hpp_source.html">internal/delaunay_2d.hpp</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="delaunay__3d_8hpp_source.html">internal/delaunay_3d.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
@@ -145,14 +144,14 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a1646363f25b9134edc803de5b208d6e1"><td class="memTemplParams" colspan="2">template&lt;int D&gt; </td></tr>
-<tr class="memitem:a1646363f25b9134edc803de5b208d6e1"><td class="memTemplItemLeft" align="right" valign="top">RowVectors&lt; double, D &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a1646363f25b9134edc803de5b208d6e1">wmtk::components::points_to_rowvectors</a> (const std::string &amp;position, PointMesh &amp;point_cloud)</td></tr>
-<tr class="separator:a1646363f25b9134edc803de5b208d6e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a21e25d3a6f734e991354c2294bf49bbe"><td class="memTemplParams" colspan="2">template&lt;int D, typename MeshT &gt; </td></tr>
-<tr class="memitem:a21e25d3a6f734e991354c2294bf49bbe"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a21e25d3a6f734e991354c2294bf49bbe">wmtk::components::delaunay_exec</a> (const internal::DelaunayOptions &amp;options, io::Cache &amp;cache)</td></tr>
-<tr class="separator:a21e25d3a6f734e991354c2294bf49bbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2000fd9887333564a8a9ce6e1070e6ba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a2000fd9887333564a8a9ce6e1070e6ba">wmtk::components::delaunay</a> (const base::Paths &amp;paths, const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;j, io::Cache &amp;cache)</td></tr>
-<tr class="separator:a2000fd9887333564a8a9ce6e1070e6ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a17fb8917590951b183bdf6334a06a2"><td class="memTemplParams" colspan="2">template&lt;int D&gt; </td></tr>
+<tr class="memitem:a1a17fb8917590951b183bdf6334a06a2"><td class="memTemplItemLeft" align="right" valign="top">RowVectors&lt; double, D &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a1a17fb8917590951b183bdf6334a06a2">wmtk::components::points_to_rowvectors</a> (const PointMesh &amp;point_cloud, const attribute::MeshAttributeHandle &amp;pts_attr)</td></tr>
+<tr class="separator:a1a17fb8917590951b183bdf6334a06a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae83ffb7414718eb36eadf02c893b9daa"><td class="memTemplParams" colspan="2">template&lt;int D, typename MeshT &gt; </td></tr>
+<tr class="memitem:ae83ffb7414718eb36eadf02c893b9daa"><td class="memTemplItemLeft" align="right" valign="top">std::shared_ptr&lt; MeshT &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#ae83ffb7414718eb36eadf02c893b9daa">wmtk::components::delaunay_exec</a> (const PointMesh &amp;point_cloud, const attribute::MeshAttributeHandle &amp;pts_attr, const std::string &amp;output_pos_attr_name)</td></tr>
+<tr class="separator:ae83ffb7414718eb36eadf02c893b9daa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12bd8646c56df6a1f46dba67ab86ebd7"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; Mesh &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a12bd8646c56df6a1f46dba67ab86ebd7">wmtk::components::delaunay</a> (const PointMesh &amp;point_cloud, const attribute::MeshAttributeHandle &amp;pts_attr, const std::string &amp;output_pos_attr_name)</td></tr>
+<tr class="separator:a12bd8646c56df6a1f46dba67ab86ebd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -160,7 +159,7 @@ Functions</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_120f1c8542a0cba5e040bcc9c13f01c7.html">delaunay</a></li><li class="navelem"><a class="el" href="dir_d2711e46840c411f1190d6d712f0565e.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_3465f345a6bcc8b6bd74e1488f3c0735.html">components</a></li><li class="navelem"><a class="el" href="dir_d99b861e28996c57327cd7dc3c2b8e63.html">delaunay</a></li><li class="navelem"><a class="el" href="delaunay_8cpp.html">delaunay.cpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_55d85f035c5a01e8a30523454f322589.html">delaunay</a></li><li class="navelem"><a class="el" href="dir_2454a91a72de30f8ef23d73b4b03ade1.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_2fd915b1ed8915385efb2525cdf302a3.html">components</a></li><li class="navelem"><a class="el" href="dir_bbd6c69411663e1f8e41efe80aaad619.html">delaunay</a></li><li class="navelem"><a class="el" href="delaunay_8cpp.html">delaunay.cpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

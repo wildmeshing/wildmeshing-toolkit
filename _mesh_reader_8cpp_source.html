@@ -118,36 +118,40 @@ $(document).ready(function(){initNavTree('_mesh_reader_8cpp_source.html',''); in
 <a href="_mesh_reader_8cpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_mesh_reader_8hpp.html">MeshReader.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_h_d_f5_reader_8hpp.html">HDF5Reader.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160; </div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;memory&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_logger_8hpp.html">wmtk/utils/Logger.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk.html">wmtk</a> {</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;memory&gt;</span></div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
-<div class="line"><a name="l00008"></a><span class="lineno"><a class="line" href="namespacewmtk.html#adb1edeb39c4e0ef98ecc5afeed46891c">    8</a></span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk.html#adb1edeb39c4e0ef98ecc5afeed46891c">read_mesh</a>(</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    <span class="keyword">const</span> std::filesystem::path&amp; filename,</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">bool</span> ignore_z,</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; tetrahedron_attributes)</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;{</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> extension = filename.extension().string();</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keywordflow">if</span> (extension == <span class="stringliteral">&quot;.hdf5&quot;</span>) {</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;        <a class="code" href="classwmtk_1_1_h_d_f5_reader.html">HDF5Reader</a> reader;</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;        <span class="keywordflow">return</span> reader.<a class="code" href="classwmtk_1_1_h_d_f5_reader.html#a2524f46ffeb8b8b9af898e7b2993bc00">read</a>(filename);</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (extension == <span class="stringliteral">&quot;.msh&quot;</span>) {</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;        <a class="code" href="classwmtk_1_1_msh_reader.html">MshReader</a> reader;</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;        <span class="keywordflow">return</span> reader.<a class="code" href="classwmtk_1_1_msh_reader.html#afd780afbbde030daa41a17137bc37085">read</a>(filename, ignore_z, tetrahedron_attributes);</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    }</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keywordflow">throw</span> std::runtime_error(extension + <span class="stringliteral">&quot; not supported&quot;</span>);</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;}</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk.html">wmtk</a> {</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
+<div class="line"><a name="l00010"></a><span class="lineno"><a class="line" href="namespacewmtk.html#adb1edeb39c4e0ef98ecc5afeed46891c">   10</a></span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk.html#adb1edeb39c4e0ef98ecc5afeed46891c">read_mesh</a>(</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    <span class="keyword">const</span> std::filesystem::path&amp; filename,</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">bool</span> ignore_z,</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; tetrahedron_attributes)</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;{</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> extension = filename.extension().string();</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="keywordflow">if</span> (extension == <span class="stringliteral">&quot;.hdf5&quot;</span>) {</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;        <a class="code" href="classwmtk_1_1_h_d_f5_reader.html">HDF5Reader</a> reader;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;        <span class="keywordflow">return</span> reader.<a class="code" href="classwmtk_1_1_h_d_f5_reader.html#a2524f46ffeb8b8b9af898e7b2993bc00">read</a>(filename);</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (extension == <span class="stringliteral">&quot;.msh&quot;</span>) {</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;        <a class="code" href="classwmtk_1_1_msh_reader.html">MshReader</a> reader;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;        <span class="keywordflow">return</span> reader.<a class="code" href="classwmtk_1_1_msh_reader.html#afd780afbbde030daa41a17137bc37085">read</a>(filename, ignore_z, tetrahedron_attributes);</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    }</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <a class="code" href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">log_and_throw_error</a>(<span class="stringliteral">&quot;Files of type {} are not supported&quot;</span>, extension);</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;}</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;} <span class="comment">// namespace wmtk</span></div>
 <div class="ttc" id="a_h_d_f5_reader_8hpp_html"><div class="ttname"><a href="_h_d_f5_reader_8hpp.html">HDF5Reader.hpp</a></div></div>
+<div class="ttc" id="a_logger_8hpp_html"><div class="ttname"><a href="_logger_8hpp.html">Logger.hpp</a></div></div>
 <div class="ttc" id="a_mesh_reader_8hpp_html"><div class="ttname"><a href="_mesh_reader_8hpp.html">MeshReader.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_h_d_f5_reader_html"><div class="ttname"><a href="classwmtk_1_1_h_d_f5_reader.html">wmtk::HDF5Reader</a></div><div class="ttdef"><b>Definition:</b> <a href="_h_d_f5_reader_8hpp_source.html#l00016">HDF5Reader.hpp:17</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_h_d_f5_reader_html_a2524f46ffeb8b8b9af898e7b2993bc00"><div class="ttname"><a href="classwmtk_1_1_h_d_f5_reader.html#a2524f46ffeb8b8b9af898e7b2993bc00">wmtk::HDF5Reader::read</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; read(const std::filesystem::path &amp;filename)</div><div class="ttdef"><b>Definition:</b> <a href="_h_d_f5_reader_8cpp_source.html#l00044">HDF5Reader.cpp:44</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_msh_reader_html"><div class="ttname"><a href="classwmtk_1_1_msh_reader.html">wmtk::MshReader</a></div><div class="ttdef"><b>Definition:</b> <a href="_msh_reader_8hpp_source.html#l00012">MshReader.hpp:13</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_msh_reader_html_afd780afbbde030daa41a17137bc37085"><div class="ttname"><a href="classwmtk_1_1_msh_reader.html#afd780afbbde030daa41a17137bc37085">wmtk::MshReader::read</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; read(const std::filesystem::path &amp;filename, const bool ignore_z=false, const std::vector&lt; std::string &gt; &amp;attrs={})</div><div class="ttdef"><b>Definition:</b> <a href="_msh_reader_8cpp_source.html#l00020">MshReader.cpp:20</a></div></div>
 <div class="ttc" id="anamespacewmtk_html"><div class="ttname"><a href="namespacewmtk.html">wmtk</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8hpp_source.html#l00005">Accessor.hpp:5</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_adb1edeb39c4e0ef98ecc5afeed46891c"><div class="ttname"><a href="namespacewmtk.html#adb1edeb39c4e0ef98ecc5afeed46891c">wmtk::read_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; read_mesh(const std::filesystem::path &amp;filename, const bool ignore_z, const std::vector&lt; std::string &gt; &amp;tetrahedron_attributes)</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_reader_8cpp_source.html#l00008">MeshReader.cpp:8</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_a441d6ad4f19569c7d4946e743da1a925"><div class="ttname"><a href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">wmtk::log_and_throw_error</a></div><div class="ttdeci">void log_and_throw_error(const std::string &amp;msg)</div><div class="ttdef"><b>Definition:</b> <a href="_logger_8cpp_source.html#l00101">Logger.cpp:101</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_adb1edeb39c4e0ef98ecc5afeed46891c"><div class="ttname"><a href="namespacewmtk.html#adb1edeb39c4e0ef98ecc5afeed46891c">wmtk::read_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; read_mesh(const std::filesystem::path &amp;filename, const bool ignore_z, const std::vector&lt; std::string &gt; &amp;tetrahedron_attributes)</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_reader_8cpp_source.html#l00010">MeshReader.cpp:10</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

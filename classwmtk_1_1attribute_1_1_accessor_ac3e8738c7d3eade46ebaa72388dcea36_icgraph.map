@@ -1,19 +1,19 @@
 <map id="wmtk::attribute::Accessor::scalar_attribute" name="wmtk::attribute::Accessor::scalar_attribute">
-<area shape="rect" id="node1" title=" " alt="" coords="995,187,1184,229"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1components_1_1internal_1_1_marching.html#a9e2d1de9a85f917baa06fd06feffe8f3" title=" " alt="" coords="727,33,932,74"/>
-<area shape="rect" id="node4" href="$test__component__marching_8cpp.html#af20fbc246d1ad31be8d9ec0011ac52d6" title=" " alt="" coords="509,56,603,83"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1components_1_1internal_1_1_regular_space.html#af9adef544fff10ba9257d128fd13393c" title=" " alt="" coords="716,150,943,191"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a8f5c5468701772a7bd72be07ea1ecf81" title=" " alt="" coords="743,216,916,272"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1components_1_1_tag_attribute.html#a112d4bf90ca8a534231e5b1825e3421d" title=" " alt="" coords="712,297,947,338"/>
-<area shape="rect" id="node14" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a992e75c8b90a653cf89fa4f92a52fc27" title=" " alt="" coords="743,363,916,419"/>
-<area shape="rect" id="node3" href="$namespacewmtk_1_1components.html#a2089f999b4072674bda24b29e86257e1" title="Perform maching tetrahedra/triangles." alt="" coords="448,5,664,32"/>
-<area shape="rect" id="node6" href="$namespacewmtk_1_1components.html#a899899fc78b0d9575cf5996f9d10d012" title=" " alt="" coords="455,158,657,199"/>
-<area shape="rect" id="node7" href="$test__component__regular__space_8cpp.html#a5e69783b3ce0c074477e3081ab8cf658" title=" " alt="" coords="509,107,603,133"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#ad517c516675acd9b4964890cf78ce9c9" title="Go through edges of the parent mesh (triangle mesh) and initialize all the vertex tags to be &#45;1." alt="" coords="469,289,643,345"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a76f9d0aa5d7d0de388e17b239faab649" title=" " alt="" coords="469,223,643,265"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acca3241a2661355c5351269aa5a275c6" title=" " alt="" coords="227,289,400,345"/>
-<area shape="rect" id="node12" href="$namespacewmtk_1_1multimesh_1_1utils.html#a3eeab2c4a43e5e6d5fb50d399a88d0a3" title="Do two passes on the edges of a triangle mesh to create vertex tags and edge tags." alt="" coords="227,223,400,265"/>
-<area shape="rect" id="node15" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a91abc2743fec235b445ec7b584b8971e" title=" " alt="" coords="469,369,643,425"/>
-<area shape="rect" id="node16" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#abf875f1fb984fb5d322e0ac0c9dcc145" title="Given two vertex tuple, join the sets that contain them." alt="" coords="227,369,400,425"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a2537cb4e71612d88c4541856b7352ee6" title="Given an edge, join the sets that contains the two end vertices." alt="" coords="5,377,179,418"/>
+<area shape="rect" id="node1" title=" " alt="" coords="995,181,1184,223"/>
+<area shape="rect" id="node2" href="$classwmtk_1_1components_1_1_marching.html#a93c8d735afd009d73bfc4700b4f8e3f6" title="Perform the actual marching." alt="" coords="722,5,937,47"/>
+<area shape="rect" id="node4" href="$tests_2_marching_8cpp.html#af20fbc246d1ad31be8d9ec0011ac52d6" title=" " alt="" coords="266,45,361,71"/>
+<area shape="rect" id="node5" href="$classwmtk_1_1components_1_1internal_1_1_regular_space.html#af9adef544fff10ba9257d128fd13393c" title=" " alt="" coords="716,144,943,185"/>
+<area shape="rect" id="node8" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a8f5c5468701772a7bd72be07ea1ecf81" title=" " alt="" coords="743,210,916,266"/>
+<area shape="rect" id="node13" href="$classwmtk_1_1components_1_1_tag_attribute.html#a112d4bf90ca8a534231e5b1825e3421d" title=" " alt="" coords="712,291,947,332"/>
+<area shape="rect" id="node14" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a992e75c8b90a653cf89fa4f92a52fc27" title=" " alt="" coords="743,357,916,413"/>
+<area shape="rect" id="node3" href="$namespacewmtk_1_1components.html#a6f27411696c9ba6e294768451f31351f" title="Perform maching tetrahedra/triangles." alt="" coords="448,17,664,43"/>
+<area shape="rect" id="node6" href="$namespacewmtk_1_1components.html#a7cec0c38121ddd036af26c760311d0e8" title=" " alt="" coords="455,173,657,215"/>
+<area shape="rect" id="node7" href="$test__component__regular__space_8cpp.html#a5e69783b3ce0c074477e3081ab8cf658" title=" " alt="" coords="509,122,603,149"/>
+<area shape="rect" id="node9" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#ad517c516675acd9b4964890cf78ce9c9" title="Go through edges of the parent mesh (triangle mesh) and initialize all the vertex tags to be &#45;1." alt="" coords="469,305,643,361"/>
+<area shape="rect" id="node11" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a76f9d0aa5d7d0de388e17b239faab649" title=" " alt="" coords="469,239,643,280"/>
+<area shape="rect" id="node10" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acca3241a2661355c5351269aa5a275c6" title=" " alt="" coords="227,305,400,361"/>
+<area shape="rect" id="node12" href="$namespacewmtk_1_1multimesh_1_1utils.html#a3eeab2c4a43e5e6d5fb50d399a88d0a3" title="Do two passes on the edges of a triangle mesh to create vertex tags and edge tags." alt="" coords="227,239,400,280"/>
+<area shape="rect" id="node15" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a91abc2743fec235b445ec7b584b8971e" title=" " alt="" coords="469,385,643,441"/>
+<area shape="rect" id="node16" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#abf875f1fb984fb5d322e0ac0c9dcc145" title="Given two vertex tuple, join the sets that contain them." alt="" coords="227,385,400,441"/>
+<area shape="rect" id="node17" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a2537cb4e71612d88c4541856b7352ee6" title="Given an edge, join the sets that contains the two end vertices." alt="" coords="5,392,179,433"/>
 </map>

@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/multimesh_from_tag/wmtk/components/multimesh_from_tag/multimesh_from_tag.hpp Source File</title>
+<title>Wildmeshing Toolkit: components/multimesh_from_tag/wmtk/components/multimesh_from_tag/multimesh_from_tag.hpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -116,29 +116,28 @@ $(document).ready(function(){initNavTree('multimesh__from__tag_8hpp_source.html'
 </div><!--header-->
 <div class="contents">
 <a href="multimesh__from__tag_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;filesystem&gt;</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;map&gt;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;nlohmann/json.hpp&gt;</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_paths_8hpp.html">wmtk/components/base/Paths.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_cache_8hpp.html">wmtk/io/Cache.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_8hpp.html">wmtk/Mesh.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a43e4bf82099343e153b21c9be07cd2d1">multimesh_from_tag</a>(<span class="keyword">const</span> base::Paths&amp; paths, <span class="keyword">const</span> <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; j, io::Cache&amp; cache);</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
-<div class="ttc" id="a_cache_8hpp_html"><div class="ttname"><a href="_cache_8hpp.html">Cache.hpp</a></div></div>
-<div class="ttc" id="a_paths_8hpp_html"><div class="ttname"><a href="_paths_8hpp.html">Paths.hpp</a></div></div>
-<div class="ttc" id="aintegration__test_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="integration__test_8cpp_source.html#l00016">integration_test.cpp:16</a></div></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#ac309092566399cef68679a1bb8107d1e">multimesh_from_tag</a>(</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    std::shared_ptr&lt;Mesh&gt;&amp; mesh_in,</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    attribute::MeshAttributeHandle&amp; substructure_label,</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    int64_t substructure_value);</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
+<div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a43e4bf82099343e153b21c9be07cd2d1"><div class="ttname"><a href="namespacewmtk_1_1components.html#a43e4bf82099343e153b21c9be07cd2d1">wmtk::components::multimesh_from_tag</a></div><div class="ttdeci">void multimesh_from_tag(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdoc">Generate a multi-mesh from a mesh with a tag that represents the substructure.</div><div class="ttdef"><b>Definition:</b> <a href="multimesh__from__tag_8cpp_source.html#l00021">multimesh_from_tag.cpp:21</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_ac309092566399cef68679a1bb8107d1e"><div class="ttname"><a href="namespacewmtk_1_1components.html#ac309092566399cef68679a1bb8107d1e">wmtk::components::multimesh_from_tag</a></div><div class="ttdeci">void multimesh_from_tag(std::shared_ptr&lt; Mesh &gt; &amp;mesh_in, attribute::MeshAttributeHandle &amp;substructure_label, int64_t substructure_value)</div><div class="ttdoc">Generate a multi-mesh from a mesh with a tag that represents the substructure, the mesh is changed.</div><div class="ttdef"><b>Definition:</b> <a href="multimesh__from__tag_8cpp_source.html#l00020">multimesh_from_tag.cpp:20</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_60ec0aab65c8103e117c49149e720d40.html">multimesh_from_tag</a></li><li class="navelem"><a class="el" href="dir_31bb68728f5c00d1cd42205c3b469241.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_77ff8b1f4cb21ab8de0378a67546ebf7.html">components</a></li><li class="navelem"><a class="el" href="dir_75f88da3c9e576b4f8300167ab21b05a.html">multimesh_from_tag</a></li><li class="navelem"><a class="el" href="multimesh__from__tag_8hpp.html">multimesh_from_tag.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_0bb33c45305857962c91977612951af5.html">multimesh_from_tag</a></li><li class="navelem"><a class="el" href="dir_4b62c6398b9ba4c05ebb79af345d812c.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_ecc621e05dc037dc13686f338e18e5b8.html">components</a></li><li class="navelem"><a class="el" href="dir_0ce27f898574cd3a685d089d6402113d.html">multimesh_from_tag</a></li><li class="navelem"><a class="el" href="multimesh__from__tag_8hpp.html">multimesh_from_tag.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

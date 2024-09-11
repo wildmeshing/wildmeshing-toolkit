@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 770;
+var viewWidth = 1154;
 var viewHeight = 50;
 var sectionId = 'dynsection-0';
 </script>
@@ -58,61 +58,94 @@ var sectionId = 'dynsection-0';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="0,-6 0,-36 151,-36 151,-6 0,-6"/>
-<text text-anchor="start" x="8" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Attribute</text>
-<text text-anchor="middle" x="75.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">TransferStrategyBase</text>
+<polygon fill="#bfbfbf" stroke="black" points="384,-6 384,-36 535,-36 535,-6 384,-6"/>
+<text text-anchor="start" x="392" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Attribute</text>
+<text text-anchor="middle" x="459.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">TransferStrategyBase</text>
 </a>
 </g>
-</g>
-<!-- Node2 -->
-<g id="node2" class="node">
-<title>Node2</title>
-<g id="a_node2"><a xlink:href="classwmtk_1_1operations_1_1_attribute_transfer_strategy.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="187,-6 187,-36 344,-36 344,-6 187,-6"/>
-<text text-anchor="start" x="195" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Attribute</text>
-<text text-anchor="middle" x="265.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">TransferStrategy&lt; MyType &gt;</text>
-</a>
-</g>
-</g>
-<!-- Node1&#45;&gt;Node2 -->
-<g id="edge1" class="edge">
-<title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M161.1,-21C169.7,-21 178.41,-21 186.93,-21"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="161.07,-17.5 151.07,-21 161.07,-24.5 161.07,-17.5"/>
-</g>
-<!-- Node3 -->
-<g id="node3" class="node">
-<title>Node3</title>
-<g id="a_node3"><a xlink:href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="380,-0.5 380,-41.5 520,-41.5 520,-0.5 380,-0.5"/>
-<text text-anchor="start" x="388" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Single</text>
-<text text-anchor="start" x="388" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">AttributeTransferStrategy</text>
-<text text-anchor="middle" x="450" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; MyType, ParentType &gt;</text>
-</a>
-</g>
-</g>
-<!-- Node2&#45;&gt;Node3 -->
-<g id="edge2" class="edge">
-<title>Node2&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M354.2,-21C362.79,-21 371.42,-21 379.78,-21"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="354.16,-17.5 344.16,-21 354.16,-24.5 354.16,-17.5"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:href="classwmtk_1_1operations_1_1attribute__update_1_1_cast_attribute_transfer_strategy.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="556,-0.5 556,-41.5 762,-41.5 762,-0.5 556,-0.5"/>
-<text text-anchor="start" x="564" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::attribute</text>
-<text text-anchor="start" x="564" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">_update::CastAttributeTransferStrategy</text>
-<text text-anchor="middle" x="659" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; MyType, ParentType &gt;</text>
+<g id="a_node4"><a xlink:href="classwmtk_1_1operations_1_1_attribute_transfer_strategy.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="571,-6 571,-36 728,-36 728,-6 571,-6"/>
+<text text-anchor="start" x="579" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Attribute</text>
+<text text-anchor="middle" x="649.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">TransferStrategy&lt; MyType &gt;</text>
 </a>
 </g>
 </g>
-<!-- Node3&#45;&gt;Node4 -->
+<!-- Node1&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
-<title>Node3&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M530.24,-21C538.57,-21 547.11,-21 555.65,-21"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="530.22,-17.5 520.22,-21 530.22,-24.5 530.22,-17.5"/>
+<title>Node1&#45;&gt;Node4</title>
+<path fill="none" stroke="midnightblue" d="M545.1,-21C553.7,-21 562.41,-21 570.93,-21"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="545.07,-17.5 535.07,-21 545.07,-24.5 545.07,-17.5"/>
+</g>
+<!-- Node2 -->
+<g id="node2" class="node">
+<title>Node2</title>
+<g id="a_node2"><a xlink:href="classwmtk_1_1operations_1_1_attribute_transfer_edge.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="197,-6 197,-36 348,-36 348,-6 197,-6"/>
+<text text-anchor="start" x="205" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Attribute</text>
+<text text-anchor="middle" x="272.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">TransferEdge</text>
+</a>
+</g>
+</g>
+<!-- Node2&#45;&gt;Node1 -->
+<g id="edge1" class="edge">
+<title>Node2&#45;&gt;Node1</title>
+<path fill="none" stroke="midnightblue" d="M358.47,-21C366.93,-21 375.47,-21 383.81,-21"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="358.21,-17.5 348.21,-21 358.21,-24.5 358.21,-17.5"/>
+</g>
+<!-- Node3 -->
+<g id="node3" class="node">
+<title>Node3</title>
+<g id="a_node3"><a xlink:title=" ">
+<polygon fill="none" stroke="#bfbfbf" points="0,-0.5 0,-41.5 161,-41.5 161,-0.5 0,-0.5"/>
+<text text-anchor="start" x="8" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">std::enable_shared</text>
+<text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">_from_this&lt; AttributeTransfer</text>
+<text text-anchor="middle" x="80.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">Edge &gt;</text>
+</a>
+</g>
+</g>
+<!-- Node3&#45;&gt;Node2 -->
+<g id="edge2" class="edge">
+<title>Node3&#45;&gt;Node2</title>
+<path fill="none" stroke="midnightblue" d="M171.53,-21C179.99,-21 188.51,-21 196.81,-21"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="171.25,-17.5 161.25,-21 171.25,-24.5 171.25,-17.5"/>
+</g>
+<!-- Node5 -->
+<g id="node5" class="node">
+<title>Node5</title>
+<g id="a_node5"><a xlink:href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="764,-0.5 764,-41.5 904,-41.5 904,-0.5 764,-0.5"/>
+<text text-anchor="start" x="772" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Single</text>
+<text text-anchor="start" x="772" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">AttributeTransferStrategy</text>
+<text text-anchor="middle" x="834" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; MyType, ParentType &gt;</text>
+</a>
+</g>
+</g>
+<!-- Node4&#45;&gt;Node5 -->
+<g id="edge4" class="edge">
+<title>Node4&#45;&gt;Node5</title>
+<path fill="none" stroke="midnightblue" d="M738.2,-21C746.79,-21 755.42,-21 763.78,-21"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="738.16,-17.5 728.16,-21 738.16,-24.5 738.16,-17.5"/>
+</g>
+<!-- Node6 -->
+<g id="node6" class="node">
+<title>Node6</title>
+<g id="a_node6"><a xlink:href="classwmtk_1_1operations_1_1attribute__update_1_1_cast_attribute_transfer_strategy.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="940,-0.5 940,-41.5 1146,-41.5 1146,-0.5 940,-0.5"/>
+<text text-anchor="start" x="948" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::attribute</text>
+<text text-anchor="start" x="948" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">_update::CastAttributeTransferStrategy</text>
+<text text-anchor="middle" x="1043" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; MyType, ParentType &gt;</text>
+</a>
+</g>
+</g>
+<!-- Node5&#45;&gt;Node6 -->
+<g id="edge5" class="edge">
+<title>Node5&#45;&gt;Node6</title>
+<path fill="none" stroke="midnightblue" d="M914.24,-21C922.57,-21 931.11,-21 939.65,-21"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="914.22,-17.5 904.22,-21 914.22,-24.5 914.22,-17.5"/>
 </g>
 </g>
 </svg>

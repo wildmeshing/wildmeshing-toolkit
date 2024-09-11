@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/marching/wmtk/components/marching/internal/MarchingOptions.hpp File Reference</title>
+<title>Wildmeshing Toolkit: components/marching/wmtk/components/marching/MarchingOptions.hpp File Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -113,24 +113,23 @@ $(document).ready(function(){initNavTree('_marching_options_8hpp.html',''); init
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#namespaces">Namespaces</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#namespaces">Namespaces</a>  </div>
   <div class="headertitle">
 <div class="title">MarchingOptions.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;spdlog/spdlog.h&gt;</code><br />
-<code>#include &lt;nlohmann/json.hpp&gt;</code><br />
+<div class="textblock"><code>#include &lt;map&gt;</code><br />
+<code>#include &lt;<a class="el" href="_mesh_attribute_handle_8hpp_source.html">wmtk/attribute/MeshAttributeHandle.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for MarchingOptions.hpp:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="_marching_options_8hpp__incl.svg" width="307" height="142"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="_marching_options_8hpp__incl.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 </div><div class="textblock"><div class="dynheader">
 This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="_marching_options_8hpp__dep__incl.svg" width="100%" height="428"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="_marching_options_8hpp__dep__incl.svg" width="459" height="275"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 </div>
@@ -138,9 +137,7 @@ This graph shows which files directly or indirectly include this file:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_marching_attributes.html">wmtk::components::internal::MarchingAttributes</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_marching_options.html">wmtk::components::internal::MarchingOptions</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_marching_options.html">wmtk::components::MarchingOptions</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
@@ -149,17 +146,6 @@ Namespaces</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacewmtk_1_1components"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html">wmtk::components</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:namespacewmtk_1_1components_1_1internal"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html">wmtk::components::internal</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:ad16f398cf6c2ef302d36251472787381"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#ad16f398cf6c2ef302d36251472787381">wmtk::components::internal::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (MarchingAttributes, vertex_label, filter_labels, edge_label, face_label)</td></tr>
-<tr class="separator:ad16f398cf6c2ef302d36251472787381"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5450a3ab21d590cbd8b68220592345f6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a5450a3ab21d590cbd8b68220592345f6">wmtk::components::internal::to_json</a> (<a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;j, MarchingOptions &amp;o)</td></tr>
-<tr class="separator:a5450a3ab21d590cbd8b68220592345f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abae421f39e544e06dc1051a6cd7f4b6f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#abae421f39e544e06dc1051a6cd7f4b6f">wmtk::components::internal::from_json</a> (const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;j, MarchingOptions &amp;o)</td></tr>
-<tr class="separator:abae421f39e544e06dc1051a6cd7f4b6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -167,7 +153,7 @@ Functions</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_145469d5d06a9748959b595d0fe366d4.html">marching</a></li><li class="navelem"><a class="el" href="dir_d5eb2638408b999b7627687dc13aeda1.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_9e4886e598daa1512e4c6d38913e5aae.html">components</a></li><li class="navelem"><a class="el" href="dir_8e337b9a161fec2635378b6386653f39.html">marching</a></li><li class="navelem"><a class="el" href="dir_83b134999b838fa35ecd9dd65d631529.html">internal</a></li><li class="navelem"><a class="el" href="_marching_options_8hpp.html">MarchingOptions.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_9a5be04ba4a42993c3d4af74be2caec9.html">marching</a></li><li class="navelem"><a class="el" href="dir_10e857f26241e1f8eef6b2947ebd7496.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_ff07799b5f37e9912cfab46c79f88dfe.html">components</a></li><li class="navelem"><a class="el" href="dir_bd391d9a68160b1e5932478c38240753.html">marching</a></li><li class="navelem"><a class="el" href="_marching_options_8hpp.html">MarchingOptions.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

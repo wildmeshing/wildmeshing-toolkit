@@ -8,5 +8,6 @@ var classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute =
     [ "get_char", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html#ab564f19439182c0a1f016522ea7327d6", null ],
     [ "get_double", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html#a0da924a7ea5cbe84326eac847f0969a3", null ],
     [ "get_rational", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html#ae4fcb420878ad2b474cab34940cbe391", null ],
+    [ "operator std::string", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html#a3419d8729bc36dcd64ffcf96cc4b1aa5", null ],
     [ "primitive_type", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html#a9634d87763658dbdef52c8496c680a33", null ]
 ];

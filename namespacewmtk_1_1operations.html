@@ -169,6 +169,10 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_attributes_update_with_function.html">AttributesUpdateWithFunction</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_configuration.html">AttributeTransferConfiguration</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_edge.html">AttributeTransferEdge</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_edge_collapse.html">EdgeCollapse</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">EdgeOperationData</a></td></tr>
@@ -196,22 +200,6 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:a653093b9017535b9104355bd94c44a8a"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8a">CollapseBasicStrategy</a> { <br />
-&#160;&#160;<a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa7a1920d61156abc05a60135aefe8bc67">Default</a>
-, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aaf32779b89f6792c677a8209d9afc4724">CopyTuple</a>
-, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa68e55eab4f30286567022eafb9fa79f6">CopyOther</a>
-, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa3d6c9ac08ada31c184094bbc67afe00d">Mean</a>
-, <br />
-&#160;&#160;<a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa8ce61dd2505effd96f937fa743b6491f">Throw</a>
-, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa6adf97f83acf6453d4a6a4b1070f3754">None</a>
-<br />
- }</td></tr>
-<tr class="separator:a653093b9017535b9104355bd94c44a8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a92159ecbd7df71c5b75bd027e10818cd"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cd">BasicSimplexPredicate</a> { <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda7a1920d61156abc05a60135aefe8bc67">Default</a>
-, <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda4bb9eea168adf0aa284949f41dc52087">IsInterior</a>
-, <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda6adf97f83acf6453d4a6a4b1070f3754">None</a>
- }</td></tr>
-<tr class="separator:a92159ecbd7df71c5b75bd027e10818cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f7187ee4d2329532768f79fb8f55a50"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50">SplitBasicStrategy</a> { <br />
 &#160;&#160;<a class="el" href="namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50a7a1920d61156abc05a60135aefe8bc67">Default</a>
 , <a class="el" href="namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50a5fb63579fc981698f97d55bfecb213ea">Copy</a>
@@ -233,6 +221,22 @@ Enumerations</h2></td></tr>
 <br />
  }</td></tr>
 <tr class="separator:a66f2eeff5a03569f85abf655b0f64d48"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a653093b9017535b9104355bd94c44a8a"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8a">CollapseBasicStrategy</a> { <br />
+&#160;&#160;<a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa7a1920d61156abc05a60135aefe8bc67">Default</a>
+, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aaf32779b89f6792c677a8209d9afc4724">CopyTuple</a>
+, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa68e55eab4f30286567022eafb9fa79f6">CopyOther</a>
+, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa3d6c9ac08ada31c184094bbc67afe00d">Mean</a>
+, <br />
+&#160;&#160;<a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa8ce61dd2505effd96f937fa743b6491f">Throw</a>
+, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa6adf97f83acf6453d4a6a4b1070f3754">None</a>
+<br />
+ }</td></tr>
+<tr class="separator:a653093b9017535b9104355bd94c44a8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92159ecbd7df71c5b75bd027e10818cd"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cd">BasicSimplexPredicate</a> { <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda7a1920d61156abc05a60135aefe8bc67">Default</a>
+, <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda4bb9eea168adf0aa284949f41dc52087">IsInterior</a>
+, <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda6adf97f83acf6453d4a6a4b1070f3754">None</a>
+ }</td></tr>
+<tr class="separator:a92159ecbd7df71c5b75bd027e10818cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Enumeration Type Documentation</h2>
 <a id="a92159ecbd7df71c5b75bd027e10818cd"></a>
@@ -260,7 +264,7 @@ Enumerations</h2></td></tr>
 <tr><td class="fieldname"><a id="a92159ecbd7df71c5b75bd027e10818cda6adf97f83acf6453d4a6a4b1070f3754"></a>None&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="_new_attribute_strategy_8hpp_source.html#l00018">18</a> of file <a class="el" href="_new_attribute_strategy_8hpp_source.html">NewAttributeStrategy.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_new_attribute_strategy_8hpp_source.html#l00019">19</a> of file <a class="el" href="_new_attribute_strategy_8hpp_source.html">NewAttributeStrategy.hpp</a>.</p>
 
 </div>
 </div>
@@ -292,7 +296,7 @@ Enumerations</h2></td></tr>
 <tr><td class="fieldname"><a id="a653093b9017535b9104355bd94c44a8aa6adf97f83acf6453d4a6a4b1070f3754"></a>None&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00009">9</a> of file <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_enums_8hpp_source.html#l00015">15</a> of file <a class="el" href="_enums_8hpp_source.html">Enums.hpp</a>.</p>
 
 </div>
 </div>
@@ -323,7 +327,7 @@ Enumerations</h2></td></tr>
 <tr><td class="fieldname"><a id="a0f7187ee4d2329532768f79fb8f55a50a6adf97f83acf6453d4a6a4b1070f3754"></a>None&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="_split_new_attribute_strategy_8hpp_source.html#l00011">11</a> of file <a class="el" href="_split_new_attribute_strategy_8hpp_source.html">SplitNewAttributeStrategy.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_enums_8hpp_source.html#l00004">4</a> of file <a class="el" href="_enums_8hpp_source.html">Enums.hpp</a>.</p>
 
 </div>
 </div>
@@ -355,7 +359,7 @@ Enumerations</h2></td></tr>
 <tr><td class="fieldname"><a id="a66f2eeff5a03569f85abf655b0f64d48a6adf97f83acf6453d4a6a4b1070f3754"></a>None&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="_split_new_attribute_strategy_8hpp_source.html#l00013">13</a> of file <a class="el" href="_split_new_attribute_strategy_8hpp_source.html">SplitNewAttributeStrategy.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_enums_8hpp_source.html#l00006">6</a> of file <a class="el" href="_enums_8hpp_source.html">Enums.hpp</a>.</p>
 
 </div>
 </div>

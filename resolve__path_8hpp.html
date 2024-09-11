@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/base/wmtk/components/base/resolve_path.hpp File Reference</title>
+<title>Wildmeshing Toolkit: components/utils/wmtk/components/utils/resolve_path.hpp File Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -118,17 +118,17 @@ $(document).ready(function(){initNavTree('resolve__path_8hpp.html',''); initResi
 <div class="title">resolve_path.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;string&gt;</code><br />
+<div class="textblock"><code>#include &lt;filesystem&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for resolve_path.hpp:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="resolve__path_8hpp__incl.svg" width="242" height="142"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="resolve__path_8hpp__incl.svg" width="202" height="142"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 </div><div class="textblock"><div class="dynheader">
 This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="resolve__path_8hpp__dep__incl.svg" width="100%" height="439"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="resolve__path_8hpp__dep__incl.svg" width="100%" height="428"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 </div>
@@ -140,13 +140,20 @@ Namespaces</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacewmtk_1_1components"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html">wmtk::components</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:namespacewmtk_1_1components_1_1base"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1base.html">wmtk::components::base</a></td></tr>
+<tr class="memitem:namespacewmtk_1_1components_1_1utils"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1utils.html">wmtk::components::utils</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:adb3c5f2a17cd1f9a8b45272b9ed91873"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1base.html#adb3c5f2a17cd1f9a8b45272b9ed91873">wmtk::components::base::resolve_path</a> (const std::string &amp;path, const std::string &amp;input_file_path, const bool only_if_exists)</td></tr>
-<tr class="separator:adb3c5f2a17cd1f9a8b45272b9ed91873"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae48bdf24272c4cb25bcef0ae714c94c6"><td class="memItemLeft" align="right" valign="top">std::filesystem::path&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1utils.html#ae48bdf24272c4cb25bcef0ae714c94c6">wmtk::components::utils::resolve_path</a> (const std::filesystem::path &amp;root, const std::filesystem::path &amp;path)</td></tr>
+<tr class="memdesc:ae48bdf24272c4cb25bcef0ae714c94c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wraps the path concatenation <code>root / path</code>.  <a href="namespacewmtk_1_1components_1_1utils.html#ae48bdf24272c4cb25bcef0ae714c94c6">More...</a><br /></td></tr>
+<tr class="separator:ae48bdf24272c4cb25bcef0ae714c94c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac6067d192a642f9210763034aa2fba5c"><td class="memItemLeft" align="right" valign="top">std::filesystem::path&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1utils.html#ac6067d192a642f9210763034aa2fba5c">wmtk::components::utils::resolve_paths</a> (const std::filesystem::path &amp;root, const std::initializer_list&lt; std::filesystem::path &gt; &amp;paths)</td></tr>
+<tr class="memdesc:ac6067d192a642f9210763034aa2fba5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Call <code><a class="el" href="namespacewmtk_1_1components_1_1utils.html#a1acf8217338a8bcffd00f279a2873791">resolve_path()</a></code> to concatenate several paths.  <a href="namespacewmtk_1_1components_1_1utils.html#ac6067d192a642f9210763034aa2fba5c">More...</a><br /></td></tr>
+<tr class="separator:ac6067d192a642f9210763034aa2fba5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa3f8375d8831a2f605d476cd6b2ef473"><td class="memItemLeft" align="right" valign="top">std::filesystem::path&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1utils.html#aa3f8375d8831a2f605d476cd6b2ef473">wmtk::components::utils::resolve_path_if_not_empty</a> (const std::filesystem::path &amp;root, const std::filesystem::path &amp;path)</td></tr>
+<tr class="memdesc:aa3f8375d8831a2f605d476cd6b2ef473"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wraps <code><a class="el" href="namespacewmtk_1_1components_1_1utils.html#a1acf8217338a8bcffd00f279a2873791">resolve_path()</a></code> but returns path directly if it is empty.  <a href="namespacewmtk_1_1components_1_1utils.html#aa3f8375d8831a2f605d476cd6b2ef473">More...</a><br /></td></tr>
+<tr class="separator:aa3f8375d8831a2f605d476cd6b2ef473"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -154,7 +161,7 @@ Functions</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_f9bd88f53b0c297f06c5045d55a00b25.html">base</a></li><li class="navelem"><a class="el" href="dir_43502cf5350373f5f36bb843ee9201c3.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_5a41a1c7a8136f0a53030c60d5462b72.html">components</a></li><li class="navelem"><a class="el" href="dir_c6ad7867d8293f63d748973476a4823b.html">base</a></li><li class="navelem"><a class="el" href="resolve__path_8hpp.html">resolve_path.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_141255b66ec4604466b3430e281cf831.html">utils</a></li><li class="navelem"><a class="el" href="dir_3673f076e68f259a60362c4d9e0fd016.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_8b41c41b9efe06ae2e37b7f1c0c216d5.html">components</a></li><li class="navelem"><a class="el" href="dir_f17e2153a65e7166cfb2037e675d5562.html">utils</a></li><li class="navelem"><a class="el" href="resolve__path_8hpp.html">resolve_path.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

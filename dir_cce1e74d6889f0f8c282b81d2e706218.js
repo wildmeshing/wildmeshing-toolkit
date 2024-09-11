@@ -29,6 +29,16 @@ var dir_cce1e74d6889f0f8c282b81d2e706218 =
       [ "AttributesUpdate", "classwmtk_1_1operations_1_1_attributes_update.html", "classwmtk_1_1operations_1_1_attributes_update" ],
       [ "AttributesUpdateWithFunction", "classwmtk_1_1operations_1_1_attributes_update_with_function.html", "classwmtk_1_1operations_1_1_attributes_update_with_function" ]
     ] ],
+    [ "AttributeTransferConfiguration.cpp", "_attribute_transfer_configuration_8cpp.html", [
+      [ "AttributeTransferConfigurationPimpl", "classwmtk_1_1operations_1_1internal_1_1_attribute_transfer_configuration_pimpl.html", "classwmtk_1_1operations_1_1internal_1_1_attribute_transfer_configuration_pimpl" ]
+    ] ],
+    [ "AttributeTransferConfiguration.hpp", "_attribute_transfer_configuration_8hpp.html", [
+      [ "AttributeTransferConfiguration", "classwmtk_1_1operations_1_1_attribute_transfer_configuration.html", "classwmtk_1_1operations_1_1_attribute_transfer_configuration" ]
+    ] ],
+    [ "AttributeTransferEdge.cpp", "_attribute_transfer_edge_8cpp.html", null ],
+    [ "AttributeTransferEdge.hpp", "_attribute_transfer_edge_8hpp.html", [
+      [ "AttributeTransferEdge", "classwmtk_1_1operations_1_1_attribute_transfer_edge.html", "classwmtk_1_1operations_1_1_attribute_transfer_edge" ]
+    ] ],
     [ "EdgeCollapse.cpp", "_edge_collapse_8cpp.html", null ],
     [ "EdgeCollapse.hpp", "_edge_collapse_8hpp.html", [
       [ "EdgeCollapse", "classwmtk_1_1operations_1_1_edge_collapse.html", "classwmtk_1_1operations_1_1_edge_collapse" ]

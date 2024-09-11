@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/procedural/wmtk/components/procedural/internal/GridOptions.cpp Source File</title>
+<title>Wildmeshing Toolkit: components/procedural/wmtk/components/procedural/GridOptions.cpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -116,35 +116,41 @@ $(document).ready(function(){initNavTree('_grid_options_8cpp_source.html',''); i
 </div><!--header-->
 <div class="contents">
 <a href="_grid_options_8cpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="make__mesh_8hpp.html">make_mesh.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_grid_options_8hpp.html">GridOptions.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_grid2_options_8hpp.html">Grid2Options.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_grid3_options_8hpp.html">Grid3Options.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html">wmtk::components::internal::procedural</a> {</div>
-<div class="line"><a name="l00009"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#afc38ded3a4052aa252280a0a73ee9e69">    9</a></span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872">make_mesh</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1components_1_1internal_1_1_grid_options.html">GridOptions</a>&amp; m) {</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;    <span class="keywordflow">return</span> std::visit([](<span class="keyword">const</span> <span class="keyword">auto</span>&amp; o)  -&gt; std::shared_ptr&lt;Mesh&gt;{</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;            <span class="keywordflow">return</span> <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872">make_mesh</a>(o);</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;            },m.<a class="code" href="classwmtk_1_1components_1_1internal_1_1_grid_options.html#af59ab8d5e232c96102ba62cbe4101259">opts</a>);</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;}</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;}</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_8hpp.html">wmtk/Mesh.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_tri_mesh_8hpp.html">wmtk/TriMesh.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_tet_mesh_8hpp.html">wmtk/TetMesh.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_grid_options_8hpp.html">GridOptions.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_grid2_options_8hpp.html">Grid2Options.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_grid3_options_8hpp.html">Grid3Options.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160; </div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components_1_1procedural.html">wmtk::components::procedural</a> {</div>
+<div class="line"><a name="l00012"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1procedural.html#ae65f7700d6eefc4c80f28595d3bbef66">   12</a></span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1procedural.html#ab9c00d6ba2d614ba26750c3c80c6502c">make_mesh</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1components_1_1procedural_1_1_grid_options.html">GridOptions</a>&amp; m) {</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keywordflow">return</span> std::visit([](<span class="keyword">const</span> <span class="keyword">auto</span>&amp; o)  -&gt; std::shared_ptr&lt;Mesh&gt;{</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;            <span class="keywordflow">return</span> std::static_pointer_cast&lt;Mesh&gt;(<a class="code" href="namespacewmtk_1_1components_1_1procedural.html#ab9c00d6ba2d614ba26750c3c80c6502c">make_mesh</a>(o));</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;            },m.<a class="code" href="classwmtk_1_1components_1_1procedural_1_1_grid_options.html#a13dc212b4d22e93f361f499fe0f40513">opts</a>);</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;}</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;}</div>
 <div class="ttc" id="a_grid2_options_8hpp_html"><div class="ttname"><a href="_grid2_options_8hpp.html">Grid2Options.hpp</a></div></div>
 <div class="ttc" id="a_grid3_options_8hpp_html"><div class="ttname"><a href="_grid3_options_8hpp.html">Grid3Options.hpp</a></div></div>
 <div class="ttc" id="a_grid_options_8hpp_html"><div class="ttname"><a href="_grid_options_8hpp.html">GridOptions.hpp</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1components_1_1internal_1_1_grid_options_html"><div class="ttname"><a href="classwmtk_1_1components_1_1internal_1_1_grid_options.html">wmtk::components::internal::GridOptions</a></div><div class="ttdef"><b>Definition:</b> <a href="_grid_options_8hpp_source.html#l00010">GridOptions.hpp:11</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1components_1_1internal_1_1_grid_options_html_af59ab8d5e232c96102ba62cbe4101259"><div class="ttname"><a href="classwmtk_1_1components_1_1internal_1_1_grid_options.html#af59ab8d5e232c96102ba62cbe4101259">wmtk::components::internal::GridOptions::opts</a></div><div class="ttdeci">std::variant&lt; Grid2Options, Grid3Options &gt; opts</div><div class="ttdef"><b>Definition:</b> <a href="_grid_options_8hpp_source.html#l00013">GridOptions.hpp:13</a></div></div>
+<div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
+<div class="ttc" id="a_tet_mesh_8hpp_html"><div class="ttname"><a href="_tet_mesh_8hpp.html">TetMesh.hpp</a></div></div>
+<div class="ttc" id="a_tri_mesh_8hpp_html"><div class="ttname"><a href="_tri_mesh_8hpp.html">TriMesh.hpp</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1components_1_1procedural_1_1_grid_options_html"><div class="ttname"><a href="classwmtk_1_1components_1_1procedural_1_1_grid_options.html">wmtk::components::procedural::GridOptions</a></div><div class="ttdef"><b>Definition:</b> <a href="_grid_options_8hpp_source.html#l00010">GridOptions.hpp:11</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1components_1_1procedural_1_1_grid_options_html_a13dc212b4d22e93f361f499fe0f40513"><div class="ttname"><a href="classwmtk_1_1components_1_1procedural_1_1_grid_options.html#a13dc212b4d22e93f361f499fe0f40513">wmtk::components::procedural::GridOptions::opts</a></div><div class="ttdeci">std::variant&lt; Grid2Options, Grid3Options &gt; opts</div><div class="ttdef"><b>Definition:</b> <a href="_grid_options_8hpp_source.html#l00013">GridOptions.hpp:13</a></div></div>
 <div class="ttc" id="amake__mesh_8hpp_html"><div class="ttname"><a href="make__mesh_8hpp.html">make_mesh.hpp</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_1_1procedural_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal_1_1procedural.html">wmtk::components::internal::procedural</a></div><div class="ttdef"><b>Definition:</b> <a href="_disk_options_8cpp_source.html#l00010">DiskOptions.cpp:10</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_1_1internal_1_1procedural_html_a9f9c7ba8540630226be69470ae8ed872"><div class="ttname"><a href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872">wmtk::components::internal::procedural::make_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; make_mesh(const DiskOptions &amp;opt)</div><div class="ttdef"><b>Definition:</b> <a href="_disk_options_8cpp_source.html#l00011">DiskOptions.cpp:11</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1procedural_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1procedural.html">wmtk::components::procedural</a></div><div class="ttdef"><b>Definition:</b> <a href="_disk_options_8cpp_source.html#l00008">DiskOptions.cpp:8</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1procedural_html_ab9c00d6ba2d614ba26750c3c80c6502c"><div class="ttname"><a href="namespacewmtk_1_1components_1_1procedural.html#ab9c00d6ba2d614ba26750c3c80c6502c">wmtk::components::procedural::make_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; make_mesh(const DiskOptions &amp;opt)</div><div class="ttdef"><b>Definition:</b> <a href="_disk_options_8cpp_source.html#l00010">DiskOptions.cpp:10</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_8b2be0710edb097d46e1a67e80e3ee84.html">procedural</a></li><li class="navelem"><a class="el" href="dir_7664db7018d8c2401641294e38abf8e7.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_5c19f179921ea08a7b6a117596a5b3ff.html">components</a></li><li class="navelem"><a class="el" href="dir_43fe4bce1375f41726c9bdfbb6b52426.html">procedural</a></li><li class="navelem"><a class="el" href="dir_dd168ac3bdb88ef6c35c8b2b6978062a.html">internal</a></li><li class="navelem"><a class="el" href="_grid_options_8cpp.html">GridOptions.cpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_b59c7c9369294562dd241a4f76f533c3.html">procedural</a></li><li class="navelem"><a class="el" href="dir_9912003bb9781ceae3ab656b65953712.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_4d270fffc053c4addb6437249adf8038.html">components</a></li><li class="navelem"><a class="el" href="dir_2db10d7e5b0db126f5ad86e2e604f235.html">procedural</a></li><li class="navelem"><a class="el" href="_grid_options_8cpp.html">GridOptions.cpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

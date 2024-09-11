@@ -125,11 +125,11 @@ $(document).ready(function(){initNavTree('merkle__tree__diff_8cpp_source.html','
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span>{</div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> attribute_detailed_data_diff(</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> attribute_detailed_data_diff(</div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute&lt;T&gt;</a>&amp; a_a,</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute&lt;T&gt;</a>&amp; a_b)</div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;{</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> data;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> data;</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="keywordflow">if</span> (a_a.<a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a505bc996591f0476e092f572515ab9fd">dimension</a>() != a_b.<a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a505bc996591f0476e092f572515ab9fd">dimension</a>()) {</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;        data[<span class="stringliteral">&quot;dimension&quot;</span>] = {a_a.<a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a505bc996591f0476e092f572515ab9fd">dimension</a>(), a_b.<a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a505bc996591f0476e092f572515ab9fd">dimension</a>()};</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;        <span class="keywordflow">return</span> data;</div>
@@ -156,8 +156,8 @@ $(document).ready(function(){initNavTree('merkle__tree__diff_8cpp_source.html','
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="keywordflow">if</span> constexpr (std::is_same_v&lt;T, wmtk::Rational&gt;) {</div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            <span class="comment">// TODO:</span></div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> a_values = write_value(a_a);</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> b_values = write_value(a_b);</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> a_values = write_value(a_a);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> b_values = write_value(a_b);</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;            <span class="keywordflow">if</span> (a_values.size() == 0) {</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;                a_values = {};</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            }</div>
@@ -165,7 +165,7 @@ $(document).ready(function(){initNavTree('merkle__tree__diff_8cpp_source.html','
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;                b_values = {};</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            }</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            <span class="keywordflow">if</span> (a_values != b_values) {</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;                <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; mydat = data[<span class="stringliteral">&quot;values&quot;</span>].emplace_back();</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;                <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; mydat = data[<span class="stringliteral">&quot;values&quot;</span>].emplace_back();</div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                mydat[<span class="stringliteral">&quot;index&quot;</span>] = index;</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                mydat[<span class="stringliteral">&quot;values&quot;</span>] = {a_values, b_values};</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;            }</div>
@@ -174,12 +174,12 @@ $(document).ready(function(){initNavTree('merkle__tree__diff_8cpp_source.html','
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keywordflow">return</span> data;</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;}</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> <a class="code" href="namespacewmtk_1_1utils.html#aa8bd6cb2e566ee2d1badbff8eec034ea">merkle_tree_diff</a>(</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> <a class="code" href="namespacewmtk_1_1utils.html#aa8bd6cb2e566ee2d1badbff8eec034ea">merkle_tree_diff</a>(</div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">const</span> MerkleTreeInteriorNode&amp; a,</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">const</span> MerkleTreeInteriorNode&amp; b,</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keywordtype">bool</span> detailed = <span class="keyword">false</span>)</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;{</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> diff;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> diff;</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keyword">auto</span> a_child_hashables = a.child_hashables();</div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keyword">auto</span> b_child_hashables = b.child_hashables();</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; [name, a_hashable_ptr] : a_child_hashables) {</div>
@@ -197,7 +197,7 @@ $(document).ready(function(){initNavTree('merkle__tree__diff_8cpp_source.html','
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;} <span class="comment">// namespace</span></div>
 <div class="line"><a name="l00081"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1utils.html#aa8bd6cb2e566ee2d1badbff8eec034ea">   81</a></span>&#160;std::optional&lt;nlohmann::json&gt; <a class="code" href="namespacewmtk_1_1utils.html#aa8bd6cb2e566ee2d1badbff8eec034ea">merkle_tree_diff</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a>&amp; a, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a>&amp; b, <span class="keywordtype">bool</span> detailed)</div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;{</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> diff;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> diff;</div>
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keywordflow">if</span> (a.<a class="code" href="classwmtk_1_1utils_1_1_hashable.html#a842b5754b2d7aca0fe6e4fb3c98a3644">hash</a>() == b.<a class="code" href="classwmtk_1_1utils_1_1_hashable.html#a842b5754b2d7aca0fe6e4fb3c98a3644">hash</a>()) {</div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <span class="keywordflow">return</span> {};</div>
@@ -206,8 +206,8 @@ $(document).ready(function(){initNavTree('merkle__tree__diff_8cpp_source.html','
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keyword">auto</span> b_child_hashes = b.<a class="code" href="classwmtk_1_1utils_1_1_hashable.html#a738505bfc4f011179fc2c93b2ff11f1f">child_hashes</a>();</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="comment">// temporaries to store the left/right of something</span></div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> a_value;</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> b_value;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> a_value;</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> b_value;</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; [name, a_hash] : a_child_hashes) {</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        a_value = a_hash;</div>
 <div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        <span class="keywordflow">if</span> (b_child_hashes.find(name) != b_child_hashes.end()) {</div>
@@ -217,12 +217,12 @@ $(document).ready(function(){initNavTree('merkle__tree__diff_8cpp_source.html','
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            }</div>
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            b_value = b_hash;</div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            b_value = <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>();</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            b_value = <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>();</div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        }</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        diff[name] = nlohmann::json::array({a_value, b_value});</div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    }</div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    a_value = <a class="code" href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>();</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    a_value = <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>();</div>
 <div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; [name, <a class="code" href="classwmtk_1_1hash.html">hash</a>] : b_child_hashes) {</div>
 <div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        b_value = <a class="code" href="classwmtk_1_1hash.html">hash</a>;</div>
 <div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        <span class="keywordflow">if</span> (b_child_hashes.find(name) != b_child_hashes.end()) {</div>
@@ -297,10 +297,10 @@ $(document).ready(function(){initNavTree('merkle__tree__diff_8cpp_source.html','
 <div class="ttc" id="aclasswmtk_1_1utils_1_1_hashable_html_a738505bfc4f011179fc2c93b2ff11f1f"><div class="ttname"><a href="classwmtk_1_1utils_1_1_hashable.html#a738505bfc4f011179fc2c93b2ff11f1f">wmtk::utils::Hashable::child_hashes</a></div><div class="ttdeci">virtual std::map&lt; std::string, size_t &gt; child_hashes() const</div><div class="ttdef"><b>Definition:</b> <a href="_hashable_8cpp_source.html#l00032">Hashable.cpp:32</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1utils_1_1_hashable_html_a842b5754b2d7aca0fe6e4fb3c98a3644"><div class="ttname"><a href="classwmtk_1_1utils_1_1_hashable.html#a842b5754b2d7aca0fe6e4fb3c98a3644">wmtk::utils::Hashable::hash</a></div><div class="ttdeci">virtual std::size_t hash() const</div><div class="ttdef"><b>Definition:</b> <a href="_hashable_8cpp_source.html#l00015">Hashable.cpp:15</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1utils_1_1_merkle_tree_interior_node_html"><div class="ttname"><a href="classwmtk_1_1utils_1_1_merkle_tree_interior_node.html">wmtk::utils::MerkleTreeInteriorNode</a></div><div class="ttdef"><b>Definition:</b> <a href="_merkle_tree_interior_node_8hpp_source.html#l00006">MerkleTreeInteriorNode.hpp:7</a></div></div>
-<div class="ttc" id="aintegration__test_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="integration__test_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="integration__test_8cpp_source.html#l00016">integration_test.cpp:16</a></div></div>
 <div class="ttc" id="amerkle__tree__diff_8hpp_html"><div class="ttname"><a href="merkle__tree__diff_8hpp.html">merkle_tree_diff.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1utils_html"><div class="ttname"><a href="namespacewmtk_1_1utils.html">wmtk::utils</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00022">Tuple.hpp:22</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1utils_html_aa8bd6cb2e566ee2d1badbff8eec034ea"><div class="ttname"><a href="namespacewmtk_1_1utils.html#aa8bd6cb2e566ee2d1badbff8eec034ea">wmtk::utils::merkle_tree_diff</a></div><div class="ttdeci">std::optional&lt; nlohmann::json &gt; merkle_tree_diff(const Hashable &amp;a, const Hashable &amp;b, bool detailed)</div><div class="ttdef"><b>Definition:</b> <a href="merkle__tree__diff_8cpp_source.html#l00081">merkle_tree_diff.cpp:81</a></div></div>
+<div class="ttc" id="atests_2input_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="tests_2input_8cpp_source.html#l00008">input.cpp:8</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->
