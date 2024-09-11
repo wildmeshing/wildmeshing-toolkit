@@ -1,3 +1,5 @@
+#pragma once
+
 #include "winding_number.hpp"
 
 #include <wmtk/EdgeMesh.hpp>
@@ -14,34 +16,33 @@
 
 namespace wmtk::components {
 
-void winding_number(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+std::shared_ptr<Mesh> winding_number(
+    const std::shared_ptr<Mesh>& query_mesh_ptr,
+    const std::shard_ptr<Mesh>& surface_ptr)
 {
     using namespace internal;
 
-    WindingNumberOptions options = j.get<WindingNumberOptions>();
-
-    // read meshes
-    std::shared_ptr<Mesh> mesh = cache.read_mesh(options.input);
-    std::shared_ptr<Mesh> surface_ptr = cache.read_mesh(options.filtering_base);
     TriMesh& surface_mesh = static_cast<TriMesh&>(*surface_ptr);
 
     // compute winding number
-    auto winding_numbers = winding_number(*mesh, surface_mesh);
+    auto winding_numbers = winding_number(*query_mesh_ptr, surface_mesh);
 
     wmtk::logger().info("winding number computed!");
 
     // register winding number to tets
-    auto winding_number_handle =
-        mesh->register_attribute<double>("winding_number", mesh->top_simplex_type(), 1);
-    auto winding_number_accessor = mesh->create_accessor<double>(winding_number_handle);
+    auto winding_number_handle = query_mesh_ptr->register_attribute<double>(
+        "winding_number",
+        query_mesh_ptr->top_simplex_type(),
+        1);
+    auto winding_number_accessor = query_mesh_ptr->create_accessor<double>(winding_number_handle);
 
-    const auto& top_simplex_tuples = mesh->get_all(mesh->top_simplex_type());
+    const auto& top_simplex_tuples = query_mesh_ptr->get_all(query_mesh_ptr->top_simplex_type());
 
     for (int64_t i = 0; i < top_simplex_tuples.size(); ++i) {
         winding_number_accessor.scalar_attribute(top_simplex_tuples[i]) = winding_numbers[i];
     }
 
-    cache.write_mesh(*mesh, options.output);
+    return query_mesh_ptr;
 
     // get the matrix
     // wmtk::utils::EigenMatrixWriter writer;
