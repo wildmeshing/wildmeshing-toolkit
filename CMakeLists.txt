@@ -62,8 +62,9 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/recipes/")
 
-include(sanitizers)
 include(wmtk_cpm_cache)
+include(CPM)
+include(sanitizers)
 include(wmtk_colors)
 include(wmtk_warnings)
 include(wmtk_copy_dll)
@@ -158,11 +159,12 @@ endif()
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     # Unit tests
     enable_testing()
+    # data for unit tests
+    set(WMTK_DATA_ROOT "${CPM_SOURCE_CACHE}/wmtk_data/" CACHE PATH "Where should the toolkit download and look for test data?")
 endif()
 
 
 add_subdirectory(components)
-
 
 # ###############################################################################
 # Subdirectories
@@ -192,36 +194,8 @@ if(WMTK_BUILD_DOCS)
     endif(DOXYGEN_FOUND)
 endif()
 
-
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     add_subdirectory(tests)
-
-
-    add_executable(wmtk_app main.cpp)
-    target_compile_features(wmtk_app PUBLIC cxx_std_17)
-
-    # ###############################################################################
-    # WMTK JSON APP
-    # ###############################################################################
-    target_compile_options(wmtk_app PRIVATE "-rdynamic")
-    target_link_libraries(wmtk_app PUBLIC
-        wmtk::components
-        CLI11::CLI11
-    )
-
-
-    if(MSVC)
-        target_compile_options(wmtk_app PUBLIC /MP)
-        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/GL>)
-        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ob2>) # inline whenever suitable
-        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ot>) # favor faster code over binary size
-        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/LTCG>)
-        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/INCREMENTAL:NO>)
-        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELEASE>:/GL>)
-        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELEASE>:/Ot>)
-        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELEASE>:/LTCG>)
-        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELEASE>:/INCREMENTAL:NO>)
-    endif()
-
+    add_subdirectory(applications)
 endif()

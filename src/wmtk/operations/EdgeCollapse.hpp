@@ -13,13 +13,14 @@ public:
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 
 
-    std::shared_ptr<operations::BaseCollapseNewAttributeStrategy> get_new_attribute_strategy(
+    std::shared_ptr<const operations::BaseCollapseNewAttributeStrategy> get_new_attribute_strategy(
         const attribute::MeshAttributeHandle& attribute) const;
 
     void set_new_attribute_strategy(
         const attribute::MeshAttributeHandle& attribute,
-        const std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>& other);
+        const std::shared_ptr<const operations::BaseCollapseNewAttributeStrategy>& other);
 
+    void clear_attribute_new_strategies();
 
     void set_new_attribute_strategy(
         const attribute::MeshAttributeHandle& attribute,
@@ -36,7 +37,7 @@ public:
         const std::vector<simplex::Simplex>& mods) const final override;
 
 private:
-    std::vector<std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>>
+    std::vector<std::shared_ptr<const operations::BaseCollapseNewAttributeStrategy>>
         m_new_attr_strategies;
 };
 

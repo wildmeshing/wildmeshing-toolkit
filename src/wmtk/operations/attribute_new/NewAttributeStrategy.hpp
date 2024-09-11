@@ -2,6 +2,7 @@
 #include <functional>
 #include <wmtk/PrimitiveType.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/operations/AttributeTransferEdge.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
@@ -17,7 +18,7 @@ namespace wmtk::operations {
 
 enum class BasicSimplexPredicate { Default, IsInterior, None };
 
-class NewAttributeStrategy
+class NewAttributeStrategy : public AttributeTransferEdge
 {
 public:
     using SimplexPredicateType = std::function<bool(const simplex::Simplex&)>;
@@ -35,7 +36,10 @@ public:
     void set_simplex_predicate(SimplexPredicateType&& f);
     void set_simplex_predicate(BasicSimplexPredicate f);
 
-    std::bitset<2> evaluate_predicate(PrimitiveType pt, const std::array<Tuple, 2>& simplices);
+    std::bitset<2> evaluate_predicate(PrimitiveType pt, const std::array<Tuple, 2>& simplices)
+        const;
+
+    std::vector<wmtk::attribute::MeshAttributeHandle> sources() const final override { return {}; }
 
 protected:
 private:

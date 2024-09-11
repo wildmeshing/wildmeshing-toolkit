@@ -34,14 +34,14 @@ using CollapseReturnData = wmtk::multimesh::operations::CollapseReturnData;
 CollapseReturnData multi_mesh_edge_collapse(
     Mesh& mesh,
     const Tuple& t,
-    const std::vector<std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>>&
+    const std::vector<std::shared_ptr<const operations::BaseCollapseNewAttributeStrategy>>&
         new_attr_strategies);
 
 
 std::vector<simplex::Simplex> multi_mesh_edge_collapse_with_modified_simplices(
     Mesh& mesh,
     const simplex::Simplex& simplex,
-    const std::vector<std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>>&
+    const std::vector<std::shared_ptr<const operations::BaseCollapseNewAttributeStrategy>>&
         new_attr_strategies);
 
 } // namespace operations::utils
