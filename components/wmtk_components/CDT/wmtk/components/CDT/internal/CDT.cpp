@@ -21,47 +21,49 @@ void convert_trimesh_to_input_plc(const TriMesh& trimesh, cdt::inputPLC& plc)
     auto [V, nvert] = vdat;
     auto [F, ntri] = fdat;
 
-    std::cout << "here 1" << std::endl;
-
-
-    std::cout << "here 2" << std::endl;
-
-
-    std::cout << "here 3" << std::endl;
-
     plc.initFromVectors(V.data(), V.size(), F.data(), ntri, true);
-
-    std::cout << "here 4" << std::endl;
-
-
-    std::cout << "here 5" << std::endl;
 }
 
 cdt::TetMesh* createSteinerCDT(cdt::inputPLC& plc, bool bbox, bool snap)
 {
+    std::cout << "here 1" << std::endl;
     if (bbox) {
         plc.addBoundingBoxVertices();
     }
 
+    std::cout << "here 2" << std::endl;
+
     cdt::TetMesh* tin = new cdt::TetMesh;
     tin->init_vertices(plc.coordinates.data(), plc.numVertices());
+
+    std::cout << "here 2.5" << std::endl;
     tin->tetrahedrize();
+
+    std::cout << "here 3" << std::endl;
 
     // copied from cdt/main.cpp
     // Build a structured PLC linked to the Delaunay tetrahedrization
     cdt::PLCx Steiner_plc(*tin, plc.triangle_vertices.data(), plc.numTriangles());
 
+    std::cout << "here 4" << std::endl;
+
     // Recover segments by inserting Steiner points in both the PLC and the
     // tetrahedrization
     Steiner_plc.segmentRecovery_HSi(true);
 
+    std::cout << "here 5" << std::endl;
+
     // Recover PLC faces by locally remeshing the tetrahedrization
     bool sisMethodWorks = Steiner_plc.faceRecovery(true);
+
+    std::cout << "here 6" << std::endl;
 
     // Mark the tets which are bounded by the PLC.
     // If the PLC is not a valid polyhedron (i.e. it has odd-valency edges)
     // all the tets but the ghosts are marked as "internal".
     uint32_t num_inner_tets = (uint32_t)Steiner_plc.markInnerTets();
+
+    std::cout << "here 7" << std::endl;
 
     // try to round to floating points
     // should be false if use for rational insertion
@@ -70,6 +72,8 @@ cdt::TetMesh* createSteinerCDT(cdt::inputPLC& plc, bool bbox, bool snap)
             wmtk::logger().error("Could not force FP representability.");
         }
     }
+
+    std::cout << "here 8" << std::endl;
 
     return tin;
 }
