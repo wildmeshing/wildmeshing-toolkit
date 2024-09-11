@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fmt/ranges.h>
 #include <spdlog/spdlog.h>
 #include <array>
 #include <bitset>

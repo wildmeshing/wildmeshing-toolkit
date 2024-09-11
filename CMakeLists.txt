@@ -79,6 +79,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # ###############################################################################
 
 # Dependencies
+include(fmt)
 include(paraviewo)
 include(spdlog)
 include(gmp)
@@ -109,7 +110,7 @@ target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
 target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
 
 # C++ standard
-target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
+target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_20)
 
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
@@ -147,6 +148,7 @@ endif()
 
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
+    fmt::fmt
     spdlog::spdlog
     paraviewo::paraviewo
     gmp::gmp

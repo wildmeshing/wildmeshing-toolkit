@@ -6,6 +6,7 @@
 #if defined(__GNUG__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
+#include <fmt/format.h>
 #include "HDF5Writer.hpp"
 
 #include <wmtk/utils/Rational.hpp>
