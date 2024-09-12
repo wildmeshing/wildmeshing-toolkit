@@ -17,12 +17,16 @@ if(TARGET spdlog::spdlog)
 endif()
 
 include(fmt)
+# the toolkit requires this setting now, ideally we could make this more optional, but it requires more care in making deps private
+set(SPDLOG_FMT_EXTERNAL CACHE BOOL "Use external fmt library instead of bundled; this is forced by wmtk" ON)
+
+# option(SPDLOG_FMT_EXTERNAL "Use external fmt library instead of bundled" ON)
 
 message(STATUS "Third-party (external): creating target 'spdlog::spdlog'")
 
 option(SPDLOG_INSTALL "Generate the install target" ON)
-option(SPDLOG_FMT_EXTERNAL "Use external fmt library instead of bundled" ON)
-#option(SPDLOG_FMT_EXTERNAL_HO "Use external fmt header-only library instead of bundled" ON)
+
+
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME "spdlog")
 
 include(CPM)
