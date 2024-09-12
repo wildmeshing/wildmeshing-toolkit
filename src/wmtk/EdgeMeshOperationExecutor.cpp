@@ -1,25 +1,16 @@
 
 #include "EdgeMeshOperationExecutor.hpp"
+#include <wmtk/operations/internal/SplitAlternateFacetData.hpp>
 
 namespace wmtk {
 // constructor
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
-    EdgeMesh& m,
-    const Tuple& operating_tuple,
-    attribute::Accessor<int64_t>& hash_acc)
-#else
 EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
     EdgeMesh& m,
     const Tuple& operating_tuple)
-#endif
     : flag_accessors{{m.get_flag_accessor(PrimitiveType::Vertex), m.get_flag_accessor(PrimitiveType::Edge)}}
     , ee_accessor(m.create_accessor<int64_t>(m.m_ee_handle))
     , ev_accessor(m.create_accessor<int64_t>(m.m_ev_handle))
     , ve_accessor(m.create_accessor<int64_t>(m.m_ve_handle))
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    , hash_accessor(hash_acc)
-#endif
     , m_mesh(m)
 {
     m_operating_tuple = operating_tuple;
@@ -30,20 +21,11 @@ EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
     m_spine_vids[1] = m_mesh.id_vertex(operating_tuple_switch_vertex);
 
     // update hash on neighborhood
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    cell_ids_to_update_hash.emplace_back(m_mesh.id_edge(m_operating_tuple));
-#endif
     if (!m_mesh.is_boundary_vertex(m_operating_tuple)) {
         m_neighbor_eids[0] = m_mesh.id_edge(m_mesh.switch_edge(m_operating_tuple));
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-        cell_ids_to_update_hash.emplace_back(m_neighbor_eids[0]);
-#endif
     }
     if (!m_mesh.is_boundary_vertex(operating_tuple_switch_vertex)) {
         m_neighbor_eids[1] = m_mesh.id_edge(m_mesh.switch_edge(operating_tuple_switch_vertex));
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-        cell_ids_to_update_hash.emplace_back(m_neighbor_eids[1]);
-#endif
     }
 
 
@@ -61,13 +43,7 @@ void EdgeMesh::EdgeMeshOperationExecutor::delete_simplices()
     }
 }
 
-void EdgeMesh::EdgeMeshOperationExecutor::update_cell_hash()
-{
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-
-    m_mesh.update_cell_hashes(cell_ids_to_update_hash, hash_accessor);
-#endif
-}
+void EdgeMesh::EdgeMeshOperationExecutor::update_cell_hash() {}
 
 const std::array<std::vector<int64_t>, 2>
 EdgeMesh::EdgeMeshOperationExecutor::get_split_simplices_to_delete(
@@ -96,6 +72,7 @@ EdgeMesh::EdgeMeshOperationExecutor::get_collapse_simplices_to_delete(
 
 void EdgeMesh::EdgeMeshOperationExecutor::split_edge()
 {
+    set_split();
     m_output_tuple = split_edge_single_mesh();
     // TODO: Implement for multi_mesh in the future
 }
@@ -103,6 +80,11 @@ void EdgeMesh::EdgeMeshOperationExecutor::split_edge()
 Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
 {
     simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
+
+    // create new edges (facets)
+    // m_split_e[i] is connect to m_neighbor_eids[i] and m_spine_vids[i]
+    const auto& data = split_facet_data().add_facet(m_mesh, m_operating_tuple);
+    m_split_e = data.new_facet_indices;
 
     if (m_mesh.is_free()) {
         const std::vector<int64_t> new_vids =
@@ -119,24 +101,19 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
         const int64_t v_new = new_vids[0];
         m_split_v = v_new;
     }
-    // create new edges
-    // new_eids[i] is connect to m_neighbor_eids[i] and m_spine_vids[i]
-    const std::vector<int64_t> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
-    assert(new_eids.size() == 2);
-    std::copy(new_eids.begin(), new_eids.end(), m_split_e.begin());
     const int64_t local_vid = m_mesh.is_ccw(m_operating_tuple) ? 0 : 1;
 
     // update ee
     if (m_mesh.is_free()) {
     } else {
         // for 2 new edges
-        auto ee_new_0 = ee_accessor.index_access().vector_attribute(new_eids[0]);
-        auto ee_new_1 = ee_accessor.index_access().vector_attribute(new_eids[1]);
-        ee_new_0[local_vid ^ 1] = new_eids[1];
-        ee_new_1[local_vid] = new_eids[0];
+        auto ee_new_0 = ee_accessor.index_access().vector_attribute(m_split_e[0]);
+        auto ee_new_1 = ee_accessor.index_access().vector_attribute(m_split_e[1]);
+        ee_new_0[local_vid ^ 1] = m_split_e[1];
+        ee_new_1[local_vid] = m_split_e[0];
         if (m_is_self_loop) {
-            ee_new_0[local_vid] = new_eids[1];
-            ee_new_1[local_vid ^ 1] = new_eids[0];
+            ee_new_0[local_vid] = m_split_e[1];
+            ee_new_1[local_vid ^ 1] = m_split_e[0];
         } else {
             ee_new_0[local_vid] = m_neighbor_eids[0];
             ee_new_1[local_vid ^ 1] = m_neighbor_eids[1];
@@ -150,7 +127,7 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
                     for (int64_t j = 0; j < 2; j++) {
                         if (ee_neighbor[j] == m_operating_edge_id &&
                             ev_neighbor[j] == m_spine_vids[i]) {
-                            ee_neighbor[j] = new_eids[i];
+                            ee_neighbor[j] = m_split_e[i];
                             break;
                         }
                     }
@@ -162,8 +139,8 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
     // update ev
     {
         // for new edges
-        auto ev_new_0 = ev_accessor.index_access().vector_attribute(new_eids[0]);
-        auto ev_new_1 = ev_accessor.index_access().vector_attribute(new_eids[1]);
+        auto ev_new_0 = ev_accessor.index_access().vector_attribute(m_split_e[0]);
+        auto ev_new_1 = ev_accessor.index_access().vector_attribute(m_split_e[1]);
         ev_new_0[local_vid] = m_spine_vids[0];
         if (m_mesh.is_free()) {
             ev_new_0[local_vid ^ 1] = m_free_split_v[0];
@@ -179,28 +156,28 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
     {
         // for new vertex
         if (m_mesh.is_free()) {
-            ve_accessor.index_access().scalar_attribute(m_free_split_v[0]) = new_eids[0];
-            ve_accessor.index_access().scalar_attribute(m_free_split_v[1]) = new_eids[1];
+            ve_accessor.index_access().scalar_attribute(m_free_split_v[0]) = m_split_e[0];
+            ve_accessor.index_access().scalar_attribute(m_free_split_v[1]) = m_split_e[1];
         } else {
-            ve_accessor.index_access().scalar_attribute(m_split_v) = new_eids[0];
+            ve_accessor.index_access().scalar_attribute(m_split_v) = m_split_e[0];
         }
 
         // for spine vertices
-        ve_accessor.index_access().scalar_attribute(m_spine_vids[0]) = new_eids[0];
-        ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) = new_eids[1];
+        ve_accessor.index_access().scalar_attribute(m_spine_vids[0]) = m_split_e[0];
+        ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) = m_split_e[1];
     }
     update_cell_hash();
     delete_simplices();
 
     // prepare return Tuple
-    auto ret_edge = m_mesh.edge_tuple_from_id(new_eids[1]);
+    auto ret_edge = m_mesh.edge_tuple_from_id(m_split_e[1]);
 
     // if the mesh is free we don't care about which edge is returned
     if (!m_mesh.is_free()) {
         if (m_mesh.id_vertex(ret_edge) != m_split_v) {
             ret_edge = m_mesh.switch_vertex(ret_edge);
 
-            assert(m_mesh.id_edge(ret_edge) == new_eids[1]);
+            assert(m_mesh.id_edge(ret_edge) == m_split_e[1]);
             assert(m_mesh.id_vertex(ret_edge) == m_split_v);
             assert(m_mesh.id_vertex(m_mesh.switch_vertex(ret_edge)) == m_spine_vids[1]);
         }
@@ -216,6 +193,7 @@ void EdgeMesh::EdgeMeshOperationExecutor::update_hash_in_map(EdgeMesh& child_mes
 
 void EdgeMesh::EdgeMeshOperationExecutor::collapse_edge()
 {
+    set_collapse();
     m_output_tuple = collapse_edge_single_mesh();
     // TODO: Implement for multi_mesh in the future
 }
@@ -227,7 +205,8 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
         simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
         update_cell_hash();
         delete_simplices();
-        return Tuple();;
+        return Tuple();
+        ;
     }
     // check if the collapse is valid
     if (m_is_self_loop || (m_mesh.is_boundary_vertex(m_operating_tuple) &&

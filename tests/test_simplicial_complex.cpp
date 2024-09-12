@@ -138,8 +138,7 @@ TEST_CASE("link-case1", "[simplicial_complex][link][2D]")
     m.initialize(F);
 
     // get the tuple point to V(0), E(01), F(013)
-    int64_t hash = 0;
-    Tuple t(0, 2, -1, 1, hash);
+    Tuple t(0, 2, -1, 1);
 
     // make sure this is the right tuple
     REQUIRE(m.id(t, PF) == 1);
@@ -177,8 +176,7 @@ TEST_CASE("link-case2", "[simplicial_complex][link][2D]")
     m = tests::three_neighbors();
 
     // get the tuple point to V(0), E(01), F(012)
-    int64_t hash = 0;
-    Tuple t(0, 2, -1, 1, hash);
+    Tuple t(0, 2, -1, 1);
     // make sure this is the right tuple
     REQUIRE(m.id(t, PF) == 1);
     REQUIRE(m.id(t, PV) == 0);
@@ -242,8 +240,7 @@ TEST_CASE("k-ring", "[simplicial_complex][k-ring][2D]")
     m = tests::three_neighbors();
 
     // get the tuple point to V(3)
-    int64_t hash = 0;
-    Tuple t(1, 0, -1, 0, hash);
+    Tuple t(1, 0, -1, 0);
     Simplex s = Simplex::vertex(m, t);
     REQUIRE(m.id(t, PV) == 3);
     // Old code
@@ -268,7 +265,7 @@ TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
     std::vector<Simplex> ring0;
     SECTION("interior")
     {
-        t = m.edge_tuple_between_v1_v2(4, 5, 2);
+        t = m.edge_tuple_with_vs_and_t(4, 5, 2);
         auto sc = link(static_cast<Mesh&>(m), Simplex::vertex(m, t));
         ring0 = sc.simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 6);
@@ -276,7 +273,7 @@ TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
     }
     SECTION("on_boundary_cw")
     {
-        t = m.edge_tuple_between_v1_v2(0, 1, 1);
+        t = m.edge_tuple_with_vs_and_t(0, 1, 1);
         auto sc = link(static_cast<Mesh&>(m), Simplex::vertex(m, t));
         ring0 = sc.simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 3);
@@ -284,7 +281,7 @@ TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
     }
     SECTION("on_boundary_ccw")
     {
-        t = m.edge_tuple_between_v1_v2(0, 3, 0);
+        t = m.edge_tuple_with_vs_and_t(0, 3, 0);
         auto sc = link(static_cast<Mesh&>(m), Simplex::vertex(m, t));
         ring0 = sc.simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 3);
@@ -292,14 +289,14 @@ TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
     }
     SECTION("single_boundary_triangle_cw")
     {
-        t = m.edge_tuple_between_v1_v2(6, 5, 4);
+        t = m.edge_tuple_with_vs_and_t(6, 5, 4);
         ring0 = link(static_cast<Mesh&>(m), Simplex::vertex(m, t))
                     .simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 2);
     }
     SECTION("single_boundary_triangle_ccw")
     {
-        t = m.edge_tuple_between_v1_v2(6, 2, 4);
+        t = m.edge_tuple_with_vs_and_t(6, 2, 4);
         ring0 = link(static_cast<Mesh&>(m), Simplex::vertex(m, t))
                     .simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 2);
@@ -315,8 +312,7 @@ TEST_CASE("open_star", "[simplicial_complex][star][2D]")
     m = tests::three_neighbors();
 
     // get the tuple point to V(0), E(01), F(012)
-    int64_t hash = 0;
-    Tuple t(0, 2, -1, 1, hash);
+    Tuple t(0, 2, -1, 1);
 
 
     auto sc_v = open_star(m, Simplex(m, PV, t)).simplex_vector();
@@ -353,8 +349,7 @@ TEST_CASE("closed_star", "[simplicial_complex][star][2D]")
     m = tests::three_neighbors();
 
     // get the tuple point to V(0), E(01), F(012)
-    int64_t hash = 0;
-    Tuple t(0, 2, -1, 1, hash);
+    Tuple t(0, 2, -1, 1);
     REQUIRE(m.id(t, PV) == 0);
     REQUIRE(m.id(m.switch_tuple(t, PV), PV) == 1);
     REQUIRE(m.id(m.switch_tuple(m.switch_tuple(t, PE), PV), PV) == 2);
@@ -376,7 +371,7 @@ TEST_CASE("open_star_3d", "[simplicial_complex][open_star][3D]")
     tests_3d::DEBUG_TetMesh m;
     m = tests_3d::single_tet();
 
-    const Tuple t = m.edge_tuple_between_v1_v2(1, 2, 0);
+    const Tuple t = m.edge_tuple_with_vs_and_t(1, 2, 0);
 
     SimplexCollection sc_v = open_star(m, Simplex(m, PV, t));
     CHECK(sc_v.simplex_vector(PV).size() == 1);

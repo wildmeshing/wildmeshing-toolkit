@@ -1,4 +1,8 @@
 #pragma once
+#if defined(MTAO_DEBUG_MESH_COMP)
+#include <spdlog/spdlog.h>
+#endif
+//
 #include <wmtk/utils/Rational.hpp>
 //
 #include "TypedAttributeHandle.hpp"
@@ -72,6 +76,19 @@ public:
 
     bool operator==(const MeshAttributeHandle& o) const
     {
+#if defined(MTAO_DEBUG_MESH_COMP)
+        std::visit(
+            [&](const auto& h, const auto& oh) {
+                spdlog::warn(
+                    "{} {} == {} {}",
+                    std::string(h),
+                    fmt::ptr(m_mesh),
+                    std::string(oh),
+                    fmt::ptr(m_mesh));
+            },
+            m_handle,
+            o.m_handle);
+#endif
         return m_handle == o.m_handle && m_mesh == o.m_mesh;
     }
 
@@ -90,7 +107,7 @@ public:
 
 
     template <typename T>
-    auto as() const -> const held_handle_type<held_type_from_primitive<T>()>& ;
+    auto as() const -> const held_handle_type<held_type_from_primitive<T>()>&;
 
     template <HeldType Type>
     auto as_from_held_type() const -> const held_handle_type<Type>&;
@@ -142,7 +159,8 @@ private:
 };
 
 template <typename T>
-inline auto MeshAttributeHandle::as() const -> const held_handle_type<held_type_from_primitive<T>()>& 
+inline auto MeshAttributeHandle::as() const
+    -> const held_handle_type<held_type_from_primitive<T>()>&
 {
     return as_from_held_type<held_type_from_primitive<T>()>();
 }
@@ -182,8 +200,7 @@ inline bool MeshAttributeHandle::holds_basic_type() const
         m_handle);
 }
 template <MeshAttributeHandle::HeldType Type>
-inline auto MeshAttributeHandle::as_from_held_type() const
-    -> const held_handle_type<Type>& 
+inline auto MeshAttributeHandle::as_from_held_type() const -> const held_handle_type<Type>&
 {
     return std::get<held_handle_type<Type>>(m_handle);
 }

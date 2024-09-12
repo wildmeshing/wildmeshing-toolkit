@@ -17,11 +17,7 @@ class AccessorBase;
 
 template <typename T>
 class PerThreadAttributeScopeStacks;
-template <typename T>
-class AttributeScopeStack;
 namespace internal {
-template <typename T>
-class AttributeMapCache;
 template <typename T>
 class AttributeTransactionStack;
 } // namespace internal
@@ -48,7 +44,6 @@ public:
 
     template <typename U, int D>
     friend class AccessorBase;
-    friend class internal::AttributeMapCache<T>;
     friend class internal::AttributeTransactionStack<T>;
     void serialize(const std::string& name, const int dim, MeshWriter& writer) const;
 
@@ -108,13 +103,8 @@ public:
     void pop_scope(bool apply_updates);
     void rollback_current_scope();
 
-#if defined(WMTK_ENABLE_TRANSACTION_STACK)
     const internal::AttributeTransactionStack<T>& get_local_scope_stack() const;
     internal::AttributeTransactionStack<T>& get_local_scope_stack();
-#else
-    const AttributeScopeStack<T>& get_local_scope_stack() const;
-    AttributeScopeStack<T>& get_local_scope_stack();
-#endif
 
     /**
      * @brief Consolidate the vector, using the new2old map m provided and resizing the vector to
@@ -345,7 +335,6 @@ inline const T& Attribute<T>::default_value() const
     return m_default_value;
 }
 
-#if defined(WMTK_ENABLE_TRANSACTION_STACK)
 template <typename T>
 inline const internal::AttributeTransactionStack<T>& Attribute<T>::get_local_scope_stack() const
 {
@@ -356,18 +345,6 @@ inline internal::AttributeTransactionStack<T>& Attribute<T>::get_local_scope_sta
 {
     return m_scope_stacks.local();
 }
-#else
-template <typename T>
-inline const AttributeScopeStack<T>& Attribute<T>::get_local_scope_stack() const
-{
-    return m_scope_stacks.local();
-}
-template <typename T>
-inline AttributeScopeStack<T>& Attribute<T>::get_local_scope_stack()
-{
-    return m_scope_stacks.local();
-}
-#endif
 
 template <typename T>
 inline void Attribute<T>::push_scope()

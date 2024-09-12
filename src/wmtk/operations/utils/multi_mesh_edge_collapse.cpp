@@ -22,7 +22,7 @@ std::shared_ptr<invariants::InvariantCollection> multimesh_edge_collapse_invaria
 CollapseReturnData multi_mesh_edge_collapse(
     Mesh& mesh,
     const Tuple& t,
-    const std::vector<std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>>&
+    const std::vector<std::shared_ptr<const operations::BaseCollapseNewAttributeStrategy>>&
         new_attr_strategies)
 {
     multimesh::MultiMeshSimplexVisitor visitor(
@@ -33,14 +33,16 @@ CollapseReturnData multi_mesh_edge_collapse(
     multimesh::MultiMeshSimplexEventVisitor event_visitor(visitor);
     event_visitor.run_on_nodes(UpdateEdgeOperationMultiMeshMapFunctor{});
 
-    auto cache = visitor.cache();
+    auto cache = visitor.take_cache();
 
     auto tuples = wmtk::multimesh::operations::extract_operation_tuples(cache);
     auto update_attributes = [&](auto&& m) {
         using T = std::remove_reference_t<decltype(m)>;
         if constexpr (!std::is_const_v<T>) {
             for (const auto& collapse_ptr : new_attr_strategies) {
-                collapse_ptr->update(cache, tuples);
+                if (&m == &collapse_ptr->mesh()) {
+                    collapse_ptr->update(m, cache, tuples);
+                }
             }
         }
     };
@@ -52,7 +54,7 @@ CollapseReturnData multi_mesh_edge_collapse(
 std::vector<simplex::Simplex> multi_mesh_edge_collapse_with_modified_simplices(
     Mesh& mesh,
     const simplex::Simplex& simplex,
-    const std::vector<std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>>&
+    const std::vector<std::shared_ptr<const operations::BaseCollapseNewAttributeStrategy>>&
         new_attr_strategies)
 {
     auto return_data =

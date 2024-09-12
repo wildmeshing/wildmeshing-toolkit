@@ -235,7 +235,7 @@ TEST_CASE("attribute_after_split", "[io][.]")
             m.create_accessor<int64_t>(attribute_handle);
         wmtk::attribute::Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
 
-        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 0);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(0, 1, 0);
 
         Eigen::Vector3d p_mid;
         {

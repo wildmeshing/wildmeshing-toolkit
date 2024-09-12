@@ -106,10 +106,15 @@ protected:
     /// variant of id that can cache internally held values
     int64_t id(const simplex::Simplex& s) const final override
     {
+
+#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
         if (s.m_index == -1) {
             s.m_index = id(s.tuple(), s.primitive_type());
         }
         return s.m_index;
+#else
+        return id(s.tuple(),s.primitive_type());
+#endif
     }
 
 

@@ -52,16 +52,18 @@ public:
         m_priority = func;
     }
 
-    std::shared_ptr<operations::AttributeTransferStrategyBase> get_transfer_strategy(
+    std::shared_ptr<const operations::AttributeTransferStrategyBase> get_transfer_strategy(
         const attribute::MeshAttributeHandle& attribute);
 
 
     void add_transfer_strategy(
-        const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
+        const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other);
 
     void set_transfer_strategy(
         const attribute::MeshAttributeHandle& attribute,
-        const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
+        const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other);
+
+    void clear_attribute_transfer_strategies();
 
     virtual void reserve_enough_simplices();
 
@@ -84,17 +86,6 @@ protected:
         const std::vector<simplex::Simplex>& unmods,
         const std::vector<simplex::Simplex>& mods) const;
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
-    /// @brief utility for subclasses
-    /// @param tuple
-    Tuple resurrect_tuple(const Tuple& tuple) const;
-
-    /// @brief utility for subclasses
-    attribute::Accessor<int64_t> hash_accessor();
-    /// @brief utility for subclasses
-    const attribute::Accessor<int64_t> hash_accessor() const;
-#endif
-
 
     void apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods);
 
@@ -109,7 +100,7 @@ protected:
 
     invariants::InvariantCollection m_invariants;
 
-    std::vector<std::shared_ptr<operations::AttributeTransferStrategyBase>>
+    std::vector<std::shared_ptr<const operations::AttributeTransferStrategyBase>>
         m_attr_transfer_strategies;
 };
 

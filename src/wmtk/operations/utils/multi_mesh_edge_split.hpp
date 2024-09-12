@@ -22,14 +22,14 @@ using SplitReturnData = wmtk::multimesh::operations::SplitReturnData;
 SplitReturnData multi_mesh_edge_split(
     Mesh& mesh,
     const Tuple& t,
-    const std::vector<std::shared_ptr<operations::BaseSplitNewAttributeStrategy>>&
+    const std::vector<std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>>&
         new_attr_strategies);
 
 
 std::vector<simplex::Simplex> multi_mesh_edge_split_with_modified_simplices(
     Mesh& mesh,
     const simplex::Simplex& simplex,
-    const std::vector<std::shared_ptr<operations::BaseSplitNewAttributeStrategy>>&
+    const std::vector<std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>>&
         new_attr_strategies);
 
 } // namespace operations::utils

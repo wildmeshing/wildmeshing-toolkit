@@ -13,6 +13,9 @@ inline bool is_ccw(const Tuple& tuple)
 }
 inline bool tuple_is_valid_for_ccw(const Tuple& tuple)
 {
+    if (tuple.is_null()) {
+        return false;
+    }
     return true;
 }
 } // namespace wmtk::autogen::edge_mesh

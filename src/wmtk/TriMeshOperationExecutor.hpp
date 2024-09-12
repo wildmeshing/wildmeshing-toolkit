@@ -9,23 +9,15 @@ namespace wmtk {
 class TriMesh::TriMeshOperationExecutor : public operations::tri_mesh::EdgeOperationData
 {
 public:
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple, attribute::Accessor<int64_t>& hash_acc);
-#else
     TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple);
-#endif
     void delete_simplices();
-    void update_cell_hash();
 
     std::array<attribute::Accessor<char>, 3> flag_accessors;
-    attribute::Accessor<int64_t,TriMesh> ff_accessor;
-    attribute::Accessor<int64_t,TriMesh> fe_accessor;
-    attribute::Accessor<int64_t,TriMesh> fv_accessor;
-    attribute::Accessor<int64_t,TriMesh> vf_accessor;
-    attribute::Accessor<int64_t,TriMesh> ef_accessor;
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    attribute::Accessor<int64_t>& hash_accessor;
-#endif
+    attribute::Accessor<int64_t, TriMesh>& ff_accessor;
+    attribute::Accessor<int64_t, TriMesh>& fe_accessor;
+    attribute::Accessor<int64_t, TriMesh>& fv_accessor;
+    attribute::Accessor<int64_t, TriMesh>& vf_accessor;
+    attribute::Accessor<int64_t, TriMesh>& ef_accessor;
 
     /**
      * @brief jump to the next edge
@@ -61,10 +53,12 @@ public:
 
     void connect_ears();
 
+    // historical precompute tooling
+    void split_edge_precompute();
+    void collapse_edge_precompute();
+
     void split_edge();
     void collapse_edge();
-    void split_edge_single_mesh();
-    void collapse_edge_single_mesh();
 
     /**
      * @brief
@@ -74,6 +68,8 @@ public:
      */
     // return the two new fids in order
     void replace_incident_face(IncidentFaceData& face_data);
+    void create_spine_simplices();
+    void fill_split_facet_data();
     void connect_faces_across_spine();
     std::vector<int64_t> request_simplex_indices(const PrimitiveType type, int64_t count);
 

@@ -218,6 +218,26 @@ TEST_CASE("test_debug_trimeshes_two_neighbors")
     info.simply_connected_components = 1;
     info.simplex_counts = std::array<int64_t, 3>{{5, 7, 3}};
     run_debug_trimesh(m, info);
+
+
+    auto tups = m.get_all(wmtk::PrimitiveType::Triangle);
+
+
+    const auto& fv_acc = *m.m_fv_accessor;
+    const auto& fe_acc = *m.m_fe_accessor;
+    const auto& ff_acc = *m.m_ff_accessor;
+
+    CHECK(fv_acc.const_vector_attribute(tups[0]) == Vector3l(0, 1, 2));
+    CHECK(fv_acc.const_vector_attribute(tups[1]) == Vector3l(3, 1, 0));
+    CHECK(fv_acc.const_vector_attribute(tups[2]) == Vector3l(0, 2, 4));
+
+    CHECK(fe_acc.const_vector_attribute(tups[0]) == Vector3l(4, 1, 0));
+    CHECK(fe_acc.const_vector_attribute(tups[1]) == Vector3l(0, 2, 5));
+    CHECK(fe_acc.const_vector_attribute(tups[2]) == Vector3l(6, 3, 1));
+
+    CHECK(ff_acc.const_vector_attribute(tups[0]) == Vector3l(-1, 2, 1));
+    CHECK(ff_acc.const_vector_attribute(tups[1]) == Vector3l(0, -1, -1));
+    CHECK(ff_acc.const_vector_attribute(tups[2]) == Vector3l(-1, -1, 0));
 }
 TEST_CASE("test_debug_trimeshes_three_neighbors")
 {
@@ -358,12 +378,12 @@ TEST_CASE("test_debug_disk_trimesh")
         CHECK(n_boundary_vertices == 1);
 
 
-        Tuple v0e1(0, 1, -1, 0, 0);
-        Tuple v0e2(0, 2, -1, 0, 0);
-        Tuple v1e0(1, 0, -1, 0, 0);
-        Tuple v1e2(1, 2, -1, 0, 0);
-        Tuple v2e0(2, 0, -1, 0, 0);
-        Tuple v2e1(2, 1, -1, 0, 0);
+        Tuple v0e1(0, 1, -1, 0);
+        Tuple v0e2(0, 2, -1, 0);
+        Tuple v1e0(1, 0, -1, 0);
+        Tuple v1e2(1, 2, -1, 0);
+        Tuple v2e0(2, 0, -1, 0);
+        Tuple v2e1(2, 1, -1, 0);
 
 
         CHECK(m.switch_face(v0e1) == v0e2);

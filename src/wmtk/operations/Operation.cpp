@@ -1,4 +1,5 @@
 #include "Operation.hpp"
+#include <spdlog/spdlog.h>
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
@@ -23,7 +24,7 @@ Operation::Operation(Mesh& mesh)
 Operation::~Operation() = default;
 
 
-std::shared_ptr<operations::AttributeTransferStrategyBase> Operation::get_transfer_strategy(
+std::shared_ptr<const operations::AttributeTransferStrategyBase> Operation::get_transfer_strategy(
     const attribute::MeshAttributeHandle& attribute)
 {
     assert(attribute.is_same_mesh(mesh()));
@@ -35,9 +36,14 @@ std::shared_ptr<operations::AttributeTransferStrategyBase> Operation::get_transf
     throw std::runtime_error("unable to find attribute");
 }
 
+void Operation::clear_attribute_transfer_strategies()
+{
+    m_attr_transfer_strategies.clear();
+}
+
 void Operation::set_transfer_strategy(
     const attribute::MeshAttributeHandle& attribute,
-    const std::shared_ptr<operations::AttributeTransferStrategyBase>& other)
+    const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other)
 {
     assert(attribute.is_same_mesh(mesh()));
 
@@ -52,34 +58,38 @@ void Operation::set_transfer_strategy(
 }
 
 void Operation::add_transfer_strategy(
-    const std::shared_ptr<operations::AttributeTransferStrategyBase>& other)
+    const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other)
 {
+    spdlog::info("Adding a transfer");
     m_attr_transfer_strategies.emplace_back(other);
 }
 
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
+    if (!mesh().is_valid(simplex)) {
+        return {};
+    }
     if (!before(simplex)) {
         return {};
     }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    const auto simplex_resurrect =
-        simplex::Simplex(mesh(), simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
-#else
     const auto simplex_resurrect = simplex;
-#endif
 
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
 
-    auto unmods = unmodified_primitives(simplex_resurrect);
-    auto mods = execute(simplex_resurrect);
-    if (!mods.empty()) { // success should be marked here
-        apply_attribute_transfer(mods);
-        if (after(unmods, mods)) {
-            return mods; // scope destructor is called
+    try {
+        auto unmods = unmodified_primitives(simplex_resurrect);
+        auto mods = execute(simplex_resurrect);
+        if (!mods.empty()) { // success should be marked here
+            apply_attribute_transfer(mods);
+            if (after(unmods, mods)) {
+                return mods; // scope destructor is called
+            }
         }
+    } catch (const std::exception& e) {
+        scope.mark_failed();
+        throw e;
     }
     scope.mark_failed();
     return {}; // scope destructor is called
@@ -99,12 +109,7 @@ bool Operation::before(const simplex::Simplex& simplex) const
         return false;
     }
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    const auto simplex_resurrect =
-        simplex::Simplex(mesh(), simplex.primitive_type(), resurrect_tuple(simplex.tuple()));
-#else
     const auto simplex_resurrect = simplex;
-#endif
 
     // map simplex to the invariant mesh
     const Mesh& invariant_mesh = m_invariants.mesh();
@@ -170,23 +175,6 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
         }
     }
 }
-
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-Tuple Operation::resurrect_tuple(const Tuple& tuple) const
-{
-    return mesh().resurrect_tuple(tuple, hash_accessor());
-}
-
-attribute::Accessor<int64_t> Operation::hash_accessor()
-{
-    return m_mesh.get_cell_hash_accessor();
-}
-
-const attribute::Accessor<int64_t> Operation::hash_accessor() const
-{
-    return m_mesh.get_const_cell_hash_accessor();
-}
-#endif
 
 
 void Operation::reserve_enough_simplices()

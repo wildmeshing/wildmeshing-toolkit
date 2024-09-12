@@ -62,8 +62,9 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/recipes/")
 
-include(sanitizers)
 include(wmtk_cpm_cache)
+include(CPM)
+include(sanitizers)
 include(wmtk_colors)
 include(wmtk_warnings)
 include(wmtk_copy_dll)
@@ -90,6 +91,7 @@ include(fast_envelope)
 include(bvh)
 include(volume_mesher)
 include(onetbb)
+include(CLI11)
 
 # Core library
 add_library(wildmeshing_toolkit)
@@ -118,32 +120,15 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_20)
 set(WMTK_MAX_ATTRIBUTE_DIMENSION Eigen::Dynamic CACHE STRING "Set the largest size a vector can be in an attribute")
 target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_MAX_ATTRIBUTE_DIMENSION=${WMTK_MAX_ATTRIBUTE_DIMENSION})
 
-
-
-option(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE "Use monotonic allocator to store the cache buffer" OFF)
-if(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
-    target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
+option(WMTK_ENABLE_SIMPLEX_ID_CACHING "Enable coverage reporting" OFF)
+if(WMTK_ENABLE_SIMPLEX_ID_CACHING)
+    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_SIMPLEX_ID_CACHING)
 endif()
 
 
-option(WMTK_ENABLE_GENERIC_CHECKPOINTS "Enable checkpoint selection" OFF)
-if(WMTK_ENABLE_GENERIC_CHECKPOINTS)
-    target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_ENABLE_GENERIC_CHECKPOINTS)
-endif()
-option(WMTK_ENABLE_MAP_CACHE "Enable checkpoint selection" ON)
-if(WMTK_ENABLE_MAP_CACHE)
-    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_MAP_CACHE)
-endif()
 
-option(WMTK_ENABLE_TRANSACTION_STACK "Enable transaction stack" ON)
-if(WMTK_ENABLE_TRANSACTION_STACK)
-    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_TRANSACTION_STACK)
-endif()
 
-option(WMTK_ENABLE_HASH_UPDATE "Enable hash update" OFF)
-if(WMTK_ENABLE_HASH_UPDATE)
-    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_ENABLE_HASH_UPDATE)
-endif()
+
 
 
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
@@ -176,11 +161,12 @@ endif()
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     # Unit tests
     enable_testing()
+    # data for unit tests
+    set(WMTK_DATA_ROOT "${CPM_SOURCE_CACHE}/wmtk_data/" CACHE PATH "Where should the toolkit download and look for test data?")
 endif()
 
 
 add_subdirectory(components)
-
 
 # ###############################################################################
 # Subdirectories
@@ -210,36 +196,8 @@ if(WMTK_BUILD_DOCS)
     endif(DOXYGEN_FOUND)
 endif()
 
-
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     add_subdirectory(tests)
-
-
-    add_executable(wmtk_app main.cpp)
-    target_compile_features(wmtk_app PUBLIC cxx_std_17)
-
-    # ###############################################################################
-    # WMTK JSON APP
-    # ###############################################################################
-    target_compile_options(wmtk_app PRIVATE "-rdynamic")
-    target_link_libraries(wmtk_app PUBLIC
-        wmtk::components
-        CLI11::CLI11
-    )
-
-
-    if(MSVC)
-        target_compile_options(wmtk_app PUBLIC /MP)
-        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/GL>)
-        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ob2>) # inline whenever suitable
-        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/Ot>) # favor faster code over binary size
-        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/LTCG>)
-        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/INCREMENTAL:NO>)
-        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELEASE>:/GL>)
-        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELEASE>:/Ot>)
-        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELEASE>:/LTCG>)
-        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELEASE>:/INCREMENTAL:NO>)
-    endif()
-
+    add_subdirectory(applications)
 endif()

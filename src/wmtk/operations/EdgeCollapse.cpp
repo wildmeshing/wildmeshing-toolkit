@@ -64,7 +64,7 @@ std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives(
 ////////////////////////////////////
 
 
-std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>
+std::shared_ptr<const operations::BaseCollapseNewAttributeStrategy>
 EdgeCollapse::get_new_attribute_strategy(const attribute::MeshAttributeHandle& attribute) const
 {
     for (auto& s : m_new_attr_strategies) {
@@ -73,10 +73,14 @@ EdgeCollapse::get_new_attribute_strategy(const attribute::MeshAttributeHandle& a
 
     throw std::runtime_error("unable to find attribute");
 }
+void EdgeCollapse::clear_attribute_new_strategies()
+{
+    m_new_attr_strategies.clear();
+}
 
 void EdgeCollapse::set_new_attribute_strategy(
     const attribute::MeshAttributeHandle& attribute,
-    const std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>& other)
+    const std::shared_ptr<const operations::BaseCollapseNewAttributeStrategy>& other)
 {
     for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
         if (m_new_attr_strategies[i]->matches_attribute(attribute)) {
@@ -84,8 +88,9 @@ void EdgeCollapse::set_new_attribute_strategy(
             return;
         }
     }
-    if(attribute.mesh().is_free()) {
-        logger().debug("Set new collapse attribute strategy on a free mesh, there are no new attributes for free mesh collapses");
+    if (attribute.mesh().is_free()) {
+        logger().debug("Set new collapse attribute strategy on a free mesh, there are no new "
+                       "attributes for free mesh collapses");
         return;
     }
 

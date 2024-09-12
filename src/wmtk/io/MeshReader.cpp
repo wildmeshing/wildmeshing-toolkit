@@ -1,6 +1,8 @@
 #include "MeshReader.hpp"
 #include "HDF5Reader.hpp"
 
+#include <wmtk/utils/Logger.hpp>
+
 #include <memory>
 
 namespace wmtk {
@@ -19,7 +21,7 @@ std::shared_ptr<Mesh> read_mesh(
         return reader.read(filename, ignore_z, tetrahedron_attributes);
     }
 
-    throw std::runtime_error(extension + " not supported");
+    log_and_throw_error("Files of type {} are not supported", extension);
 }
 
 } // namespace wmtk

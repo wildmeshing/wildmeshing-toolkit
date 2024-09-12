@@ -166,13 +166,7 @@ Tuple TetMesh::vertex_tuple_from_id(int64_t id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("vertex_tuple_from_id failed");
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
-
-    Tuple v_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
-#else
     Tuple v_tuple = Tuple(lvid, leid, lfid, t);
-#endif
     assert(is_ccw(v_tuple));
     assert(is_valid(v_tuple));
     return v_tuple;
@@ -197,13 +191,7 @@ Tuple TetMesh::edge_tuple_from_id(int64_t id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("edge_tuple_from_id failed");
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
-
-    Tuple e_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
-#else
     Tuple e_tuple = Tuple(lvid, leid, lfid, t);
-#endif
     assert(is_ccw(e_tuple));
     assert(is_valid(e_tuple));
     return e_tuple;
@@ -228,13 +216,7 @@ Tuple TetMesh::face_tuple_from_id(int64_t id) const
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("face_tuple_from_id failed");
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
-
-    Tuple f_tuple = Tuple(lvid, leid, lfid, t, get_cell_hash(t, hash_accessor));
-#else
     Tuple f_tuple = Tuple(lvid, leid, lfid, t);
-#endif
     assert(is_ccw(f_tuple));
     assert(is_valid(f_tuple));
     return f_tuple;
@@ -246,13 +228,7 @@ Tuple TetMesh::tet_tuple_from_id(int64_t id) const
     const auto [nlvid, leid, lfid] = autogen::tet_mesh::auto_3d_table_complete_vertex[lvid];
     assert(lvid == nlvid);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    const attribute::Accessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
-
-    Tuple t_tuple = Tuple(lvid, leid, lfid, id, get_cell_hash(id, hash_accessor));
-#else
     Tuple t_tuple = Tuple(lvid, leid, lfid, id);
-#endif
     assert(is_ccw(t_tuple));
     assert(is_valid(t_tuple));
     return t_tuple;
@@ -337,11 +313,7 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         assert(leid_new != -1);
         assert(lfid_new != -1);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-        const Tuple res(lvid_new, leid_new, lfid_new, gcid_new, get_cell_hash_slow(gcid_new));
-#else
         const Tuple res(lvid_new, leid_new, lfid_new, gcid_new);
-#endif
         assert(is_valid(res));
         return res;
     }
@@ -579,27 +551,13 @@ Tuple TetMesh::tuple_from_global_ids(int64_t tid, int64_t fid, int64_t eid, int6
     assert(leid != -1);
     assert(lfid != -1);
 
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    return Tuple(lvid, leid, lfid, tid, get_cell_hash_slow(tid));
-#else
     return Tuple(lvid, leid, lfid, tid);
-#endif
 }
 
 std::vector<Tuple> TetMesh::orient_vertices(const Tuple& tuple) const
 {
     int64_t cid = tuple.m_global_cid;
-#if defined(WMTK_ENABLE_HASH_UPDATE)
-    auto hash = get_cell_hash_slow(cid);
-
-    return {
-        Tuple(0, 0, 2, cid, hash),
-        Tuple(1, 0, 3, cid, hash),
-        Tuple(2, 1, 1, cid, hash),
-        Tuple(3, 2, 2, cid, hash)};
-#else
     return {Tuple(0, 0, 2, cid), Tuple(1, 0, 3, cid), Tuple(2, 1, 1, cid), Tuple(3, 2, 2, cid)};
-#endif
 }
 
 

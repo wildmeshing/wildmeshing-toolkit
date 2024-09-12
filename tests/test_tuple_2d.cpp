@@ -396,7 +396,7 @@ TEST_CASE("2D_is_boundary", "[tuple_2d]")
     CHECK(n_boundary_vertices == 8);
 
 
-    const Tuple t1 = m.edge_tuple_between_v1_v2(0, 1, 1);
+    const Tuple t1 = m.edge_tuple_with_vs_and_t(0, 1, 1);
     CHECK(m.is_boundary_edge(t1));
     CHECK(m.is_boundary_vertex(t1));
 

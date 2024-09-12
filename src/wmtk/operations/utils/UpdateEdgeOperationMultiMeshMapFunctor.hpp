@@ -1,7 +1,7 @@
 #pragma once
+#include <Eigen/Core>
 #include <memory>
 #include <vector>
-#include <Eigen/Core>
 
 namespace wmtk {
 class Mesh;
@@ -19,6 +19,7 @@ class Accessor;
 }
 
 namespace operations {
+class EdgeOperationData;
 namespace edge_mesh {
 class EdgeOperationData;
 }
@@ -96,11 +97,17 @@ public:
     void operator()(TetMesh&, const simplex::Simplex&, const tet_mesh::EdgeOperationData&);
 
 private:
+    /*
+    template <typename T>
+    void update_maps(MeshType&, const simplex::Simplex&, const EdgeOperationData&);
+    */
+
+private:
     int64_t parent_global_cid(
-        const attribute::Accessor<int64_t,Mesh, Eigen::Dynamic>& parent_to_child,
+        const attribute::Accessor<int64_t, Mesh, Eigen::Dynamic>& parent_to_child,
         int64_t parent_gid) const;
     int64_t child_global_cid(
-        const attribute::Accessor<int64_t,Mesh, Eigen::Dynamic>& parent_to_child,
+        const attribute::Accessor<int64_t, Mesh, Eigen::Dynamic>& parent_to_child,
         int64_t parent_gid) const;
     void update_all_hashes(
         Mesh& m,
@@ -111,7 +118,7 @@ private:
 
     // for tet
     int64_t parent_local_fid(
-        const attribute::Accessor<int64_t,Mesh, Eigen::Dynamic>& parent_to_child,
+        const attribute::Accessor<int64_t, Mesh, Eigen::Dynamic>& parent_to_child,
         int64_t parent_gid) const;
 
     void update_ear_replacement(TetMesh& m, const tet_mesh::EdgeOperationData& tmoe) const;
