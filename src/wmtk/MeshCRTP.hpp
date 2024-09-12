@@ -1,5 +1,8 @@
 #pragma once
 #include "Mesh.hpp"
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+#include <ranges>
+#endif
 
 
 namespace wmtk {
@@ -39,11 +42,11 @@ public:
     }
     /// Performs a sequence of switch_tuple operations in the order specified in op_sequence.
     /// in debug mode this will assert a failure, in release this will return a null tuple
-//#if defined(__cpp_concepts)
-//    template <std::forward_iterator ContainerType>
-//#else
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+    template <std::ranges::forward_range ContainerType>
+#else
     template <typename ContainerType>
-//#endif
+#endif
     Tuple switch_tuples(const Tuple& tuple, const ContainerType& op_sequence) const;
     /// annoying initializer list prototype to catch switch_tuples(t, {PV,PE})
     Tuple switch_tuples(const Tuple& tuple, const std::initializer_list<PrimitiveType>& op_sequence)
@@ -126,11 +129,11 @@ protected:
 };
 
 template <typename Derived>
-//#if defined(__cpp_concepts)
-//template <std::forward_iterator ContainerType>
-//#else
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+template <std::ranges::forward_range ContainerType>
+#else
 template <typename ContainerType>
-//#endif
+#endif
 Tuple MeshCRTP<Derived>::switch_tuples(const Tuple& tuple, const ContainerType& sequence) const
 {
     static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);

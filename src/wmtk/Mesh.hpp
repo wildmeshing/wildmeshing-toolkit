@@ -32,8 +32,8 @@
 
 
 // if we have concepts then switch_tuples uses forward_iterator concept
-#if defined(__cpp_concepts)
-#include <iterator>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+#include <ranges>
 #endif
 
 
@@ -354,22 +354,22 @@ public:
 
     // Performs a sequence of switch_tuple operations in the order specified in op_sequence.
     // in debug mode this will assert a failure, in release this will return a null tuple
-//#if defined(__cpp_concepts)
-//    template <std::forward_iterator ContainerType>
-//#else
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+    template <std::ranges::forward_range ContainerType>
+#else
     template <typename ContainerType>
-//#endif
+#endif
     Tuple switch_tuples(const Tuple& tuple, const ContainerType& op_sequence) const;
     // annoying initializer list prototype to catch switch_tuples(t, {PV,PE})
     Tuple switch_tuples(const Tuple& tuple, const std::initializer_list<PrimitiveType>& op_sequence)
         const;
 
     // Performs a sequence of switch_tuple operations in the order specified in op_sequence.
-//#if defined(__cpp_concepts)
-//    template <std::forward_iterator ContainerType>
-//#else
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+    template <std::ranges::forward_range ContainerType>
+#else
     template <typename ContainerType>
-//#endif
+#endif
     Tuple switch_tuples_unsafe(const Tuple& tuple, const ContainerType& op_sequence) const;
     // annoying initializer list prototype to catch switch_tuples(t, {PV,PE})
     Tuple switch_tuples_unsafe(
@@ -928,11 +928,11 @@ inline decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args) const
     return std::invoke(std::forward<Functor>(f), std::forward<Args>(args)...);
 }
 
-//#if defined(__cpp_concepts)
-//template <std::forward_iterator ContainerType>
-//#else
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+    template <std::ranges::forward_range ContainerType>
+#else
 template <typename ContainerType>
-//#endif
+#endif
 inline Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequence) const
 {
     static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
@@ -971,11 +971,11 @@ inline PrimitiveType Mesh::top_simplex_type() const
 }
 
 
-//#if defined(__cpp_concepts)
-//template <std::forward_iterator ContainerType>
-//#else
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+    template <std::ranges::forward_range ContainerType>
+#else
 template <typename ContainerType>
-//#endif
+#endif
 inline Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType& sequence) const
 {
     static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
