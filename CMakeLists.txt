@@ -112,7 +112,12 @@ target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
 target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
 
 # C++ standard
+option(WMTK_USE_CXX20 "Sets WMTK to use C++20, defaults to C++17")
+if(WMTK_USE_CXX20)
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_20)
+else()
+target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
+endif()
 
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
