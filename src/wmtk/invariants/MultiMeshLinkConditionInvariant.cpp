@@ -10,13 +10,14 @@
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/link_condition.hpp>
 
-namespace wmtk {
+namespace wmtk::invariants {
 namespace {
 
 struct MultiMeshLinkConditionFunctor
 {
     template <typename MeshType>
-    bool operator()(const MeshType& m, const simplex::Simplex& s) const { 
+    bool operator()(const MeshType& m, const simplex::Simplex& s) const
+    {
         return m.is_free() || simplex::link_condition(m, s.tuple());
     }
 };
@@ -44,4 +45,4 @@ bool MultiMeshLinkConditionInvariant::before(const simplex::Simplex& t) const
 
     return true;
 }
-} // namespace wmtk
+} // namespace wmtk::invariants

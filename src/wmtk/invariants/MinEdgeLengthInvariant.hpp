@@ -6,6 +6,7 @@
 #include "Invariant.hpp"
 
 namespace wmtk {
+namespace invariants {
 class MinEdgeLengthInvariant : public Invariant
 {
 public:
@@ -20,4 +21,7 @@ private:
     const TypedAttributeHandle<double> m_coordinate_handle;
     double m_threshold_squared;
 };
+} // namespace invariants
+
+using MinEdgeLengthInvariant = invariants::MinEdgeLengthInvariant;
 } // namespace wmtk

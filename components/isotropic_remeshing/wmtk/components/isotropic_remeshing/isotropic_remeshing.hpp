@@ -1,11 +1,8 @@
 #pragma once
-#include <nlohmann/json.hpp>
-#include <wmtk/io/Cache.hpp>
 
-#include <wmtk/components/utils/Paths.hpp>
+namespace wmtk::components::isotropic_remeshing {
+class IsotropicRemeshingOptions;
 
-namespace wmtk::components {
+void isotropic_remeshing(const IsotropicRemeshingOptions& options);
 
-void isotropic_remeshing(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache);
-
-} // namespace wmtk::components
+} // namespace wmtk::components::isotropic_remeshing
