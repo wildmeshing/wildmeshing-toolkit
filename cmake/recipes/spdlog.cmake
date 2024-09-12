@@ -28,6 +28,8 @@ set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME "spdlog")
 include(CPM)
 CPMAddPackage("gh:gabime/spdlog@1.14.1")
 
+# because we force the use of external FMT we want to make sure any dependency that uses spdlog has fmt around
+target_link_libraries(spdlog PUBLIC fmt)
 
 set_target_properties(spdlog PROPERTIES POSITION_INDEPENDENT_CODE ON)
 

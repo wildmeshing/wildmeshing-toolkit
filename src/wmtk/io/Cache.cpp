@@ -85,7 +85,7 @@ Cache::~Cache()
         }
 
         if (fs::exists(m_cache_dir)) {
-            wmtk::logger().warn("Could not remove cache folder {}", fs::absolute(m_cache_dir));
+            wmtk::logger().warn("Could not remove cache folder {}", std::string(fs::absolute(m_cache_dir)));
         }
     }
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include <fmt/ranges.h>
 #include <spdlog/spdlog.h>
 #include <array>
 #include <bitset>
@@ -50,7 +51,7 @@ public:
             }
             if (!found) {
                 throw std::runtime_error(fmt::format(
-                    "Tiling type was not found, got [{}], expected one of {[{}]}",
+                    "Tiling type was not found, got [{}], expected one of {{[{}]}}",
                     tiling,
                     fmt::join(tiling_names, "],[")));
             }
