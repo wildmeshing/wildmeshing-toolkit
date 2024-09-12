@@ -1,5 +1,8 @@
 #pragma once
 #include "Mesh.hpp"
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+#include <ranges>
+#endif
 
 
 namespace wmtk {
@@ -39,8 +42,8 @@ public:
     }
     /// Performs a sequence of switch_tuple operations in the order specified in op_sequence.
     /// in debug mode this will assert a failure, in release this will return a null tuple
-#if defined(__cpp_concepts)
-    template <std::forward_iterator ContainerType>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+    template <std::ranges::forward_range ContainerType>
 #else
     template <typename ContainerType>
 #endif
@@ -126,8 +129,8 @@ protected:
 };
 
 template <typename Derived>
-#if defined(__cpp_concepts)
-template <std::forward_iterator ContainerType>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+template <std::ranges::forward_range ContainerType>
 #else
 template <typename ContainerType>
 #endif

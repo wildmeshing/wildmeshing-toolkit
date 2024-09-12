@@ -60,7 +60,7 @@ attribute::MeshAttributeHandle get_attribute(const Mesh& m, const nlohmann::json
         // return get_attribute(*child_ptr, name);
     }
 
-    log_and_throw_error("Invalid type for {}.", attribute);
+    log_and_throw_error("Invalid type for {}.", std::string(attribute));
 }
 
 

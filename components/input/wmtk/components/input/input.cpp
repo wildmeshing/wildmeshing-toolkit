@@ -12,7 +12,7 @@ std::shared_ptr<Mesh> input(
     const std::vector<std::string>& tetrahedron_attributes)
 {
     if (!std::filesystem::exists(file)) {
-        log_and_throw_error("file {} not found", file);
+        log_and_throw_error("file {} not found", file.string());
     }
 
     const std::shared_ptr<Mesh> mesh = read_mesh(file, ignore_z, tetrahedron_attributes);

@@ -16,14 +16,20 @@ if(TARGET spdlog::spdlog)
     return()
 endif()
 
+include(fmt)
+
 message(STATUS "Third-party (external): creating target 'spdlog::spdlog'")
 
 option(SPDLOG_INSTALL "Generate the install target" ON)
+option(SPDLOG_FMT_EXTERNAL "Use external fmt library instead of bundled" ON)
+#option(SPDLOG_FMT_EXTERNAL_HO "Use external fmt header-only library instead of bundled" ON)
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME "spdlog")
 
 include(CPM)
-CPMAddPackage("gh:gabime/spdlog@1.9.2")
+CPMAddPackage("gh:gabime/spdlog@1.14.1")
 
+# because we force the use of external FMT we want to make sure any dependency that uses spdlog has fmt around
+target_link_libraries(spdlog PUBLIC fmt)
 
 set_target_properties(spdlog PROPERTIES POSITION_INDEPENDENT_CODE ON)
 

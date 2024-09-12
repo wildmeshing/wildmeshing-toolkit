@@ -32,8 +32,8 @@
 
 
 // if we have concepts then switch_tuples uses forward_iterator concept
-#if defined(__cpp_concepts)
-#include <iterator>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+#include <ranges>
 #endif
 
 
@@ -354,8 +354,8 @@ public:
 
     // Performs a sequence of switch_tuple operations in the order specified in op_sequence.
     // in debug mode this will assert a failure, in release this will return a null tuple
-#if defined(__cpp_concepts)
-    template <std::forward_iterator ContainerType>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+    template <std::ranges::forward_range ContainerType>
 #else
     template <typename ContainerType>
 #endif
@@ -365,8 +365,8 @@ public:
         const;
 
     // Performs a sequence of switch_tuple operations in the order specified in op_sequence.
-#if defined(__cpp_concepts)
-    template <std::forward_iterator ContainerType>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+    template <std::ranges::forward_range ContainerType>
 #else
     template <typename ContainerType>
 #endif
@@ -928,8 +928,8 @@ inline decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args) const
     return std::invoke(std::forward<Functor>(f), std::forward<Args>(args)...);
 }
 
-#if defined(__cpp_concepts)
-template <std::forward_iterator ContainerType>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+    template <std::ranges::forward_range ContainerType>
 #else
 template <typename ContainerType>
 #endif
@@ -971,8 +971,8 @@ inline PrimitiveType Mesh::top_simplex_type() const
 }
 
 
-#if defined(__cpp_concepts)
-template <std::forward_iterator ContainerType>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+    template <std::ranges::forward_range ContainerType>
 #else
 template <typename ContainerType>
 #endif

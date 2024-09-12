@@ -1,5 +1,5 @@
 
-#include <spdlog/fmt/bundled/ranges.h>
+#include <fmt/ranges.h>
 #include <bitset>
 #include <catch2/catch_test_macros.hpp>
 #include <tools/DEBUG_EdgeMesh.hpp>

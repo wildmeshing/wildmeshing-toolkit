@@ -702,7 +702,7 @@ void wildmeshing(const utils::Paths& paths, const nlohmann::json& j, io::Cache& 
 
         wmtk::logger().trace(
             "TetWild: getting constrained position {} from {}",
-            v.constrained_position,
+            std::string(v.constrained_position),
             v.geometry.mesh);
         auto constrained = utils::get_attributes(cache, *mesh, v.constrained_position);
         multimesh_meshes.push_back(constrained.front().mesh().shared_from_this());
