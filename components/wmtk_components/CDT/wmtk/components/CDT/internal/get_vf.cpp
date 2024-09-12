@@ -1,6 +1,9 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/utils/EigenMatrixWriter.hpp>
 
+#include <igl/remove_duplicate_vertices.h>
+#include <wmtk/utils/Logger.hpp>
+
 namespace wmtk::components::internal {
 auto get_vf(const TriMesh& trimesh)
 {
@@ -11,10 +14,19 @@ auto get_vf(const TriMesh& trimesh)
     std::vector<double> vV;
     std::vector<uint32_t> vF;
 
+    MatrixX<int64_t> F_tmp;
+    MatrixX<double> V_tmp;
+    writer.get_FV_matrix(F_tmp);
+    writer.get_position_matrix(V_tmp);
+
+    // debug code
     MatrixX<int64_t> F;
     MatrixX<double> V;
-    writer.get_FV_matrix(F);
-    writer.get_position_matrix(V);
+
+    Eigen::VectorXi IV, _;
+    igl::remove_duplicate_vertices(V_tmp, F_tmp, 0, V, IV, _, F);
+
+    wmtk::logger().info("removed duplicated vertices {} -> {}", V_tmp.rows(), V.rows());
 
     const uint32_t npts = V.rows();
     const uint32_t ntri = F.rows();

@@ -18,10 +18,10 @@ void convert_trimesh_to_input_plc(const TriMesh& trimesh, cdt::inputPLC& plc)
     // return;
 
     auto [vdat, fdat] = get_vf(trimesh);
-    auto [V, nvert] = vdat;
+    auto [V, npts] = vdat;
     auto [F, ntri] = fdat;
 
-    plc.initFromVectors(V.data(), V.size(), F.data(), ntri, true);
+    plc.initFromVectors(V.data(), npts, F.data(), ntri, true);
 }
 
 cdt::TetMesh* createSteinerCDT(cdt::inputPLC& plc, bool bbox, bool snap)
