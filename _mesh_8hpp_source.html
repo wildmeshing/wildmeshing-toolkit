@@ -143,14 +143,14 @@ $(document).ready(function(){initNavTree('_mesh_8hpp_source.html',''); initResiz
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_mesh_attributes_8hpp.html">attribute/MeshAttributes.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="multimesh_2attribute_2_attribute_scope_handle_8hpp.html">multimesh/attribute/AttributeScopeHandle.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
-<div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="classwmtk_1_1_mesh_c_r_t_p.html#a169bfa91876ab0af8a9f65d7ef666160">   29</a></span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_use_parent_scope_r_a_i_i_8hpp.html">multimesh/attribute/UseParentScopeRAII.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_use_parent_scope_r_a_i_i_8hpp.html">multimesh/attribute/UseParentScopeRAII.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_simplex_8hpp.html">simplex/Simplex.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
+<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="classwmtk_1_1_mesh_c_r_t_p.html#a169bfa91876ab0af8a9f65d7ef666160">   32</a></span>&#160; </div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="comment">// if we have concepts then switch_tuples uses forward_iterator concept</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#if defined(__cpp_concepts)</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="preprocessor">#include &lt;iterator&gt;</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#if defined(__cpp_concepts) &amp;&amp; defined(__cpp_lib_ranges)</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="preprocessor">#include &lt;ranges&gt;</span></div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="preprocessor">#endif</span></div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
@@ -422,8 +422,8 @@ $(document).ready(function(){initNavTree('_mesh_8hpp_source.html',''); initResiz
 <div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160; </div>
 <div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;    <span class="comment">// Performs a sequence of switch_tuple operations in the order specified in op_sequence.</span></div>
 <div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;    <span class="comment">// in debug mode this will assert a failure, in release this will return a null tuple</span></div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;<span class="preprocessor">#if defined(__cpp_concepts)</span></div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;    <span class="keyword">template</span> &lt;std::forward_iterator ContainerType&gt;</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;<span class="preprocessor">#if defined(__cpp_concepts) &amp;&amp; defined(__cpp_lib_ranges)</span></div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;    <span class="keyword">template</span> &lt;std::ranges::forward_range ContainerType&gt;</div>
 <div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;<span class="preprocessor">#else</span></div>
 <div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> ContainerType&gt;</div>
 <div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;<span class="preprocessor">#endif</span></div>
@@ -433,8 +433,8 @@ $(document).ready(function(){initNavTree('_mesh_8hpp_source.html',''); initResiz
 <div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;        <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160; </div>
 <div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;    <span class="comment">// Performs a sequence of switch_tuple operations in the order specified in op_sequence.</span></div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;<span class="preprocessor">#if defined(__cpp_concepts)</span></div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;    <span class="keyword">template</span> &lt;std::forward_iterator ContainerType&gt;</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;<span class="preprocessor">#if defined(__cpp_concepts) &amp;&amp; defined(__cpp_lib_ranges)</span></div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;    <span class="keyword">template</span> &lt;std::ranges::forward_range ContainerType&gt;</div>
 <div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;<span class="preprocessor">#else</span></div>
 <div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> ContainerType&gt;</div>
 <div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;<span class="preprocessor">#endif</span></div>
@@ -753,8 +753,8 @@ $(document).ready(function(){initNavTree('_mesh_8hpp_source.html',''); initResiz
 <div class="line"><a name="l00928"></a><span class="lineno">  928</span>&#160;    <span class="keywordflow">return</span> std::invoke(std::forward&lt;Functor&gt;(f), std::forward&lt;Args&gt;(args)...);</div>
 <div class="line"><a name="l00929"></a><span class="lineno">  929</span>&#160;}</div>
 <div class="line"><a name="l00930"></a><span class="lineno">  930</span>&#160; </div>
-<div class="line"><a name="l00931"></a><span class="lineno">  931</span>&#160;<span class="preprocessor">#if defined(__cpp_concepts)</span></div>
-<div class="line"><a name="l00932"></a><span class="lineno">  932</span>&#160;<span class="keyword">template</span> &lt;std::forward_iterator ContainerType&gt;</div>
+<div class="line"><a name="l00931"></a><span class="lineno">  931</span>&#160;<span class="preprocessor">#if defined(__cpp_concepts) &amp;&amp; defined(__cpp_lib_ranges)</span></div>
+<div class="line"><a name="l00932"></a><span class="lineno">  932</span>&#160;    <span class="keyword">template</span> &lt;std::ranges::forward_range ContainerType&gt;</div>
 <div class="line"><a name="l00933"></a><span class="lineno">  933</span>&#160;<span class="preprocessor">#else</span></div>
 <div class="line"><a name="l00934"></a><span class="lineno">  934</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> ContainerType&gt;</div>
 <div class="line"><a name="l00935"></a><span class="lineno">  935</span>&#160;<span class="preprocessor">#endif</span></div>
@@ -796,8 +796,8 @@ $(document).ready(function(){initNavTree('_mesh_8hpp_source.html',''); initResiz
 <div class="line"><a name="l00971"></a><span class="lineno">  971</span>&#160;}</div>
 <div class="line"><a name="l00972"></a><span class="lineno">  972</span>&#160; </div>
 <div class="line"><a name="l00973"></a><span class="lineno">  973</span>&#160; </div>
-<div class="line"><a name="l00974"></a><span class="lineno">  974</span>&#160;<span class="preprocessor">#if defined(__cpp_concepts)</span></div>
-<div class="line"><a name="l00975"></a><span class="lineno">  975</span>&#160;<span class="keyword">template</span> &lt;std::forward_iterator ContainerType&gt;</div>
+<div class="line"><a name="l00974"></a><span class="lineno">  974</span>&#160;<span class="preprocessor">#if defined(__cpp_concepts) &amp;&amp; defined(__cpp_lib_ranges)</span></div>
+<div class="line"><a name="l00975"></a><span class="lineno">  975</span>&#160;    <span class="keyword">template</span> &lt;std::ranges::forward_range ContainerType&gt;</div>
 <div class="line"><a name="l00976"></a><span class="lineno">  976</span>&#160;<span class="preprocessor">#else</span></div>
 <div class="line"><a name="l00977"></a><span class="lineno">  977</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> ContainerType&gt;</div>
 <div class="line"><a name="l00978"></a><span class="lineno">  978</span>&#160;<span class="preprocessor">#endif</span></div>

@@ -129,7 +129,7 @@ $(document).ready(function(){initNavTree('input_8cpp_source.html',''); initResiz
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; tetrahedron_attributes)</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;{</div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keywordflow">if</span> (!std::filesystem::exists(file)) {</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;        <a class="code" href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">log_and_throw_error</a>(<span class="stringliteral">&quot;file {} not found&quot;</span>, file);</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;        <a class="code" href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">log_and_throw_error</a>(<span class="stringliteral">&quot;file {} not found&quot;</span>, file.string());</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    }</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">const</span> std::shared_ptr&lt;Mesh&gt; mesh = <a class="code" href="namespacewmtk.html#adb1edeb39c4e0ef98ecc5afeed46891c">read_mesh</a>(file, ignore_z, tetrahedron_attributes);</div>

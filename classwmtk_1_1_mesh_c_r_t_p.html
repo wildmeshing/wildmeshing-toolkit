@@ -522,7 +522,7 @@ class wmtk::MeshCRTP&lt; Derived &gt;</h3>
 <p>A <a href="https://en.cppreference.com/w/cpp/language/crtp">Curiously Recurring Template Pattern</a> shim to enable generic specialization of functions. </p>
 <p>CRTP allows us to shift from dynamic to static (inline-able) polymorphism for functions that are frequently called (like id and switch_tuple). It also allows us to create slightly different interfaces to return different types of accessors to take advantage of the static polymorphism. </p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00020">20</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00023">23</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a597eb7115908f931ca2764e39339f572"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a597eb7115908f931ca2764e39339f572">&#9670;&nbsp;</a></span>create_accessor() <span class="overload">[1/2]</span></h2>
@@ -554,7 +554,7 @@ template&lt;typename T , int Dim = Eigen::Dynamic&gt; </div>
 
 <p>constructs a accessor that is aware of the derived mesh's type </p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00077">77</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00080">80</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00162">wmtk::attribute::MeshAttributeHandle::as()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00170">wmtk::attribute::MeshAttributeHandle::holds()</a>, and <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00018">wmtk::attribute::MeshAttributeHandle::mesh()</a>.</p>
 <div class="dynheader">
@@ -596,9 +596,9 @@ template&lt;typename T , int Dim = Eigen::Dynamic&gt; </div>
 
 <p>constructs an accessor that is aware of the derived mesh's type </p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00062">62</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00065">65</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00031">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00034">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00346">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, <a class="el" href="shortestedge__collapse_8cpp_source.html#l00027">wmtk::components::shortestedge_collapse()</a>, and <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00038">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement()</a>.</p>
 <div class="dynheader">
@@ -646,7 +646,7 @@ template&lt;typename T , int Dim = Eigen::Dynamic&gt; </div>
 
 <p>constructs a const accessor that is aware of the derived mesh's type </p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00088">88</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00091">91</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00162">wmtk::attribute::MeshAttributeHandle::as()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00170">wmtk::attribute::MeshAttributeHandle::holds()</a>, and <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00018">wmtk::attribute::MeshAttributeHandle::mesh()</a>.</p>
 <div class="dynheader">
@@ -688,9 +688,9 @@ template&lt;typename T , int Dim = Eigen::Dynamic&gt; </div>
 
 <p>constructs a const accessor that is aware of the derived mesh's type </p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00069">69</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00072">72</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00031">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00034">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>, <a class="el" href="delaunay_8cpp_source.html#l00068">wmtk::components::delaunay()</a>, <a class="el" href="delaunay_8cpp_source.html#l00015">wmtk::components::points_to_rowvectors()</a>, and <a class="el" href="shortestedge__collapse_8cpp_source.html#l00027">wmtk::components::shortestedge_collapse()</a>.</p>
 <div class="dynheader">
@@ -735,9 +735,9 @@ template&lt;typename Derived &gt; </div>
 
 <p>CRTP utility to extract the derived type of this. </p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00031">31</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00034">34</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00062">wmtk::MeshCRTP&lt; Derived &gt;::create_accessor()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00069">wmtk::MeshCRTP&lt; Derived &gt;::create_const_accessor()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00098">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00055">wmtk::MeshCRTP&lt; Derived &gt;::is_boundary()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00053">wmtk::MeshCRTP&lt; Derived &gt;::is_ccw()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00035">wmtk::MeshCRTP&lt; Derived &gt;::switch_tuple()</a>, and <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00122">wmtk::MeshCRTP&lt; Derived &gt;::tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00065">wmtk::MeshCRTP&lt; Derived &gt;::create_accessor()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00072">wmtk::MeshCRTP&lt; Derived &gt;::create_const_accessor()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00101">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00058">wmtk::MeshCRTP&lt; Derived &gt;::is_boundary()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00056">wmtk::MeshCRTP&lt; Derived &gt;::is_ccw()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00038">wmtk::MeshCRTP&lt; Derived &gt;::switch_tuple()</a>, and <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00125">wmtk::MeshCRTP&lt; Derived &gt;::tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -774,7 +774,7 @@ template&lt;typename Derived &gt; </div>
 
 <p>CRTP utility to extract the derived type of this with constnesss. </p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00033">33</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00036">36</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
 </div>
 </div>
@@ -808,9 +808,9 @@ template&lt;typename Derived &gt; </div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a91ebb6ef4430ef91e9c00410ced82696">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00107">107</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00110">110</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00098">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00101">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -858,11 +858,11 @@ template&lt;typename Derived &gt; </div>
 
 <p>Returns the id of a simplex encoded in a tuple. </p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00098">98</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00101">101</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00031">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00034">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00107">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>, and <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00101">wmtk::MeshCRTP&lt; Derived &gt;::id_virtual()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00110">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>, and <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00104">wmtk::MeshCRTP&lt; Derived &gt;::id_virtual()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -919,9 +919,9 @@ template&lt;typename Derived &gt; </div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a6f6c3b9a1d738d05ec8d84cabfa5e4b4">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00101">101</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00104">104</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00098">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00101">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -971,9 +971,9 @@ template&lt;typename Derived &gt; </div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a24e1e157ff89e7898a48ce737bb4b23a">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00055">55</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00058">58</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00031">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00034">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1013,9 +1013,9 @@ template&lt;typename Derived &gt; </div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a56d57041196b23cfa33661c9488c9c4b">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00053">53</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00056">56</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00031">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00034">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1151,9 +1151,9 @@ template&lt;typename Derived &gt; </div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00035">35</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00038">38</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00031">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>, and <a class="el" href="_mesh_8hpp_source.html#l00965">wmtk::Mesh::top_simplex_type()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00034">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>, and <a class="el" href="_mesh_8hpp_source.html#l00965">wmtk::Mesh::top_simplex_type()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1196,7 +1196,7 @@ template&lt;typename ContainerType &gt; </div>
 <p>Performs a sequence of switch_tuple operations in the order specified in op_sequence. </p>
 <p>in debug mode this will assert a failure, in release this will return a null tuple </p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00134">134</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00137">137</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>, <a class="el" href="link_8cpp_source.html#l00027">wmtk::simplex::link()</a>, <a class="el" href="link__single__dimension_8cpp_source.html#l00038">wmtk::simplex::link_single_dimension()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00032">wmtk::TriMesh::TriMeshOperationExecutor::next_edge()</a>, and <a class="el" href="open__star_8cpp_source.html#l00062">wmtk::simplex::open_star()</a>.</p>
 <div class="dynheader">
@@ -1238,7 +1238,7 @@ template&lt;typename Derived &gt; </div>
 
 <p>annoying initializer list prototype to catch switch_tuples(t, {PV,PE}) </p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00157">157</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00160">160</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
 </div>
 </div>
@@ -1289,9 +1289,9 @@ template&lt;typename Derived &gt; </div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a60165ceb4c2db2731df90e4ac100637d">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00122">122</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00125">125</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00031">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00034">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1326,7 +1326,7 @@ template&lt;typename U , typename MeshType , int Dim&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00028">28</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00031">31</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
 </div>
 </div>
