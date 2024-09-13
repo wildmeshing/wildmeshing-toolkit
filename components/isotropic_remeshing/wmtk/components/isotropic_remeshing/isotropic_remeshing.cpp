@@ -6,6 +6,11 @@
 #include <wmtk/invariants/FusionEdgeInvariant.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
+#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/MinEdgeLengthInvariant.hpp>
+#include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
+#include <wmtk/invariants/ValenceImprovementInvariant.hpp>
+#include <wmtk/invariants/InteriorSimplexInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/uvEdgeInvariant.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
@@ -58,7 +63,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     if (position.mesh().top_simplex_type() != PrimitiveType::Triangle) {
         log_and_throw_error(
             "isotropic remeshing works only for triangle meshes: {}",
-            position.mesh().top_simplex_type());
+            primitive_type_name(position.mesh().top_simplex_type()));
     }
 
     auto pass_through_attributes = options.pass_through;
@@ -136,7 +141,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         update_position;
 
-    if (update_other_positions) {
+    if (options.attributes.update_other_positions) {
         update_position =
             std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
                 other_positions.front(),
@@ -153,7 +158,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     // split
     auto op_split = std::make_shared<EdgeSplit>(mesh);
     op_split->add_invariant(invariant_min_edge_length);
-    if (lock_boundary && !use_for_periodic && !dont_disable_split) {
+    if (options.lock_boundary && !options.use_for_periodic && !options.dont_disable_split) {
         op_split->add_invariant(invariant_interior_edge);
     }
     for (auto& p : positions) {
@@ -182,12 +187,12 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     op_collapse->add_invariant(invariant_mm_map);
 
     // hack for uv
-    if (fix_uv_seam) {
+    if (options.fix_uv_seam) {
         op_collapse->add_invariant(
             std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
     }
 
-    if (lock_boundary && !use_for_periodic) {
+    if (options.lock_boundary && !options.use_for_periodic) {
         op_collapse->add_invariant(invariant_interior_edge);
         // set collapse towards boundary
         for (auto& p : positions) {
@@ -196,7 +201,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
             tmp->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
             op_collapse->set_new_attribute_strategy(p, tmp);
         }
-    } else if (use_for_periodic) {
+    } else if (options.use_for_periodic) {
         op_collapse->add_invariant(
             std::make_shared<invariants::FusionEdgeInvariant>(mesh, mesh.get_multi_mesh_root()));
         for (auto& p : positions) {
@@ -221,7 +226,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     op_swap->add_invariant(invariant_interior_edge);
 
     // hack for uv
-    if (fix_uv_seam) {
+    if (options.fix_uv_seam) {
         op_swap->add_invariant(
             std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
     }
@@ -259,12 +264,12 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
         op_smooth->set_function(VertexLaplacianSmooth(position));
     }
 
-    if (lock_boundary) {
+    if (options.lock_boundary) {
         op_smooth->add_invariant(invariant_interior_vertex);
     }
 
     // hack for uv
-    if (fix_uv_seam) {
+    if (options.fix_uv_seam) {
         op_smooth->add_invariant(
             std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
     }
@@ -281,7 +286,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
 
     //////////////////////////////////////////
     Scheduler scheduler;
-    for (long i = 0; i < iterations; ++i) {
+    for (long i = 0; i < options.iterations; ++i) {
         wmtk::logger().info("Iteration {}", i);
 
         SchedulerStats pass_stats;
