@@ -95,6 +95,7 @@ include(volume_mesher)
 include(onetbb)
 
 include(libigl)
+igl_include(restricted triangle)
 
 # Core library
 add_library(wildmeshing_toolkit)
@@ -137,6 +138,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     simple_bvh::simple_bvh
     VolumeRemesher::VolumeRemesher
     igl::core
+    igl_restricted::triangle
     TBB::tbb
 )
 

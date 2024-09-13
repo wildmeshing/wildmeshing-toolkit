@@ -94,10 +94,10 @@ int wmtk_orient3d(
 }
 
 int wmtk_orient3d(
-    const Eigen::Ref<const Eigen::Vector3<double>> &p0,
-    const Eigen::Ref<const Eigen::Vector3<double>> &p1,
-    const Eigen::Ref<const Eigen::Vector3<double>> &p2,
-    const Eigen::Ref<const Eigen::Vector3<double>> &p3)
+    const Eigen::Ref<const Eigen::Vector3<double>>& p0,
+    const Eigen::Ref<const Eigen::Vector3<double>>& p1,
+    const Eigen::Ref<const Eigen::Vector3<double>>& p2,
+    const Eigen::Ref<const Eigen::Vector3<double>>& p3)
 {
     Eigen::Vector3d p0nc = p0;
     Eigen::Vector3d p1nc = p1;
@@ -116,9 +116,9 @@ int wmtk_orient3d(
 }
 
 int wmtk_orient2d(
-    const Eigen::Ref<const Eigen::Vector2<Rational>> &p0,
-    const Eigen::Ref<const Eigen::Vector2<Rational>> &p1,
-    const Eigen::Ref<const Eigen::Vector2<Rational>> &p2)
+    const Eigen::Ref<const Eigen::Vector2<Rational>>& p0,
+    const Eigen::Ref<const Eigen::Vector2<Rational>>& p1,
+    const Eigen::Ref<const Eigen::Vector2<Rational>>& p2)
 {
     if (is_rounded(p0) && is_rounded(p1) && is_rounded(p2)) {
         return wmtk_orient2d(p0.cast<double>(), p1.cast<double>(), p2.cast<double>());

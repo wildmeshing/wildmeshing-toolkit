@@ -1,5 +1,6 @@
 // #include "get_local_trimesh.hpp"
 #include <unordered_map>
+#include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 
@@ -113,4 +114,25 @@ get_local_trimesh_before_collapse(const wmtk::TriMesh& mesh, const wmtk::simplex
 
     return std::make_tuple(F, V, f_local_to_global, v_local_to_global);
 }
+
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
+get_local_trimesh(const wmtk::TetMesh& mesh, const wmtk::simplex::Simplex& simplex)
+{
+    return std::make_tuple(
+        Eigen::MatrixXi(),
+        Eigen::MatrixXd(),
+        std::vector<int64_t>(),
+        std::vector<int64_t>());
+}
+
+std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
+get_local_tetmesh_before_collapse(const wmtk::TetMesh& mesh, const wmtk::simplex::Simplex& simplex)
+{
+    return std::make_tuple(
+        Eigen::MatrixXi(),
+        Eigen::MatrixXd(),
+        std::vector<int64_t>(),
+        std::vector<int64_t>());
+}
+
 } // namespace wmtk::operations::utils

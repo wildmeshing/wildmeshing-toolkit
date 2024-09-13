@@ -233,6 +233,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             Eigen::MatrixXd UV_joint;
                             std::vector<int64_t> v_id_map_joint;
 
+                            // TODO: for debugging
                             if (true) {
                                 igl::writeOBJ(
                                     OperationLogPath + "/VF_before_" +
@@ -244,6 +245,26 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                         std::to_string(succ_operations_count) + ".obj",
                                     to_three_cols(V_after),
                                     F_after);
+                                // write v_id_map_before and v_id_map_after to a text file
+                                std::ofstream v_id_map_file(
+                                    OperationLogPath + "/v_id_map_" +
+                                    std::to_string(succ_operations_count) + ".txt");
+                                if (v_id_map_file.is_open()) {
+                                    v_id_map_file << "boundary case:\n"
+                                                  << is_bd_v0 << " " << is_bd_v1 << "\n";
+                                    v_id_map_file << "v_id_map_before: \n";
+                                    for (auto id : v_id_map_before) {
+                                        v_id_map_file << id << " ";
+                                    }
+                                    v_id_map_file << "\n";
+                                    v_id_map_file << "v_id_map_after: \n";
+                                    for (auto id : v_id_map_after) {
+                                        v_id_map_file << id << " ";
+                                    }
+                                    v_id_map_file.close();
+                                } else {
+                                    std::cerr << "unable to open file for writing\n";
+                                }
                             }
                             utils::local_joint_flatten(
                                 F_before,
@@ -392,6 +413,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 return {};
                             }
                         }
+                    } else if (mesh().top_simplex_type() == PrimitiveType::Tetrahedron) {
                     }
 
                     // TODO: get a larger json file to do this:
