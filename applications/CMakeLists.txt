@@ -1,4 +1,8 @@
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/applications")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/applications/cmake")
+
+
+# clear out the parent targets
+set(WMTK_APPLICATION_HEADER_TARGETS )
 
 include(wmtk_add_application)
 include(wmtk_register_integration_test)
@@ -35,3 +39,8 @@ add_subdirectory(tetwild_simplification)
 endif()
 
 wmtk_generate_test_config("${WMTK_TEST_CONFIG}")
+
+
+add_custom_target(wmtk_application_headers
+    DEPENDS ${WMTK_APPLICATION_HEADER_TARGETS}
+)

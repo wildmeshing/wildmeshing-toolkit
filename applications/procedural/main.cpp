@@ -14,6 +14,7 @@
 
 #include <wmtk/components/procedural/ProceduralOptions.hpp>
 #include <wmtk/components/procedural/make_mesh.hpp>
+#include <wmtk/TriMesh.hpp>
 #include "spec.hpp"
 
 using namespace wmtk::components;
@@ -47,11 +48,6 @@ int main(int argc, char* argv[])
         }
     }
 
-    const fs::path input_path_in = j["input_path"];
-
-    const fs::path root = input_path_in.empty() ? json_input_file : input_path_in;
-
-    fs::path input_file = wmtk::components::utils::resolve_path(j["input"], root);
 
 
     wmtk::components::procedural::ProceduralOptions options =
