@@ -3,12 +3,13 @@
 namespace wmtk::operations::utils {
 
 void flatten(
-    const Eigen::MatrixXd& Vjoint,
-    const Eigen::MatrixXi& Fjoint_before,
-    const Eigen::MatrixXi& Fjoint_after,
-    const Eigen::VectorXi& b_UV,
-    const Eigen::VectorXd& bc_UV,
-    Eigen::MatrixXd& UVjoint);
+    const Eigen::MatrixXd& V_joint_before,
+    const Eigen::MatrixXd& V_joint_after,
+    const Eigen::MatrixXi& F_joint_before,
+    const Eigen::MatrixXi& F_joint_after,
+    const Eigen::VectorXi& b_soft,
+    Eigen::MatrixXd& UVjoint,
+    int n_iterations = 10);
 
 void local_joint_flatten(
     const Eigen::MatrixXi& F_before,
