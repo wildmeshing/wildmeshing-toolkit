@@ -5,6 +5,7 @@
 #include <wmtk/TriMesh.hpp>
 
 #include <wmtk/components/multimesh_from_tag/internal/MultiMeshFromTag.hpp>
+#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 
 #include "internal/CDT.hpp"
 #include "internal/CDTOptions.hpp"
@@ -63,6 +64,25 @@ void CDT(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
     mmft.remove_soup();
 
     wmtk::logger().info("registered surface child mesh to tetmesh {}", options.output);
+
+    // propagate position to all child meshes
+    auto pt_attribute = tm->get_attribute_handle<Rational>("vertices", PrimitiveType::Vertex);
+
+    for (auto child : tm->get_child_meshes()) {
+        auto child_position_handle = child->register_attribute<Rational>(
+            "vertices",
+            PrimitiveType::Vertex,
+            tm->get_attribute_dimension(pt_attribute.as<Rational>()));
+
+        auto propagate_to_child_position =
+            [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<Rational> { return P; };
+        auto update_child_positon =
+            std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<Rational, Rational>>(
+                child_position_handle,
+                pt_attribute,
+                propagate_to_child_position);
+        update_child_positon->run_on_all();
+    }
 
     std::map<std::string, std::vector<int64_t>> names;
 
