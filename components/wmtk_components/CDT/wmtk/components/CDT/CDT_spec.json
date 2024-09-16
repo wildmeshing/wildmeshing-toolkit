@@ -7,7 +7,8 @@
             "output"
         ],
         "optional": [
-            "inner_only"
+            "inner_only",
+            "rational_output"
         ]
     },
     {
@@ -23,5 +24,11 @@
         "type": "bool",
         "default": true,
         "doc": "only need tets inside the input"
+    },
+    {
+        "pointer": "/rational_output",
+        "type": "bool",
+        "default": false,
+        "doc": "generate mesh coordinate using rational number"
     }
 ]

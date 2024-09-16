@@ -11,7 +11,8 @@ namespace wmtk::components::internal {
 std::shared_ptr<wmtk::TetMesh> CDT_internal(
     const wmtk::TriMesh& m,
     std::vector<std::array<bool, 4>>& local_f_on_input,
-    bool inner_only)
+    bool inner_only,
+    bool rational_output)
 {
     auto [vdat, fdat] = get_vf(m);
     std::vector<double> V_tmp;
@@ -36,10 +37,8 @@ std::shared_ptr<wmtk::TetMesh> CDT_internal(
 
 
     MatrixX<int64_t> T;
-    MatrixX<Rational> V;
 
     T.resize(T_final.size(), 4);
-    V.resize(V_final_str.size(), 3);
 
     for (int64_t i = 0; i < T_final.size(); ++i) {
         T(i, 0) = T_final[i][0];
@@ -48,16 +47,29 @@ std::shared_ptr<wmtk::TetMesh> CDT_internal(
         T(i, 3) = T_final[i][3];
     }
 
+    std::shared_ptr<wmtk::TetMesh> tm = std::make_shared<wmtk::TetMesh>();
+    tm->initialize(T);
+
+
+    MatrixX<Rational> V;
+    V.resize(V_final_str.size(), 3);
+
     for (int64_t i = 0; i < V_final_str.size(); ++i) {
         V(i, 0).init_from_binary(V_final_str[i][0]);
         V(i, 1).init_from_binary(V_final_str[i][1]);
         V(i, 2).init_from_binary(V_final_str[i][2]);
     }
 
-    std::shared_ptr<wmtk::TetMesh> tm = std::make_shared<wmtk::TetMesh>();
-    tm->initialize(T);
+    if (rational_output) {
+        mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, *tm);
+    } else {
+        MatrixX<double> V_double;
+        V_double.resize(V_final_str.size(), 3);
 
-    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, *tm);
+        V_double = V.cast<double>();
+        mesh_utils::set_matrix_attribute(V_double, "vertices", PrimitiveType::Vertex, *tm);
+    }
+
 
     return tm;
 }
