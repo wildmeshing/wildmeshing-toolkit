@@ -63,6 +63,10 @@ int main(int argc, char* argv[])
         wmtk::components::multimesh("boundary", mesh_after_cdt, nullptr, "vertices", "", -1, -1);
     wmtk::logger().info("registered boundary child mesh");
 
+    std::string output_file = j["output"];
+    wmtk::components::output(*parent_mesh, output_file + "_before_sec", "vertices");
+    wmtk::components::output(*child_mesh, output_file + "_surface_before_sec", "vertices");
+
     std::vector<attribute::MeshAttributeHandle> pass_through;
     auto boundary_handle =
         parent_mesh->get_attribute_handle<int64_t>("is_boundary", PrimitiveType::Triangle);
@@ -79,7 +83,6 @@ int main(int argc, char* argv[])
         j["envelope_size"],
         pass_through);
 
-    std::string output_file = j["output"];
     wmtk::components::output(*parent_mesh, output_file, "vertices");
     wmtk::components::output(*mesh_after_sec, output_file + "_surface", "vertices");
 
