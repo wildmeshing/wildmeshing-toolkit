@@ -20,7 +20,7 @@ function(register_jse_json)
   endforeach()
 
 
-  MESSAGE(WARN jse_app "in ${register_jse_json_INPUT} js_out" ${EXPANDED_JS_OUTPUT} dirs" ${register_jse_json_DIRECTORIES}")
+  MESSAGE(STATUS jse_app "in ${register_jse_json_INPUT} js_out ${EXPANDED_JS_OUTPUT} dirs ${register_jse_json_DIRECTORIES}")
 
   message(STATUS "JSE OUTPUT FILE ${EXPANDED_JS_OUTPUT}")
   MESSAGE(STATUS "Working dir: ${WORKING_DIR}")
@@ -30,10 +30,10 @@ function(register_jse_json)
       BYPRODUCTS "${EXPANDED_JS_OUTPUT}"
       SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/${register_jse_json_INPUT}" ${JS_IN_DIRS})
 
-  configure_file("${CMAKE_CURRENT_LIST_DIR}/spec.hpp.in" ${HPP_OUTPUT} USE_SOURCE_PERMISSIONS)
+  message(STATUS "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/spec.hpp.in")
   add_custom_target("wmtk_application_${register_jse_json_APPLICATION_NAME}_spec_header"
       #COMMAND 'echo "#pragma once\n namespace wmtk::applications::${register_jse_json_APPLICATION_NAME}\n \{ \n \n \}"> "${HPP_OUTPUT}"'
-      COMMAND "err"
+      COMMAND "echo awijegoiwajgawioegjwaoiejgwaeigjwaeigjawejig"
       DEPENDS "wmtk_application_${register_jse_json_APPLICATION_NAME}_jse"
       WORKING_DIRECTORY ${WORKING_DIR}
       BYPRODUCTS "${HPP_OUTPUT}"
