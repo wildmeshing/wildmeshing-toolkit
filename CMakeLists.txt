@@ -96,6 +96,7 @@ include(onetbb)
 
 include(libigl)
 igl_include(restricted triangle)
+igl_include(glfw)
 
 # Core library
 add_library(wildmeshing_toolkit)
@@ -139,6 +140,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     VolumeRemesher::VolumeRemesher
     igl::core
     igl_restricted::triangle
+    igl::glfw
     TBB::tbb
 )
 

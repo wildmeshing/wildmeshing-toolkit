@@ -268,10 +268,10 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             }
                             utils::local_joint_flatten(
                                 F_before,
-                                V_before,
+                                to_three_cols(V_before),
                                 v_id_map_before,
                                 F_after,
-                                V_after,
+                                to_three_cols(V_after),
                                 v_id_map_after,
                                 UV_joint,
                                 v_id_map_joint,

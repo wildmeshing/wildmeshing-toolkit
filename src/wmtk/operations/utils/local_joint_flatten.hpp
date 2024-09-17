@@ -7,7 +7,8 @@ void flatten(
     const Eigen::MatrixXd& V_joint_after,
     const Eigen::MatrixXi& F_joint_before,
     const Eigen::MatrixXi& F_joint_after,
-    const Eigen::VectorXi& b_soft,
+    // const Eigen::VectorXi& b_soft,
+    const std::vector<std::pair<int, int>>& b_hard,
     Eigen::MatrixXd& UVjoint,
     int n_iterations = 10);
 
