@@ -73,4 +73,64 @@ inline bool SimplexComparisons::less(
     }
     return m.id(a, primitive_type) < m.id(b, primitive_type);
 }
+inline bool SimplexComparisons::equal_subdart(
+    const Mesh& m,
+    PrimitiveType primitive_type,
+    const Tuple& a,
+    const Tuple& b)
+{
+    for (PrimitiveType pt = PrimitiveType::Vertex; pt < primitive_type; pt = pt + 1) {
+        if (m.id(a, pt) != m.id(b, pt)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+inline bool SimplexComparisons::equal_subdart(
+    const Mesh& m,
+    PrimitiveType primitive_type,
+    const Simplex& a,
+    const Simplex& b)
+{
+    return equal_subdart(m, primitive_type, a.tuple(), b.tuple());
+}
+inline bool SimplexComparisons::equal_subdart(const Mesh& m, const Simplex& a, const Simplex& b)
+{
+    PrimitiveType primitive_type =
+        a.primitive_type() < b.primitive_type() ? a.primitive_type() : b.primitive_type();
+    return equal_subdart(m, primitive_type, a, b);
+}
+
+bool SimplexComparisons::less_subdart(
+    const Mesh& m,
+    PrimitiveType primitive_type,
+    const Tuple& a,
+    const Tuple& b)
+{
+    for (PrimitiveType pt = PrimitiveType::Vertex; pt < primitive_type; pt = pt + 1) {
+        int64_t ai = m.id(a, pt);
+        int64_t bi = m.id(b, pt);
+        if (ai == bi) {
+            continue;
+        } else {
+            return ai < bi;
+        }
+    }
+    return false;
+}
+bool SimplexComparisons::less_subdart(
+    const Mesh& m,
+    PrimitiveType primitive_type,
+    const Simplex& a,
+    const Simplex& b)
+{
+    return less_subdart(m, primitive_type, a.tuple(), b.tuple());
+}
+bool SimplexComparisons::less_subdart(const Mesh& m, const Simplex& a, const Simplex& b)
+{
+    PrimitiveType primitive_type =
+        a.primitive_type() < b.primitive_type() ? a.primitive_type() : b.primitive_type();
+    return less_subdart(m, primitive_type, a, b);
+}
 } // namespace wmtk::simplex::utils
