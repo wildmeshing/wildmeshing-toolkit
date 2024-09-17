@@ -8,6 +8,7 @@
 #include <wmtk/operations/utils/MultiMeshEdgeSplitFunctor.hpp>
 #include <wmtk/operations/utils/UpdateEdgeOperationMultiMeshMapFunctor.hpp>
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 
 #include <wmtk/TriMesh.hpp>
 
@@ -60,9 +61,9 @@ std::vector<simplex::Simplex> multi_mesh_edge_split_with_modified_simplices(
     const std::vector<std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>>&
         new_attr_strategies)
 {
+    auto candidates = top_dimension_cofaces(mesh, simplex);
     auto return_data = multi_mesh_edge_split(mesh, simplex.tuple(), new_attr_strategies);
 
-    auto candidates = cofaces_single_dimension_simplices(mesh, simplex, simplex.primitive_type());
     for (const auto& c : candidates) {
         if (return_data.has_variant(mesh, c)) {
             return std::visit(

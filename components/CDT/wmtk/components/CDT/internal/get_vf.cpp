@@ -5,7 +5,8 @@
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::components::internal {
-auto get_vf(const TriMesh& trimesh)
+std::tuple<std::pair<std::vector<double>, uint32_t>, std::pair<std::vector<uint32_t>, uint32_t>>
+get_vf(const TriMesh& trimesh)
 {
     wmtk::utils::EigenMatrixWriter writer;
 
