@@ -1,29 +1,28 @@
 #include "multimesh.hpp"
 
-#include "MultimeshOptions.hpp"
-
 #include <wmtk/components/utils/get_attributes.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
 
+#include <wmtk/utils/Rational.hpp>
+
 
 namespace wmtk::components {
-void multimesh(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+std::pair<std::shared_ptr<Mesh>, std::shared_ptr<Mesh>> multimesh(
+    const std::string type,
+    const std::shared_ptr<Mesh>& mesh,
+    const std::shared_ptr<Mesh>& child,
+    const std::string position_handle_name,
+    const std::string tag_name,
+    const int64_t tag_value,
+    const int64_t primitive)
 {
-    const std::string type = j["type"];
-
-
-    std::map<std::string, std::vector<int64_t>> names;
     std::shared_ptr<Mesh> parent;
-    std::string out_name;
 
     if (type == "uv") {
-        MultimeshUVOptions options = j.get<MultimeshUVOptions>();
-        out_name = options.name;
-        parent = cache.read_mesh(options.parent);
-        std::shared_ptr<Mesh> child = cache.read_mesh(options.child);
+        parent = mesh;
 
         if (parent->top_simplex_type() == child->top_simplex_type() &&
             parent->capacity(parent->top_simplex_type()) ==
@@ -31,8 +30,8 @@ void multimesh(const utils::Paths& paths, const nlohmann::json& j, io::Cache& ca
             auto child_map = multimesh::same_simplex_dimension_bijection(*parent, *child);
 
             parent->register_child_mesh(child, child_map);
-            names[options.child] = child->absolute_multi_mesh_id();
-            names[options.parent] = parent->absolute_multi_mesh_id();
+
+            return std::make_pair(parent, child);
         } else {
             throw std::runtime_error("unsupported multimesh mapping");
         }
@@ -40,77 +39,79 @@ void multimesh(const utils::Paths& paths, const nlohmann::json& j, io::Cache& ca
         std::shared_ptr<Mesh> mesh_in;
         const bool use_boundary = type == "boundary";
         std::string tag;
-        std::string name;
         attribute::MeshAttributeHandle position;
         int64_t value;
         PrimitiveType ptype;
 
+        bool use_rational_position =
+            mesh->has_attribute<Rational>(position_handle_name, PrimitiveType::Vertex);
+
+        if (!use_rational_position) {
+            position =
+                mesh->get_attribute_handle<double>(position_handle_name, PrimitiveType::Vertex);
+        } else {
+            position =
+                mesh->get_attribute_handle<Rational>(position_handle_name, PrimitiveType::Vertex);
+        }
+
         if (use_boundary) {
-            MultimeshBOptions options = j.get<MultimeshBOptions>();
-            name = options.mesh;
-            out_name = options.name;
-            mesh_in = cache.read_mesh(options.mesh);
-            auto tmp = utils::get_attributes(cache, *mesh_in, options.position);
-            assert(tmp.size() == 1);
-            position = tmp.front();
-            auto& mesh = position.mesh();
-
-            tag = options.tag_name;
+            tag = "is_boundary";
             value = 1;
-            ptype = get_primitive_type_from_id(mesh.top_cell_dimension() - 1);
+            ptype = get_primitive_type_from_id(mesh->top_cell_dimension() - 1);
 
-            auto is_boundary_handle = mesh.register_attribute<int64_t>(tag, ptype, 1);
-            auto is_boundary_accessor = mesh.create_accessor(is_boundary_handle.as<int64_t>());
+            auto is_boundary_handle = mesh->register_attribute<int64_t>(tag, ptype, 1);
+            auto is_boundary_accessor = mesh->create_accessor(is_boundary_handle.as<int64_t>());
 
-            for (const auto& t : mesh.get_all(ptype)) {
-                is_boundary_accessor.scalar_attribute(t) = mesh.is_boundary(ptype, t) ? value : 0;
+            for (const auto& t : mesh->get_all(ptype)) {
+                is_boundary_accessor.scalar_attribute(t) = mesh->is_boundary(ptype, t) ? value : 0;
             }
         } else {
-            MultimeshTOptions options = j.get<MultimeshTOptions>();
-            mesh_in = cache.read_mesh(options.mesh);
-
-            name = options.mesh;
-            out_name = options.name;
-
-            auto tmp = utils::get_attributes(cache, *mesh_in, options.position);
-            assert(tmp.size() == 1);
-            position = tmp.front();
-
-            tag = options.tag;
-            value = options.tag_value;
-            ptype = get_primitive_type_from_id(options.primitive);
+            tag = tag_name;
+            value = tag_value;
+            ptype = get_primitive_type_from_id(primitive);
         }
 
         auto child_mesh = wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
-            position.mesh(),
+            *mesh,
             tag,
             value,
             ptype);
 
+        if (!use_rational_position) {
+            auto child_position_handle = child_mesh->register_attribute<double>(
+                "vertices", // TODO fix me
+                PrimitiveType::Vertex,
+                position.dimension());
 
-        auto child_position_handle = child_mesh->register_attribute<double>(
-            "vertices", // TODO fix me
-            PrimitiveType::Vertex,
-            position.dimension());
+            auto propagate_to_child_position = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+                return P;
+            };
+            auto update_child_positon =
+                std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+                    child_position_handle,
+                    position,
+                    propagate_to_child_position);
+            update_child_positon->run_on_all();
+        } else {
+            auto child_position_handle = child_mesh->register_attribute<Rational>(
+                "vertices", // TODO fix me
+                PrimitiveType::Vertex,
+                position.dimension());
 
-        auto propagate_to_child_position = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-            return P;
-        };
-        auto update_child_positon =
-            std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            auto propagate_to_child_position =
+                [](const Eigen::MatrixX<Rational>& P) -> Eigen::VectorX<Rational> { return P; };
+            auto update_child_positon = std::make_shared<
+                wmtk::operations::SingleAttributeTransferStrategy<Rational, Rational>>(
                 child_position_handle,
                 position,
                 propagate_to_child_position);
-        update_child_positon->run_on_all();
+            update_child_positon->run_on_all();
+        }
 
-        parent = mesh_in;
-        if (&position.mesh() != mesh_in.get()) names[name] = parent->absolute_multi_mesh_id();
-
-        names[tag] = child_mesh->absolute_multi_mesh_id();
+        return std::make_pair(mesh, child_mesh);
     }
 
-    // output
-    cache.write_mesh(*parent, out_name, names);
+    throw std::runtime_error("unsupported multimesh type");
 }
 
 } // namespace wmtk::components

@@ -25,12 +25,12 @@ add_subdirectory("marching/wmtk/components/marching")
 add_subdirectory("procedural/wmtk/components/procedural")
 
 add_subdirectory("tetwild_simplification/wmtk/components/tetwild_simplification")
+add_subdirectory("multimesh/wmtk/components/multimesh")
 
 # add_component("export_cache")
 # add_component("import_cache")
 # add_component("isotropic_remeshing")
 # add_component("mesh_info")
-# add_component("multimesh")
 # add_component("regular_space")
 # add_component("tag_intersection")
 # add_component("wildmeshing")
