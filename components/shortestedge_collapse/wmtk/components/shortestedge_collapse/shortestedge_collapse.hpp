@@ -1,11 +1,16 @@
 #pragma once
-#include <nlohmann/json.hpp>
-#include <wmtk/io/Cache.hpp>
-
-#include <wmtk/components/utils/Paths.hpp>
+#include <wmtk/Mesh.hpp>
 
 namespace wmtk::components {
 
-void shortestedge_collapse(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache);
+std::shared_ptr<Mesh> shortestedge_collapse(
+    const std::shared_ptr<Mesh>& position_mesh,
+    const std::string& position_handle_name,
+    const std::shared_ptr<Mesh>& inversion_mesh,
+    const std::string& inversion_position_handle_name,
+    bool update_other_position,
+    const double length_rel,
+    bool lock_boundary,
+    double envelope_size);
 
 } // namespace wmtk::components
