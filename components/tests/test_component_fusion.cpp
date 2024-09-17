@@ -7,15 +7,15 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/Types.hpp>
-#include <wmtk/components/base/Paths.hpp>
 #include <wmtk/components/fusion/fusion.hpp>
 #include <wmtk/components/input/input.hpp>
+#include <wmtk/components/utils/Paths.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/EigenMatrixWriter.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
-using namespace wmtk::components::base;
+using namespace wmtk::components::utils;
 using namespace wmtk;
 using namespace wmtk::tests;
 using namespace wmtk::tests_3d;

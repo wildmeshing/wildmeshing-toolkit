@@ -56,8 +56,8 @@ std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives(
 }
 
 
-std::shared_ptr<operations::BaseSplitNewAttributeStrategy> EdgeSplit::get_new_attribute_strategy(
-    const attribute::MeshAttributeHandle& attribute) const
+std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>
+EdgeSplit::get_new_attribute_strategy(const attribute::MeshAttributeHandle& attribute) const
 {
     for (auto& s : m_new_attr_strategies) {
         if (s->matches_attribute(attribute)) return s;
@@ -66,9 +66,14 @@ std::shared_ptr<operations::BaseSplitNewAttributeStrategy> EdgeSplit::get_new_at
     throw std::runtime_error("unable to find attribute");
 }
 
+
+void EdgeSplit::clear_attribute_new_strategies()
+{
+    m_new_attr_strategies.clear();
+}
 void EdgeSplit::set_new_attribute_strategy(
     const attribute::MeshAttributeHandle& attribute,
-    const std::shared_ptr<operations::BaseSplitNewAttributeStrategy>& other)
+    const std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>& other)
 {
     for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
         if (m_new_attr_strategies[i]->matches_attribute(attribute)) {

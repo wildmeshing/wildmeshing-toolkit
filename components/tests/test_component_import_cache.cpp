@@ -1,11 +1,11 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
-#include <wmtk/components/base/Paths.hpp>
 #include <wmtk/components/export_cache/export_cache.hpp>
 #include <wmtk/components/import_cache/import_cache.hpp>
 #include <wmtk/components/input/input.hpp>
+#include <wmtk/components/utils/Paths.hpp>
 
-using namespace wmtk::components::base;
+using namespace wmtk::components::utils;
 using json = nlohmann::json;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
