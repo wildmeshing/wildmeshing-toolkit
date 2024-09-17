@@ -57,17 +57,23 @@ std::vector<simplex::Simplex> multi_mesh_edge_collapse_with_modified_simplices(
     const std::vector<std::shared_ptr<const operations::BaseCollapseNewAttributeStrategy>>&
         new_attr_strategies)
 {
+    int64_t simplex_id = mesh.id(simplex);
     auto return_data =
         operations::utils::multi_mesh_edge_collapse(mesh, simplex.tuple(), new_attr_strategies);
 
     if (mesh.is_free()) {
         return std::vector<simplex::Simplex>{1};
     }
+    const auto& var = return_data.get_variant(mesh, simplex_id);
+
+    // const auto& var =
+    //     mesh.parent_scope([&]() -> const auto& { return return_data.get_variant(mesh, simplex);
+    //     });
 
     return std::visit(
         [&mesh](const auto& rt) -> std::vector<simplex::Simplex> {
             return {simplex::Simplex::vertex(mesh, rt.m_output_tuple)};
         },
-        return_data.get_variant(mesh, simplex));
+        var);
 }
 } // namespace wmtk::operations::utils

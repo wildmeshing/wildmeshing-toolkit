@@ -41,7 +41,8 @@ public:
             NodeFunctor,
             MeshVariantTraits,
             wmtk::simplex::utils::MeshSimplexComparator,
-            simplex::Simplex>;
+            int64_t>;
+    // simplex::Simplex>;
     using CacheType = ReturnDataType;
 
     using TypeHelper = wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType<
@@ -287,8 +288,10 @@ private:
                             run(child_mesh, child_simplex);
 
                             if constexpr (HasReturnCache && ChildHasReturn && CurHasReturn) {
-                                auto parent_id = m_return_data.get_id(current_mesh, simplex);
-                                auto child_id = m_return_data.get_id(child_mesh, child_simplex);
+                                auto parent_id =
+                                    m_return_data.get_id(current_mesh, current_mesh.id(simplex));
+                                auto child_id =
+                                    m_return_data.get_id(child_mesh, child_mesh.id(child_simplex));
                                 // logger().trace(
                                 //     "MultiMeshSimplexVisitor[{}=>{}] adding to edges edge simplex
                                 //     {} " "child " "simplex{}",
@@ -310,7 +313,7 @@ private:
         if constexpr (CurHasReturn) {
             auto current_return = visitor.m_node_functor(current_mesh, simplex);
 
-            m_return_data.add(std::move(current_return), current_mesh, simplex);
+            m_return_data.add(std::move(current_return), current_mesh, current_mesh.id(simplex));
         } else {
             visitor.m_node_functor(current_mesh, simplex);
         }

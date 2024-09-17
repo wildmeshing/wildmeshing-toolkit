@@ -59,7 +59,12 @@ std::vector<simplex::Simplex> multi_mesh_edge_split_with_modified_simplices(
     const std::vector<std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>>&
         new_attr_strategies)
 {
+    int64_t simplex_id = mesh.id(simplex);
     auto return_data = multi_mesh_edge_split(mesh, simplex.tuple(), new_attr_strategies);
+    const auto& var = return_data.get_variant(mesh, simplex_id);
+    // const auto& var =
+    //     mesh.parent_scope([&]() -> const auto& { return return_data.get_variant(mesh, simplex);
+    //     });
     return std::visit(
         [&mesh](const auto& rt) -> std::vector<simplex::Simplex> {
             if (mesh.is_free()) {
@@ -68,6 +73,6 @@ std::vector<simplex::Simplex> multi_mesh_edge_split_with_modified_simplices(
                 return {simplex::Simplex::vertex(mesh, rt.m_output_tuple)};
             }
         },
-        return_data.get_variant(mesh, simplex));
+        var);
 }
 } // namespace wmtk::operations::utils

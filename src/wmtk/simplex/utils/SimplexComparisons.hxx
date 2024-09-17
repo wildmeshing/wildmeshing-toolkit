@@ -102,7 +102,7 @@ inline bool SimplexComparisons::equal_subdart(const Mesh& m, const Simplex& a, c
     return equal_subdart(m, primitive_type, a, b);
 }
 
-bool SimplexComparisons::less_subdart(
+inline bool SimplexComparisons::less_subdart(
     const Mesh& m,
     PrimitiveType primitive_type,
     const Tuple& a,
@@ -119,7 +119,7 @@ bool SimplexComparisons::less_subdart(
     }
     return false;
 }
-bool SimplexComparisons::less_subdart(
+inline bool SimplexComparisons::less_subdart(
     const Mesh& m,
     PrimitiveType primitive_type,
     const Simplex& a,
@@ -127,7 +127,7 @@ bool SimplexComparisons::less_subdart(
 {
     return less_subdart(m, primitive_type, a.tuple(), b.tuple());
 }
-bool SimplexComparisons::less_subdart(const Mesh& m, const Simplex& a, const Simplex& b)
+inline bool SimplexComparisons::less_subdart(const Mesh& m, const Simplex& a, const Simplex& b)
 {
     PrimitiveType primitive_type =
         a.primitive_type() < b.primitive_type() ? a.primitive_type() : b.primitive_type();
