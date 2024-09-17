@@ -39,7 +39,7 @@ void shortestedge_collapse(const utils::Paths& paths, const nlohmann::json& j, i
     if (pos_handle.mesh().top_simplex_type() != PrimitiveType::Triangle) {
         log_and_throw_error(
             "isotropic remeshing works only for triangle meshes: {}",
-            mesh_in->top_simplex_type());
+            primitive_type_name(mesh_in->top_simplex_type()));
     }
 
     auto pass_through_attributes = utils::get_attributes(cache, *mesh_in, options.pass_through);
