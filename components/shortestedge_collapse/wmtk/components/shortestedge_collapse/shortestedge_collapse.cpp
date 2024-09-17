@@ -60,6 +60,7 @@ std::shared_ptr<Mesh> shortestedge_collapse(
     attribute::MeshAttributeHandle position_for_inversion;
 
     if (check_inversion) {
+        wmtk::logger().info("check inversion!");
         position_for_inversion = inversion_mesh->get_attribute_handle<double>(
             inversion_position_handle_name,
             PrimitiveType::Vertex);

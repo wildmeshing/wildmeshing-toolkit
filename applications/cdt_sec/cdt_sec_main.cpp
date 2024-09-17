@@ -63,6 +63,13 @@ int main(int argc, char* argv[])
         wmtk::components::multimesh("boundary", mesh_after_cdt, nullptr, "vertices", "", -1, -1);
     wmtk::logger().info("registered boundary child mesh");
 
+    // check open
+    for (const auto& e : child_mesh->get_all(PrimitiveType::Edge)) {
+        if (child_mesh->is_boundary(PrimitiveType::Edge, e)) {
+            wmtk::logger().info("open edge on trimesh!");
+        }
+    }
+
     std::string output_file = j["output"];
     wmtk::components::output(*parent_mesh, output_file + "_before_sec", "vertices");
     wmtk::components::output(*child_mesh, output_file + "_surface_before_sec", "vertices");
