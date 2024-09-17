@@ -4,27 +4,27 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 
-#include <wmtk/components/multimesh_from_tag/internal/MultiMeshFromTag.hpp>
+// #include <wmtk/components/multimesh_from_tag/internal/MultiMeshFromTag.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 
 #include "internal/CDT.hpp"
-#include "internal/CDTOptions.hpp"
+// #include "internal/CDTOptions.hpp"
 
 namespace wmtk {
 namespace components {
 
 using namespace internal;
 
-void CDT(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+std::shared_ptr<Mesh>
+CDT(const std::shared_ptr<Mesh>& input, const bool inner_only, const bool rational_output)
 {
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
     constexpr static PrimitiveType PF = PrimitiveType::Triangle;
     constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
 
-    CDTOptions options = j.get<CDTOptions>();
 
-    auto trimesh_in = cache.read_mesh(options.input);
+    auto trimesh_in = input;
     TriMesh& trimesh = static_cast<TriMesh&>(*trimesh_in);
 
     std::vector<std::array<bool, 4>> local_f_on_input;
@@ -32,7 +32,7 @@ void CDT(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
     wmtk::logger().info("start CDT ...");
 
     std::shared_ptr<TetMesh> tm =
-        CDT_internal(trimesh, local_f_on_input, options.inner_only, options.rational_output);
+        CDT_internal(trimesh, local_f_on_input, inner_only, rational_output);
 
     wmtk::logger().info("finished CDT");
 
@@ -86,12 +86,7 @@ void CDT(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
     //     update_child_positon->run_on_all();
     // }
 
-    std::map<std::string, std::vector<int64_t>> names;
-
-    names["tetmesh"] = tm->absolute_multi_mesh_id();
-    // names["surface_mesh"] = tm->absolute_multi_mesh_id();
-
-    cache.write_mesh(*tm, options.output, names);
+    return tm;
 }
 
 } // namespace components

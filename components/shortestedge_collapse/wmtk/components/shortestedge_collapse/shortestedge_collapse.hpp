@@ -11,6 +11,7 @@ std::shared_ptr<Mesh> shortestedge_collapse(
     bool update_other_position,
     const double length_rel,
     bool lock_boundary,
-    double envelope_size);
+    double envelope_size,
+    const std::vector<attribute::MeshAttributeHandle>& pass_through);
 
 } // namespace wmtk::components
