@@ -2,6 +2,9 @@
 #include <memory>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 
+namespace nlohmann {
+    class json;
+};
 
 namespace wmtk::components::isotropic_remeshing {
 
@@ -25,6 +28,9 @@ struct IsotropicRemeshingOptions
     bool use_for_periodic = false;
     bool dont_disable_split = false;
     bool fix_uv_seam = true;
+
+    void load_json(const nlohmann::json& js);
+    void write_json(nlohmann::json& js);
 };
 
 

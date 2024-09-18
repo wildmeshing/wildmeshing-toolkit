@@ -11,6 +11,7 @@
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/components/output/output.hpp>
 #include <wmtk/components/utils/resolve_path.hpp>
+#include <wmtk/components/isotropic_remeshing.hpp>
 
 #include "spec.hpp"
 
@@ -45,8 +46,13 @@ int main(int argc, char* argv[])
         }
     }
 
-    const fs::path input_path_in = j["input_path"];
+    const fs::path input_path_in = j["input"];
 
+    wmtk::components::input(input_path_in);
+
+    wmtk::components::isotropic_remeshing::IsotropicRemeshingOptions opts;
+
+    wmtk::components::isotropic_remeshing::isotropic_remeshing(options);
 
     // input uv mesh
 
@@ -57,5 +63,5 @@ int main(int argc, char* argv[])
 
 
     const std::string output_path = j["output"];
-    //wmtk::components::output_hdf5(*mesh, j["output"]);
+    wmtk::components::output_hdf5(*mesh, j["output"]);
 }
