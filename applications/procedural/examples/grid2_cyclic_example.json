@@ -1,0 +1,21 @@
+
+        "name": "grid2d_tiled",
+        "type": "grid"
+        "grid": {
+          "coordinates": {
+            "name": "vertices",
+            "spacing": [
+              1,
+              1
+            ]
+          },
+          "cycles": [
+            true,
+            true
+          ],
+          "dimensions": [
+            10,
+            10
+          ],
+          "tiling": "diagonal"
+        },
