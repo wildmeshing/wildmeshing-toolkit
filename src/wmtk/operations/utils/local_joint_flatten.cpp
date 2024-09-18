@@ -75,7 +75,10 @@ void flatten(
         bc,
         0,
         b_hard);
-    // igl::triangle::scaf_solve(scaf_data, n_iterations);
+
+    igl::triangle::scaf_solve(scaf_data, n_iterations);
+
+    /*
     {
         int show_option = 1;
         auto key_down_debug = [&](igl::opengl::glfw::Viewer& viewer,
@@ -167,8 +170,9 @@ void flatten(
         viewer.callback_key_down = key_down_debug;
         viewer.launch();
     }
+    */
     // return UVjoint
-    UVjoint = scaf_data.w_uv;
+    UVjoint = scaf_data.w_uv.topRows(V_joint_before.rows());
 }
 
 void get_local_vid_map(
@@ -199,7 +203,7 @@ void get_local_vid_map(
         }
     }
 
-    std::cout << "vj_before = " << vj_before << std::endl;
+    // std::cout << "vj_before = " << vj_before << std::endl;
     if (vj_before == -1 || vj_before == vi_before) {
         throw std::runtime_error("Cannot find the joint vertex!");
     }
@@ -210,7 +214,7 @@ void get_local_vid_map(
 // input: is_bd_v0, is_bd_v1
 // output: V_joint_before, V_joint_after, F_joint_before, F_joint_after
 // output: b_hard(hard constraint on colinear case on the boundary)
-void get_joint_mesh(
+int get_joint_mesh(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXi& F_before,
     const Eigen::MatrixXd& V_after,
@@ -223,13 +227,14 @@ void get_joint_mesh(
     Eigen::MatrixXi& F_joint_before,
     Eigen::MatrixXd& V_joint_after,
     Eigen::MatrixXi& F_joint_after,
-    std::vector<std::pair<int, int>>& b_hard)
+    std::vector<std::pair<int, int>>& b_hard,
+    std::vector<int64_t>& v_id_map_joint)
 {
     // get boundary_case_id
     int case_id = 0;
     if (is_bd_v0) case_id += 1;
     if (is_bd_v1) case_id += 1;
-    std::cout << "Boundary case id: " << case_id << std::endl;
+    // std::cout << "Boundary case id: " << case_id << std::endl;
 
     // collect information
     int vi_before, vj_before, vi_after;
@@ -267,6 +272,11 @@ void get_joint_mesh(
             }
         }
 
+        v_id_map_joint = v_id_map_before;
+        v_id_map_joint.push_back(v_id_map_after[vi_after]);
+
+        return N_v_joint - 1;
+
     } else if (case_id == 1) {
         // for connector case there will be no more vertices than before case
         int N_v_joint = V_before.rows();
@@ -294,11 +304,15 @@ void get_joint_mesh(
             }
         }
 
+        v_id_map_joint = v_id_map_before;
+        v_id_map_joint.push_back(v_id_map_after[vi_after]);
+
+        return v_bd;
+
     } else if (case_id == 2) {
         bool do_3_colinear_case = true;
         int v_to_keep;
 
-        // TODO: implement this part
         // decide which vertex to keep
         {
             Eigen::VectorXi bd_loop_before;
@@ -378,8 +392,15 @@ void get_joint_mesh(
                     }
                 }
             }
-        }
+
+            v_id_map_joint = v_id_map_before;
+            v_id_map_joint.push_back(v_id_map_after[vi_after]);
+
+            return v_to_keep;
+        } // end of if(do_3_colinear_case)
     }
+
+    return -1; // should not happen
 }
 void local_joint_flatten(
     const Eigen::MatrixXi& F_before,
@@ -399,7 +420,8 @@ void local_joint_flatten(
 
     std::vector<std::pair<int, int>> b_hard;
 
-    get_joint_mesh(
+    // TODO: update the mapping of the vertices at the same time
+    int v_common = get_joint_mesh(
         V_before,
         F_before,
         V_after,
@@ -412,10 +434,29 @@ void local_joint_flatten(
         F_joint_before,
         V_joint_after,
         F_joint_after,
-        b_hard);
+        b_hard,
+        v_id_map_joint);
 
-    // TODO: it might be nice if we can visualize the joint mesh here?
-    flatten(V_joint_before, V_joint_after, F_joint_before, F_joint_after, b_hard, UV_joint, 10);
+    flatten(V_joint_before, V_joint_after, F_joint_before, F_joint_after, b_hard, UV_joint, 5);
+
+    // modify UV_joint, F_after
+    {
+        // only add the common vertex for case 1 and case 2
+        if (v_common != UV_joint.rows() - 1) {
+            UV_joint.conservativeResize(UV_joint.rows() + 1, UV_joint.cols());
+            UV_joint.row(UV_joint.rows() - 1) = UV_joint.row(v_common);
+        }
+        F_after = F_joint_after;
+
+        for (int i = 0; i < F_after.rows(); i++) {
+            for (int j = 0; j < 3; j++) {
+                if (F_after(i, j) == v_common) {
+                    F_after(i, j) = UV_joint.rows() - 1;
+                }
+            }
+        }
+    }
+
     /*
         {
             int show_option = 1;
@@ -464,6 +505,7 @@ void local_joint_flatten(
             viewer.launch();
         }
         */
+
     // check if all element in UV_joint is valid number
     bool check_nan = false;
     for (int i = 0; i < UV_joint.rows(); i++) {
