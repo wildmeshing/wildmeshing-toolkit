@@ -1,10 +1,18 @@
+set(COMPONENT_NAME wildmeshing)
+add_component(${COMPONENT_NAME})
+if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
+    return()
+endif()
+
 
 set(SRC_FILES
-	wildmeshing.hpp
+    wildmeshing.hpp
     wildmeshing.cpp
-    WildmeshingOptions.hpp
-    )
+    internal/wildmeshing2d.hpp
+    internal/wildmeshing2d.cpp
+    internal/wildmeshing3d.hpp
+    internal/wildmeshing3d.cpp
+    internal/wildmeshing_utils.hpp
+    internal/WildmeshingOptions.hpp)
 
-
-#CURRENT_COMPONENT_LIB_NAME is set from the main cmake
-target_sources(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${SRC_FILES})
+target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

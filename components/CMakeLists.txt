@@ -26,6 +26,9 @@ add_subdirectory("procedural/wmtk/components/procedural")
 
 add_subdirectory("tetwild_simplification/wmtk/components/tetwild_simplification")
 
+add_subdirectory("wildmeshing/wmtk/components/wildmeshing")
+
+
 # add_component("export_cache")
 # add_component("import_cache")
 # add_component("isotropic_remeshing")
