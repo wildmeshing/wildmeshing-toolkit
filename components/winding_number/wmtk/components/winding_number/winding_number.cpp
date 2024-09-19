@@ -1,5 +1,3 @@
-#pragma once
-
 #include "winding_number.hpp"
 
 #include <wmtk/EdgeMesh.hpp>
@@ -18,7 +16,7 @@ namespace wmtk::components {
 
 std::shared_ptr<Mesh> winding_number(
     const std::shared_ptr<Mesh>& query_mesh_ptr,
-    const std::shard_ptr<Mesh>& surface_ptr)
+    const std::shared_ptr<Mesh>& surface_ptr)
 {
     using namespace internal;
 

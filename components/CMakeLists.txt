@@ -26,6 +26,7 @@ add_subdirectory("procedural/wmtk/components/procedural")
 
 add_subdirectory("tetwild_simplification/wmtk/components/tetwild_simplification")
 
+add_subdirectory("winding_number/wmtk/components/winding_number")
 add_subdirectory("wildmeshing/wmtk/components/wildmeshing")
 
 

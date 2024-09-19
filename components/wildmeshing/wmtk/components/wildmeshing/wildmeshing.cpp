@@ -11,7 +11,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing(
     const WildMeshingOptions& option)
 {
     if (option.input_mesh->top_simplex_type() == PrimitiveType::Triangle) {
-        return {};
+        return wildmeshing2d(option);
     } else {
         return wildmeshing3d(option);
     }

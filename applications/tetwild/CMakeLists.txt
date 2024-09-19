@@ -1,8 +1,9 @@
-wmtk_add_application(wildmeshing_app
-    wildmeshing_main.cpp
+wmtk_add_application(tetwild_app
+    tetwild_main.cpp
+    tetwild_spec.hpp
     )
 
-target_link_libraries(wildmeshing_app PRIVATE
+target_link_libraries(tetwild_app PRIVATE
 wmtk::input
 wmtk::tetwild_simplification
 wmtk::to_points

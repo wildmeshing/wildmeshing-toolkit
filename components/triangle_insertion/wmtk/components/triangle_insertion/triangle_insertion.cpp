@@ -23,11 +23,12 @@
 
 namespace wmtk::components {
 
-std::shared_ptr<wmtk::TetMesh> triangle_insertion(
+std::vector<std::pair<std::shared_ptr<wmtk::Mesh>, std::string>> triangle_insertion(
     const std::shared_ptr<Mesh>& mesh_in,
     const std::string& in_position,
     const std::shared_ptr<Mesh>& bg_mesh,
     const std::string& bg_position,
+    std::vector<attribute::MeshAttributeHandle>& pass_through,
     bool make_child_free)
 {
     if (mesh_in->top_simplex_type() != PrimitiveType::Triangle)
@@ -66,6 +67,9 @@ std::shared_ptr<wmtk::TetMesh> triangle_insertion(
 
     auto [tetmesh, tet_face_on_input_surface] =
         utils::generate_raw_tetmesh_from_input_surface(V, F, 0.1, Vbg, Fbg);
+
+    std::vector<std::pair<std::shared_ptr<wmtk::Mesh>, std::string>> all_meshes;
+    all_meshes.push_back(std::make_pair(tetmesh, "main"));
 
 
     /* -------------rounding------------ */
@@ -146,6 +150,9 @@ std::shared_ptr<wmtk::TetMesh> triangle_insertion(
         SurfaceMeshFromTag.remove_soup();
     }
 
+    all_meshes.push_back(std::make_pair(surface_mesh, "surface"));
+    pass_through.push_back(surface_handle);
+
     /* -----------open boundary and nonmanifold edges in input surface--------- */
 
     logger().error("Going through open/nonmanifold stuff");
@@ -207,6 +214,9 @@ std::shared_ptr<wmtk::TetMesh> triangle_insertion(
             open_boundary_mesh = tetmesh->get_child_meshes().back();
             OpenBoundaryFromTag.remove_soup();
         }
+
+        all_meshes.push_back(std::make_pair(open_boundary_mesh, "open_boundary"));
+        pass_through.push_back(open_boundary_handle);
     }
 
     if (process_nonmanifold_edges) {
@@ -216,6 +226,9 @@ std::shared_ptr<wmtk::TetMesh> triangle_insertion(
 
         nonmanifold_edge_mesh = tetmesh->get_child_meshes().back();
         NonmanifoldEdgeFromTag.remove_soup();
+
+        all_meshes.push_back(std::make_pair(nonmanifold_edge_mesh, "nonmanifold_edges"));
+        pass_through.push_back(nonmanifold_edge_handle);
     }
 
     /* ---------------------bounding box-------------------------*/
@@ -230,12 +243,14 @@ std::shared_ptr<wmtk::TetMesh> triangle_insertion(
 
     std::shared_ptr<Mesh> bbox_mesh;
 
-    internal::MultiMeshFromTag NonmanifoldEdgeFromTag(*tetmesh, bbox_handle, 1);
-    NonmanifoldEdgeFromTag.compute_substructure_mesh();
+    internal::MultiMeshFromTag BboxFromTag(*tetmesh, bbox_handle, 1);
+    BboxFromTag.compute_substructure_mesh();
 
     bbox_mesh = tetmesh->get_child_meshes().back();
-    NonmanifoldEdgeFromTag.remove_soup();
+    BboxFromTag.remove_soup();
 
+    all_meshes.push_back(std::make_pair(bbox_mesh, "bounding_box"));
+    pass_through.push_back(bbox_handle);
 
     /* -----------nonmanifold vertices in input surface--------- */
 
@@ -271,13 +286,7 @@ std::shared_ptr<wmtk::TetMesh> triangle_insertion(
         }
     }
 
-    // TODO: register as child mesh
-
-    // remove all soups
-    // NonmanifoldEdgeFromTag.remove_soup();
-    // OpenBoundaryFromTag.remove_soup();
-    // SurfaceMeshFromTag.remove_soup();
-
+    pass_through.push_back(nonmanifold_vertex_handle);
 
     /* ------------------ post processing -------------------*/
 
@@ -301,13 +310,6 @@ std::shared_ptr<wmtk::TetMesh> triangle_insertion(
         update_child_positon->run_on_all();
     }
 
-    // send to cache
-
-    std::map<std::string, std::vector<int64_t>> names;
-
-    names["tetmesh"] = tetmesh->absolute_multi_mesh_id();
-    names["surface_mesh"] = surface_mesh->absolute_multi_mesh_id();
-
     logger().info(
         "TetMesh created: {} tets, {} faces, {} edges, {} vertices",
         tetmesh->capacity(PrimitiveType::Tetrahedron),
@@ -318,20 +320,14 @@ std::shared_ptr<wmtk::TetMesh> triangle_insertion(
     logger().info("Surface child TriMesh registered");
 
     if (has_openboundary) {
-        names["open_boundary"] = open_boundary_mesh->absolute_multi_mesh_id();
-
         logger().info("Open boundary child EdgeMesh registered");
     }
     if (process_nonmanifold_edges) {
-        names["nonmanifold_edges"] = nonmanifold_edge_mesh->absolute_multi_mesh_id();
-
         logger().info("Nonmanifold edge child EdgeMesh registered");
     }
-
-    names["bbox"] = bbox_mesh->absolute_multi_mesh_id();
     logger().info("Bbox child TriMesh registered");
 
-    return tetmesh;
+    return all_meshes;
 
     /* -------------------- new code end ----------------------- */
     /* ----don't forget to comment out/ delete the old code----- */

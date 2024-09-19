@@ -34,9 +34,9 @@ if(WMTK_ENABLE_APPLICATION_tetwild_simplification)
 add_subdirectory(tetwild_simplification)
 endif()
 
-option(WMTK_ENABLE_APPLICATION_wildmeshing "Runs wildmeshing application" OFF)
-if(WMTK_ENABLE_APPLICATION_wildmeshing)
-add_subdirectory(wildmeshing)
+option(WMTK_ENABLE_APPLICATION_tetwild "Runs tetwild application" ON)
+if(WMTK_ENABLE_APPLICATION_tetwild)
+add_subdirectory(tetwild)
 endif()
 
 wmtk_generate_test_config("${WMTK_TEST_CONFIG}")
