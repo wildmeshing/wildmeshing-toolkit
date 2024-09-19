@@ -1,0 +1,113 @@
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": [
+      "input",
+      "output",
+      "attributes",
+      "iterations"
+    ],
+    "optional": [
+      "update_other_positions",
+      "pass_through",
+      "length_abs",
+      "length_rel",
+      "lock_boundary",
+      "use_for_periodic",
+      "dont_disable_split"
+    ]
+  },
+  {
+    "pointer": "/input",
+    "type": "string",
+    "doc": "input mesh path"
+  },
+  {
+    "pointer": "/output",
+    "type": "string",
+    "doc": "output mesh path"
+  },
+  {
+    "pointer": "/attributes",
+    "type": "object",
+    "required": [
+      "position"
+    ],
+    "optional": [
+      "inversion_position",
+      "other_positions",
+    ],
+    "doc": "all attributes required for this component"
+  },
+  {
+    "pointer": "/attributes/position",
+    "type": "include",
+    "spec_file": "attribute_spec.json",
+    "doc": "Position attribute"
+  },
+  {
+    "pointer": "/attributes/inversion_position",
+    "type": "include",
+    "spec_file": "optional_attribute_spec.json",
+    "doc": "Position attribute for inversion check"
+  },
+  {
+    "pointer": "/attributes/other_positions",
+    "type": "include",
+    "spec_file": "optional_attribute_spec.json",
+    "doc": "Position attribute for inversion check"
+  },
+  {
+    "pointer": "/update_other_positions",
+    "type": "bool",
+    "default": false,
+    "doc": "Use attribute update to sync other positions"
+  },
+  {
+    "pointer": "/pass_through",
+    "type": "list",
+    "default": [],
+    "doc": "all attributes that are not deleted by the component but also not required"
+  },
+  {
+    "pointer": "/pass_through/*",
+    "type": "include",
+    "spec_file": "attribute_spec.json"
+  },
+  {
+    "pointer": "/iterations",
+    "type": "int",
+    "doc": "number of iterations that should be performed"
+  },
+  {
+    "pointer": "/length_abs",
+    "type": "float",
+    "default": -1
+  },
+  {
+    "pointer": "/length_rel",
+    "type": "float",
+    "default": -1
+  },
+  {
+    "pointer": "/lock_boundary",
+    "type": "bool",
+    "default": true
+  },
+  {
+    "pointer": "/use_for_periodic",
+    "type": "bool",
+    "default": false
+  },
+  {
+    "pointer": "/dont_disable_split",
+    "type": "bool",
+    "default": false
+  },
+  {
+    "pointer": "/fix_uv_seam",
+    "type": "bool",
+    "default": false
+  }
+]

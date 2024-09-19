@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 
     wmtk::components::isotropic_remeshing::IsotropicRemeshingOptions options;
 
-    options.from_json(j);
+    options.load_json(j);
 
     const auto& js_attrs = j["attributes"];
     options.attributes.position =
@@ -62,9 +62,9 @@ int main(int argc, char* argv[])
         options.attributes.inversion_position =
             mesh_ptr->get_attribute_handle<double>(opt, PrimitiveType::Vertex);
     }
-    for (const auto& others : js_attrs["other_positions"]) {
+    for (const auto& other : js_attrs["other_positions"]) {
         options.attributes.inversion_position =
-            mesh_ptr->get_attribute_handle<double>(opt, PrimitiveType::Vertex);
+            mesh_ptr->get_attribute_handle<double>(other, PrimitiveType::Vertex);
     }
 
     wmtk::components::isotropic_remeshing::isotropic_remeshing(options);
@@ -78,5 +78,5 @@ int main(int argc, char* argv[])
 
 
     const std::string output_path = j["output"];
-    wmtk::components::output_hdf5(*mesh, j["output"]);
+    wmtk::components::output_hdf5(*mesh_ptr, j["output"]);
 }
