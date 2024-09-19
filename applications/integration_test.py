@@ -7,6 +7,9 @@ import subprocess
 import tempfile
 import argparse
 
+def fix_path(path):
+    cwd = os.getcwd()
+    return path if os.path.isabs(path) else os.path.join(cwd, path)
 
 class IntegrationTest(unittest.TestCase):
     BINARY_FOLDER = ""
@@ -14,6 +17,12 @@ class IntegrationTest(unittest.TestCase):
     TEST = None
 
     def setUp(self):
+        if "WMTK_BINARY_FOLDER" in os.environ:
+            IntegrationTest.BINARY_FOLDER = fix_path(os.environ['WMTK_BINARY_FOLDER'])
+        if "WMTK_CONFIG_FILE" in os.environ:
+            IntegrationTest.CONFIG_FILE = fix_path(os.environ['WMTK_CONFIG_FILE'])
+
+        # print(os.environ['FILENAME'])
         self.working_dir_fp = tempfile.TemporaryDirectory()
         self.working_dir = self.working_dir_fp.name
         print('Running all integration tests in', self.working_dir)
@@ -119,14 +128,14 @@ if __name__ == '__main__':
     cwd = os.getcwd()
     config_file = os.path.join(cwd, "test_config.json")
     if tcin:
-        config_file = str(tcin if os.path.isabs(tcin) else os.path.join(cwd, tcin))
+        config_file = fix_path(tcin)
         sys.argv.pop()
         sys.argv.pop()
 
 
     bin_dir = os.path.join(cwd, "applications")
     if bfin:
-        bin_dir = bfin if os.path.isabs(bfin) else os.path.join(cwd, bfin)
+        bin_dir = fix_path(bfin)
         sys.argv.pop()
         sys.argv.pop()
 
