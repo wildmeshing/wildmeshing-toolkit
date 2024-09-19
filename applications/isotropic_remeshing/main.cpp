@@ -9,9 +9,10 @@
 #include <wmtk/utils/Logger.hpp>
 
 #include <wmtk/components/input/input.hpp>
+#include <wmtk/components/isotropic_remeshing/IsotropicRemeshingOptions.hpp>
+#include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
 #include <wmtk/components/output/output.hpp>
 #include <wmtk/components/utils/resolve_path.hpp>
-#include <wmtk/components/isotropic_remeshing.hpp>
 
 #include "spec.hpp"
 
@@ -37,26 +38,40 @@ int main(int argc, char* argv[])
         j = nlohmann::json::parse(ifs);
 
         jse::JSE spec_engine;
-        bool r = spec_engine.verify_json(j, procedural_spec);
+        bool r = spec_engine.verify_json(j, wmtk::applications::isometric_remeshing::spec);
         if (!r) {
             wmtk::logger().error("{}", spec_engine.log2str());
             return 1;
         } else {
-            j = spec_engine.inject_defaults(j, procedural_spec);
+            j = spec_engine.inject_defaults(j, wmtk::applications::isometric_remeshing::spec);
         }
     }
 
     const fs::path input_path_in = j["input"];
 
-    wmtk::components::input(input_path_in);
+    auto mesh_ptr = wmtk::components::input::input(input_path_in);
 
-    wmtk::components::isotropic_remeshing::IsotropicRemeshingOptions opts;
+    wmtk::components::isotropic_remeshing::IsotropicRemeshingOptions options;
+
+    options.from_json(j);
+
+    const auto& js_attrs = j["attributes"];
+    options.attributes.position =
+        mesh_ptr->get_attribute_handle<double>(js_attrs["position"], PrimitiveType::Vertex);
+    if (auto opt = js_attrs["position"]; !opt.empty()) {
+        options.attributes.inversion_position =
+            mesh_ptr->get_attribute_handle<double>(opt, PrimitiveType::Vertex);
+    }
+    for (const auto& others : js_attrs["other_positions"]) {
+        options.attributes.inversion_position =
+            mesh_ptr->get_attribute_handle<double>(opt, PrimitiveType::Vertex);
+    }
 
     wmtk::components::isotropic_remeshing::isotropic_remeshing(options);
 
     // input uv mesh
 
-    // multimesh the input meshes if not already multimeshed 
+    // multimesh the input meshes if not already multimeshed
     // OR - should this be a diff app?
 
     // call isotropic_remeshing

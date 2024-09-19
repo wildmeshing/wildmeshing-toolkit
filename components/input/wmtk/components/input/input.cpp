@@ -4,7 +4,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
-namespace wmtk::components {
+namespace wmtk::components::input {
 
 std::shared_ptr<Mesh> input(
     const std::filesystem::path& file,
@@ -20,4 +20,4 @@ std::shared_ptr<Mesh> input(
 
     return mesh;
 }
-} // namespace wmtk::components
+} // namespace wmtk::components::input

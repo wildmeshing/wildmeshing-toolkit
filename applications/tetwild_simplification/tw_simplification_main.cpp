@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
     const fs::path input_file =
         wmtk::components::utils::resolve_paths(json_input_file, {j["root"], j["input"]});
 
-    auto mesh = wmtk::components::input(input_file);
+    auto mesh = wmtk::components::input::input(input_file);
     wmtk::logger().info("mesh has {} vertices", mesh->get_all(PrimitiveType::Vertex).size());
 
     if (mesh->top_simplex_type() != PrimitiveType::Triangle)

@@ -141,7 +141,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         update_position;
 
-    if (options.attributes.update_other_positions) {
+    if (options.update_other_positions) {
         update_position =
             std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
                 other_positions.front(),

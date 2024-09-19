@@ -14,6 +14,7 @@ nlohmann::json spec = R"(
       "iterations"
     ],
     "optional": [
+      "update_other_positions",
       "pass_through",
       "length_abs",
       "length_rel",
@@ -41,7 +42,6 @@ nlohmann::json spec = R"(
     "optional": [
       "inversion_position",
       "other_positions",
-      "update_other_positions"
     ],
     "doc": "all attributes required for this component"
   },
@@ -64,7 +64,7 @@ nlohmann::json spec = R"(
     "doc": "Position attribute for inversion check"
   },
   {
-    "pointer": "/attributes/update_other_positions",
+    "pointer": "/update_other_positions",
     "type": "bool",
     "default": false,
     "doc": "Use attribute update to sync other positions"

@@ -4,7 +4,7 @@
 
 #include <wmtk/Mesh.hpp>
 
-namespace wmtk::components {
+namespace wmtk::components::input {
 
 /*
  * @brief Read a mesh from file.
@@ -21,4 +21,4 @@ std::shared_ptr<Mesh> input(
     const bool ignore_z = false,
     const std::vector<std::string>& tetrahedron_attributes = {});
 
-} // namespace wmtk::components
+} // namespace wmtk::components::input

@@ -5,6 +5,7 @@ if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
 endif()
 
 set(SRC_FILES
+    IsotropicRemeshingOptions.cpp
     IsotropicRemeshingOptions.hpp
 	isotropic_remeshing.hpp
     isotropic_remeshing.cpp
@@ -13,4 +14,4 @@ set(SRC_FILES
 
 #CURRENT_COMPONENT_LIB_NAME is set from the main cmake
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
-target_link_libraries(wmtk_${COMPONENT_NAME} PRIVATE geogram::delaunay_psm)
+target_link_libraries(wmtk_${COMPONENT_NAME} PRIVATE nlohmann_json)
