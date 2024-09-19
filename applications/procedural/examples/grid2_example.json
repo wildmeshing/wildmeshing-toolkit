@@ -1,49 +1,5 @@
 {
-  "components": [
-    {
-      "procedural": {
-        "grid": {
-          "coordinates": {
-            "name": "vertices",
-            "spacing": [
-              1,
-              1
-            ]
-          },
-          "cycles": [
-            true,
-            true
-          ],
-          "dimensions": [
-            10,
-            10
-          ],
-          "tiling": "diagonal"
-        },
-        "name": "grid2d_tiled",
-        "type": "grid"
       }
-    },
-    {
-      "procedural": {
-        "grid": {
-          "cycles": [
-            true,
-            true,
-            true
-          ],
-          "dimensions": [
-            10,
-            10,
-            10
-          ],
-          "tiling": "freudenthal"
-        },
-        "name": "grid3d_tiled",
-        "type": "grid"
-      }
-    },
-    {
       "procedural": {
         "grid": {
           "coordinates": {
@@ -60,28 +16,6 @@
           "tiling": "diagonal"
         },
         "name": "grid2d",
-        "type": "grid"
-      }
-    },
-    {
-      "procedural": {
-        "grid": {
-          "coordinates": {
-            "name": "vertices",
-            "spacing": [
-              1,
-              1,
-              1
-            ]
-          },
-          "dimensions": [
-            10,
-            10,
-            10
-          ],
-          "tiling": "freudenthal"
-        },
-        "name": "grid3d",
         "type": "grid"
       }
     },

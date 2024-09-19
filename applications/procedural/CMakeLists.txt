@@ -5,7 +5,7 @@ wmtk_add_application(procedural_app
     spec.hpp
     )
 
-    register_jse_json(APPLICATION_NAME procedural INPUT procedural_spec.json )
+    #register_jse_json(APPLICATION_NAME procedural INPUT procedural_spec.json )
 
 # procedural requires the input component and the procedural component
 target_link_libraries(procedural_app PRIVATE

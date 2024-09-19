@@ -12,12 +12,13 @@
 #include <wmtk/components/output/output.hpp>
 #include <wmtk/components/utils/resolve_path.hpp>
 
+#include <wmtk/TriMesh.hpp>
 #include <wmtk/components/procedural/ProceduralOptions.hpp>
 #include <wmtk/components/procedural/make_mesh.hpp>
-#include <wmtk/TriMesh.hpp>
 #include "spec.hpp"
 
 using namespace wmtk::components;
+using namespace wmtk::applications;
 using namespace wmtk;
 namespace fs = std::filesystem;
 
@@ -39,15 +40,14 @@ int main(int argc, char* argv[])
         j = nlohmann::json::parse(ifs);
 
         jse::JSE spec_engine;
-        bool r = spec_engine.verify_json(j, procedural_spec);
+        bool r = spec_engine.verify_json(j, applications::procedural::spec);
         if (!r) {
             wmtk::logger().error("{}", spec_engine.log2str());
             return 1;
         } else {
-            j = spec_engine.inject_defaults(j, procedural_spec);
+            j = spec_engine.inject_defaults(j, applications::procedural::spec);
         }
     }
-
 
 
     wmtk::components::procedural::ProceduralOptions options =
