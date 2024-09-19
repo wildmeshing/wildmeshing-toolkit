@@ -1,14 +1,14 @@
 function(register_jse_json)
  set(options )
- set(oneValueArgs APPLICATION_NAME INPUT)# HPP_OUTPUT)
+ set(oneValueArgs APPLICATION_NAME INPUT)# OUTPUT_PREFIX)
  set(multiValueArgs DIRECTORIES)
   cmake_parse_arguments(register_jse_json "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
   if(NOT EXPANDED_JS_OUTPUT)
       set(EXPANDED_JS_OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/spec_expanded.json")
   endif()
-  if(NOT HPP_OUTPUT)
-      set(HPP_OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/spec.hpp")
+  if(NOT OUTPUT_PREFIX)
+      set(OUTPUT_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/spec")
   endif()
 
   set(WORKING_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -32,12 +32,13 @@ function(register_jse_json)
 
   message(STATUS "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/spec.hpp.in")
   add_custom_target("wmtk_application_${register_jse_json_APPLICATION_NAME}_spec_header"
-      #COMMAND 'echo "#pragma once\n namespace wmtk::applications::${register_jse_json_APPLICATION_NAME}\n \{ \n \n \}"> "${HPP_OUTPUT}"'
-      COMMAND "echo awijegoiwajgawioegjwaoiejgwaeigjwaeigjawejig"
-      DEPENDS "wmtk_application_${register_jse_json_APPLICATION_NAME}_jse"
+      #COMMAND 'echo "#pragma once\n namespace wmtk::applications::${register_jse_json_APPLICATION_NAME}\n \{ \n \n \}"> "${OUTPUT_PREFIX}"'
+      COMMAND python3 ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/generate_spec.py "${register_jse_json_APPLICATION_NAME}" "${EXPANDED_JS_OUTPUT}" "${OUTPUT_PREFIX}"
+      DEPENDS "wmtk_application_${register_jse_json_APPLICATION_NAME}_jse" 
       WORKING_DIRECTORY ${WORKING_DIR}
-      BYPRODUCTS "${HPP_OUTPUT}"
-      SOURCES "${register_jse_json_INPUT}" ${JS_IN_DIRS})
+      BYPRODUCTS "${OUTPUT_PREFIX}.cpp" "${OUTPUT_PREFIX}.hpp"
+      SOURCES "${register_jse_json_INPUT}" ${JS_IN_DIRS} ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/generate_spec.py
+  )
 
 
   list(APPEND WMTK_APPLICATION_HEADER_TARGETS "wmtk_application_${register_jse_json_APPLICATION_NAME}_spec_header")
