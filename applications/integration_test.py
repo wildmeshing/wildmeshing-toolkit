@@ -69,7 +69,10 @@ class IntegrationTest(unittest.TestCase):
             json.dump(input, input_json)
             input_json.flush()
 
-            res = subprocess.run([executable, "-j", input_json.name], cwd=self.working_dir)
+            res = subprocess.run([executable, "-j", input_json.name], cwd=self.working_dir, capture_output=True)
+
+            if res.returncode != 0:
+                print(res.stderr.decode('utf-8'))
 
             self.assertEqual(res.returncode, 0)
             result = json.load(oracle_file)
