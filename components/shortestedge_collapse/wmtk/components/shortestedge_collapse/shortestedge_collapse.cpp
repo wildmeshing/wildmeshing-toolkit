@@ -24,52 +24,28 @@
 
 namespace wmtk::components {
 std::shared_ptr<Mesh> shortestedge_collapse(
-    const std::shared_ptr<Mesh>& position_mesh,
-    const std::string& position_handle_name,
-    const std::shared_ptr<Mesh>& inversion_mesh,
-    const std::string& inversion_position_handle_name,
+    TriMesh& mesh,
+    const attribute::MeshAttributeHandle& position_handle,
+    std::optional<attribute::MeshAttributeHandle>& inversion_position_handle,
     bool update_other_position,
     const double length_rel,
     bool lock_boundary,
     double envelope_size,
     const std::vector<attribute::MeshAttributeHandle>& pass_through)
 {
-    std::shared_ptr<Mesh> mesh_in = position_mesh;
-
-    // bool use_rational_position =
-    //     mesh_in->has_attribute<Rational>(position_handle_name, PrimitiveType::Vertex);
-
-    attribute::MeshAttributeHandle pos_handle;
-
-    // if (!use_rational_position) {
-    pos_handle = mesh_in->get_attribute_handle<double>(position_handle_name, PrimitiveType::Vertex);
-    // } else {
-    //     pos_handle =
-    //         mesh->get_attribute_handle<Rational>(position_handle_name, PrimitiveType::Vertex);
-    // }
-
-    if (pos_handle.mesh().top_simplex_type() != PrimitiveType::Triangle) {
+    if (mesh.top_simplex_type() != PrimitiveType::Triangle) {
         log_and_throw_error(
             "shortest edge collapse works only for triangle meshes: {}",
-            primitive_type_name(mesh_in->top_simplex_type()));
+            primitive_type_name(mesh.top_simplex_type()));
     }
+
+    // TriMesh& mesh = static_cast<TriMesh&>(position_handle.mesh());
 
     auto pass_through_attributes = pass_through;
 
-    bool check_inversion = inversion_mesh != nullptr;
-    attribute::MeshAttributeHandle position_for_inversion;
-
-    if (check_inversion) {
-        wmtk::logger().info("check inversion!");
-        position_for_inversion = inversion_mesh->get_attribute_handle<double>(
-            inversion_position_handle_name,
-            PrimitiveType::Vertex);
-    }
+    bool check_inversion = inversion_position_handle.has_value();
 
     /////////////////////////////////////////////
-
-    // TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
-    TriMesh& mesh = static_cast<TriMesh&>(pos_handle.mesh());
 
     auto visited_edge_flag =
         mesh.register_attribute<char>("visited_edge", PrimitiveType::Edge, 1, false, char(1));
@@ -82,7 +58,7 @@ std::shared_ptr<Mesh> shortestedge_collapse(
     auto tag_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<char, double>>(
             visited_edge_flag,
-            pos_handle,
+            position_handle,
             update_flag_func);
 
     //////////////////////////////////
@@ -99,7 +75,7 @@ std::shared_ptr<Mesh> shortestedge_collapse(
     auto edge_length_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
             edge_length_attribute,
-            pos_handle,
+            position_handle,
             compute_edge_length);
     edge_length_update->run_on_all();
 
@@ -110,7 +86,7 @@ std::shared_ptr<Mesh> shortestedge_collapse(
     Eigen::VectorXd bmax(mesh.top_cell_dimension());
     bmax.setConstant(std::numeric_limits<double>::lowest());
 
-    auto pt_accessor = mesh.create_const_accessor<double>(pos_handle);
+    auto pt_accessor = mesh.create_const_accessor<double>(position_handle);
 
     const auto vertices = mesh.get_all(PrimitiveType::Vertex);
     for (const auto& v : vertices) {
@@ -162,9 +138,10 @@ std::shared_ptr<Mesh> shortestedge_collapse(
 
     ////////////// positions
     std::vector<attribute::MeshAttributeHandle> positions;
-    positions.push_back(pos_handle);
-    positions.push_back(position_for_inversion);
-
+    positions.push_back(position_handle);
+    if (check_inversion) {
+        positions.push_back(inversion_position_handle.value());
+    }
 
     //////////////////////////////////////////
     // collapse
@@ -176,16 +153,16 @@ std::shared_ptr<Mesh> shortestedge_collapse(
 
     if (envelope_size > 0) {
         collapse->add_invariant(std::make_shared<wmtk::invariants::EnvelopeInvariant>(
-            pos_handle,
+            position_handle,
             bbdiag * envelope_size,
-            pos_handle));
+            position_handle));
     }
 
 
     if (check_inversion) {
         collapse->add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
-            position_for_inversion.mesh(),
-            position_for_inversion.as<double>()));
+            inversion_position_handle.value().mesh(),
+            inversion_position_handle.value().as<double>()));
     }
     collapse->set_new_attribute_strategy(
         visited_edge_flag,
@@ -242,6 +219,6 @@ std::shared_ptr<Mesh> shortestedge_collapse(
         pass_stats.sorting_time,
         pass_stats.executing_time);
 
-    return position_mesh;
+    return mesh.shared_from_this();
 }
 } // namespace wmtk::components

@@ -57,10 +57,26 @@ int main(int argc, char* argv[])
     auto mesh = wmtk::components::input(input_file);
     wmtk::logger().info("mesh has {} vertices", mesh->get_all(PrimitiveType::Vertex).size());
 
-    auto mesh_after_cdt = wmtk::components::CDT(mesh, true, false);
+    auto mesh_after_cdt = wmtk::components::CDT(static_cast<const TriMesh&>(*mesh), true, false);
 
-    auto [parent_mesh, child_mesh] =
-        wmtk::components::multimesh("boundary", mesh_after_cdt, nullptr, "vertices", "", -1, -1);
+    attribute::MeshAttributeHandle mesh_after_cdt_position_handle;
+
+    if (mesh_after_cdt->has_attribute<Rational>("vertices", PrimitiveType::Vertex)) {
+        mesh_after_cdt_position_handle =
+            mesh_after_cdt->get_attribute_handle<Rational>("vertices", PrimitiveType::Vertex);
+    } else {
+        mesh_after_cdt_position_handle =
+            mesh_after_cdt->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    }
+
+    auto [parent_mesh, child_mesh] = wmtk::components::multimesh(
+        wmtk::components::MultiMeshType::Boundary,
+        *mesh_after_cdt,
+        nullptr,
+        mesh_after_cdt_position_handle,
+        "",
+        -1,
+        -1);
     wmtk::logger().info("registered boundary child mesh");
 
     // check open
@@ -79,11 +95,17 @@ int main(int argc, char* argv[])
         parent_mesh->get_attribute_handle<int64_t>("is_boundary", PrimitiveType::Triangle);
     pass_through.push_back(boundary_handle);
 
+    auto child_mesh_position_handle =
+        child_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+
+    std::optional<attribute::MeshAttributeHandle> parent_mesh_position_handle =
+        parent_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+
+
     auto mesh_after_sec = wmtk::components::shortestedge_collapse(
-        child_mesh,
-        "vertices",
-        parent_mesh,
-        "vertices",
+        static_cast<TriMesh&>(*child_mesh),
+        child_mesh_position_handle,
+        parent_mesh_position_handle,
         false,
         j["length_rel"],
         false,

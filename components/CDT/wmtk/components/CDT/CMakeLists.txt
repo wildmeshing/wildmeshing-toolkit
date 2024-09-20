@@ -5,7 +5,6 @@ if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
 endif()
 
 set(SRC_FILES
-    internal/CDTOptions.hpp
     internal/CDT.hpp
     internal/CDT.cpp
     CDT.hpp

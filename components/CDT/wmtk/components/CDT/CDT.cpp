@@ -15,17 +15,12 @@ namespace components {
 
 using namespace internal;
 
-std::shared_ptr<Mesh>
-CDT(const std::shared_ptr<Mesh>& input, const bool inner_only, const bool rational_output)
+std::shared_ptr<Mesh> CDT(const TriMesh& trimesh, const bool inner_only, const bool rational_output)
 {
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
     constexpr static PrimitiveType PF = PrimitiveType::Triangle;
     constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
-
-
-    auto trimesh_in = input;
-    TriMesh& trimesh = static_cast<TriMesh&>(*trimesh_in);
 
     std::vector<std::array<bool, 4>> local_f_on_input;
 
