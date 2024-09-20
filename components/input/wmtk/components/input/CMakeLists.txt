@@ -8,7 +8,10 @@ set(SRC_FILES
     internal/mesh_with_tag_from_image.cpp
     internal/mesh_with_tag_from_image.hpp
     input.cpp
-	input.hpp)
+	input.hpp
+    NamedMultiMesh.hpp
+    NamedMultiMesh.cpp
+)
 
 include(stb)
 

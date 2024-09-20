@@ -11,6 +11,7 @@ namespace wmtk::components::input {
 
 class NamedMultiMesh
 {
+    public:
     NamedMultiMesh();
     ~NamedMultiMesh();
 
