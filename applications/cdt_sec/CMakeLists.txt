@@ -14,7 +14,7 @@ wmtk::shortestedge_collapse
 wmtk::CDT
 wmtk::output)
 
-# wmtk_register_integration_test(cdt_sec_app
-#     ${CMAKE_CURRENT_SOURCE_DIR}/delaunay_test_config.json
-#     "https://github.com/wildmeshing/data.git"
-#     152a561697a6e923451ca8535309cbe1e116a9fa)
+wmtk_register_integration_test(cdt_sec_app
+    ${CMAKE_CURRENT_SOURCE_DIR}/cdt_sec_test_config.json
+    "https://github.com/wildmeshing/data.git"
+    e39994334263bd3fa8f6eb026d8487b5e9ae7191)

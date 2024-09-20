@@ -1,9 +1,10 @@
-// {
-//     "test_directory": "unit_test",
-//     "tests": [
-//         "delaunay_out.json"
-//     ],
-//     "input_tag": "input",
-//     "oracle_tag": "report",
-//     "input_directory_tag": "root"
-// }
+{
+    "test_directory": "unit_test",
+    "tests": [
+        "cdt_sec_out.json"
+    ],
+    "input_tag": "input",
+    "oracle_tag": "report",
+    "input_directory_tag": "root",
+    "checks": []
+}

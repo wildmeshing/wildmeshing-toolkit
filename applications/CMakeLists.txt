@@ -34,7 +34,7 @@ if(WMTK_ENABLE_APPLICATION_tetwild_simplification)
 add_subdirectory(tetwild_simplification)
 endif()
 
-option(WMTK_ENABLE_APPLICATION_cdt_sec "Runs cdt_sec application" OFF)
+option(WMTK_ENABLE_APPLICATION_cdt_sec "Runs cdt_sec application" ON)
 if(WMTK_ENABLE_APPLICATION_cdt_sec)
 add_subdirectory(cdt_sec)
 endif()
