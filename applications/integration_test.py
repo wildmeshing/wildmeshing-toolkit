@@ -71,8 +71,12 @@ class IntegrationTest(unittest.TestCase):
 
             res = subprocess.run([executable, "-j", input_json.name], cwd=self.working_dir, capture_output=True)
 
+            input_json.close()
+
             if res.returncode != 0:
+                print("Error running")
                 print(res.stderr.decode('utf-8'))
+                print(res.stdout.decode('utf-8'))
 
             self.assertEqual(res.returncode, 0)
             result = json.load(oracle_file)
@@ -89,7 +93,6 @@ class IntegrationTest(unittest.TestCase):
                     self.assertEqual(result[k], test_oracle[k])
 
             oracle_file.close()
-            input_json.close()
 
 
         self.assertTrue(True)
