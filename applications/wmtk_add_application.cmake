@@ -26,4 +26,5 @@ function(wmtk_add_application APP_NAME ...)
         target_link_options(${APP_NAME} PRIVATE $<$<CONFIG:RELEASE>:/INCREMENTAL:NO>)
     endif()
 
+    wmtk_copy_dll(${APP_NAME})
 endfunction()
