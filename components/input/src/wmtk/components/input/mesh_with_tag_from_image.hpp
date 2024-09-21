@@ -3,7 +3,7 @@
 #include <wmtk/TriMesh.hpp>
 
 #include <filesystem>
-namespace wmtk::components::internal {
+namespace wmtk::components::input {
 
 
 /**
@@ -18,4 +18,4 @@ namespace wmtk::components::internal {
 std::shared_ptr<wmtk::TriMesh> mesh_with_tag_from_image(
     const std::filesystem::path& file,
     const std::string& tag_name);
-} // namespace wmtk::components::internal
+} // namespace wmtk::components::input

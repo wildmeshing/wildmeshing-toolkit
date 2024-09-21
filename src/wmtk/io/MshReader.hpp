@@ -23,18 +23,19 @@ public:
     std::shared_ptr<Mesh> read(
         const std::filesystem::path& filename,
         const int64_t embedded_dimension,
-        const std::vector<std::vector<std::string>>& extra_attributes = {});
+        const std::vector<std::vector<std::string>>& extra_attributes);
+    std::shared_ptr<Mesh> read(
+        const std::filesystem::path& filename,
+        const int64_t embedded_dimension = -1);
 
 private:
     const mshio::NodeBlock* get_vertex_block(int DIM) const;
 
     const mshio::ElementBlock* get_simplex_element_block(int DIM) const;
 
-    template <int DIM>
-    size_t get_num_vertices() const;
+    size_t get_num_vertices(int DIM) const;
 
-    template <int DIM>
-    size_t get_num_simplex_elements() const;
+    size_t get_num_simplex_elements(int DIM) const;
 
     template <int DIM>
     void extract_vertices();
@@ -51,10 +52,10 @@ private:
     void validate();
 
     int get_mesh_dimension() const;
+    int get_embedded_dimension() const;
 
     std::shared_ptr<Mesh> generate(
-        const std::vector<std::vector<std::string>>& extra_attributes
-        );
+        const std::optional<std::vector<std::vector<std::string>>>& extra_attributes = {});
 
     template <int DIM>
     auto generateT() -> std::shared_ptr<wmtk::utils::mesh_type_from_dimension_t<DIM>>;
@@ -82,7 +83,6 @@ private:
     // void extract_element_attribute(const std::string& attr_name, Fn&& set_attr);
 
 
-    
 private:
     mshio::MshSpec m_spec;
     int64_t m_embedded_dimension;

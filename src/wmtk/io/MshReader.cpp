@@ -12,6 +12,7 @@
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk/utils/orient.hpp>
 
+#include "mshio/MshSpec.h"
 #include "predicates.h"
 
 namespace wmtk::io {
@@ -21,24 +22,17 @@ MshReader::~MshReader() = default;
 template <int DIM>
 void MshReader::extract()
 {
-    V.resize(get_num_vertices<DIM>(), m_embedded_dimension);
-    S.resize(get_num_simplex_elements<DIM>(), DIM + 1);
     extract_vertices<DIM>();
     extract_simplex_elements<DIM>();
 }
 int MshReader::get_mesh_dimension() const
 {
-    if (get_num_simplex_elements<3>() > 0) {
-        return 3;
-    } else if (get_num_simplex_elements<2>() > 0) {
-        return 2;
-
-    } else if (get_num_simplex_elements<1>() > 0) {
-        return 1;
-
-    } else {
-        return 0;
+    for (int dim = 3; dim > 0; --dim) {
+        if (get_num_simplex_elements(dim) > 0) {
+            return dim;
+        }
     }
+    return 0;
 }
 
 std::shared_ptr<Mesh> MshReader::read(
@@ -63,10 +57,21 @@ std::shared_ptr<Mesh> MshReader::read(
     const std::vector<std::vector<std::string>>& extra_attributes)
 {
     m_spec = mshio::load_msh(filename.string());
-    m_embedded_dimension = embedded_dimension;
+    m_embedded_dimension = embedded_dimension == -1 ? get_embedded_dimension() : embedded_dimension;
 
 
     return generate(extra_attributes);
+}
+
+std::shared_ptr<Mesh> MshReader::read(
+    const std::filesystem::path& filename,
+    const int64_t embedded_dimension)
+{
+    m_spec = mshio::load_msh(filename.string());
+    m_embedded_dimension = embedded_dimension == -1 ? get_embedded_dimension() : embedded_dimension;
+
+
+    return generate();
 }
 
 
@@ -90,8 +95,7 @@ const mshio::ElementBlock* MshReader::get_simplex_element_block(int DIM) const
     return nullptr;
 }
 
-template <int DIM>
-size_t MshReader::get_num_vertices() const
+size_t MshReader::get_num_vertices(int DIM) const
 {
     const auto* block = get_vertex_block(DIM);
     if (block != nullptr) {
@@ -101,8 +105,7 @@ size_t MshReader::get_num_vertices() const
     }
 }
 
-template <int DIM>
-size_t MshReader::get_num_simplex_elements() const
+size_t MshReader::get_num_simplex_elements(int DIM) const
 {
     const auto* block = get_simplex_element_block(DIM);
     if (block != nullptr) {
@@ -112,16 +115,30 @@ size_t MshReader::get_num_simplex_elements() const
     }
 }
 
+
+int MshReader::get_embedded_dimension() const
+{
+    const mshio::NodeBlock* block = get_vertex_block(get_mesh_dimension());
+    assert(block != nullptr);
+
+    return block->entity_dim;
+}
+
 template <int DIM>
 void MshReader::extract_vertices()
 {
-    const auto* block = get_vertex_block(DIM);
-    if (block == nullptr) return;
+    const mshio::NodeBlock* block = get_vertex_block(DIM);
+    assert(block != nullptr);
 
     const size_t num_vertices = block->num_nodes_in_block;
-    if (num_vertices == 0) return;
+
+    V.resize(num_vertices, m_embedded_dimension);
+    // previously this code returned if false, but later on there is an assumption the vertex block
+    // is filled out  so it is now an assertion
+    assert(num_vertices > 0);
 
     assert(m_embedded_dimension <= 3);
+    assert(m_embedded_dimension > 0);
 
     using Vector = wmtk::Vector<double, 3>;
     using ConstMapType = Vector::ConstMapType;
@@ -145,6 +162,8 @@ void MshReader::extract_simplex_elements()
     const size_t num_elements = element_block->num_elements_in_block;
     if (num_elements == 0) return;
     assert(vertex_block->num_nodes_in_block != 0);
+
+    S.resize(num_elements, DIM + 1);
 
     const size_t vert_tag_offset = vertex_block->tags.front();
     const size_t elem_tag_offset = element_block->data.front();
@@ -287,8 +306,8 @@ void MshReader::extract_element_attribute(
     }
 }
 
-auto MshReader::generate(const std::vector<std::vector<std::string>>& extra_attributes)
-    -> std::shared_ptr<Mesh>
+auto MshReader::generate(const std::optional<std::vector<std::vector<std::string>>>&
+                             extra_attributes_opt) -> std::shared_ptr<Mesh>
 {
     std::shared_ptr<Mesh> res;
     switch (get_mesh_dimension()) {
@@ -298,14 +317,16 @@ auto MshReader::generate(const std::vector<std::vector<std::string>>& extra_attr
     default:
     case 0: res = std::make_shared<PointMesh>();
     }
+    assert(V.size() > 0);
 
-    {
+    if (extra_attributes_opt.has_value()) {
+        const auto& extra_attributes = extra_attributes_opt.value();
         // save all valid scalar attributes on tets
         std::set<std::string> valid_attr_names;
         for (const auto& data : m_spec.element_data) {
             // validness: int_tags[2] stores the dimension of an element_data, which should
             // match the size of tets
-            if (data.header.int_tags[2] != get_num_simplex_elements<3>()) {
+            if (data.header.int_tags[2] != get_num_simplex_elements(3)) {
                 continue;
             }
             valid_attr_names.insert(data.header.string_tags.front());

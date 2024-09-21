@@ -3,9 +3,9 @@ if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
     return()
 endif()
 set(SRC_FILES
-    internal/InputOptions.hpp
-    internal/mesh_with_tag_from_image.cpp
-    internal/mesh_with_tag_from_image.hpp
+    InputOptions.hpp
+    mesh_with_tag_from_image.cpp
+    mesh_with_tag_from_image.hpp
     input.cpp
 	input.hpp
     NamedMultiMesh.hpp

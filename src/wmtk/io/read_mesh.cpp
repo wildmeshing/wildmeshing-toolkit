@@ -1,6 +1,6 @@
 #include "read_mesh.hpp"
-#include "MshReader.hpp"
 #include "HDF5Reader.hpp"
+#include "MshReader.hpp"
 
 #include <wmtk/utils/Logger.hpp>
 
@@ -25,7 +25,7 @@ FileType guess_file_type(const std::filesystem::path& filename)
     if (ret == FileType::Auto) {
         log_and_throw_error(
             "Automatic file type detection could not identify type of file {} with extension of {}",
-            filename,
+            filename.string(),
             extension);
     }
     return ret;
@@ -44,13 +44,38 @@ std::shared_ptr<Mesh> read_mesh(const std::filesystem::path& filename, FileType 
     }
     case FileType::Msh: {
         MshReader reader;
-        return reader.read(filename, ignore_z, tetrahedron_attributes);
+        return reader.read(filename);
     }
     default:
     case FileType::Auto: {
         assert(false); // get_file_type should have caught failure to obtain right ifle type already
     }
     }
+    return {};
+}
+std::shared_ptr<Mesh> read_mesh(
+    const std::filesystem::path& filename,
+    const std::vector<std::vector<std::string>>& retrieved_attributes,
+    FileType file_type)
+{
+    if (file_type == FileType::Auto) {
+        file_type = utils::guess_file_type(filename);
+    }
+    switch (file_type) {
+    case FileType::HDF5: {
+        HDF5Reader reader;
+        return reader.read(filename);
+    }
+    case FileType::Msh: {
+        MshReader reader;
+        return reader.read(filename, -1, retrieved_attributes);
+    }
+    default:
+    case FileType::Auto: {
+        assert(false); // get_file_type should have caught failure to obtain right ifle type already
+    }
+    }
+    return {};
 }
 
 std::shared_ptr<Mesh> read_mesh(
@@ -58,5 +83,24 @@ std::shared_ptr<Mesh> read_mesh(
     const bool ignore_z,
     const std::vector<std::string>& tetrahedron_attributes,
     FileType file_type)
-{}
+{
+    if (file_type == FileType::Auto) {
+        file_type = utils::guess_file_type(filename);
+    }
+    switch (file_type) {
+    case FileType::HDF5: {
+        HDF5Reader reader;
+        return reader.read(filename);
+    }
+    case FileType::Msh: {
+        MshReader reader;
+        return reader.read(filename, ignore_z, tetrahedron_attributes);
+    }
+    default:
+    case FileType::Auto: {
+        assert(false); // get_file_type should have caught failure to obtain right ifle type already
+    }
+    }
+    return {};
+}
 } // namespace wmtk::io

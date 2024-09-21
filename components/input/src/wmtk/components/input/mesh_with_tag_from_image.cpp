@@ -6,7 +6,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-namespace wmtk::components::internal {
+namespace wmtk::components::input {
 
 Eigen::Matrix<int64_t, -1, -1> tags_from_image(const std::filesystem::path& file)
 {
@@ -80,4 +80,4 @@ std::shared_ptr<wmtk::TriMesh> mesh_with_tag_from_image(
     return m;
 }
 
-} // namespace wmtk::components::internal
+} // namespace wmtk::components::input
