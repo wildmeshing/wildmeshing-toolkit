@@ -14,7 +14,8 @@ class NamedMultiMesh
     NamedMultiMesh();
     ~NamedMultiMesh();
 
-    void set_names(const nlohmann::json& js, const std::string_view& name = "");
+    void set_names( const std::string_view& root_name= "");
+    void set_names( const std::string_view& root_name, const nlohmann::json& js);
 
     Mesh& root() { return *m_root; }
     const Mesh& root() const { return *m_root; }
