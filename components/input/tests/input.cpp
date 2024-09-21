@@ -9,23 +9,15 @@ using json = nlohmann::json;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-// TEST_CASE("component_input", "[components][input]")
-// {
-//     wmtk::io::Cache cache("wmtk_cache", ".");
-
-//     SECTION("should pass")
-//     {
-//         const std::filesystem::path input_file = data_dir / "small.msh";
-//         json component_json = {
-//             {"type", "input"},
-//             {"name", "input_mesh"},
-//             {"file", input_file.string()},
-//             {"ignore_z", false},
-//             {"tetrahedron_attributes", json::array()}};
+TEST_CASE("component_input", "[components][input]")
+{
+     SECTION("should pass")
+     {
+         const std::filesystem::path input_file = data_dir / "small.msh";
 
 
-//         CHECK_NOTHROW(wmtk::components::input(Paths(), component_json, cache));
-//     }
+         CHECK_NOTHROW(wmtk::components::input::input(input_file, false, {}));
+     }
 
 //     SECTION("should throw")
 //     {
@@ -79,4 +71,4 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 //         true,
 //         false);
 //     m->serialize(writer);
-// }
+ }

@@ -13,7 +13,7 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
 endif()
 
 # list of all components
-add_subdirectory("input/wmtk/components/input")
+add_subdirectory("input")
 add_subdirectory("output/wmtk/components/output")
 add_subdirectory("delaunay/wmtk/components/delaunay")
 add_subdirectory("to_points/wmtk/components/to_points")

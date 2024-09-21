@@ -27,6 +27,20 @@ int wmtk_orient3d(
     const Eigen::Ref<const Eigen::Vector3<double>>& p3);
 
 
+// assumes inputs are column vectors
+template <typename Derived>
+int wmtk_orient3d(const Eigen::MatrixBase<Derived>& A)
+{
+    assert(A.rows() == 3);
+    assert(A.cols() == 4);
+    const auto p0 = A.col(0);
+    const auto p1 = A.col(1);
+    const auto p2 = A.col(2);
+    const auto p3 = A.col(3);
+    return wmtk_orient3d(p0, p1, p2, p3);
+}
+
+
 // int wmtk_orient2d(
 //     Eigen::Ref<const Eigen::Vector2<T>> p0,
 //     Eigen::Ref<const Eigen::Vector2<T>> p1,

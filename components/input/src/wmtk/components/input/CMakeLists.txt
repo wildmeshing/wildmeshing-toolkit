@@ -1,4 +1,3 @@
-set(COMPONENT_NAME input)
 add_component(${COMPONENT_NAME})
 if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
     return()
@@ -8,7 +7,10 @@ set(SRC_FILES
     internal/mesh_with_tag_from_image.cpp
     internal/mesh_with_tag_from_image.hpp
     input.cpp
-	input.hpp)
+	input.hpp
+    NamedMultiMesh.hpp
+    NamedMultiMesh.cpp
+)
 
 include(stb)
 
@@ -17,4 +19,3 @@ include(stb)
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 target_link_libraries(wmtk_${COMPONENT_NAME} PRIVATE stb::image)
 
-add_component_test(wmtk::${COMPONENT_NAME} tests/input.cpp)
