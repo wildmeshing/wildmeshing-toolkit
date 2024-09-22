@@ -11,12 +11,18 @@ namespace wmtk::components::input {
 
 class NamedMultiMesh
 {
-    public:
+public:
     NamedMultiMesh();
     ~NamedMultiMesh();
 
-    void set_names( const std::string_view& root_name= "");
-    void set_names( const std::string_view& root_name, const nlohmann::json& js);
+    void set_names(const std::string_view& root_name = "");
+    void set_names(const std::string_view& root_name, const nlohmann::json& js);
+    void set_root(Mesh& m);
+
+    /// Navigates to the root of the multimesh
+    void set_mesh(Mesh& m);
+    Mesh& get_mesh(const std::string_view& path) const;
+    std::vector<int64_t> get_id(const std::string_view& path) const;
 
     Mesh& root() { return *m_root; }
     const Mesh& root() const { return *m_root; }

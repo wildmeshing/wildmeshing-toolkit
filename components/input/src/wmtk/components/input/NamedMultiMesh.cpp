@@ -1,12 +1,23 @@
 #include "NamedMultiMesh.hpp"
 #include <nlohmann/json.hpp>
+#include <ranges>
 #include <vector>
+#include <wmtk/Mesh.hpp>
 namespace wmtk::components::input {
+namespace {
+auto get_split_path(const std::string_view& view)
+{
+    using namespace std;
+    return std::ranges::views::split(view, "."sv);
+}
+} // namespace
 
 struct NamedMultiMesh::Node
 {
     std::string name;
     std::vector<std::unique_ptr<Node>> m_children;
+
+    std::map<std::string_view, int64_t> m_child_indexer;
     void set_names(const nlohmann::json& js)
     {
         if (js.is_null()) {
@@ -26,11 +37,61 @@ struct NamedMultiMesh::Node
                 child->set_names(value);
             }
         }
+        update_child_names();
+    }
+
+    void update_child_names()
+    {
+        m_child_indexer.clear();
+        for (size_t j = 0; j < m_children.size(); ++j) {
+            m_child_indexer.emplace(m_children[j]->name, j);
+        }
+    }
+
+    void construct_index(auto& view, std::vector<int64_t>& indices)
+    {
+        if (view.size() == 0) {
+            return;
+        }
+
+        const std::string_view& next_name = view.front();
+
+        const size_t index = m_child_indexer[next_name];
+        indices.emplace_back(index);
+        view.advance();
+        m_children[index]->construct_index(view, indices);
     }
 };
+
+void NamedMultiMesh::set_root(Mesh& m)
+{
+    m_root = m.shared_from_this();
+}
+
+void NamedMultiMesh::set_mesh(Mesh& m)
+{
+    set_root(m.get_multi_mesh_root());
+}
+
+
+Mesh& NamedMultiMesh::get_mesh(const std::string_view& path) const
+{
+    return m_root->get_multi_mesh_child_mesh(get_id(path));
+}
+
+auto NamedMultiMesh::get_id(const std::string_view& path) const -> std::vector<int64_t>
+{
+    const std::ranges::view auto split = get_split_path(path);
+
+    const std::string_view& next_name = split[0];
+
+    indices.emplace_back(index);
+    view.advance();
+}
+
 void NamedMultiMesh::set_names(const std::string_view& root_name)
 {
-    set_names("", {});
+    set_names(root_name, {});
 }
 void NamedMultiMesh::set_names(const std::string_view& root_name, const nlohmann::json& js)
 {
