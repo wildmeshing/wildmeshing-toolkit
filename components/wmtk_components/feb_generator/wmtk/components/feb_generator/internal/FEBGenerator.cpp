@@ -599,10 +599,10 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                             tag_acc.scalar_attribute(mesh.switch_tetrahedron(temp_t));
                         if (std::find(exclude_ids.begin(), exclude_ids.end(), another_side_tag) !=
                                 exclude_ids.end() ||
-                            std::find(
-                                filter_tags.begin(),
-                                filter_tags.end(),
-                                bctag_acc.scalar_attribute(temp_t)) == filter_tags.end()) {
+                            (filter_tags.size() != 0 && std::find(
+                                 filter_tags.begin(),
+                                 filter_tags.end(),
+                                 bctag_acc.scalar_attribute(temp_t)) == filter_tags.end())) {
                             continue;
                         }
 
@@ -678,10 +678,10 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                         int64_t another_side_tag =
                             tag_acc.scalar_attribute(mesh.switch_tetrahedron(temp_t));
                         if (another_side_tag != shared_idx ||
-                            std::find(
-                                filter_tags.begin(),
-                                filter_tags.end(),
-                                bctag_acc.scalar_attribute(temp_t)) == filter_tags.end()) {
+                            (filter_tags.size() != 0 && std::find(
+                                 filter_tags.begin(),
+                                 filter_tags.end(),
+                                 bctag_acc.scalar_attribute(temp_t)) == filter_tags.end())) {
                             continue;
                         }
 
@@ -737,14 +737,16 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                         }
 
                         // in include set and the filter set
+                        //int64_t another_side_tag =
+                        //    tag_acc.scalar_attribute(mesh.switch_tetrahedron(temp_t));
                         int64_t another_side_tag =
-                            tag_acc.scalar_attribute(mesh.switch_tetrahedron(temp_t));
+                            tag_acc.scalar_attribute(temp_t);
                         if (std::find(include_ids.begin(), include_ids.end(), another_side_tag) ==
                                 include_ids.end() ||
-                            std::find(
-                                filter_tags.begin(),
-                                filter_tags.end(),
-                                bctag_acc.scalar_attribute(temp_t)) == filter_tags.end()) {
+                            (filter_tags.size() != 0 && std::find(
+                                 filter_tags.begin(),
+                                 filter_tags.end(),
+                                 bctag_acc.scalar_attribute(temp_t)) == filter_tags.end())) {
                             continue;
                         }
 
@@ -774,7 +776,7 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                     for (const auto& t : tet_tuple_list[main_idx]) {
                         Tuple temp_t = t;
                         // in include set and the filter set
-                        if (std::find(
+                        if (filter_tags.size() != 0 && std::find(
                                 filter_tags.begin(),
                                 filter_tags.end(),
                                 bctag_acc.scalar_attribute(temp_t)) == filter_tags.end()) {
