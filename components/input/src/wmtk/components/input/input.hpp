@@ -4,8 +4,9 @@
 
 #include <wmtk/Mesh.hpp>
 
+#include "NamedMultiMesh.hpp"
 namespace wmtk::components::input {
-    class InputOptions;
+class InputOptions;
 
 
 /*
@@ -23,6 +24,6 @@ std::shared_ptr<Mesh> input(
     const bool ignore_z = false,
     const std::vector<std::string>& tetrahedron_attributes = {});
 
-std::shared_ptr<Mesh> input(const InputOptions& options);
+NamedMultiMesh input(const InputOptions& options);
 
 } // namespace wmtk::components::input

@@ -104,4 +104,6 @@ void NamedMultiMesh::set_names(const std::string_view& root_name, const nlohmann
 
 NamedMultiMesh::NamedMultiMesh() = default;
 NamedMultiMesh::~NamedMultiMesh() = default;
+NamedMultiMesh::NamedMultiMesh(NamedMultiMesh&&) = default;
+auto NamedMultiMesh::operator=(NamedMultiMesh&&) -> NamedMultiMesh& = default;
 } // namespace wmtk::components::input
