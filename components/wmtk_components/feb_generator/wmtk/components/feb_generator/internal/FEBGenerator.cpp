@@ -414,6 +414,8 @@ json read_json_settings(std::string path)
 
 void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_folder)
 {
+    bool need_merge = true;
+
     clock_t start, end;
     start = clock();
 
@@ -608,6 +610,11 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
 
                         // in filter
 
+                        // is merged
+                        if (need_merge && another_side_tag != 0) {
+                            continue;
+                        }
+
                         // write into surface
                         f << "\t\t\t<tri3 id=\"" << cnt++ << "\">";
                         f << offset_tol +
@@ -658,11 +665,17 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                 }*/
 
                 if (need_compute) {
+
                     const auto& face_tuples = face_tuple_list[main_idx];
 
                     f << "\t\t<Surface name=\"" << name << "\">\n";
                     int64_t cnt = 1;
                     for (const auto& t : face_tuples) {
+                        // is merged
+                        if (need_merge && main_idx > shared_idx) {
+                            continue;
+                        }
+
                         Tuple temp_t = t;
                         if (tag_acc.scalar_attribute(temp_t) != main_idx) {
                             temp_t = mesh.switch_tetrahedron(t);
@@ -724,7 +737,13 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
 
                     f << "\t\t<Surface name=\"" << name << "(" << main_idx << ")" << "\">\n";
                     int64_t cnt = 1;
+
                     for (const auto& t : face_tuples) {
+                        // need merge
+                        if (need_merge && main_idx > include_ids[0]) {
+                            break;
+                        }
+
                         Tuple temp_t = t;
                         if (tag_acc.scalar_attribute(temp_t) != main_idx) {
                             temp_t = mesh.switch_tetrahedron(t);
@@ -739,8 +758,15 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                         // in include set and the filter set
                         //int64_t another_side_tag =
                         //    tag_acc.scalar_attribute(mesh.switch_tetrahedron(temp_t));
-                        int64_t another_side_tag =
-                            tag_acc.scalar_attribute(temp_t);
+                        int64_t another_side_tag;
+                        if (main_idx == include_ids[0]) {
+                            another_side_tag =
+                                tag_acc.scalar_attribute(temp_t);
+                        } else {
+                            another_side_tag =
+                                tag_acc.scalar_attribute(mesh.switch_tetrahedron(temp_t));
+                        }
+
                         if (std::find(include_ids.begin(), include_ids.end(), another_side_tag) ==
                                 include_ids.end() ||
                             (filter_tags.size() != 0 && std::find(
@@ -809,7 +835,10 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                 }
             }
         }
-        offset_tol += offset;
+
+        if (!need_merge) {
+            offset_tol += offset;
+        }
     }
 
     // surface pairs part
