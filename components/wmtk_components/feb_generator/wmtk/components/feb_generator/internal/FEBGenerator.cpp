@@ -665,16 +665,16 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                 }*/
 
                 if (need_compute) {
+                    // is merged
+                    if (need_merge && main_idx > shared_idx) {
+                        continue;
+                    }
 
                     const auto& face_tuples = face_tuple_list[main_idx];
 
                     f << "\t\t<Surface name=\"" << name << "\">\n";
                     int64_t cnt = 1;
                     for (const auto& t : face_tuples) {
-                        // is merged
-                        if (need_merge && main_idx > shared_idx) {
-                            continue;
-                        }
 
                         Tuple temp_t = t;
                         if (tag_acc.scalar_attribute(temp_t) != main_idx) {
