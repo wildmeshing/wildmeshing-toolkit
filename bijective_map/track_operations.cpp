@@ -130,12 +130,15 @@ void handle_collapse_edge(
             }
             if (offset_in_f_after == -1) {
                 // print the whole v_id_map_joint
+                std::cout << "something is wrong!" << std::endl;
+
+                std::cout << "the F_after:\n" << F_after << std::endl;
+
                 std::cout << "v_id_map_joint: ";
                 for (int i = 0; i < v_id_map_joint.size(); i++) {
                     std::cout << v_id_map_joint[i] << ", ";
                 }
 
-                std::cout << "something is wrong!" << std::endl;
                 std::cout << "local_index_in_f_after: " << local_index_in_f_after << std::endl;
                 for (int i = 0; i < 3; i++) {
                     std::cout << F_after(local_index_in_f_after, i) << ", ";

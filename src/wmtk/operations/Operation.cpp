@@ -20,8 +20,10 @@
 using json = nlohmann::json;
 
 // for Debugging output
+#include <igl/Timer.h>
 #include <igl/boundary_loop.h>
 #include <igl/doublearea.h>
+#include <igl/readOBJ.h>
 #include <igl/writeOBJ.h>
 
 namespace wmtk::operations {
@@ -94,7 +96,10 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
         if (after(unmods, mods)) {
             // store local atlas for retrieval
 #ifdef WMTK_RECORD_OPERATIONS
+
             if (m_record && operation_name != "MeshConsolidate") {
+                std::cout << "operation id: " << succ_operations_count << "\n";
+
                 // create a local atlas file
                 // std::cout << "operation " << operation_name << " is successful\n";
                 std::string filename = OperationLogPath + OperationLogPrefix +
@@ -103,6 +108,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                 json operation_log;
 
                 if (operation_log_file.is_open()) {
+                    igl::Timer timer;
                     // save operation_name
                     operation_log["operation_name"] = operation_name;
 
@@ -234,7 +240,7 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             std::vector<int64_t> v_id_map_joint;
 
                             // TODO: for debugging
-                            if (true) {
+                            if (false) {
                                 igl::writeOBJ(
                                     OperationLogPath + "/VF_before_" +
                                         std::to_string(succ_operations_count) + ".obj",
@@ -266,6 +272,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                     std::cerr << "unable to open file for writing\n";
                                 }
                             }
+
+                            timer.start();
                             utils::local_joint_flatten(
                                 F_before,
                                 to_three_cols(V_before),
@@ -277,7 +285,10 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 v_id_map_joint,
                                 is_bd_v0,
                                 is_bd_v1);
-                            if (true) {
+                            std::cout << "time for local_joint_flatten: " << timer.getElapsedTime()
+                                      << " seconds\n";
+
+                            if (false) {
                                 igl::writeOBJ(
                                     OperationLogPath + "/UV_after_" +
                                         std::to_string(succ_operations_count) + ".obj",
@@ -307,14 +318,15 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
                             if (dbarea_before.minCoeff() < 0) {
                                 // std::cerr << "negative area in F_before detected\n";
-
+                                throw std::runtime_error(
+                                    "collapse negative area in F_before detected");
                                 scope.mark_failed();
                                 return {};
                             }
 
                             if (dbarea_after.minCoeff() < 0) {
-                                // std::cerr << "negative area in F_after detected\n";
-
+                                throw std::runtime_error(
+                                    "collapse negative area in F_after detected");
                                 scope.mark_failed();
                                 return {};
                             }
@@ -323,7 +335,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 // std::cout << "operation number: " << succ_operations_count <<
                                 // "\n"; std::cerr << "self intersection in collapse F_before
                                 // detected\n";
-
+                                throw std::runtime_error(
+                                    "collapse self intersection in F_before detected");
                                 scope.mark_failed();
                                 return {};
                             } else {
@@ -336,12 +349,15 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
                             if (operation_name == "AttributesUpdate") {
                                 Eigen::MatrixXd UV_joint;
+                                timer.start();
                                 utils::local_joint_flatten_smoothing(
                                     F_before,
-                                    V_before,
-                                    V_after,
+                                    to_three_cols(V_before),
+                                    to_three_cols(V_after),
                                     F_after,
                                     UV_joint);
+                                std::cout << "time for local_joint_flatten_smoothing: "
+                                          << timer.getElapsedTime() << " seconds\n";
                                 V_before = UV_joint;
                                 V_after = UV_joint;
 
@@ -353,8 +369,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                 Eigen::MatrixXd UV_joint;
                                 Eigen::VectorXi local_map;
                                 utils::local_joint_flatten_swap(
-                                    V_before,
-                                    V_after,
+                                    to_three_cols(V_before),
+                                    to_three_cols(V_after),
                                     F_before,
                                     F_after,
                                     UV_joint,
@@ -390,25 +406,23 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             igl::doublearea(V_after, F_after, dbarea_after);
 
                             if (dbarea_before.minCoeff() < 0) {
-                                // std::cerr << "negative area in F_before detected\n";
-
+                                throw std::runtime_error(
+                                    "swap/smooth negative area in F_before detected");
                                 scope.mark_failed();
                                 return {};
                             }
 
                             if (dbarea_after.minCoeff() < 0) {
-                                // std::cerr << "negative area in F_after detected\n";
-
+                                throw std::runtime_error(
+                                    "swap/smooth negative area in F_after detected");
                                 scope.mark_failed();
                                 return {};
                             }
 
 
                             if (has_self_intersection(F_before, V_before)) {
-                                // std::cout << "operation number: " << succ_operations_count <<
-                                // "\n";
-                                // std::cerr << "self intersection in swap/smooth F_before detected\n";
-
+                                throw std::runtime_error(
+                                    "swap/smooth self intersection in F_before detected");
                                 scope.mark_failed();
                                 return {};
                             }
@@ -424,7 +438,6 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                     std::cerr << "unable to open file " << filename << " for writing\n";
                 }
                 succ_operations_count++;
-                // std::cout << "total successful operations: " << succ_operations_count << "\n";
 
             } // end if (m_record)
 #endif

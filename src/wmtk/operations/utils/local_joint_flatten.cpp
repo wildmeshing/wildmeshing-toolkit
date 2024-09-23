@@ -1,4 +1,6 @@
 #include "local_joint_flatten.hpp"
+#include <wmtk/utils/orient.hpp>
+
 #include <igl/boundary_facets.h>
 #include <igl/boundary_loop.h>
 #include <igl/cotmatrix_entries.h>
@@ -13,6 +15,51 @@
 
 // flatten part is done
 namespace wmtk::operations::utils {
+
+void uniform_uv_init(
+    const Eigen::MatrixXd& V,
+    const Eigen::MatrixXi& F,
+    const Eigen::VectorXi& bnd,
+    const Eigen::MatrixXd& bnd_uv,
+    Eigen::MatrixXd& uv_init)
+{
+    uv_init.resize(V.rows(), 2);
+
+    int uv_size = V.rows();
+    int bnd_size = bnd.size();
+
+    std::vector<int> is_bnd(uv_size, -1);
+    for (int i = 0; i < bnd.size(); i++) {
+        is_bnd[bnd[i]] = i;
+    }
+    Eigen::MatrixXd A(uv_size, bnd_size);
+    A.setZero();
+    for (int i = 0; i < F.rows(); i++) {
+        for (int j = 0; j < 3; j++) {
+            int v0 = F(i, j);
+            int v1 = F(i, (j + 1) % 3);
+            if (is_bnd[v0] >= 0) {
+                A(v1, is_bnd[v0]) = 1;
+            }
+
+            if (is_bnd[v1] >= 0) {
+                A(v0, is_bnd[v1]) = 1;
+            }
+        }
+    }
+
+    for (int i = 0; i < uv_size; i++) {
+        if (is_bnd[i] >= 0) {
+            uv_init.row(i) = bnd_uv.row(is_bnd[i]);
+        } else {
+            uv_init.row(i) = (A.row(i) * bnd_uv) / A.row(i).sum();
+            if (A.row(i).sum() == 2) {
+                uv_init.row(i) *= 0.9;
+            }
+        }
+    }
+}
+
 void flatten(
     const Eigen::MatrixXd& V_joint_before,
     const Eigen::MatrixXd& V_joint_after,
@@ -21,7 +68,8 @@ void flatten(
     // const Eigen::VectorXi& b_soft,
     const std::vector<std::pair<int, int>>& b_hard,
     Eigen::MatrixXd& UVjoint,
-    int n_iterations)
+    int n_iterations,
+    bool debug_mode = false)
 {
     Eigen::MatrixXd bnd_uv, uv_init;
     Eigen::VectorXi bnd;
@@ -30,7 +78,16 @@ void flatten(
     Eigen::MatrixXd M_before;
     igl::doublearea(V_joint_before, F_joint_before, M_before);
 
-    igl::map_vertices_to_circle(V_joint_before, bnd, bnd_uv);
+    // may causing problem?
+    // igl::map_vertices_to_circle(V_joint_before, bnd, bnd_uv);
+    // TODO: here we change to uniform circle
+    {
+        bnd_uv.resize(bnd.size(), 2);
+        for (int i = 0; i < bnd.size(); i++) {
+            bnd_uv(i, 0) = cos(2 * igl::PI * i / bnd.size());
+            bnd_uv(i, 1) = sin(2 * igl::PI * i / bnd.size());
+        }
+    }
     bnd_uv *= sqrt(M_before.sum() / (2 * igl::PI));
 
     // add hard constraints
@@ -55,8 +112,28 @@ void flatten(
     F_joint.resize(F_joint_before.rows() + F_joint_after.rows(), F_joint_before.cols());
     F_joint << F_joint_before, F_joint_after;
 
+    auto check_uv_orientation = [](const Eigen::MatrixXd& uv, const Eigen::MatrixXi& F) {
+        for (int i = 0; i < F.rows(); i++) {
+            if (wmtk::utils::wmtk_orient2d(uv.row(F(i, 0)), uv.row(F(i, 1)), uv.row(F(i, 2))) < 0) {
+                return false;
+            }
+        }
+        return true;
+    };
+
     // get uv_init
     igl::harmonic(V_joint_before, F_joint, bnd, bnd_uv, 1, uv_init);
+    // TODO: 1. first, check orientation
+    //       2. then, if fail, find another way to get uv_init
+    {
+        if (!check_uv_orientation(uv_init, F_joint)) {
+            std::cout << "Use uniform uv init!" << std::endl;
+            uniform_uv_init(V_joint_before, F_joint, bnd, bnd_uv, uv_init);
+            if (!check_uv_orientation(uv_init, F_joint)) {
+                std::runtime_error("Orientation check failed for uniform uv init!");
+            }
+        }
+    }
     igl::triangle::SCAFData scaf_data;
 
     // optimization
@@ -70,16 +147,16 @@ void flatten(
         F_joint_after,
         uv_init,
         scaf_data,
+        // igl::MappingEnergyType::ARAP,
         igl::MappingEnergyType::SYMMETRIC_DIRICHLET,
+        // igl::MappingEnergyType::CONFORMAL,
         b,
         bc,
         0,
         b_hard);
 
-    igl::triangle::scaf_solve(scaf_data, n_iterations);
 
-    /*
-    {
+    if (debug_mode) {
         int show_option = 1;
         auto key_down_debug = [&](igl::opengl::glfw::Viewer& viewer,
                                   unsigned char key,
@@ -165,16 +242,18 @@ void flatten(
         };
 
         igl::opengl::glfw::Viewer viewer;
-        viewer.data().set_mesh(scaf_data.w_uv, F_joint_before);
+        viewer.data().set_mesh(V_joint_before, F_joint_before);
         viewer.data().set_colors(Eigen::RowVector3d(230, 220, 170) / 255.0);
         viewer.callback_key_down = key_down_debug;
         viewer.launch();
+    } else {
+        igl::triangle::scaf_solve(scaf_data, n_iterations);
     }
-    */
     // return UVjoint
     UVjoint = scaf_data.w_uv.topRows(V_joint_before.rows());
 }
 
+// get local_vid_map from V_joint_after to V_joint_before
 void get_local_vid_map(
     const std::vector<int64_t>& v_id_map_before,
     const std::vector<int64_t>& v_id_map_after,
@@ -234,7 +313,7 @@ int get_joint_mesh(
     int case_id = 0;
     if (is_bd_v0) case_id += 1;
     if (is_bd_v1) case_id += 1;
-    // std::cout << "Boundary case id: " << case_id << std::endl;
+    std::cout << "Boundary case id: " << case_id << std::endl;
 
     // collect information
     int vi_before, vj_before, vi_after;
@@ -412,7 +491,8 @@ void local_joint_flatten(
     Eigen::MatrixXd& UV_joint,
     std::vector<int64_t>& v_id_map_joint,
     bool is_bd_v0,
-    bool is_bd_v1)
+    bool is_bd_v1,
+    bool debug_mode)
 {
     // get joint mesh here
     Eigen::MatrixXd V_joint_before, V_joint_after;
@@ -437,12 +517,21 @@ void local_joint_flatten(
         b_hard,
         v_id_map_joint);
 
-    flatten(V_joint_before, V_joint_after, F_joint_before, F_joint_after, b_hard, UV_joint, 5);
+    flatten(
+        V_joint_before,
+        V_joint_after,
+        F_joint_before,
+        F_joint_after,
+        b_hard,
+        UV_joint,
+        5,
+        debug_mode);
 
     // modify UV_joint, F_after
     {
         // only add the common vertex for case 1 and case 2
-        if (v_common != UV_joint.rows() - 1) {
+        // here the if condition means no vertices are added
+        if (v_common != V_before.rows()) {
             UV_joint.conservativeResize(UV_joint.rows() + 1, UV_joint.cols());
             UV_joint.row(UV_joint.rows() - 1) = UV_joint.row(v_common);
         }
@@ -531,8 +620,82 @@ void local_joint_flatten_smoothing(
     const Eigen::MatrixXd& V_before,
     const Eigen::MatrixXd& V_after,
     Eigen::MatrixXi& F_after,
-    Eigen::MatrixXd& UV_joint)
+    Eigen::MatrixXd& UV_joint,
+    bool debug_mode)
 {
+    // in this case V_joint_before == V_joint_after
+    Eigen::MatrixXd V_joint = V_before;
+    V_joint.conservativeResize(V_joint.rows() + 1, V_joint.cols());
+    V_joint.row(V_joint.rows() - 1) = V_after.row(0);
+
+    Eigen::MatrixXi F_joint_before = F_before;
+    Eigen::MatrixXi F_joint_after = F_before;
+
+    // update F_joint_after
+    for (int i = 0; i < F_joint_after.rows(); i++) {
+        for (int j = 0; j < 3; j++) {
+            if (F_joint_after(i, j) == 0) {
+                F_joint_after(i, j) = V_joint.rows() - 1;
+            }
+        }
+    }
+
+    F_after = F_joint_after;
+    std::vector<std::pair<int, int>> b_hard; // empty
+
+    std::cout << "Start flatten smoothing" << std::endl;
+    flatten(V_joint, V_joint, F_joint_before, F_joint_after, b_hard, UV_joint, 8, debug_mode);
+    std::cout << "Finish flatten smoothing" << std::endl;
+    /*
+    {
+        auto V_joint_before = V_joint;
+        auto V_joint_after = V_joint;
+        int show_option = 1;
+        auto key_down_init =
+            [&](igl::opengl::glfw::Viewer& viewer, unsigned char key, int modifier) {
+                if (key == '1')
+                    show_option = 1;
+                else if (key == '2')
+                    show_option = 2;
+                else if (key == '3')
+                    show_option = 3;
+                else if (key == '4')
+                    show_option = 4;
+
+
+                switch (show_option) {
+                case 1:
+                    viewer.data().clear();
+                    viewer.data().set_mesh(V_joint_before, F_joint_before);
+                    viewer.core().align_camera_center(V_joint_before, F_joint_before);
+                    break;
+                case 2:
+                    viewer.data().clear();
+                    viewer.data().set_mesh(V_joint_after, F_joint_after);
+                    viewer.core().align_camera_center(V_joint_after, F_joint_after);
+                    break;
+                case 3:
+                    viewer.data().clear();
+                    viewer.data().set_mesh(UV_joint, F_joint_before);
+                    viewer.data().set_colors(Eigen::RowVector3d(210, 150, 150) / 255.0);
+                    viewer.core().align_camera_center(UV_joint, F_joint_before);
+                    break;
+                case 4:
+                    viewer.data().clear();
+                    viewer.data().set_mesh(UV_joint, F_joint_after);
+                    viewer.data().set_colors(Eigen::RowVector3d(210, 150, 150) / 255.0);
+                    viewer.core().align_camera_center(UV_joint, F_joint_after);
+                    break;
+                }
+
+                return false;
+            };
+        igl::opengl::glfw::Viewer viewer;
+        viewer.data().set_mesh(V_joint_before, F_joint_before);
+        viewer.callback_key_down = key_down_init;
+        viewer.launch();
+    }
+    */
     return;
 }
 
@@ -544,6 +707,32 @@ void local_joint_flatten_swap(
     Eigen::MatrixXd& UV_joint,
     Eigen::VectorXi& local_vid_after_to_before_map)
 {
+    // get local_vid_after_to_before_map
+    local_vid_after_to_before_map.resize(V_after.rows());
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            if (V_before.row(i) == V_after.row(j)) {
+                local_vid_after_to_before_map[j] = i;
+                break;
+            }
+        }
+    }
+
+    Eigen::MatrixXi F_after_joint;
+    F_after_joint.resize(F_after.rows(), F_after.cols());
+    for (int i = 0; i < F_after.rows(); i++) {
+        for (int j = 0; j < F_after.cols(); j++) {
+            F_after_joint(i, j) = local_vid_after_to_before_map[F_after(i, j)];
+        }
+    }
+
+    std::vector<std::pair<int, int>> b_hard; // empty
+
+    std::cout << "Start flatten swapping" << std::endl;
+    flatten(V_before, V_before, F_before, F_after_joint, b_hard, UV_joint, 5);
+    std::cout << "Finish flatten swapping" << std::endl;
+
+
     return;
 }
 
