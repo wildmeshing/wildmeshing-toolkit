@@ -9,6 +9,10 @@ class Mesh;
 
 namespace wmtk::components::input {
 
+// allows for accessing a mesh by a string ID
+// The IDs are loaded through a json format, and hte root node can either have a name or be hte
+// empty string. Even if hte root it has a name, typing it can be skipped by a preceding '.' before
+// a path
 class NamedMultiMesh
 {
 public:

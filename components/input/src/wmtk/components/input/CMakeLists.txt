@@ -15,6 +15,7 @@ set(SRC_FILES
 include(stb)
 
 
+target_compile_features(wmtk_${COMPONENT_NAME} PUBLIC cxx_std_20)
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 target_link_libraries(wmtk_${COMPONENT_NAME} PRIVATE stb::image)

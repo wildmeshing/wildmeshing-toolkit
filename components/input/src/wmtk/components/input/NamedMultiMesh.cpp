@@ -8,7 +8,10 @@ namespace {
 auto get_split_path(const std::string_view& view)
 {
     using namespace std;
-    return std::ranges::views::split(view, "."sv);
+    return std::ranges::views::split(view, "."sv) |
+           std::views::transform([](const auto& r) noexcept -> std::string_view {
+               return std::string_view(r.begin(), r.end());
+           });
 }
 } // namespace
 
@@ -24,15 +27,16 @@ struct NamedMultiMesh::Node
             return;
         }
         if (js.is_string()) {
-            m_children.emplace_back()->name = js;
+            auto& child = m_children.emplace_back(std::make_unique<Node>());
+            child->name = js;
         } else if (js.is_array()) {
             for (const auto& value : js) {
-                auto& child = m_children.emplace_back();
+                auto& child = m_children.emplace_back(std::make_unique<Node>());
                 child->name = value;
             }
         } else if (js.is_object()) {
             for (const auto& [key, value] : js.items()) {
-                auto& child = m_children.emplace_back();
+                auto& child = m_children.emplace_back(std::make_unique<Node>());
                 child->name = key;
                 child->set_names(value);
             }
@@ -46,20 +50,6 @@ struct NamedMultiMesh::Node
         for (size_t j = 0; j < m_children.size(); ++j) {
             m_child_indexer.emplace(m_children[j]->name, j);
         }
-    }
-
-    void construct_index(auto& view, std::vector<int64_t>& indices)
-    {
-        if (view.size() == 0) {
-            return;
-        }
-
-        const std::string_view& next_name = view.front();
-
-        const size_t index = m_child_indexer[next_name];
-        indices.emplace_back(index);
-        view.advance();
-        m_children[index]->construct_index(view, indices);
     }
 };
 
@@ -76,17 +66,26 @@ void NamedMultiMesh::set_mesh(Mesh& m)
 
 Mesh& NamedMultiMesh::get_mesh(const std::string_view& path) const
 {
-    return m_root->get_multi_mesh_child_mesh(get_id(path));
+    const auto id = get_id(path);
+    return m_root->get_multi_mesh_child_mesh(id);
 }
 
 auto NamedMultiMesh::get_id(const std::string_view& path) const -> std::vector<int64_t>
 {
-    const std::ranges::view auto split = get_split_path(path);
+    std::ranges::view auto split = get_split_path(path);
 
-    const std::string_view& next_name = split[0];
+    std::vector<int64_t> indices;
+    Node const* cur_mesh = m_name_root.get();
+    assert(*split.begin() == cur_mesh->name || *split.begin() == "");
+    for (const auto& token : std::ranges::views::drop(split, 1)) {
+        for (const auto& [k, v] : cur_mesh->m_child_indexer) {
+        }
+        int64_t index = cur_mesh->m_child_indexer.at(token);
+        indices.emplace_back(index);
+        cur_mesh = cur_mesh->m_children[index].get();
+    }
 
-    indices.emplace_back(index);
-    view.advance();
+    return indices;
 }
 
 void NamedMultiMesh::set_names(const std::string_view& root_name)
@@ -100,9 +99,7 @@ void NamedMultiMesh::set_names(const std::string_view& root_name, const nlohmann
     if (js.is_null()) {
         return;
     }
-    if (js.is_object()) {
-        m_name_root->set_names(js);
-    }
+    m_name_root->set_names(js);
 }
 
 NamedMultiMesh::NamedMultiMesh() = default;

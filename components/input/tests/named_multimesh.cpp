@@ -1,3 +1,4 @@
+#include <fmt/ranges.h>
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 #include <wmtk/Mesh.hpp>
@@ -23,14 +24,16 @@ auto make_child(wmtk::Mesh& m, const std::vector<int64_t>& path)
         // input root mesh already exists so nothing to be done
         return;
     }
-    for (size_t j = 1; j < path.size(); ++j) {
-        std::vector<int64_t> p(path.begin(), path.begin() + j - 1);
+    for (size_t j = 0; j < path.size(); ++j) {
+        std::vector<int64_t> p(path.begin(), path.begin() + j);
         auto& cur_mesh = m.get_multi_mesh_mesh(p);
         int64_t child_index = path[j];
         const auto child_meshes = cur_mesh.get_child_meshes();
-        for (int64_t index = child_meshes.size(); index < child_index; ++index) {
+        for (int64_t index = child_meshes.size(); index <= child_index; ++index) {
             auto new_mesh = make_mesh();
             auto map = wmtk::multimesh::same_simplex_dimension_bijection(cur_mesh, *new_mesh);
+
+            cur_mesh.register_child_mesh(new_mesh, map);
         }
     }
 }
@@ -44,11 +47,82 @@ TEST_CASE("named_multimesh_parse", "[components][input]")
         wmtk::components::input::NamedMultiMesh named_mm;
         named_mm.set_mesh(*m);
 
-        assert(m == named_mm.root().shared_from_this());
-        assert(m == named_mm.get_mesh(".").shared_from_this());
-        assert(m == named_mm.get_mesh("").shared_from_this());
+        named_mm.set_names("roo");
+
+        CHECK(std::vector<int64_t>{} == named_mm.get_id("roo"));
+        CHECK(m == named_mm.root().shared_from_this());
+        CHECK(m == named_mm.get_mesh("roo").shared_from_this());
     }
 
 
-    nlohmann::json js = nlohmann::json::array({"child"});
+    {
+        auto m = make_mesh();
+        make_child(*m, {0});
+
+
+        wmtk::components::input::NamedMultiMesh named_mm;
+        named_mm.set_mesh(*m);
+        {
+            nlohmann::json js = nlohmann::json::array({"child"});
+            named_mm.set_names("roo", js);
+        }
+        CHECK(std::vector<int64_t>{} == named_mm.get_id("roo"));
+        CHECK(std::vector<int64_t>{0} == named_mm.get_id("roo.child"));
+        CHECK(m == named_mm.root().shared_from_this());
+        CHECK(m == named_mm.get_mesh("roo").shared_from_this());
+        CHECK(
+            m->get_multi_mesh_child_mesh({0}).shared_from_this() ==
+            named_mm.get_mesh("roo.child").shared_from_this());
+    }
+    {
+        wmtk::components::input::NamedMultiMesh named_mm;
+        nlohmann::json js = nlohmann::json("child");
+        named_mm.set_names("roo", js);
+        CHECK(std::vector<int64_t>{} == named_mm.get_id("roo"));
+        CHECK(std::vector<int64_t>{0} == named_mm.get_id("roo.child"));
+    }
+    {
+        wmtk::components::input::NamedMultiMesh named_mm;
+        nlohmann::json js;
+        js["child"] = {};
+        named_mm.set_names("roo", js);
+        CHECK(std::vector<int64_t>{} == named_mm.get_id("roo"));
+        CHECK(std::vector<int64_t>{0} == named_mm.get_id("roo.child"));
+    }
+
+    {
+        wmtk::components::input::NamedMultiMesh named_mm;
+        auto m = make_mesh();
+        {
+            make_child(*m, {0});
+            make_child(*m, {0, 0, 0});
+            make_child(*m, {1, 1});
+
+            named_mm.set_mesh(*m);
+        }
+        {
+            nlohmann::json js;
+            js["c"]["d"]["e"] = {};
+            js["child"] = nlohmann::json::array({"c1", "c2"});
+            named_mm.set_names("roo", js);
+        }
+        CHECK(std::vector<int64_t>{} == named_mm.get_id("roo"));
+        CHECK(std::vector<int64_t>{0, 0, 0} == named_mm.get_id("roo.c.d.e"));
+        CHECK(std::vector<int64_t>{1} == named_mm.get_id("roo.child"));
+        CHECK(std::vector<int64_t>{1, 0} == named_mm.get_id("roo.child.c1"));
+        CHECK(std::vector<int64_t>{1, 1} == named_mm.get_id("roo.child.c2"));
+        CHECK(
+            m->get_multi_mesh_child_mesh({0, 0, 0}).shared_from_this() ==
+            named_mm.get_mesh("roo.c.d.e").shared_from_this());
+        CHECK(
+            m->get_multi_mesh_child_mesh({1, 1}).shared_from_this() ==
+            named_mm.get_mesh("roo.child.c2").shared_from_this());
+
+        CHECK(
+            m->get_multi_mesh_child_mesh({0, 0, 0}).shared_from_this() ==
+            named_mm.get_mesh(".c.d.e").shared_from_this());
+        CHECK(
+            m->get_multi_mesh_child_mesh({1, 1}).shared_from_this() ==
+            named_mm.get_mesh(".child.c2").shared_from_this());
+    }
 }
