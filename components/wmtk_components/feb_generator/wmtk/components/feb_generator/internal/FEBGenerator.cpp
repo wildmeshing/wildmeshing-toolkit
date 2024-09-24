@@ -428,6 +428,9 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
     wmtk::attribute::MeshAttributeHandle id_handle =
         mesh.register_attribute<int64_t>("vertex_id", PrimitiveType::Vertex, 1);
     wmtk::attribute::Accessor<int64_t> id_acc = mesh.create_accessor<int64_t>(id_handle);
+    wmtk::attribute::MeshAttributeHandle id_used_handle =
+        mesh.register_attribute<int64_t>("id_used", PrimitiveType::Vertex, 1);
+    wmtk::attribute::Accessor<int64_t> id_used_acc = mesh.create_accessor<int64_t>(id_used_handle);
     wmtk::attribute::MeshAttributeHandle vertices_handle =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     wmtk::attribute::Accessor<double> pos_acc = mesh.create_accessor<double>(vertices_handle);
@@ -548,6 +551,13 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
             for (size_t i = 0; i < target_vertices_ids.size(); ++i) {
                 int64_t v_id = target_vertices_ids[i];
                 const auto point = pos_acc.const_vector_attribute(v_tuple_list[v_id]);
+
+                if (id_used_acc.scalar_attribute(v_tuple_list[v_id]) == 0) {
+                    id_used_acc.scalar_attribute(v_tuple_list[v_id]) = 1;
+                } 
+                else {
+                    continue;
+                }
 
                 f << "\t\t\t<node id=\"" << offset_tol + target_vertices_ids[i] + 1 << "\">"
                   << point[0] << "," << point[1] << "," << point[2] << "</node>\n";
