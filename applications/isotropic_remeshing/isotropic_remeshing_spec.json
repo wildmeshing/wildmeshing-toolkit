@@ -19,8 +19,9 @@
   },
   {
     "pointer": "/input",
-    "type": "string",
-    "doc": "input mesh"
+    "type": "include",
+    "spec_file": "input_spec.json",
+    "doc": "input mesh path"
   },
   {
     "pointer": "/output",
