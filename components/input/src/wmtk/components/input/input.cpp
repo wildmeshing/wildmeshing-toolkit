@@ -50,7 +50,7 @@ NamedMultiMesh input(const InputOptions& options)
 
     NamedMultiMesh mm;
     mm.set_mesh(*mesh);
-    mm.set_names(options.root_name, options.name_spec);
+    mm.set_names(options.name_spec);
 
     return mm;
 }

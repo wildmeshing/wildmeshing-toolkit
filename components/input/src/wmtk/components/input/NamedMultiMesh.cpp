@@ -88,18 +88,27 @@ auto NamedMultiMesh::get_id(const std::string_view& path) const -> std::vector<i
     return indices;
 }
 
-void NamedMultiMesh::set_names(const std::string_view& root_name)
+void NamedMultiMesh::set_name(const std::string_view& root_name)
 {
-    set_names(root_name, {});
+    set_names(nlohmann::json(root_name));
 }
-void NamedMultiMesh::set_names(const std::string_view& root_name, const nlohmann::json& js)
+void NamedMultiMesh::set_names(const nlohmann::json& js)
 {
+    assert(js.is_object() || js.is_string() || js.is_null());
     m_name_root = std::make_unique<Node>();
-    m_name_root->name = root_name;
+
     if (js.is_null()) {
         return;
+    } else if (js.is_string()) {
+        m_name_root->name = js.get<std::string>();
+    } else {
+        assert(js.is_object());
+        assert(js.size() == 1);
+        for (const auto& [k, v] : js.items()) {
+            m_name_root->name = k;
+            m_name_root->set_names(v);
+        }
     }
-    m_name_root->set_names(js);
 }
 
 NamedMultiMesh::NamedMultiMesh() = default;

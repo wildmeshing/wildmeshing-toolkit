@@ -14,7 +14,6 @@ struct InputOptions
     std::optional<std::vector<std::vector<std::string>>> imported_attributes;
 
 
-    std::string root_name;
     nlohmann::json name_spec;
 
     bool old_mode = false;
@@ -23,3 +22,13 @@ struct InputOptions
 
 
 } // namespace wmtk::components::input
+
+namespace nlohmann {
+template <>
+struct adl_serializer<wmtk::components::input::InputOptions>
+{
+    using Type = wmtk::components::input::InputOptions;
+    static void to_json(json& j, const Type& v);
+    static void from_json(const json& j, Type& v);
+};
+} // namespace nlohmann

@@ -4,6 +4,7 @@ if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
 endif()
 set(SRC_FILES
     InputOptions.hpp
+    InputOptions.cpp
     mesh_with_tag_from_image.cpp
     mesh_with_tag_from_image.hpp
     input.cpp

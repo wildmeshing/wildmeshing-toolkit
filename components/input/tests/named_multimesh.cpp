@@ -47,7 +47,7 @@ TEST_CASE("named_multimesh_parse", "[components][input]")
         wmtk::components::input::NamedMultiMesh named_mm;
         named_mm.set_mesh(*m);
 
-        named_mm.set_names("roo");
+        named_mm.set_name("roo");
 
         CHECK(std::vector<int64_t>{} == named_mm.get_id("roo"));
         CHECK(m == named_mm.root().shared_from_this());
@@ -63,8 +63,9 @@ TEST_CASE("named_multimesh_parse", "[components][input]")
         wmtk::components::input::NamedMultiMesh named_mm;
         named_mm.set_mesh(*m);
         {
-            nlohmann::json js = nlohmann::json::array({"child"});
-            named_mm.set_names("roo", js);
+            nlohmann::json js;
+            js["roo"] = nlohmann::json::array({"child"});
+            named_mm.set_names(js);
         }
         CHECK(std::vector<int64_t>{} == named_mm.get_id("roo"));
         CHECK(std::vector<int64_t>{0} == named_mm.get_id("roo.child"));
@@ -76,16 +77,17 @@ TEST_CASE("named_multimesh_parse", "[components][input]")
     }
     {
         wmtk::components::input::NamedMultiMesh named_mm;
-        nlohmann::json js = nlohmann::json("child");
-        named_mm.set_names("roo", js);
+        nlohmann::json js;
+        js["roo"] = nlohmann::json("child");
+        named_mm.set_names(js);
         CHECK(std::vector<int64_t>{} == named_mm.get_id("roo"));
         CHECK(std::vector<int64_t>{0} == named_mm.get_id("roo.child"));
     }
     {
         wmtk::components::input::NamedMultiMesh named_mm;
         nlohmann::json js;
-        js["child"] = {};
-        named_mm.set_names("roo", js);
+        js["roo"]["child"] = {};
+        named_mm.set_names(js);
         CHECK(std::vector<int64_t>{} == named_mm.get_id("roo"));
         CHECK(std::vector<int64_t>{0} == named_mm.get_id("roo.child"));
     }
@@ -102,9 +104,9 @@ TEST_CASE("named_multimesh_parse", "[components][input]")
         }
         {
             nlohmann::json js;
-            js["c"]["d"]["e"] = {};
-            js["child"] = nlohmann::json::array({"c1", "c2"});
-            named_mm.set_names("roo", js);
+            js["roo"]["c"]["d"]["e"] = {};
+            js["roo"]["child"] = nlohmann::json::array({"c1", "c2"});
+            named_mm.set_names(js);
         }
         CHECK(std::vector<int64_t>{} == named_mm.get_id("roo"));
         CHECK(std::vector<int64_t>{0, 0, 0} == named_mm.get_id("roo.c.d.e"));
