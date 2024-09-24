@@ -29,6 +29,10 @@ void adl_serializer<wmtk::components::input::InputOptions>::to_json(json& j, con
 }
 void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json& j, Type& v)
 {
+    if (j.is_string()) {
+        v.file = j["file"].get<std::string>();
+        return;
+    }
     v.file = j["file"].get<std::string>();
     if (j.contains("name_spec")) {
         v.name_spec = j["name_spec"];
