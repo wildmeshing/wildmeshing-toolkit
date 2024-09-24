@@ -46,6 +46,13 @@ TEST_CASE("component_input", "[components][input]")
         CHECK(*a == b.root());
     }
 
+    {
+        nlohmann::json js = "path";
+        REQUIRE(js.is_string());
+        auto opts = js.get<wmtk::components::input::InputOptions>();
+        CHECK(opts.file.string() == "path");
+    }
+
     SECTION("should throw")
     {
         //         json component_json = {
