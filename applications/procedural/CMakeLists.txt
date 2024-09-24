@@ -13,3 +13,9 @@ wmtk::input
 wmtk::procedural
 wmtk::output
 )
+
+wmtk_register_integration_test(
+    EXEC_NAME procedural_app
+    CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/test_config.json
+    CONFIG_PATH ${CMAKE_CURRENT_SOURCE_DIR}
+)

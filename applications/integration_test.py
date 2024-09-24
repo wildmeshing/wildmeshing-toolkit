@@ -9,8 +9,8 @@ import argparse
 
 
 class IntegrationTest(unittest.TestCase):
-    BINARY_FOLDER = ""
-    CONFIG_FILE = ""
+    BINARY_FOLDER = None
+    CONFIG_FILE = None
     TEST = None
 
     def setUp(self):
@@ -24,8 +24,8 @@ class IntegrationTest(unittest.TestCase):
     def tearDown(self):
         self.working_dir_fp.cleanup()
 
-    def run_one(self, executable, data_folder, config):
-        test_folder = os.path.join(data_folder, config["test_directory"])
+    def run_one(self, executable, config_folder, data_folder, config):
+        config_folder = os.path.join(config_folder, config["test_directory"])
 
         input_tag = config["input_tag"]
         oracle_tag = config["oracle_tag"]
@@ -39,8 +39,9 @@ class IntegrationTest(unittest.TestCase):
         for test_file_name in config["tests"]:
             print("Running test", test_file_name)
 
-            test_file = os.path.join(test_folder, test_file_name)
+            test_file = os.path.join(config_folder, test_file_name)
 
+            print(f"Test file: {test_file}")
             self.assertTrue(os.path.exists(test_file))
 
             with open(test_file) as f:
@@ -52,9 +53,9 @@ class IntegrationTest(unittest.TestCase):
 
             if root_tag in input:
                 if not os.path.isabs(input[root_tag]):
-                    input[root_tag] = os.path.join(test_folder, input[root_tag])
+                    input[root_tag] = os.path.join(config_folder, input[root_tag])
             else:
-                input[root_tag] = test_folder
+                input[root_tag] = config_folder
 
             input_json = tempfile.NamedTemporaryFile(mode='w')
             json.dump(input, input_json)
@@ -93,12 +94,16 @@ class IntegrationTest(unittest.TestCase):
                 print("Running test for", key)
 
 
-                file = self.main_config[key]["config_file"]
+                my_config = self.main_config[key]
+
+                file = my_config["config_file"]
 
                 with open(file) as fp:
                     config = json.load(fp)
 
-                self.run_one(key, self.main_config[key]["data_folder"], config)
+                data_folder = None if "data_folder" not in my_config else my_config["data_folder"]
+                config_folder = data_folder if "config_folder" not in my_config else my_config["config_folder"]
+                self.run_one(key, config_folder, data_folder, config)
 
 
 if __name__ == '__main__':
@@ -117,18 +122,21 @@ if __name__ == '__main__':
     bfin = args.binary_folder
 
     cwd = os.getcwd()
-    config_file = os.path.join(cwd, "test_config.json")
     if tcin:
         config_file = str(tcin if os.path.isabs(tcin) else os.path.join(cwd, tcin))
         sys.argv.pop()
         sys.argv.pop()
+    else:
+        config_file = os.path.join(cwd, "test_config.json")
 
 
-    bin_dir = os.path.join(cwd, "applications")
     if bfin:
         bin_dir = bfin if os.path.isabs(bfin) else os.path.join(cwd, bfin)
         sys.argv.pop()
         sys.argv.pop()
+    else:
+        bin_dir = os.path.join(cwd, "applications")
+
 
     if args.test:
         sys.argv.pop()
