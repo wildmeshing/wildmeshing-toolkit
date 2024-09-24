@@ -4,6 +4,7 @@
 #include <CLI/CLI.hpp>
 #include <filesystem>
 #include <nlohmann/json.hpp>
+#include <wmtk/components/input/InputOptions.hpp>
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -47,9 +48,10 @@ int main(int argc, char* argv[])
         }
     }
 
-    const fs::path input_path_in = j["input"];
+    const auto input_opts = j["input"].get<wmtk::components::input::InputOptions>();
 
-    auto mesh_ptr = wmtk::components::input::input(input_path_in);
+    auto named_mesh = wmtk::components::input::input(input_opts);
+    auto mesh_ptr = named_mesh.root().shared_from_this();
 
     wmtk::components::isotropic_remeshing::IsotropicRemeshingOptions options;
 
