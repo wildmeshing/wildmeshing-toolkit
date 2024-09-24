@@ -18,6 +18,8 @@ struct InputOptions
 
     bool old_mode = false;
     bool ignore_z = false;
+
+    bool operator==(const InputOptions& o) const;
 };
 
 

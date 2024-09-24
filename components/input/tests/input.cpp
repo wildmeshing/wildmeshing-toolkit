@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+#include <wmtk/components/input/InputOptions.hpp>
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/components/input/mesh_with_tag_from_image.hpp>
 #include <wmtk/io/Cache.hpp>
@@ -19,6 +20,30 @@ TEST_CASE("component_input", "[components][input]")
 
 
         CHECK_NOTHROW(wmtk::components::input::input(input_file, false, {}));
+        auto a = wmtk::components::input::input(input_file, false, {});
+
+        json component_json = {
+            {"file", input_file.string()},
+            {"old_mode", true},
+            {"ignore_z", false},
+            {"tetrahedron_attributes", json::array()}};
+        auto opts = component_json.get<wmtk::components::input::InputOptions>();
+        CHECK(opts.file == input_file);
+        CHECK(opts.ignore_z == false);
+        CHECK(opts.old_mode == true);
+        CHECK(opts.old_mode == true);
+        REQUIRE(opts.imported_attributes.has_value());
+        CHECK(opts.imported_attributes.value().size() == 4);
+        json js2 = opts;
+        for (const auto& v : opts.imported_attributes.value()) {
+            CHECK(v.size() == 0);
+        }
+
+        CHECK(js2 == component_json);
+
+        auto b = wmtk::components::input::input(opts);
+
+        CHECK(*a == b.root());
     }
 
     SECTION("should throw")
@@ -44,7 +69,7 @@ TEST_CASE("component_input_point", "[components][input][.]")
 TEST_CASE("mesh_with_tag_from_image", "[components][input]")
 {
     using namespace wmtk;
-         io::Cache cache("wmtk_cache", std::filesystem::current_path());
+    io::Cache cache("wmtk_cache", std::filesystem::current_path());
 
     std::filesystem::path img_path = data_dir / "images/half_white_half_black.png";
 
