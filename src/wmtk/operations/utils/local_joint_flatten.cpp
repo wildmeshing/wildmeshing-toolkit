@@ -80,12 +80,25 @@ void flatten(
 
     // may causing problem?
     // igl::map_vertices_to_circle(V_joint_before, bnd, bnd_uv);
-    // TODO: here we change to uniform circle
+    // Here we change to uniform circle
+    
+    // TODO: Modify the colinear case
+    // normally we use starting as 0
     {
+        int starting = 0;
+        if (b_hard.size() > 0){
+            // find b_hard[1].first in bnd
+            for (int i = 0; i < bnd.size(); i++){
+                if (b_hard[1].first == bnd[i]){
+                    starting = i;
+                    break;
+                }
+            }
+        }
         bnd_uv.resize(bnd.size(), 2);
         for (int i = 0; i < bnd.size(); i++) {
-            bnd_uv(i, 0) = cos(2 * igl::PI * i / bnd.size());
-            bnd_uv(i, 1) = sin(2 * igl::PI * i / bnd.size());
+            bnd_uv((starting + i) % bnd.size(), 0) = cos(2 * igl::PI * i / bnd.size());
+            bnd_uv((starting + i) % bnd.size(), 1) = sin(2 * igl::PI * i / bnd.size());
         }
     }
     bnd_uv *= sqrt(M_before.sum() / (2 * igl::PI));
@@ -500,7 +513,6 @@ void local_joint_flatten(
 
     std::vector<std::pair<int, int>> b_hard;
 
-    // TODO: update the mapping of the vertices at the same time
     int v_common = get_joint_mesh(
         V_before,
         F_before,
@@ -623,6 +635,9 @@ void local_joint_flatten_smoothing(
     Eigen::MatrixXd& UV_joint,
     bool debug_mode)
 {
+
+    // TODO: special case is needed for boundary cases
+
     // in this case V_joint_before == V_joint_after
     Eigen::MatrixXd V_joint = V_before;
     V_joint.conservativeResize(V_joint.rows() + 1, V_joint.cols());
