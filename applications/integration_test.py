@@ -25,7 +25,8 @@ class IntegrationTest(unittest.TestCase):
         self.working_dir_fp.cleanup()
 
     def run_one(self, executable, config_folder, data_folder, config):
-        config_folder = os.path.join(config_folder, config["test_directory"])
+        if "test_directory" in config:
+            config_folder = os.path.join(config_folder, config["test_directory"])
 
         input_tag = config["input_tag"]
         oracle_tag = config["oracle_tag"]
@@ -45,7 +46,11 @@ class IntegrationTest(unittest.TestCase):
             self.assertTrue(os.path.exists(test_file))
 
             with open(test_file) as f:
-                test_oracle = json.load(f)
+                try:
+                    test_oracle = json.load(f)
+                except Exception as e:
+                    print(f"Caught exception while loading file {test_file}: {e}")
+                    raise e
 
             input = test_oracle[input_tag].copy()
             oracle_file = tempfile.NamedTemporaryFile(mode='r')
