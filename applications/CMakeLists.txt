@@ -8,6 +8,8 @@ include(wmtk_add_application)
 include(wmtk_register_integration_test)
 include(wmtk_generate_test_config)
 
+add_subdirectory(utils)
+
 option(WMTK_ENABLE_APPLICATION_delaunay "Runs delaunay application" ON)
 if(WMTK_ENABLE_APPLICATION_delaunay)
 add_subdirectory(delaunay)
