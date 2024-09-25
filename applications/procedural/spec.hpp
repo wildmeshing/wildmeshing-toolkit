@@ -8,36 +8,23 @@ nlohmann::json spec = R"(
   {
     "pointer": "/",
     "required": [
-      "name",
-      "type",
-      "fan"
+      "triangle_fan"
     ],
-    "type": "object",
-    "type_name": "triangle_fan"
+    "type": "object"
   },
   {
     "pointer": "/",
     "required": [
-      "name",
-      "type",
       "disk"
     ],
-    "type": "object",
-    "type_name": "disk"
+    "type": "object"
   },
   {
     "pointer": "/",
     "required": [
-      "name",
-      "type",
       "grid"
     ],
-    "type": "object",
-    "type_name": "grid"
-  },
-  {
-    "pointer": "/name",
-    "type": "string"
+    "type": "object"
   },
   {
     "doc": "The type of mesh to generate. The settings are assumed to be for the right type",

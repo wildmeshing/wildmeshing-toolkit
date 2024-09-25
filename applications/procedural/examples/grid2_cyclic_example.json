@@ -1,21 +1,28 @@
+{
 
-        "name": "grid2d_tiled",
-        "type": "grid"
-        "grid": {
-          "coordinates": {
+    "grid": {
+        "coordinates": {
             "name": "vertices",
             "spacing": [
-              1,
-              1
+                1,
+                1
             ]
-          },
-          "cycles": [
+        },
+        "cycles": [
             true,
             true
-          ],
-          "dimensions": [
+        ],
+        "dimensions": [
             10,
             10
-          ],
-          "tiling": "diagonal"
+        ],
+        "tiling": "diagonal"
+    },
+
+      "output": {
+        "attributes": {
+          "position": "vertices"
         },
+        "file": "grid2d_cyclic",
+      }
+}
