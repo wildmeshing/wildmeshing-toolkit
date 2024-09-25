@@ -144,10 +144,6 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_regular_space_options.html">RegularSpaceOptions</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_s_e_c_attributes.html">SECAttributes</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_s_e_c_options.html">SECOptions</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_tag_intersection_attributes.html">TagIntersectionAttributes</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_tag_intersection_values.html">TagIntersectionValues</a></td></tr>
@@ -159,6 +155,10 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:aa5cef5f50f316f60f46180e6f84752f6"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#aa5cef5f50f316f60f46180e6f84752f6">CDT_internal</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a> &amp;m, std::vector&lt; std::array&lt; bool, 4 &gt;&gt; &amp;local_f_on_input, bool inner_only, bool rational_output)</td></tr>
+<tr class="separator:aa5cef5f50f316f60f46180e6f84752f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae96e456a97cc6bb91612325fce6c6abb"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; std::pair&lt; std::vector&lt; double &gt;, uint32_t &gt;, std::pair&lt; std::vector&lt; uint32_t &gt;, uint32_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#ae96e456a97cc6bb91612325fce6c6abb">get_vf</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;trimesh)</td></tr>
+<tr class="separator:ae96e456a97cc6bb91612325fce6c6abb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae80c4178ab57d7bc05e9512f49be096a"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; Eigen::MatrixXd, Eigen::MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#ae80c4178ab57d7bc05e9512f49be096a">delaunay_2d</a> (Eigen::Ref&lt; const <a class="el" href="namespacewmtk.html#a7ff716d10e4dcaa89c691794f81b0de1">RowVectors2d</a> &gt; points)</td></tr>
 <tr class="separator:ae80c4178ab57d7bc05e9512f49be096a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2b8f841c866f2be5ad04a5b453746b6e"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; Eigen::MatrixXd, Eigen::MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a2b8f841c866f2be5ad04a5b453746b6e">delaunay_3d</a> (Eigen::Ref&lt; const <a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> &gt; points)</td></tr>
@@ -198,10 +198,6 @@ Functions</h2></td></tr>
 <tr class="separator:a967f1070f24c7de9b9bb12030deb5f60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a369e36ea89a3191d9840467d2483e140"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a369e36ea89a3191d9840467d2483e140">from_json</a> (const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;j, <a class="el" href="structwmtk_1_1components_1_1internal_1_1_regular_space_options.html">RegularSpaceOptions</a> &amp;o)</td></tr>
 <tr class="separator:a369e36ea89a3191d9840467d2483e140"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6607f6d75c28ecb67dec5a07589f85a8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a6607f6d75c28ecb67dec5a07589f85a8">NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (<a class="el" href="structwmtk_1_1components_1_1internal_1_1_s_e_c_attributes.html">SECAttributes</a>, position, other_positions, inversion_position, update_other_positions)</td></tr>
-<tr class="separator:a6607f6d75c28ecb67dec5a07589f85a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a42f1c29d6b23e6e0686cc3ba5c1e83f8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a42f1c29d6b23e6e0686cc3ba5c1e83f8">NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (<a class="el" href="structwmtk_1_1components_1_1internal_1_1_s_e_c_options.html">SECOptions</a>, <a class="el" href="namespacewmtk_1_1components.html#a0385d7ace50dd77deab3d479b734435d">input</a>, <a class="el" href="namespacewmtk_1_1components.html#a50def332b20b44816cb0c8d31a808a51">output</a>, attributes, pass_through, length_abs, length_rel, lock_boundary, use_for_periodic, envelope_size)</td></tr>
-<tr class="separator:a42f1c29d6b23e6e0686cc3ba5c1e83f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a46caf88594dc94f3a9b7264bd6807de0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a46caf88594dc94f3a9b7264bd6807de0">to_json</a> (<a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;j, <a class="el" href="structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html">TagIntersectionOptions</a> &amp;o)</td></tr>
 <tr class="separator:a46caf88594dc94f3a9b7264bd6807de0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6e73c503f2bb2babc226368768c71070"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a6e73c503f2bb2babc226368768c71070">from_json</a> (const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;j, <a class="el" href="structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html">TagIntersectionOptions</a> &amp;o)</td></tr>
@@ -313,6 +309,64 @@ Here is the call graph for this function:</div>
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a919ba35151931f21305c895ea3d52a2b_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="aa5cef5f50f316f60f46180e6f84752f6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5cef5f50f316f60f46180e6f84752f6">&#9670;&nbsp;</a></span>CDT_internal()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt; wmtk::components::internal::CDT_internal </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::array&lt; bool, 4 &gt;&gt; &amp;&#160;</td>
+          <td class="paramname"><em>local_f_on_input</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>inner_only</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>rational_output</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="internal_2_c_d_t_8cpp_source.html#l00013">13</a> of file <a class="el" href="internal_2_c_d_t_8cpp_source.html">CDT.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="cdt__lib_8cpp_source.html#l00166">cdt_lib::cdt_to_string()</a>, <a class="el" href="get__vf_8cpp_source.html#l00009">get_vf()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="mesh__utils_8hpp_source.html#l00009">wmtk::mesh_utils::set_matrix_attribute()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="orient_8cpp_source.html#l00052">wmtk::utils::wmtk_orient3d()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_c_d_t_8cpp_source.html#l00018">wmtk::components::CDT()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_aa5cef5f50f316f60f46180e6f84752f6_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_aa5cef5f50f316f60f46180e6f84752f6_icgraph.svg" width="447" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -502,6 +556,42 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
+<a id="ae96e456a97cc6bb91612325fce6c6abb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae96e456a97cc6bb91612325fce6c6abb">&#9670;&nbsp;</a></span>get_vf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::tuple&lt; std::pair&lt; std::vector&lt; double &gt;, uint32_t &gt;, std::pair&lt; std::vector&lt; uint32_t &gt;, uint32_t &gt; &gt; wmtk::components::internal::get_vf </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>trimesh</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="get__vf_8cpp_source.html#l00009">9</a> of file <a class="el" href="get__vf_8cpp_source.html">get_vf.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_eigen_matrix_writer_8cpp_source.html#l00021">wmtk::utils::EigenMatrixWriter::get_FV_matrix()</a>, <a class="el" href="_eigen_matrix_writer_8cpp_source.html#l00005">wmtk::utils::EigenMatrixWriter::get_position_matrix()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, and <a class="el" href="_mesh_8cpp_source.html#l00044">wmtk::Mesh::serialize()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="internal_2_c_d_t_8cpp_source.html#l00013">CDT_internal()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_ae96e456a97cc6bb91612325fce6c6abb_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_ae96e456a97cc6bb91612325fce6c6abb_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
 <a id="a49432d47b0fca2f5fe80f1e9c634fa14"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a49432d47b0fca2f5fe80f1e9c634fa14">&#9670;&nbsp;</a></span>isotropic_remeshing()</h2>
 
@@ -651,7 +741,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="a163f2df8912b357a44313f201d62cdc2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a163f2df8912b357a44313f201d62cdc2">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[1/12]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a163f2df8912b357a44313f201d62cdc2">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[1/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -679,7 +769,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="ab4d5aa85b7e849adbde7c7fedc6453bf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab4d5aa85b7e849adbde7c7fedc6453bf">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[2/12]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4d5aa85b7e849adbde7c7fedc6453bf">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[2/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -713,7 +803,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="a54b94df0200765de12723783395d875f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a54b94df0200765de12723783395d875f">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[3/12]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a54b94df0200765de12723783395d875f">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[3/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -741,7 +831,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="a45f0fde8802f8e062c930ecdef5210bb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a45f0fde8802f8e062c930ecdef5210bb">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[4/12]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a45f0fde8802f8e062c930ecdef5210bb">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[4/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -781,7 +871,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="a1f51db9e8abba0eb8b907b905e0064d5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1f51db9e8abba0eb8b907b905e0064d5">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[5/12]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f51db9e8abba0eb8b907b905e0064d5">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[5/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -827,7 +917,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="aef589070cd8047eeef633efc806e2f94"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aef589070cd8047eeef633efc806e2f94">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[6/12]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aef589070cd8047eeef633efc806e2f94">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[6/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -909,7 +999,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="a82ea78e67966e7a58c4f86b0c3cad0ab"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a82ea78e67966e7a58c4f86b0c3cad0ab">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[7/12]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a82ea78e67966e7a58c4f86b0c3cad0ab">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[7/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -936,130 +1026,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a6607f6d75c28ecb67dec5a07589f85a8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6607f6d75c28ecb67dec5a07589f85a8">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[8/12]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">wmtk::components::internal::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_s_e_c_attributes.html">SECAttributes</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">position&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">other_positions&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">inversion_position&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">update_other_positions&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a42f1c29d6b23e6e0686cc3ba5c1e83f8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a42f1c29d6b23e6e0686cc3ba5c1e83f8">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[9/12]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">wmtk::components::internal::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_s_e_c_options.html">SECOptions</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk_1_1components.html#a0385d7ace50dd77deab3d479b734435d">input</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk_1_1components.html#a50def332b20b44816cb0c8d31a808a51">output</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">attributes&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">pass_through&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">length_abs&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">length_rel&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">lock_boundary&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">use_for_periodic&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">envelope_size&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="a5167173a30d388b3b1f1cd81cd6a167a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5167173a30d388b3b1f1cd81cd6a167a">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[10/12]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5167173a30d388b3b1f1cd81cd6a167a">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[8/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1105,7 +1073,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="a41722ce1685a7dec1703284ea7b17090"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a41722ce1685a7dec1703284ea7b17090">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[11/12]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a41722ce1685a7dec1703284ea7b17090">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[9/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1151,7 +1119,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="ac37ed3f255d6cb7b44f2423cf4079170"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac37ed3f255d6cb7b44f2423cf4079170">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[12/12]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac37ed3f255d6cb7b44f2423cf4079170">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[10/10]</span></h2>
 
 <div class="memitem">
 <div class="memproto">

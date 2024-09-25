@@ -82,8 +82,6 @@ var annotated_dup =
           [ "TagAttribute", "classwmtk_1_1components_1_1internal_1_1_tag_attribute.html", "classwmtk_1_1components_1_1internal_1_1_tag_attribute" ],
           [ "RegularSpace", "classwmtk_1_1components_1_1internal_1_1_regular_space.html", "classwmtk_1_1components_1_1internal_1_1_regular_space" ],
           [ "RegularSpaceOptions", "structwmtk_1_1components_1_1internal_1_1_regular_space_options.html", "structwmtk_1_1components_1_1internal_1_1_regular_space_options" ],
-          [ "SECAttributes", "structwmtk_1_1components_1_1internal_1_1_s_e_c_attributes.html", "structwmtk_1_1components_1_1internal_1_1_s_e_c_attributes" ],
-          [ "SECOptions", "structwmtk_1_1components_1_1internal_1_1_s_e_c_options.html", "structwmtk_1_1components_1_1internal_1_1_s_e_c_options" ],
           [ "TagIntersectionAttributes", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_attributes.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_attributes" ],
           [ "TagIntersectionValues", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values" ],
           [ "TagIntersectionOptions", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options" ],

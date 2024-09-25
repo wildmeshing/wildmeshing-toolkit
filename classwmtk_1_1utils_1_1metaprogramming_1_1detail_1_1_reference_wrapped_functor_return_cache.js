@@ -14,6 +14,7 @@ var classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functo
     [ "get_id", "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a31b56eba1f5bd731f738170979d38bfc", null ],
     [ "get_variant", "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a2d4e8819e94c7d717f9cb27fb953c9e1", null ],
     [ "get_variant", "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a7d9c737b1ad7e78d08b2ec8aee9e8f4c", null ],
+    [ "has_variant", "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a6e14286f2c0e0cfa16372756f768449a", null ],
     [ "keys", "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ae578dd8fb78ec51a6ce71a512133a118", null ],
     [ "set_enable_overwrites", "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a26a0e01292c23e5d6e2a57436174880a", null ],
     [ "m_data", "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a70a58a5ce7f6bb70e0d033637513c0e9", null ],

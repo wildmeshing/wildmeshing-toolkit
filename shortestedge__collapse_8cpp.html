@@ -139,7 +139,6 @@ $(document).ready(function(){initNavTree('shortestedge__collapse_8cpp.html','');
 <code>#include &lt;<a class="el" href="_new_attribute_strategy_8hpp_source.html">wmtk/operations/attribute_new/NewAttributeStrategy.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_attribute_transfer_strategy_8hpp_source.html">wmtk/operations/attribute_update/AttributeTransferStrategy.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_logger_8hpp_source.html">wmtk/utils/Logger.hpp</a>&gt;</code><br />
-<code>#include &quot;<a class="el" href="_s_e_c_options_8hpp_source.html">internal/SECOptions.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for shortestedge_collapse.cpp:</div>
 <div class="dyncontent">
@@ -158,8 +157,8 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a769d2bf3c79d6e770cb957f4b59b64fd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a769d2bf3c79d6e770cb957f4b59b64fd">wmtk::components::shortestedge_collapse</a> (const utils::Paths &amp;paths, const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;j, io::Cache &amp;cache)</td></tr>
-<tr class="separator:a769d2bf3c79d6e770cb957f4b59b64fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ed0166820b046296ef72b8a22430c29"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; Mesh &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a4ed0166820b046296ef72b8a22430c29">wmtk::components::shortestedge_collapse</a> (TriMesh &amp;mesh, const attribute::MeshAttributeHandle &amp;position_handle, std::optional&lt; attribute::MeshAttributeHandle &gt; &amp;inversion_position_handle, bool update_other_position, const double length_rel, bool lock_boundary, double envelope_size, const std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;pass_through)</td></tr>
+<tr class="separator:a4ed0166820b046296ef72b8a22430c29"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

@@ -116,20 +116,26 @@ $(document).ready(function(){initNavTree('shortestedge__collapse_8hpp_source.htm
 </div><!--header-->
 <div class="contents">
 <a href="shortestedge__collapse_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;nlohmann/json.hpp&gt;</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_cache_8hpp.html">wmtk/io/Cache.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_8hpp.html">wmtk/Mesh.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_tri_mesh_8hpp.html">wmtk/TriMesh.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;wmtk/components/utils/Paths.hpp&gt;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160; </div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a769d2bf3c79d6e770cb957f4b59b64fd">shortestedge_collapse</a>(<span class="keyword">const</span> utils::Paths&amp; paths, <span class="keyword">const</span> <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; j, io::Cache&amp; cache);</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
-<div class="ttc" id="a_cache_8hpp_html"><div class="ttname"><a href="_cache_8hpp.html">Cache.hpp</a></div></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components.html#a4ed0166820b046296ef72b8a22430c29">shortestedge_collapse</a>(</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;    TriMesh&amp; mesh,</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    <span class="keyword">const</span> attribute::MeshAttributeHandle&amp; position_handle,</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;    std::optional&lt;attribute::MeshAttributeHandle&gt;&amp; inversion_position_handle,</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    <span class="keywordtype">bool</span> update_other_position,</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> length_rel,</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keywordtype">bool</span> lock_boundary,</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keywordtype">double</span> envelope_size,</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">const</span> std::vector&lt;attribute::MeshAttributeHandle&gt;&amp; pass_through);</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
+<div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
+<div class="ttc" id="a_tri_mesh_8hpp_html"><div class="ttname"><a href="_tri_mesh_8hpp.html">TriMesh.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a769d2bf3c79d6e770cb957f4b59b64fd"><div class="ttname"><a href="namespacewmtk_1_1components.html#a769d2bf3c79d6e770cb957f4b59b64fd">wmtk::components::shortestedge_collapse</a></div><div class="ttdeci">void shortestedge_collapse(const utils::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="shortestedge__collapse_8cpp_source.html#l00027">shortestedge_collapse.cpp:27</a></div></div>
-<div class="ttc" id="atests_2input_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="tests_2input_8cpp_source.html#l00008">input.cpp:8</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_a4ed0166820b046296ef72b8a22430c29"><div class="ttname"><a href="namespacewmtk_1_1components.html#a4ed0166820b046296ef72b8a22430c29">wmtk::components::shortestedge_collapse</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; shortestedge_collapse(TriMesh &amp;mesh, const attribute::MeshAttributeHandle &amp;position_handle, std::optional&lt; attribute::MeshAttributeHandle &gt; &amp;inversion_position_handle, bool update_other_position, const double length_rel, bool lock_boundary, double envelope_size, const std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;pass_through)</div><div class="ttdef"><b>Definition:</b> <a href="shortestedge__collapse_8cpp_source.html#l00026">shortestedge_collapse.cpp:26</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

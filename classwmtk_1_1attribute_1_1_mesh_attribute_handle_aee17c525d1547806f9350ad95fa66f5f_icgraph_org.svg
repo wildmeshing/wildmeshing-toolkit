@@ -98,10 +98,10 @@
 <path fill="none" stroke="midnightblue" d="M585.86,-135.37C563.03,-124.29 533.33,-110.74 506,-101 495.88,-97.39 484.99,-94.05 474.31,-91.05"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="584.37,-138.54 594.89,-139.8 587.45,-132.25 584.37,-138.54"/>
 </g>
-<!-- Node13 -->
-<g id="node13" class="node">
-<title>Node13</title>
-<g id="a_node13"><a xlink:href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#aa54d76c92c262b3957a5a13a2efdaf12" target="_top" xlink:title=" ">
+<!-- Node14 -->
+<g id="node14" class="node">
+<title>Node14</title>
+<g id="a_node14"><a xlink:href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#aa54d76c92c262b3957a5a13a2efdaf12" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="314,-0.5 314,-41.5 506,-41.5 506,-0.5 314,-0.5"/>
 <text text-anchor="start" x="322" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::SplitNew</text>
 <text text-anchor="start" x="322" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">AttributeStrategy::SplitNewAttribute</text>
@@ -109,9 +109,9 @@
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node13 -->
-<g id="edge12" class="edge">
-<title>Node1&#45;&gt;Node13</title>
+<!-- Node1&#45;&gt;Node14 -->
+<g id="edge13" class="edge">
+<title>Node1&#45;&gt;Node14</title>
 <path fill="none" stroke="midnightblue" d="M604.18,-132.3C582.11,-108.91 544.78,-72.85 506,-51 499.82,-47.52 493.19,-44.38 486.4,-41.57"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="601.69,-134.77 611.06,-139.71 606.82,-130 601.69,-134.77"/>
 </g>
@@ -197,16 +197,31 @@
 <g id="node12" class="node">
 <title>Node12</title>
 <g id="a_node12"><a xlink:href="namespacewmtk_1_1utils.html#a63f193e192f0629608e3d43f8143b6a9" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="120,-66.5 120,-85.5 265,-85.5 265,-66.5 120,-66.5"/>
-<text text-anchor="middle" x="192.5" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::utils::cast_attribute</text>
+<polygon fill="none" stroke="black" points="120,-82.5 120,-101.5 265,-101.5 265,-82.5 120,-82.5"/>
+<text text-anchor="middle" x="192.5" y="-89.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::utils::cast_attribute</text>
 </a>
 </g>
 </g>
 <!-- Node11&#45;&gt;Node12 -->
 <g id="edge11" class="edge">
 <title>Node11&#45;&gt;Node12</title>
-<path fill="none" stroke="midnightblue" d="M311.23,-76C295.75,-76 280,-76 265.26,-76"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="311.35,-79.5 321.35,-76 311.35,-72.5 311.35,-79.5"/>
+<path fill="none" stroke="midnightblue" d="M311.23,-83.26C295.75,-84.41 280,-85.58 265.26,-86.67"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="311.63,-86.74 321.35,-82.51 311.12,-79.76 311.63,-86.74"/>
+</g>
+<!-- Node13 -->
+<g id="node13" class="node">
+<title>Node13</title>
+<g id="a_node13"><a xlink:href="namespacewmtk_1_1components.html#a52f9ca12856b67dee17249c6172e2bbe" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="108,-44.5 108,-63.5 277,-63.5 277,-44.5 108,-44.5"/>
+<text text-anchor="middle" x="192.5" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::components::multimesh</text>
+</a>
+</g>
+</g>
+<!-- Node11&#45;&gt;Node13 -->
+<g id="edge12" class="edge">
+<title>Node11&#45;&gt;Node13</title>
+<path fill="none" stroke="midnightblue" d="M311.38,-66.03C299.98,-64.87 288.43,-63.69 277.24,-62.55"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="311.04,-69.52 321.35,-67.05 311.76,-62.55 311.04,-69.52"/>
 </g>
 </g>
 </svg>

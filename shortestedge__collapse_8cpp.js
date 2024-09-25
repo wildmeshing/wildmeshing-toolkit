@@ -1,4 +1,4 @@
 var shortestedge__collapse_8cpp =
 [
-    [ "shortestedge_collapse", "shortestedge__collapse_8cpp.html#a769d2bf3c79d6e770cb957f4b59b64fd", null ]
+    [ "shortestedge_collapse", "shortestedge__collapse_8cpp.html#a4ed0166820b046296ef72b8a22430c29", null ]
 ];
