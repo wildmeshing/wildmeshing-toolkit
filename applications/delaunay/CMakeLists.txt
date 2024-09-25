@@ -11,7 +11,9 @@ target_link_libraries(delaunay_app PRIVATE
 wmtk::input
 wmtk::delaunay
 wmtk::output
-wmtk::to_points)
+wmtk::to_points
+wmtk::application_utils
+)
 
 wmtk_register_integration_test(
     EXEC_NAME delaunay_app

@@ -1,6 +1,7 @@
 #include <jse/jse.h>
 #include <CLI/CLI.hpp>
 #include <filesystem>
+#include <wmtk/applications/utils/element_count_report.hpp>
 #include <nlohmann/json.hpp>
 
 #include <wmtk/Mesh.hpp>
@@ -77,11 +78,7 @@ int main(int argc, char* argv[])
     const std::string report = j["report"];
     if (!report.empty()) {
         nlohmann::json out_json;
-        out_json["vertices"] = out->get_all(PrimitiveType::Vertex).size();
-        out_json["edges"] = out->get_all(PrimitiveType::Edge).size();
-        out_json["faces"] = out->get_all(PrimitiveType::Triangle).size();
-        out_json["cells"] = out->get_all(PrimitiveType::Tetrahedron).size();
-
+        out_json.update(wmtk::applications::utils::element_count_report(*out));
         out_json["input"] = j;
 
         std::ofstream ofs(report);
