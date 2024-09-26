@@ -1,27 +1,32 @@
 [
     {
         "pointer": "/",
-        "type": "list"
-    },
-    {
-        "pointer": "/*",
-        "type": "string",
-        "default": ""
-    },
-    {
-        "pointer": "/*",
         "type": "object",
         "required": [
-            "name",
+            "name"
+        ],
+        "optional": [
+            "type",
+            "simplex",
             "mesh"
         ]
     },
     {
-        "pointer": "/*/name",
-        "type": "string"
+        "pointer": "/name",
+        "type": "the name of the attribute"
     },
     {
-        "pointer": "/*/mesh",
-        "type": "string"
+        "pointer": "/mesh",
+        "type": "the name of the mesh the attribute belongs to"
+    },
+    {
+        "pointer": "/type",
+        "type": "string",
+        "doc": "the type of the attribute, one of double/char/int64/rational"
+    },
+    {
+        "pointer": "/simplex",
+        "type": "int",
+        "doc": "the dimension of the simplex the attribute lies on"
     }
 ]
