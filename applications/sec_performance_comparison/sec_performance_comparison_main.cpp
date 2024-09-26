@@ -15,6 +15,7 @@
 #include <wmtk/components/utils/resolve_path.hpp>
 
 using namespace wmtk;
+using namespace components;
 namespace fs = std::filesystem;
 
 using wmtk::components::utils::resolve_paths;
@@ -27,23 +28,24 @@ int main(int argc, char* argv[])
     //const fs::path input_file = "bunny.msh"; // 69,451 faces
     //const fs::path input_file = "max-planck.msh"; // 99,991 faces
 
-    std::shared_ptr<Mesh> mesh_in = wmtk::components::input(input_file);
+    std::shared_ptr<Mesh> mesh_in = input(input_file);
     TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
 
     attribute::MeshAttributeHandle pos_handle =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     // shortestedge_collapse
-    {
-        components::shortestedge_collapse(mesh, pos_handle, 10);
+    if (false) {
+        shortestedge_collapse(mesh, pos_handle, 10);
+        output(mesh, "sec_out", pos_handle);
     }
 
     // tetwild_simplification
-    {
-        //
+    if (true) {
+        auto [mesh_out, stats] = tetwild_simplification(mesh, "vertices", 0.01);
+        output(*mesh_out, "tws_out", "vertices");
     }
 
-    wmtk::components::output(mesh, "sec_performance_comparison_out", pos_handle);
 
     const std::string report = "report.json";
     if (!report.empty()) {
