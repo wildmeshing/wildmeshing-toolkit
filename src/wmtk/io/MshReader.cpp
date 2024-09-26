@@ -141,7 +141,7 @@ void MshReader::extract_vertices()
     assert(m_embedded_dimension > 0);
 
     using Vector = wmtk::Vector<double, 3>;
-    using ConstMapType = Vector::ConstMapType;
+    using ConstMapType = typename Vector::ConstMapType;
 
     const size_t tag_offset = block->tags.front();
     for (size_t i = 0; i < num_vertices; i++) {
@@ -173,7 +173,7 @@ void MshReader::extract_simplex_elements()
         const size_t* element = element_block->data.data() + i * (DIM + 2) + 1;
 
         using Vector = wmtk::Vector<size_t, DIM + 1>;
-        using ConstMapType = Vector::ConstMapType;
+        using ConstMapType = typename Vector::ConstMapType;
 
         ConstMapType element_vec(element);
         const auto vertex_tag_offset_vec = Vector::Constant(vert_tag_offset);
