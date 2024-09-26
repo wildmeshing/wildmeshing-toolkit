@@ -39,4 +39,9 @@ if(WMTK_ENABLE_APPLICATION_cdt_sec)
 add_subdirectory(cdt_sec)
 endif()
 
+option(WMTK_ENABLE_APPLICATION_sec_performance_comparison "Runs sec_performance_comparison application" ON)
+if(WMTK_ENABLE_APPLICATION_sec_performance_comparison)
+add_subdirectory(sec_performance_comparison)
+endif()
+
 wmtk_generate_test_config("${WMTK_TEST_CONFIG}")
