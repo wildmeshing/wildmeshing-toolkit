@@ -23,15 +23,8 @@
 
 
 namespace wmtk::components {
-std::shared_ptr<Mesh> shortestedge_collapse(
-    TriMesh& mesh,
-    const attribute::MeshAttributeHandle& position_handle,
-    std::optional<attribute::MeshAttributeHandle>& inversion_position_handle,
-    bool update_other_position,
-    const double length_rel,
-    bool lock_boundary,
-    double envelope_size,
-    const std::vector<attribute::MeshAttributeHandle>& pass_through)
+
+void shortestedge_collapse(TriMesh& mesh, const ShortestEdgeCollapseOptions& options)
 {
     if (mesh.top_simplex_type() != PrimitiveType::Triangle) {
         log_and_throw_error(
@@ -39,11 +32,14 @@ std::shared_ptr<Mesh> shortestedge_collapse(
             primitive_type_name(mesh.top_simplex_type()));
     }
 
+    const attribute::MeshAttributeHandle& position_handle = options.position_handle;
+    const attribute::MeshAttributeHandle& inversion_position_handle =
+        options.inversion_position_handle;
+
     // TriMesh& mesh = static_cast<TriMesh&>(position_handle.mesh());
 
-    auto pass_through_attributes = pass_through;
-
-    bool check_inversion = inversion_position_handle.has_value();
+    std::vector<attribute::MeshAttributeHandle> pass_through_attributes =
+        options.pass_through_attributes;
 
     /////////////////////////////////////////////
 
@@ -81,9 +77,9 @@ std::shared_ptr<Mesh> shortestedge_collapse(
 
     //////////////////////////////////
     // computing bbox diagonal
-    Eigen::VectorXd bmin(mesh.top_cell_dimension());
+    Eigen::VectorXd bmin(position_handle.dimension());
     bmin.setConstant(std::numeric_limits<double>::max());
-    Eigen::VectorXd bmax(mesh.top_cell_dimension());
+    Eigen::VectorXd bmax(position_handle.dimension());
     bmax.setConstant(std::numeric_limits<double>::lowest());
 
     auto pt_accessor = mesh.create_const_accessor<double>(position_handle);
@@ -99,7 +95,7 @@ std::shared_ptr<Mesh> shortestedge_collapse(
 
     const double bbdiag = (bmax - bmin).norm();
 
-    const double length_abs = bbdiag * length_rel;
+    const double length_abs = bbdiag * options.length_rel;
 
     wmtk::logger().info(
         "bbox max {}, bbox min {}, diag {}, target edge length {}",
@@ -137,10 +133,10 @@ std::shared_ptr<Mesh> shortestedge_collapse(
     auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(mesh);
 
     ////////////// positions
-    std::vector<attribute::MeshAttributeHandle> positions;
-    positions.push_back(position_handle);
-    if (check_inversion) {
-        positions.push_back(inversion_position_handle.value());
+    std::vector<attribute::MeshAttributeHandle> position_handles;
+    position_handles.push_back(position_handle);
+    if (inversion_position_handle.is_valid()) {
+        position_handles.push_back(inversion_position_handle);
     }
 
     //////////////////////////////////////////
@@ -151,18 +147,18 @@ std::shared_ptr<Mesh> shortestedge_collapse(
     collapse->add_invariant(invariant_mm_map);
 
 
-    if (envelope_size > 0) {
+    if (options.envelope_size) {
         collapse->add_invariant(std::make_shared<wmtk::invariants::EnvelopeInvariant>(
             position_handle,
-            bbdiag * envelope_size,
+            bbdiag * options.envelope_size.value(),
             position_handle));
     }
 
 
-    if (check_inversion) {
+    if (inversion_position_handle.is_valid()) {
         collapse->add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
-            inversion_position_handle.value().mesh(),
-            inversion_position_handle.value().as<double>()));
+            inversion_position_handle.mesh(),
+            inversion_position_handle.as<double>()));
     }
     collapse->set_new_attribute_strategy(
         visited_edge_flag,
@@ -172,19 +168,22 @@ std::shared_ptr<Mesh> shortestedge_collapse(
     collapse->set_priority(short_edges_first_priority);
     collapse->add_transfer_strategy(edge_length_update);
 
-    if (lock_boundary) {
+    if (options.lock_boundary) {
         collapse->add_invariant(invariant_interior_edge);
         // set collapse towards boundary
-        for (auto& p : positions) {
-            auto tmp = std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(p);
-            tmp->set_strategy(wmtk::operations::CollapseBasicStrategy::CopyOther);
-            tmp->set_simplex_predicate(wmtk::operations::BasicSimplexPredicate::IsInterior);
-            collapse->set_new_attribute_strategy(p, tmp);
+        for (const auto& pos_handle : position_handles) {
+            auto pos_collapse_strategy =
+                std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(
+                    pos_handle);
+            pos_collapse_strategy->set_strategy(wmtk::operations::CollapseBasicStrategy::CopyOther);
+            pos_collapse_strategy->set_simplex_predicate(
+                wmtk::operations::BasicSimplexPredicate::IsInterior);
+            collapse->set_new_attribute_strategy(pos_handle, pos_collapse_strategy);
         }
     } else {
-        for (auto& p : positions) {
+        for (const auto& pos_handle : position_handles) {
             collapse->set_new_attribute_strategy(
-                p,
+                pos_handle,
                 wmtk::operations::CollapseBasicStrategy::CopyOther);
         }
     }
@@ -218,7 +217,28 @@ std::shared_ptr<Mesh> shortestedge_collapse(
         pass_stats.collecting_time,
         pass_stats.sorting_time,
         pass_stats.executing_time);
+}
 
-    return mesh.shared_from_this();
+void shortestedge_collapse(
+    TriMesh& mesh,
+    const attribute::MeshAttributeHandle& position_handle,
+    const double length_rel,
+    std::optional<bool> lock_boundary,
+    std::optional<double> envelope_size,
+    std::optional<attribute::MeshAttributeHandle> inversion_position_handle,
+    const std::vector<attribute::MeshAttributeHandle>& pass_through)
+{
+    ShortestEdgeCollapseOptions options;
+    options.position_handle = position_handle;
+    options.length_rel = length_rel;
+    if (lock_boundary) {
+        options.lock_boundary = lock_boundary.value();
+    }
+    options.envelope_size = envelope_size;
+    if (inversion_position_handle) {
+        options.inversion_position_handle = inversion_position_handle.value();
+    }
+    options.pass_through_attributes = pass_through;
+    shortestedge_collapse(mesh, options);
 }
 } // namespace wmtk::components
