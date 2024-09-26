@@ -911,7 +911,7 @@ nlohmann::json simplify(
 std::tuple<std::shared_ptr<TriMesh>, nlohmann::json> tetwild_simplification(
     const TriMesh& mesh,
     const std::string& postion_attr_name,
-    double main_esp,
+    double main_eps,
     bool relative,
     double duplicate_tol,
     bool use_sampling)
@@ -945,13 +945,13 @@ std::tuple<std::shared_ptr<TriMesh>, nlohmann::json> tetwild_simplification(
 
     const double bbdiag = (bmax - bmin).norm();
 
-    if (relative) main_esp *= bbdiag;
+    if (relative) main_eps *= bbdiag;
 
     if (duplicate_tol < 0) duplicate_tol = SCALAR_ZERO;
     if (relative) duplicate_tol *= bbdiag;
 
-    const double envelope_size = 2 * main_esp * (9 - 2 * sqrt(3)) / 25.0;
-    const double sampling_dist = (8.0 / 15.0) * main_esp;
+    const double envelope_size = 2 * main_eps * (9 - 2 * sqrt(3)) / 25.0;
+    const double sampling_dist = (8.0 / 15.0) * main_eps;
 
     AABBWrapper tree(vertices, faces, envelope_size, sampling_dist, use_sampling);
 
