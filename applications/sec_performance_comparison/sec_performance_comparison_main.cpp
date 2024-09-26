@@ -3,6 +3,8 @@
 #include <nlohmann/json.hpp>
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/TriMesh.hpp>
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <wmtk/components/input/input.hpp>
@@ -19,13 +21,27 @@ using wmtk::components::utils::resolve_paths;
 
 int main(int argc, char* argv[])
 {
-    const fs::path input_file = "MY_MESH_FILE";
+    const fs::path input_file = "100071_sf.msh"; // 11,040 faces
+    //const fs::path input_file = "blub.msh"; // 14,208 faces
+    //const fs::path input_file = "Octocat.msh"; // 37,884 faces
+    //const fs::path input_file = "bunny.msh"; // 69,451 faces
+    //const fs::path input_file = "max-planck.msh"; // 99,991 faces
 
     std::shared_ptr<Mesh> mesh_in = wmtk::components::input(input_file);
-    Mesh& mesh = *mesh_in;
+    TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
 
     attribute::MeshAttributeHandle pos_handle =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+
+    // shortestedge_collapse
+    {
+        components::shortestedge_collapse(mesh, pos_handle, 10);
+    }
+
+    // tetwild_simplification
+    {
+        //
+    }
 
     wmtk::components::output(mesh, "sec_performance_comparison_out", pos_handle);
 
