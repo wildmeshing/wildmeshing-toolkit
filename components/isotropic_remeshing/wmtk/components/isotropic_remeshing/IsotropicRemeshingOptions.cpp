@@ -7,7 +7,6 @@ namespace wmtk::components::isotropic_remeshing {
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     IsotropicRemeshingOptions,
-    update_other_positions,
     iterations ,
     length_abs ,
     length_rel ,

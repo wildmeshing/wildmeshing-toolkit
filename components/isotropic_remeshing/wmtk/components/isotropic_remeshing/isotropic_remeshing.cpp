@@ -58,7 +58,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     using namespace internal;
 
 
-    auto position = options.attributes.position;
+    auto position = options.position_attribute;
 
     if (position.mesh().top_simplex_type() != PrimitiveType::Triangle) {
         log_and_throw_error(
@@ -66,8 +66,8 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
             primitive_type_name(position.mesh().top_simplex_type()));
     }
 
-    auto pass_through_attributes = options.pass_through;
-    auto other_positions = options.attributes.other_positions;
+    auto pass_through_attributes = options.pass_through_attributes;
+    auto other_positions = options.other_position_attributes;
 
     double length = options.length_abs;
     if (options.length_abs < 0) {
@@ -87,12 +87,12 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
 
     // gather handles again as they were invalidated by clear_attributes
     // positions = utils::get_attributes(cache, *mesh_in,
-    // options.attributes.position); assert(positions.size() == 1); position =
+    // options.position_attribute); assert(positions.size() == 1); position =
     // positions.front(); pass_through_attributes = utils::get_attributes(cache,
-    // *mesh_in, options.pass_through);
+    // *mesh_in, options.pass_through_attributes);
 
     std::optional<attribute::MeshAttributeHandle> position_for_inversion =
-        options.attributes.inversion_position;
+        options.inversion_position_attribute;
 
 
     assert(dynamic_cast<TriMesh*>(&position.mesh()) != nullptr);
@@ -141,7 +141,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         update_position;
 
-    if (options.update_other_positions) {
+    if (!options.other_position_attributes.empty()) {
         update_position =
             std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
                 other_positions.front(),

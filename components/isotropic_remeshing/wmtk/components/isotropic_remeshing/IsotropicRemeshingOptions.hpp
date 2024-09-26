@@ -6,19 +6,15 @@
 
 namespace wmtk::components::isotropic_remeshing {
 
-struct IsotropicRemeshingAttributes
-{
-    wmtk::attribute::MeshAttributeHandle position;
-    std::optional<wmtk::attribute::MeshAttributeHandle> inversion_position;
-    std::vector<wmtk::attribute::MeshAttributeHandle> other_positions;
-};
 
 struct IsotropicRemeshingOptions
 {
     // std::shared_ptr<TriMesh> input;
-    IsotropicRemeshingAttributes attributes;
-    bool update_other_positions;
-    std::vector<wmtk::attribute::MeshAttributeHandle> pass_through;
+    wmtk::attribute::MeshAttributeHandle position_attribute;
+    std::optional<wmtk::attribute::MeshAttributeHandle> inversion_position_attribute;
+    std::vector<wmtk::attribute::MeshAttributeHandle> other_position_attributes;
+
+    std::vector<wmtk::attribute::MeshAttributeHandle> pass_through_attributes;
     int64_t iterations = 10;
     double length_abs = 0;
     double length_rel = 0;

@@ -3,6 +3,7 @@
 #include <CLI/App.hpp>
 #include <CLI/CLI.hpp>
 #include <filesystem>
+#include <wmtk/applications/utils/parse_jse.hpp>
 #include <nlohmann/json.hpp>
 #include <wmtk/components/input/InputOptions.hpp>
 
@@ -33,20 +34,7 @@ int main(int argc, char* argv[])
         ->check(CLI::ExistingFile);
     CLI11_PARSE(app, argc, argv);
 
-    nlohmann::json j;
-    {
-        std::ifstream ifs(json_input_file);
-        j = nlohmann::json::parse(ifs);
-
-        jse::JSE spec_engine;
-        bool r = spec_engine.verify_json(j, wmtk::applications::isometric_remeshing::spec);
-        if (!r) {
-            wmtk::logger().error("{}", spec_engine.log2str());
-            return 1;
-        } else {
-            j = spec_engine.inject_defaults(j, wmtk::applications::isometric_remeshing::spec);
-        }
-    }
+    nlohmann::json j = wmtk::applications::utils::parse_jse(wmtk::applications::isotropic_remeshing::spec, json_input_file);
 
     const auto input_opts = j["input"].get<wmtk::components::input::InputOptions>();
 

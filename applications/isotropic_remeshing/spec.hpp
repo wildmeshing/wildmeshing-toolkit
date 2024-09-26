@@ -1,7 +1,7 @@
 #pragma once
 #include <nlohmann/json.hpp>
 
-namespace wmtk::applications::isometric_remeshing {
+namespace wmtk::applications::isotropic_remeshing {
 nlohmann::json spec = R"(
 [
   {

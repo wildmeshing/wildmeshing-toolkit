@@ -1,9 +1,7 @@
 
 
-add_library(wmtk_application_utils
-    src/wmtk/applications/utils/element_count_report.hpp
-    src/wmtk/applications/utils/element_count_report.cpp
-)
+add_library(wmtk_application_utils)
+add_subdirectory(src/wmtk/applications/utils)
 
 
 target_link_libraries(wmtk_application_utils wildmeshing_toolkit nlohmann_json)
