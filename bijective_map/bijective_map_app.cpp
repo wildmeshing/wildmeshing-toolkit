@@ -831,16 +831,96 @@ void forward_track_line_app(
         viewer.launch();
     }
 
+    save_query_curves(curves, "curves.in");
+
     // forward track lines
     for (auto& curve : curves) {
         back_track_lines(operation_logs_dir, curve, true);
     }
+
+    save_query_curves(curves, "curves.out");
 
     {
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_out, F_out);
         viewer.data().point_size /= 3;
         for (const auto& curve : curves) {
+            for (const auto& seg : curve.segments) {
+                Eigen::MatrixXd pts(2, 3);
+                for (int i = 0; i < 2; i++) {
+                    Eigen::Vector3d p(0, 0, 0);
+                    for (int j = 0; j < 3; j++) {
+                        p += V_out.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                    }
+                    pts.row(i) = p;
+                }
+                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+            }
+        }
+        viewer.launch();
+    }
+    // store curve to file
+
+    {
+        igl::opengl::glfw::Viewer viewer;
+        viewer.data().set_mesh(V_out, F_out);
+        viewer.data().point_size /= 3;
+        for (const auto& curve : curves) {
+            for (const auto& seg : curve.segments) {
+                Eigen::MatrixXd pts(2, 3);
+                for (int i = 0; i < 2; i++) {
+                    Eigen::Vector3d p(0, 0, 0);
+                    for (int j = 0; j < 3; j++) {
+                        p += V_out.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                    }
+                    pts.row(i) = p;
+                }
+                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+            }
+        }
+        viewer.launch();
+    }
+}
+
+void check_iso_lines(
+    const Eigen::MatrixXd& V_in,
+    const Eigen::MatrixXi& F_in,
+    const Eigen::MatrixXd& V_out,
+    const Eigen::MatrixXi& F_out,
+    const std::vector<query_curve>& curves_in,
+    const std::vector<query_curve>& curves_out)
+{
+    {
+        igl::opengl::glfw::Viewer viewer;
+        viewer.data().set_mesh(V_in, F_in);
+        viewer.data().point_size /= 3;
+        for (const auto curve_origin : curves_in) {
+            for (const auto& seg : curve_origin.segments) {
+                Eigen::MatrixXd pts(2, 3);
+                for (int i = 0; i < 2; i++) {
+                    Eigen::Vector3d p(0, 0, 0);
+                    for (int j = 0; j < 3; j++) {
+                        p += V_in.row(seg.fv_ids[j]) * seg.bcs[i](j);
+                    }
+                    pts.row(i) = p;
+                }
+                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
+                viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
+            }
+        }
+        viewer.launch();
+    }
+
+    {
+        igl::opengl::glfw::Viewer viewer;
+        viewer.data().set_mesh(V_out, F_out);
+        viewer.data().point_size /= 3;
+        for (const auto& curve : curves_out) {
             for (const auto& seg : curve.segments) {
                 Eigen::MatrixXd pts(2, 3);
                 for (int i = 0; i < 2; i++) {
@@ -1089,6 +1169,21 @@ int main(int argc, char** argv)
             Ft_in_obj,
             Fn_in_obj);
         forward_track_line_app(V_in, F_in, Vt_in_obj, Ft_in_obj, V_out, F_out, operation_logs_dir);
+    } else if (application_name == "check_iso_lines") {
+        // Eigen::MatrixXd V_in_obj, Vt_in_obj, Vn_in_obj;
+        // Eigen::MatrixXi F_in_obj, Ft_in_obj, Fn_in_obj;
+        // std::cout << "\nloading input obj file..." << std::endl;
+        // igl::readOBJ(
+        //     input_obj_file.string(),
+        //     V_in_obj,
+        //     Vt_in_obj,
+        //     Vn_in_obj,
+        //     F_in_obj,
+        //     Ft_in_obj,
+        //     Fn_in_obj);
+        std::vector<query_curve> curves_in = load_query_curves("curves.in");
+        std::vector<query_curve> curves_out = load_query_curves("curves.out");
+        check_iso_lines(V_in, F_in, V_out, F_out, curves_in, curves_out);
     }
     return 0;
 }

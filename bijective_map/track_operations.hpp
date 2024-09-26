@@ -32,6 +32,9 @@ struct query_curve
     std::vector<int> next_segment_ids;
 };
 
+// IO
+void save_query_curves(const std::vector<query_curve>& curves, const std::string& filename);
+std::vector<query_curve> load_query_curves(const std::string& filename);
 
 /*
 // Rational version of the above

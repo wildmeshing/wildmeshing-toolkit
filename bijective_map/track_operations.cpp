@@ -4,6 +4,78 @@
 
 #include "track_operations.hpp"
 
+// Function to save a vector<query_curve> to a file
+void save_query_curves(const std::vector<query_curve>& curves, const std::string& filename)
+{
+    std::ofstream ofs(filename, std::ios::binary);
+
+    // Write number of curves
+    size_t num_curves = curves.size();
+    ofs.write(reinterpret_cast<const char*>(&num_curves), sizeof(num_curves));
+
+    // Save each query_curve
+    for (const auto& curve : curves) {
+        // Write number of segments
+        size_t num_segments = curve.segments.size();
+        ofs.write(reinterpret_cast<const char*>(&num_segments), sizeof(num_segments));
+
+        // Write each segment
+        for (const auto& segment : curve.segments) {
+            ofs.write(reinterpret_cast<const char*>(&segment.f_id), sizeof(segment.f_id));
+            ofs.write(reinterpret_cast<const char*>(segment.bcs[0].data()), sizeof(segment.bcs[0]));
+            ofs.write(reinterpret_cast<const char*>(segment.bcs[1].data()), sizeof(segment.bcs[1]));
+            ofs.write(reinterpret_cast<const char*>(segment.fv_ids.data()), sizeof(segment.fv_ids));
+        }
+
+        // Write next_segment_ids
+        size_t num_next_ids = curve.next_segment_ids.size();
+        ofs.write(reinterpret_cast<const char*>(&num_next_ids), sizeof(num_next_ids));
+        ofs.write(
+            reinterpret_cast<const char*>(curve.next_segment_ids.data()),
+            num_next_ids * sizeof(int));
+    }
+
+    ofs.close();
+}
+
+// Function to load a vector<query_curve> from a file
+std::vector<query_curve> load_query_curves(const std::string& filename)
+{
+    std::ifstream ifs(filename, std::ios::binary);
+    std::vector<query_curve> curves;
+
+    // Read number of curves
+    size_t num_curves;
+    ifs.read(reinterpret_cast<char*>(&num_curves), sizeof(num_curves));
+    curves.resize(num_curves);
+
+    // Load each query_curve
+    for (auto& curve : curves) {
+        // Read number of segments
+        size_t num_segments;
+        ifs.read(reinterpret_cast<char*>(&num_segments), sizeof(num_segments));
+        curve.segments.resize(num_segments);
+
+        // Read each segment
+        for (auto& segment : curve.segments) {
+            ifs.read(reinterpret_cast<char*>(&segment.f_id), sizeof(segment.f_id));
+            ifs.read(reinterpret_cast<char*>(segment.bcs[0].data()), sizeof(segment.bcs[0]));
+            ifs.read(reinterpret_cast<char*>(segment.bcs[1].data()), sizeof(segment.bcs[1]));
+            ifs.read(reinterpret_cast<char*>(segment.fv_ids.data()), sizeof(segment.fv_ids));
+        }
+
+        // Read next_segment_ids
+        size_t num_next_ids;
+        ifs.read(reinterpret_cast<char*>(&num_next_ids), sizeof(num_next_ids));
+        curve.next_segment_ids.resize(num_next_ids);
+        ifs.read(
+            reinterpret_cast<char*>(curve.next_segment_ids.data()),
+            num_next_ids * sizeof(int));
+    }
+
+    ifs.close();
+    return curves;
+}
 
 // TODO: Rational Version of this code
 Eigen::Vector3d ComputeBarycentricCoordinates3D(
