@@ -1074,8 +1074,9 @@ Matrix json_to_matrix(const json& js)
     return mat;
 }
 
-void parse_edge_split_file(
+void parse_non_collapse_file(
     const json& operation_log,
+    bool& is_skipped,
     Eigen::MatrixXd& V_before,
     Eigen::MatrixXi& F_before,
     std::vector<int64_t>& id_map_before,
@@ -1085,6 +1086,11 @@ void parse_edge_split_file(
     std::vector<int64_t>& id_map_after,
     std::vector<int64_t>& v_id_map_after)
 {
+    is_skipped = operation_log["is_skipped"].get<bool>();
+    if (is_skipped) {
+        return;
+    }
+
     F_before = json_to_matrix<Eigen::MatrixXi>(operation_log["F_before"]);
     V_before = json_to_matrix<Eigen::MatrixXd>(operation_log["V_before"]);
     id_map_before = operation_log["F_id_map_before"].get<std::vector<int64_t>>();

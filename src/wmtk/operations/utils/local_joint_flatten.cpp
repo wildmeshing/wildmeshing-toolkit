@@ -81,15 +81,14 @@ void flatten(
     // may causing problem?
     // igl::map_vertices_to_circle(V_joint_before, bnd, bnd_uv);
     // Here we change to uniform circle
-    
-    // TODO: Modify the colinear case
+
     // normally we use starting as 0
     {
         int starting = 0;
-        if (b_hard.size() > 0){
+        if (b_hard.size() > 0) {
             // find b_hard[1].first in bnd
-            for (int i = 0; i < bnd.size(); i++){
-                if (b_hard[1].first == bnd[i]){
+            for (int i = 0; i < bnd.size(); i++) {
+                if (b_hard[1].first == bnd[i]) {
                     starting = i;
                     break;
                 }
@@ -635,9 +634,6 @@ void local_joint_flatten_smoothing(
     Eigen::MatrixXd& UV_joint,
     bool debug_mode)
 {
-
-    // TODO: special case is needed for boundary cases
-
     // in this case V_joint_before == V_joint_after
     Eigen::MatrixXd V_joint = V_before;
     V_joint.conservativeResize(V_joint.rows() + 1, V_joint.cols());

@@ -76,8 +76,10 @@ void back_track_map(
             Eigen::MatrixXd V_after, V_before;
             std::vector<int64_t> id_map_after, id_map_before;
             std::vector<int64_t> v_id_map_after, v_id_map_before;
-            parse_edge_split_file(
+            bool is_skipped;
+            parse_non_collapse_file(
                 operation_log,
+                is_skipped,
                 V_before,
                 F_before,
                 id_map_before,
@@ -86,6 +88,10 @@ void back_track_map(
                 F_after,
                 id_map_after,
                 v_id_map_after);
+
+            if (is_skipped) {
+                continue;
+            }
 
             if (do_forward) {
                 handle_swap_edge(
@@ -117,8 +123,10 @@ void back_track_map(
             Eigen::MatrixXd V_after, V_before;
             std::vector<int64_t> id_map_after, id_map_before;
             std::vector<int64_t> v_id_map_after, v_id_map_before;
-            parse_edge_split_file(
+            bool is_skipped;
+            parse_non_collapse_file(
                 operation_log,
+                is_skipped,
                 V_before,
                 F_before,
                 id_map_before,
@@ -242,8 +250,11 @@ void back_track_lines(path dirPath, query_curve& curve, bool do_forward = false)
             Eigen::MatrixXd V_after, V_before;
             std::vector<int64_t> id_map_after, id_map_before;
             std::vector<int64_t> v_id_map_after, v_id_map_before;
-            parse_edge_split_file(
+            bool is_skipped;
+
+            parse_non_collapse_file(
                 operation_log,
+                is_skipped,
                 V_before,
                 F_before,
                 id_map_before,
@@ -252,6 +263,10 @@ void back_track_lines(path dirPath, query_curve& curve, bool do_forward = false)
                 F_after,
                 id_map_after,
                 v_id_map_after);
+
+            if (is_skipped) {
+                continue;
+            }
 
             if (do_forward) {
                 handle_swap_edge_curve(
@@ -282,8 +297,10 @@ void back_track_lines(path dirPath, query_curve& curve, bool do_forward = false)
             Eigen::MatrixXd V_after, V_before;
             std::vector<int64_t> id_map_after, id_map_before;
             std::vector<int64_t> v_id_map_after, v_id_map_before;
-            parse_edge_split_file(
+            bool is_skipped;
+            parse_non_collapse_file(
                 operation_log,
+                is_skipped,
                 V_before,
                 F_before,
                 id_map_before,

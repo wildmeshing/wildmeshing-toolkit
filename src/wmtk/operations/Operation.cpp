@@ -347,22 +347,30 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 
                         } else { // for other operations
 
+                            // add skip option
+                            bool skip = false;
                             if (operation_name == "AttributesUpdate") {
-                                Eigen::MatrixXd UV_joint;
-                                timer.start();
-                                utils::local_joint_flatten_smoothing(
-                                    F_before,
-                                    to_three_cols(V_before),
-                                    to_three_cols(V_after),
-                                    F_after,
-                                    UV_joint);
-                                std::cout << "time for local_joint_flatten_smoothing: "
-                                          << timer.getElapsedTime() << " seconds\n";
-                                V_before = UV_joint;
-                                V_after = UV_joint;
+                                bool is_bd = mesh().is_boundary(simplex);
 
-                                v_id_map_before.push_back(v_id_map_before[0]);
-                                v_id_map_after.push_back(v_id_map_after[0]);
+                                if (!is_bd) {
+                                    Eigen::MatrixXd UV_joint;
+                                    timer.start();
+                                    utils::local_joint_flatten_smoothing(
+                                        F_before,
+                                        to_three_cols(V_before),
+                                        to_three_cols(V_after),
+                                        F_after,
+                                        UV_joint);
+                                    std::cout << "time for local_joint_flatten_smoothing: "
+                                              << timer.getElapsedTime() << " seconds\n";
+                                    V_before = UV_joint;
+                                    V_after = UV_joint;
+
+                                    v_id_map_before.push_back(v_id_map_before[0]);
+                                    v_id_map_after.push_back(v_id_map_after[0]);
+                                } else {
+                                    skip = true;
+                                }
                             }
 
                             if (operation_name == "TriEdgeSwap") {
@@ -382,49 +390,54 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                                     V_after.row(i) = V_before.row(local_map(i));
                                 }
                             }
+                            if (!skip) {
+                                // log the mesh before and after the operation
+                                operation_log["is_skipped"] = false;
 
-                            // log the mesh before and after the operation
-                            operation_log["F_after"]["rows"] = F_after.rows();
-                            operation_log["F_after"]["values"] = matrix_to_json(F_after);
-                            operation_log["V_after"]["rows"] = V_after.rows();
-                            operation_log["V_after"]["values"] = matrix_to_json(V_after);
-                            operation_log["F_id_map_after"] = id_map_after;
-                            operation_log["V_id_map_after"] = v_id_map_after;
+                                operation_log["F_after"]["rows"] = F_after.rows();
+                                operation_log["F_after"]["values"] = matrix_to_json(F_after);
+                                operation_log["V_after"]["rows"] = V_after.rows();
+                                operation_log["V_after"]["values"] = matrix_to_json(V_after);
+                                operation_log["F_id_map_after"] = id_map_after;
+                                operation_log["V_id_map_after"] = v_id_map_after;
 
-                            operation_log["F_before"]["rows"] = F_before.rows();
-                            operation_log["F_before"]["values"] = matrix_to_json(F_before);
-                            operation_log["V_before"]["rows"] = V_before.rows();
-                            operation_log["V_before"]["values"] = matrix_to_json(V_before);
-                            operation_log["F_id_map_before"] = id_map_before;
-                            operation_log["V_id_map_before"] = v_id_map_before;
-
-
-                            // TODO: add an after check here just to make sure this operation can be
-                            // localy parametrized without problem
-                            Eigen::VectorXd dbarea_before, dbarea_after;
-                            igl::doublearea(V_before, F_before, dbarea_before);
-                            igl::doublearea(V_after, F_after, dbarea_after);
-
-                            if (dbarea_before.minCoeff() < 0) {
-                                throw std::runtime_error(
-                                    "swap/smooth negative area in F_before detected");
-                                scope.mark_failed();
-                                return {};
-                            }
-
-                            if (dbarea_after.minCoeff() < 0) {
-                                throw std::runtime_error(
-                                    "swap/smooth negative area in F_after detected");
-                                scope.mark_failed();
-                                return {};
-                            }
+                                operation_log["F_before"]["rows"] = F_before.rows();
+                                operation_log["F_before"]["values"] = matrix_to_json(F_before);
+                                operation_log["V_before"]["rows"] = V_before.rows();
+                                operation_log["V_before"]["values"] = matrix_to_json(V_before);
+                                operation_log["F_id_map_before"] = id_map_before;
+                                operation_log["V_id_map_before"] = v_id_map_before;
 
 
-                            if (has_self_intersection(F_before, V_before)) {
-                                throw std::runtime_error(
-                                    "swap/smooth self intersection in F_before detected");
-                                scope.mark_failed();
-                                return {};
+                                // an after check here just to make sure this operation
+                                // can be localy parametrized without problem
+                                Eigen::VectorXd dbarea_before, dbarea_after;
+                                igl::doublearea(V_before, F_before, dbarea_before);
+                                igl::doublearea(V_after, F_after, dbarea_after);
+
+                                if (dbarea_before.minCoeff() < 0) {
+                                    throw std::runtime_error(
+                                        "swap/smooth negative area in F_before detected");
+                                    scope.mark_failed();
+                                    return {};
+                                }
+
+                                if (dbarea_after.minCoeff() < 0) {
+                                    throw std::runtime_error(
+                                        "swap/smooth negative area in F_after detected");
+                                    scope.mark_failed();
+                                    return {};
+                                }
+
+
+                                if (has_self_intersection(F_before, V_before)) {
+                                    throw std::runtime_error(
+                                        "swap/smooth self intersection in F_before detected");
+                                    scope.mark_failed();
+                                    return {};
+                                }
+                            } else {
+                                operation_log["is_skipped"] = true;
                             }
                         }
                     } else if (mesh().top_simplex_type() == PrimitiveType::Tetrahedron) {

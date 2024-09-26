@@ -223,8 +223,9 @@ void parse_consolidate_file(
     std::vector<int64_t>& face_ids_maps,
     std::vector<int64_t>& vertex_ids_maps);
 
-void parse_edge_split_file(
+void parse_non_collapse_file(
     const json& operation_log,
+    bool& is_skipped,
     Eigen::MatrixXd& V_before,
     Eigen::MatrixXi& F_before,
     std::vector<int64_t>& id_map_before,
