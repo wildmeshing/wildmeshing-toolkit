@@ -7,6 +7,9 @@ import subprocess
 import tempfile
 import argparse
 
+def fix_path(path):
+    cwd = os.getcwd()
+    return path if os.path.isabs(path) else os.path.join(cwd, path)
 
 class IntegrationTest(unittest.TestCase):
     BINARY_FOLDER = None
@@ -14,6 +17,12 @@ class IntegrationTest(unittest.TestCase):
     TEST = None
 
     def setUp(self):
+        if "WMTK_BINARY_FOLDER" in os.environ:
+            IntegrationTest.BINARY_FOLDER = fix_path(os.environ['WMTK_BINARY_FOLDER'])
+        if "WMTK_CONFIG_FILE" in os.environ:
+            IntegrationTest.CONFIG_FILE = fix_path(os.environ['WMTK_CONFIG_FILE'])
+
+        # print(os.environ['FILENAME'])
         self.working_dir_fp = tempfile.TemporaryDirectory()
         self.working_dir = self.working_dir_fp.name
         print('Running all integration tests in', self.working_dir)
@@ -66,7 +75,14 @@ class IntegrationTest(unittest.TestCase):
             json.dump(input, input_json)
             input_json.flush()
 
-            res = subprocess.run([executable, "-j", input_json.name], cwd=self.working_dir)
+            res = subprocess.run([executable, "-j", input_json.name], cwd=self.working_dir, capture_output=True)
+
+            input_json.close()
+
+            if res.returncode != 0:
+                print("Error running")
+                print(res.stderr.decode('utf-8'))
+                print(res.stdout.decode('utf-8'))
 
             self.assertEqual(res.returncode, 0)
             result = json.load(oracle_file)
@@ -83,7 +99,6 @@ class IntegrationTest(unittest.TestCase):
                     self.assertEqual(result[k], test_oracle[k])
 
             oracle_file.close()
-            input_json.close()
 
 
         self.assertTrue(True)
@@ -128,7 +143,7 @@ if __name__ == '__main__':
 
     cwd = os.getcwd()
     if tcin:
-        config_file = str(tcin if os.path.isabs(tcin) else os.path.join(cwd, tcin))
+        config_file = fix_path(tcin)
         sys.argv.pop()
         sys.argv.pop()
     else:
@@ -136,7 +151,7 @@ if __name__ == '__main__':
 
 
     if bfin:
-        bin_dir = bfin if os.path.isabs(bfin) else os.path.join(cwd, bfin)
+        bin_dir = fix_path(bfin)
         sys.argv.pop()
         sys.argv.pop()
     else:

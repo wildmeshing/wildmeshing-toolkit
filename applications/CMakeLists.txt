@@ -46,3 +46,15 @@ wmtk_generate_test_config("${WMTK_TEST_CONFIG}")
 add_custom_target(wmtk_application_headers
     DEPENDS ${WMTK_APPLICATION_HEADER_TARGETS}
 )
+if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+    enable_testing()
+
+    find_package(Python REQUIRED)
+
+    add_test(
+        NAME wmtk_integration_test
+        COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/integration_test.py
+        -c ${CMAKE_BINARY_DIR}/test_config.json
+        -b ${CMAKE_BINARY_DIR}/applications
+    )
+endif()
