@@ -18,12 +18,16 @@ class NamedMultiMesh
 public:
     NamedMultiMesh();
     NamedMultiMesh(NamedMultiMesh&&);
+    NamedMultiMesh(const NamedMultiMesh&);
     ~NamedMultiMesh();
     auto operator=(NamedMultiMesh&&) -> NamedMultiMesh&;
 
     void set_name(const std::string_view& root_name = "");
     void set_names(const nlohmann::json& js);
     void set_root(Mesh& m);
+
+    std::string_view root_name() const;
+    std::string name(const std::vector<int64_t>& id) const;
 
     /// Navigates to the root of the multimesh
     void set_mesh(Mesh& m);
