@@ -31,3 +31,4 @@ else()
 endif()
 
 include(${CPM_DOWNLOAD_LOCATION})
+message(STATUS CPM should exist)
