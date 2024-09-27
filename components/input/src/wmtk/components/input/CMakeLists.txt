@@ -1,3 +1,4 @@
+set(COMPONENT_NAME input)
 add_component(${COMPONENT_NAME})
 if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
     return()
@@ -11,6 +12,8 @@ set(SRC_FILES
 	input.hpp
     NamedMultiMesh.hpp
     NamedMultiMesh.cpp
+    utils/get_attribute.hpp
+    utils/get_attribute.cpp
 )
 
 include(stb)

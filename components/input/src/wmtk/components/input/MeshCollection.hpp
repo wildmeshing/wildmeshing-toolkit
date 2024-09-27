@@ -12,6 +12,10 @@ public:
     const NamedMultiMesh& get_named_multimesh(const std::string_view& path) const;
     const Mesh& get_mesh(const std::string_view& path) const;
 
+    NamedMultiMesh& get_named_multimesh(const std::string_view& path);
+    Mesh& get_mesh(const std::string_view& path);
+
+
 
 private:
     std::map<std::string_view, NamedMultiMesh> m_meshes;

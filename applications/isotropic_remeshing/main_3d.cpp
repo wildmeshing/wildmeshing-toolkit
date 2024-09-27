@@ -3,8 +3,8 @@
 #include <CLI/App.hpp>
 #include <CLI/CLI.hpp>
 #include <filesystem>
-#include <wmtk/applications/utils/parse_jse.hpp>
 #include <nlohmann/json.hpp>
+#include <wmtk/applications/utils/parse_jse.hpp>
 #include <wmtk/components/input/InputOptions.hpp>
 
 #include <wmtk/Mesh.hpp>
@@ -34,7 +34,9 @@ int main(int argc, char* argv[])
         ->check(CLI::ExistingFile);
     CLI11_PARSE(app, argc, argv);
 
-    nlohmann::json j = wmtk::applications::utils::parse_jse(wmtk::applications::isotropic_remeshing::spec, json_input_file);
+    nlohmann::json j = wmtk::applications::utils::parse_jse(
+        wmtk::applications::isotropic_remeshing::spec,
+        json_input_file);
 
     const auto input_opts = j["input"].get<wmtk::components::input::InputOptions>();
 
@@ -46,14 +48,14 @@ int main(int argc, char* argv[])
     options.load_json(j);
 
     const auto& js_attrs = j["attributes"];
-    options.attributes.position =
+    options.position_attribute =
         mesh_ptr->get_attribute_handle<double>(js_attrs["position"], PrimitiveType::Vertex);
     if (auto opt = js_attrs["position"]; !opt.empty()) {
-        options.attributes.inversion_position =
+        options.inversion_position_attribute =
             mesh_ptr->get_attribute_handle<double>(opt, PrimitiveType::Vertex);
     }
     for (const auto& other : js_attrs["other_positions"]) {
-        options.attributes.inversion_position =
+        options.inversion_position_attribute =
             mesh_ptr->get_attribute_handle<double>(other, PrimitiveType::Vertex);
     }
 
