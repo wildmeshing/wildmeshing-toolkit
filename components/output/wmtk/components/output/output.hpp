@@ -30,7 +30,7 @@ namespace wmtk::components {
 void output(
     const Mesh& mesh,
     const std::filesystem::path& file,
-    const std::string& position_attr_name);
+    const std::string& position_attr_name = {});
 
 /**
  * @brief Write the mesh to file.
