@@ -24,30 +24,40 @@ using wmtk::components::utils::resolve_paths;
 nlohmann::json test_run(const fs::path& input_file, const bool run_tetwild_simplification)
 {
     std::shared_ptr<Mesh> mesh_in = input(input_file);
-    TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
+
+    logger().info(
+        "Input {} #faces = {}",
+        run_tetwild_simplification ? "tws" : "sec",
+        mesh_in->get_all(PrimitiveType::Triangle).size());
 
     attribute::MeshAttributeHandle pos_handle =
-        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        mesh_in->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     if (run_tetwild_simplification) {
         // tetwild_simplification
         nlohmann::json stats;
         {
             wmtk::utils::StopWatch sw("tetwild_simplification");
-            std::tie(mesh_in, stats) = tetwild_simplification(mesh, "vertices", 0.01);
+            std::tie(mesh_in, stats) =
+                tetwild_simplification(static_cast<TriMesh&>(*mesh_in), "vertices", 0.01);
         }
     } else {
         // shortestedge_collapse
         wmtk::utils::StopWatch sw("shortestedge_collapse");
-        shortestedge_collapse(mesh, pos_handle, 10);
+        shortestedge_collapse(static_cast<TriMesh&>(*mesh_in), pos_handle, 10);
     }
-    output(mesh, "sec_out", pos_handle);
+    output(*mesh_in, run_tetwild_simplification ? "tws_out" : "sec_out", pos_handle);
+
+    logger().info(
+        "Output {} #faces = {}",
+        run_tetwild_simplification ? "tws" : "sec",
+        mesh_in->get_all(PrimitiveType::Triangle).size());
 
     nlohmann::json out_json;
-    out_json["stats"]["vertices"] = mesh.get_all(PrimitiveType::Vertex).size();
-    out_json["stats"]["edges"] = mesh.get_all(PrimitiveType::Edge).size();
-    out_json["stats"]["triangles"] = mesh.get_all(PrimitiveType::Triangle).size();
-    out_json["stats"]["tets"] = mesh.get_all(PrimitiveType::Tetrahedron).size();
+    out_json["stats"]["vertices"] = mesh_in->get_all(PrimitiveType::Vertex).size();
+    out_json["stats"]["edges"] = mesh_in->get_all(PrimitiveType::Edge).size();
+    out_json["stats"]["triangles"] = mesh_in->get_all(PrimitiveType::Triangle).size();
+    out_json["stats"]["tets"] = mesh_in->get_all(PrimitiveType::Tetrahedron).size();
 
     return out_json;
 }
@@ -63,14 +73,10 @@ int main(int argc, char* argv[])
     nlohmann::json out_json;
 
     // shortestedge_collapse
-    if (true) {
-        out_json["sec"] = test_run(input_file, false);
-    }
+    out_json["sec"] = test_run(input_file, false);
 
     // tetwild_simplification
-    if (true) {
-        out_json["tws"] = test_run(input_file, true);
-    }
+    out_json["tws"] = test_run(input_file, true);
 
 
     const std::string report = "report.json";
