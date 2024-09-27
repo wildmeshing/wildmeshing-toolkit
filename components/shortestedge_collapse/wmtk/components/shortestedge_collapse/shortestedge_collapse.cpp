@@ -19,6 +19,9 @@
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_new/NewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
+#include <wmtk/operations/attribute_update/TopologicalTransferStrategy.hpp>
+#include <wmtk/simplex/cofaces_single_dimension.hpp>
+#include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 
@@ -74,6 +77,28 @@ void shortestedge_collapse(TriMesh& mesh, const ShortestEdgeCollapseOptions& opt
             position_handle,
             compute_edge_length);
     edge_length_update->run_on_all();
+
+    auto pos_acc = mesh.create_accessor(position_handle.as<double>());
+    auto visited_edge_flag_acc = mesh.create_accessor(visited_edge_flag.as<char>());
+
+    ////////////////////////////////////////////////
+    auto edge_attributes_update = [&mesh, &edge_length_accessor, &pos_acc, &visited_edge_flag_acc](
+                                      const simplex::Simplex& s) -> void {
+        assert(s.primitive_type() == PrimitiveType::Vertex);
+
+        const auto edges = simplex::cofaces_single_dimension(mesh, s, PrimitiveType::Edge);
+        for (const simplex::Simplex& e : edges) {
+            visited_edge_flag_acc.scalar_attribute(e) = char(1);
+            const auto vertices = simplex::faces_single_dimension(mesh, e, PrimitiveType::Vertex);
+            const auto p0 = pos_acc.const_vector_attribute(vertices.simplex_vector()[0]);
+            const auto p1 = pos_acc.const_vector_attribute(vertices.simplex_vector()[1]);
+            edge_length_accessor.scalar_attribute(e) = (p1 - p0).norm();
+        }
+    };
+
+    auto vertex_to_edge_transfer = std::make_shared<wmtk::operations::TopologicalTransferStrategy>(
+        position_handle,
+        edge_attributes_update);
 
     //////////////////////////////////
     // computing bbox diagonal
@@ -163,10 +188,11 @@ void shortestedge_collapse(TriMesh& mesh, const ShortestEdgeCollapseOptions& opt
     collapse->set_new_attribute_strategy(
         visited_edge_flag,
         wmtk::operations::CollapseBasicStrategy::None);
-    collapse->add_transfer_strategy(tag_update);
 
     collapse->set_priority(short_edges_first_priority);
-    collapse->add_transfer_strategy(edge_length_update);
+    // collapse->add_transfer_strategy(tag_update);
+    // collapse->add_transfer_strategy(edge_length_update);
+    collapse->add_topology_transfer_strategy(vertex_to_edge_transfer);
 
     if (options.lock_boundary) {
         collapse->add_invariant(invariant_interior_edge);

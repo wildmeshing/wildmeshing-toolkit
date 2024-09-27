@@ -5,6 +5,9 @@ set(SRC_FILES
     AttributeTransferStrategyBase.hpp
     AttributeTransferStrategyBase.cpp
 
+    TopologicalTransferStrategy.hpp
+    TopologicalTransferStrategy.cpp
+
     CastAttributeTransferStrategy.hpp
 
     make_cast_attribute_transfer_strategy.cpp

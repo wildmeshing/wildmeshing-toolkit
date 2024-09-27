@@ -64,11 +64,11 @@ nlohmann::json test_run(const fs::path& input_file, const bool run_tetwild_simpl
 
 int main(int argc, char* argv[])
 {
-    const fs::path input_file = "100071_sf.msh"; // 11,040 faces
+    //const fs::path input_file = "100071_sf.msh"; // 11,040 faces
     //const fs::path input_file = "blub.msh"; // 14,208 faces
     //const fs::path input_file = "Octocat.msh"; // 37,884 faces
     //const fs::path input_file = "bunny.msh"; // 69,451 faces
-    //const fs::path input_file = "max-planck.msh"; // 99,991 faces
+    const fs::path input_file = "max-planck.msh"; // 99,991 faces
 
     nlohmann::json out_json;
 
@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
     out_json["sec"] = test_run(input_file, false);
 
     // tetwild_simplification
-    out_json["tws"] = test_run(input_file, true);
+    // out_json["tws"] = test_run(input_file, true);
 
 
     const std::string report = "report.json";

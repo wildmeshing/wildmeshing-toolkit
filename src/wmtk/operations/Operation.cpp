@@ -64,6 +64,12 @@ void Operation::add_transfer_strategy(
     m_attr_transfer_strategies.emplace_back(other);
 }
 
+void Operation::add_topology_transfer_strategy(
+    const std::shared_ptr<const operations::TopologicalTransferStrategy>& other)
+{
+    m_topology_transfer_strategies.emplace_back(other);
+}
+
 std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
     if (!mesh().is_valid(simplex)) {
@@ -142,36 +148,44 @@ bool Operation::after(
 
 void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods)
 {
-    simplex::SimplexCollection all(m_mesh);
-    for (const auto& s : direct_mods) {
-        if (!s.tuple().is_null()) {
-            all.add(simplex::closed_star(m_mesh, s, false));
+    if (!m_attr_transfer_strategies.empty()) {
+        simplex::SimplexCollection all(m_mesh);
+        for (const auto& s : direct_mods) {
+            if (!s.tuple().is_null()) {
+                all.add(simplex::closed_star(m_mesh, s, false));
+            }
+        }
+        all.sort_and_clean();
+        for (const auto& at_ptr : m_attr_transfer_strategies) {
+            if (&m_mesh == &(at_ptr->mesh())) {
+                for (const auto& s : all.simplex_vector()) {
+                    if (s.primitive_type() == at_ptr->primitive_type()) {
+                        at_ptr->run(s);
+                    }
+                }
+            } else {
+                auto& at_mesh = at_ptr->mesh();
+                auto at_mesh_simplices = m_mesh.map(at_mesh, direct_mods);
+
+                simplex::SimplexCollection at_mesh_all(at_mesh);
+                for (const auto& s : at_mesh_simplices) {
+                    at_mesh_all.add(simplex::closed_star(at_mesh, s));
+                }
+
+                at_mesh_all.sort_and_clean();
+
+                for (const auto& s : at_mesh_all.simplex_vector()) {
+                    if (s.primitive_type() == at_ptr->primitive_type()) {
+                        at_ptr->run(s);
+                    }
+                }
+            }
         }
     }
-    all.sort_and_clean();
-    for (const auto& at_ptr : m_attr_transfer_strategies) {
-        if (&m_mesh == &(at_ptr->mesh())) {
-            for (const auto& s : all.simplex_vector()) {
-                if (s.primitive_type() == at_ptr->primitive_type()) {
-                    at_ptr->run(s);
-                }
-            }
-        } else {
-            auto& at_mesh = at_ptr->mesh();
-            auto at_mesh_simplices = m_mesh.map(at_mesh, direct_mods);
 
-            simplex::SimplexCollection at_mesh_all(at_mesh);
-            for (const auto& s : at_mesh_simplices) {
-                at_mesh_all.add(simplex::closed_star(at_mesh, s));
-            }
-
-            at_mesh_all.sort_and_clean();
-
-            for (const auto& s : at_mesh_all.simplex_vector()) {
-                if (s.primitive_type() == at_ptr->primitive_type()) {
-                    at_ptr->run(s);
-                }
-            }
+    for (const auto& strategy : m_topology_transfer_strategies) {
+        for (const simplex::Simplex& s : direct_mods) {
+            strategy->run(s);
         }
     }
 }

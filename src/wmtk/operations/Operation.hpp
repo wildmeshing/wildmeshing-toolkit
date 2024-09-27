@@ -2,6 +2,7 @@
 
 #include "attribute_new/NewAttributeStrategy.hpp"
 #include "attribute_update/AttributeTransferStrategyBase.hpp"
+#include "attribute_update/TopologicalTransferStrategy.hpp"
 
 #include <wmtk/Tuple.hpp>
 #include <wmtk/attribute/Accessor.hpp>
@@ -59,6 +60,9 @@ public:
     void add_transfer_strategy(
         const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other);
 
+    void add_topology_transfer_strategy(
+        const std::shared_ptr<const operations::TopologicalTransferStrategy>& other);
+
     void set_transfer_strategy(
         const attribute::MeshAttributeHandle& attribute,
         const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other);
@@ -102,6 +106,9 @@ protected:
 
     std::vector<std::shared_ptr<const operations::AttributeTransferStrategyBase>>
         m_attr_transfer_strategies;
+
+    std::vector<std::shared_ptr<const operations::TopologicalTransferStrategy>>
+        m_topology_transfer_strategies;
 };
 
 } // namespace operations
