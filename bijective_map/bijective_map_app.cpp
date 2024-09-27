@@ -7,7 +7,7 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
-
+#include <wmtk/utils/orient.hpp>
 using namespace wmtk;
 
 // igl
@@ -861,29 +861,6 @@ void forward_track_line_app(
         }
         viewer.launch();
     }
-    // store curve to file
-
-    {
-        igl::opengl::glfw::Viewer viewer;
-        viewer.data().set_mesh(V_out, F_out);
-        viewer.data().point_size /= 3;
-        for (const auto& curve : curves) {
-            for (const auto& seg : curve.segments) {
-                Eigen::MatrixXd pts(2, 3);
-                for (int i = 0; i < 2; i++) {
-                    Eigen::Vector3d p(0, 0, 0);
-                    for (int j = 0; j < 3; j++) {
-                        p += V_out.row(seg.fv_ids[j]) * seg.bcs[i](j);
-                    }
-                    pts.row(i) = p;
-                }
-                viewer.data().add_points(pts.row(0), Eigen::RowVector3d(1, 0, 0));
-                viewer.data().add_points(pts.row(1), Eigen::RowVector3d(1, 0, 0));
-                viewer.data().add_edges(pts.row(0), pts.row(1), Eigen::RowVector3d(1, 0, 0));
-            }
-        }
-        viewer.launch();
-    }
 }
 
 void check_iso_lines(
@@ -894,7 +871,7 @@ void check_iso_lines(
     const std::vector<query_curve>& curves_in,
     const std::vector<query_curve>& curves_out)
 {
-    {
+    if (true) {
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_in, F_in);
         viewer.data().point_size /= 3;
@@ -915,8 +892,7 @@ void check_iso_lines(
         }
         viewer.launch();
     }
-
-    {
+    if (false) {
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_out, F_out);
         viewer.data().point_size /= 3;
@@ -936,6 +912,119 @@ void check_iso_lines(
             }
         }
         viewer.launch();
+    }
+
+
+    auto doIntersect = [](const Eigen::RowVector2d& p1,
+                          const Eigen::RowVector2d& q1,
+                          const Eigen::RowVector2d& p2,
+                          const Eigen::RowVector2d& q2) -> bool {
+        auto onSegment = [](const Eigen::RowVector2d& p,
+                            const Eigen::RowVector2d& q,
+                            const Eigen::RowVector2d& r) -> bool {
+            return q[0] <= std::max(p[0], r[0]) && q[0] >= std::min(p[0], r[0]) &&
+                   q[1] <= std::max(p[1], r[1]) && q[1] >= std::min(p[1], r[1]);
+        };
+
+        // auto orientation = [](const Eigen::RowVector2d& p,
+        //                       const Eigen::RowVector2d& q,
+        //                       const Eigen::RowVector2d& r) -> int {
+        //     double val = (q[1] - p[1]) * (r[0] - q[0]) - (q[0] - p[0]) * (r[1] - q[1]);
+        //     if (val == 0) return 0; // collinear
+        //     return (val > 0) ? 1 : 2; // clock or counterclock wise
+        // };
+
+        int o1 = wmtk::utils::wmtk_orient2d(p1, q1, p2);
+        int o2 = wmtk::utils::wmtk_orient2d(p1, q1, q2);
+        int o3 = wmtk::utils::wmtk_orient2d(p2, q2, p1);
+        int o4 = wmtk::utils::wmtk_orient2d(p2, q2, q1);
+
+
+        // General case
+        if (o1 != o2 && o3 != o4) return true;
+
+        // Special Cases
+        if (o1 == 0 && onSegment(p1, p2, q1)) return true;
+        if (o2 == 0 && onSegment(p1, q2, q1)) return true;
+        if (o3 == 0 && onSegment(p2, p1, q2)) return true;
+        if (o4 == 0 && onSegment(p2, q1, q2)) return true;
+
+        return false; // No intersection
+    };
+
+    for (int i = 0; i < curves_out.size(); i++) {
+        for (int j = i; j < curves_out.size(); j++) {
+            int intersect_count = 0;
+            for (int seg_i = 0; seg_i < curves_out[i].segments.size(); seg_i++) {
+                for (int seg_j = 0; seg_j < curves_out[j].segments.size(); seg_j++) {
+                    if (i == j &&
+                        (seg_i == seg_j || curves_out[i].next_segment_ids[seg_i] == seg_j ||
+                         curves_out[j].next_segment_ids[seg_j] == seg_i)) {
+                        continue;
+                    }
+                    if (curves_out[i].segments[seg_i].f_id != curves_out[j].segments[seg_j].f_id) {
+                        continue;
+                    }
+
+                    Eigen::RowVector2d p1, q1, p2, q2;
+                    p1 = curves_out[i].segments[seg_i].bcs[0].head(2);
+                    q1 = curves_out[i].segments[seg_i].bcs[1].head(2);
+                    p2 = curves_out[j].segments[seg_j].bcs[0].head(2);
+                    q2 = curves_out[j].segments[seg_j].bcs[1].head(2);
+
+                    if ((p1 - p2).norm() < 1e-8 || (p1 - q2).norm() < 1e-8 ||
+                        (q1 - p2).norm() < 1e-8 || (q1 - q2).norm() < 1e-8) {
+                        continue;
+                    }
+
+                    if (doIntersect(p1, q1, p2, q2)) {
+                        intersect_count++;
+                        // std::cout << "i = " << i << ", seg_i = " << seg_i
+                        //           << ", next[seg_i] = " << curves_out[i].next_segment_ids[seg_i]
+                        //           << std::endl;
+                        // std::cout << "p1: " << p1 << std::endl;
+                        // std::cout << "q1: " << q1 << std::endl;
+                        // std::cout << "j = " << j << ", seg_j = " << seg_j
+                        //           << ", next[seg_j] = " << curves_out[j].next_segment_ids[seg_j]
+                        //           << std::endl;
+                        // std::cout << "p2: " << p2 << std::endl;
+                        // std::cout << "q2: " << q2 << std::endl;
+
+                        // std::cout << "next[seg_i]: "
+                        //           << curves_out[i]
+                        //                  .segments[curves_out[i].next_segment_ids[seg_i]]
+                        //                  .bcs[0]
+                        //                  .head(2)
+                        //                  .transpose()
+                        //           << ", "
+                        //           << curves_out[i]
+                        //                  .segments[curves_out[i].next_segment_ids[seg_i]]
+                        //                  .bcs[1]
+                        //                  .head(2)
+                        //                  .transpose()
+                        //           << std::endl;
+                        // std::cout << "next[seg_j]: "
+                        //           << curves_out[j]
+                        //                  .segments[curves_out[j].next_segment_ids[seg_j]]
+                        //                  .bcs[0]
+                        //                  .head(2)
+                        //                  .transpose()
+                        //           << ", "
+                        //           << curves_out[j]
+                        //                  .segments[curves_out[j].next_segment_ids[seg_j]]
+                        //                  .bcs[1]
+                        //                  .head(2)
+                        //                  .transpose()
+
+                        //           << std::endl;
+                        // std::cout << std::endl;
+                    }
+                }
+            }
+            std::cout << "curve " << i << " and curve " << j << " intersect " << intersect_count
+                      << " times" << std::endl;
+        }
+        std::cout << std::endl;
     }
 }
 
