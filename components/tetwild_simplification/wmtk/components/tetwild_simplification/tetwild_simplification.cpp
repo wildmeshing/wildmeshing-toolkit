@@ -98,6 +98,7 @@ public:
 
     bool is_out(const std::array<Vector3, 3>& triangle) const
     {
+        return false;
         if (m_use_sampling)
             return is_out_using_sampling(triangle);
         else
