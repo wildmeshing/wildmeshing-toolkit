@@ -12,7 +12,7 @@ void from_boundary(
     const PrimitiveType ptype,
     const std::string& attribute_name,
     char value,
-    std::vector<wmtk::attribute::MeshAttributeHandle>& passed_attributes)
+    const std::vector<wmtk::attribute::MeshAttributeHandle>& passed_attributes)
 {
     auto is_boundary_handle = mesh.register_attribute<char>(attribute_name, ptype, 1);
     auto is_boundary_accessor = mesh.create_accessor(is_boundary_handle.as<char>());

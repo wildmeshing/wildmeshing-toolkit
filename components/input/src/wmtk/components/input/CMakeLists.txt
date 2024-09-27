@@ -14,6 +14,9 @@ set(SRC_FILES
     NamedMultiMesh.cpp
     utils/get_attribute.hpp
     utils/get_attribute.cpp
+
+    MeshCollection.hpp
+    MeshCollection.cpp
 )
 
 include(stb)

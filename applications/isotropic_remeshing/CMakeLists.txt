@@ -4,15 +4,22 @@ include(wmtk_register_jse_json)
 
 #register_jse_json(APPLICATION_NAME isotropic_remeshing INPUT spec.json )
 
+set(SHARED_STUFF
+    make_multimesh.hpp
+    make_multimesh.cpp
+)
+
 
 wmtk_add_application(isotropic_remeshing_3d_app
     main_3d.cpp
     #spec.hpp
+    ${SHARED_STUFF}
     )
 
 wmtk_add_application(isotropic_remeshing_uv_app
     main_uv.cpp
     #spec.hpp
+    ${SHARED_STUFF}
     )
 
 
@@ -20,6 +27,7 @@ wmtk_add_application(isotropic_remeshing_uv_app
 target_link_libraries(isotropic_remeshing_3d_app PRIVATE
 wmtk::input
 wmtk::isotropic_remeshing
+wmtk::multimesh
 wmtk::output
 wmtk::application_utils
 )
@@ -28,6 +36,7 @@ target_link_libraries(isotropic_remeshing_uv_app PRIVATE
 wmtk::input
 wmtk::isotropic_remeshing
 wmtk::output
+wmtk::multimesh
 wmtk::application_utils
 )
 

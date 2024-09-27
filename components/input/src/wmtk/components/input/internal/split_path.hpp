@@ -4,7 +4,7 @@
 
 namespace wmtk::components::input::internal {
 
-auto split_path(const std::string_view& view)
+inline auto split_path(const std::string_view& view)
 {
     using namespace std;
     return std::ranges::views::split(view, "."sv) |

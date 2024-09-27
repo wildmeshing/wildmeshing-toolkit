@@ -1,3 +1,4 @@
+set(COMPONENT_NAME multimesh)
 add_component(${COMPONENT_NAME})
 if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
     return()

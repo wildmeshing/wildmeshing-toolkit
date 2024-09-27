@@ -15,7 +15,7 @@
 namespace wmtk::components::multimesh {
 
 std::shared_ptr<Mesh>
-axis_aligned_fusion(Mesh& mesh, const std::vector<bool>& operating_axis, double eps)
+axis_aligned_fusion(const Mesh& mesh, const std::vector<bool>& operating_axis, double eps)
 {
     // get mesh dimension and checks
     int64_t mesh_dim = mesh.top_cell_dimension();

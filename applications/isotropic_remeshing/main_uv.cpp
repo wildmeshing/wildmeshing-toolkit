@@ -16,6 +16,7 @@
 #include <wmtk/components/utils/resolve_path.hpp>
 
 #include "spec.hpp"
+#include "make_multimesh.hpp"
 
 using namespace wmtk::components;
 using namespace wmtk;
@@ -37,25 +38,29 @@ int main(int argc, char* argv[])
         wmtk::applications::isotropic_remeshing::spec,
         json_input_file);
 
-    const auto input_opts = j["input"].get<wmtk::components::input::InputOptions>();
+
+    const auto input_js =  j["input"];
+
+    const auto input_opts =input_js.get<wmtk::components::input::InputOptions>();
+
 
     auto named_mesh = wmtk::components::input::input(input_opts);
     auto mesh_ptr = named_mesh.root().shared_from_this();
+    named_mesh.set_mesh(*make_multimesh(*mesh_ptr, input_js));
 
     wmtk::components::isotropic_remeshing::IsotropicRemeshingOptions options;
 
     options.load_json(j);
 
-    const auto& js_attrs = j["attributes"];
     options.position_attribute =
-        mesh_ptr->get_attribute_handle<double>(js_attrs["position"], PrimitiveType::Vertex);
-    if (auto opt = js_attrs["position"]; !opt.empty()) {
+        mesh_ptr->get_attribute_handle<double>(j["position_attribute"], PrimitiveType::Vertex);
+    if(j.contains("inversion_position_attribute")) {
         options.inversion_position_attribute =
-            mesh_ptr->get_attribute_handle<double>(opt, PrimitiveType::Vertex);
+            mesh_ptr->get_attribute_handle<double>(j["inversion_position_attribute"].get<std::string>(), PrimitiveType::Vertex);
     }
-    for (const auto& other : js_attrs["other_positions"]) {
-        options.inversion_position_attribute =
-            mesh_ptr->get_attribute_handle<double>(other, PrimitiveType::Vertex);
+    for (const auto& other : j["other_position_attributes"]) {
+        options.other_position_attributes.emplace_back(
+            mesh_ptr->get_attribute_handle<double>(other, PrimitiveType::Vertex));
     }
 
     wmtk::components::isotropic_remeshing::isotropic_remeshing(options);
