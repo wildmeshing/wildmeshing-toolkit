@@ -1,0 +1,91 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "type_name": "uv",
+        "required": [
+            "type",
+            "parent",
+            "child",
+            "name"
+        ]
+    },
+    {
+        "pointer": "/",
+        "type": "object",
+        "type_name": "boundary",
+        "required": [
+            "type",
+            "mesh",
+            "position",
+            "name"
+        ],
+        "optional": [
+            "tag_name"
+        ]
+    },
+    {
+        "pointer": "/",
+        "type": "object",
+        "type_name": "tag",
+        "required": [
+            "type",
+            "mesh",
+            "tag",
+            "tag_value",
+            "primitive",
+            "position",
+            "name"
+        ]
+    },
+    {
+        "pointer": "/type",
+        "type": "string",
+        "options": [
+            "uv",
+            "boundary",
+            "tag"
+        ]
+    },
+    {
+        "pointer": "/name",
+        "type": "string"
+    },
+    {
+        "pointer": "/tag_name",
+        "type": "string",
+        "default": "is_boundary"
+    },
+    {
+        "pointer": "/mesh",
+        "type": "string"
+    },
+    {
+        "pointer": "/position",
+        "type": "include",
+        "spec_file": "attribute_spec.json"
+    },
+    {
+        "pointer": "/tag",
+        "type": "string"
+    },
+    {
+        "pointer": "/tag_value",
+        "type": "int"
+    },
+    {
+        "pointer": "/primitive",
+        "type": "int",
+        "min": 0,
+        "max": 4
+    },
+    {
+        "pointer": "/parent",
+        "type": "string"
+    },
+    {
+        "type_name": "uv",
+        "pointer": "/child",
+        "type": "string"
+    }
+]

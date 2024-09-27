@@ -1,5 +1,4 @@
-#include "fusion.hpp"
-#include "FusionOptions.hpp"
+#include "axis_aligned_fusion.hpp"
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TetMesh.hpp>
@@ -13,34 +12,14 @@
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 
 
-namespace wmtk::components {
+namespace wmtk::components::multimesh {
 
-void fusion(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+std::shared_ptr<Mesh>
+axis_aligned_fusion(Mesh& mesh, const std::vector<bool>& operating_axis, double eps)
 {
-    // load mesh
-    FusionOptions options = j.get<FusionOptions>();
-    std::shared_ptr<Mesh> mesh = cache.read_mesh(options.input);
-
-    // get fusion axis
-
-    std::array<bool, 3> operating_axis = {{options.fusion_X, options.fusion_Y, options.fusion_Z}};
-
-    // for (const auto c : fusion_axis) {
-    //     if (c == 'X' || c == 'x') {
-    //         operating_axis[0] = true;
-    //     } else if (c == 'Y' || c == 'y') {
-    //         operating_axis[1] = true;
-    //     } else if (c == 'Z' || c == 'z') {
-    //         operating_axis[2] = true;
-    //     } else {
-    //         throw std::runtime_error("invalid fusion axis");
-    //     }
-    // }
-
     // get mesh dimension and checks
-    int64_t mesh_dim = mesh->top_cell_dimension();
+    int64_t mesh_dim = mesh.top_cell_dimension();
 
-    double eps = 1e-10;
 
     std::map<std::string, std::vector<int64_t>> names;
 
@@ -55,13 +34,13 @@ void fusion(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache
         MatrixX<double> V;
         MatrixX<int64_t> FV;
         wmtk::utils::EigenMatrixWriter writer;
-        mesh->serialize(writer);
+        mesh.serialize(writer);
 
         writer.get_position_matrix(V);
         writer.get_FV_matrix(FV);
 
-        assert(V.rows() == mesh->get_all(PrimitiveType::Vertex).size());
-        assert(FV.rows() == mesh->get_all(PrimitiveType::Triangle).size());
+        assert(V.rows() == mesh.get_all(PrimitiveType::Vertex).size());
+        assert(FV.rows() == mesh.get_all(PrimitiveType::Triangle).size());
 
         // rescale to [0, 1]
         Eigen::MatrixXd V_rescale(V.rows(), V.cols());
@@ -100,16 +79,16 @@ void fusion(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache
             const auto& pos = V_rescale.row(i);
 
             if (abs(pos[0] - 0.0) < eps) {
-                vertices_on_zero[0].push_back(std::make_pair(i, pos));
+                vertices_on_zero[0].emplace_back(std::make_pair(i, pos));
             }
             if (abs(pos[1] - 0.0) < eps) {
-                vertices_on_zero[1].push_back(std::make_pair(i, pos));
+                vertices_on_zero[1].emplace_back(std::make_pair(i, pos));
             }
             if (abs(pos[0] - 1.0) < eps) {
-                vertices_on_one[0].push_back(std::make_pair(i, pos));
+                vertices_on_one[0].emplace_back(std::make_pair(i, pos));
             }
             if (abs(pos[1] - 1.0) < eps) {
-                vertices_on_one[1].push_back(std::make_pair(i, pos));
+                vertices_on_one[1].emplace_back(std::make_pair(i, pos));
             }
 
             // corners
@@ -243,28 +222,23 @@ void fusion(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache
         std::shared_ptr<TriMesh> child_ptr = std::make_shared<TriMesh>(std::move(position_mesh));
         std::shared_ptr<TriMesh> parent_ptr = std::make_shared<TriMesh>(std::move(fusion_mesh));
 
-        auto child_map = multimesh::same_simplex_dimension_bijection(*parent_ptr, *child_ptr);
+        auto child_map = wmtk::multimesh::same_simplex_dimension_bijection(*parent_ptr, *child_ptr);
         parent_ptr->register_child_mesh(child_ptr, child_map);
 
-        names["periodic"] = parent_ptr->absolute_multi_mesh_id();
-        names["position"] = child_ptr->absolute_multi_mesh_id();
-
-        cache.write_mesh(*parent_ptr, options.name, names);
-
-        break;
+        return parent_ptr;
     }
     case (3): {
         MatrixX<double> V;
         MatrixX<int64_t> TV;
 
         wmtk::utils::EigenMatrixWriter writer;
-        mesh->serialize(writer);
+        mesh.serialize(writer);
 
         writer.get_position_matrix(V);
         writer.get_TV_matrix(TV);
 
-        assert(V.rows() == mesh->get_all(PrimitiveType::Vertex).size());
-        assert(TV.rows() == mesh->get_all(PrimitiveType::Tetrahedron).size());
+        assert(V.rows() == mesh.get_all(PrimitiveType::Vertex).size());
+        assert(TV.rows() == mesh.get_all(PrimitiveType::Tetrahedron).size());
 
         // rescale to [0, 1]
         RowVectors3d V_rescale(V.rows(), 3);
@@ -400,19 +374,15 @@ void fusion(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache
         std::shared_ptr<TetMesh> child_ptr = std::make_shared<TetMesh>(std::move(position_mesh));
         std::shared_ptr<TetMesh> parent_ptr = std::make_shared<TetMesh>(std::move(fusion_mesh));
 
-        auto child_map = multimesh::same_simplex_dimension_bijection(*parent_ptr, *child_ptr);
+        auto child_map = wmtk::multimesh::same_simplex_dimension_bijection(*parent_ptr, *child_ptr);
         parent_ptr->register_child_mesh(child_ptr, child_map);
 
-        names["periodic"] = parent_ptr->absolute_multi_mesh_id();
-        names["position"] = child_ptr->absolute_multi_mesh_id();
-
-        cache.write_mesh(*parent_ptr, options.name, names);
-
-        break;
+        return parent_ptr;
     }
     default: {
         throw std::runtime_error("mesh dimension not supported");
     }
     }
+    return {};
 }
-} // namespace wmtk::components
+} // namespace wmtk::components::multimesh

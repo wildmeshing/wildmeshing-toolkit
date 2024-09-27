@@ -1,17 +1,16 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
-#include <wmtk/io/Cache.hpp>
-
-#include <wmtk/components/utils/Paths.hpp>
+#include <memory>
+#include <vector>
 
 namespace wmtk {
 class Mesh;
-class TriMesh;
-class TetMesh;
 } // namespace wmtk
-namespace wmtk::components {
+namespace wmtk::components::multimesh {
 
-void fusion(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache);
+// TODO: this really shouldn't require returning a mesh
+// void axis_aligned_fusion(Mesh& m, const std::vector<bool>& axes_to_fuse, double eps = 1e-10);
+std::shared_ptr<Mesh>
+axis_aligned_fusion(const Mesh& m, const std::vector<bool>& axes_to_fuse, double eps = 1e-10);
 
-} // namespace wmtk::components
+} // namespace wmtk::components::multimesh
