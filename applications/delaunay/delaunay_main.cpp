@@ -78,8 +78,10 @@ int main(int argc, char* argv[])
     const std::string report = j["report"];
     if (!report.empty()) {
         nlohmann::json out_json;
-        out_json.update(wmtk::applications::utils::element_count_report(*out));
+        out_json.update(wmtk::applications::utils::element_count_report_named(*out));
         out_json["input"] = j;
+
+        spdlog::warn("{}", out_json.dump(2));
 
         std::ofstream ofs(report);
         ofs << out_json;
