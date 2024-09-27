@@ -2,6 +2,7 @@
 #include <memory>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include <nlohmann/json_fwd.hpp>
+#include <optional>
 
 
 namespace wmtk::components::isotropic_remeshing {

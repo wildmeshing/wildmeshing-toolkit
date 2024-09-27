@@ -20,7 +20,7 @@ wmtk::attribute::MeshAttributeHandle transfer_attribute(
 {
     return std::visit(
         [&](const auto& h) {
-            using T = std::decay_t<decltype(h)>::Type;
+            using T = typename std::decay_t<decltype(h)>::Type;
             return wmtk::utils::cast_attribute<T>(original_handle, m, new_attribute_name);
         },
 
