@@ -38,14 +38,14 @@
 
 
 namespace wmtk {
-    namespace tests {
-        class DEBUG_Mesh;
+namespace tests {
+class DEBUG_Mesh;
 namespace tools {
 
 class TestTools;
 
 }
-}
+} // namespace tests
 // thread management tool that we will PImpl
 namespace attribute {
 class AttributeManager;
@@ -929,7 +929,7 @@ inline decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args) const
 }
 
 #if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
-    template <std::ranges::forward_range ContainerType>
+template <std::ranges::forward_range ContainerType>
 #else
 template <typename ContainerType>
 #endif
@@ -972,7 +972,7 @@ inline PrimitiveType Mesh::top_simplex_type() const
 
 
 #if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
-    template <std::ranges::forward_range ContainerType>
+template <std::ranges::forward_range ContainerType>
 #else
 template <typename ContainerType>
 #endif

@@ -9,6 +9,9 @@ set(SRC_FILES
     transport_tuple.cpp
     transport_tuple.hpp
 
+    transfer_attribute.hpp
+    transfer_attribute.cpp
+
     tuple_map_attribute_io.hpp
     tuple_map_attribute_io.cpp
    

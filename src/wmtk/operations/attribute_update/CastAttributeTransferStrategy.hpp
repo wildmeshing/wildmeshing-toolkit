@@ -35,17 +35,7 @@ public:
             }
         };
 
-        constexpr static bool is_hybrid_rational =
-            std::is_same_v<
-                ParentType,
-                wmtk::attribute::utils::HybridRationalAttribute<Eigen::Dynamic>::Type> ||
-            std::is_same_v<
-                MyType,
-                wmtk::attribute::utils::HybridRationalAttribute<Eigen::Dynamic>::Type>;
-        if constexpr (is_hybrid_rational) {
-            assert(false);
-            return {};
-        } else if constexpr (std::is_same_v<MyType, wmtk::Rational>) {
+        if constexpr (std::is_same_v<MyType, wmtk::Rational>) {
             if constexpr (std::is_same_v<ParentType, wmtk::Rational>) {
                 return eval(v);
             } else {
