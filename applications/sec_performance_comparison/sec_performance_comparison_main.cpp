@@ -39,12 +39,12 @@ nlohmann::json test_run(const fs::path& input_file, const bool run_tetwild_simpl
         {
             wmtk::utils::StopWatch sw("tetwild_simplification");
             std::tie(mesh_in, stats) =
-                tetwild_simplification(static_cast<TriMesh&>(*mesh_in), "vertices", 0.01);
+                tetwild_simplification(static_cast<TriMesh&>(*mesh_in), "vertices", 1000);
         }
     } else {
         // shortestedge_collapse
         wmtk::utils::StopWatch sw("shortestedge_collapse");
-        shortestedge_collapse(static_cast<TriMesh&>(*mesh_in), pos_handle, 10);
+        shortestedge_collapse(static_cast<TriMesh&>(*mesh_in), pos_handle, 1000);
     }
     output(*mesh_in, run_tetwild_simplification ? "tws_out" : "sec_out", pos_handle);
 
