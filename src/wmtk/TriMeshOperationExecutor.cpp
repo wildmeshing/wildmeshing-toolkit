@@ -609,45 +609,50 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_precompute()
     set_collapse();
     is_collapse = true;
 
-    const simplex::SimplexCollection edge_closed_star =
-        simplex::closed_star(m_mesh, simplex::Simplex::edge(m_mesh, m_operating_tuple));
-
-    // get all faces incident to the edge
-    for (const simplex::Simplex& f : edge_closed_star.simplex_vector(PrimitiveType::Triangle)) {
-        m_incident_face_datas.emplace_back(get_incident_face_data(f.tuple()));
+    m_incident_face_datas.emplace_back(get_incident_face_data(m_operating_tuple));
+    if (!m_mesh.is_boundary_edge(m_operating_tuple)) {
+        m_incident_face_datas.emplace_back(get_incident_face_data(m_mesh.switch_face(m_operating_tuple)));
     }
 
-    assert(m_incident_face_datas.size() <= 2);
-    if (m_incident_face_datas[0].fid != m_mesh.id_face(m_operating_tuple)) {
-        assert(m_incident_face_datas.size() == 2);
-        std::swap(m_incident_face_datas[0], m_incident_face_datas[1]);
-    }
+    //const simplex::SimplexCollection edge_closed_star =
+    //    simplex::closed_star(m_mesh, simplex::Simplex::edge(m_mesh, m_operating_tuple));
+    //
+    //// get all faces incident to the edge
+    //for (const simplex::Simplex& f : edge_closed_star.simplex_vector(PrimitiveType::Triangle)) {
+    //    m_incident_face_datas.emplace_back(get_incident_face_data(f.tuple()));
+    //}
+    //
+    //assert(m_incident_face_datas.size() <= 2);
+    //if (m_incident_face_datas[0].fid != m_mesh.id_face(m_operating_tuple)) {
+    //    assert(m_incident_face_datas.size() == 2);
+    //    std::swap(m_incident_face_datas[0], m_incident_face_datas[1]);
+    //}
 
-    // update hash on all faces in the two-ring neighborhood
-    simplex::SimplexCollection hash_update_region(m_mesh);
-    for (const simplex::Simplex& v : edge_closed_star.simplex_vector(PrimitiveType::Vertex)) {
-        const simplex::SimplexCollection v_closed_star = simplex::top_dimension_cofaces(m_mesh, v);
-        hash_update_region.add(v_closed_star);
-    }
-    hash_update_region.sort_and_clean();
-
-    global_ids_to_potential_tuples.resize(3);
-    simplex::SimplexCollection faces(m_mesh);
-
-    for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
-
-        faces.add(wmtk::simplex::faces(m_mesh, f, false));
-        faces.add(f);
-    }
-
-    faces.sort_and_clean();
-    for (const auto& s : faces) {
-        const int64_t index = static_cast<int64_t>(s.primitive_type());
-        if (!m_mesh.has_child_mesh_in_dimension(index)) continue;
-        global_ids_to_potential_tuples.at(index).emplace_back(
-            m_mesh.id(s),
-            wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
-    }
+    //// update hash on all faces in the two-ring neighborhood
+    //simplex::SimplexCollection hash_update_region(m_mesh);
+    //for (const simplex::Simplex& v : edge_closed_star.simplex_vector(PrimitiveType::Vertex)) {
+    //    const simplex::SimplexCollection v_closed_star = simplex::top_dimension_cofaces(m_mesh, v);
+    //    hash_update_region.add(v_closed_star);
+    //}
+    //hash_update_region.sort_and_clean();
+    //
+    //global_ids_to_potential_tuples.resize(3);
+    //simplex::SimplexCollection faces(m_mesh);
+    //
+    //for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
+    //
+    //    faces.add(wmtk::simplex::faces(m_mesh, f, false));
+    //    faces.add(f);
+    //}
+    //
+    //faces.sort_and_clean();
+    //for (const auto& s : faces) {
+    //    const int64_t index = static_cast<int64_t>(s.primitive_type());
+    //    if (!m_mesh.has_child_mesh_in_dimension(index)) continue;
+    //    global_ids_to_potential_tuples.at(index).emplace_back(
+    //        m_mesh.id(s),
+    //        wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
+    //}
     simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
 }
 
