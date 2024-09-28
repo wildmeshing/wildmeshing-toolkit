@@ -27,11 +27,12 @@
 
 namespace wmtk::components {
 
-void shortestedge_collapse(TriMesh& mesh, const ShortestEdgeCollapseOptions& options)
+void shortestedge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& options)
 {
-    if (mesh.top_simplex_type() != PrimitiveType::Triangle) {
+    if (mesh.top_simplex_type() != PrimitiveType::Triangle &&
+        mesh.top_simplex_type() != PrimitiveType::Tetrahedron) {
         log_and_throw_error(
-            "shortest edge collapse works only for triangle meshes: {}",
+            "shortest edge collapse works only for triangle and tet meshes: {}",
             primitive_type_name(mesh.top_simplex_type()));
     }
 
@@ -246,7 +247,7 @@ void shortestedge_collapse(TriMesh& mesh, const ShortestEdgeCollapseOptions& opt
 }
 
 void shortestedge_collapse(
-    TriMesh& mesh,
+    Mesh& mesh,
     const attribute::MeshAttributeHandle& position_handle,
     const double length_rel,
     std::optional<bool> lock_boundary,

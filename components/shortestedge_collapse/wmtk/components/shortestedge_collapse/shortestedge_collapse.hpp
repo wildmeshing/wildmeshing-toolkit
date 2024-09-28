@@ -14,7 +14,7 @@ namespace wmtk::components {
  * @param mesh The triangular surface mesh.
  * @param options All options required for performing the shortest-edge collapse.
  */
-void shortestedge_collapse(TriMesh& mesh, const ShortestEdgeCollapseOptions& options);
+void shortestedge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& options);
 
 /**
  * @brief Perform shortest-edge collapse on a triangular surface mesh.
@@ -26,7 +26,7 @@ void shortestedge_collapse(TriMesh& mesh, const ShortestEdgeCollapseOptions& opt
  *
  */
 void shortestedge_collapse(
-    TriMesh& mesh,
+    Mesh& mesh,
     const attribute::MeshAttributeHandle& position_handle,
     const double length_rel,
     std::optional<bool> lock_boundary = {},
