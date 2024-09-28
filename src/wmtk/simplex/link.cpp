@@ -6,6 +6,7 @@
 
 #include "closed_star.hpp"
 #include "faces.hpp"
+#include "link_single_dimension.hpp"
 #include "top_dimension_cofaces.hpp"
 
 
@@ -98,26 +99,25 @@ link(const TriMesh& mesh, const simplex::Simplex& simplex, const bool sort_and_c
 {
     // make use of the fact that the top dimension coface tuples always contain the simplex itself
 
-    std::vector<Simplex> link_simplices;
     switch (simplex.primitive_type()) {
     case PrimitiveType::Vertex: {
+        std::vector<Simplex> link_simplices;
         link_vertex(mesh, simplex, link_simplices);
-        break;
+        SimplexCollection collection(mesh, std::move(link_simplices));
+        if (sort_and_clean) {
+            collection.sort();
+        }
+        return collection;
     }
     case PrimitiveType::Edge: {
-        link_edge(mesh, simplex, link_simplices);
-        break;
+        return link_single_dimension(mesh, simplex, PrimitiveType::Vertex, sort_and_clean);
     }
     case PrimitiveType::Triangle: break;
     case PrimitiveType::Tetrahedron:
     default: log_and_throw_error("Unknown primitive type in open_star."); break;
     }
 
-    SimplexCollection sc(mesh, std::move(link_simplices));
-    if (sort_and_clean) {
-        sc.sort_and_clean();
-    }
-    return sc;
+    return SimplexCollection(mesh);
 }
 
 SimplexCollection
