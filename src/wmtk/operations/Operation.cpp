@@ -90,7 +90,12 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
         if (!mods.empty()) { // success should be marked here
             apply_attribute_transfer(mods);
             if (after(unmods, mods)) {
-                return mods; // scope destructor is called
+                {
+                    // HACK fail all operations
+                    scope.mark_failed();
+                    return {};
+                }
+                //return mods; // scope destructor is called
             }
         }
     } catch (const std::exception& e) {

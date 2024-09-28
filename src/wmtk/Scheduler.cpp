@@ -85,6 +85,11 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
                     res.fail();
                 else
                     res.succeed();
+
+                if (res.number_of_performed_operations() == 50000) {
+                    logger().warn("HACKY break in Scheduler.cpp");
+                    break;
+                }
             }
         }
         if (m_update_frequency) {
@@ -120,7 +125,7 @@ SchedulerStats Scheduler::run_operation_on_all(
     int64_t success = res.number_of_successful_operations();
     std::vector<std::pair<int64_t, double>> order;
 
-    while (success > 0) {
+    while (false) {
         SchedulerStats internal_stats;
         // op.reserve_enough_simplices();
 

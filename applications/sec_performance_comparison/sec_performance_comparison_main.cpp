@@ -26,9 +26,9 @@ nlohmann::json test_run(const fs::path& input_file, const bool run_tetwild_simpl
     std::shared_ptr<Mesh> mesh_in = input(input_file);
 
     logger().info(
-        "Input {} #faces = {}",
+        "Input {} #top_simplices = {}",
         run_tetwild_simplification ? "tws" : "sec",
-        mesh_in->get_all(PrimitiveType::Triangle).size());
+        mesh_in->get_all(mesh_in->top_simplex_type()).size());
 
     attribute::MeshAttributeHandle pos_handle =
         mesh_in->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
@@ -49,9 +49,9 @@ nlohmann::json test_run(const fs::path& input_file, const bool run_tetwild_simpl
     output(*mesh_in, run_tetwild_simplification ? "tws_out" : "sec_out", pos_handle);
 
     logger().info(
-        "Output {} #faces = {}",
+        "Output {} #top_simplices = {}",
         run_tetwild_simplification ? "tws" : "sec",
-        mesh_in->get_all(PrimitiveType::Triangle).size());
+        mesh_in->get_all(mesh_in->top_simplex_type()).size());
 
     nlohmann::json out_json;
     out_json["stats"]["vertices"] = mesh_in->get_all(PrimitiveType::Vertex).size();
@@ -68,7 +68,9 @@ int main(int argc, char* argv[])
     //const fs::path input_file = "blub.msh"; // 14,208 faces
     //const fs::path input_file = "Octocat.msh"; // 37,884 faces
     //const fs::path input_file = "bunny.msh"; // 69,451 faces
-    const fs::path input_file = "max-planck.msh"; // 99,991 faces
+    //const fs::path input_file = "max-planck.msh"; // 99,991 faces
+
+    const fs::path input_file = "tetwild_fig8_mid.msh"; // tetmesh
 
     nlohmann::json out_json;
 
