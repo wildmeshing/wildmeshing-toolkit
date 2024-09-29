@@ -6,6 +6,7 @@
 
 #include "faces.hpp"
 #include "top_dimension_cofaces.hpp"
+#include "top_dimension_cofaces_iterable.hpp"
 
 namespace wmtk::simplex {
 
@@ -38,6 +39,32 @@ SimplexCollection closed_star(const Mesh& mesh, const Simplex& simplex, const bo
     }
 
     return collection;
+
+
+    // assert(mesh.is_valid(simplex.tuple()));
+    // SimplexCollection collection(mesh);
+    //
+    // switch (mesh.top_simplex_type()) {
+    // case PrimitiveType::Vertex: break;
+    // case PrimitiveType::Edge: collection.reserve(6 * 3 + 1); break;
+    // case PrimitiveType::Triangle: collection.reserve(6 * 7 + 1); break;
+    // case PrimitiveType::Tetrahedron: collection.reserve(6 * 15 + 1); break;
+    // default: log_and_throw_error("unknown mesh type in top_dimension_cofaces_tuples");
+    // }
+    //
+    // for (const Tuple& t : top_dimension_cofaces_iterable(mesh, simplex)) {
+    //     const simplex::Simplex s(mesh, mesh.top_simplex_type(), t);
+    //     collection.add(s);
+    //     faces(collection, simplex, false);
+    // }
+    //
+    // collection.add(simplex);
+    //
+    // if (sort_and_clean) {
+    //     collection.sort_and_clean();
+    // }
+    //
+    // return collection;
 }
 
 } // namespace wmtk::simplex
