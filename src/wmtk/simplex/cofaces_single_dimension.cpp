@@ -190,7 +190,7 @@ SimplexCollection cofaces_single_dimension(
         mesh,
         cofaces_single_dimension_simplices(mesh, my_simplex, cofaces_type));
     if (sort_and_clean) {
-        collection.sort_and_clean();
+        collection.sort();
     }
 
     return collection;
@@ -211,25 +211,6 @@ std::vector<Tuple> cofaces_single_dimension_tuples(
         log_and_throw_error("Unknown primitive type in cofaces_single_dimension_tuples");
         break;
     }
-
-    // std::vector<Tuple> tuples;
-    //
-    // if (my_simplex.primitive_type() == cofaces_type) {
-    //     tuples = {my_simplex.tuple()};
-    //     return tuples;
-    // }
-    //
-    // tuples = top_dimension_cofaces_tuples(mesh, my_simplex);
-    //
-    //
-    // assert(my_simplex.primitive_type() < cofaces_type);
-    // auto range = wmtk::utils::primitive_range(mesh.top_simplex_type(), cofaces_type);
-    // range.pop_back();
-    // for (const auto& pt : range) {
-    //     tuples = boundary_with_preserved_face_tuples(mesh, tuples, pt,
-    //     my_simplex.primitive_type());
-    // }
-    // return tuples;
 }
 
 std::vector<Simplex> cofaces_single_dimension_simplices(
