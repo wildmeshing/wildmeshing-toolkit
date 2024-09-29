@@ -55,6 +55,9 @@ bool are_all_ears_in_child(const TetMesh& parent, const EdgeMesh& child, const T
 }
 struct MultiMeshMapValidFunctor
 {
+    bool operator()(const auto& m, const simplex::Simplex& s, int64_t) {
+        return this->operator()(m,s);
+    }
     bool operator()(const Mesh& m, const simplex::Simplex& s) const { return false; }
     bool operator()(const PointMesh& m, const simplex::Simplex& s) const { return false; }
 

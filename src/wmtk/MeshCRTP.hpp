@@ -29,6 +29,8 @@ private:
 public:
     template <typename U, typename MeshType, int Dim>
     friend class attribute::Accessor;
+    template <int64_t cell_dimension, typename NodeFunctor>
+    friend class multimesh::MultiMeshSimplexVisitor;
     using Mesh::Mesh;
     /// CRTP utility to extract the derived type of this
     Derived& derived() { return static_cast<Derived&>(*this); }

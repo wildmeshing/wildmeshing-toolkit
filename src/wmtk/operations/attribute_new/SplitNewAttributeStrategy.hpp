@@ -63,10 +63,15 @@ public:
         return {m_handle};
     }
 
+    bool invalid_state() const final override;
+    std::string name() const final override;
+
 private:
     wmtk::attribute::MeshAttributeHandle m_handle;
     SplitRibFuncType m_split_rib_op;
     SplitFuncType m_split_op;
+    bool m_will_throw = false;
+    bool m_will_throw_rib = false;
     std::unique_ptr<SplitNewAttributeTopoInfo> m_topo_info;
 
     void assign_split(

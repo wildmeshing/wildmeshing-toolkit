@@ -156,6 +156,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     std::vector<std::shared_ptr<Operation>> ops;
 
     // split
+    wmtk::logger().debug("Configure isotropic remeshing split");
     auto op_split = std::make_shared<EdgeSplit>(mesh);
     op_split->add_invariant(invariant_min_edge_length);
     if (options.lock_boundary && !options.use_for_periodic && !options.dont_disable_split) {
@@ -170,11 +171,14 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     for (const auto& attr : pass_through_attributes) {
         op_split->set_new_attribute_strategy(attr);
     }
+    assert(op_split->attribute_new_all_configured());
     ops.push_back(op_split);
+
 
 
     //////////////////////////////////////////
     // collapse
+    wmtk::logger().debug("Configure isotropic remeshing collapse");
     auto op_collapse = std::make_shared<EdgeCollapse>(mesh);
     op_collapse->add_invariant(invariant_link_condition);
     if (position_for_inversion) {
@@ -217,11 +221,13 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     for (const auto& attr : pass_through_attributes) {
         op_collapse->set_new_attribute_strategy(attr);
     }
+    assert(op_collapse->attribute_new_all_configured());
     ops.push_back(op_collapse);
 
 
     //////////////////////////////////////////
     // swap
+    wmtk::logger().debug("Configure isotropic remeshing swap");
     auto op_swap = std::make_shared<composite::TriEdgeSwap>(mesh);
     op_swap->add_invariant(invariant_interior_edge);
 
@@ -252,6 +258,8 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
         op_swap->split().set_new_attribute_strategy(attr);
         op_swap->collapse().set_new_attribute_strategy(attr);
     }
+    assert(op_swap->split().attribute_new_all_configured());
+    assert(op_swap->collapse().attribute_new_all_configured());
     ops.push_back(op_swap);
 
 

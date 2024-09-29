@@ -9,6 +9,16 @@
 
 namespace wmtk::operations {
 
+template <typename T>
+bool SplitNewAttributeStrategy<T>::invalid_state() const
+{
+    return m_will_throw || m_will_throw_rib;
+}
+template <typename T>
+std::string SplitNewAttributeStrategy<T>::name() const
+{
+    return fmt::format("SplitNewAttributeStrategy[{}]", m_handle.name());
+}
 
 template <typename T>
 typename SplitNewAttributeStrategy<T>::SplitFuncType SplitNewAttributeStrategy<
@@ -320,22 +330,26 @@ template <typename T>
 void SplitNewAttributeStrategy<T>::set_rib_strategy(SplitRibBasicStrategy t)
 {
     set_rib_strategy(standard_split_rib_strategy(t, m_handle.name()));
+    m_will_throw_rib = t == SplitRibBasicStrategy::Throw;
 }
 template <typename T>
 void SplitNewAttributeStrategy<T>::set_strategy(SplitBasicStrategy t)
 {
     set_strategy(standard_split_strategy(t, m_handle.name()));
+    m_will_throw = t == SplitBasicStrategy::Throw;
 }
 
 template <typename T>
 void SplitNewAttributeStrategy<T>::set_rib_strategy(SplitRibFuncType&& f)
 {
     m_split_rib_op = std::move(f);
+    m_will_throw_rib = false;
 }
 template <typename T>
 void SplitNewAttributeStrategy<T>::set_strategy(SplitFuncType&& f)
 {
     m_split_op = std::move(f);
+    m_will_throw = false;
 }
 
 template <typename T>

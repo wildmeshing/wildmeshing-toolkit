@@ -25,7 +25,10 @@ public:
     template <typename MeshType, typename... OtherArgumentTypes>
     const auto& get_cached_return(const MeshType& m, OtherArgumentTypes&&... args) const
     {
+        multimesh::attribute::UseParentScopeRAII raii(const_cast<MeshType&>(m));
+        //return m.parent_scope([&]() {
         return m_visitor.cache().get(m, std::forward<OtherArgumentTypes>(args)...);
+        //});
     }
 
 private:

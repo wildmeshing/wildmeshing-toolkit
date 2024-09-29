@@ -1,4 +1,5 @@
 #include "CollapseNewAttributeStrategy.hpp"
+#include <fmt/format.h>
 #include <wmtk/utils/primitive_range.hpp>
 
 #include <wmtk/operations/edge_mesh/CollapseNewAttributeTopoInfo.hpp>
@@ -6,6 +7,16 @@
 #include <wmtk/operations/tri_mesh/CollapseNewAttributeTopoInfo.hpp>
 
 namespace wmtk::operations {
+template <typename T>
+bool CollapseNewAttributeStrategy<T>::invalid_state() const
+{
+    return m_will_throw;
+}
+template <typename T>
+std::string CollapseNewAttributeStrategy<T>::name() const
+{
+    return fmt::format("CollapseNewAttributeStrategy[{}]", m_handle.name());
+}
 
 template <typename T>
 typename CollapseNewAttributeStrategy<T>::CollapseFuncType
@@ -203,11 +214,13 @@ template <typename T>
 void CollapseNewAttributeStrategy<T>::set_strategy(CollapseFuncType&& f)
 {
     m_collapse_op = std::move(f);
+    m_will_throw = false;
 }
 template <typename T>
 void CollapseNewAttributeStrategy<T>::set_strategy(CollapseBasicStrategy optype)
 {
     set_strategy(standard_collapse_strategy(optype));
+    m_will_throw = optype == CollapseBasicStrategy::Throw;
 }
 
 
