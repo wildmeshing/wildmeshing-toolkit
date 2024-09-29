@@ -6,13 +6,16 @@
 namespace wmtk::simplex {
 
 
-TopDimensionCofacesIterable::TopDimensionCofacesIterable(Mesh& mesh, const Simplex& simplex)
+TopDimensionCofacesIterable::TopDimensionCofacesIterable(const Mesh& mesh, const Simplex& simplex)
     //: m_collection(top_dimension_cofaces(mesh, simplex))
     : m_mesh(&mesh)
     , m_simplex(simplex)
 {}
 
-TopDimensionCofacesIterable::Iterator::Iterator(Mesh& mesh, const Simplex& simplex, bool is_done)
+TopDimensionCofacesIterable::Iterator::Iterator(
+    const Mesh& mesh,
+    const Simplex& simplex,
+    bool is_done)
     : m_mesh(&mesh)
     , m_simplex(simplex)
     , t(simplex.tuple())
@@ -111,7 +114,7 @@ TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::ste
             if (m_mesh->is_boundary(PE, opp_of_input)) {
                 m_phase = IteratorPhase::End;
             } else {
-                m_phase = IteratorPhase::Backward;
+                m_phase = IteratorPhase::Intermediate;
             }
         } else {
             m_phase = IteratorPhase::End;
