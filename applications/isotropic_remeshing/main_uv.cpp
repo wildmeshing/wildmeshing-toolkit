@@ -4,7 +4,9 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <wmtk/applications/utils/parse_jse.hpp>
+#include <wmtk/components/input/MeshCollection.hpp>
 #include <wmtk/components/input/InputOptions.hpp>
+#include <wmtk/components/input/utils/get_attribute.hpp>
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -15,8 +17,8 @@
 #include <wmtk/components/output/output.hpp>
 #include <wmtk/components/utils/resolve_path.hpp>
 
-#include "spec.hpp"
 #include "make_multimesh.hpp"
+#include "spec.hpp"
 
 using namespace wmtk::components;
 using namespace wmtk;
@@ -34,33 +36,56 @@ int main(int argc, char* argv[])
         ->check(CLI::ExistingFile);
     CLI11_PARSE(app, argc, argv);
 
-    nlohmann::json j = wmtk::applications::utils::parse_jse(
-        wmtk::applications::isotropic_remeshing::spec,
-        json_input_file);
+    //nlohmann::json j = wmtk::applications::utils::parse_jse(
+    //    wmtk::applications::isotropic_remeshing::spec,
+    //    json_input_file);
+
+    std::ifstream ifs(json_input_file);
+    nlohmann::json j = nlohmann::json::parse(ifs);
+
+    const auto input_js = j["input"];
+
+    const auto input_opts = input_js.get<wmtk::components::input::InputOptions>();
 
 
-    const auto input_js =  j["input"];
-
-    const auto input_opts =input_js.get<wmtk::components::input::InputOptions>();
-
-
-    auto named_mesh = wmtk::components::input::input(input_opts);
+    wmtk::components::input::MeshCollection mc;
+    auto& named_mesh = mc.add_mesh(input_opts);
     auto mesh_ptr = named_mesh.root().shared_from_this();
-    named_mesh.set_mesh(*make_multimesh(*mesh_ptr, input_js));
+    spdlog::warn("Input js: {}", input_js.dump(2));
+    if(input_js.contains("multimesh")) {
+        mesh_ptr = make_multimesh(*mesh_ptr, input_js["multimesh"]);
+
+        spdlog::info("{} children", mesh_ptr->get_all_child_meshes().size());
+    }
+
 
     wmtk::components::isotropic_remeshing::IsotropicRemeshingOptions options;
 
     options.load_json(j);
 
-    options.position_attribute =
-        mesh_ptr->get_attribute_handle<double>(j["position_attribute"], PrimitiveType::Vertex);
-    if(j.contains("inversion_position_attribute")) {
-        options.inversion_position_attribute =
-            mesh_ptr->get_attribute_handle<double>(j["inversion_position_attribute"].get<std::string>(), PrimitiveType::Vertex);
+    options.position_attribute = wmtk::components::input::utils::get_attribute(
+            mc, j["position_attribute"]);
+
+    if (j.contains("inversion_position_attribute")) {
+    options.inversion_position_attribute = wmtk::components::input::utils::get_attribute(
+            mc, j["inversion_position_attribute"]);
     }
+    if(j.contains("other_position_attributes")) {
     for (const auto& other : j["other_position_attributes"]) {
         options.other_position_attributes.emplace_back(
-            mesh_ptr->get_attribute_handle<double>(other, PrimitiveType::Vertex));
+                wmtk::components::input::utils::get_attribute(
+            mc, other));
+    }
+    }
+    if(j.contains("pass_through_attributes")) {
+    for (const auto& other : j["pass_through_attributes"]) {
+        options.pass_through_attributes.emplace_back(
+                wmtk::components::input::utils::get_attribute(
+            mc, other));
+    }
+    }
+    for(const auto& attr: options.pass_through_attributes) {
+        spdlog::info("Pass through: {}", attr.name());
     }
 
     wmtk::components::isotropic_remeshing::isotropic_remeshing(options);
@@ -74,5 +99,5 @@ int main(int argc, char* argv[])
 
 
     const std::string output_path = j["output"];
-    wmtk::components::output_hdf5(*mesh_ptr, j["output"]);
+    wmtk::components::output::output(*mesh_ptr, j["output"]);
 }

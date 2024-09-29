@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
     auto out = wmtk::components::delaunay(*pts_mesh, pts_pts_attr, j["output_pos_attr_name"]);
 
     std::string output_file = j["output"];
-    wmtk::components::output(*out, output_file, j["output_pos_attr_name"]);
+    wmtk::components::output::output(*out, output_file, j["output_pos_attr_name"]);
 
     const std::string report = j["report"];
     if (!report.empty()) {

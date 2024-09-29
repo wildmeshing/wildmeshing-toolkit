@@ -7,7 +7,7 @@
 namespace wmtk::components::multimesh {
 
 
-void from_boundary(
+    std::shared_ptr<Mesh> from_boundary(
     Mesh& mesh,
     const PrimitiveType ptype,
     const std::string& attribute_name,
@@ -21,7 +21,7 @@ void from_boundary(
         is_boundary_accessor.scalar_attribute(t) = mesh.is_boundary(ptype, t) ? value : 0;
     }
 
-    from_tag(is_boundary_handle, value, passed_attributes);
+    return from_tag(is_boundary_handle, value, passed_attributes);
 }
 
 } // namespace wmtk::components::multimesh

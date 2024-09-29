@@ -131,8 +131,13 @@ std::string NamedMultiMesh::name(const std::vector<int64_t>& id) const
 
 NamedMultiMesh::NamedMultiMesh() = default;
 NamedMultiMesh::~NamedMultiMesh() = default;
-NamedMultiMesh::NamedMultiMesh(NamedMultiMesh&&) = default;
-auto NamedMultiMesh::operator=(NamedMultiMesh&&) -> NamedMultiMesh& = default;
+//NamedMultiMesh::NamedMultiMesh(NamedMultiMesh&&) = default;
+//auto NamedMultiMesh::operator=(NamedMultiMesh&&) -> NamedMultiMesh& = default;
+auto NamedMultiMesh::operator=(const NamedMultiMesh& o) -> NamedMultiMesh& {
+     m_root = o.m_root;
+     m_name_root=std::make_unique<Node>(*o.m_name_root);
+     return *this;
+}
 NamedMultiMesh::NamedMultiMesh(const NamedMultiMesh& o)
     : m_root(o.m_root)
     , m_name_root(std::make_unique<Node>(*o.m_name_root))

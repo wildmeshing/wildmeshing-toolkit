@@ -3,14 +3,22 @@
 #include "internal/split_path.hpp"
 #include <wmtk/utils/Logger.hpp>
 
+#include "input.hpp"
 
 namespace wmtk::components::input {
 
 
-void MeshCollection::add_mesh(NamedMultiMesh m)
+NamedMultiMesh& MeshCollection::add_mesh(NamedMultiMesh m)
 {
-    m_meshes.emplace(m.root_name(), std::move(m));
+    auto [it, did] = m_meshes.emplace(m.root_name(), std::move(m));
+    return it->second;
 }
+
+NamedMultiMesh& MeshCollection::add_mesh(const InputOptions& opts)
+{
+    return add_mesh(input(opts));
+}
+
 
 const NamedMultiMesh& MeshCollection::get_named_multimesh(const std::string_view& path) const
 {

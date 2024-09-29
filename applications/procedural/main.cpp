@@ -82,10 +82,10 @@ int main(int argc, char* argv[])
 
     const std::string output_path = j["output"];
     if (coordinate_handle_opt.has_value()) {
-        wmtk::components::output(*mesh, output_path, *coordinate_handle_opt);
+        wmtk::components::output::output(*mesh, output_path, *coordinate_handle_opt);
     } else {
         assert(output_path.size() > 4);
         assert(output_path.substr(output_path.size() - 4) == ".hdf5");
-        wmtk::components::output_hdf5(*mesh, j["output"]);
+        wmtk::components::output::output_hdf5(*mesh, j["output"]);
     }
 }

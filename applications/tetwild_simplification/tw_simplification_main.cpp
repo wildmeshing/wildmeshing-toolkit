@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
         j["sample_envelope"]);
 
     std::string output_file = j["output"];
-    wmtk::components::output(*out, output_file, "vertices");
+    wmtk::components::output::output(*out, output_file, "vertices");
 
     const std::string report = j["report"];
     if (!report.empty()) {

@@ -7,22 +7,52 @@ namespace wmtk::components::input::utils {
 
 wmtk::attribute::MeshAttributeHandle get_attribute(const Mesh& mesh, const nlohmann::json& js)
 {
-    const std::string name = js["name"];
+    if(js.is_string()) {
+        spdlog::trace("Parsing {} as just a name", js.dump());
+    }
+    const std::string name = js.is_string() ? js.get<std::string>() : js["name"].get<std::string>();
     std::string type_name = js.contains("type") ? js["type"] : "";
-    const int simplex_dim = js.contains("simplex") ? js["simplex"].get<int>() : 0;
-    const PrimitiveType pt = wmtk::get_primitive_type_from_id(simplex_dim);
-    if (type_name.empty()) {
+    int simplex_dim = js.contains("simplex") ? js["simplex"].get<int>() : -1;
+
+    auto try_types= [&](int index) {
+            const PrimitiveType pt = wmtk::get_primitive_type_from_id(index);
         // search
         if (mesh.has_attribute<double>(name, pt)) {
             type_name = "double";
+            return true;
         } else if (mesh.has_attribute<int64_t>(name, pt)) {
             type_name = "int";
+            return true;
         } else if (mesh.has_attribute<char>(name, pt)) {
             type_name = "char";
+            return true;
         } else if (mesh.has_attribute<wmtk::Rational>(name, pt)) {
             type_name = "rational";
+            return true;
         }
+        return false;
+    };
+
+
+    // if simplex dim is missing then both simplex dim and type name is populated
+    if(simplex_dim == -1) {
+        for(int j = 0 ; j < mesh.top_cell_dimension(); ++j) {
+            if(try_types(j)) {
+                simplex_dim = j;
+                break;
+            }
+
+        }
+        // if simplex dim was tehre but type name not populated we populate
+    } else if(type_name.empty()) {
+        try_types(simplex_dim);
     }
+    // only other case is both are populated, which is fine
+
+    assert(!type_name.empty());
+    assert(simplex_dim != -1);
+
+    const PrimitiveType pt = wmtk::get_primitive_type_from_id(simplex_dim);
 
 
     if (type_name == "double") {

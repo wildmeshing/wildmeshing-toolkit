@@ -6,7 +6,8 @@
       "input",
       "output",
       "attributes",
-      "iterations"
+      "iterations",
+      "position_attribute"
     ],
     "optional": [
       "pass_through",
@@ -14,7 +15,9 @@
       "length_rel",
       "lock_boundary",
       "use_for_periodic",
-      "dont_disable_split"
+      "dont_disable_split",
+      "inversion_position_attribute",
+      "other_position_attributes"
     ]
   },
   {
@@ -29,41 +32,22 @@
     "doc": "output mesh"
   },
   {
-    "pointer": "/attributes",
-    "type": "object",
-    "required": [
-      "position"
-    ],
-    "optional": [
-      "inversion_position",
-      "other_positions",
-      "update_other_positions"
-    ],
-    "doc": "all attributes required for this component"
-  },
-  {
-    "pointer": "/attributes/position",
+    "pointer": "/position_attribute",
     "type": "include",
     "spec_file": "attribute_spec.json",
     "doc": "Position attribute"
   },
   {
-    "pointer": "/attributes/inversion_position",
+    "pointer": "/inversion_position_attribute",
     "type": "include",
     "spec_file": "optional_attribute_spec.json",
     "doc": "Position attribute for inversion check"
   },
   {
-    "pointer": "/attributes/other_positions",
+    "pointer": "/other_positions_attribute",
     "type": "include",
     "spec_file": "optional_attribute_spec.json",
     "doc": "Position attribute for inversion check"
-  },
-  {
-    "pointer": "/attributes/update_other_positions",
-    "type": "bool",
-    "default": false,
-    "doc": "Use attribute update to sync other positions"
   },
   {
     "pointer": "/pass_through",

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
+#include <memory>
 
 namespace wmtk {
 class Mesh;
@@ -10,7 +11,8 @@ class MeshAttributeHandle;
 } // namespace wmtk
 namespace wmtk::components::multimesh {
 
-void from_boundary(
+    // returns new mesh created from the boundary
+    std::shared_ptr<Mesh> from_boundary(
     Mesh& m,
     const PrimitiveType boundary_dimension,
     const std::string& attribute_name,

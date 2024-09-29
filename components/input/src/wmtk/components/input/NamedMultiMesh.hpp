@@ -17,10 +17,11 @@ class NamedMultiMesh
 {
 public:
     NamedMultiMesh();
-    NamedMultiMesh(NamedMultiMesh&&);
+    //NamedMultiMesh(NamedMultiMesh&&);
     NamedMultiMesh(const NamedMultiMesh&);
     ~NamedMultiMesh();
-    auto operator=(NamedMultiMesh&&) -> NamedMultiMesh&;
+   // auto operator=(NamedMultiMesh&&) -> NamedMultiMesh&;
+   auto operator=(const NamedMultiMesh&) -> NamedMultiMesh&;
 
     void set_name(const std::string_view& root_name = "");
     void set_names(const nlohmann::json& js);

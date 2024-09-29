@@ -70,5 +70,5 @@ int main(int argc, char* argv[])
 
 
     const std::string output_path = j["output"];
-    wmtk::components::output_hdf5(*mesh_ptr, j["output"]);
+    wmtk::components::output::output_hdf5(*mesh_ptr, j["output"]);
 }

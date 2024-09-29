@@ -5,24 +5,14 @@ namespace wmtk::applications::isotropic_remeshing {
 nlohmann::json spec = R"(
 [
   {
-    "optional": [
-      "pass_through",
-      "length_abs",
-      "length_rel",
-      "lock_boundary",
-      "use_for_periodic",
-      "dont_disable_split"
-    ],
     "pointer": "/",
+    "type": "object",
     "required": [
       "input",
       "output",
       "attributes",
       "iterations"
-    ],
-    "type": "object"
-  },
-  {
+      ],
     "optional": [
       "imported_attributes",
       "name_spec",
@@ -31,14 +21,7 @@ nlohmann::json spec = R"(
       "tet_attributes"
     ],
     "pointer": "/input",
-    "required": [
-      "file"
-    ],
     "type": "object"
-  },
-  {
-    "pointer": "/input/file",
-    "type": "string"
   },
   {
     "default": {},
@@ -83,100 +66,18 @@ nlohmann::json spec = R"(
     "type": "string"
   },
   {
-    "doc": "all attributes required for this component",
-    "optional": [
-      "inversion_position",
-      "other_positions",
-      "update_other_positions"
-    ],
-    "pointer": "/attributes",
-    "required": [
-      "position"
-    ],
+    "pointer": "/position_attribute",
     "type": "object"
   },
   {
-    "pointer": "/attributes/position",
+    "default": {},
+    "pointer": "/inversion_position_attribute",
+    "type": "object"
+  },
+  {
+    "default": {},
+    "pointer": "/other_position_attributes",
     "type": "list"
-  },
-  {
-    "default": "",
-    "pointer": "/attributes/position/*",
-    "type": "string"
-  },
-  {
-    "pointer": "/attributes/position/*",
-    "required": [
-      "name",
-      "mesh"
-    ],
-    "type": "object"
-  },
-  {
-    "pointer": "/attributes/position/*/name",
-    "type": "string"
-  },
-  {
-    "pointer": "/attributes/position/*/mesh",
-    "type": "string"
-  },
-  {
-    "default": [],
-    "pointer": "/attributes/inversion_position",
-    "type": "list"
-  },
-  {
-    "default": "",
-    "pointer": "/attributes/inversion_position/*",
-    "type": "string"
-  },
-  {
-    "pointer": "/attributes/inversion_position/*",
-    "required": [
-      "name",
-      "mesh"
-    ],
-    "type": "object"
-  },
-  {
-    "pointer": "/attributes/inversion_position/*/name",
-    "type": "string"
-  },
-  {
-    "pointer": "/attributes/inversion_position/*/mesh",
-    "type": "string"
-  },
-  {
-    "default": [],
-    "pointer": "/attributes/other_positions",
-    "type": "list"
-  },
-  {
-    "default": "",
-    "pointer": "/attributes/other_positions/*",
-    "type": "string"
-  },
-  {
-    "pointer": "/attributes/other_positions/*",
-    "required": [
-      "name",
-      "mesh"
-    ],
-    "type": "object"
-  },
-  {
-    "pointer": "/attributes/other_positions/*/name",
-    "type": "string"
-  },
-  {
-    "pointer": "/attributes/other_positions/*/mesh",
-    "type": "string"
-  },
-  {
-    "default": false,
-    "doc": "Use attribute update to sync other positions",
-    "pointer": "/attributes/update_other_positions",
-    "type": "bool"
   },
   {
     "default": [],

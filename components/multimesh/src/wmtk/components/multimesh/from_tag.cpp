@@ -8,7 +8,7 @@
 namespace wmtk::components::multimesh {
 
 namespace {
-void from_tag(
+    std::shared_ptr<Mesh> from_tag(
     wmtk::attribute::MeshAttributeHandle& handle,
     const wmtk::attribute::MeshAttributeHandle::ValueVariant& tag_value,
     const std::vector<wmtk::attribute::MeshAttributeHandle>& passed_attributes)
@@ -21,10 +21,11 @@ void from_tag(
 
         wmtk::multimesh::utils::transfer_attribute(attr, *child_mesh);
     }
+    return child_mesh;
 }
 } // namespace
 
-void from_tag(
+std::shared_ptr<Mesh> from_tag(
     const wmtk::attribute::MeshAttributeHandle& handle,
 
     const wmtk::attribute::MeshAttributeHandle::ValueVariant& tag_value,
@@ -34,7 +35,7 @@ void from_tag(
 {
     // constness is annoying, but want to let rvalues get passed in?
     wmtk::attribute::MeshAttributeHandle h = handle;
-    from_tag(h, tag_value, passed_attributes);
+    return from_tag(h, tag_value, passed_attributes);
 }
 
 } // namespace wmtk::components::multimesh

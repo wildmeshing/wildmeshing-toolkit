@@ -79,8 +79,12 @@ private:
         const std::array<Tuple, 2>& input_ears,
         const Tuple& final_simplex) const;
 
-    static SplitFuncType standard_split_strategy(SplitBasicStrategy optype);
-    static SplitRibFuncType standard_split_rib_strategy(SplitRibBasicStrategy optype);
+    static SplitFuncType standard_split_strategy(
+        SplitBasicStrategy optype,
+        const std::string_view& = {});
+    static SplitRibFuncType standard_split_rib_strategy(
+        SplitRibBasicStrategy optype,
+        const std::string_view& = {});
 };
 
 

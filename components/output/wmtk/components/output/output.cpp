@@ -7,7 +7,7 @@
 #include <wmtk/utils/Logger.hpp>
 
 
-namespace wmtk::components {
+namespace wmtk::components::output {
 
 void output(
     const Mesh& mesh,

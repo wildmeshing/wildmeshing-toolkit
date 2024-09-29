@@ -148,7 +148,7 @@ public:
     // return the dimension of the attribute (i.e the number of values stored per simplex)
     int64_t dimension() const;
 
-    // std::string name() const;
+     std::string name() const;
 
 
 private:

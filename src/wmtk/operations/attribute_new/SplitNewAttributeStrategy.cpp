@@ -11,8 +11,8 @@ namespace wmtk::operations {
 
 
 template <typename T>
-typename SplitNewAttributeStrategy<T>::SplitFuncType
-SplitNewAttributeStrategy<T>::standard_split_strategy(SplitBasicStrategy optype)
+typename SplitNewAttributeStrategy<T>::SplitFuncType SplitNewAttributeStrategy<
+    T>::standard_split_strategy(SplitBasicStrategy optype, const std::string_view& name)
 {
     using VT = SplitNewAttributeStrategy::VecType;
 
@@ -27,18 +27,20 @@ SplitNewAttributeStrategy<T>::standard_split_strategy(SplitBasicStrategy optype)
         return [](const VT& a, const std::bitset<2>&) -> std::array<VT, 2> {
             return std::array<VT, 2>{{a / T(2), a / T(2)}};
         };
-    case SplitBasicStrategy::Throw:
-        return [](const VT&, const std::bitset<2>&) -> std::array<VT, 2> {
-            log_and_throw_error("Split should have a new attribute");
+    case SplitBasicStrategy::Throw: {
+        std::string mn(name);
+        return [mn](const VT&, const std::bitset<2>&) -> std::array<VT, 2> {
+            log_and_throw_error("Split should have a new attribute for [{}]", mn);
         };
+    }
     case SplitBasicStrategy::None: return {};
     }
     return {};
 }
 
 template <>
-typename SplitNewAttributeStrategy<Rational>::SplitFuncType
-SplitNewAttributeStrategy<Rational>::standard_split_strategy(SplitBasicStrategy optype)
+typename SplitNewAttributeStrategy<Rational>::SplitFuncType SplitNewAttributeStrategy<
+    Rational>::standard_split_strategy(SplitBasicStrategy optype, const std::string_view& name)
 {
     using VT = SplitNewAttributeStrategy::VecType;
 
@@ -53,10 +55,12 @@ SplitNewAttributeStrategy<Rational>::standard_split_strategy(SplitBasicStrategy 
         return [](const VT& a, const std::bitset<2>&) -> std::array<VT, 2> {
             return std::array<VT, 2>{{a / Rational(2, true), a / Rational(2, true)}};
         };
-    case SplitBasicStrategy::Throw:
-        return [](const VT&, const std::bitset<2>&) -> std::array<VT, 2> {
-            log_and_throw_error("Split should have a new attribute");
+    case SplitBasicStrategy::Throw: {
+        std::string mn(name);
+        return [mn](const VT&, const std::bitset<2>&) -> std::array<VT, 2> {
+            log_and_throw_error("Split should have a new attribute for [{}]", mn);
         };
+    }
     case SplitBasicStrategy::None: return {};
     }
     return {};
@@ -64,8 +68,8 @@ SplitNewAttributeStrategy<Rational>::standard_split_strategy(SplitBasicStrategy 
 
 
 template <typename T>
-typename SplitNewAttributeStrategy<T>::SplitRibFuncType
-SplitNewAttributeStrategy<T>::standard_split_rib_strategy(SplitRibBasicStrategy optype)
+typename SplitNewAttributeStrategy<T>::SplitRibFuncType SplitNewAttributeStrategy<
+    T>::standard_split_rib_strategy(SplitRibBasicStrategy optype, const std::string_view& name)
 {
     using VT = SplitNewAttributeStrategy::VecType;
 
@@ -106,17 +110,21 @@ SplitNewAttributeStrategy<T>::standard_split_rib_strategy(SplitRibBasicStrategy 
                 return b;
             }
         };
-    case SplitRibBasicStrategy::Throw:
-        return [](const VT&, const VT&, const std::bitset<2>&) -> VT {
-            log_and_throw_error("Split should have a new attribute");
+    case SplitRibBasicStrategy::Throw: {
+        std::string mn(name);
+        return [mn](const VT&, const VT&, const std::bitset<2>&) -> VT {
+            log_and_throw_error("Split should have a new attribute [{}]", mn);
         };
+    }
     case SplitRibBasicStrategy::None: return {};
     }
     return {};
 }
 template <>
 typename SplitNewAttributeStrategy<Rational>::SplitRibFuncType
-SplitNewAttributeStrategy<Rational>::standard_split_rib_strategy(SplitRibBasicStrategy optype)
+SplitNewAttributeStrategy<Rational>::standard_split_rib_strategy(
+    SplitRibBasicStrategy optype,
+    const std::string_view& name)
 {
     using VT = SplitNewAttributeStrategy::VecType;
 
@@ -153,10 +161,12 @@ SplitNewAttributeStrategy<Rational>::standard_split_rib_strategy(SplitRibBasicSt
                 return b;
             }
         };
-    case SplitRibBasicStrategy::Throw:
-        return [](const VT&, const VT&, const std::bitset<2>&) -> VT {
-            log_and_throw_error("Split should have a new attribute");
+    case SplitRibBasicStrategy::Throw: {
+        std::string mn(name);
+        return [mn](const VT&, const VT&, const std::bitset<2>&) -> VT {
+            log_and_throw_error("Split should have a new attribute [{}]", mn);
         };
+    }
     case SplitRibBasicStrategy::None: return {};
     }
     return {};
@@ -309,12 +319,12 @@ void SplitNewAttributeStrategy<T>::assign_split(
 template <typename T>
 void SplitNewAttributeStrategy<T>::set_rib_strategy(SplitRibBasicStrategy t)
 {
-    set_rib_strategy(standard_split_rib_strategy(t));
+    set_rib_strategy(standard_split_rib_strategy(t, m_handle.name()));
 }
 template <typename T>
 void SplitNewAttributeStrategy<T>::set_strategy(SplitBasicStrategy t)
 {
-    set_strategy(standard_split_strategy(t));
+    set_strategy(standard_split_strategy(t, m_handle.name()));
 }
 
 template <typename T>

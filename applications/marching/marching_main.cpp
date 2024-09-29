@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
         wmtk::components::marching(mesh, options);
     }
 
-    wmtk::components::output(mesh, j["output"], pos_handle);
+    wmtk::components::output::output(mesh, j["output"], pos_handle);
 
     const std::string report = j["report"];
     if (!report.empty()) {

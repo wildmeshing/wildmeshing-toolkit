@@ -4,10 +4,12 @@
 
 namespace wmtk::components::input {
 
+    class InputOptions;
 class MeshCollection
 {
 public:
-    void add_mesh(NamedMultiMesh o);
+    NamedMultiMesh& add_mesh(NamedMultiMesh o);
+    NamedMultiMesh& add_mesh(const InputOptions& opts);
 
     const NamedMultiMesh& get_named_multimesh(const std::string_view& path) const;
     const Mesh& get_mesh(const std::string_view& path) const;
