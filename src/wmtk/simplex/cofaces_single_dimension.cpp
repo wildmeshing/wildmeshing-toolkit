@@ -42,6 +42,90 @@ std::vector<Tuple> boundary_with_preserved_face_tuples(
 
     return r;
 }
+
+
+std::vector<Tuple> cofaces_single_dimension_vertex(
+    const TriMesh& mesh,
+    const Simplex& my_simplex,
+    PrimitiveType cofaces_type)
+{
+    if (cofaces_type == PrimitiveType::Vertex) {
+        return {my_simplex.tuple()};
+    } else if (cofaces_type == PrimitiveType::Triangle) {
+        return top_dimension_cofaces_tuples(mesh, my_simplex);
+    }
+
+    assert(cofaces_type == PrimitiveType::Edge);
+
+    constexpr PrimitiveType PV = PrimitiveType::Vertex;
+    constexpr PrimitiveType PE = PrimitiveType::Edge;
+    constexpr PrimitiveType PF = PrimitiveType::Triangle;
+
+    std::vector<Tuple> tuples;
+    tuples.reserve(6);
+
+    assert(mesh.is_valid(my_simplex.tuple()));
+    const Tuple t_in = my_simplex.tuple();
+    Tuple t = t_in;
+
+    do {
+        const Tuple t_collect = mesh.switch_tuple(t, PV);
+        tuples.emplace_back(t_collect);
+
+        if (mesh.is_boundary_edge(t)) {
+            break;
+        }
+        t = mesh.switch_tuples(t, {PF, PE});
+    } while (t != t_in);
+
+
+    if (t == t_in && !mesh.is_boundary_edge(t)) {
+        return tuples;
+    }
+
+    t = mesh.switch_edge(t_in);
+
+    tuples.emplace_back(t);
+    if (mesh.is_boundary_edge(t)) {
+        return tuples;
+    }
+    t = mesh.switch_tuples(t, {PF, PE});
+
+    do {
+        const Tuple t_collect = mesh.switch_tuple(t, PV);
+        tuples.emplace_back(t_collect);
+
+        if (mesh.is_boundary_edge(t)) {
+            break;
+        }
+        t = mesh.switch_tuples(t, {PF, PE});
+    } while (true);
+
+    return tuples;
+}
+
+std::vector<Tuple> cofaces_single_dimension_edge(
+    const TriMesh& mesh,
+    const Simplex& my_simplex,
+    PrimitiveType cofaces_type)
+{
+    if (cofaces_type == PrimitiveType::Edge) {
+        return {my_simplex.tuple()};
+    }
+
+    assert(cofaces_type == PrimitiveType::Triangle);
+    return top_dimension_cofaces_tuples(mesh, my_simplex);
+}
+
+std::vector<Tuple> cofaces_single_dimension_face(
+    const TriMesh& mesh,
+    const Simplex& my_simplex,
+    PrimitiveType cofaces_type)
+{
+    assert(cofaces_type == PrimitiveType::Triangle);
+    return {my_simplex.tuple()};
+}
+
 } // namespace
 
 
@@ -94,6 +178,50 @@ SimplexCollection cofaces_single_dimension(
     }
 
     return collection;
+}
+
+SimplexCollection cofaces_single_dimension(
+    const TriMesh& mesh,
+    const Simplex& my_simplex,
+    PrimitiveType cofaces_type,
+    bool sort_and_clean)
+{
+    SimplexCollection collection(
+        mesh,
+        cofaces_single_dimension_simplices(mesh, my_simplex, cofaces_type));
+    if (sort_and_clean) {
+        collection.sort();
+    }
+
+    return collection;
+}
+
+std::vector<Tuple> cofaces_single_dimension_tuples(
+    const TriMesh& mesh,
+    const Simplex& my_simplex,
+    PrimitiveType cofaces_type)
+{
+    switch (my_simplex.primitive_type()) {
+    case PrimitiveType::Vertex:
+        return cofaces_single_dimension_vertex(mesh, my_simplex, cofaces_type);
+    case PrimitiveType::Edge: return cofaces_single_dimension_edge(mesh, my_simplex, cofaces_type);
+    case PrimitiveType::Triangle:
+        return cofaces_single_dimension_face(mesh, my_simplex, cofaces_type);
+    default:
+        log_and_throw_error("Unknown primitive type in cofaces_single_dimension_tuples");
+        break;
+    }
+}
+
+std::vector<Simplex> cofaces_single_dimension_simplices(
+    const TriMesh& mesh,
+    const Simplex& simplex,
+    PrimitiveType cofaces_type)
+{
+    return utils::tuple_vector_to_homogeneous_simplex_vector(
+        mesh,
+        cofaces_single_dimension_tuples(mesh, simplex, cofaces_type),
+        cofaces_type);
 }
 
 } // namespace wmtk::simplex
