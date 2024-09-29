@@ -787,6 +787,11 @@ TEST_CASE("simplex_top_dimension_cofaces_tri_iterable", "[simplex_collection][2D
         const Tuple t = m.edge_tuple_with_vs_and_t(6, 5, 4);
         simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
     }
+    SECTION("vertex_boundary_4")
+    {
+        const Tuple t = m.edge_tuple_with_vs_and_t(1, 4, 2);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
+    }
     SECTION("edge_interior")
     {
         const Tuple t = m.edge_tuple_with_vs_and_t(4, 5, 2);
