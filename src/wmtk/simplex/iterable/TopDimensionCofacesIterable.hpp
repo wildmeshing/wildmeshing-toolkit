@@ -21,7 +21,7 @@ public:
     class Iterator
     {
     public:
-        Iterator(Mesh& mesh, const Simplex& simplex, bool is_done = false);
+        Iterator(const Mesh& mesh, const Simplex& simplex, bool is_done = false);
         Iterator operator++();
         bool operator!=(const Iterator& other) const;
         Tuple operator*();
@@ -35,7 +35,7 @@ public:
         Iterator step_trimesh_face();
 
     private:
-        Mesh* m_mesh;
+        const Mesh* m_mesh;
         Simplex m_simplex;
         Tuple t;
         IteratorPhase m_phase = IteratorPhase::Forward;
@@ -43,13 +43,13 @@ public:
     };
 
 public:
-    TopDimensionCofacesIterable(Mesh& mesh, const Simplex& simplex);
+    TopDimensionCofacesIterable(const Mesh& mesh, const Simplex& simplex);
 
     Iterator begin() const { return Iterator(*m_mesh, m_simplex); }
     Iterator end() const { return Iterator(*m_mesh, m_simplex, true); }
 
 private:
-    Mesh* m_mesh;
+    const Mesh* m_mesh;
     Simplex m_simplex;
 };
 
