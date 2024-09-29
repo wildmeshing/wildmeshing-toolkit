@@ -28,6 +28,13 @@ public:
         const Tuple& operator*() const;
 
     private:
+        void init_trimesh_vertex();
+        Iterator step_trimesh_vertex();
+
+        Iterator step_trimesh_edge();
+        Iterator step_trimesh_face();
+
+    private:
         Mesh* m_mesh;
         Simplex m_simplex;
         Tuple t;
