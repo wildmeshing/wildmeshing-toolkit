@@ -1,5 +1,17 @@
 var NAVTREEINDEX26 =
 {
+"tri__mesh_2subdart__maximal__action__to__face_8cpp_source.html":[8,0,2,0,1,4,11],
+"tri__mesh_2subdart__maximal__action__to__face_8hpp.html":[8,0,2,0,1,4,12],
+"tri__mesh_2subdart__maximal__action__to__face_8hpp.html#a4ed90cb979c5c2753822f39472e9ddc6":[8,0,2,0,1,4,12,0],
+"tri__mesh_2subdart__maximal__action__to__face_8hpp.html#a6dd4d5f30900add59669380efcb4bdf5":[8,0,2,0,1,4,12,2],
+"tri__mesh_2subdart__maximal__action__to__face_8hpp.html#aeeca538f69391f9162cafaf464897737":[8,0,2,0,1,4,12,1],
+"tri__mesh_2subdart__maximal__action__to__face_8hpp_source.html":[8,0,2,0,1,4,12],
+"tri__mesh_2tuple__from__valid__index_8hpp.html":[8,0,2,0,1,4,13],
+"tri__mesh_2tuple__from__valid__index_8hpp.html#aa2ec3dcd719ab81c10b79cab4415cfbd":[8,0,2,0,1,4,13,0],
+"tri__mesh_2tuple__from__valid__index_8hpp_source.html":[8,0,2,0,1,4,13],
+"tri__mesh_2tuple__from__valid__index_8hxx.html":[8,0,2,0,1,4,14],
+"tri__mesh_2tuple__from__valid__index_8hxx.html#aa2ec3dcd719ab81c10b79cab4415cfbd":[8,0,2,0,1,4,14,0],
+"tri__mesh_2tuple__from__valid__index_8hxx_source.html":[8,0,2,0,1,4,14],
 "tri__mesh_2valid__index__from__tuple_8hpp.html":[8,0,2,0,1,4,15],
 "tri__mesh_2valid__index__from__tuple_8hpp.html#a62728e3e11c8fece1c85f27dbf39187c":[8,0,2,0,1,4,15,0],
 "tri__mesh_2valid__index__from__tuple_8hpp_source.html":[8,0,2,0,1,4,15],

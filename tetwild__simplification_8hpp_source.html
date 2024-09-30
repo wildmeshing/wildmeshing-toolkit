@@ -124,19 +124,19 @@ $(document).ready(function(){initNavTree('tetwild__simplification_8hpp_source.ht
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;std::tuple&lt;std::shared_ptr&lt;TriMesh&gt;, <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&gt; <a class="code" href="namespacewmtk_1_1components.html#abd293a6a41da0ec4d15cf8f31ce1eff2">tetwild_simplification</a>(</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    <span class="keyword">const</span> TriMesh&amp; mesh,</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    <span class="keyword">const</span> std::string&amp; postion_attr_name,</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keywordtype">double</span> main_esp,</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keywordtype">bool</span> realitive = <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keywordtype">double</span> duplicate_tol = -1,</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="keywordtype">bool</span> use_sampling = <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;std::tuple&lt;std::shared_ptr&lt;TriMesh&gt;, <a class="code" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&gt; <a class="code" href="namespacewmtk_1_1components.html#ab76577dc5b3ef0ad8ac307cff60d5807">tetwild_simplification</a>(</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">const</span> TriMesh&amp; mesh,</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <span class="keyword">const</span> std::string&amp; postion_attr_name,</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keywordtype">double</span> main_eps,</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keywordtype">bool</span> relative = <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keywordtype">double</span> duplicate_tol = -1,</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="keywordtype">bool</span> use_sampling = <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
 <div class="ttc" id="a_tri_mesh_8hpp_html"><div class="ttname"><a href="_tri_mesh_8hpp.html">TriMesh.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_abd293a6a41da0ec4d15cf8f31ce1eff2"><div class="ttname"><a href="namespacewmtk_1_1components.html#abd293a6a41da0ec4d15cf8f31ce1eff2">wmtk::components::tetwild_simplification</a></div><div class="ttdeci">std::tuple&lt; std::shared_ptr&lt; TriMesh &gt;, nlohmann::json &gt; tetwild_simplification(const TriMesh &amp;mesh, const std::string &amp;postion_attr_name, double main_esp, bool relative, double duplicate_tol, bool use_sampling)</div><div class="ttdef"><b>Definition:</b> <a href="tetwild__simplification_8cpp_source.html#l00911">tetwild_simplification.cpp:911</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_ab76577dc5b3ef0ad8ac307cff60d5807"><div class="ttname"><a href="namespacewmtk_1_1components.html#ab76577dc5b3ef0ad8ac307cff60d5807">wmtk::components::tetwild_simplification</a></div><div class="ttdeci">std::tuple&lt; std::shared_ptr&lt; TriMesh &gt;, nlohmann::json &gt; tetwild_simplification(const TriMesh &amp;mesh, const std::string &amp;postion_attr_name, double main_eps, bool relative, double duplicate_tol, bool use_sampling)</div><div class="ttdoc">Perform the simplification from the original tetwild.</div><div class="ttdef"><b>Definition:</b> <a href="tetwild__simplification_8cpp_source.html#l00911">tetwild_simplification.cpp:911</a></div></div>
 <div class="ttc" id="atests_2input_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="tests_2input_8cpp_source.html#l00008">input.cpp:8</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

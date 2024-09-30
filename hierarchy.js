@@ -343,6 +343,7 @@ var hierarchy =
     ] ],
     [ "wmtk::Scheduler", "classwmtk_1_1_scheduler.html", null ],
     [ "wmtk::SchedulerStats", "classwmtk_1_1_scheduler_stats.html", null ],
+    [ "wmtk::components::ShortestEdgeCollapseOptions", "structwmtk_1_1components_1_1_shortest_edge_collapse_options.html", null ],
     [ "wmtk::simplex::Simplex", "classwmtk_1_1simplex_1_1_simplex.html", null ],
     [ "wmtk::simplex::SimplexCollection", "classwmtk_1_1simplex_1_1_simplex_collection.html", null ],
     [ "wmtk::simplex::utils::SimplexComparisons", "classwmtk_1_1simplex_1_1utils_1_1_simplex_comparisons.html", null ],

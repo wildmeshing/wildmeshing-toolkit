@@ -19,7 +19,7 @@ var searchData=
   ['tetmeshoperationexecutor_4623',['TetMeshOperationExecutor',['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#acac0375cc0218906ab5e82ff00463471',1,'wmtk::TetMesh::TetMeshOperationExecutor']]],
   ['tetmeshsubstructuretopologypreservinginvariant_4624',['TetMeshSubstructureTopologyPreservingInvariant',['../classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#a81baa9211019d481fc47e699d0747b3b',1,'wmtk::invariants::TetMeshSubstructureTopologyPreservingInvariant']]],
   ['tetrahedron_4625',['tetrahedron',['../classwmtk_1_1simplex_1_1_simplex.html#a7cff84ea4d1ff4f5ba3ec96a7ddd5c01',1,'wmtk::simplex::Simplex::tetrahedron()'],['../classwmtk_1_1_primitive.html#ae6ea47e788a39f79a71311a8c703496f',1,'wmtk::Primitive::tetrahedron()'],['../classwmtk_1_1_cell.html#a9973423f587077030592b40b9d63ba12',1,'wmtk::Cell::tetrahedron()']]],
-  ['tetwild_5fsimplification_4626',['tetwild_simplification',['../namespacewmtk_1_1components.html#abd293a6a41da0ec4d15cf8f31ce1eff2',1,'wmtk::components']]],
+  ['tetwild_5fsimplification_4626',['tetwild_simplification',['../namespacewmtk_1_1components.html#ab76577dc5b3ef0ad8ac307cff60d5807',1,'wmtk::components']]],
   ['tetwildtangentiallaplaciansmoothing_4627',['TetWildTangentialLaplacianSmoothing',['../classwmtk_1_1operations_1_1_tet_wild_tangential_laplacian_smoothing.html#a97d5a211925ff7c6c4a0473342b81971',1,'wmtk::operations::TetWildTangentialLaplacianSmoothing']]],
   ['to_5fbinary_4628',['to_binary',['../classwmtk_1_1_rational.html#ae8444e5103a7bca535a392380692f198',1,'wmtk::Rational']]],
   ['to_5fdouble_4629',['to_double',['../classwmtk_1_1_rational.html#a48b8729e70f23bbd7fe1e74695049b29',1,'wmtk::Rational']]],

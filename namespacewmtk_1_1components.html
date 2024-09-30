@@ -152,6 +152,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_periodic_optimization_options.html">PeriodicOptimizationOptions</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_shortest_edge_collapse_options.html">ShortestEdgeCollapseOptions</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1_tag_intersection.html">TagIntersection</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1_random.html">Random</a></td></tr>
@@ -253,8 +255,12 @@ Functions</h2></td></tr>
 <tr class="separator:a7447d90d4590819b69239d895ea5dc86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7cec0c38121ddd036af26c760311d0e8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a7cec0c38121ddd036af26c760311d0e8">regular_space</a> (const utils::Paths &amp;paths, const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;j, <a class="el" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a> &amp;cache)</td></tr>
 <tr class="separator:a7cec0c38121ddd036af26c760311d0e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ed0166820b046296ef72b8a22430c29"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a4ed0166820b046296ef72b8a22430c29">shortestedge_collapse</a> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &amp;position_handle, std::optional&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt; &amp;inversion_position_handle, bool update_other_position, const double length_rel, bool lock_boundary, double envelope_size, const std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt; &amp;pass_through)</td></tr>
-<tr class="separator:a4ed0166820b046296ef72b8a22430c29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3a4b32383fdc9c2eb8334cc8ef947a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#ae3a4b32383fdc9c2eb8334cc8ef947a5">shortestedge_collapse</a> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;mesh, const <a class="el" href="structwmtk_1_1components_1_1_shortest_edge_collapse_options.html">ShortestEdgeCollapseOptions</a> &amp;options)</td></tr>
+<tr class="memdesc:ae3a4b32383fdc9c2eb8334cc8ef947a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform shortest-edge collapse on a triangular surface mesh.  <a href="namespacewmtk_1_1components.html#ae3a4b32383fdc9c2eb8334cc8ef947a5">More...</a><br /></td></tr>
+<tr class="separator:ae3a4b32383fdc9c2eb8334cc8ef947a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3154cdbc6047eee67258b69cc7d5e7cf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a3154cdbc6047eee67258b69cc7d5e7cf">shortestedge_collapse</a> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &amp;position_handle, const double length_rel, std::optional&lt; bool &gt; lock_boundary={}, std::optional&lt; double &gt; envelope_size={}, std::optional&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt; inversion_position_handle={}, const std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt; &amp;pass_through={})</td></tr>
+<tr class="memdesc:a3154cdbc6047eee67258b69cc7d5e7cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform shortest-edge collapse on a triangular surface mesh.  <a href="namespacewmtk_1_1components.html#a3154cdbc6047eee67258b69cc7d5e7cf">More...</a><br /></td></tr>
+<tr class="separator:a3154cdbc6047eee67258b69cc7d5e7cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0271fbc50dba277ddd2d1d3e32d1fb3d"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a0271fbc50dba277ddd2d1d3e32d1fb3d">gather_attributes</a> (<a class="el" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a> &amp;cache, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html">internal::TagIntersectionOptions</a> &amp;options)</td></tr>
 <tr class="separator:a0271fbc50dba277ddd2d1d3e32d1fb3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7de20dc23c12ed780d05e5e37b1f6bb7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a7de20dc23c12ed780d05e5e37b1f6bb7">mod3</a> (int j)</td></tr>
@@ -276,8 +282,9 @@ Functions</h2></td></tr>
 <tr class="separator:a9030c2868475595c9de07d942791b673"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adec286f3cfd3e5764450f37dd7df619c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#adec286f3cfd3e5764450f37dd7df619c">simplify</a> (std::vector&lt; <a class="el" href="namespacewmtk_1_1components.html#ac70c00ff28dd31bb7109e7da8c89860f">Vector3</a> &gt; &amp;input_vertices, std::vector&lt; <a class="el" href="namespacewmtk_1_1components.html#a2f21785e2086fb657f13f7e68bcbe9d1">Vector3i</a> &gt; &amp;input_faces, const <a class="el" href="classwmtk_1_1components_1_1_a_a_b_b_wrapper.html">AABBWrapper</a> &amp;tree, const double duplicate_tol)</td></tr>
 <tr class="separator:adec286f3cfd3e5764450f37dd7df619c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abd293a6a41da0ec4d15cf8f31ce1eff2"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &gt;, <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#abd293a6a41da0ec4d15cf8f31ce1eff2">tetwild_simplification</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;mesh, const std::string &amp;postion_attr_name, double main_esp, bool relative, double duplicate_tol, bool use_sampling)</td></tr>
-<tr class="separator:abd293a6a41da0ec4d15cf8f31ce1eff2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab76577dc5b3ef0ad8ac307cff60d5807"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &gt;, <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#ab76577dc5b3ef0ad8ac307cff60d5807">tetwild_simplification</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;mesh, const std::string &amp;postion_attr_name, double main_eps, bool relative=true, double duplicate_tol=-1, bool use_sampling=true)</td></tr>
+<tr class="memdesc:ab76577dc5b3ef0ad8ac307cff60d5807"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform the simplification from the original tetwild.  <a href="namespacewmtk_1_1components.html#ab76577dc5b3ef0ad8ac307cff60d5807">More...</a><br /></td></tr>
+<tr class="separator:ab76577dc5b3ef0ad8ac307cff60d5807"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1703c2264e52b16281828951556f8b11"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_point_mesh.html">PointMesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a1703c2264e52b16281828951556f8b11">to_points</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &amp;pts_attr, const <a class="el" href="classwmtk_1_1components_1_1_to_pts_options.html">ToPtsOptions</a> &amp;options, const std::string &amp;output_pos_attr_name)</td></tr>
 <tr class="separator:a1703c2264e52b16281828951556f8b11"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d6d11e3b7ba03911492ecfc79622247"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a9d6d11e3b7ba03911492ecfc79622247">triangle_insertion</a> (const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; &amp;mesh_in, const std::string &amp;in_position, const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; &amp;bg_mesh, const std::string &amp;bg_position, bool make_child_free)</td></tr>
@@ -2548,14 +2555,14 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a4ed0166820b046296ef72b8a22430c29"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4ed0166820b046296ef72b8a22430c29">&#9670;&nbsp;</a></span>shortestedge_collapse()</h2>
+<a id="a3154cdbc6047eee67258b69cc7d5e7cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3154cdbc6047eee67258b69cc7d5e7cf">&#9670;&nbsp;</a></span>shortestedge_collapse() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; wmtk::components::shortestedge_collapse </td>
+          <td class="memname">void wmtk::components::shortestedge_collapse </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;&#160;</td>
           <td class="paramname"><em>mesh</em>, </td>
@@ -2569,38 +2576,32 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::optional&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>inversion_position_handle</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>update_other_position</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">const double&#160;</td>
           <td class="paramname"><em>length_rel</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>lock_boundary</em>, </td>
+          <td class="paramtype">std::optional&lt; bool &gt;&#160;</td>
+          <td class="paramname"><em>lock_boundary</em> = <code>{}</code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>envelope_size</em>, </td>
+          <td class="paramtype">std::optional&lt; double &gt;&#160;</td>
+          <td class="paramname"><em>envelope_size</em> = <code>{}</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::optional&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt;&#160;</td>
+          <td class="paramname"><em>inversion_position_handle</em> = <code>{}</code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>pass_through</em>&#160;</td>
+          <td class="paramname"><em>pass_through</em> = <code>{}</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -2610,13 +2611,73 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="shortestedge__collapse_8cpp_source.html#l00026">26</a> of file <a class="el" href="shortestedge__collapse_8cpp_source.html">shortestedge_collapse.cpp</a>.</p>
+<p>Perform shortest-edge collapse on a triangular surface mesh. </p>
+<p>This function generates new attributes that are not removed automatically.</p>
+<p>This function wraps the behavior of <code>shortestedge_collapse</code> with options. For details on the default values of the options, look at <a class="el" href="structwmtk_1_1components_1_1_shortest_edge_collapse_options.html">ShortestEdgeCollapseOptions</a>. </p>
 
-<p class="reference">References <a class="el" href="_scheduler_8hpp_source.html#l00048">wmtk::SchedulerStats::collecting_time</a>, <a class="el" href="consolidate_8cpp_source.html#l00013">wmtk::multimesh::consolidate()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa68e55eab4f30286567022eafb9fa79f6">wmtk::operations::CopyOther</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00065">wmtk::MeshCRTP&lt; Derived &gt;::create_accessor()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00072">wmtk::MeshCRTP&lt; Derived &gt;::create_const_accessor()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_multi_mesh_visitor_8hpp_source.html#l00079">wmtk::multimesh::MultiMeshVisitor&lt; NodeFunctor_ &gt;::execute_from_root()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00050">wmtk::SchedulerStats::executing_time</a>, <a class="el" href="_mesh_8cpp_source.html#l00018">wmtk::Mesh::get_all()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda4bb9eea168adf0aa284949f41dc52087">wmtk::operations::IsInterior</a>, <a class="el" href="_logger_8cpp_source.html#l00101">wmtk::log_and_throw_error()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa6adf97f83acf6453d4a6a4b1070f3754">wmtk::operations::None</a>, <a class="el" href="_scheduler_8hpp_source.html#l00023">wmtk::SchedulerStats::number_of_failed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00030">wmtk::SchedulerStats::number_of_performed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00016">wmtk::SchedulerStats::number_of_successful_operations()</a>, <a class="el" href="_primitive_type_8cpp_source.html#l00041">wmtk::primitive_type_name()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00011">wmtk::Mesh::register_attribute()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00029">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00049">wmtk::SchedulerStats::sorting_time</a>, <a class="el" href="_mesh_8hpp_source.html#l00961">wmtk::Mesh::top_cell_dimension()</a>, <a class="el" href="_mesh_8hpp_source.html#l00965">wmtk::Mesh::top_simplex_type()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="faces__single__dimension_8cpp_source.html#l00009">wmtk::simplex::vertices()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="shortestedge__collapse_8cpp_source.html#l00222">222</a> of file <a class="el" href="shortestedge__collapse_8cpp_source.html">shortestedge_collapse.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_shortest_edge_collapse_options_8hpp_source.html#l00024">wmtk::components::ShortestEdgeCollapseOptions::envelope_size</a>, <a class="el" href="_shortest_edge_collapse_options_8hpp_source.html#l00029">wmtk::components::ShortestEdgeCollapseOptions::inversion_position_handle</a>, <a class="el" href="_shortest_edge_collapse_options_8hpp_source.html#l00016">wmtk::components::ShortestEdgeCollapseOptions::length_rel</a>, <a class="el" href="_shortest_edge_collapse_options_8hpp_source.html#l00020">wmtk::components::ShortestEdgeCollapseOptions::lock_boundary</a>, <a class="el" href="_shortest_edge_collapse_options_8hpp_source.html#l00033">wmtk::components::ShortestEdgeCollapseOptions::pass_through_attributes</a>, <a class="el" href="_shortest_edge_collapse_options_8hpp_source.html#l00012">wmtk::components::ShortestEdgeCollapseOptions::position_handle</a>, and <a class="el" href="shortestedge__collapse_8cpp_source.html#l00027">shortestedge_collapse()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_a4ed0166820b046296ef72b8a22430c29_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_a3154cdbc6047eee67258b69cc7d5e7cf_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="ae3a4b32383fdc9c2eb8334cc8ef947a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3a4b32383fdc9c2eb8334cc8ef947a5">&#9670;&nbsp;</a></span>shortestedge_collapse() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::shortestedge_collapse </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="structwmtk_1_1components_1_1_shortest_edge_collapse_options.html">ShortestEdgeCollapseOptions</a> &amp;&#160;</td>
+          <td class="paramname"><em>options</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Perform shortest-edge collapse on a triangular surface mesh. </p>
+<p>This function generates new attributes that are not removed automatically.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">mesh</td><td>The triangular surface mesh. </td></tr>
+    <tr><td class="paramname">options</td><td>All options required for performing the shortest-edge collapse. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="shortestedge__collapse_8cpp_source.html#l00027">27</a> of file <a class="el" href="shortestedge__collapse_8cpp_source.html">shortestedge_collapse.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00162">wmtk::attribute::MeshAttributeHandle::as()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00048">wmtk::SchedulerStats::collecting_time</a>, <a class="el" href="consolidate_8cpp_source.html#l00013">wmtk::multimesh::consolidate()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa68e55eab4f30286567022eafb9fa79f6">wmtk::operations::CopyOther</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00065">wmtk::MeshCRTP&lt; Derived &gt;::create_accessor()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00072">wmtk::MeshCRTP&lt; Derived &gt;::create_const_accessor()</a>, <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00053">wmtk::attribute::MeshAttributeHandle::dimension()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_shortest_edge_collapse_options_8hpp_source.html#l00024">wmtk::components::ShortestEdgeCollapseOptions::envelope_size</a>, <a class="el" href="_multi_mesh_visitor_8hpp_source.html#l00079">wmtk::multimesh::MultiMeshVisitor&lt; NodeFunctor_ &gt;::execute_from_root()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00050">wmtk::SchedulerStats::executing_time</a>, <a class="el" href="_mesh_8cpp_source.html#l00018">wmtk::Mesh::get_all()</a>, <a class="el" href="_shortest_edge_collapse_options_8hpp_source.html#l00029">wmtk::components::ShortestEdgeCollapseOptions::inversion_position_handle</a>, <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00038">wmtk::attribute::MeshAttributeHandle::is_valid()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda4bb9eea168adf0aa284949f41dc52087">wmtk::operations::IsInterior</a>, <a class="el" href="_shortest_edge_collapse_options_8hpp_source.html#l00016">wmtk::components::ShortestEdgeCollapseOptions::length_rel</a>, <a class="el" href="_shortest_edge_collapse_options_8hpp_source.html#l00020">wmtk::components::ShortestEdgeCollapseOptions::lock_boundary</a>, <a class="el" href="_logger_8cpp_source.html#l00101">wmtk::log_and_throw_error()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="_mesh_attribute_handle_8cpp_source.html#l00018">wmtk::attribute::MeshAttributeHandle::mesh()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa6adf97f83acf6453d4a6a4b1070f3754">wmtk::operations::None</a>, <a class="el" href="_scheduler_8hpp_source.html#l00023">wmtk::SchedulerStats::number_of_failed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00030">wmtk::SchedulerStats::number_of_performed_operations()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00016">wmtk::SchedulerStats::number_of_successful_operations()</a>, <a class="el" href="_shortest_edge_collapse_options_8hpp_source.html#l00033">wmtk::components::ShortestEdgeCollapseOptions::pass_through_attributes</a>, <a class="el" href="_shortest_edge_collapse_options_8hpp_source.html#l00012">wmtk::components::ShortestEdgeCollapseOptions::position_handle</a>, <a class="el" href="_primitive_type_8cpp_source.html#l00041">wmtk::primitive_type_name()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00011">wmtk::Mesh::register_attribute()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00029">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_scheduler_8hpp_source.html#l00049">wmtk::SchedulerStats::sorting_time</a>, <a class="el" href="_mesh_8hpp_source.html#l00965">wmtk::Mesh::top_simplex_type()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="faces__single__dimension_8cpp_source.html#l00009">wmtk::simplex::vertices()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="shortestedge__collapse_8cpp_source.html#l00222">shortestedge_collapse()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_ae3a4b32383fdc9c2eb8334cc8ef947a5_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_ae3a4b32383fdc9c2eb8334cc8ef947a5_icgraph.svg" width="539" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -2802,8 +2863,8 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
-<a id="abd293a6a41da0ec4d15cf8f31ce1eff2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abd293a6a41da0ec4d15cf8f31ce1eff2">&#9670;&nbsp;</a></span>tetwild_simplification()</h2>
+<a id="ab76577dc5b3ef0ad8ac307cff60d5807"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab76577dc5b3ef0ad8ac307cff60d5807">&#9670;&nbsp;</a></span>tetwild_simplification()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2824,25 +2885,25 @@ Here is the caller graph for this function:</div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>main_esp</em>, </td>
+          <td class="paramname"><em>main_eps</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>relative</em>, </td>
+          <td class="paramname"><em>relative</em> = <code>true</code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>duplicate_tol</em>, </td>
+          <td class="paramname"><em>duplicate_tol</em> = <code>-1</code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>use_sampling</em>&#160;</td>
+          <td class="paramname"><em>use_sampling</em> = <code>true</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -2852,13 +2913,27 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
+<p>Perform the simplification from the original tetwild. </p>
+<p>This code does not use WMTK for anything besides in the API.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">mesh</td><td>The mesh that should be simplified. </td></tr>
+    <tr><td class="paramname">postion_attr_name</td><td>The name of the position attribute. </td></tr>
+    <tr><td class="paramname">main_eps</td><td>Specifies the amount of simplification. </td></tr>
+    <tr><td class="paramname">relative</td><td>The <code>main_eps</code> and <code>duplicate_tol</code> are relative to the bbox diagonal. </td></tr>
+    <tr><td class="paramname">duplicate_tol</td><td>The radius in which vertices are considered duplicates. Also, faces that have an area below this value are removed. </td></tr>
+    <tr><td class="paramname">use_sampling</td><td>Use sampling for the envelope. </td></tr>
+  </table>
+  </dd>
+</dl>
+
 <p class="definition">Definition at line <a class="el" href="tetwild__simplification_8cpp_source.html#l00911">911</a> of file <a class="el" href="tetwild__simplification_8cpp_source.html">tetwild_simplification.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="faces_8cpp_source.html#l00010">wmtk::simplex::faces()</a>, <a class="el" href="_eigen_matrix_writer_8cpp_source.html#l00031">wmtk::utils::EigenMatrixWriter::get_double_matrix()</a>, <a class="el" href="_eigen_matrix_writer_8cpp_source.html#l00021">wmtk::utils::EigenMatrixWriter::get_FV_matrix()</a>, <a class="el" href="_mesh_8cpp_source.html#l00044">wmtk::Mesh::serialize()</a>, <a class="el" href="mesh__utils_8hpp_source.html#l00009">wmtk::mesh_utils::set_matrix_attribute()</a>, <a class="el" href="tetwild__simplification_8cpp_source.html#l00832">simplify()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00100">wmtk::simplex::SimplexCollection::size()</a>, and <a class="el" href="faces__single__dimension_8cpp_source.html#l00009">wmtk::simplex::vertices()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_abd293a6a41da0ec4d15cf8f31ce1eff2_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_ab76577dc5b3ef0ad8ac307cff60d5807_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 

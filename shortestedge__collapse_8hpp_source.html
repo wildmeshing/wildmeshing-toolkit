@@ -119,23 +119,27 @@ $(document).ready(function(){initNavTree('shortestedge__collapse_8hpp_source.htm
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_8hpp.html">wmtk/Mesh.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_tri_mesh_8hpp.html">wmtk/TriMesh.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_shortest_edge_collapse_options_8hpp.html">ShortestEdgeCollapseOptions.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components.html#a4ed0166820b046296ef72b8a22430c29">shortestedge_collapse</a>(</div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;    TriMesh&amp; mesh,</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    <span class="keyword">const</span> attribute::MeshAttributeHandle&amp; position_handle,</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;    std::optional&lt;attribute::MeshAttributeHandle&gt;&amp; inversion_position_handle,</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    <span class="keywordtype">bool</span> update_other_position,</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> length_rel,</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keywordtype">bool</span> lock_boundary,</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keywordtype">double</span> envelope_size,</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">const</span> std::vector&lt;attribute::MeshAttributeHandle&gt;&amp; pass_through);</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160; </div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#ae3a4b32383fdc9c2eb8334cc8ef947a5">shortestedge_collapse</a>(TriMesh&amp; mesh, <span class="keyword">const</span> ShortestEdgeCollapseOptions&amp; options);</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#ae3a4b32383fdc9c2eb8334cc8ef947a5">shortestedge_collapse</a>(</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    TriMesh&amp; mesh,</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keyword">const</span> attribute::MeshAttributeHandle&amp; position_handle,</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> length_rel,</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    std::optional&lt;bool&gt; lock_boundary = {},</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    std::optional&lt;double&gt; envelope_size = {},</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    std::optional&lt;attribute::MeshAttributeHandle&gt; inversion_position_handle = {},</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">const</span> std::vector&lt;attribute::MeshAttributeHandle&gt;&amp; pass_through = {});</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
+<div class="ttc" id="a_shortest_edge_collapse_options_8hpp_html"><div class="ttname"><a href="_shortest_edge_collapse_options_8hpp.html">ShortestEdgeCollapseOptions.hpp</a></div></div>
 <div class="ttc" id="a_tri_mesh_8hpp_html"><div class="ttname"><a href="_tri_mesh_8hpp.html">TriMesh.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00014">Tuple.hpp:14</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a4ed0166820b046296ef72b8a22430c29"><div class="ttname"><a href="namespacewmtk_1_1components.html#a4ed0166820b046296ef72b8a22430c29">wmtk::components::shortestedge_collapse</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; shortestedge_collapse(TriMesh &amp;mesh, const attribute::MeshAttributeHandle &amp;position_handle, std::optional&lt; attribute::MeshAttributeHandle &gt; &amp;inversion_position_handle, bool update_other_position, const double length_rel, bool lock_boundary, double envelope_size, const std::vector&lt; attribute::MeshAttributeHandle &gt; &amp;pass_through)</div><div class="ttdef"><b>Definition:</b> <a href="shortestedge__collapse_8cpp_source.html#l00026">shortestedge_collapse.cpp:26</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_ae3a4b32383fdc9c2eb8334cc8ef947a5"><div class="ttname"><a href="namespacewmtk_1_1components.html#ae3a4b32383fdc9c2eb8334cc8ef947a5">wmtk::components::shortestedge_collapse</a></div><div class="ttdeci">void shortestedge_collapse(TriMesh &amp;mesh, const ShortestEdgeCollapseOptions &amp;options)</div><div class="ttdoc">Perform shortest-edge collapse on a triangular surface mesh.</div><div class="ttdef"><b>Definition:</b> <a href="shortestedge__collapse_8cpp_source.html#l00027">shortestedge_collapse.cpp:27</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

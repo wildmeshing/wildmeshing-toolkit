@@ -15,6 +15,6 @@ var tetwild__simplification_8cpp =
     [ "set_intersection", "tetwild__simplification_8cpp.html#ad12cb27f259bc36dae03ccf73a88087f", null ],
     [ "simplify", "tetwild__simplification_8cpp.html#adec286f3cfd3e5764450f37dd7df619c", null ],
     [ "swapping", "tetwild__simplification_8cpp.html#a9030c2868475595c9de07d942791b673", null ],
-    [ "tetwild_simplification", "tetwild__simplification_8cpp.html#abd293a6a41da0ec4d15cf8f31ce1eff2", null ],
+    [ "tetwild_simplification", "tetwild__simplification_8cpp.html#ab76577dc5b3ef0ad8ac307cff60d5807", null ],
     [ "vector_unique", "tetwild__simplification_8cpp.html#aa0ee421954a6b56f1b280700fb55f807", null ]
 ];
