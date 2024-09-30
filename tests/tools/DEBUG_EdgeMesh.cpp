@@ -50,7 +50,6 @@ Eigen::Matrix<int64_t, 2, 1> DEBUG_EdgeMesh::ev_from_eid(const int64_t eid) cons
 
 auto DEBUG_EdgeMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple
 {
-    throw std::runtime_error("this function is never used");
     const attribute::Accessor<int64_t> ev = create_const_accessor<int64_t>(m_ev_handle);
     for (int64_t eid = 0; eid < capacity(PrimitiveType::Edge); ++eid) {
         Tuple edge = edge_tuple_from_id(eid);
@@ -104,8 +103,7 @@ void DEBUG_EdgeMesh::reserve_attributes(PrimitiveType type, int64_t size)
 }
 
 
-auto DEBUG_EdgeMesh::get_emoe(const Tuple& t)
-    -> EdgeMeshOperationExecutor
+auto DEBUG_EdgeMesh::get_emoe(const Tuple& t) -> EdgeMeshOperationExecutor
 {
     return EdgeMeshOperationExecutor(*this, t);
 }

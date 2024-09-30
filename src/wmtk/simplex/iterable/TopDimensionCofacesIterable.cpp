@@ -28,6 +28,8 @@ TopDimensionCofacesIterable::Iterator::Iterator(
     }
 
     switch (m_mesh->top_simplex_type()) {
+    case PrimitiveType::Vertex: return;
+    case PrimitiveType::Edge: return;
     case PrimitiveType::Triangle: {
         if (m_simplex.primitive_type() == PrimitiveType::Vertex) {
             init_trimesh_vertex();
@@ -48,6 +50,8 @@ TopDimensionCofacesIterable::Iterator::Iterator(
 TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::operator++()
 {
     switch (m_mesh->top_simplex_type()) {
+    case PrimitiveType::Vertex: return step_pointmesh();
+    case PrimitiveType::Edge: return step_edgemesh();
     case PrimitiveType::Triangle: {
         switch (m_simplex.primitive_type()) {
         case PrimitiveType::Vertex: return step_trimesh_vertex();
@@ -70,8 +74,7 @@ TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::ope
     default: break;
     }
 
-    log_and_throw_error(
-        "TopDimensionCofacesIterable not implemented for that simplex and/or mesh type.");
+    assert(false); // unknown simplex or mesh type
 }
 
 bool TopDimensionCofacesIterable::Iterator::operator!=(const Iterator& other) const
@@ -321,6 +324,35 @@ TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::ste
 
 TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::step_tetmesh_tet()
 {
+    m_is_end = true;
+    return *this;
+}
+
+TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::step_edgemesh()
+{
+    if (m_simplex.primitive_type() == PrimitiveType::Edge) {
+        m_is_end = true;
+        return *this;
+    }
+
+    assert(m_simplex.primitive_type() == PrimitiveType::Vertex);
+
+    constexpr PrimitiveType PV = PrimitiveType::Vertex;
+    constexpr PrimitiveType PE = PrimitiveType::Edge;
+
+    if (m_phase == IteratorPhase::End || m_mesh->is_boundary(PV, m_t)) {
+        m_is_end = true;
+    } else {
+        m_t = m_mesh->switch_tuple(m_t, PE);
+        m_phase = IteratorPhase::End;
+    }
+
+    return *this;
+}
+
+TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::step_pointmesh()
+{
+    // this function is not covered by a unit test
     m_is_end = true;
     return *this;
 }

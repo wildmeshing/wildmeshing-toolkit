@@ -45,6 +45,10 @@ public:
         Iterator step_tetmesh_face();
         Iterator step_tetmesh_tet();
 
+        Iterator step_edgemesh();
+
+        Iterator step_pointmesh();
+
     private:
         const Mesh* m_mesh;
         Simplex m_simplex;
