@@ -23,34 +23,32 @@ public:
     class Iterator
     {
     public:
-        Iterator(const Mesh& mesh, const Simplex& simplex, bool is_done = false);
+        Iterator(const Mesh& mesh, const Simplex& simplex, bool is_end = false);
         Iterator operator++();
         bool operator!=(const Iterator& other) const;
         Tuple operator*();
         const Tuple& operator*() const;
 
     private:
-        void init_trimesh_vertex();
-        Iterator step_trimesh_vertex();
+        /**
+         * @brief Get the d - depth primitive type.
+         *
+         * E.g., for a triangle mesh the d-1 simplex is an edge, and the d-2 simplex a vertex.
+         */
+        PrimitiveType pt(int64_t depth) const;
+        int64_t depth();
 
-        Iterator step_trimesh_edge();
-        Iterator step_trimesh_face();
+        void init(int64_t depth);
 
-        void init_tetmesh();
-        void init_tetmesh_vertex();
-        void init_tetmesh_edge();
+        Iterator step_depth_0();
+        Iterator step_depth_1();
+        Iterator step_depth_2();
+        Iterator step_depth_3();
 
-        Iterator step_tetmesh_vertex();
-        Iterator step_tetmesh_edge();
-        Iterator step_tetmesh_face();
-        Iterator step_tetmesh_tet();
-
-        Iterator step_edgemesh();
-
-        Iterator step_pointmesh();
 
     private:
         const Mesh* m_mesh;
+
         Simplex m_simplex;
         Tuple m_t;
         IteratorPhase m_phase = IteratorPhase::Forward;
