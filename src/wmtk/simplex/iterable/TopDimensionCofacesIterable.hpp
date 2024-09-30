@@ -9,11 +9,28 @@
 namespace wmtk::simplex {
 
 /**
- * For TriMesh:
- * Iterate first in forward direction, using `switch_tuples(t, {PF, PE})`.
- * If a boundary is hit, restart from the input simplex, and switch direction.
+ * Iterating through the d-simplices of a mesh can be done in different ways, depending on the
+ * simplex dimension x around which the iteration is done. More precisely, the type of iteration
+ * depends on the depth = d - x.
  *
- * Stop iterating if the boundary was hit twice, or the input simplex was reached again.
+ * * depth 0: no iteration necessary
+ * * depth 1: there are at most 2 d-simplices
+ * * depth 2: circular iteration
+ * * depth 3: breadth first search
+ *
+ * Iteration for depth 0 and 1 are straight forward.
+ * Depth 3 is also rather simple as an entire breadth first search must be performed.
+ *
+ * Depth 2 is more complex, especially because the input simplex could be on the boundary. To reach
+ * all simplices, iteration is divided in 4 phases:
+ * * forward: Starting from the input simplex's tuple, use tuple switches of type d-1 and d until
+ * either the iteration reaches again the input simplex, or it hits a boundary.
+ * * intermediate: If the forward iteration stopped at a boundary, the iteration needs to switch to
+ * the backward phase. The intermediate phase prepares that by setting the iterator to the input
+ * simplex's tuple and performing a d-1 switch.
+ * * backward: After successful switch, the iteration continues just like in the forward phase until
+ * another boundary is hit.
+ * * end: In this phase, the iteration is ended, `is_end = true`.
  */
 class TopDimensionCofacesIterable
 {

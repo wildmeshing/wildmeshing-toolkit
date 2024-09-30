@@ -8,7 +8,6 @@ namespace wmtk::simplex {
 
 
 TopDimensionCofacesIterable::TopDimensionCofacesIterable(const Mesh& mesh, const Simplex& simplex)
-    //: m_collection(top_dimension_cofaces(mesh, simplex))
     : m_mesh(&mesh)
     , m_simplex(simplex)
 {}
