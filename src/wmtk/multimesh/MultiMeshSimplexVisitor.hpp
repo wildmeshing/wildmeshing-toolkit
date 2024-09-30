@@ -4,7 +4,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
-#include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/simplex/NavigatableSimplex.hpp>
 #include <wmtk/simplex/utils/MeshSimplexComparator.hpp>
 #include <wmtk/utils/mesh_type_from_primitive_type.hpp>
 #include <wmtk/utils/metaprogramming/MeshVariantTraits.hpp>
@@ -41,8 +41,7 @@ public:
             NodeFunctor,
             MeshVariantTraits,
             wmtk::simplex::utils::MeshSimplexComparator,
-            simplex::Simplex,
-            int64_t
+            simplex::NavigatableSimplex
                 >;
     using CacheType = ReturnDataType;
 
@@ -158,8 +157,7 @@ public:
             NodeFunctor,
             MeshVariantTraits,
             wmtk::simplex::utils::MeshSimplexComparator,
-            simplex::Simplex,
-            int64_t>;
+            simplex::NavigatableSimplex>;
     constexpr static bool HasReturnCache =
         !wmtk::utils::metaprogramming::
             all_return_void_v<NodeFunctor, MeshVariantTraits, simplex::Simplex>;
@@ -220,7 +218,7 @@ private:
         // pre-compute all of  the child tuples in case the node functor changes the mesh that
         // breaks the traversal down
         auto& child_datas = current_mesh.m_multi_mesh_manager.children();
-        std::vector<std::vector<simplex::Simplex>> mapped_child_simplices;
+        std::vector<std::vector<simplex::NavigatableSimplex>> mapped_child_simplices;
         mapped_child_simplices.reserve(child_datas.size());
 
 
@@ -234,7 +232,11 @@ private:
             [&](const auto& child_data) {
                 Mesh& child_mesh = *child_data.mesh;
 
-                auto r = current_mesh.map_to_child(child_mesh, simplex);
+                auto _r = current_mesh.map_to_child(child_mesh, simplex);
+                std::vector<simplex::NavigatableSimplex> r;
+                std::transform(_r.begin(),_r.end(), [&](const simplex::Simplex& s) {
+                        return simplex::NavigatableSimplex(child_mesh, s);
+                        });
 #if !defined(NDEBUG)
                 for (const auto& s : r) {
                     assert(child_mesh.is_valid(s.tuple()));
@@ -290,8 +292,8 @@ private:
                             run(child_mesh, child_simplex);
 
                             if constexpr (HasReturnCache && ChildHasReturn && CurHasReturn) {
-                                auto parent_id = m_return_data.get_id(current_mesh, simplex, current_mesh.id(simplex));
-                                auto child_id = m_return_data.get_id(child_mesh, simplex, child_mesh.id(child_simplex));
+                                auto parent_id = m_return_data.get_id(current_mesh, simplex);
+                                auto child_id = m_return_data.get_id(child_mesh, simplex);
                                 // logger().trace(
                                 //     "MultiMeshSimplexVisitor[{}=>{}] adding to edges edge simplex
                                 //     {} " "child " "simplex{}",

@@ -1,4 +1,6 @@
 #pragma once
+#include <wmtk/Tuple.hpp>
+#include "IdSimplex.hpp"
 #include "Simplex.hpp"
 
 namespace wmtk {
@@ -6,19 +8,28 @@ class Mesh;
 }
 namespace wmtk::simplex {
 class IdSimplex;
-class NavigatableSimplex : public Simplex
+
+
+// An extension to a simplex that can be used for some sort of navigation at the time it is created.
+// Useful for tracking the input of operations where the simplex id is valuable
+class NavigatableSimplex : public IdSimplex
 {
-    friend class IdSimplex;
+public:
     friend class wmtk::Mesh;
+    NavigatableSimplex(const Mesh& m, const Simplex& s);
+    operator Simplex() const;
+
+
+    const Tuple& tuple() const { return m_tuple; }
 
 protected:
     NavigatableSimplex(const PrimitiveType& ptype, const Tuple& t, int64_t index)
-        : Simplex{ptype, t}
-        , m_index(index)
+        : IdSimplex{ptype, index}
+        , m_tuple(t)
     {}
 
+
 private:
-    int64_t index() const { return m_index; }
-    int64_t m_index;
+    Tuple m_tuple;
 };
 } // namespace wmtk::simplex

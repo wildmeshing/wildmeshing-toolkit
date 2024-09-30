@@ -21,6 +21,8 @@ class Simplex
     friend class wmtk::MeshCRTP;
     template <typename T, typename MeshType, int Dim>
     friend class attribute::Accessor;
+
+    friend class NavigatableSimplex;
     PrimitiveType m_primitive_type;
     Tuple m_tuple;
     // the mesh class can use this index value to cache/accelerate operations
