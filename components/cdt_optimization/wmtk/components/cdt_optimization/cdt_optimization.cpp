@@ -3,10 +3,13 @@
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/components/utils/get_attributes.hpp>
+#include <wmtk/function/PerSimplexFunction.hpp>
+#include <wmtk/function/simplex/AMIPS.hpp>
 #include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
+#include <wmtk/invariants/MaxFunctionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
@@ -22,6 +25,8 @@
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/orient.hpp>
+#include "predicates.h"
 
 
 namespace wmtk::components {
@@ -202,10 +207,16 @@ std::shared_ptr<Mesh> cdt_optimization(
     // swap
     //////////////////////////////////////////
 
+    std::shared_ptr<function::PerSimplexFunction> amips =
+        std::make_shared<wmtk::function::AMIPS>(mesh, position_handle);
+    auto function_invariant =
+        std::make_shared<wmtk::invariants::MaxFunctionInvariant>(mesh.top_simplex_type(), amips);
+
     auto swap = std::make_shared<wmtk::operations::composite::TriEdgeSwap>(mesh);
 
     swap->add_invariant(
         std::make_shared<wmtk::Swap2dEdgeLengthInvariant>(mesh, position_handle.as<double>()));
+
     swap->add_invariant(invariant_mm_map);
 
     swap->collapse().add_invariant(invariant_link_condition);
@@ -219,10 +230,12 @@ std::shared_ptr<Mesh> cdt_optimization(
 
 
     if (check_inversion) {
-        swap->add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
+        swap->collapse().add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
             inversion_position_handle.value().mesh(),
             inversion_position_handle.value().as<double>()));
     }
+
+    // swap->add_invariant(function_invariant);
 
     swap->split().set_new_attribute_strategy(
         visited_edge_flag,
@@ -234,8 +247,7 @@ std::shared_ptr<Mesh> cdt_optimization(
 
     swap->add_transfer_strategy(tag_update);
 
-    swap->split().add_transfer_strategy(edge_length_update);
-    swap->collapse().add_transfer_strategy(edge_length_update);
+    swap->add_transfer_strategy(edge_length_update);
 
     for (auto& p : positions) {
         swap->split().set_new_attribute_strategy(p);
@@ -291,12 +303,35 @@ std::shared_ptr<Mesh> cdt_optimization(
     }
 
 
-    // // debug code
-    // for (const auto& e : mesh.get_all(PrimitiveType::Edge)) {
-    //     if (mesh.is_boundary(PrimitiveType::Edge, e)) {
-    //         logger().error("after sec mesh has nonmanifold edges");
-    //     }
-    // }
+    // debug code
+    for (const auto& e : mesh.get_all(PrimitiveType::Edge)) {
+        if (mesh.is_boundary(PrimitiveType::Edge, e)) {
+            logger().error("after sec mesh has nonmanifold edges");
+        }
+    }
+
+    auto inversion_pos_accessor =
+        inversion_position_handle.value().mesh().create_const_accessor<double>(
+            inversion_position_handle.value());
+
+    // debug code
+    for (const auto& t :
+         inversion_position_handle.value().mesh().get_all(PrimitiveType::Tetrahedron)) {
+        const auto vertices = inversion_position_handle.value().mesh().orient_vertices(t);
+        std::vector<Vector3d> pos;
+        for (int i = 0; i < vertices.size(); ++i) {
+            pos.push_back(inversion_pos_accessor.const_vector_attribute(vertices[i]));
+        }
+        if (orient3d(pos[0].data(), pos[1].data(), pos[2].data(), pos[3].data()) <= 0) {
+            wmtk::logger().error(
+                "Flipped or degenerated tet! orient3d = {}",
+                orient3d(pos[0].data(), pos[1].data(), pos[2].data(), pos[3].data()));
+        } else if (orient3d(pos[0].data(), pos[1].data(), pos[2].data(), pos[3].data()) <= 1e-5) {
+            wmtk::logger().error(
+                "Nearly degenerated tet! orient3d = {}",
+                orient3d(pos[0].data(), pos[1].data(), pos[2].data(), pos[3].data()));
+        }
+    }
 
 
     return mesh.shared_from_this();
