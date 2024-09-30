@@ -98,22 +98,22 @@ int main(int argc, char* argv[])
     auto child_mesh_position_handle =
         child_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
-    std::optional<attribute::MeshAttributeHandle> parent_mesh_position_handle =
+    attribute::MeshAttributeHandle parent_mesh_position_handle =
         parent_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
+    {
+        components::ShortestEdgeCollapseOptions options;
+        options.position_handle = child_mesh_position_handle;
+        options.length_rel = j["length_rel"];
+        options.envelope_size = j["envelope_size"];
+        options.inversion_position_handle = parent_mesh_position_handle;
+        options.pass_through_attributes = pass_through;
 
-    auto mesh_after_sec = wmtk::components::shortestedge_collapse(
-        static_cast<TriMesh&>(*child_mesh),
-        child_mesh_position_handle,
-        parent_mesh_position_handle,
-        false,
-        j["length_rel"],
-        false,
-        j["envelope_size"],
-        pass_through);
+        components::shortestedge_collapse(static_cast<TriMesh&>(*child_mesh), options);
+    }
 
     wmtk::components::output(*parent_mesh, output_file, "vertices");
-    wmtk::components::output(*mesh_after_sec, output_file + "_surface", "vertices");
+    wmtk::components::output(*child_mesh, output_file + "_surface", "vertices");
 
     const std::string report = j["report"];
     if (!report.empty()) {
