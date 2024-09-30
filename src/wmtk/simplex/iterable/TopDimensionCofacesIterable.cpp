@@ -75,6 +75,7 @@ TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::ope
     }
 
     assert(false); // unknown simplex or mesh type
+    return Iterator(*m_mesh, m_simplex, true);
 }
 
 bool TopDimensionCofacesIterable::Iterator::operator!=(const Iterator& other) const
@@ -197,9 +198,7 @@ void TopDimensionCofacesIterable::Iterator::init_tetmesh_vertex()
     m_visited[wmtk::utils::TupleInspector::global_cid(m_t)] = true;
 
     const std::array<Tuple, 3> t_tris = {
-        m_t,
-        m_mesh->switch_tuple(m_t, PF),
-        m_mesh->switch_tuples(m_t, {PE, PF})};
+        {m_t, m_mesh->switch_tuple(m_t, PF), m_mesh->switch_tuples(m_t, {PE, PF})}};
 
     for (const Tuple& tt : t_tris) {
         if (m_mesh->is_boundary(PF, tt)) {
@@ -246,9 +245,7 @@ TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::ste
     m_queue.pop();
 
     const std::array<Tuple, 3> t_tris = {
-        m_t,
-        m_mesh->switch_tuple(m_t, PF),
-        m_mesh->switch_tuples(m_t, {PE, PF})};
+        {m_t, m_mesh->switch_tuple(m_t, PF), m_mesh->switch_tuples(m_t, {PE, PF})}};
 
     for (const Tuple& tt : t_tris) {
         if (m_mesh->is_boundary(PF, tt)) {
