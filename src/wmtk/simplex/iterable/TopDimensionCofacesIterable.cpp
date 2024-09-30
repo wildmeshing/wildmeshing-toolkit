@@ -60,9 +60,9 @@ TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::ope
     case PrimitiveType::Tetrahedron: {
         switch (m_simplex.primitive_type()) {
         case PrimitiveType::Vertex: return step_tetmesh_vertex();
-        case PrimitiveType::Edge: break;
-        case PrimitiveType::Triangle: break;
-        case PrimitiveType::Tetrahedron: break;
+        case PrimitiveType::Edge: return step_tetmesh_edge();
+        case PrimitiveType::Triangle: return step_tetmesh_face();
+        case PrimitiveType::Tetrahedron: return step_tetmesh_tet();
         default: assert(false); // unknown simplex type
         }
         break;
@@ -174,35 +174,57 @@ void TopDimensionCofacesIterable::Iterator::init_tetmesh()
     constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
     switch (m_simplex.primitive_type()) {
-    case PrimitiveType::Vertex: {
-        m_visited = std::vector<bool>(m_mesh->get_all(PrimitiveType::Tetrahedron).size(), false);
-
-        m_visited[wmtk::utils::TupleInspector::global_cid(m_t)] = true;
-
-        const std::array<Tuple, 3> t_tris = {
-            m_t,
-            m_mesh->switch_tuple(m_t, PF),
-            m_mesh->switch_tuples(m_t, {PE, PF})};
-
-        for (const Tuple& tt : t_tris) {
-            if (m_mesh->is_boundary(PF, tt)) {
-                continue;
-            }
-            const Tuple neigh = m_mesh->switch_tuple(tt, PT);
-            const int64_t neigh_id = wmtk::utils::TupleInspector::global_cid(neigh);
-
-            m_visited[neigh_id] = true;
-            m_queue.push(neigh);
-        }
-
-        return;
-    }
-    case PrimitiveType::Edge: break;
-    case PrimitiveType::Triangle: break;
-    case PrimitiveType::Tetrahedron: break;
+    case PrimitiveType::Vertex: init_tetmesh_vertex(); return;
+    case PrimitiveType::Edge: init_tetmesh_edge(); return;
+    case PrimitiveType::Triangle: return;
+    case PrimitiveType::Tetrahedron: return;
     default: break;
     }
     log_and_throw_error("not implemented");
+}
+
+void TopDimensionCofacesIterable::Iterator::init_tetmesh_vertex()
+{
+    constexpr PrimitiveType PE = PrimitiveType::Edge;
+    constexpr PrimitiveType PF = PrimitiveType::Triangle;
+    constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
+
+    m_visited = std::vector<bool>(m_mesh->get_all(PrimitiveType::Tetrahedron).size(), false);
+
+    m_visited[wmtk::utils::TupleInspector::global_cid(m_t)] = true;
+
+    const std::array<Tuple, 3> t_tris = {
+        m_t,
+        m_mesh->switch_tuple(m_t, PF),
+        m_mesh->switch_tuples(m_t, {PE, PF})};
+
+    for (const Tuple& tt : t_tris) {
+        if (m_mesh->is_boundary(PF, tt)) {
+            continue;
+        }
+        const Tuple neigh = m_mesh->switch_tuple(tt, PT);
+        const int64_t neigh_id = wmtk::utils::TupleInspector::global_cid(neigh);
+
+        m_visited[neigh_id] = true;
+        m_queue.push(neigh);
+    }
+}
+
+void TopDimensionCofacesIterable::Iterator::init_tetmesh_edge()
+{
+    constexpr PrimitiveType PF = PrimitiveType::Triangle;
+    constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
+
+    // check if forward or backward phase can be executed
+    if (m_mesh->is_boundary(PF, m_t)) {
+        m_phase = IteratorPhase::Intermediate;
+
+        // check if a backward phase exists
+        const Tuple opp_of_input = m_mesh->switch_tuple(m_simplex.tuple(), PF);
+        if (m_mesh->is_boundary(PF, opp_of_input)) {
+            m_phase = IteratorPhase::End;
+        }
+    }
 }
 
 TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::step_tetmesh_vertex()
@@ -239,6 +261,67 @@ TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::ste
     }
 
 
+    return *this;
+}
+
+TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::step_tetmesh_edge()
+{
+    constexpr PrimitiveType PF = PrimitiveType::Triangle;
+    constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
+
+    if (m_phase == IteratorPhase::End) {
+        m_is_end = true;
+        return *this;
+    }
+
+    if (m_phase == IteratorPhase::Intermediate) {
+        // switch to backward phase
+        m_t = m_mesh->switch_tuple(m_simplex.tuple(), PF);
+        m_phase = IteratorPhase::Backward;
+    }
+
+    m_t = m_mesh->switch_tuples(m_t, {PT, PF});
+
+    if (m_t == m_simplex.tuple()) {
+        m_is_end = true;
+        return *this;
+    }
+
+    if (m_mesh->is_boundary(PF, m_t)) {
+        if (m_phase == IteratorPhase::Forward) {
+            // check if a backward phase exists
+            const Tuple opp_of_input = m_mesh->switch_tuple(m_simplex.tuple(), PF);
+            if (m_mesh->is_boundary(PF, opp_of_input)) {
+                m_phase = IteratorPhase::End;
+            } else {
+                m_phase = IteratorPhase::Intermediate;
+            }
+        } else {
+            m_phase = IteratorPhase::End;
+        }
+    }
+
+    return *this;
+}
+
+TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::step_tetmesh_face()
+{
+    constexpr PrimitiveType PF = PrimitiveType::Triangle;
+    constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
+
+    if (m_phase == IteratorPhase::End || m_mesh->is_boundary(PF, m_t)) {
+        m_is_end = true;
+    } else {
+        m_t = m_mesh->switch_tuple(m_t, PT);
+        m_phase = IteratorPhase::End;
+    }
+
+    return *this;
+}
+
+TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::step_tetmesh_tet()
+{
+    m_is_end = true;
     return *this;
 }
 

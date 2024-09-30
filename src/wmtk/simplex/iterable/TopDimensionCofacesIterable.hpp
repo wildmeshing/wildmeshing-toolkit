@@ -38,8 +38,12 @@ public:
 
         void init_tetmesh();
         void init_tetmesh_vertex();
+        void init_tetmesh_edge();
 
         Iterator step_tetmesh_vertex();
+        Iterator step_tetmesh_edge();
+        Iterator step_tetmesh_face();
+        Iterator step_tetmesh_tet();
 
     private:
         const Mesh* m_mesh;
