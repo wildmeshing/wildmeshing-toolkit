@@ -9,30 +9,15 @@
 namespace wmtk::simplex {
 
 /**
- * Iterating through the d-simplices of a mesh can be done in different ways, depending on the
- * simplex dimension x around which the iteration is done. More precisely, the type of iteration
- * depends on the depth = d - x.
+ * This iterator works pretty much the same as TopDimensionCofacesIterable.
  *
- * * depth 0: no iteration necessary
- * * depth 1: there are at most 2 d-simplices
- * * depth 2: circular iteration
- * * depth 3: breadth first search
- *
- * Iteration for depth 0 and 1 are straight forward.
- * Depth 3 is also rather simple as an entire breadth first search must be performed.
- *
- * Depth 2 is more complex, especially because the input simplex could be on the boundary. To reach
- * all simplices, iteration is divided in 4 phases:
- * * forward: Starting from the input simplex's tuple, use tuple switches of type d-1 and d until
- * either the iteration reaches again the input simplex, or it hits a boundary.
- * * intermediate: If the forward iteration stopped at a boundary, the iteration needs to switch to
- * the backward phase. The intermediate phase prepares that by setting the iterator to the input
- * simplex's tuple and performing a d-1 switch.
- * * backward: After successful switch, the iteration continues just like in the forward phase until
- * another boundary is hit.
- * * end: In this phase, the iteration is ended, `is_end = true`.
+ * Besides the listed iterator depths 0 to 3, this iterator requires something that I call depth 2+.
+ * This is necessary, when the iterator should also stop in the intermediate phase. That happens in
+ * two cases:
+ * 1. TriMesh, vertex, get edges
+ * 2. TetMesh, edge, get triangles
  */
-class TopDimensionCofacesIterable
+class CofacesSingleDimensionIterable
 {
 public:
     /**
@@ -43,7 +28,11 @@ public:
     class Iterator
     {
     public:
-        Iterator(const Mesh& mesh, const Simplex& simplex, bool is_end = false);
+        Iterator(
+            const Mesh& mesh,
+            const Simplex& simplex,
+            const PrimitiveType cofaces_type,
+            bool is_end = false);
         Iterator operator++();
         bool operator!=(const Iterator& other) const;
         Tuple operator*();
@@ -62,6 +51,10 @@ public:
          * The depth is "mesh top simplex dimension" - "simplex dimension".
          */
         int64_t depth();
+        /**
+         * @brief Same as `depth()` but for the coface instead of the simplex type.
+         */
+        int64_t coface_depth();
 
         /**
          * @brief Depending on the depth, the iterator must be initialized differently.
@@ -98,25 +91,31 @@ public:
 
     private:
         const Mesh* m_mesh;
-
         const Simplex m_simplex; // the input simplex
+        const PrimitiveType m_cofaces_type;
+
         Tuple m_t; // the tuple that iterates through the mesh
         IteratorPhase m_phase = IteratorPhase::Forward; // for depth 1 and 2 iteration
         bool m_is_end = false; // mark iterator as end
 
         std::queue<Tuple> m_queue; // for depth 3 iteration
         std::vector<bool> m_visited; // for depth 3 iteration
+        std::vector<bool> m_visited_coface; // for depth 3 iteration
     };
 
 public:
-    TopDimensionCofacesIterable(const Mesh& mesh, const Simplex& simplex);
+    CofacesSingleDimensionIterable(
+        const Mesh& mesh,
+        const Simplex& simplex,
+        const PrimitiveType cofaces_type);
 
-    Iterator begin() const { return Iterator(*m_mesh, m_simplex); }
-    Iterator end() const { return Iterator(*m_mesh, m_simplex, true); }
+    Iterator begin() const { return Iterator(*m_mesh, m_simplex, m_cofaces_type); }
+    Iterator end() const { return Iterator(*m_mesh, m_simplex, m_cofaces_type, true); }
 
 private:
     const Mesh* m_mesh;
     const Simplex m_simplex;
+    const PrimitiveType m_cofaces_type;
 };
 
 } // namespace wmtk::simplex

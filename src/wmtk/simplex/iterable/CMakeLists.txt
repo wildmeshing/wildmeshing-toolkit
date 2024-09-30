@@ -7,6 +7,8 @@ set(SRC_FILES
     OpenStarIterable.cpp
     TopDimensionCofacesIterable.hpp
     TopDimensionCofacesIterable.cpp
+    CofacesSingleDimensionIterable.hpp
+    CofacesSingleDimensionIterable.cpp
     FacesIterable.hpp
     FacesIterable.cpp
 )
