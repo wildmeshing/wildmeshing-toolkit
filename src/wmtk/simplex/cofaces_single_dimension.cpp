@@ -69,8 +69,7 @@ std::vector<Tuple> cofaces_single_dimension_vertex(
     Tuple t = t_in;
 
     do {
-        const Tuple t_collect = mesh.switch_tuple(t, PV);
-        tuples.emplace_back(t_collect);
+        tuples.emplace_back(t);
 
         if (mesh.is_boundary_edge(t)) {
             break;
@@ -92,8 +91,7 @@ std::vector<Tuple> cofaces_single_dimension_vertex(
     t = mesh.switch_tuples(t, {PF, PE});
 
     do {
-        const Tuple t_collect = mesh.switch_tuple(t, PV);
-        tuples.emplace_back(t_collect);
+        tuples.emplace_back(t);
 
         if (mesh.is_boundary_edge(t)) {
             break;

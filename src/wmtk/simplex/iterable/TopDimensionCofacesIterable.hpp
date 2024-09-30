@@ -1,5 +1,7 @@
 #pragma once
 
+#include <queue>
+
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
@@ -34,12 +36,28 @@ public:
         Iterator step_trimesh_edge();
         Iterator step_trimesh_face();
 
+        void init_tetmesh();
+        void init_tetmesh_vertex();
+        void init_tetmesh_edge();
+
+        Iterator step_tetmesh_vertex();
+        Iterator step_tetmesh_edge();
+        Iterator step_tetmesh_face();
+        Iterator step_tetmesh_tet();
+
+        Iterator step_edgemesh();
+
+        Iterator step_pointmesh();
+
     private:
         const Mesh* m_mesh;
         Simplex m_simplex;
-        Tuple t;
+        Tuple m_t;
         IteratorPhase m_phase = IteratorPhase::Forward;
         bool m_is_end = false;
+
+        std::queue<Tuple> m_queue;
+        std::vector<bool> m_visited;
     };
 
 public:
