@@ -12,6 +12,7 @@
 
 
 #include <wmtk/components/CDT/CDT.hpp>
+#include <wmtk/components/cdt_optimization/cdt_optimization.hpp>
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/components/multimesh/multimesh.hpp>
 #include <wmtk/components/output/output.hpp>
@@ -102,10 +103,11 @@ int main(int argc, char* argv[])
         parent_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
 
-    auto mesh_after_sec = wmtk::components::shortestedge_collapse(
+    auto mesh_after_sec = wmtk::components::cdt_optimization(
         static_cast<TriMesh&>(*child_mesh),
         child_mesh_position_handle,
         parent_mesh_position_handle,
+        5,
         false,
         j["length_rel"],
         false,

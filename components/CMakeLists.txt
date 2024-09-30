@@ -29,6 +29,7 @@ add_subdirectory("tetwild_simplification/wmtk/components/tetwild_simplification"
 add_subdirectory("multimesh/wmtk/components/multimesh")
 add_subdirectory("shortestedge_collapse/wmtk/components/shortestedge_collapse")
 add_subdirectory("CDT/wmtk/components/CDT")
+add_subdirectory("cdt_optimization/wmtk/components/cdt_optimization")
 
 # add_component("export_cache")
 # add_component("import_cache")

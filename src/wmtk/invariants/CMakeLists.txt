@@ -92,6 +92,9 @@ set(SRC_FILES
 
     EnergyFilterInvariant.hpp
     EnergyFilterInvariant.cpp
+
+    Swap2dEdgeLengthInvariant.hpp
+    Swap2dEdgeLengthInvariant.cpp
     
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

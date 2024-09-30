@@ -11,6 +11,7 @@ target_link_libraries(cdt_sec_app PRIVATE
 wmtk::input
 wmtk::multimesh
 wmtk::shortestedge_collapse
+wmtk::cdt_optimization
 wmtk::CDT
 wmtk::output)
 
