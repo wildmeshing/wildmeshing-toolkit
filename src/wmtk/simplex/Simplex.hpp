@@ -24,23 +24,13 @@ class Simplex
     PrimitiveType m_primitive_type;
     Tuple m_tuple;
     // the mesh class can use this index value to cache/accelerate operations
-#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
-    mutable int64_t m_index = -1;
-#endif
-
+protected:
     // private constructor mesh might want to use if it knows the ids beforehand
     Simplex(const PrimitiveType& ptype, const Tuple& t)
         : m_primitive_type{ptype}
         , m_tuple{t}
     {}
-    // private constructor mesh might want to use if it knows the ids beforehand
-    Simplex(const PrimitiveType& ptype, const Tuple& t, int64_t index)
-        : m_primitive_type{ptype}
-        , m_tuple{t}
-#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
-        , m_index(index)
-#endif
-    {}
+
 
 public:
     Simplex() = default;
@@ -57,22 +47,20 @@ public:
 
     static Simplex vertex(const Mesh& m, const Tuple& t)
     {
-        return Simplex(m, PrimitiveType::Vertex, t);
+        return Simplex(PrimitiveType::Vertex, t);
     }
-    static Simplex edge(const Mesh& m, const Tuple& t)
-    {
-        return Simplex(m, PrimitiveType::Edge, t);
-    }
+    static Simplex edge(const Mesh& m, const Tuple& t) { return Simplex(PrimitiveType::Edge, t); }
     static Simplex face(const Mesh& m, const Tuple& t)
     {
-        return Simplex(m, PrimitiveType::Triangle, t);
+        return Simplex(PrimitiveType::Triangle, t);
     }
     static Simplex tetrahedron(const Mesh& m, const Tuple& t)
     {
-        return Simplex(m, PrimitiveType::Tetrahedron, t);
+        return Simplex(PrimitiveType::Tetrahedron, t);
     }
 
-    // these operations are only internally defined if caching is enabled to make sure there's a consistent semantic when simplex id caching is enabled vs not
+    // these operations are only internally defined if caching is enabled to make sure there's a
+    // consistent semantic when simplex id caching is enabled vs not
 #if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
     bool operator==(const Simplex& o) const;
     bool operator<(const Simplex& o) const;
