@@ -1780,6 +1780,53 @@ TEST_CASE("simplex_cofaces_single_dimension_tri_iterable", "[simplex_collection]
     }
 }
 
+TEST_CASE("simplex_cofaces_single_dimension_tet_iterable", "[simplex_collection][3D][.]")
+{
+    auto mp = std::make_unique<TetMesh>(tests_3d::six_cycle_tets());
+    Mesh& m = *mp;
+
+    auto compare_collections = [&m](const simplex::Simplex& s) {
+        SimplexCollection os_m = open_star_slow(m, s);
+        for (const PrimitiveType pt :
+             wmtk::utils::primitive_range(s.primitive_type(), m.top_simplex_type())) {
+            SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
+
+            auto itrb = cofaces_single_dimension_iterable(m, s, pt);
+            SimplexCollection itrb_collection(m);
+            for (const Tuple& tt : itrb) {
+                itrb_collection.add(simplex::Simplex(m, pt, tt));
+            }
+            REQUIRE(single_dim_comp.size() == itrb_collection.size());
+            itrb_collection.sort_and_clean();
+            REQUIRE(single_dim_comp.size() == itrb_collection.size());
+
+            for (size_t i = 0; i < itrb_collection.simplex_vector().size(); ++i) {
+                CHECK(simplex::utils::SimplexComparisons::equal(
+                    m,
+                    itrb_collection.simplex_vector()[i],
+                    single_dim_comp.simplex_vector()[i]));
+            }
+        }
+    };
+
+    for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+        const simplex::Simplex s(m, PrimitiveType::Vertex, t);
+        compare_collections(s);
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
+        const simplex::Simplex s(m, PrimitiveType::Edge, t);
+        compare_collections(s);
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Triangle)) {
+        const simplex::Simplex s(m, PrimitiveType::Triangle, t);
+        compare_collections(s);
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Tetrahedron)) {
+        const simplex::Simplex s(m, PrimitiveType::Tetrahedron, t);
+        compare_collections(s);
+    }
+}
+
 TEST_CASE("simplex_faces_single_dimension", "[simplex_collection]")
 {
     tests_3d::DEBUG_TetMesh m = tests_3d::single_tet();
