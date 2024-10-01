@@ -1,5 +1,6 @@
 name: Build
 
+
 on:
   push:
     branches:
@@ -71,9 +72,6 @@ jobs:
       - name: Tests
         run: cd build; ctest --verbose --output-on-failure
 
-      - name: Integration Tests
-        run: cd build; python ../applications/integration_test.py
-
   ####################
   # MacOS
   ####################
@@ -131,9 +129,6 @@ jobs:
         #if: matrix.arch == 'x86_64' # no ARM vm on actions yet
         run: cd build; ctest --verbose --output-on-failure
 
-      - name: Integration Tests
-        run: cd build; python3 ../applications/integration_test.py
-
   ####################
   # Windows
   ####################
@@ -163,7 +158,7 @@ jobs:
           cmake --version
           cmake -G Ninja ^
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} ^
-            -DCPM_SOURCE_CACHE=C:\Temp\CPM
+            -DCPM_SOURCE_CACHE=C:\Temp\CPM ^
             -B build ^
             -S .
           cd build

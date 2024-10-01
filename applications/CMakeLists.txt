@@ -40,3 +40,17 @@ add_subdirectory(cdt_sec)
 endif()
 
 wmtk_generate_test_config("${WMTK_TEST_CONFIG}")
+
+
+if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+    enable_testing()
+
+    find_package(Python REQUIRED)
+
+    add_test(
+        NAME wmtk_integration_test
+        COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/integration_test.py
+        -c ${CMAKE_BINARY_DIR}/test_config.json
+        -b ${CMAKE_BINARY_DIR}/applications
+    )
+endif()

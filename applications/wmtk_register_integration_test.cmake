@@ -1,4 +1,4 @@
-function(wmtk_register_integration_test EXEC_NAME CONFIG_FILE GIT_REPOSITORY GIT_TAG)
+macro(wmtk_register_integration_test EXEC_NAME CONFIG_FILE GIT_REPOSITORY GIT_TAG)
     include(CPM)
 
     MESSAGE(STATUS "Registering integration test for ${EXEC_NAME}")
@@ -10,4 +10,4 @@ function(wmtk_register_integration_test EXEC_NAME CONFIG_FILE GIT_REPOSITORY GIT
     list (APPEND WMTK_TEST_CONFIG "\"${EXEC_NAME}\":{\"data_folder\":\"${DATA_DIR}\", \"config_file\":\"${CONFIG_FILE}\"}")
 
     SET(WMTK_TEST_CONFIG ${WMTK_TEST_CONFIG} PARENT_SCOPE)
-endfunction()
+endmacro()
