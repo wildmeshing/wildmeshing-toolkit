@@ -28,10 +28,12 @@ add_subdirectory("procedural/wmtk/components/procedural")
 add_subdirectory("tetwild_simplification/wmtk/components/tetwild_simplification")
 add_subdirectory("isotropic_remeshing/wmtk/components/isotropic_remeshing")
 
+add_subdirectory("shortestedge_collapse/wmtk/components/shortestedge_collapse")
+add_subdirectory("CDT/wmtk/components/CDT")
+
 # add_component("export_cache")
 # add_component("import_cache")
 # add_component("mesh_info")
-# add_component("multimesh")
 # add_component("regular_space")
 # add_component("tag_intersection")
 # add_component("wildmeshing")

@@ -15,7 +15,7 @@ namespace wmtk::components::multimesh {
     std::shared_ptr<Mesh> from_boundary(
     Mesh& m,
     const PrimitiveType boundary_dimension,
-    const std::string& attribute_name,
+    const std::string& boundary_attribute_name,
     char value = 1,
     const std::vector<wmtk::attribute::MeshAttributeHandle>& passed_attributes = {});
 } // namespace wmtk::components::multimesh

@@ -62,8 +62,8 @@ class IntegrationTest(unittest.TestCase):
                     raise e
 
             input = test_oracle[input_tag].copy()
-            oracle_file = tempfile.NamedTemporaryFile(mode='r')
-            input[oracle_tag] = oracle_file.name
+            with tempfile.NamedTemporaryFile(mode='r', delete=False) as oracle_file:
+                oracle_file.close()
 
             if root_tag in input:
                 if not os.path.isabs(input[root_tag]):
@@ -71,34 +71,37 @@ class IntegrationTest(unittest.TestCase):
             else:
                 input[root_tag] = config_folder
 
-            input_json = tempfile.NamedTemporaryFile(mode='w')
-            json.dump(input, input_json)
-            input_json.flush()
+                if root_tag in input:
+                    if not os.path.isabs(input[root_tag]):
+                        input[root_tag] = os.path.join(test_folder, input[root_tag])
+                else:
+                    input[root_tag] = test_folder
 
-            res = subprocess.run([executable, "-j", input_json.name], cwd=self.working_dir, capture_output=True)
+                with tempfile.NamedTemporaryFile(mode='w', delete=False) as input_json:
+                    json.dump(input, input_json)
+                    input_json.close()
 
-            input_json.close()
+                    res = subprocess.run([executable, "-j", input_json.name], cwd=self.working_dir, capture_output=True)
 
-            if res.returncode != 0:
-                print("Error running")
-                print(res.stderr.decode('utf-8'))
-                print(res.stdout.decode('utf-8'))
+                if res.returncode != 0:
+                    print("Error running")
+                    print(res.stderr.decode('utf-8'))
+                    print(res.stdout.decode('utf-8'))
 
-            self.assertEqual(res.returncode, 0)
-            result = json.load(oracle_file)
+                self.assertEqual(res.returncode, 0)
+                with open(oracle_file.name, "r") as fp:
+                    result = json.load(fp)
 
-            for check in checks:
-                self.assertTrue(result[check], test_oracle[check])
+                for check in checks:
+                    self.assertTrue(result[check], test_oracle[check])
 
-            if len(checks) == 0 and not has_checks:
-                for k in test_oracle:
-                    if k == input_tag:
-                        continue
+                if len(checks) == 0 and not has_checks:
+                    for k in test_oracle:
+                        if k == input_tag:
+                            continue
 
-                    self.assertTrue(k in result)
-                    self.assertEqual(result[k], test_oracle[k])
-
-            oracle_file.close()
+                        self.assertTrue(k in result)
+                        self.assertEqual(result[k], test_oracle[k])
 
 
         self.assertTrue(True)

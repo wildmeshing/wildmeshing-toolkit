@@ -17,6 +17,9 @@ set(SRC_FILES
     from_tag.hpp
     from_tag.cpp
 
+
+    multimesh.hpp
+    multimesh.cpp
 )
 
 include(stb)

@@ -7,6 +7,8 @@
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/utils/MultiMeshEdgeCollapseFunctor.hpp>
 #include <wmtk/operations/utils/UpdateEdgeOperationMultiMeshMapFunctor.hpp>
+#include <wmtk/simplex/cofaces_single_dimension.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 
 #include <wmtk/TriMesh.hpp>
 
@@ -58,17 +60,33 @@ std::vector<simplex::Simplex> multi_mesh_edge_collapse_with_modified_simplices(
         new_attr_strategies)
 {
     simplex::NavigatableSimplex nsimplex(mesh, simplex);
+    auto candidates = top_dimension_cofaces(mesh, simplex);
     auto return_data =
         operations::utils::multi_mesh_edge_collapse(mesh, nsimplex, new_attr_strategies);
+
 
     if (mesh.is_free()) {
         return std::vector<simplex::Simplex>{1};
     }
 
-    return std::visit(
-        [&mesh](const auto& rt) -> std::vector<simplex::Simplex> {
-            return {simplex::Simplex::vertex(mesh, rt.m_output_tuple)};
-        },
-        return_data.get_variant(mesh, nsimplex));
+
+    for (const auto& c : candidates) {
+        if (return_data.has_variant(mesh, nsimplex)) {
+            return std::visit(
+                [&mesh](const auto& rt) -> std::vector<simplex::Simplex> {
+                    return {simplex::Simplex::vertex(mesh, rt.m_output_tuple)};
+                },
+                return_data.get_variant(mesh, nsimplex));
+        }
+    }
+
+    assert(return_data.has_variant(mesh, nsimplex));
+
+    // return std::visit(
+    //     [&mesh](const auto& rt) -> std::vector<simplex::Simplex> {
+    //         return {simplex::Simplex::vertex(mesh, rt.m_output_tuple)};
+    //     },
+    //     return_data.get_variant(mesh, simplex));
+    return {};
 }
 } // namespace wmtk::operations::utils
