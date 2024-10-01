@@ -56,7 +56,7 @@ class IntegrationTest(unittest.TestCase):
                 test_oracle = json.load(f)
 
             input = test_oracle[input_tag].copy()
-            with tempfile.NamedTemporaryFile(mode='r', delete_on_close=False) as oracle_file:
+            with tempfile.NamedTemporaryFile(mode='r', delete=False) as oracle_file:
                 oracle_file.close()
 
                 input[oracle_tag] = oracle_file.name
@@ -67,7 +67,7 @@ class IntegrationTest(unittest.TestCase):
                 else:
                     input[root_tag] = test_folder
 
-                with tempfile.NamedTemporaryFile(mode='w', delete_on_close=False) as input_json:
+                with tempfile.NamedTemporaryFile(mode='w', delete=False) as input_json:
                     json.dump(input, input_json)
                     input_json.close()
 
