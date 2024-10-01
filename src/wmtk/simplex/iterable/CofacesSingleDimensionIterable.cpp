@@ -19,26 +19,25 @@ CofacesSingleDimensionIterable::CofacesSingleDimensionIterable(
 }
 
 CofacesSingleDimensionIterable::Iterator::Iterator(
-    const Mesh& mesh,
-    const Simplex& simplex,
-    const PrimitiveType cofaces_type,
-    bool is_end)
-    : m_mesh(&mesh)
-    , m_simplex(simplex)
-    , m_cofaces_type(cofaces_type)
-    , m_t(simplex.tuple())
+    const CofacesSingleDimensionIterable& container,
+    const Tuple& t)
+    : m_container(&container)
+    , m_t(t)
     , m_phase(IteratorPhase::Forward)
-    , m_is_end(is_end)
 {
-    if (m_is_end) {
+    if (m_t.is_null()) {
         return;
     }
 
-    init(depth());
+    init();
 }
 
 CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterator::operator++()
 {
+    if (m_container->m_simplex.primitive_type() == m_container->m_cofaces_type) {
+        return step_depth_0();
+    }
+
     switch (depth()) {
     case 0: return step_depth_0();
     case 1: return step_depth_1();
@@ -48,13 +47,12 @@ CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterato
     }
 
     assert(false); // unknown simplex or mesh type
-    return Iterator(*m_mesh, m_simplex, m_cofaces_type, true);
+    return Iterator(*m_container);
 }
 
 bool CofacesSingleDimensionIterable::Iterator::operator!=(const Iterator& other) const
 {
-    const bool diff_end = (m_is_end != other.m_is_end);
-    return diff_end;
+    return m_t != other.m_t;
 }
 
 Tuple CofacesSingleDimensionIterable::Iterator::operator*()
@@ -69,58 +67,60 @@ const Tuple& CofacesSingleDimensionIterable::Iterator::operator*() const
 
 PrimitiveType CofacesSingleDimensionIterable::Iterator::pt(int64_t depth) const
 {
-    return get_primitive_type_from_id(m_mesh->top_cell_dimension() - depth);
+    return get_primitive_type_from_id(m_container->m_mesh->top_cell_dimension() - depth);
 }
 
 int64_t CofacesSingleDimensionIterable::Iterator::depth()
 {
-    assert(m_mesh->top_cell_dimension() >= get_primitive_type_id(m_simplex.primitive_type()));
-    assert(m_mesh->top_cell_dimension() - get_primitive_type_id(m_simplex.primitive_type()) < 4);
+    const Mesh& mesh = *(m_container->m_mesh);
+    const simplex::Simplex& simplex = m_container->m_simplex;
+    assert(mesh.top_cell_dimension() >= get_primitive_type_id(simplex.primitive_type()));
+    assert(mesh.top_cell_dimension() - get_primitive_type_id(simplex.primitive_type()) < 4);
 
-    return m_mesh->top_cell_dimension() - get_primitive_type_id(m_simplex.primitive_type());
+    return mesh.top_cell_dimension() - get_primitive_type_id(simplex.primitive_type());
 }
 
 int64_t CofacesSingleDimensionIterable::Iterator::coface_depth()
 {
-    assert(m_mesh->top_cell_dimension() >= get_primitive_type_id(m_cofaces_type));
-    assert(m_mesh->top_cell_dimension() - get_primitive_type_id(m_cofaces_type) < 4);
+    const Mesh& mesh = *(m_container->m_mesh);
+    assert(mesh.top_cell_dimension() >= get_primitive_type_id(m_container->m_cofaces_type));
+    assert(mesh.top_cell_dimension() - get_primitive_type_id(m_container->m_cofaces_type) < 4);
 
-    return m_mesh->top_cell_dimension() - get_primitive_type_id(m_cofaces_type);
+    return mesh.top_cell_dimension() - get_primitive_type_id(m_container->m_cofaces_type);
 }
 
-void CofacesSingleDimensionIterable::Iterator::init(int64_t depth)
+void CofacesSingleDimensionIterable::Iterator::init()
 {
+    const Mesh& mesh = *(m_container->m_mesh);
+    const simplex::Simplex& simplex = m_container->m_simplex;
     // No initialization necessary if simplex is d or d-1.
 
-    if (depth == 2) {
+    if (m_container->m_simplex.primitive_type() == m_container->m_cofaces_type) {
+        return;
+    }
+
+    if (depth() == 2) {
         // d - 2 --> iteration
 
         // check if forward or backward phase can be executed
-        if (m_mesh->is_boundary(pt(1), m_t)) {
+        if (mesh.is_boundary(pt(1), m_t)) {
             m_phase = IteratorPhase::Intermediate;
-
-            // check if a backward phase exists
-            const Tuple opp_of_input = m_mesh->switch_tuple(m_simplex.tuple(), pt(1));
-            if (m_mesh->is_boundary(pt(1), opp_of_input)) {
-                m_phase = IteratorPhase::End;
-            }
         }
-    } else if (depth == 3) {
+    } else if (depth() == 3) {
         // d - 3 --> BFS
 
-        m_visited = std::vector<bool>(m_mesh->get_all(pt(0)).size(), false);
-        m_visited_coface = std::vector<bool>(m_mesh->get_all(m_cofaces_type).size(), false);
+        m_visited = std::vector<bool>(mesh.get_all(PrimitiveType::Tetrahedron).size(), false);
 
         m_visited[wmtk::utils::TupleInspector::global_cid(m_t)] = true;
 
         const std::array<Tuple, 3> t_tris = {
-            {m_t, m_mesh->switch_tuple(m_t, pt(1)), m_mesh->switch_tuples(m_t, {pt(2), pt(1)})}};
+            {m_t, mesh.switch_tuple(m_t, pt(1)), mesh.switch_tuples(m_t, {pt(2), pt(1)})}};
 
         for (const Tuple& tt : t_tris) {
-            if (m_mesh->is_boundary(pt(1), tt)) {
+            if (mesh.is_boundary(pt(1), tt)) {
                 continue;
             }
-            const Tuple neigh = m_mesh->switch_tuple(tt, pt(0));
+            const Tuple neigh = mesh.switch_tuple(tt, pt(0));
             const int64_t neigh_id = wmtk::utils::TupleInspector::global_cid(neigh);
 
             m_visited[neigh_id] = true;
@@ -131,57 +131,60 @@ void CofacesSingleDimensionIterable::Iterator::init(int64_t depth)
 
 CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterator::step_depth_0()
 {
-    m_is_end = true;
+    m_t = Tuple();
     return *this;
 }
 
 CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterator::step_depth_1()
 {
-    if (m_phase == IteratorPhase::End || m_mesh->is_boundary(pt(1), m_t)) {
-        m_is_end = true;
-    } else {
-        m_t = m_mesh->switch_tuple(m_t, pt(0));
-        m_phase = IteratorPhase::End;
-    }
+    const Mesh& mesh = *(m_container->m_mesh);
+    const simplex::Simplex& simplex = m_container->m_simplex;
 
-    return *this;
+    if (m_phase == IteratorPhase::End || mesh.is_boundary(pt(1), m_t)) {
+        m_t = Tuple();
+        return *this;
+    } else {
+        m_t = mesh.switch_tuple(m_t, pt(0));
+        m_phase = IteratorPhase::End;
+        return *this;
+    }
 }
 
 CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterator::step_depth_2()
 {
-    log_and_throw_error("not fully implemented yet");
-
-    if (m_phase == IteratorPhase::End) {
-        m_is_end = true;
-        return *this;
-    }
+    const Mesh& mesh = *(m_container->m_mesh);
+    const simplex::Simplex& simplex = m_container->m_simplex;
 
     if (m_phase == IteratorPhase::Intermediate) {
-        // switch to backward phase
-        m_t = m_mesh->switch_tuple(m_simplex.tuple(), pt(1));
-        m_phase = IteratorPhase::Backward;
+        // go to opposite of input
+        m_t = mesh.switch_tuple(simplex.tuple(), pt(1));
+        if (mesh.is_boundary(pt(1), m_t)) {
+            m_phase = IteratorPhase::End;
+        } else {
+            // switch to backward phase
+            m_phase = IteratorPhase::Backward;
+        }
         if (coface_depth() != 0) {
             // depth 2+ --> return intermediate state
             return *this;
         }
     }
 
-    m_t = m_mesh->switch_tuples(m_t, {pt(0), pt(1)});
-
-    if (m_t == m_simplex.tuple()) {
-        m_is_end = true;
+    if (m_phase == IteratorPhase::End) {
+        m_t = Tuple();
         return *this;
     }
 
-    if (m_mesh->is_boundary(pt(1), m_t)) {
+    m_t = mesh.switch_tuples(m_t, {pt(0), pt(1)});
+
+    if (m_t == simplex.tuple()) {
+        m_t = Tuple();
+        return *this;
+    }
+
+    if (mesh.is_boundary(pt(1), m_t)) {
         if (m_phase == IteratorPhase::Forward) {
-            // check if a backward phase exists
-            const Tuple opp_of_input = m_mesh->switch_tuple(m_simplex.tuple(), pt(1));
-            if (m_mesh->is_boundary(pt(1), opp_of_input)) {
-                m_phase = IteratorPhase::End;
-            } else {
-                m_phase = IteratorPhase::Intermediate;
-            }
+            m_phase = IteratorPhase::Intermediate;
         } else {
             m_phase = IteratorPhase::End;
         }
@@ -192,22 +195,25 @@ CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterato
 
 CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterator::step_depth_3()
 {
+    const Mesh& mesh = *(m_container->m_mesh);
+
     if (m_queue.empty()) {
-        m_is_end = true;
-        return *this;
+        Tuple rt = m_t;
+        m_t = Tuple();
+        return Iterator(*m_container, rt);
     }
 
     m_t = m_queue.front();
     m_queue.pop();
 
     const std::array<Tuple, 3> t_tris = {
-        {m_t, m_mesh->switch_tuple(m_t, pt(1)), m_mesh->switch_tuples(m_t, {pt(2), pt(1)})}};
+        {m_t, mesh.switch_tuple(m_t, pt(1)), mesh.switch_tuples(m_t, {pt(2), pt(1)})}};
 
     for (const Tuple& tt : t_tris) {
-        if (m_mesh->is_boundary(pt(1), tt)) {
+        if (mesh.is_boundary(pt(1), tt)) {
             continue;
         }
-        const Tuple neigh = m_mesh->switch_tuple(tt, pt(0));
+        const Tuple neigh = mesh.switch_tuple(tt, pt(0));
         const int64_t neigh_id = wmtk::utils::TupleInspector::global_cid(neigh);
 
         if (!m_visited[neigh_id]) {

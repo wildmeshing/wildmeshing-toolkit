@@ -82,12 +82,6 @@ void TopDimensionCofacesIterable::Iterator::init(int64_t depth)
         // check if forward or backward phase can be executed
         if (mesh.is_boundary(pt(1), m_t)) {
             m_phase = IteratorPhase::Intermediate;
-
-            // check if a backward phase exists
-            const Tuple opp_of_input = mesh.switch_tuple(simplex.tuple(), pt(1));
-            if (mesh.is_boundary(pt(1), opp_of_input)) {
-                m_phase = IteratorPhase::End;
-            }
         }
     } else if (depth == 3) {
         // d - 3 --> BFS
@@ -140,16 +134,20 @@ TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::ste
     const Mesh& mesh = *(m_container->m_mesh);
     const simplex::Simplex& simplex = m_container->m_simplex;
 
-    if (m_phase == IteratorPhase::End) {
-        Tuple rt = m_t;
-        m_t = Tuple();
-        return Iterator(*m_container, rt);
+    if (m_phase == IteratorPhase::Intermediate) {
+        // go to opposite of input
+        m_t = mesh.switch_tuple(simplex.tuple(), pt(1));
+        if (mesh.is_boundary(pt(1), m_t)) {
+            m_phase = IteratorPhase::End;
+        } else {
+            // switch to backward phase
+            m_phase = IteratorPhase::Backward;
+        }
     }
 
-    if (m_phase == IteratorPhase::Intermediate) {
-        // switch to backward phase
-        m_t = mesh.switch_tuple(simplex.tuple(), pt(1));
-        m_phase = IteratorPhase::Backward;
+    if (m_phase == IteratorPhase::End) {
+        m_t = Tuple();
+        return *this;
     }
 
     m_t = mesh.switch_tuples(m_t, {pt(0), pt(1)});
@@ -161,13 +159,7 @@ TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::ste
 
     if (mesh.is_boundary(pt(1), m_t)) {
         if (m_phase == IteratorPhase::Forward) {
-            // check if a backward phase exists
-            const Tuple opp_of_input = mesh.switch_tuple(simplex.tuple(), pt(1));
-            if (mesh.is_boundary(pt(1), opp_of_input)) {
-                m_phase = IteratorPhase::End;
-            } else {
-                m_phase = IteratorPhase::Intermediate;
-            }
+            m_phase = IteratorPhase::Intermediate;
         } else {
             m_phase = IteratorPhase::End;
         }

@@ -28,11 +28,7 @@ public:
     class Iterator
     {
     public:
-        Iterator(
-            const Mesh& mesh,
-            const Simplex& simplex,
-            const PrimitiveType cofaces_type,
-            bool is_end = false);
+        Iterator(const CofacesSingleDimensionIterable& container, const Tuple& t = Tuple());
         Iterator operator++();
         bool operator!=(const Iterator& other) const;
         Tuple operator*();
@@ -59,7 +55,7 @@ public:
         /**
          * @brief Depending on the depth, the iterator must be initialized differently.
          */
-        void init(int64_t depth);
+        void init();
 
         /**
          * @brief Just return the simplex and stop.
@@ -90,17 +86,13 @@ public:
 
 
     private:
-        const Mesh* m_mesh;
-        const Simplex m_simplex; // the input simplex
-        const PrimitiveType m_cofaces_type;
+        const CofacesSingleDimensionIterable* m_container;
 
         Tuple m_t; // the tuple that iterates through the mesh
         IteratorPhase m_phase = IteratorPhase::Forward; // for depth 1 and 2 iteration
-        bool m_is_end = false; // mark iterator as end
 
         std::queue<Tuple> m_queue; // for depth 3 iteration
         std::vector<bool> m_visited; // for depth 3 iteration
-        std::vector<bool> m_visited_coface; // for depth 3 iteration
     };
 
 public:
@@ -109,8 +101,8 @@ public:
         const Simplex& simplex,
         const PrimitiveType cofaces_type);
 
-    Iterator begin() const { return Iterator(*m_mesh, m_simplex, m_cofaces_type); }
-    Iterator end() const { return Iterator(*m_mesh, m_simplex, m_cofaces_type, true); }
+    Iterator begin() const { return Iterator(*this, m_simplex.tuple()); }
+    Iterator end() const { return Iterator(*this); }
 
 private:
     const Mesh* m_mesh;

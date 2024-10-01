@@ -1737,14 +1737,15 @@ TEST_CASE("simplex_cofaces_single_dimension_tri", "[simplex_collection][2D]")
     }
 }
 
-TEST_CASE("simplex_cofaces_single_dimension_tri_iterable", "[simplex_collection][2D][.]")
+TEST_CASE("simplex_cofaces_single_dimension_tri_iterable", "[simplex_collection][2D]")
 {
     auto mp = std::make_unique<TriMesh>(tests::hex_plus_two());
     Mesh& m = *mp;
 
     auto compare_collections = [&m](const simplex::Simplex& s) {
         SimplexCollection os_m = open_star_slow(m, s);
-        for (const PrimitiveType pt : wmtk::utils::primitive_below(m.top_simplex_type())) {
+        for (const PrimitiveType pt :
+             wmtk::utils::primitive_range(s.primitive_type(), m.top_simplex_type())) {
             SimplexCollection single_dim_comp(m, os_m.simplex_vector(pt));
 
             auto itrb = cofaces_single_dimension_iterable(m, s, pt);
