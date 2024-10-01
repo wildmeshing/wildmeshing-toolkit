@@ -149,6 +149,8 @@ CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterato
 
 CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterator::step_depth_2()
 {
+    log_and_throw_error("not fully implemented yet");
+
     if (m_phase == IteratorPhase::End) {
         m_is_end = true;
         return *this;
