@@ -17,6 +17,7 @@ class NavigatableSimplex : public IdSimplex
 public:
     friend class wmtk::Mesh;
     NavigatableSimplex(const Mesh& m, const Simplex& s);
+    NavigatableSimplex(const Mesh& m, const PrimitiveType& ptype, const Tuple& t) ;
     operator Simplex() const;
 
 

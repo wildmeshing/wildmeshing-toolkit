@@ -1,6 +1,14 @@
 set(SRC_FILES
     Simplex.cpp
     Simplex.hpp
+
+    IdSimplex.hpp
+    IdSimplex.cpp
+
+    NavigatableSimplex.hpp
+    NavigatableSimplex.cpp
+
+
     SimplexCollection.hpp
     SimplexCollection.cpp
     RawSimplex.cpp

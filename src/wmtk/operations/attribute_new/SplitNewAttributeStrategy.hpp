@@ -14,10 +14,10 @@ class BaseSplitNewAttributeStrategy : public NewAttributeStrategy
 {
 public:
     using ReturnData = wmtk::multimesh::operations::SplitReturnData;
-    using OperationTupleData = wmtk::multimesh::operations::OperationTupleData;
+    using OperationInOutData = wmtk::multimesh::operations::OperationInOutData;
 
 
-    virtual void update(Mesh& m, const ReturnData& ret_data, const OperationTupleData& op_data)
+    virtual void update(Mesh& m, const ReturnData& ret_data, const OperationInOutData& op_data)
         const = 0;
 };
 
@@ -27,7 +27,7 @@ class SplitNewAttributeStrategy : public BaseSplitNewAttributeStrategy
 public:
     using VecType = VectorX<T>;
     using ReturnData = BaseSplitNewAttributeStrategy::ReturnData;
-    using OperationTupleData = BaseSplitNewAttributeStrategy::OperationTupleData;
+    using OperationInOutData = BaseSplitNewAttributeStrategy::OperationInOutData;
     using ReturnVariant = ReturnData::ReturnVariant;
 
     // given two ear $k$-simplices, define a value for the single new $k$-simplex between them
@@ -42,7 +42,7 @@ public:
 
     SplitNewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle& h);
 
-    void update(Mesh& m, const ReturnData& ret_data, const OperationTupleData& op_data)
+    void update(Mesh& m, const ReturnData& ret_data, const OperationInOutData& op_data)
         const final override;
 
     void set_rib_strategy(SplitRibFuncType&& f);

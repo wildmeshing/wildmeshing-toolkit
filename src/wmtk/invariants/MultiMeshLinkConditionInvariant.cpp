@@ -36,7 +36,7 @@ bool MultiMeshLinkConditionInvariant::before(const simplex::Simplex& t) const
         std::integral_constant<int64_t, 1>{}, // specify that this runs on edges
         MultiMeshLinkConditionFunctor{});
     // TODO: fix visitor to work for const data
-    visitor.execute_from_root(const_cast<Mesh&>(mesh()), t);
+    visitor.execute_from_root(const_cast<Mesh&>(mesh()), simplex::NavigatableSimplex(mesh(),t));
     const auto& data = visitor.cache();
 
     for (const auto& [key, value_var] : data) {

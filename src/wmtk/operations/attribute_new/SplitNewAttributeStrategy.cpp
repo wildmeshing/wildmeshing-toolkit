@@ -217,7 +217,7 @@ template <typename T>
 void SplitNewAttributeStrategy<T>::update(
     Mesh& m,
     const ReturnData& data,
-    const OperationTupleData& op_datas) const
+    const OperationInOutData& op_datas) const
 {
     if (!bool(m_split_rib_op) && !bool(m_split_op)) {
         return;
@@ -225,23 +225,23 @@ void SplitNewAttributeStrategy<T>::update(
 
     if (op_datas.find(&mesh()) == op_datas.end()) return;
     assert(&m == &mesh());
-    const std::vector<std::array<Tuple, 2>>& tuple_pairs = op_datas.at(&mesh());
+    const std::vector<std::tuple<simplex::NavigatableSimplex, Tuple>>& tuple_pairs =
+        op_datas.at(&mesh());
 
     const PrimitiveType pt = primitive_type();
     auto acc = m.create_accessor(m_handle.as<T>());
     for (const auto& tuple_pair : tuple_pairs) {
-        const Tuple& input_tuple = tuple_pair[0];
-        const Tuple& output_tuple = tuple_pair[1];
+        const simplex::NavigatableSimplex& input_simplex = std::get<0>(tuple_pair);
+        const Tuple& output_tuple = std::get<1>(tuple_pair);
 
-        simplex::Simplex input_simplex = mesh().parent_scope(
-            [this, &input_tuple]() { return simplex::Simplex::edge(mesh(), input_tuple); });
 
         const auto& return_data_variant = data.get_variant(mesh(), input_simplex);
 
         // for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type()))
         {
             // copy attributes opposing ears
-            auto old_simps = m_topo_info->input_ear_simplices(return_data_variant, input_tuple, pt);
+            auto old_simps =
+                m_topo_info->input_ear_simplices(return_data_variant, input_simplex.tuple(), pt);
             auto new_simps =
                 m_topo_info->output_rib_simplices(return_data_variant, output_tuple, pt);
 
@@ -254,7 +254,7 @@ void SplitNewAttributeStrategy<T>::update(
         }
         {
             auto old_simps =
-                m_topo_info->input_split_simplices(return_data_variant, input_tuple, pt);
+                m_topo_info->input_split_simplices(return_data_variant, input_simplex.tuple(), pt);
             auto new_simps =
                 m_topo_info->output_split_simplices(return_data_variant, output_tuple, pt);
 

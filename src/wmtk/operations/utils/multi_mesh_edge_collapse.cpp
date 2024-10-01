@@ -21,21 +21,21 @@ std::shared_ptr<invariants::InvariantCollection> multimesh_edge_collapse_invaria
 
 CollapseReturnData multi_mesh_edge_collapse(
     Mesh& mesh,
-    const Tuple& t,
+    const simplex::NavigatableSimplex& t,
     const std::vector<std::shared_ptr<const operations::BaseCollapseNewAttributeStrategy>>&
         new_attr_strategies)
 {
     multimesh::MultiMeshSimplexVisitor visitor(
         std::integral_constant<int64_t, 1>{}, // specify that this runs over edges
         MultiMeshEdgeCollapseFunctor{});
-    visitor.execute_from_root(mesh, simplex::Simplex(mesh, PrimitiveType::Edge, t));
+    visitor.execute_from_root(mesh, t);
 
     multimesh::MultiMeshSimplexEventVisitor event_visitor(visitor);
     event_visitor.run_on_nodes(UpdateEdgeOperationMultiMeshMapFunctor{});
 
     auto cache = visitor.take_cache();
 
-    auto tuples = wmtk::multimesh::operations::extract_operation_tuples(cache);
+    auto tuples = wmtk::multimesh::operations::extract_operation_in_out(cache);
     auto update_attributes = [&](auto&& m) {
         using T = std::remove_reference_t<decltype(m)>;
         if constexpr (!std::is_const_v<T>) {
@@ -57,8 +57,9 @@ std::vector<simplex::Simplex> multi_mesh_edge_collapse_with_modified_simplices(
     const std::vector<std::shared_ptr<const operations::BaseCollapseNewAttributeStrategy>>&
         new_attr_strategies)
 {
+    simplex::NavigatableSimplex nsimplex(mesh, simplex);
     auto return_data =
-        operations::utils::multi_mesh_edge_collapse(mesh, simplex.tuple(), new_attr_strategies);
+        operations::utils::multi_mesh_edge_collapse(mesh, nsimplex, new_attr_strategies);
 
     if (mesh.is_free()) {
         return std::vector<simplex::Simplex>{1};
@@ -68,6 +69,6 @@ std::vector<simplex::Simplex> multi_mesh_edge_collapse_with_modified_simplices(
         [&mesh](const auto& rt) -> std::vector<simplex::Simplex> {
             return {simplex::Simplex::vertex(mesh, rt.m_output_tuple)};
         },
-        return_data.get_variant(mesh, simplex));
+        return_data.get_variant(mesh, nsimplex));
 }
 } // namespace wmtk::operations::utils

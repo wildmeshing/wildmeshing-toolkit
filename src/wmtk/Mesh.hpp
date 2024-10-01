@@ -130,6 +130,7 @@ public:
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::RawSimplex;
     friend class simplex::Simplex;
+    friend class simplex::IdSimplex;
     friend class simplex::SimplexCollection;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
