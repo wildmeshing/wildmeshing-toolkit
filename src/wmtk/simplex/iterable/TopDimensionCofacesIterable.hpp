@@ -43,7 +43,7 @@ public:
     class Iterator
     {
     public:
-        Iterator(const Mesh& mesh, const Simplex& simplex, bool is_end = false);
+        Iterator(const TopDimensionCofacesIterable& container, const Tuple& t = Tuple());
         Iterator operator++();
         bool operator!=(const Iterator& other) const;
         Tuple operator*();
@@ -97,12 +97,10 @@ public:
 
 
     private:
-        const Mesh* m_mesh;
+        const TopDimensionCofacesIterable* m_container;
 
-        const Simplex m_simplex; // the input simplex
         Tuple m_t; // the tuple that iterates through the mesh
         IteratorPhase m_phase = IteratorPhase::Forward; // for depth 1 and 2 iteration
-        bool m_is_end = false; // mark iterator as end
 
         std::queue<Tuple> m_queue; // for depth 3 iteration
         std::vector<bool> m_visited; // for depth 3 iteration
@@ -111,8 +109,8 @@ public:
 public:
     TopDimensionCofacesIterable(const Mesh& mesh, const Simplex& simplex);
 
-    Iterator begin() const { return Iterator(*m_mesh, m_simplex); }
-    Iterator end() const { return Iterator(*m_mesh, m_simplex, true); }
+    Iterator begin() const { return Iterator(*this, m_simplex.tuple()); }
+    Iterator end() const { return Iterator(*this); }
 
 private:
     const Mesh* m_mesh;
