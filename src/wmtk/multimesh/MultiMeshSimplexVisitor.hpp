@@ -297,7 +297,7 @@ private:
 
                             if constexpr (HasReturnCache && ChildHasReturn && CurHasReturn) {
                                 auto parent_id = m_return_data.get_id(current_mesh, simplex);
-                                auto child_id = m_return_data.get_id(child_mesh, simplex);
+                                auto child_id = m_return_data.get_id(child_mesh, child_simplex);
                                 // logger().trace(
                                 //     "MultiMeshSimplexVisitor[{}=>{}] adding to edges edge simplex
                                 //     {} " "child " "simplex{}",

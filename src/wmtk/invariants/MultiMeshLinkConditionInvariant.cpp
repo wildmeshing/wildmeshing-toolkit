@@ -15,7 +15,8 @@ namespace {
 
 struct MultiMeshLinkConditionFunctor
 {
-    bool operator()(const auto& m, const simplex::Simplex& s, int64_t) {
+    template <typename T>
+    bool operator()(const T& m, const simplex::Simplex& s, int64_t) {
         return this->operator()(m,s);
     }
     template <typename MeshType>
