@@ -232,7 +232,10 @@ generate_raw_tetmesh_from_input_surface(
         embedded_facets_on_input,
         true);
 
-    wmtk::logger().info("volume remesher finished, polycell mesh generated");
+    wmtk::logger().info(
+        "volume remesher finished, polycell mesh generated, #vertices: {},  #cells: {}",
+        embedded_vertices.size() / 3,
+        embedded_cells.size());
 
     // convert to double and readable format
     // std::vector<Vector3d> v_coords; // vertex coordinates

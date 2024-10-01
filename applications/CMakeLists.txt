@@ -39,6 +39,11 @@ if(WMTK_ENABLE_APPLICATION_cdt_sec)
 add_subdirectory(cdt_sec)
 endif()
 
+option(WMTK_ENABLE_APPLICATION_insertion "Runs insertion application" ON)
+if(WMTK_ENABLE_APPLICATION_insertion)
+add_subdirectory(insertion)
+endif()
+
 wmtk_generate_test_config("${WMTK_TEST_CONFIG}")
 
 
