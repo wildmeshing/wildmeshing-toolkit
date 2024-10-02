@@ -33,6 +33,8 @@ add_subdirectory("multimesh/wmtk/components/multimesh")
 add_subdirectory("shortestedge_collapse/wmtk/components/shortestedge_collapse")
 add_subdirectory("CDT/wmtk/components/CDT")
 
+add_subdirectory("edge_insertion/wmtk/components/edge_insertion")
+
 # add_component("export_cache")
 # add_component("import_cache")
 # add_component("isotropic_remeshing")
