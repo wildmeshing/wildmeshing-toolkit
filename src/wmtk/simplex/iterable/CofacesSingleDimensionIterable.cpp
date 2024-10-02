@@ -112,20 +112,9 @@ void CofacesSingleDimensionIterable::Iterator::init()
         m_visited = std::vector<bool>(mesh.get_all(PrimitiveType::Tetrahedron).size(), false);
 
         m_visited[wmtk::utils::TupleInspector::global_cid(m_t)] = true;
+        m_queue.push(m_t);
 
-        const std::array<Tuple, 3> t_tris = {
-            {m_t, mesh.switch_tuple(m_t, pt(1)), mesh.switch_tuples(m_t, {pt(2), pt(1)})}};
-
-        for (const Tuple& tt : t_tris) {
-            if (mesh.is_boundary(pt(1), tt)) {
-                continue;
-            }
-            const Tuple neigh = mesh.switch_tuple(tt, pt(0));
-            const int64_t neigh_id = wmtk::utils::TupleInspector::global_cid(neigh);
-
-            m_visited[neigh_id] = true;
-            m_queue.push(neigh);
-        }
+        step_depth_3();
     }
 }
 

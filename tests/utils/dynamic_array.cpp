@@ -122,9 +122,9 @@ TEST_CASE("visited_array_bfs_lower_dimension", "[DynamicArray][VisitedArray]")
     simplex::internal::VisitedArray<int64_t> visited_cells;
     simplex::internal::VisitedArray<simplex::RawSimplex> visited_edges;
 
-    int64_t vertex_id;
-    int64_t expected_cells_size;
-    int64_t expected_edges_size;
+    int64_t vertex_id = -1;
+    int64_t expected_cells_size = -1;
+    int64_t expected_edges_size = -1;
     SECTION("interior")
     {
         vertex_id = 4;
@@ -147,23 +147,9 @@ TEST_CASE("visited_array_bfs_lower_dimension", "[DynamicArray][VisitedArray]")
     simplex::Simplex v(m, PrimitiveType::Vertex, m.vertex_tuple_from_id(vertex_id));
 
     std::queue<Tuple> q;
-    {
-        Tuple t = v.tuple();
-        visited_cells.is_visited(TupleInspector::global_cid(t));
 
-        std::array<Tuple, 2> edges = {t, m.switch_edge(t)};
-        for (Tuple e : edges) {
-            simplex::RawSimplex e_simplex(m, simplex::Simplex(m, PrimitiveType::Edge, e));
-            visited_edges.is_visited(e_simplex);
-
-            if (!m.is_boundary_edge(e)) {
-                e = m.switch_face(e);
-                if (!visited_cells.is_visited(TupleInspector::global_cid(e))) {
-                    q.push(e);
-                }
-            }
-        }
-    }
+    visited_cells.is_visited(TupleInspector::global_cid(v.tuple()));
+    q.push(v.tuple());
 
     while (!q.empty()) {
         Tuple t = q.front();
