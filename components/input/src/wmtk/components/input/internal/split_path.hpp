@@ -7,12 +7,11 @@ namespace wmtk::components::input::internal {
 
 inline auto split_path(const std::string_view& view)
 {
-#if defined(__cpp_lib_ranges)
+#if defined(WMTK_ENABLED_CPP20)
     using namespace std;
     return std::ranges::views::split(view, "."sv) |
            std::views::transform([](const auto& r) noexcept -> std::string_view {
-                   return std::string_view(r.data(), r.data() + r.size());
-               //return std::string_view(r.begin(), r.end());
+               return std::string_view(r.begin(), r.end());
            });
 
 #else
