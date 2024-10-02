@@ -3,6 +3,7 @@
 #include <queue>
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/simplex/RawSimplex.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/simplex/internal/VisitedArray.hpp>
@@ -10,30 +11,15 @@
 namespace wmtk::simplex {
 
 /**
- * Iterating through the d-simplices of a mesh can be done in different ways, depending on the
- * simplex dimension x around which the iteration is done. More precisely, the type of iteration
- * depends on the depth = d - x.
+ * This iterator works pretty much the same as TopDimensionCofacesIterable.
  *
- * * depth 0: no iteration necessary
- * * depth 1: there are at most 2 d-simplices
- * * depth 2: circular iteration
- * * depth 3: breadth first search
- *
- * Iteration for depth 0 and 1 are straight forward.
- * Depth 3 is also rather simple as an entire breadth first search must be performed.
- *
- * Depth 2 is more complex, especially because the input simplex could be on the boundary. To reach
- * all simplices, iteration is divided in 4 phases:
- * * forward: Starting from the input simplex's tuple, use tuple switches of type d-1 and d until
- * either the iteration reaches again the input simplex, or it hits a boundary.
- * * intermediate: If the forward iteration stopped at a boundary, the iteration needs to switch to
- * the backward phase. The intermediate phase prepares that by setting the iterator to the input
- * simplex's tuple and performing a d-1 switch.
- * * backward: After successful switch, the iteration continues just like in the forward phase until
- * another boundary is hit.
- * * end: In this phase, the iteration is ended, `is_end = true`.
+ * Besides the listed iterator depths 0 to 3, this iterator requires something that I call depth 2+.
+ * This is necessary, when the iterator should also stop in the intermediate phase. That happens in
+ * two cases:
+ * 1. TriMesh, vertex, get edges
+ * 2. TetMesh, edge, get triangles
  */
-class TopDimensionCofacesIterable
+class CofacesSingleDimensionIterable
 {
 public:
     /**
@@ -44,7 +30,7 @@ public:
     class Iterator
     {
     public:
-        Iterator(const TopDimensionCofacesIterable& container, const Tuple& t = Tuple());
+        Iterator(const CofacesSingleDimensionIterable& container, const Tuple& t = Tuple());
         Iterator operator++();
         bool operator!=(const Iterator& other) const;
         Tuple operator*();
@@ -63,11 +49,15 @@ public:
          * The depth is "mesh top simplex dimension" - "simplex dimension".
          */
         int64_t depth();
+        /**
+         * @brief Same as `depth()` but for the coface instead of the simplex type.
+         */
+        int64_t coface_depth();
 
         /**
          * @brief Depending on the depth, the iterator must be initialized differently.
          */
-        void init(int64_t depth);
+        void init();
 
         /**
          * @brief Just return the simplex and stop.
@@ -96,19 +86,26 @@ public:
          */
         Iterator step_depth_3();
 
+        void add_neighbors_to_queue();
+
 
     private:
-        const TopDimensionCofacesIterable* m_container;
+        const CofacesSingleDimensionIterable* m_container;
 
         Tuple m_t; // the tuple that iterates through the mesh
         IteratorPhase m_phase = IteratorPhase::Forward; // for depth 1 and 2 iteration
 
         std::queue<Tuple> m_queue; // for depth 3 iteration
         simplex::internal::VisitedArray<int64_t> m_visited; // for depth 3 iteration
+        simplex::internal::VisitedArray<simplex::RawSimplex>
+            m_visited_cofaces; // for depth 3 iteration
     };
 
 public:
-    TopDimensionCofacesIterable(const Mesh& mesh, const Simplex& simplex);
+    CofacesSingleDimensionIterable(
+        const Mesh& mesh,
+        const Simplex& simplex,
+        const PrimitiveType cofaces_type);
 
     Iterator begin() const { return Iterator(*this, m_simplex.tuple()); }
     Iterator end() const { return Iterator(*this); }
@@ -116,6 +113,7 @@ public:
 private:
     const Mesh* m_mesh;
     const Simplex m_simplex;
+    const PrimitiveType m_cofaces_type;
 };
 
 } // namespace wmtk::simplex
