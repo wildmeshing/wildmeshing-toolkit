@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/Mesh.hpp>
+#include <memory>
 
 namespace wmtk::components::multimesh {
 

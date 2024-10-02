@@ -1,5 +1,6 @@
 #pragma once
 #include <wmtk/PrimitiveType.hpp>
+#include <tuple>
 
 
 namespace wmtk {

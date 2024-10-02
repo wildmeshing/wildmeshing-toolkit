@@ -74,7 +74,12 @@ Mesh& NamedMultiMesh::get_mesh(const std::string_view& path) const
 
 auto NamedMultiMesh::get_id(const std::string_view& path) const -> std::vector<int64_t>
 {
+
+#if defined(WMTK_ENABLED_CPP20)
     std::ranges::view auto split = internal::split_path(path);
+#else
+        auto split = internal::split_path(path);
+#endif
 
     std::vector<int64_t> indices;
     Node const* cur_mesh = m_name_root.get();
