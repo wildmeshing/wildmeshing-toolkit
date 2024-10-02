@@ -116,7 +116,7 @@ get_local_trimesh_before_collapse(const wmtk::TriMesh& mesh, const wmtk::simplex
 }
 
 std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
-get_local_trimesh(const wmtk::TetMesh& mesh, const wmtk::simplex::Simplex& simplex)
+get_local_tetmesh(const wmtk::TetMesh& mesh, const wmtk::simplex::Simplex& simplex)
 {
     // Get the vertex position attribute handle
     auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
@@ -142,7 +142,7 @@ get_local_trimesh(const wmtk::TetMesh& mesh, const wmtk::simplex::Simplex& simpl
             cur_v = mesh.switch_edge(cur_v);
         }
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
             int64_t global_vid = mesh.id(wmtk::simplex::Simplex::vertex(mesh, cur_v));
             // If vertex not in the map, add it
             if (global_to_local_map.count(global_vid) == 0) {
@@ -151,16 +151,33 @@ get_local_trimesh(const wmtk::TetMesh& mesh, const wmtk::simplex::Simplex& simpl
             }
 
             T(tet_count, i) = global_to_local_map[global_vid];
+            if (i == 3)
+            {
+                cur_v = mesh.switch_tuples(
+                cur_v,
+                {PrimitiveType::Triangle, PrimitiveType::Edge, PrimitiveType::Vertex}); // Next vertex
+            }
+            else
+            {
             cur_v = mesh.switch_tuples(
                 cur_v,
                 {PrimitiveType::Edge, PrimitiveType::Vertex}); // Next vertex
+            }
         }
+      
+        t_local_to_global[tet_count] = mesh.id(t_tuple);
+        tet_count++;
     }
-    return std::make_tuple(
-        Eigen::MatrixXi(),
-        Eigen::MatrixXd(),
-        std::vector<int64_t>(),
-        std::vector<int64_t>());
+    Eigen::MatrixXd V(vertex_count, pos.dimension());
+    std::vector<int64_t> v_local_to_global(vertex_count);
+    for (const auto& pair : global_to_local_map) {
+        v_local_to_global[pair.second] = pair.first;
+        V.row(pair.second) =
+            pos.const_vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, pair.first));
+    }
+
+    return std::make_tuple(T, V, t_local_to_global, v_local_to_global);
+
 }
 
 std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
