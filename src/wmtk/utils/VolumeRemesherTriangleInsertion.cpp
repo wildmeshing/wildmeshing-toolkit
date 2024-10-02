@@ -120,9 +120,9 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(const std::vector<V
             // if (orient2d(prev.first.data(), cur.first.data(), next.first.data()) == 0 &&
             //     orient2d(cur.first.data(), next.first.data(), nextnext.first.data()) != 0) {
 
-            const Vector3r a = points[cur] - points[prev];
-            const Vector3r b = points[next] - points[cur];
-            const Vector3r c = points[nextnext] - points[next];
+            // const Vector3r a = points[cur] - points[prev];
+            // const Vector3r b = points[next] - points[cur];
+            // const Vector3r c = points[nextnext] - points[next];
 
             // if (((a[0] * b[1] - a[1] * b[0]).get_sign() == 0 &&
             //      (a[1] * b[2] - a[2] * b[1]).get_sign() == 0 &&
