@@ -17,7 +17,6 @@
 #include <wmtk/utils/Rational.hpp>
 
 
-// this should change! make a util?
 #include <wmtk/components/multimesh_from_tag/internal/MultiMeshFromTag.hpp>
 
 
