@@ -47,9 +47,9 @@ TEST_CASE("test_create_tags")
         }
     }
 
-    Tuple v1 = parent.edge_tuple_between_v1_v2(1, 0, 1);
+    Tuple v1 = parent.edge_tuple_with_vs_and_t(1, 0, 1);
     REQUIRE(parent.id(v1, PrimitiveType::Vertex) == 1);
-    Tuple v2 = parent.edge_tuple_between_v1_v2(8, 7, 6);
+    Tuple v2 = parent.edge_tuple_with_vs_and_t(8, 7, 6);
     REQUIRE(parent.id(v2, PrimitiveType::Vertex) == 8);
 
     REQUIRE(vertex_tag_accessor.const_scalar_attribute(v1) == 1);
@@ -102,9 +102,9 @@ TEST_CASE("create_tags_2")
         }
     }
 
-    Tuple v1 = parent.edge_tuple_between_v1_v2(2, 0, 0);
+    Tuple v1 = parent.edge_tuple_with_vs_and_t(2, 0, 0);
     REQUIRE(parent.id(v1, PrimitiveType::Vertex) == 2);
-    Tuple v2 = parent.edge_tuple_between_v1_v2(4, 1, 2);
+    Tuple v2 = parent.edge_tuple_with_vs_and_t(4, 1, 2);
     REQUIRE(parent.id(v2, PrimitiveType::Vertex) == 4);
 
     REQUIRE(vertex_tag_accessor.const_scalar_attribute(v1) == 2);

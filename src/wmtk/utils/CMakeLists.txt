@@ -16,6 +16,8 @@ set(SRC_FILES
     mesh_utils.cpp
     TupleInspector.hpp
 
+    filter_pointers_to_derived.hpp
+
     orient.hpp
     orient.cpp
 

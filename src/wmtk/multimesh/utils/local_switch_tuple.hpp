@@ -1,6 +1,9 @@
 #pragma once
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Tuple.hpp>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+#include <ranges>
+#endif
 
 namespace wmtk::multimesh::utils {
 
@@ -15,8 +18,8 @@ Tuple local_switch_tuple(
 
 // Performs a sequence of switch_tuple operations in the order specified in sequence.
 // in debug mode this will assert a failure, in release this will return a null tuple
-#if defined(__cpp_concepts)
-template <std::forward_iterator ContainerType>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+    template <std::ranges::forward_range ContainerType>
 #else
 template <typename ContainerType>
 #endif
@@ -32,8 +35,8 @@ Tuple local_switch_tuples(
 
 
 // IMPLEMENTATION of above declaration
-#if defined(__cpp_concepts)
-template <std::forward_iterator ContainerType>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+    template <std::ranges::forward_range ContainerType>
 #else
 template <typename ContainerType>
 #endif

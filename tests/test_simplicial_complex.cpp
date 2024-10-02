@@ -265,7 +265,7 @@ TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
     std::vector<Simplex> ring0;
     SECTION("interior")
     {
-        t = m.edge_tuple_between_v1_v2(4, 5, 2);
+        t = m.edge_tuple_with_vs_and_t(4, 5, 2);
         auto sc = link(static_cast<Mesh&>(m), Simplex::vertex(m, t));
         ring0 = sc.simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 6);
@@ -273,7 +273,7 @@ TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
     }
     SECTION("on_boundary_cw")
     {
-        t = m.edge_tuple_between_v1_v2(0, 1, 1);
+        t = m.edge_tuple_with_vs_and_t(0, 1, 1);
         auto sc = link(static_cast<Mesh&>(m), Simplex::vertex(m, t));
         ring0 = sc.simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 3);
@@ -281,7 +281,7 @@ TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
     }
     SECTION("on_boundary_ccw")
     {
-        t = m.edge_tuple_between_v1_v2(0, 3, 0);
+        t = m.edge_tuple_with_vs_and_t(0, 3, 0);
         auto sc = link(static_cast<Mesh&>(m), Simplex::vertex(m, t));
         ring0 = sc.simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 3);
@@ -289,14 +289,14 @@ TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
     }
     SECTION("single_boundary_triangle_cw")
     {
-        t = m.edge_tuple_between_v1_v2(6, 5, 4);
+        t = m.edge_tuple_with_vs_and_t(6, 5, 4);
         ring0 = link(static_cast<Mesh&>(m), Simplex::vertex(m, t))
                     .simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 2);
     }
     SECTION("single_boundary_triangle_ccw")
     {
-        t = m.edge_tuple_between_v1_v2(6, 2, 4);
+        t = m.edge_tuple_with_vs_and_t(6, 2, 4);
         ring0 = link(static_cast<Mesh&>(m), Simplex::vertex(m, t))
                     .simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 2);
@@ -371,7 +371,7 @@ TEST_CASE("open_star_3d", "[simplicial_complex][open_star][3D]")
     tests_3d::DEBUG_TetMesh m;
     m = tests_3d::single_tet();
 
-    const Tuple t = m.edge_tuple_between_v1_v2(1, 2, 0);
+    const Tuple t = m.edge_tuple_with_vs_and_t(1, 2, 0);
 
     SimplexCollection sc_v = open_star(m, Simplex(m, PV, t));
     CHECK(sc_v.simplex_vector(PV).size() == 1);

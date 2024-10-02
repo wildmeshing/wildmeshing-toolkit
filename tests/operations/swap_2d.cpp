@@ -48,7 +48,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
 
         REQUIRE(m.is_connectivity_valid());
 
-        const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
         auto res = op(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
@@ -75,7 +75,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         REQUIRE(m.is_connectivity_valid());
 
-        const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 2);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 2);
         auto res = op(Simplex::edge(m, edge));
         REQUIRE(!res.empty());
         const Tuple ret = res.front().tuple();
@@ -102,7 +102,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
         REQUIRE(m.is_connectivity_valid());
-        const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(1, 2, 0);
         REQUIRE(op(Simplex::edge(m, edge)).empty());
         REQUIRE(m.is_connectivity_valid());
     }
@@ -114,7 +114,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         REQUIRE(m.is_connectivity_valid());
 
-        const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
+        const Tuple edge = m.edge_tuple_with_vs_and_t(2, 1, 1);
         REQUIRE(op(Simplex::edge(m, edge)).empty());
         REQUIRE(m.is_connectivity_valid());
     }
@@ -134,7 +134,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //
         // this case covered the on boundary case
         DEBUG_TriMesh m = single_triangle();
-        const Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
+        const Tuple f = m.edge_tuple_with_vs_and_t(1, 2, 0);
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         auto result = op(Simplex::face(m, f));
@@ -161,7 +161,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //  1  ----0---- 2
         //
         DEBUG_TriMesh m = quad();
-        Tuple f = m.edge_tuple_between_v1_v2(1, 0, 1);
+        Tuple f = m.edge_tuple_with_vs_and_t(1, 0, 1);
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         const auto res = op(Simplex::face(m, f));
@@ -262,7 +262,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         // V.row(1) << 1, 0, 0;
         // V.row(2) << 0.5, 0.866, 0;
         DEBUG_TriMesh m = single_equilateral_triangle(3);
-        Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
+        Tuple f = m.edge_tuple_with_vs_and_t(1, 2, 0);
         wmtk::attribute::MeshAttributeHandle pos_handle =
             m.get_attribute_handle<double>("vertices", PV);
 
@@ -300,7 +300,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //   \ / \ / \ /
         //    7---8---9
         DEBUG_TriMesh m = edge_region();
-        Tuple f = m.edge_tuple_between_v1_v2(3, 4, 0);
+        Tuple f = m.edge_tuple_with_vs_and_t(3, 4, 0);
 
         wmtk::attribute::MeshAttributeHandle todo_handle =
             m.register_attribute<int64_t>("todo_face", PF, 1);
@@ -329,7 +329,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
     {
         DEBUG_TriMesh m = single_triangle();
 
-        const Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
+        const Tuple f = m.edge_tuple_with_vs_and_t(1, 2, 0);
         wmtk::attribute::MeshAttributeHandle todo_handle =
             m.register_attribute<int64_t>("todo_face", PF, 1);
         wmtk::attribute::MeshAttributeHandle edge_tag_handle =
@@ -343,13 +343,13 @@ TEST_CASE("split_face", "[operations][split][2D]")
             m.create_accessor<int64_t>(vertex_tag_handle);
         acc_todo.scalar_attribute(f) = 1;
 
-        acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = 1;
-        acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = 2;
-        acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(2, 0, 0)) = 3;
+        acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(0, 1, 0)) = 1;
+        acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(1, 2, 0)) = 2;
+        acc_edge_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(2, 0, 0)) = 3;
 
-        acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = 1;
-        acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = 2;
-        acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(2, 0, 0)) = 3;
+        acc_vertex_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(0, 1, 0)) = 1;
+        acc_vertex_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(1, 2, 0)) = 2;
+        acc_vertex_tag.scalar_attribute(m.edge_tuple_with_vs_and_t(2, 0, 0)) = 3;
 
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
@@ -412,7 +412,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
     {
         DEBUG_TriMesh m = single_equilateral_triangle(3);
 
-        const Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
+        const Tuple f = m.edge_tuple_with_vs_and_t(1, 2, 0);
         wmtk::attribute::MeshAttributeHandle todo_handle =
             m.register_attribute<int64_t>("todo_face", PF, 1);
 

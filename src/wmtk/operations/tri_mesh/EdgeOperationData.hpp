@@ -9,10 +9,7 @@ class EdgeOperationData : public wmtk::operations::EdgeOperationData
 {
 public:
     EdgeOperationData() = default;
-    EdgeOperationData(const EdgeOperationData&) = default;
     EdgeOperationData(EdgeOperationData&&) = default;
-
-    EdgeOperationData& operator=(const EdgeOperationData&) = default;
     EdgeOperationData& operator=(EdgeOperationData&&) = default;
     //           C
     //         /  \ .
@@ -89,12 +86,6 @@ public:
 
     std::array<std::vector<int64_t>, 3> simplex_ids_to_delete;
     std::vector<int64_t> cell_ids_to_update_hash;
-
-    // for multimesh we need to know which global ids are modified to trigger
-    // for every simplex dimension (We have 3 in trimesh):
-    // a list of [simplex index, {all versions of that simplex}]
-    std::vector<std::vector<std::tuple<int64_t, std::vector<Tuple>>>>
-        global_simplex_ids_with_potentially_modified_hashes;
 
 
     // common simplicies

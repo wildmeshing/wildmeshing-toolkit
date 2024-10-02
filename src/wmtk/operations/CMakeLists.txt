@@ -8,6 +8,12 @@ set(SRC_FILES
     AttributesUpdate.hpp
     AttributesUpdate.cpp
 
+    AttributeTransferEdge.hpp
+    AttributeTransferEdge.cpp
+
+    AttributeTransferConfiguration.hpp
+    AttributeTransferConfiguration.cpp
+
     Operation.hpp
     Operation.cpp
 
@@ -58,3 +64,4 @@ add_subdirectory(composite)
 #
 add_subdirectory(utils)
 #
+add_subdirectory(internal)

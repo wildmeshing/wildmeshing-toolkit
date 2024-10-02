@@ -7,7 +7,15 @@ namespace wmtk::simplex::utils {
 
 inline bool SimplexComparisons::equal(const Mesh& m, const Simplex& s0, const Simplex& s1)
 {
+#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
     return s0 == s1;
+#else
+    const auto s0pt = s0.primitive_type();
+    const auto s1pt = s1.primitive_type();
+    const auto s0id = m.id(s0);
+    const auto s1id = m.id(s1);
+    return std::tie(s0pt, s0id) == std::tie(s1pt, s1id);
+#endif
     //    return equal(m, s0.tuple(), s0.primitive_type(), s1.tuple(), s1.primitive_type());
 }
 inline bool SimplexComparisons::equal(
@@ -30,7 +38,15 @@ inline bool SimplexComparisons::equal(
 
 inline bool SimplexComparisons::less(const Mesh& m, const Simplex& s0, const Simplex& s1)
 {
+#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
     return s0 < s1;
+#else
+    const auto s0pt = s0.primitive_type();
+    const auto s1pt = s1.primitive_type();
+    const auto s0id = m.id(s0);
+    const auto s1id = m.id(s1);
+    return std::tie(s0pt, s0id) < std::tie(s1pt, s1id);
+#endif
     //    return less(m, s0.tuple(), s0.primitive_type(), s1.tuple(), s1.primitive_type());
 }
 inline bool SimplexComparisons::less(

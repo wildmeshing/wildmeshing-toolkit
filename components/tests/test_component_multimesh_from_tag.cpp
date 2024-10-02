@@ -493,7 +493,7 @@ TEST_CASE("multimesh_from_tag", "[components][multimesh][multimesh_from_tag]")
         }
         )"_json;
 
-    CHECK_NOTHROW(multimesh_from_tag(base::Paths(), o, cache));
+    CHECK_NOTHROW(multimesh_from_tag(utils::Paths(), o, cache));
 }
 
 // TODO add tests for tet_edge and tet_point

@@ -20,7 +20,7 @@ bool DEBUG_TetMesh::operator!=(const DEBUG_TetMesh& o) const
 
 void DEBUG_TetMesh::print_state() const {}
 
-auto DEBUG_TetMesh::edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2, const int64_t tid)
+auto DEBUG_TetMesh::edge_tuple_with_vs_and_t(const int64_t v1, const int64_t v2, const int64_t tid)
     const -> Tuple
 {
     const attribute::Accessor<int64_t> tv = create_const_accessor<int64_t>(m_tv_handle);
@@ -57,7 +57,7 @@ auto DEBUG_TetMesh::edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2,
     return Tuple(local_vid1, local_eid, local_fid, tid);
 }
 
-auto DEBUG_TetMesh::edge_tuple_between_v1_v2(
+auto DEBUG_TetMesh::face_tuple_with_vs_and_t(
     const int64_t v1,
     const int64_t v2,
     const int64_t v3,

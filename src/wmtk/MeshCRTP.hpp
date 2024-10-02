@@ -1,5 +1,8 @@
 #pragma once
 #include "Mesh.hpp"
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+#include <ranges>
+#endif
 
 
 namespace wmtk {
@@ -39,8 +42,8 @@ public:
     }
     /// Performs a sequence of switch_tuple operations in the order specified in op_sequence.
     /// in debug mode this will assert a failure, in release this will return a null tuple
-#if defined(__cpp_concepts)
-    template <std::forward_iterator ContainerType>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+    template <std::ranges::forward_range ContainerType>
 #else
     template <typename ContainerType>
 #endif
@@ -106,10 +109,15 @@ protected:
     /// variant of id that can cache internally held values
     int64_t id(const simplex::Simplex& s) const final override
     {
+
+#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
         if (s.m_index == -1) {
             s.m_index = id(s.tuple(), s.primitive_type());
         }
         return s.m_index;
+#else
+        return id(s.tuple(),s.primitive_type());
+#endif
     }
 
 
@@ -121,8 +129,8 @@ protected:
 };
 
 template <typename Derived>
-#if defined(__cpp_concepts)
-template <std::forward_iterator ContainerType>
+#if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
+template <std::ranges::forward_range ContainerType>
 #else
 template <typename ContainerType>
 #endif

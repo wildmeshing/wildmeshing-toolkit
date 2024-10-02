@@ -11,11 +11,10 @@ include(CPM)
 CPMAddPackage(
     NAME paraviewo
     GITHUB_REPOSITORY polyfem/paraviewo
-    GIT_TAG 5e0218b
+    GIT_TAG 2e0cbba
 )
 
 set_target_properties(paraviewo PROPERTIES FOLDER third_party)
-set_target_properties(fmt PROPERTIES FOLDER third_party)
 set_target_properties(tinyxml2 PROPERTIES FOLDER third_party)
 
 set_target_properties(hdf5-static PROPERTIES FOLDER third_party)

@@ -136,6 +136,12 @@ public:
         return m_data.at(id);
     }
 
+    bool has_variant(const BaseType& input, const OtherArgumentTypes&... ts) const
+    {
+        auto id = get_id(input, ts...);
+        return m_data.find(id) != m_data.end();
+    }
+
     // a pointer to an input and some other arguments
     using KeyType = std::tuple<const BaseType*, OtherArgumentTypes...>;
 

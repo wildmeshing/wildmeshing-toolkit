@@ -7,6 +7,8 @@
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/utils/MultiMeshEdgeSplitFunctor.hpp>
 #include <wmtk/operations/utils/UpdateEdgeOperationMultiMeshMapFunctor.hpp>
+#include <wmtk/simplex/cofaces_single_dimension.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 
 #include <wmtk/TriMesh.hpp>
 
@@ -22,7 +24,7 @@ std::shared_ptr<invariants::InvariantCollection> multimesh_edge_split_invariants
 SplitReturnData multi_mesh_edge_split(
     Mesh& mesh,
     const Tuple& t,
-    const std::vector<std::shared_ptr<operations::BaseSplitNewAttributeStrategy>>&
+    const std::vector<std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>>&
         new_attr_strategies)
 {
     multimesh::MultiMeshSimplexVisitor visitor(
@@ -34,14 +36,16 @@ SplitReturnData multi_mesh_edge_split(
     event_visitor.run_on_nodes(UpdateEdgeOperationMultiMeshMapFunctor{});
 
 
-    auto cache = visitor.cache();
+    auto cache = visitor.take_cache();
 
     auto tuples = wmtk::multimesh::operations::extract_operation_tuples(cache);
     auto update_attributes = [&](auto&& m) {
         using T = std::remove_reference_t<decltype(m)>;
         if constexpr (!std::is_const_v<T>) {
             for (const auto& split_ptr : new_attr_strategies) {
-                split_ptr->update(cache, tuples);
+                if (&m == &split_ptr->mesh()) {
+                    split_ptr->update(m, cache, tuples);
+                }
             }
         }
     };
@@ -54,18 +58,39 @@ SplitReturnData multi_mesh_edge_split(
 std::vector<simplex::Simplex> multi_mesh_edge_split_with_modified_simplices(
     Mesh& mesh,
     const simplex::Simplex& simplex,
-    const std::vector<std::shared_ptr<operations::BaseSplitNewAttributeStrategy>>&
+    const std::vector<std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>>&
         new_attr_strategies)
 {
+    auto candidates = top_dimension_cofaces(mesh, simplex);
     auto return_data = multi_mesh_edge_split(mesh, simplex.tuple(), new_attr_strategies);
-    return std::visit(
-        [&mesh](const auto& rt) -> std::vector<simplex::Simplex> {
-        if(mesh.is_free()) {
-        return rt.new_vertices(mesh);
-        } else {
-            return {simplex::Simplex::vertex(mesh, rt.m_output_tuple)};
-            }
-        },
-        return_data.get_variant(mesh, simplex));
+
+    for (const auto& c : candidates) {
+        if (return_data.has_variant(mesh, simplex::Simplex::edge(mesh, c.tuple()))) {
+            return std::visit(
+                [&mesh](const auto& rt) -> std::vector<simplex::Simplex> {
+                    if (mesh.is_free()) {
+                        return rt.new_vertices(mesh);
+                    } else {
+                        return {simplex::Simplex::vertex(mesh, rt.m_output_tuple)};
+                    }
+                },
+                return_data.get_variant(mesh, simplex::Simplex::edge(mesh, c.tuple())));
+        }
+    }
+
+    assert(return_data.has_variant(mesh, simplex));
+
+    return {};
+
+
+    // return std::visit(
+    //     [&mesh](const auto& rt) -> std::vector<simplex::Simplex> {
+    //         if (mesh.is_free()) {
+    //             return rt.new_vertices(mesh);
+    //         } else {
+    //             return {simplex::Simplex::vertex(mesh, rt.m_output_tuple)};
+    //         }
+    //     },
+    //     return_data.get_variant(mesh, simplex));
 }
 } // namespace wmtk::operations::utils

@@ -17,7 +17,15 @@ public:
             const auto& [b_mesh_ptr, b_simplex] = b;
 
             if (a_mesh_ptr == b_mesh_ptr) {
+#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
                 return SimplexComparisons::less(*a_mesh_ptr, a_simplex, b_simplex);
+#else
+                if (a_simplex.primitive_type() == b_simplex.primitive_type()) {
+                    return a_simplex.tuple() < b_simplex.tuple();
+                } else {
+                    return a_simplex.primitive_type() < b_simplex.primitive_type();
+                }
+#endif
             } else {
                 return a_mesh_ptr < b_mesh_ptr;
             }
@@ -33,7 +41,13 @@ public:
             const auto& [b_mesh_ptr, b_simplex] = b;
 
             if (a_mesh_ptr == b_mesh_ptr) {
+#if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
                 return SimplexComparisons::equal(*a_mesh_ptr, a_simplex, b_simplex);
+#else
+
+                return a_simplex.tuple() == b_simplex.tuple() &&
+                       a_simplex.primitive_type() == b_simplex.primitive_type();
+#endif
             } else {
                 return false;
             }

@@ -17,9 +17,12 @@ namespace wmtk {
 
 class Mesh;
 class HDF5Reader;
-namespace operations::utils {
+namespace operations {
+class EdgeOperationData;
+namespace utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
+} // namespace operations
 namespace attribute {
 template <typename T, typename MeshType, int Dim>
 class Accessor;
@@ -444,6 +447,11 @@ protected: // protected to enable unit testing
         const std::vector<std::tuple<int64_t, std::vector<Tuple>>>& simplices_to_update,
         const std::vector<std::tuple<int64_t, std::array<int64_t, 2>>>& split_cell_maps = {});
 
+    void update_maps_from_edge_operation(
+        Mesh& my_mesh,
+        PrimitiveType primitive_type,
+        const operations::EdgeOperationData& operation_data);
+
 
     // uses the available parameters to find a tuple that is equivalent to old_smiplex but using
     // still-existing top level simplices. by equivalent each sub-simplex of old_simplex's tuple
@@ -496,6 +504,12 @@ protected: // protected to enable unit testing
     static int64_t parent_local_fid(
         const wmtk::attribute::Accessor<int64_t>& child_to_parent,
         int64_t child_gid);
+
+
+    // ===============================================================================
+    // ===============================================================================
+    // ===============================================================================
+    // ===============================================================================
 
 
     // internal function for mapping up a multimesh tree by a certain number of edges

@@ -9,4 +9,3 @@ int8_t valid_index_from_tuple(const Tuple& t);
 }
 
 #include "valid_index_from_tuple.hxx"
-#

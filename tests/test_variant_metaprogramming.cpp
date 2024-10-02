@@ -39,6 +39,7 @@ struct Input
 {
     int type = -1;
     int id;
+    Input(int type,int id): type(type), id(id) {}
     Input& operator=(const Input& o) = default;
     Input(const Input& o) = default;
 

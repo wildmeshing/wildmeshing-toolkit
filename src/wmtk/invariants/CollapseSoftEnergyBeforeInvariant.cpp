@@ -1,8 +1,10 @@
 #include "CollapseSoftEnergyBeforeInvariant.hpp"
+#include <wmtk/simplex/utils/SimplexComparisons.hpp>
 
 #include <wmtk/function/utils/amips.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
+#include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include <wmtk/utils/orient.hpp>
 
 namespace wmtk::invariants {
@@ -72,9 +74,19 @@ bool CollapseSoftEnergyBeforeInvariant::before(const simplex::Simplex& s) const
 
                 // compute new energy
                 const simplex::Simplex v0_s(mesh(), PV, v0);
-                if (simplex::Simplex::vertex(mesh(), lv[1]) == v0_s ||
-                    simplex::Simplex::vertex(mesh(), lv[2]) == v0_s ||
-                    simplex::Simplex::vertex(mesh(), lv[3]) == v0_s) {
+
+                if (simplex::utils::SimplexComparisons::equal(
+                        mesh(),
+                        simplex::Simplex::vertex(mesh(), lv[1]),
+                        v0_s) ||
+                    simplex::utils::SimplexComparisons::equal(
+                        mesh(),
+                        simplex::Simplex::vertex(mesh(), lv[2]),
+                        v0_s) ||
+                    simplex::utils::SimplexComparisons::equal(
+                        mesh(),
+                        simplex::Simplex::vertex(mesh(), lv[3]),
+                        v0_s)) {
                     // skip if incident both vertices
                     continue;
                 }
@@ -154,9 +166,18 @@ bool CollapseSoftEnergyBeforeInvariant::before(const simplex::Simplex& s) const
 
                 // skip tets incident the edge, old is already computed above
                 const simplex::Simplex v1_s(mesh(), PV, v1);
-                if (simplex::Simplex::vertex(mesh(), lv[1]) == v1_s ||
-                    simplex::Simplex::vertex(mesh(), lv[2]) == v1_s ||
-                    simplex::Simplex::vertex(mesh(), lv[3]) == v1_s) {
+                if (simplex::utils::SimplexComparisons::equal(
+                        mesh(),
+                        simplex::Simplex::vertex(mesh(), lv[1]),
+                        v1_s) ||
+                    simplex::utils::SimplexComparisons::equal(
+                        mesh(),
+                        simplex::Simplex::vertex(mesh(), lv[2]),
+                        v1_s) ||
+                    simplex::utils::SimplexComparisons::equal(
+                        mesh(),
+                        simplex::Simplex::vertex(mesh(), lv[3]),
+                        v1_s)) {
                     // skip if incident both vertices
                     continue;
                 }
@@ -196,9 +217,18 @@ bool CollapseSoftEnergyBeforeInvariant::before(const simplex::Simplex& s) const
 
                 // compute new energy
                 const simplex::Simplex v1_s(mesh(), PV, v1);
-                if (simplex::Simplex::vertex(mesh(), lv[1]) == v1_s ||
-                    simplex::Simplex::vertex(mesh(), lv[2]) == v1_s ||
-                    simplex::Simplex::vertex(mesh(), lv[3]) == v1_s) {
+                if (simplex::utils::SimplexComparisons::equal(
+                        mesh(),
+                        simplex::Simplex::vertex(mesh(), lv[1]),
+                        v1_s) ||
+                    simplex::utils::SimplexComparisons::equal(
+                        mesh(),
+                        simplex::Simplex::vertex(mesh(), lv[2]),
+                        v1_s) ||
+                    simplex::utils::SimplexComparisons::equal(
+                        mesh(),
+                        simplex::Simplex::vertex(mesh(), lv[3]),
+                        v1_s)) {
                     // skip if incident both vertices
                     continue;
                 }
@@ -278,9 +308,18 @@ bool CollapseSoftEnergyBeforeInvariant::before(const simplex::Simplex& s) const
 
                 // skip tets incident the edge, old is already computed above
                 const simplex::Simplex v0_s(mesh(), PV, v0);
-                if (simplex::Simplex::vertex(mesh(), lv[1]) == v0_s ||
-                    simplex::Simplex::vertex(mesh(), lv[2]) == v0_s ||
-                    simplex::Simplex::vertex(mesh(), lv[3]) == v0_s) {
+                if (simplex::utils::SimplexComparisons::equal(
+                        mesh(),
+                        simplex::Simplex::vertex(mesh(), lv[1]),
+                        v0_s) ||
+                    simplex::utils::SimplexComparisons::equal(
+                        mesh(),
+                        simplex::Simplex::vertex(mesh(), lv[2]),
+                        v0_s) ||
+                    simplex::utils::SimplexComparisons::equal(
+                        mesh(),
+                        simplex::Simplex::vertex(mesh(), lv[3]),
+                        v0_s)) {
                     // skip if incident both vertices
                     continue;
                 }

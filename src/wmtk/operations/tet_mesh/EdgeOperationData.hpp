@@ -8,6 +8,9 @@ namespace wmtk::operations::tet_mesh {
 class EdgeOperationData : public wmtk::operations::EdgeOperationData
 {
 public:
+    EdgeOperationData() = default;
+    EdgeOperationData(EdgeOperationData&&) = default;
+    EdgeOperationData& operator=(EdgeOperationData&&) = default;
     //
     // E --------------- C --------------- F
     //   \-_           / | \           _-/
@@ -71,16 +74,16 @@ public:
         std::array<int64_t, 2> split_t = std::array<int64_t, 2>{{-1, -1}}; // tid_new_1/2
         int64_t rib_f = -1; // fid_split
 
-        int64_t v0;
-        int64_t v1;
-        int64_t v2;
-        int64_t v3;
-        int64_t e01;
-        int64_t e02;
-        int64_t e03;
-        int64_t e12;
-        int64_t e13;
-        int64_t e23;
+        int64_t v0 = -1;
+        int64_t v1 = -1;
+        int64_t v2 = -1;
+        int64_t v3 = -1;
+        int64_t e01 = -1;
+        int64_t e02 = -1;
+        int64_t e03 = -1;
+        int64_t e12 = -1;
+        int64_t e13 = -1;
+        int64_t e23 = -1;
 
         std::array<EarTet, 2> ears; // ear_tet_1/2
 
@@ -137,15 +140,9 @@ public:
     std::vector<IncidentTetData> incident_tet_datas() const { return m_incident_tet_datas; }
     std::vector<IncidentFaceData> incident_face_datas() const { return m_incident_face_datas; }
 
+    std::vector<simplex::Simplex> new_vertices(const Mesh&) const;
     std::array<int64_t, 2> new_spine_eids() const { return m_split_new_spine_eids; }
 
-    std::vector<simplex::Simplex> new_vertices(const Mesh& m) const { return {};}
-
-    // for multimesh we need to know which global ids are modified to trigger
-    // for every simplex dimension (We have 4 in tetmesh):
-    // a list of [simplex index, {all versions of that simplex}]
-    std::vector<std::vector<std::tuple<int64_t, std::vector<Tuple>>>>
-        global_simplex_ids_with_potentially_modified_hashes;
 
     bool is_collapse = false;
 

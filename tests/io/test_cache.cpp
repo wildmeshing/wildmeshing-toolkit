@@ -2,13 +2,11 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/Cache.hpp>
-#include <wmtk/io/CacheStack.hpp>
-#include <wmtk/io/SubCacheHandle.hpp>
 
 #include <wmtk/operations/EdgeSplit.hpp>
 
-#include "../tools/DEBUG_TriMesh.hpp"
-#include "../tools/TriMesh_examples.hpp"
+#include <tools/DEBUG_TriMesh.hpp>
+#include <tools/TriMesh_examples.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 using namespace wmtk;
@@ -67,61 +65,6 @@ TEST_CASE("cache_move_constructor", "[cache][io]")
         CHECK(fs::exists(cache_dir));
     }
     cache_opt.reset();
-    CHECK_FALSE(fs::exists(cache_dir));
-}
-
-TEST_CASE("cache_stack_init", "[cache][io]")
-{
-    const fs::path dir = std::filesystem::current_path();
-    const std::string prefix = "wmtk_cache";
-
-    fs::path cache_dir;
-    fs::path a_dir;
-    fs::path zero_dir;
-    {
-        io::Cache cache(prefix, dir);
-
-        cache_dir = cache.get_cache_path();
-        {
-            CacheStack stack(std::move(cache));
-            CHECK(stack.get_current_cache().get_cache_path() == cache_dir);
-            {
-                SubCacheHandle zero("0", stack);
-                const Cache& zero_cache = stack.get_current_cache();
-                zero_dir = zero_cache.get_cache_path();
-                CHECK(zero_dir.stem().string().rfind("0", 0) == 0); // cache dir starts with prefix
-                CHECK(fs::exists(zero_dir));
-
-                CHECK(std::filesystem::equivalent(zero_dir.parent_path(), cache_dir));
-                {
-                    SubCacheHandle a("a", stack);
-                    const Cache& a_cache = stack.get_current_cache();
-                    a_dir = a_cache.get_cache_path();
-                    CHECK(a_dir.stem().string().rfind("a", 0) == 0); // cache dir starts with prefix
-                    CHECK(fs::exists(a_dir));
-
-
-                    CHECK(std::filesystem::equivalent(a_dir.parent_path(), zero_dir));
-                }
-                // check that a didnt get deleted
-                CHECK(fs::exists(a_dir));
-
-                // check that the current cache is the zero one
-                const Cache& zero_cache2 = stack.get_current_cache();
-                fs::path zero_dir2 = zero_cache2.get_cache_path();
-                CHECK(zero_dir == zero_dir2);
-            }
-            // check that the two child dirs werent deleted
-            CHECK(fs::exists(a_dir));
-            CHECK(fs::exists(zero_dir));
-            // check that the cache is ta the root level
-            const Cache& cache2 = stack.get_current_cache();
-            fs::path dir2 = cache2.get_cache_path();
-            CHECK(cache_dir == dir2);
-        }
-        CHECK_FALSE(fs::exists(cache_dir));
-    }
-
     CHECK_FALSE(fs::exists(cache_dir));
 }
 

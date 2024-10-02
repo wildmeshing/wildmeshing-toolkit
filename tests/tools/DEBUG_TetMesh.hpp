@@ -25,7 +25,7 @@ public:
     using TetMesh::m_attribute_manager;
 
 
-    auto edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2, const int64_t tid) const
+    auto edge_tuple_with_vs_and_t(const int64_t v1, const int64_t v2, const int64_t tid) const
         -> Tuple;
     /**
      * @brief return a tuple with edge v1v2 and face v1v2v3 in tet tid
@@ -36,7 +36,7 @@ public:
      * @param tid
      * @return Tuple
      */
-    auto edge_tuple_between_v1_v2(
+    auto face_tuple_with_vs_and_t(
         const int64_t v1,
         const int64_t v2,
         const int64_t v3,

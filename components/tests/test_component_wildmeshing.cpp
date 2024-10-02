@@ -2,15 +2,15 @@
 #include <nlohmann/json.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/Types.hpp>
-#include <wmtk/components/base/Paths.hpp>
 #include <wmtk/components/input/input.hpp>
+#include <wmtk/components/utils/Paths.hpp>
 #include <wmtk/components/wildmeshing/wildmeshing.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk/utils/orient.hpp>
 
-#include <wmtk/components/base/get_attributes.hpp>
+#include <wmtk/components/utils/get_attributes.hpp>
 #include <wmtk/multimesh/consolidate.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -59,7 +59,7 @@
 
 #include <fstream>
 
-using namespace wmtk::components::base;
+using namespace wmtk::components::utils;
 using namespace wmtk;
 using namespace simplex;
 using namespace operations;
