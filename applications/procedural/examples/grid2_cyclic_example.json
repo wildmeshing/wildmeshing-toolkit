@@ -1,5 +1,6 @@
 {
 
+    "input": {
     "grid": {
         "coordinates": {
             "name": "vertices",
@@ -23,6 +24,7 @@
         "attributes": {
           "position": "vertices"
         },
-        "file": "grid2d_cyclic",
+        "file": "grid2d_cyclic"
       }
+    }
 }

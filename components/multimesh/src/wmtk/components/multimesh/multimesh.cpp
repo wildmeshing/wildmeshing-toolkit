@@ -15,7 +15,7 @@ namespace wmtk::components::multimesh {
 std::pair<std::shared_ptr<Mesh>, std::shared_ptr<Mesh>> multimesh(
     const MultiMeshType& type,
     Mesh& parent,
-    const std::shared_ptr<Mesh>& child,
+    std::shared_ptr<Mesh> child,
     const attribute::MeshAttributeHandle parent_position_handle,
     const std::string& tag_name,
     const int64_t tag_value,
@@ -25,8 +25,6 @@ std::pair<std::shared_ptr<Mesh>, std::shared_ptr<Mesh>> multimesh(
         if (parent.top_simplex_type() == child->top_simplex_type() &&
             parent.capacity(parent.top_simplex_type()) ==
                 child->capacity(child->top_simplex_type())) {
-
-
             from_facet_bijection(parent, *child);
 
             return std::make_pair(parent.shared_from_this(), child);
@@ -45,29 +43,26 @@ std::pair<std::shared_ptr<Mesh>, std::shared_ptr<Mesh>> multimesh(
                                      wmtk::attribute::MeshAttributeHandle::HeldType::Rational;
 
         if (use_boundary) {
-
-            auto child_mesh = from_boundary(parent);
-
             tag = "is_boundary";
             value = 1;
             ptype = get_primitive_type_from_id(parent.top_cell_dimension() - 1);
 
-            from_boundary(parent, ptype, tag, value);
+            child = from_boundary(parent, ptype, tag, value);
         } else {
             tag = tag_name;
             value = tag_value;
             ptype = get_primitive_type_from_id(primitive);
 
-            child_mesh = wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
-            parent,
-            tag,
-            value,
-            ptype);
+            child = wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                parent,
+                tag,
+                value,
+                ptype);
         }
 
 
         if (!use_rational_position) {
-            auto child_position_handle = child_mesh->register_attribute<double>(
+            auto child_position_handle = child->register_attribute<double>(
                 "vertices", // TODO fix me
                 PrimitiveType::Vertex,
                 parent_position_handle.dimension());
@@ -82,7 +77,7 @@ std::pair<std::shared_ptr<Mesh>, std::shared_ptr<Mesh>> multimesh(
                     propagate_to_child_position);
             update_child_positon->run_on_all();
         } else {
-            auto child_position_handle = child_mesh->register_attribute<Rational>(
+            auto child_position_handle = child->register_attribute<Rational>(
                 "vertices", // TODO fix me
                 PrimitiveType::Vertex,
                 parent_position_handle.dimension());
@@ -97,10 +92,10 @@ std::pair<std::shared_ptr<Mesh>, std::shared_ptr<Mesh>> multimesh(
             update_child_positon->run_on_all();
         }
 
-        return std::make_pair(parent.shared_from_this(), child_mesh);
+        return std::make_pair(parent.shared_from_this(), child);
     }
 
     throw std::runtime_error("unsupported multimesh type");
 }
 
-} // namespace wmtk::components
+} // namespace wmtk::components::multimesh

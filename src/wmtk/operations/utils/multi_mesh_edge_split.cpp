@@ -64,7 +64,7 @@ std::vector<simplex::Simplex> multi_mesh_edge_split_with_modified_simplices(
 {
     simplex::NavigatableSimplex nsimplex(mesh, simplex);
     auto candidates = top_dimension_cofaces(mesh, simplex);
-    auto return_data = multi_mesh_edge_split(mesh, simplex.tuple(), new_attr_strategies);
+    auto return_data = multi_mesh_edge_split(mesh, nsimplex, new_attr_strategies);
 
     for (const auto& c : candidates) {
         if (return_data.has_variant(mesh, nsimplex)) {

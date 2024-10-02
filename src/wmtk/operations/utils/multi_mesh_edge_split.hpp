@@ -21,7 +21,7 @@ std::shared_ptr<invariants::InvariantCollection> multimesh_edge_split_invariants
 using SplitReturnData = wmtk::multimesh::operations::SplitReturnData;
 SplitReturnData multi_mesh_edge_split(
     Mesh& mesh,
-    const Tuple& t,
+    const simplex::NavigatableSimplex& t,
     const std::vector<std::shared_ptr<const operations::BaseSplitNewAttributeStrategy>>&
         new_attr_strategies);
 
