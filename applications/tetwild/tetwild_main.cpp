@@ -124,6 +124,8 @@ int main(int argc, char* argv[])
         if (e.envelope_name == "surface") {
             e.envelope_geometry_mesh = mesh; // set as input
         }
+
+        enves.push_back(e);
     }
 
     wmtk::components::WildMeshingOptions wmo;
