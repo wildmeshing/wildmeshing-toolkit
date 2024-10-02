@@ -29,12 +29,14 @@ add_subdirectory("tetwild_simplification/wmtk/components/tetwild_simplification"
 add_subdirectory("winding_number/wmtk/components/winding_number")
 add_subdirectory("wildmeshing/wmtk/components/wildmeshing")
 
+add_subdirectory("multimesh/wmtk/components/multimesh")
+add_subdirectory("shortestedge_collapse/wmtk/components/shortestedge_collapse")
+add_subdirectory("CDT/wmtk/components/CDT")
 
 # add_component("export_cache")
 # add_component("import_cache")
 # add_component("isotropic_remeshing")
 # add_component("mesh_info")
-# add_component("multimesh")
 # add_component("regular_space")
 # add_component("tag_intersection")
 # add_component("wildmeshing")

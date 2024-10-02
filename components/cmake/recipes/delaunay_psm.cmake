@@ -12,7 +12,7 @@ include(CPM)
 CPMAddPackage(
     NAME delaunay_psm
     GITHUB_REPOSITORY wildmeshing/Delaunay_psm
-    GIT_TAG 3ecb4d6a1ccdcf5f3325a67470f18ae5b4074343
+    GIT_TAG 0da678f007015e2c94b06d1450bfea4c46680cef
 )
 
 add_library(delaunay_psm STATIC ${delaunay_psm_SOURCE_DIR}/Delaunay_psm.cpp)

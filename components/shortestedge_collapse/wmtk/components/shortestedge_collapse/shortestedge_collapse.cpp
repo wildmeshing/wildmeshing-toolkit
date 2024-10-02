@@ -21,51 +21,27 @@
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-#include "internal/SECOptions.hpp"
 
 namespace wmtk::components {
-void shortestedge_collapse(const utils::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+
+void shortestedge_collapse(TriMesh& mesh, const ShortestEdgeCollapseOptions& options)
 {
-    using namespace internal;
-
-    SECOptions options = j.get<SECOptions>();
-
-    std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
-
-    auto pos_handles = utils::get_attributes(cache, *mesh_in, options.attributes.position);
-    assert(pos_handles.size() == 1);
-    auto pos_handle = pos_handles.front();
-
-    if (pos_handle.mesh().top_simplex_type() != PrimitiveType::Triangle) {
+    if (mesh.top_simplex_type() != PrimitiveType::Triangle) {
         log_and_throw_error(
-            "isotropic remeshing works only for triangle meshes: {}",
-            mesh_in->top_simplex_type());
+            "shortest edge collapse works only for triangle meshes: {}",
+            primitive_type_name(mesh.top_simplex_type()));
     }
 
-    auto pass_through_attributes = utils::get_attributes(cache, *mesh_in, options.pass_through);
-    auto other_positions =
-        utils::get_attributes(cache, *mesh_in, options.attributes.other_positions);
+    const attribute::MeshAttributeHandle& position_handle = options.position_handle;
+    const attribute::MeshAttributeHandle& inversion_position_handle =
+        options.inversion_position_handle;
 
-    std::optional<attribute::MeshAttributeHandle> position_for_inversion;
+    // TriMesh& mesh = static_cast<TriMesh&>(position_handle.mesh());
 
-    if (!options.attributes.inversion_position.empty()) {
-        auto tmp = utils::get_attributes(cache, *mesh_in, options.attributes.inversion_position);
-        assert(tmp.size() == 1);
-        position_for_inversion = tmp.front();
-    }
+    std::vector<attribute::MeshAttributeHandle> pass_through_attributes =
+        options.pass_through_attributes;
 
     /////////////////////////////////////////////
-
-    // TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
-    TriMesh& mesh = static_cast<TriMesh&>(pos_handle.mesh());
-
-
-    // // debug code
-    // for (const auto& e : mesh.get_all(PrimitiveType::Edge)) {
-    //     if (mesh.is_boundary(PrimitiveType::Edge, e)) {
-    //         logger().error("before sec mesh has nonmanifold edges");
-    //     }
-    // }
 
     auto visited_edge_flag =
         mesh.register_attribute<char>("visited_edge", PrimitiveType::Edge, 1, false, char(1));
@@ -78,7 +54,7 @@ void shortestedge_collapse(const utils::Paths& paths, const nlohmann::json& j, i
     auto tag_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<char, double>>(
             visited_edge_flag,
-            pos_handle,
+            position_handle,
             update_flag_func);
 
     //////////////////////////////////
@@ -95,33 +71,18 @@ void shortestedge_collapse(const utils::Paths& paths, const nlohmann::json& j, i
     auto edge_length_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
             edge_length_attribute,
-            pos_handle,
+            position_handle,
             compute_edge_length);
     edge_length_update->run_on_all();
 
-#if false // old implementation from teseo/sec branch
-    double avg_length = 0;
-    const auto edges = mesh.get_all(PrimitiveType::Edge);
-    for (const auto& e : edges) {
-        avg_length += edge_length_accessor.const_scalar_attribute(e);
-    }
-    avg_length /= edges.size();
-    if (options.length_abs < 0) {
-        if (options.length_rel < 0) {
-            throw std::runtime_error("Either absolute or relative length must be set!");
-        }
-        options.length_abs = avg_length * options.length_rel;
-    }
-    logger().info("Average edge length: {}, target {}", avg_length, options.length_abs);
-#else
     //////////////////////////////////
     // computing bbox diagonal
-    Eigen::VectorXd bmin(mesh.top_cell_dimension());
+    Eigen::VectorXd bmin(position_handle.dimension());
     bmin.setConstant(std::numeric_limits<double>::max());
-    Eigen::VectorXd bmax(mesh.top_cell_dimension());
+    Eigen::VectorXd bmax(position_handle.dimension());
     bmax.setConstant(std::numeric_limits<double>::lowest());
 
-    auto pt_accessor = mesh.create_const_accessor<double>(pos_handle);
+    auto pt_accessor = mesh.create_const_accessor<double>(position_handle);
 
     const auto vertices = mesh.get_all(PrimitiveType::Vertex);
     for (const auto& v : vertices) {
@@ -134,16 +95,15 @@ void shortestedge_collapse(const utils::Paths& paths, const nlohmann::json& j, i
 
     const double bbdiag = (bmax - bmin).norm();
 
-    options.length_abs = bbdiag * options.length_rel;
+    const double length_abs = bbdiag * options.length_rel;
 
     wmtk::logger().info(
         "bbox max {}, bbox min {}, diag {}, target edge length {}",
         bmax,
         bmin,
         bbdiag,
-        options.length_abs);
+        length_abs);
 
-#endif
     auto short_edges_first_priority = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         return edge_length_accessor.const_scalar_attribute(s.tuple());
@@ -152,7 +112,7 @@ void shortestedge_collapse(const utils::Paths& paths, const nlohmann::json& j, i
     auto todo = std::make_shared<TodoSmallerInvariant>(
         mesh,
         edge_length_attribute.as<double>(),
-        4. / 5. * options.length_abs); // MTAO: why is this 4/5?
+        4. / 5. * length_abs); // MTAO: why is this 4/5?
 
     //////////////////////////invariants
 
@@ -173,9 +133,11 @@ void shortestedge_collapse(const utils::Paths& paths, const nlohmann::json& j, i
     auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(mesh);
 
     ////////////// positions
-    std::vector<attribute::MeshAttributeHandle> positions = other_positions;
-    positions.push_back(pos_handle);
-
+    std::vector<attribute::MeshAttributeHandle> position_handles;
+    position_handles.push_back(position_handle);
+    if (inversion_position_handle.is_valid()) {
+        position_handles.push_back(inversion_position_handle);
+    }
 
     //////////////////////////////////////////
     // collapse
@@ -185,18 +147,18 @@ void shortestedge_collapse(const utils::Paths& paths, const nlohmann::json& j, i
     collapse->add_invariant(invariant_mm_map);
 
 
-    if (options.envelope_size > 0) {
+    if (options.envelope_size) {
         collapse->add_invariant(std::make_shared<wmtk::invariants::EnvelopeInvariant>(
-            pos_handle,
-            bbdiag * options.envelope_size,
-            pos_handle));
+            position_handle,
+            bbdiag * options.envelope_size.value(),
+            position_handle));
     }
 
 
-    if (position_for_inversion) {
+    if (inversion_position_handle.is_valid()) {
         collapse->add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
-            position_for_inversion.value().mesh(),
-            position_for_inversion.value().as<double>()));
+            inversion_position_handle.mesh(),
+            inversion_position_handle.as<double>()));
     }
     collapse->set_new_attribute_strategy(
         visited_edge_flag,
@@ -206,34 +168,22 @@ void shortestedge_collapse(const utils::Paths& paths, const nlohmann::json& j, i
     collapse->set_priority(short_edges_first_priority);
     collapse->add_transfer_strategy(edge_length_update);
 
-
-    // hack for uv
-    if (options.fix_uv_seam) {
-        collapse->add_invariant(
-            std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
-    }
-
-    if (options.lock_boundary && !options.use_for_periodic) {
+    if (options.lock_boundary) {
         collapse->add_invariant(invariant_interior_edge);
         // set collapse towards boundary
-        for (auto& p : positions) {
-            auto tmp = std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(p);
-            tmp->set_strategy(wmtk::operations::CollapseBasicStrategy::CopyOther);
-            tmp->set_simplex_predicate(wmtk::operations::BasicSimplexPredicate::IsInterior);
-            collapse->set_new_attribute_strategy(p, tmp);
-        }
-    } else if (options.use_for_periodic) {
-        collapse->add_invariant(
-            std::make_shared<invariants::FusionEdgeInvariant>(mesh, mesh.get_multi_mesh_root()));
-        for (auto& p : positions) {
-            collapse->set_new_attribute_strategy(
-                p,
-                wmtk::operations::CollapseBasicStrategy::CopyOther);
+        for (const auto& pos_handle : position_handles) {
+            auto pos_collapse_strategy =
+                std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(
+                    pos_handle);
+            pos_collapse_strategy->set_strategy(wmtk::operations::CollapseBasicStrategy::CopyOther);
+            pos_collapse_strategy->set_simplex_predicate(
+                wmtk::operations::BasicSimplexPredicate::IsInterior);
+            collapse->set_new_attribute_strategy(pos_handle, pos_collapse_strategy);
         }
     } else {
-        for (auto& p : positions) {
+        for (const auto& pos_handle : position_handles) {
             collapse->set_new_attribute_strategy(
-                p,
+                pos_handle,
                 wmtk::operations::CollapseBasicStrategy::CopyOther);
         }
     }
@@ -267,9 +217,28 @@ void shortestedge_collapse(const utils::Paths& paths, const nlohmann::json& j, i
         pass_stats.collecting_time,
         pass_stats.sorting_time,
         pass_stats.executing_time);
+}
 
-
-    // output
-    cache.write_mesh(*mesh_in, options.output);
+void shortestedge_collapse(
+    TriMesh& mesh,
+    const attribute::MeshAttributeHandle& position_handle,
+    const double length_rel,
+    std::optional<bool> lock_boundary,
+    std::optional<double> envelope_size,
+    std::optional<attribute::MeshAttributeHandle> inversion_position_handle,
+    const std::vector<attribute::MeshAttributeHandle>& pass_through)
+{
+    ShortestEdgeCollapseOptions options;
+    options.position_handle = position_handle;
+    options.length_rel = length_rel;
+    if (lock_boundary) {
+        options.lock_boundary = lock_boundary.value();
+    }
+    options.envelope_size = envelope_size;
+    if (inversion_position_handle) {
+        options.inversion_position_handle = inversion_position_handle.value();
+    }
+    options.pass_through_attributes = pass_through;
+    shortestedge_collapse(mesh, options);
 }
 } // namespace wmtk::components

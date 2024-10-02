@@ -80,6 +80,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # ###############################################################################
 
 # Dependencies
+include(fmt)
 include(paraviewo)
 include(spdlog)
 include(gmp)
@@ -91,6 +92,7 @@ include(bvh)
 include(volume_mesher)
 include(onetbb)
 include(CLI11)
+include(CDT)
 
 # Core library
 add_library(wildmeshing_toolkit)
@@ -111,7 +113,12 @@ target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
 target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
 
 # C++ standard
+option(WMTK_USE_CXX20 "Sets WMTK to use C++20, defaults to C++17")
+if(WMTK_USE_CXX20)
+target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_20)
+else()
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
+endif()
 
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
@@ -132,6 +139,7 @@ endif()
 
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
+    fmt::fmt
     spdlog::spdlog
     paraviewo::paraviewo
     gmp::gmp

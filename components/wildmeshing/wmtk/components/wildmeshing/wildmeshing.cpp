@@ -19,4 +19,5 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing(
     assert(false);
     return {};
 }
+
 } // namespace wmtk::components

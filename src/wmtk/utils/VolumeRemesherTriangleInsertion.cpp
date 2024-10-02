@@ -513,7 +513,7 @@ generate_raw_tetmesh_from_input_surface(
                 t[1],
                 t[2],
                 t[3],
-                tmp.determinant(),
+                tmp.determinant().serialize(),
                 wmtk_orient3d(
                     v_coords_final_rational[t[0]],
                     v_coords_final_rational[t[1]],

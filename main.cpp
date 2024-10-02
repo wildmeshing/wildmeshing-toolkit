@@ -22,7 +22,7 @@ int main(int argc, char** argv)
 
     CLI11_PARSE(app, argc, argv);
     if (!std::filesystem::exists(json_input_file)) {
-        wmtk::logger().critical("File `{}` does not exist.", json_input_file);
+        wmtk::logger().critical("File `{}` does not exist.", std::string(json_input_file));
         return EXIT_FAILURE;
     }
 

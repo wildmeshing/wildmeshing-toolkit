@@ -1,4 +1,4 @@
-#include <spdlog/fmt/bundled/format.h>
+#include <fmt/format.h>
 #include <wmtk/attribute/internal/hash.hpp>
 #include "Mesh.hpp"
 namespace wmtk {
