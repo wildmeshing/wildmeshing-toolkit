@@ -275,6 +275,12 @@ generate_raw_tetmesh_from_input_surface(
         v_coords.back()[1].init_from_binary(embedded_vertices[3 * i + 1].get_str());
         v_coords.back()[2].init_from_binary(embedded_vertices[3 * i + 2].get_str());
 #endif
+        if (v_coords.back()[0].can_be_rounded() && v_coords.back()[1].can_be_rounded() &&
+            v_coords.back()[2].can_be_rounded()) {
+            v_coords.back()[0].round();
+            v_coords.back()[1].round();
+            v_coords.back()[2].round();
+        }
     }
     wmtk::logger().trace("done");
 
