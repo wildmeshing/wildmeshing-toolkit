@@ -16,23 +16,15 @@ namespace wmtk::components {
 
 using namespace internal;
 
-void edge_insertion(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+EdgeInsertionMeshes edge_insertion(EdgeMesh& input_mesh, TriMesh& bg_mesh)
 {
-    EdgeInsOptions options = j.get<EdgeInsOptions>();
-
-    std::shared_ptr<Mesh> tris = cache.read_mesh(options.triangles);
-    std::shared_ptr<Mesh> edges = cache.read_mesh(options.edges);
-
-    TriMesh& trimesh = static_cast<TriMesh&>(*tris);
-    EdgeMesh& edgemesh = static_cast<EdgeMesh&>(*edges);
-
     std::vector<Vector2r> v_final;
     std::vector<std::array<int64_t, 3>> FV_new;
     std::vector<std::array<int, 3>> local_e_on_input;
 
     wmtk::logger().info("start edge insertion ...");
 
-    edge_insertion(trimesh, edgemesh, v_final, FV_new, local_e_on_input);
+    edge_insertion(bg_mesh, input_mesh, v_final, FV_new, local_e_on_input);
 
     wmtk::logger().info("finished edge insertion");
 
@@ -73,12 +65,12 @@ void edge_insertion(const base::Paths& paths, const nlohmann::json& j, io::Cache
         input_accessor.scalar_attribute(e12) = local_e_on_input[i][0];
     }
 
-    std::shared_ptr<Mesh> input_mesh;
+    std::shared_ptr<Mesh> inserted_input_mesh;
 
     internal::MultiMeshFromTag mmft(*m, input_handle, true);
     mmft.compute_substructure_mesh();
 
-    input_mesh = m->get_child_meshes().back();
+    inserted_input_mesh = m->get_child_meshes().back();
 
     mmft.remove_soup();
 
@@ -100,13 +92,11 @@ void edge_insertion(const base::Paths& paths, const nlohmann::json& j, io::Cache
         update_child_positon->run_on_all();
     }
 
+    EdgeInsertionMeshes eim;
+    eim.inserted_edge_mesh = inserted_input_mesh;
+    eim.tri_mesh = m;
 
-    std::map<std::string, std::vector<int64_t>> names;
-
-    names["trimesh"] = m->absolute_multi_mesh_id();
-    names["input_mesh"] = input_mesh->absolute_multi_mesh_id();
-
-    cache.write_mesh(*m, options.output, names);
+    return eim;
 }
 
 } // namespace wmtk::components
