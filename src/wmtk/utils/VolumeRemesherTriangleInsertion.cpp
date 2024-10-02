@@ -14,6 +14,7 @@
 #include <VolumeRemesher/embed.h>
 // clang-format on
 
+#include <numeric>
 
 namespace wmtk::utils {
 
@@ -81,43 +82,60 @@ void generate_background_mesh(
     }
 }
 
-std::vector<std::array<int64_t, 3>> triangulate_polygon_face(std::vector<Vector3r> points)
+std::vector<std::array<int64_t, 3>> triangulate_polygon_face(const std::vector<Vector3r>& points)
 {
     // triangulate weak convex polygons
     std::vector<std::array<int64_t, 3>> triangulated_faces;
 
-    std::vector<std::pair<Vector3r, int64_t>> points_vector;
-    for (int64_t i = 0; i < points.size(); ++i) {
-        points_vector.push_back(std::pair<Vector3r, int64_t>(points[i], i));
+    std::vector<int64_t> points_vector(points.size());
+    std::iota(std::begin(points_vector), std::end(points_vector), 0);
+
+    Vector3r out = points[0];
+    for (int64_t i = 1; i < points.size(); ++i) {
+        for (int64_t d = 0; d < 3; ++d) {
+            if (out[d] < points[i][d]) out[d] = points[i][d];
+        }
+    }
+
+    for (int64_t d = 0; d < 3; ++d) {
+        out[d].round();
+        out[d] = out[d] - 1;
     }
 
     // find the first colinear ABC with nonlinear BCD and delete C from vector
     while (points_vector.size() > 3) {
         bool no_colinear = true;
         for (int64_t i = 0; i < points_vector.size(); ++i) {
-            auto cur = points_vector[i];
-            auto next = points_vector[(i + 1) % points_vector.size()];
-            auto prev = points_vector[(i + points_vector.size() - 1) % points_vector.size()];
-            auto nextnext = points_vector[(i + 2) % points_vector.size()];
+            const int64_t next_i = (i + 1) % points_vector.size();
+            const int64_t prev_i = (i + points_vector.size() - 1) % points_vector.size();
+            const int64_t nextnext_i = (i + 2) % points_vector.size();
+
+            const int64_t cur = points_vector[i];
+            const int64_t next = points_vector[next_i];
+            const int64_t prev = points_vector[prev_i];
+            const int64_t nextnext = points_vector[nextnext_i];
+
 
             // TODO: check if orient2d == 0 works for check colinearity
             // if (orient2d(prev.first.data(), cur.first.data(), next.first.data()) == 0 &&
             //     orient2d(cur.first.data(), next.first.data(), nextnext.first.data()) != 0) {
 
-            Vector3r a = cur.first - prev.first;
-            Vector3r b = next.first - cur.first;
-            Vector3r c = nextnext.first - next.first;
+            const Vector3r a = points[cur] - points[prev];
+            const Vector3r b = points[next] - points[cur];
+            const Vector3r c = points[nextnext] - points[next];
 
-            if (((a[0] * b[1] - a[1] * b[0]).get_sign() == 0 &&
-                 (a[1] * b[2] - a[2] * b[1]).get_sign() == 0 &&
-                 (a[0] * b[2] - a[2] * b[0]).get_sign() == 0) &&
-                (((b[0] * c[1] - b[1] * c[0]).get_sign() != 0 ||
-                  (b[1] * c[2] - b[2] * c[1]).get_sign() != 0 ||
-                  (b[0] * c[2] - b[2] * c[0]).get_sign() != 0))) {
+            // if (((a[0] * b[1] - a[1] * b[0]).get_sign() == 0 &&
+            //      (a[1] * b[2] - a[2] * b[1]).get_sign() == 0 &&
+            //      (a[0] * b[2] - a[2] * b[0]).get_sign() == 0) &&
+            //     (((b[0] * c[1] - b[1] * c[0]).get_sign() != 0 ||
+            //       (b[1] * c[2] - b[2] * c[1]).get_sign() != 0 ||
+            //       (b[0] * c[2] - b[2] * c[0]).get_sign() != 0))) {
+            if (wmtk_orient3d(points[prev], points[cur], points[next], out) == 0 &&
+                wmtk_orient3d(points[cur], points[next], points[nextnext], out) == 0) {
                 no_colinear = false;
-                std::array<int64_t, 3> t = {{cur.second, next.second, nextnext.second}};
+                std::array<int64_t, 3> t = {{cur, next, nextnext}};
                 triangulated_faces.push_back(t);
-                points_vector.erase(points_vector.begin() + ((i + 1) % points_vector.size()));
+                points_vector.erase(points_vector.begin() + next_i);
                 break;
             } else {
                 continue;
@@ -130,9 +148,7 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(std::vector<Vector3
     // cleanup convex polygon
     while (points_vector.size() >= 3) {
         std::array<int64_t, 3> t = {
-            {points_vector[0].second,
-             points_vector[1].second,
-             points_vector[points_vector.size() - 1].second}};
+            {points_vector[0], points_vector[1], points_vector[points_vector.size() - 1]}};
         triangulated_faces.push_back(t);
         points_vector.erase(points_vector.begin());
     }
@@ -246,6 +262,7 @@ generate_raw_tetmesh_from_input_surface(
     std::vector<std::array<int64_t, 4>> tets_final; // final tets
     std::vector<std::array<bool, 4>> tet_face_on_input_surface; // tet local face on input surface
 
+    wmtk::logger().trace("Converting vertices...");
     for (int64_t i = 0; i < embedded_vertices.size() / 3; ++i) {
 #ifdef USE_GNU_GMP_CLASSES
         v_coords.emplace_back();
@@ -259,7 +276,9 @@ generate_raw_tetmesh_from_input_surface(
         v_coords.back()[2].init_from_binary(embedded_vertices[3 * i + 2].get_str());
 #endif
     }
+    wmtk::logger().trace("done");
 
+    wmtk::logger().trace("Facets loop...");
     for (int64_t i = 0; i < embedded_facets.size(); ++i) {
         int64_t polysize = embedded_facets[i];
         std::vector<int64_t> polygon;
@@ -269,7 +288,9 @@ generate_raw_tetmesh_from_input_surface(
         polygon_faces.push_back(polygon);
         i += polysize; // dangerous behavior, but working now
     }
+    wmtk::logger().trace("done");
 
+    wmtk::logger().trace("Cells loop...");
     for (int64_t i = 0; i < embedded_cells.size(); ++i) {
         std::vector<int64_t> polygon_cell;
         int64_t cellsize = embedded_cells[i];
@@ -279,6 +300,7 @@ generate_raw_tetmesh_from_input_surface(
         polygon_cells.push_back(polygon_cell);
         i += cellsize; // dangerous behavior, but working now
     }
+    wmtk::logger().trace("done");
 
     polygon_faces_on_input.resize(polygon_faces.size(), false);
 
@@ -291,6 +313,7 @@ generate_raw_tetmesh_from_input_surface(
     std::vector<bool> triangulated_faces_on_input;
     std::vector<std::vector<int64_t>> map_poly_to_tri_face(polygon_faces.size());
 
+    wmtk::logger().trace("Triangulation loop...");
     for (int64_t i = 0; i < polygon_faces.size(); ++i) {
         // already clipped in other polygon
         if (map_poly_to_tri_face[i].size() != 0) continue;
@@ -298,7 +321,7 @@ generate_raw_tetmesh_from_input_surface(
         // new polygon face to clip
         std::vector<std::array<int64_t, 3>> clipped_indices;
         std::vector<Vector3r> poly_coordinates;
-        std::vector<int64_t> polygon_face = polygon_faces[i];
+        const std::vector<int64_t>& polygon_face = polygon_faces[i];
         assert(polygon_face.size() >= 3);
 
         if (polygon_face.size() == 3) {
