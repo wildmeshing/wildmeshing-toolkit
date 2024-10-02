@@ -5,34 +5,41 @@
 
 namespace wmtk::utils {
 
-constexpr size_t DynamicArraySize = 10; // will be replaced by a template parameter
 
+template <typename T, uint64_t ArraySize = 50>
 class DynamicArray
 {
 public:
     class Iterator
     {
     public:
-        Iterator(const DynamicArray* container, const size_t index = 0);
+        Iterator(const DynamicArray* container, const uint64_t index = 0);
         Iterator operator++();
         bool operator!=(const Iterator& other) const;
-        int operator*();
+        T operator*();
 
     private:
         const DynamicArray* m_container;
-        size_t m_index = 0;
+        uint64_t m_index = 0;
     };
 
 
-    int& operator[](const size_t index);
-    const int& operator[](const size_t index) const;
+    T& operator[](const uint64_t index);
+    const T& operator[](const uint64_t index) const;
 
-    void emplace_back(const int& val);
+    void emplace_back(const T& val);
 
-    size_t size() const;
-    size_t capacity() const;
+    uint64_t size() const;
+    uint64_t capacity() const;
 
-    void reserve(const size_t new_capacity);
+    /**
+     * @brief Return the size of the static array.
+     *
+     * This function does NOT return the size of the DynamicArray!
+     */
+    constexpr static uint64_t array_size();
+
+    void reserve(const uint64_t new_capacity);
 
     bool uses_vector() const;
 
@@ -43,11 +50,13 @@ private:
     void switch_to_vector();
 
 private:
-    std::array<int, DynamicArraySize> m_array;
-    std::vector<int> m_vector;
+    std::array<T, ArraySize> m_array;
+    std::vector<T> m_vector;
 
     bool m_use_vector = false;
-    size_t m_end_index = 0;
+    uint64_t m_end_index = 0;
 };
 
 } // namespace wmtk::utils
+
+#include "DynamicArray.hxx"

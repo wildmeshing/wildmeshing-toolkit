@@ -7,25 +7,26 @@ using namespace utils;
 
 TEST_CASE("dynamic_array", "[DynamicArray]")
 {
-    DynamicArray arr;
+    DynamicArray<int64_t, 5> arr;
+    constexpr uint64_t ArraySize = decltype(arr)::array_size();
     CHECK_FALSE(arr.uses_vector());
     CHECK(arr.size() == 0);
-    CHECK(arr.capacity() == DynamicArraySize);
+    CHECK(arr.capacity() == ArraySize);
 
-    for (size_t i = 0; i < DynamicArraySize; ++i) {
+    for (uint64_t i = 0; i < ArraySize; ++i) {
         arr.emplace_back(i);
     }
 
     CHECK_FALSE(arr.uses_vector());
-    CHECK(arr.size() == DynamicArraySize);
-    CHECK(arr.capacity() == DynamicArraySize);
+    CHECK(arr.size() == ArraySize);
+    CHECK(arr.capacity() == ArraySize);
 
-    arr.emplace_back(DynamicArraySize);
+    arr.emplace_back(ArraySize);
     CHECK(arr.uses_vector());
-    CHECK(arr.size() == DynamicArraySize + 1);
-    CHECK(arr.capacity() > DynamicArraySize);
+    CHECK(arr.size() == ArraySize + 1);
+    CHECK(arr.capacity() > ArraySize);
 
-    for (size_t i = 0; i < arr.size(); ++i) {
+    for (uint64_t i = 0; i < arr.size(); ++i) {
         CHECK(arr[i] == i);
         arr[i] = 0;
         CHECK(arr[i] == 0);
@@ -33,7 +34,7 @@ TEST_CASE("dynamic_array", "[DynamicArray]")
     }
 
     {
-        size_t i = 0;
+        uint64_t i = 0;
         for (const int v : arr) {
             CHECK(v == i++);
         }

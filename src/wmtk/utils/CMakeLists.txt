@@ -71,7 +71,7 @@ set(SRC_FILES
     Stopwatch.cpp
 
     DynamicArray.hpp
-    DynamicArray.cpp
+    DynamicArray.hxx
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
