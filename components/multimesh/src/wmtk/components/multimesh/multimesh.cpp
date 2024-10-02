@@ -12,7 +12,7 @@
 
 
 namespace wmtk::components::multimesh {
-std::pair<std::shared_ptr<Mesh>, std::shared_ptr<Mesh>> multimesh(
+    std::pair<std::shared_ptr<Mesh>, std::shared_ptr<Mesh>> multimesh(
     const MultiMeshType& type,
     Mesh& parent,
     const std::shared_ptr<Mesh>& child,
@@ -25,9 +25,9 @@ std::pair<std::shared_ptr<Mesh>, std::shared_ptr<Mesh>> multimesh(
         if (parent.top_simplex_type() == child->top_simplex_type() &&
             parent.capacity(parent.top_simplex_type()) ==
                 child->capacity(child->top_simplex_type())) {
+            auto child_map = wmtk::multimesh::same_simplex_dimension_bijection(parent, *child);
 
-
-            from_facet_bijection(parent, *child);
+            parent.register_child_mesh(child, child_map);
 
             return std::make_pair(parent.shared_from_this(), child);
         } else {
@@ -45,26 +45,27 @@ std::pair<std::shared_ptr<Mesh>, std::shared_ptr<Mesh>> multimesh(
                                      wmtk::attribute::MeshAttributeHandle::HeldType::Rational;
 
         if (use_boundary) {
-
-            auto child_mesh = from_boundary(parent);
-
             tag = "is_boundary";
             value = 1;
             ptype = get_primitive_type_from_id(parent.top_cell_dimension() - 1);
 
-            from_boundary(parent, ptype, tag, value);
+            auto is_boundary_handle = parent.register_attribute<int64_t>(tag, ptype, 1);
+            auto is_boundary_accessor = parent.create_accessor(is_boundary_handle.as<int64_t>());
+
+            for (const auto& t : parent.get_all(ptype)) {
+                is_boundary_accessor.scalar_attribute(t) = parent.is_boundary(ptype, t) ? value : 0;
+            }
         } else {
             tag = tag_name;
             value = tag_value;
             ptype = get_primitive_type_from_id(primitive);
+        }
 
-            child_mesh = wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+        auto child_mesh = wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
             parent,
             tag,
             value,
             ptype);
-        }
-
 
         if (!use_rational_position) {
             auto child_position_handle = child_mesh->register_attribute<double>(
