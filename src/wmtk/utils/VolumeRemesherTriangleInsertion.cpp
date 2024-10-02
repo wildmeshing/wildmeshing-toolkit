@@ -203,9 +203,9 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(
 
 
     Vector3r out = points[0];
-    for (int64_t i = 1; i < points.size(); ++i) {
+    for (int64_t i = 1; i < face.size(); ++i) {
         for (int64_t d = 0; d < 3; ++d) {
-            if (out[d] < points[i][d]) out[d] = points[i][d];
+            if (out[d] < points[face[i]][d]) out[d] = points[face[i]][d];
         }
     }
 
@@ -301,12 +301,12 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(
     // compute all angles
     int64_t colinear_cnt = 0;
     for (int64_t i = 0; i < points_vector.size(); ++i) {
-        const Vector3r a =
-            points[points_vector[i]] -
-            points[points_vector[(i + points_vector.size() - 1) % points_vector.size()]];
+        // const Vector3r a =
+        //     points[points_vector[i]] -
+        //     points[points_vector[(i + points_vector.size() - 1) % points_vector.size()]];
 
-        const Vector3r b =
-            points[points_vector[(i + 1) % points_vector.size()]] - points[points_vector[i]];
+        // const Vector3r b =
+        //     points[points_vector[(i + 1) % points_vector.size()]] - points[points_vector[i]];
 
         // if ((a[0] * b[1] - a[1] * b[0]).get_sign() != 0 ||
         //     (a[1] * b[2] - a[2] * b[1]).get_sign() != 0 ||
