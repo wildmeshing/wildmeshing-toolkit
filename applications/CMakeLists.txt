@@ -39,6 +39,11 @@ if(WMTK_ENABLE_APPLICATION_tetwild)
 add_subdirectory(tetwild)
 endif()
 
+option(WMTK_ENABLE_APPLICATION_triwild "Runs triwild application" ON)
+if(WMTK_ENABLE_APPLICATION_triwild)
+add_subdirectory(triwild)
+endif()
+
 option(WMTK_ENABLE_APPLICATION_cdt_sec "Runs cdt_sec application" ON)
 if(WMTK_ENABLE_APPLICATION_cdt_sec)
 add_subdirectory(cdt_sec)
