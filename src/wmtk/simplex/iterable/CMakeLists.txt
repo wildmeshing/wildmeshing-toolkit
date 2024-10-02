@@ -1,6 +1,8 @@
 set(SRC_FILES
     ClosedStarIterable.hpp
     ClosedStarIterable.cpp
+    CofacesInSimplexIterable.hpp
+    CofacesInSimplexIterable.cpp
     LinkIterable.hpp
     LinkIterable.cpp
     OpenStarIterable.hpp
