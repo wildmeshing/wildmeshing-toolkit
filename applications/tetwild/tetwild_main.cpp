@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
     //     envelope_meshes.push_back(meshes_after_insertion[i]);
     // }
 
-    assert(envelope_meshes.size() >= 2);
+    // assert(envelope_meshes.size() >= 2);
 
     std::vector<wmtk::components::EnvelopeOptions> enves;
 

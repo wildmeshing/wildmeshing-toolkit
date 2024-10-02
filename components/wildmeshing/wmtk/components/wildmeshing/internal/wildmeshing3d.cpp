@@ -314,7 +314,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing3d(
             geometry_mesh->has_attribute<double>(e.geometry_position_name, PrimitiveType::Vertex);
         const bool geometry_has_rational_pos =
             geometry_mesh->has_attribute<Rational>(e.geometry_position_name, PrimitiveType::Vertex);
-        assert(has_double_pos || has_rational_pos);
+        assert(geometry_has_double_pos || geometry_has_rational_pos);
 
         auto geometry_pt_handle = geometry_has_double_pos
                                       ? geometry_mesh->get_attribute_handle<double>(
