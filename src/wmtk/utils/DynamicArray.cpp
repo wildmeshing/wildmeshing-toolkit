@@ -84,4 +84,26 @@ void DynamicArray::switch_to_vector()
     std::copy(m_array.begin(), m_array.end(), std::back_inserter(m_vector));
 }
 
+DynamicArray::Iterator::Iterator(const DynamicArray* container, const size_t index)
+    : m_container(container)
+    , m_index(index)
+{}
+
+DynamicArray::Iterator DynamicArray::Iterator::operator++()
+{
+    ++m_index;
+    return *this;
+}
+
+bool DynamicArray::Iterator::operator!=(const Iterator& other) const
+{
+    return m_index != other.m_index;
+}
+
+int DynamicArray::Iterator::operator*()
+{
+    return (*m_container)[m_index];
+}
+
+
 } // namespace wmtk::utils

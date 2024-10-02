@@ -10,6 +10,20 @@ constexpr size_t DynamicArraySize = 10; // will be replaced by a template parame
 class DynamicArray
 {
 public:
+    class Iterator
+    {
+    public:
+        Iterator(const DynamicArray* container, const size_t index = 0);
+        Iterator operator++();
+        bool operator!=(const Iterator& other) const;
+        int operator*();
+
+    private:
+        const DynamicArray* m_container;
+        size_t m_index = 0;
+    };
+
+
     int& operator[](const size_t index);
     const int& operator[](const size_t index) const;
 
@@ -21,6 +35,9 @@ public:
     void reserve(const size_t new_capacity);
 
     bool uses_vector() const;
+
+    Iterator begin() const { return Iterator(this); }
+    Iterator end() const { return Iterator(this, m_end_index); }
 
 private:
     void switch_to_vector();

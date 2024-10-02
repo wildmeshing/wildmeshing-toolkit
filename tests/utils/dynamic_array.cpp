@@ -20,8 +20,22 @@ TEST_CASE("dynamic_array", "[DynamicArray]")
     CHECK(arr.size() == DynamicArraySize);
     CHECK(arr.capacity() == DynamicArraySize);
 
-    arr.emplace_back(DynamicArraySize + 1);
+    arr.emplace_back(DynamicArraySize);
     CHECK(arr.uses_vector());
     CHECK(arr.size() == DynamicArraySize + 1);
     CHECK(arr.capacity() > DynamicArraySize);
+
+    for (size_t i = 0; i < arr.size(); ++i) {
+        CHECK(arr[i] == i);
+        arr[i] = 0;
+        CHECK(arr[i] == 0);
+        arr[i] = i;
+    }
+
+    {
+        size_t i = 0;
+        for (const int v : arr) {
+            CHECK(v == i++);
+        }
+    }
 }
