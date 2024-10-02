@@ -130,7 +130,7 @@ std::shared_ptr<Mesh> MshReader::read(
     } else if (get_num_edges() > 0) {
         assert(tetrahedron_attributes.empty());
 
-        V.resize(get_num_face_vertices(), m_ignore_z ? 2 : 3);
+        V.resize(get_num_edge_vertices(), m_ignore_z ? 2 : 3);
         S.resize(get_num_edges(), 2);
 
         extract_edge_vertices();
