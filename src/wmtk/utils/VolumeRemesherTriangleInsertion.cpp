@@ -1,6 +1,5 @@
 
 #include "VolumeRemesherTriangleInsertion.hpp"
-#include <igl/bfs_orient.h>
 #include <set>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TetMesh.hpp>
@@ -14,7 +13,6 @@
 // clang-format off
 #include <VolumeRemesher/embed.h>
 // clang-format on
-
 
 #include <numeric>
 
@@ -190,11 +188,9 @@ void lookup_pentagon_table(
     }
 }
 
-bool is_cross_zero(const Vector3r& a, const Vector3r& b, const Vector3r& c, const Vector3r& out)
+bool is_collinear(const Vector3r& a, const Vector3r& b, const Vector3r& c, const Vector3r& out)
 {
-    return (a[0] * b[1] - a[1] * b[0]).get_sign() == 0 &&
-           (a[1] * b[2] - a[2] * b[1]).get_sign() == 0 &&
-           (a[0] * b[2] - a[2] * b[0]).get_sign() == 0;
+    return wmtk_orient3d(a b, c, out) == 0;
 }
 
 std::vector<std::array<int64_t, 3>> triangulate_polygon_face(
@@ -220,18 +216,14 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(
 
     if (face.size() == 4) {
         // special case for quad
-        const Vector3r a = points[face[0]] - points[face[3]];
-        const Vector3r b = points[face[1]] - points[face[0]];
-
-        const Vector3r c = points[face[2]] - points[face[1]];
-        const Vector3r d = points[face[3]] - points[face[2]];
-
-        if (((a[0] * b[1] - a[1] * b[0]).get_sign() != 0 ||
-             (a[1] * b[2] - a[2] * b[1]).get_sign() != 0 ||
-             (a[0] * b[2] - a[2] * b[0]).get_sign() != 0) &&
-            ((c[0] * d[1] - c[1] * d[0]).get_sign() != 0 ||
-             (c[1] * d[2] - c[2] * d[1]).get_sign() != 0 ||
-             (c[0] * d[2] - c[2] * d[0]).get_sign() != 0)) {
+        // if (((a[0] * b[1] - a[1] * b[0]).get_sign() != 0 ||
+        //      (a[1] * b[2] - a[2] * b[1]).get_sign() != 0 ||
+        //      (a[0] * b[2] - a[2] * b[0]).get_sign() != 0) &&
+        //     ((c[0] * d[1] - c[1] * d[0]).get_sign() != 0 ||
+        //      (c[1] * d[2] - c[2] * d[1]).get_sign() != 0 ||
+        //      (c[0] * d[2] - c[2] * d[0]).get_sign() != 0)) {
+        if (!is_collinear(points[face[0]], points[face[1]], points[face[3]], out) &&
+            !is_collinear(points[face[1]], points[face[2]], points[face[3]], out)) {
             // not colinear continue
             triangulated_faces.emplace_back(std::array<int64_t, 3>({{face[0], face[1], face[3]}}));
             triangulated_faces.emplace_back(std::array<int64_t, 3>({{face[1], face[2], face[3]}}));
@@ -243,24 +235,27 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(
         return triangulated_faces;
     } else if (face.size() == 5) {
         // special case for pentagon
-        const Vector3r a = points[face[0]] - points[face[4]];
-        const Vector3r b = points[face[1]] - points[face[0]];
-        const Vector3r c = points[face[2]] - points[face[1]];
-        const Vector3r d = points[face[3]] - points[face[2]];
-        const Vector3r f = points[face[2]] - points[face[0]];
-        const Vector3r e = points[face[4]] - points[face[3]];
+        // const Vector3r a = points[face[0]] - points[face[4]];
+        // const Vector3r b = points[face[1]] - points[face[0]];
+        // const Vector3r c = points[face[2]] - points[face[1]];
+        // const Vector3r d = points[face[3]] - points[face[2]];
+        // const Vector3r f = points[face[2]] - points[face[0]];
+        // const Vector3r e = points[face[4]] - points[face[3]];
 
-        bool noncolinear012 = (b[0] * c[1] - b[1] * c[0]).get_sign() != 0 ||
-                              (b[1] * c[2] - b[2] * c[1]).get_sign() != 0 ||
-                              (b[0] * c[2] - b[2] * c[0]).get_sign() != 0;
+        bool noncolinear012 = !is_collinear(points[face[0]], points[face[1]], points[face[2]], out);
+        //   (b[0] * c[1] - b[1] * c[0]).get_sign() != 0 ||
+        //   (b[1] * c[2] - b[2] * c[1]).get_sign() != 0 ||
+        //   (b[0] * c[2] - b[2] * c[0]).get_sign() != 0;
 
-        bool noncolinear123 = (c[0] * d[1] - c[1] * d[0]).get_sign() != 0 ||
-                              (c[1] * d[2] - c[2] * d[1]).get_sign() != 0 ||
-                              (c[0] * d[2] - c[2] * d[0]).get_sign() != 0;
+        bool noncolinear123 = !is_collinear(points[face[1]], points[face[2]], points[face[3]], out);
+        //   (c[0] * d[1] - c[1] * d[0]).get_sign() != 0 ||
+        //   (c[1] * d[2] - c[2] * d[1]).get_sign() != 0 ||
+        //   (c[0] * d[2] - c[2] * d[0]).get_sign() != 0;
 
-        bool noncolinear340 = (e[0] * a[1] - e[1] * a[0]).get_sign() != 0 ||
-                              (e[1] * a[2] - e[2] * a[1]).get_sign() != 0 ||
-                              (e[0] * a[2] - e[2] * a[0]).get_sign() != 0;
+        bool noncolinear340 = !is_collinear(points[face[3]], points[face[4]], points[face[0]], out);
+        //   (e[0] * a[1] - e[1] * a[0]).get_sign() != 0 ||
+        //   (e[1] * a[2] - e[2] * a[1]).get_sign() != 0 ||
+        //   (e[0] * a[2] - e[2] * a[0]).get_sign() != 0;
 
         // check bxc fxd exa
         if (noncolinear012 && noncolinear123 && noncolinear340) {
@@ -274,17 +269,20 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(
 
         // lookup table
 
-        bool noncolinear023 = (f[0] * d[1] - f[1] * d[0]).get_sign() != 0 ||
-                              (f[1] * d[2] - f[2] * d[1]).get_sign() != 0 ||
-                              (f[0] * d[2] - f[2] * d[0]).get_sign() != 0;
+        bool noncolinear023 = !is_collinear(points[face[0]], points[face[2]], points[face[3]], out);
+        //   (f[0] * d[1] - f[1] * d[0]).get_sign() != 0 ||
+        //   (f[1] * d[2] - f[2] * d[1]).get_sign() != 0 ||
+        //   (f[0] * d[2] - f[2] * d[0]).get_sign() != 0;
 
-        bool noncolinear234 = (d[0] * e[1] - d[1] * e[0]).get_sign() != 0 ||
-                              (d[1] * e[2] - d[2] * e[1]).get_sign() != 0 ||
-                              (d[0] * e[2] - d[2] * e[0]).get_sign() != 0;
+        bool noncolinear234 = !is_collinear(points[face[2]], points[face[3]], points[face[4]], out);
+        //   (d[0] * e[1] - d[1] * e[0]).get_sign() != 0 ||
+        //   (d[1] * e[2] - d[2] * e[1]).get_sign() != 0 ||
+        //   (d[0] * e[2] - d[2] * e[0]).get_sign() != 0;
 
-        bool noncolinear401 = (a[0] * b[1] - a[1] * b[0]).get_sign() != 0 ||
-                              (a[1] * b[2] - a[2] * b[1]).get_sign() != 0 ||
-                              (a[0] * b[2] - a[2] * b[0]).get_sign() != 0;
+        bool noncolinear401 = !is_collinear(points[face[4]], points[face[0]], points[face[1]], out);
+        //   (a[0] * b[1] - a[1] * b[0]).get_sign() != 0 ||
+        //   (a[1] * b[2] - a[2] * b[1]).get_sign() != 0 ||
+        //   (a[0] * b[2] - a[2] * b[0]).get_sign() != 0;
 
         int pentagon_idx = 10000 * int(noncolinear401) + 1000 * int(noncolinear012) +
                            100 * int(noncolinear123) + 10 * int(noncolinear234) +
@@ -294,57 +292,6 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(
 
         return triangulated_faces;
     }
-
-    // std::vector<int64_t> points_vector = face;
-
-    // // find the first colinear ABC with nonlinear BCD and delete C from vector
-    // while (points_vector.size() > 3) {
-    //     bool no_colinear = true;
-    //     for (int64_t i = 0; i < points_vector.size(); ++i) {
-    //         const int64_t cur = points_vector[i];
-    //         const int64_t next = points_vector[(i + 1) % points_vector.size()];
-    //         const int64_t prev =
-    //             points_vector[(i + points_vector.size() - 1) % points_vector.size()];
-    //         const int64_t nextnext = points_vector[(i + 2) % points_vector.size()];
-
-    //         // TODO: check if orient2d == 0 works for check colinearity
-    //         // if (orient2d(prev.first.data(), cur.first.data(), next.first.data()) == 0 &&
-    //         //     orient2d(cur.first.data(), next.first.data(), nextnext.first.data()) != 0) {
-
-    //         const Vector3r a = points[cur] - points[prev];
-    //         const Vector3r b = points[next] - points[cur];
-
-
-    //         // if (((a[0] * b[1] - a[1] * b[0]).get_sign() == 0 &&
-    //         //      (a[1] * b[2] - a[2] * b[1]).get_sign() == 0 &&
-    //         //      (a[0] * b[2] - a[2] * b[0]).get_sign() == 0) &&
-    //         //     (((b[0] * c[1] - b[1] * c[0]).get_sign() != 0 ||
-    //         //       (b[1] * c[2] - b[2] * c[1]).get_sign() != 0 ||
-    //         //       (b[0] * c[2] - b[2] * c[0]).get_sign() != 0))) {
-    //         if ((a[0] * b[1] - a[1] * b[0]).get_sign() != 0 ||
-    //             (a[1] * b[2] - a[2] * b[1]).get_sign() != 0 ||
-    //             (a[0] * b[2] - a[2] * b[0]).get_sign() != 0) {
-    //             // not colinear continue
-    //             continue;
-    //         }
-    //         const Vector3r c = points[nextnext] - points[next];
-
-    //         if (((b[0] * c[1] - b[1] * c[0]).get_sign() != 0 ||
-    //              (b[1] * c[2] - b[2] * c[1]).get_sign() != 0 ||
-    //              (b[0] * c[2] - b[2] * c[0]).get_sign() != 0)) {
-    //             no_colinear = false;
-    //             triangulated_faces.emplace_back(std::array<int64_t, 3>({{cur, next,
-    //             nextnext}})); points_vector.erase(points_vector.begin() + ((i + 1) %
-    //             points_vector.size()));
-
-    //             break;
-    //         } else {
-    //             continue;
-    //         }
-    //     }
-
-    //     if (no_colinear) break;
-    // }
 
     // cache version
     std::vector<int64_t> points_vector = face;
@@ -360,9 +307,14 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(
         const Vector3r b =
             points[points_vector[(i + 1) % points_vector.size()]] - points[points_vector[i]];
 
-        if ((a[0] * b[1] - a[1] * b[0]).get_sign() != 0 ||
-            (a[1] * b[2] - a[2] * b[1]).get_sign() != 0 ||
-            (a[0] * b[2] - a[2] * b[0]).get_sign() != 0) {
+        // if ((a[0] * b[1] - a[1] * b[0]).get_sign() != 0 ||
+        //     (a[1] * b[2] - a[2] * b[1]).get_sign() != 0 ||
+        //     (a[0] * b[2] - a[2] * b[0]).get_sign() != 0) {
+        if (!is_collinear(
+                points[points_vector[i]],
+                points[points_vector[(i + points_vector.size() - 1) % points_vector.size()]],
+                points[points_vector[(i + 1) % points_vector.size()]],
+                out)) {
             is_point_noncolinear[i] = true;
         } else {
             is_point_noncolinear[i] = false;
@@ -388,14 +340,6 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(
         }
         colinear_cnt--;
     }
-
-    // // cleanup convex polygon
-    // while (points_vector.size() >= 3) {
-    //     triangulated_faces.emplace_back(
-    //         std::array<int64_t, 3>({{points_vector[0], points_vector[1],
-    //         points_vector.back()}}));
-    //     points_vector.erase(points_vector.begin());
-    // }
 
     assert(points_vector.size() >= 3);
 
@@ -586,13 +530,11 @@ generate_raw_tetmesh_from_input_surface(
 
 
     wmtk::logger().trace("Triangulation loop...");
-
     for (int64_t i = 0; i < polygon_faces.size(); ++i) {
         // already clipped in other polygon
         if (map_poly_to_tri_face[i].size() != 0) continue;
 
         // new polygon face to clip
-
         std::vector<std::array<int64_t, 3>> clipped_indices;
         const std::vector<int64_t>& polygon_face = polygon_faces[i];
 
@@ -644,17 +586,16 @@ generate_raw_tetmesh_from_input_surface(
     wmtk::logger().info("tetrahedralization starting...");
 
     // debugging log, to remove
-    int64_t is_tet = 0;
-    for (int64_t i = 0; i < polygon_cells.size(); ++i) {
-        auto polygon_cell = polygon_cells[i];
-        int64_t num_faces = 0;
-        for (auto f : polygon_cell) {
-            num_faces += map_poly_to_tri_face[f].size();
-        }
-        if (num_faces == 4) is_tet++;
-    }
-
-    wmtk::logger().info("{} out of {} polygon cells are tets", is_tet, polygon_cells.size());
+    // int64_t is_tet = 0;
+    // for (int64_t i = 0; i < polygon_cells.size(); ++i) {
+    //     auto polygon_cell = polygon_cells[i];
+    //     int64_t num_faces = 0;
+    //     for (auto f : polygon_cell) {
+    //         num_faces += map_poly_to_tri_face[f].size();
+    //     }
+    //     if (num_faces == 4) is_tet++;
+    // }
+    // wmtk::logger().info("{} out of {} polygon cells are tets", is_tet, polygon_cells.size());
 
     // tetrahedralization polygon cells
     // int64_t was_tet_cnt = 0;
@@ -804,281 +745,283 @@ generate_raw_tetmesh_from_input_surface(
         int64_t centroid_idx = v_coords.size();
         v_coords.push_back(centroid);
 
-        // for (auto f : polygon_cell) {
-        //     for (auto t : map_poly_to_tri_face[f]) {
-        //         std::array<int64_t, 4> tetra = {
-        //             {triangulated_faces[t][0],
-        //              triangulated_faces[t][1],
-        //              triangulated_faces[t][2],
-        //              centroid_idx}};
+        for (auto f : polygon_cell) {
+            for (auto t : map_poly_to_tri_face[f]) {
+                std::array<int64_t, 4> tetra = {
+                    {triangulated_faces[t][0],
+                     triangulated_faces[t][1],
+                     triangulated_faces[t][2],
+                     centroid_idx}};
 
-        //         if (wmtk_orient3d(
-        //                 v_coords[tetra[0]],
-        //                 v_coords[tetra[1]],
-        //                 v_coords[tetra[2]],
-        //                 v_coords[tetra[3]]) < 0) {
-        //             tetra = {
-        //                 {triangulated_faces[t][1],
-        //                  triangulated_faces[t][0],
-        //                  triangulated_faces[t][2],
-        //                  centroid_idx}};
-        //         }
+                if (wmtk_orient3d(
+                        v_coords[tetra[0]],
+                        v_coords[tetra[1]],
+                        v_coords[tetra[2]],
+                        v_coords[tetra[3]]) < 0) {
+                    tetra = {
+                        {triangulated_faces[t][1],
+                         triangulated_faces[t][0],
+                         triangulated_faces[t][2],
+                         centroid_idx}};
+                }
 
-        //         tets_final.push_back(tetra);
+                tets_final.push_back(tetra);
 
-
-        //         tet_face_on_input_surface.push_back(
-        //             {{false, false, false, triangulated_faces_on_input[t]}});
-        //     }
-        // }
-
-        // new ver
-
-        timer.start();
-        Eigen::MatrixXi F, FF;
-        Eigen::VectorXi C;
-        F.resize(num_faces, 3);
-        FF.resize(num_faces, 3);
-        C.resize(num_faces);
-
-        int64_t row = 0;
-
-        for (const auto& f : polygon_cell) {
-            for (const auto& t : map_poly_to_tri_face[f]) {
-                F.row(row) << triangulated_faces[t][0], triangulated_faces[t][1],
-                    triangulated_faces[t][2];
-
-                assert(triangulated_faces[t][0] < v_coords.size() && triangulated_faces[t][0] >= 0);
-                assert(triangulated_faces[t][1] < v_coords.size() && triangulated_faces[t][1] >= 0);
-                assert(triangulated_faces[t][2] < v_coords.size() && triangulated_faces[t][2] >= 0);
-
-                assert(F(row, 0) < v_coords.size() && F(row, 0) >= 0);
-                assert(F(row, 1) < v_coords.size() && F(row, 1) >= 0);
-                assert(F(row, 2) < v_coords.size() && F(row, 2) >= 0);
-
-                row++;
 
                 tet_face_on_input_surface.push_back(
                     {{false, false, false, triangulated_faces_on_input[t]}});
             }
         }
 
-        timer.stop();
-        matrix_construct_time += timer.getElapsedTimeInSec();
+        // new version, use igl::bfs_orient
+        //     timer.start();
+        //     Eigen::MatrixXi F, FF;
+        //     Eigen::VectorXi C;
+        //     F.resize(num_faces, 3);
+        //     FF.resize(num_faces, 3);
+        //     C.resize(num_faces);
 
-        timer.start();
-        igl::bfs_orient(F, FF, C);
-        timer.stop();
-        bfs_orient_time += timer.getElapsedTimeInSec();
+        //     int64_t row = 0;
 
-        timer.start();
-        if (wmtk_orient3d(
-                v_coords[FF(0, 0)],
-                v_coords[FF(0, 1)],
-                v_coords[FF(0, 2)],
-                v_coords[centroid_idx]) > 0) {
-            for (int64_t i = 0; i < FF.rows(); ++i) {
-                std::array<int64_t, 4> tetra = {{FF(i, 0), FF(i, 1), FF(i, 2), centroid_idx}};
-                assert(FF(i, 0) < v_coords.size() && FF(i, 0) >= 0);
-                assert(FF(i, 1) < v_coords.size() && FF(i, 1) >= 0);
-                assert(FF(i, 2) < v_coords.size() && FF(i, 2) >= 0);
-                assert(centroid_idx < v_coords.size() && centroid_idx >= 0);
+        //     for (const auto& f : polygon_cell) {
+        //         for (const auto& t : map_poly_to_tri_face[f]) {
+        //             F.row(row) << triangulated_faces[t][0], triangulated_faces[t][1],
+        //                 triangulated_faces[t][2];
 
-                assert(
-                    wmtk_orient3d(
-                        v_coords[FF(i, 0)],
-                        v_coords[FF(i, 1)],
-                        v_coords[FF(i, 2)],
-                        v_coords[centroid_idx]) != 0);
+        //             assert(triangulated_faces[t][0] < v_coords.size() && triangulated_faces[t][0]
+        //             >= 0); assert(triangulated_faces[t][1] < v_coords.size() &&
+        //             triangulated_faces[t][1] >= 0); assert(triangulated_faces[t][2] <
+        //             v_coords.size() && triangulated_faces[t][2] >= 0);
 
-                tets_final.push_back(tetra);
+        //             assert(F(row, 0) < v_coords.size() && F(row, 0) >= 0);
+        //             assert(F(row, 1) < v_coords.size() && F(row, 1) >= 0);
+        //             assert(F(row, 2) < v_coords.size() && F(row, 2) >= 0);
+
+        //             row++;
+
+        //             tet_face_on_input_surface.push_back(
+        //                 {{false, false, false, triangulated_faces_on_input[t]}});
+        //         }
+        //     }
+
+        //     timer.stop();
+        //     matrix_construct_time += timer.getElapsedTimeInSec();
+
+        //     timer.start();
+        //     igl::bfs_orient(F, FF, C);
+        //     timer.stop();
+        //     bfs_orient_time += timer.getElapsedTimeInSec();
+
+        //     timer.start();
+        //     if (wmtk_orient3d(
+        //             v_coords[FF(0, 0)],
+        //             v_coords[FF(0, 1)],
+        //             v_coords[FF(0, 2)],
+        //             v_coords[centroid_idx]) > 0) {
+        //         for (int64_t i = 0; i < FF.rows(); ++i) {
+        //             std::array<int64_t, 4> tetra = {{FF(i, 0), FF(i, 1), FF(i, 2),
+        //             centroid_idx}}; assert(FF(i, 0) < v_coords.size() && FF(i, 0) >= 0);
+        //             assert(FF(i, 1) < v_coords.size() && FF(i, 1) >= 0);
+        //             assert(FF(i, 2) < v_coords.size() && FF(i, 2) >= 0);
+        //             assert(centroid_idx < v_coords.size() && centroid_idx >= 0);
+
+        //             assert(
+        //                 wmtk_orient3d(
+        //                     v_coords[FF(i, 0)],
+        //                     v_coords[FF(i, 1)],
+        //                     v_coords[FF(i, 2)],
+        //                     v_coords[centroid_idx]) != 0);
+
+        //             tets_final.push_back(tetra);
+        //         }
+        //     } else {
+        //         for (int64_t i = 0; i < FF.rows(); ++i) {
+        //             std::array<int64_t, 4> tetra = {{FF(i, 1), FF(i, 0), FF(i, 2),
+        //             centroid_idx}};
+
+        //             assert(FF(i, 0) < v_coords.size() && FF(i, 0) >= 0);
+        //             assert(FF(i, 1) < v_coords.size() && FF(i, 1) >= 0);
+        //             assert(FF(i, 2) < v_coords.size() && FF(i, 2) >= 0);
+        //             assert(centroid_idx < v_coords.size() && centroid_idx >= 0);
+
+        //             assert(
+        //                 wmtk_orient3d(
+        //                     v_coords[FF(i, 0)],
+        //                     v_coords[FF(i, 1)],
+        //                     v_coords[FF(i, 2)],
+        //                     v_coords[centroid_idx]) != 0);
+
+
+        //             tets_final.push_back(tetra);
+        //         }
+        //     }
+
+        //     timer.stop();
+        //     orient3d_poly_time += timer.getElapsedTimeInSec();
+        // }
+
+        // double get_vertex_time = 0;
+        // double vertor_unique_time = 0;
+        // double orient3d_tet_time = 0;
+        // double orient3d_poly_time = 0;
+        // double bfs_orient_time = 0;
+        // double matrix_construct_time = 0;
+        // double set_time = 0;
+        // double centroid_time = 0;
+        // int64_t tet_cnt = 0;
+
+        wmtk::logger().info("get_vertex_time: {}", get_vertex_time);
+        wmtk::logger().info("vertor_unique_time: {}", vertor_unique_time);
+        wmtk::logger().info("orient3d_tet_time: {}, tet count: {}", orient3d_tet_time, tet_cnt);
+        wmtk::logger().info("orient3d_poly_time: {}", orient3d_poly_time);
+        wmtk::logger().info("bfs_orient_time: {}", bfs_orient_time);
+        wmtk::logger().info("matrix_construct_time: {}", matrix_construct_time);
+        wmtk::logger().info("set_compare_time: {}", set_time);
+        wmtk::logger().info("centroid_time: {}", centroid_time);
+
+        wmtk::logger().info("tetrahedralization finished.");
+
+        // remove unused vertices and map
+        std::vector<bool> v_is_used_in_tet(v_coords.size(), false);
+        for (const auto& t : tets_final) {
+            for (const auto& v : t) {
+                v_is_used_in_tet[v] = true;
             }
-        } else {
-            for (int64_t i = 0; i < FF.rows(); ++i) {
-                std::array<int64_t, 4> tetra = {{FF(i, 1), FF(i, 0), FF(i, 2), centroid_idx}};
+        }
 
-                assert(FF(i, 0) < v_coords.size() && FF(i, 0) >= 0);
-                assert(FF(i, 1) < v_coords.size() && FF(i, 1) >= 0);
-                assert(FF(i, 2) < v_coords.size() && FF(i, 2) >= 0);
-                assert(centroid_idx < v_coords.size() && centroid_idx >= 0);
+        std::map<int64_t, int64_t> v_map;
+        std::vector<Vector3d> v_coords_final;
+        std::vector<Vector3r> v_coords_final_rational;
 
-                assert(
-                    wmtk_orient3d(
-                        v_coords[FF(i, 0)],
-                        v_coords[FF(i, 1)],
-                        v_coords[FF(i, 2)],
-                        v_coords[centroid_idx]) != 0);
-
-
-                tets_final.push_back(tetra);
+        for (int64_t i = 0; i < v_coords.size(); ++i) {
+            if (v_is_used_in_tet[i]) {
+                v_map[i] = v_coords_final.size();
+                v_coords_final.emplace_back(
+                    v_coords[i][0].to_double(),
+                    v_coords[i][1].to_double(),
+                    v_coords[i][2].to_double());
+                v_coords_final_rational.emplace_back(v_coords[i]);
             }
         }
 
-        timer.stop();
-        orient3d_poly_time += timer.getElapsedTimeInSec();
-    }
+        // remap tets
+        for (auto& t : tets_final) {
+            for (int i = 0; i < 4; ++i) {
+                t[i] = v_map[t[i]];
+            }
 
-    // double get_vertex_time = 0;
-    // double vertor_unique_time = 0;
-    // double orient3d_tet_time = 0;
-    // double orient3d_poly_time = 0;
-    // double bfs_orient_time = 0;
-    // double matrix_construct_time = 0;
-    // double set_time = 0;
-    // double centroid_time = 0;
-    // int64_t tet_cnt = 0;
-
-    wmtk::logger().info("get_vertex_time: {}", get_vertex_time);
-    wmtk::logger().info("vertor_unique_time: {}", vertor_unique_time);
-    wmtk::logger().info("orient3d_tet_time: {}, tet count: {}", orient3d_tet_time, tet_cnt);
-    wmtk::logger().info("orient3d_poly_time: {}", orient3d_poly_time);
-    wmtk::logger().info("bfs_orient_time: {}", bfs_orient_time);
-    wmtk::logger().info("matrix_construct_time: {}", matrix_construct_time);
-    wmtk::logger().info("set_compare_time: {}", set_time);
-    wmtk::logger().info("centroid_time: {}", centroid_time);
-
-    wmtk::logger().info("tetrahedralization finished.");
-    exit(0);
-
-    // remove unused vertices and map
-    std::vector<bool> v_is_used_in_tet(v_coords.size(), false);
-    for (const auto& t : tets_final) {
-        for (const auto& v : t) {
-            v_is_used_in_tet[v] = true;
-        }
-    }
-
-    std::map<int64_t, int64_t> v_map;
-    std::vector<Vector3d> v_coords_final;
-    std::vector<Vector3r> v_coords_final_rational;
-
-    for (int64_t i = 0; i < v_coords.size(); ++i) {
-        if (v_is_used_in_tet[i]) {
-            v_map[i] = v_coords_final.size();
-            v_coords_final.emplace_back(
-                v_coords[i][0].to_double(),
-                v_coords[i][1].to_double(),
-                v_coords[i][2].to_double());
-            v_coords_final_rational.emplace_back(v_coords[i]);
-        }
-    }
-
-    // remap tets
-    for (auto& t : tets_final) {
-        for (int i = 0; i < 4; ++i) {
-            t[i] = v_map[t[i]];
-        }
-
-        if (wmtk_orient3d(
-                v_coords_final_rational[t[0]],
-                v_coords_final_rational[t[1]],
-                v_coords_final_rational[t[2]],
-                v_coords_final_rational[t[3]]) <= 0) {
-            Eigen::Matrix<Rational, 3, 3> tmp;
-            tmp.col(0) = v_coords_final_rational[t[1]] - v_coords_final_rational[t[0]];
-            tmp.col(1) = v_coords_final_rational[t[2]] - v_coords_final_rational[t[0]];
-            tmp.col(2) = v_coords_final_rational[t[3]] - v_coords_final_rational[t[0]];
-            log_and_throw_error(
-                "flipped tet=({},{},{},{}) crash vol={} orient={}",
-                t[0],
-                t[1],
-                t[2],
-                t[3],
-                tmp.determinant().serialize(),
-                wmtk_orient3d(
+            if (wmtk_orient3d(
                     v_coords_final_rational[t[0]],
                     v_coords_final_rational[t[1]],
                     v_coords_final_rational[t[2]],
-                    v_coords_final_rational[t[3]]));
-        }
-    }
-
-    // transfer v_coords_final to V matrix and tets_final to TV matrix
-    RowVectors3d V_final(v_coords_final.size(), 3);
-    RowVectors3r V_final_rational(v_coords_final_rational.size(), 3);
-    RowVectors4l TV_final(tets_final.size(), 4);
-
-
-    for (int64_t i = 0; i < v_coords_final.size(); ++i) {
-        V_final.row(i) = v_coords_final[i];
-    }
-
-    for (int64_t i = 0; i < v_coords_final_rational.size(); ++i) {
-        V_final_rational.row(i) = v_coords_final_rational[i];
-    }
-
-    for (int64_t i = 0; i < tets_final.size(); ++i) {
-        TV_final.row(i) << tets_final[i][0], tets_final[i][1], tets_final[i][2], tets_final[i][3];
-    }
-
-    wmtk::logger().info("remove unused vertices finished.");
-
-    // initialize tetmesh
-    std::shared_ptr<wmtk::TetMesh> m = std::make_shared<wmtk::TetMesh>();
-    m->initialize(TV_final);
-    // mesh_utils::set_matrix_attribute(V_final, "vertices", PrimitiveType::Vertex, *m);
-    mesh_utils::set_matrix_attribute(V_final_rational, "vertices", PrimitiveType::Vertex, *m);
-
-    wmtk::logger().info("init tetmesh finished.");
-
-    if (!m->is_connectivity_valid()) {
-        wmtk::logger().error("invalid tetmesh connectivity after insertion");
-        throw std::runtime_error("invalid tetmesh connectivity by insertion");
-    }
-
-    return std::make_tuple(m, tet_face_on_input_surface);
-}
-
-std::tuple<std::shared_ptr<wmtk::TetMesh>, std::shared_ptr<wmtk::Mesh>>
-generate_raw_tetmesh_with_surface_from_input(
-    const RowVectors3d& V,
-    const RowVectors3l& F,
-    const double eps_target,
-    const RowVectors3d& bgV,
-    const RowVectors4l& bgF)
-{
-    constexpr static PrimitiveType PV = PrimitiveType::Vertex;
-    constexpr static PrimitiveType PE = PrimitiveType::Edge;
-    constexpr static PrimitiveType PF = PrimitiveType::Triangle;
-    constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
-
-    auto [tetmesh, tet_face_on_input_surface] =
-        generate_raw_tetmesh_from_input_surface(V, F, eps_target, bgV, bgF);
-
-    auto surface_handle =
-        tetmesh->register_attribute<int64_t>("surface", PrimitiveType::Triangle, 1);
-    auto surface_accessor = tetmesh->create_accessor<int64_t>(surface_handle);
-
-    const auto& tets = tetmesh->get_all(PrimitiveType::Tetrahedron);
-    assert(tets.size() == tet_face_on_input_surface.size());
-
-    for (int64_t i = 0; i < tets.size(); ++i) {
-        const auto& t = tets[i]; // local face 2
-        std::array<Tuple, 4> fs = {
-            {tetmesh->switch_tuples(t, {PV, PE, PF}),
-             tetmesh->switch_tuples(t, {PE, PF}),
-             t,
-             tetmesh->switch_tuples(t, {PF})}};
-
-        for (int64_t j = 0; j < 4; ++j) {
-            if (tet_face_on_input_surface[i][j]) {
-                surface_accessor.scalar_attribute(fs[j]) = 1;
-            } else {
-                surface_accessor.scalar_attribute(fs[j]) = 0;
+                    v_coords_final_rational[t[3]]) <= 0) {
+                Eigen::Matrix<Rational, 3, 3> tmp;
+                tmp.col(0) = v_coords_final_rational[t[1]] - v_coords_final_rational[t[0]];
+                tmp.col(1) = v_coords_final_rational[t[2]] - v_coords_final_rational[t[0]];
+                tmp.col(2) = v_coords_final_rational[t[3]] - v_coords_final_rational[t[0]];
+                log_and_throw_error(
+                    "flipped tet=({},{},{},{}) crash vol={} orient={}",
+                    t[0],
+                    t[1],
+                    t[2],
+                    t[3],
+                    tmp.determinant().serialize(),
+                    wmtk_orient3d(
+                        v_coords_final_rational[t[0]],
+                        v_coords_final_rational[t[1]],
+                        v_coords_final_rational[t[2]],
+                        v_coords_final_rational[t[3]]));
             }
         }
+
+        // transfer v_coords_final to V matrix and tets_final to TV matrix
+        RowVectors3d V_final(v_coords_final.size(), 3);
+        RowVectors3r V_final_rational(v_coords_final_rational.size(), 3);
+        RowVectors4l TV_final(tets_final.size(), 4);
+
+
+        for (int64_t i = 0; i < v_coords_final.size(); ++i) {
+            V_final.row(i) = v_coords_final[i];
+        }
+
+        for (int64_t i = 0; i < v_coords_final_rational.size(); ++i) {
+            V_final_rational.row(i) = v_coords_final_rational[i];
+        }
+
+        for (int64_t i = 0; i < tets_final.size(); ++i) {
+            TV_final.row(i) << tets_final[i][0], tets_final[i][1], tets_final[i][2],
+                tets_final[i][3];
+        }
+
+        wmtk::logger().info("remove unused vertices finished.");
+
+        // initialize tetmesh
+        std::shared_ptr<wmtk::TetMesh> m = std::make_shared<wmtk::TetMesh>();
+        m->initialize(TV_final);
+        // mesh_utils::set_matrix_attribute(V_final, "vertices", PrimitiveType::Vertex, *m);
+        mesh_utils::set_matrix_attribute(V_final_rational, "vertices", PrimitiveType::Vertex, *m);
+
+        wmtk::logger().info("init tetmesh finished.");
+
+        if (!m->is_connectivity_valid()) {
+            wmtk::logger().error("invalid tetmesh connectivity after insertion");
+            throw std::runtime_error("invalid tetmesh connectivity by insertion");
+        }
+
+        return std::make_tuple(m, tet_face_on_input_surface);
     }
 
-    auto child_ptr = wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
-        *tetmesh,
-        "surface",
-        1,
-        PF);
+    std::tuple<std::shared_ptr<wmtk::TetMesh>, std::shared_ptr<wmtk::Mesh>>
+    generate_raw_tetmesh_with_surface_from_input(
+        const RowVectors3d& V,
+        const RowVectors3l& F,
+        const double eps_target,
+        const RowVectors3d& bgV,
+        const RowVectors4l& bgF)
+    {
+        constexpr static PrimitiveType PV = PrimitiveType::Vertex;
+        constexpr static PrimitiveType PE = PrimitiveType::Edge;
+        constexpr static PrimitiveType PF = PrimitiveType::Triangle;
+        constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
 
-    wmtk::logger().info("registered surface child mesh to tetmesh. Tetmesh has face attribute with "
-                        "name \"surface\"");
+        auto [tetmesh, tet_face_on_input_surface] =
+            generate_raw_tetmesh_from_input_surface(V, F, eps_target, bgV, bgF);
 
-    return std::make_tuple(tetmesh, child_ptr);
-}
+        auto surface_handle =
+            tetmesh->register_attribute<int64_t>("surface", PrimitiveType::Triangle, 1);
+        auto surface_accessor = tetmesh->create_accessor<int64_t>(surface_handle);
+
+        const auto& tets = tetmesh->get_all(PrimitiveType::Tetrahedron);
+        assert(tets.size() == tet_face_on_input_surface.size());
+
+        for (int64_t i = 0; i < tets.size(); ++i) {
+            const auto& t = tets[i]; // local face 2
+            std::array<Tuple, 4> fs = {
+                {tetmesh->switch_tuples(t, {PV, PE, PF}),
+                 tetmesh->switch_tuples(t, {PE, PF}),
+                 t,
+                 tetmesh->switch_tuples(t, {PF})}};
+
+            for (int64_t j = 0; j < 4; ++j) {
+                if (tet_face_on_input_surface[i][j]) {
+                    surface_accessor.scalar_attribute(fs[j]) = 1;
+                } else {
+                    surface_accessor.scalar_attribute(fs[j]) = 0;
+                }
+            }
+        }
+
+        auto child_ptr = wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+            *tetmesh,
+            "surface",
+            1,
+            PF);
+
+        wmtk::logger().info(
+            "registered surface child mesh to tetmesh. Tetmesh has face attribute with "
+            "name \"surface\"");
+
+        return std::make_tuple(tetmesh, child_ptr);
+    }
 
 } // namespace wmtk::utils
