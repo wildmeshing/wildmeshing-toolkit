@@ -5,6 +5,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
+#include <wmtk/simplex/internal/VisitedArray.hpp>
 
 namespace wmtk::simplex {
 
@@ -103,7 +104,7 @@ public:
         IteratorPhase m_phase = IteratorPhase::Forward; // for depth 1 and 2 iteration
 
         std::queue<Tuple> m_queue; // for depth 3 iteration
-        std::vector<bool> m_visited; // for depth 3 iteration
+        simplex::internal::VisitedArray<int64_t> m_visited; // for depth 3 iteration
     };
 
 public:

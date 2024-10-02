@@ -109,9 +109,7 @@ void CofacesSingleDimensionIterable::Iterator::init()
     } else if (depth() == 3) {
         // d - 3 --> BFS
 
-        m_visited = std::vector<bool>(mesh.get_all(PrimitiveType::Tetrahedron).size(), false);
-
-        m_visited[wmtk::utils::TupleInspector::global_cid(m_t)] = true;
+        m_visited.is_visited(wmtk::utils::TupleInspector::global_cid(m_t));
         m_queue.push(m_t);
 
         step_depth_3();
@@ -205,8 +203,7 @@ CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterato
         const Tuple neigh = mesh.switch_tuple(tt, pt(0));
         const int64_t neigh_id = wmtk::utils::TupleInspector::global_cid(neigh);
 
-        if (!m_visited[neigh_id]) {
-            m_visited[neigh_id] = true;
+        if (!m_visited.is_visited(neigh_id)) {
             m_queue.push(neigh);
         }
     }
