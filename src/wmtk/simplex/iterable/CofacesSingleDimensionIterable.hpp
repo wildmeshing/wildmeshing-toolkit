@@ -3,6 +3,7 @@
 #include <queue>
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/simplex/RawSimplex.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/simplex/internal/VisitedArray.hpp>
@@ -85,6 +86,8 @@ public:
          */
         Iterator step_depth_3();
 
+        void add_neighbors_to_queue();
+
 
     private:
         const CofacesSingleDimensionIterable* m_container;
@@ -94,6 +97,8 @@ public:
 
         std::queue<Tuple> m_queue; // for depth 3 iteration
         simplex::internal::VisitedArray<int64_t> m_visited; // for depth 3 iteration
+        simplex::internal::VisitedArray<simplex::RawSimplex>
+            m_visited_cofaces; // for depth 3 iteration
     };
 
 public:

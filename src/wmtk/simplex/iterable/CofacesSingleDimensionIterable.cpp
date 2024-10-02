@@ -4,6 +4,8 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 
+#include "CofacesInSimplexIterable.hpp"
+
 namespace wmtk::simplex {
 
 
@@ -110,9 +112,10 @@ void CofacesSingleDimensionIterable::Iterator::init()
         // d - 3 --> BFS
 
         m_visited.is_visited(wmtk::utils::TupleInspector::global_cid(m_t));
-        m_queue.push(m_t);
+        m_visited_cofaces.is_visited(
+            simplex::RawSimplex(mesh, simplex::Simplex(mesh, m_container->m_cofaces_type, m_t)));
 
-        step_depth_3();
+        add_neighbors_to_queue();
     }
 }
 
@@ -183,16 +186,62 @@ CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterato
 CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterator::step_depth_3()
 {
     const Mesh& mesh = *(m_container->m_mesh);
+    const simplex::Simplex& simplex = m_container->m_simplex;
+    const PrimitiveType& cofaces_type = m_container->m_cofaces_type;
 
-    if (m_queue.empty()) {
-        Tuple rt = m_t;
+    if (coface_depth() > 0) {
+        // iterate for cofaces
+        for (const Tuple& t : CofacesInSimplexIterable(
+                 mesh,
+                 simplex::Simplex(mesh, simplex.primitive_type(), m_t),
+                 mesh.top_simplex_type())) {
+            if (!m_visited_cofaces.is_visited(
+                    simplex::RawSimplex(mesh, simplex::Simplex(mesh, cofaces_type, t)))) {
+                m_t = t;
+                return *this;
+            }
+        }
+
+        while (!m_queue.empty()) {
+            m_t = m_queue.front();
+            m_queue.pop();
+
+            add_neighbors_to_queue();
+
+            for (const Tuple& t : CofacesInSimplexIterable(
+                     mesh,
+                     simplex::Simplex(mesh, simplex.primitive_type(), m_t),
+                     mesh.top_simplex_type())) {
+                if (!m_visited_cofaces.is_visited(
+                        simplex::RawSimplex(mesh, simplex::Simplex(mesh, cofaces_type, t)))) {
+                    m_t = t;
+                    return *this;
+                }
+            }
+        }
+
         m_t = Tuple();
-        return Iterator(*m_container, rt);
+        return *this;
+    } else {
+        if (m_queue.empty()) {
+            Tuple rt = m_t;
+            m_t = Tuple();
+            return Iterator(*m_container, rt); // check if `rt` needed
+        }
+
+        m_t = m_queue.front();
+        m_queue.pop();
+
+        add_neighbors_to_queue();
     }
 
-    m_t = m_queue.front();
-    m_queue.pop();
 
+    return *this;
+}
+
+void CofacesSingleDimensionIterable::Iterator::add_neighbors_to_queue()
+{
+    const Mesh& mesh = *(m_container->m_mesh);
     const std::array<Tuple, 3> t_tris = {
         {m_t, mesh.switch_tuple(m_t, pt(1)), mesh.switch_tuples(m_t, {pt(2), pt(1)})}};
 
@@ -207,9 +256,6 @@ CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterato
             m_queue.push(neigh);
         }
     }
-
-
-    return *this;
 }
 
 } // namespace wmtk::simplex

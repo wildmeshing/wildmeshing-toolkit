@@ -26,7 +26,7 @@ CofacesInSimplexIterable::Iterator::Iterator(
 
 CofacesInSimplexIterable::Iterator CofacesInSimplexIterable::Iterator::operator++()
 {
-    std::array<PrimitiveType, 3> pts = {
+    constexpr std::array<PrimitiveType, 3> pts = {
         {PrimitiveType::Vertex, PrimitiveType::Edge, PrimitiveType::Triangle}};
 
     const Mesh& mesh = *(m_container->m_mesh);
