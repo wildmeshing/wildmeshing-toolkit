@@ -1,7 +1,7 @@
 #pragma once
 
 namespace wmtk::components::isotropic_remeshing {
-class IsotropicRemeshingOptions;
+struct IsotropicRemeshingOptions;
 
 void isotropic_remeshing(const IsotropicRemeshingOptions& options);
 
