@@ -118,6 +118,44 @@ get_local_trimesh_before_collapse(const wmtk::TriMesh& mesh, const wmtk::simplex
 std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
 get_local_trimesh(const wmtk::TetMesh& mesh, const wmtk::simplex::Simplex& simplex)
 {
+    // Get the vertex position attribute handle
+    auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto pos = mesh.create_const_accessor<double>(pos_handle);
+
+    // Create a map to store global-to-local vertex index mapping
+    std::unordered_map<int64_t, int> global_to_local_map;
+    // Get all tetrahedrons related to the given simplex
+    const auto cofaces = wmtk::simplex::top_dimension_cofaces(mesh, simplex)
+                             .simplex_vector(PrimitiveType::Tetrahedron);
+
+    // Initialize local tetrahedron face list and local-to-global mapping for tetrahedrons
+    Eigen::MatrixXi T(cofaces.size(), 4);
+    std::vector<int64_t> t_local_to_global(cofaces.size());
+
+    int vertex_count = 1;
+    global_to_local_map[mesh.id(simplex::Simplex::vertex(mesh, simplex.tuple()))] = 0;
+    int tet_count = 0;
+    for (const auto& t_tuple : cofaces) {
+        // Get the 4 vertices of the tetrahedron
+        Tuple cur_v = t_tuple.tuple();
+        if (mesh.is_ccw(cur_v)) {
+            cur_v = mesh.switch_edge(cur_v);
+        }
+
+        for (int i = 0; i < 3; i++) {
+            int64_t global_vid = mesh.id(wmtk::simplex::Simplex::vertex(mesh, cur_v));
+            // If vertex not in the map, add it
+            if (global_to_local_map.count(global_vid) == 0) {
+                global_to_local_map[global_vid] = vertex_count;
+                vertex_count++;
+            }
+
+            T(tet_count, i) = global_to_local_map[global_vid];
+            cur_v = mesh.switch_tuples(
+                cur_v,
+                {PrimitiveType::Edge, PrimitiveType::Vertex}); // Next vertex
+        }
+    }
     return std::make_tuple(
         Eigen::MatrixXi(),
         Eigen::MatrixXd(),
