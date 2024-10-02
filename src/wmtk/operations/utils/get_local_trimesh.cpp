@@ -151,20 +151,19 @@ get_local_tetmesh(const wmtk::TetMesh& mesh, const wmtk::simplex::Simplex& simpl
             }
 
             T(tet_count, i) = global_to_local_map[global_vid];
-            if (i == 3)
-            {
+            if (i == 3) {
                 cur_v = mesh.switch_tuples(
-                cur_v,
-                {PrimitiveType::Triangle, PrimitiveType::Edge, PrimitiveType::Vertex}); // Next vertex
-            }
-            else
-            {
-            cur_v = mesh.switch_tuples(
-                cur_v,
-                {PrimitiveType::Edge, PrimitiveType::Vertex}); // Next vertex
+                    cur_v,
+                    {PrimitiveType::Triangle,
+                     PrimitiveType::Edge,
+                     PrimitiveType::Vertex}); // Next vertex
+            } else {
+                cur_v = mesh.switch_tuples(
+                    cur_v,
+                    {PrimitiveType::Edge, PrimitiveType::Vertex}); // Next vertex
             }
         }
-      
+
         t_local_to_global[tet_count] = mesh.id(t_tuple);
         tet_count++;
     }
@@ -177,17 +176,69 @@ get_local_tetmesh(const wmtk::TetMesh& mesh, const wmtk::simplex::Simplex& simpl
     }
 
     return std::make_tuple(T, V, t_local_to_global, v_local_to_global);
-
 }
 
 std::tuple<Eigen::MatrixXi, Eigen::MatrixXd, std::vector<int64_t>, std::vector<int64_t>>
 get_local_tetmesh_before_collapse(const wmtk::TetMesh& mesh, const wmtk::simplex::Simplex& simplex)
 {
-    return std::make_tuple(
-        Eigen::MatrixXi(),
-        Eigen::MatrixXd(),
-        std::vector<int64_t>(),
-        std::vector<int64_t>());
+    assert(simplex.primitive_type() == PrimitiveType::Edge);
+
+    auto v0 = simplex::Simplex::vertex(mesh, simplex.tuple());
+    auto v1 = simplex::Simplex::vertex(mesh, mesh.switch_vertex(simplex.tuple()));
+
+    auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto pos = mesh.create_const_accessor<double>(pos_handle);
+
+    std::unordered_map<int64_t, int> global_to_local_map;
+    const auto cofaces0 = wmtk::simplex::top_dimension_cofaces(mesh, v0);
+    const auto cofaces1 = wmtk::simplex::top_dimension_cofaces(mesh, v1);
+    auto cofaces = simplex::SimplexCollection::get_union(cofaces0, cofaces1)
+                       .simplex_vector(PrimitiveType::Tetrahedron);
+
+    Eigen::MatrixXi T(cofaces.size(), 4);
+    std::vector<int64_t> t_local_to_global(cofaces.size());
+    int vertex_count = 1;
+
+    // the one which kept after collapse -- v1
+    global_to_local_map[mesh.id(v1)] = 0;
+
+    int tet_count = 0;
+    for (const auto& t_tuple : cofaces) {
+        // get 4 vertices
+        Tuple cur_v = t_tuple.tuple();
+        if (mesh.is_ccw(cur_v)) {
+            cur_v = mesh.switch_edge(cur_v);
+        }
+        for (int i = 0; i < 4; i++) {
+            int64_t global_vid = mesh.id(wmtk::simplex::Simplex::vertex(mesh, cur_v));
+            if (global_to_local_map.count(global_vid) == 0) {
+                global_to_local_map[global_vid] = vertex_count;
+                vertex_count++;
+            }
+            T(tet_count, i) = global_to_local_map[global_vid];
+            if (i == 3) {
+                cur_v = mesh.switch_tuples(
+                    cur_v,
+                    {PrimitiveType::Triangle,
+                     PrimitiveType::Edge,
+                     PrimitiveType::Vertex}); // next vertex
+            } else {
+                cur_v = mesh.switch_tuples(
+                    cur_v,
+                    {PrimitiveType::Edge, PrimitiveType::Vertex}); // next vertex
+            }
+        }
+    }
+
+    Eigen::MatrixXd V(vertex_count, pos.dimension());
+    std::vector<int64_t> v_local_to_global(vertex_count);
+    // build V
+    for (const auto& pair : global_to_local_map) {
+        v_local_to_global[pair.second] = pair.first;
+        V.row(pair.second) =
+            pos.const_vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, pair.first));
+    }
+    return std::make_tuple(T, V, t_local_to_global, v_local_to_global);
 }
 
 } // namespace wmtk::operations::utils
