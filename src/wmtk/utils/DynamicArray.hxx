@@ -36,6 +36,7 @@ void DynamicArray<T, ArraySize>::emplace_back(const T& val)
 {
     if (m_use_vector) {
         m_vector.emplace_back(val);
+        m_end_index++;
         return;
     }
 
