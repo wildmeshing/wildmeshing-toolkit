@@ -2,7 +2,9 @@ var namespacewmtk_1_1attribute =
 [
     [ "internal", "namespacewmtk_1_1attribute_1_1internal.html", "namespacewmtk_1_1attribute_1_1internal" ],
     [ "update_strategies", "namespacewmtk_1_1attribute_1_1update__strategies.html", null ],
-    [ "utils", "namespacewmtk_1_1attribute_1_1utils.html", "namespacewmtk_1_1attribute_1_1utils" ],
+    [ "utils", "namespacewmtk_1_1attribute_1_1utils.html", [
+      [ "variant_comparison", "namespacewmtk_1_1attribute_1_1utils.html#af33154e7d5a7fcb1a35d29ed7f050e9f", null ]
+    ] ],
     [ "Accessor", "classwmtk_1_1attribute_1_1_accessor.html", "classwmtk_1_1attribute_1_1_accessor" ],
     [ "Attribute", "classwmtk_1_1attribute_1_1_attribute.html", "classwmtk_1_1attribute_1_1_attribute" ],
     [ "MeshAttributes", "classwmtk_1_1attribute_1_1_mesh_attributes.html", "classwmtk_1_1attribute_1_1_mesh_attributes" ],

@@ -19,5 +19,6 @@ var classwmtk_1_1_mesh_c_r_t_p =
     [ "switch_tuples", "classwmtk_1_1_mesh_c_r_t_p.html#ab3cb3dac6bbba12336c6e24e6e8a5450", null ],
     [ "switch_tuples", "classwmtk_1_1_mesh_c_r_t_p.html#a86c37cdf582b78e672a2c048ba93b3ba", null ],
     [ "tuple_from_id", "classwmtk_1_1_mesh_c_r_t_p.html#a8883ca9a14143b3902a47081a1434e55", null ],
-    [ "attribute::Accessor", "classwmtk_1_1_mesh_c_r_t_p.html#a858527dd650e9b888f757f3e70f0940e", null ]
+    [ "attribute::Accessor", "classwmtk_1_1_mesh_c_r_t_p.html#a858527dd650e9b888f757f3e70f0940e", null ],
+    [ "multimesh::MultiMeshSimplexVisitor", "classwmtk_1_1_mesh_c_r_t_p.html#aa719cbea5d32f6cc40db26f5427c9f40", null ]
 ];

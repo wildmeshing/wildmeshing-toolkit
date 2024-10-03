@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['quadratic_5493',['Quadratic',['../namespacewmtk_1_1components_1_1adaptive__tessellation_1_1image.html#a42d2d9e68dcc8309b1d6c049d1fa8a43a52c8dd0bca4da5e73b9ba90ef228b7f0',1,'wmtk::components::adaptive_tessellation::image']]]
+  ['none_5564',['None',['../namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50a6adf97f83acf6453d4a6a4b1070f3754',1,'wmtk::operations::None()'],['../namespacewmtk_1_1operations.html#a66f2eeff5a03569f85abf655b0f64d48a6adf97f83acf6453d4a6a4b1070f3754',1,'wmtk::operations::None()'],['../namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa6adf97f83acf6453d4a6a4b1070f3754',1,'wmtk::operations::None()'],['../namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda6adf97f83acf6453d4a6a4b1070f3754',1,'wmtk::operations::None()']]]
 ];

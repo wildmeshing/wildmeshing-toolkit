@@ -2,11 +2,13 @@ var namespacewmtk_1_1simplex =
 [
     [ "internal", "namespacewmtk_1_1simplex_1_1internal.html", "namespacewmtk_1_1simplex_1_1internal" ],
     [ "utils", "namespacewmtk_1_1simplex_1_1utils.html", "namespacewmtk_1_1simplex_1_1utils" ],
+    [ "IdSimplex", "classwmtk_1_1simplex_1_1_id_simplex.html", "classwmtk_1_1simplex_1_1_id_simplex" ],
     [ "ClosedStarIterable", "classwmtk_1_1simplex_1_1_closed_star_iterable.html", "classwmtk_1_1simplex_1_1_closed_star_iterable" ],
     [ "FacesIterable", "classwmtk_1_1simplex_1_1_faces_iterable.html", "classwmtk_1_1simplex_1_1_faces_iterable" ],
     [ "LinkIterable", "classwmtk_1_1simplex_1_1_link_iterable.html", "classwmtk_1_1simplex_1_1_link_iterable" ],
     [ "OpenStarIterable", "classwmtk_1_1simplex_1_1_open_star_iterable.html", "classwmtk_1_1simplex_1_1_open_star_iterable" ],
     [ "TopDimensionCofacesIterable", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable" ],
+    [ "NavigatableSimplex", "classwmtk_1_1simplex_1_1_navigatable_simplex.html", "classwmtk_1_1simplex_1_1_navigatable_simplex" ],
     [ "RawSimplex", "classwmtk_1_1simplex_1_1_raw_simplex.html", "classwmtk_1_1simplex_1_1_raw_simplex" ],
     [ "RawSimplexCollection", "classwmtk_1_1simplex_1_1_raw_simplex_collection.html", "classwmtk_1_1simplex_1_1_raw_simplex_collection" ],
     [ "Simplex", "classwmtk_1_1simplex_1_1_simplex.html", "classwmtk_1_1simplex_1_1_simplex" ],

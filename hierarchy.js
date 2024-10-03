@@ -17,6 +17,8 @@ var hierarchy =
     ] ],
     [ "wmtk::attribute::AccessorCache< T >", "classwmtk_1_1attribute_1_1_accessor_cache.html", null ],
     [ "nlohmann::adl_serializer< std::filesystem::path >", "structnlohmann_1_1adl__serializer_3_01std_1_1filesystem_1_1path_01_4.html", null ],
+    [ "nlohmann::adl_serializer< wmtk::components::input::InputOptions >", "structnlohmann_1_1adl__serializer_3_01wmtk_1_1components_1_1input_1_1_input_options_01_4.html", null ],
+    [ "nlohmann::adl_serializer< wmtk::components::output::OutputOptions >", "structnlohmann_1_1adl__serializer_3_01wmtk_1_1components_1_1output_1_1_output_options_01_4.html", null ],
     [ "wmtk::utils::metaprogramming::detail::as_variant_impl< BaseVariantTraitsType, IsConst, TupleType, Index >", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl.html", null ],
     [ "wmtk::utils::metaprogramming::detail::as_variant_impl< BaseVariantTraitsType, IsConst, std::tuple< DerivedTypes... >, Index >", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html", null ],
     [ "wmtk::utils::metaprogramming::tuple::detail::as_variant_type< T >", "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1as__variant__type.html", null ],
@@ -59,9 +61,6 @@ var hierarchy =
     [ "wmtk::multimesh::attribute::CollapseNewValueApplicatorBase", "classwmtk_1_1multimesh_1_1attribute_1_1_collapse_new_value_applicator_base.html", null ],
     [ "wmtk::components::utils::ComponentOptionsBase", "structwmtk_1_1components_1_1utils_1_1_component_options_base.html", null ],
     [ "wmtk::attribute::internal::CompoundAccessor< N, MeshType, AttributeType >", "classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html", null ],
-    [ "wmtk::attribute::internal::CompoundAccessor< 3, wmtk::Mesh, char, wmtk::Rational, double >", "classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html", [
-      [ "wmtk::attribute::utils::HybridRationalAccessor< D, MeshType >", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_accessor.html", null ]
-    ] ],
     [ "wmtk::utils::metaprogramming::tuple::concatenate_types< T, U >", "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1concatenate__types.html", null ],
     [ "wmtk::utils::metaprogramming::tuple::concatenate_types< std::tuple< Ts... >, std::tuple< Us... > >", "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1concatenate__types_3_01std_1_1tuple_3_01_ts_86d0a69fecfbdc8ad2729d5312a1839cd.html", null ],
     [ "wmtk::components::procedural::DiskOptions::Coordinates", "structwmtk_1_1components_1_1procedural_1_1_disk_options_1_1_coordinates.html", null ],
@@ -145,7 +144,6 @@ var hierarchy =
     [ "wmtk::components::procedural::Grid3Options", "classwmtk_1_1components_1_1procedural_1_1_grid3_options.html", null ],
     [ "wmtk::components::procedural::GridOptions", "classwmtk_1_1components_1_1procedural_1_1_grid_options.html", null ],
     [ "wmtk::hash< T >", "classwmtk_1_1hash.html", null ],
-    [ "wmtk::hash< attribute::utils::HybridRationalAttribute< D > >", "classwmtk_1_1hash_3_01attribute_1_1utils_1_1_hybrid_rational_attribute_3_01_d_01_4_01_4.html", null ],
     [ "wmtk::hash< wmtk::attribute::AttributeHandle >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html", [
       [ "std::hash< wmtk::attribute::AttributeHandle >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html", null ]
     ] ],
@@ -165,9 +163,6 @@ var hierarchy =
     [ "wmtk::hash< wmtk::attribute::TypedAttributeHandle< wmtk::Rational > >", "classwmtk_1_1hash.html", [
       [ "std::hash< wmtk::attribute::TypedAttributeHandle< wmtk::Rational > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01wmtk_1_1_rational_01_4_01_4.html", null ]
     ] ],
-    [ "wmtk::hash< wmtk::attribute::utils::HybridRationalAttribute< D > >", "classwmtk_1_1hash.html", [
-      [ "std::hash< wmtk::attribute::utils::HybridRationalAttribute< D > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute_3_01_d_01_4_01_4.html", null ]
-    ] ],
     [ "wmtk::utils::Hashable", "classwmtk_1_1utils_1_1_hashable.html", [
       [ "wmtk::attribute::Attribute< T >", "classwmtk_1_1attribute_1_1_attribute.html", null ],
       [ "wmtk::utils::MerkleTreeInteriorNode", "classwmtk_1_1utils_1_1_merkle_tree_interior_node.html", [
@@ -182,18 +177,19 @@ var hierarchy =
     [ "wmtk::HDF5Reader", "classwmtk_1_1_h_d_f5_reader.html", null ],
     [ "wmtk::simplex::internal::HomogeneousSimplexEqualFunctor", "structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_equal_functor.html", null ],
     [ "wmtk::simplex::internal::HomogeneousSimplexLessFunctor", "structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_less_functor.html", null ],
+    [ "wmtk::simplex::IdSimplex", "classwmtk_1_1simplex_1_1_id_simplex.html", [
+      [ "wmtk::simplex::NavigatableSimplex", "classwmtk_1_1simplex_1_1_navigatable_simplex.html", null ]
+    ] ],
     [ "wmtk::components::adaptive_tessellation::image::Image", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html", null ],
     [ "wmtk::components::internal::ImportCacheOptions", "structwmtk_1_1components_1_1internal_1_1_import_cache_options.html", null ],
     [ "wmtk::operations::tet_mesh::EdgeOperationData::IncidentFaceData", "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_face_data.html", null ],
     [ "wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html", null ],
     [ "wmtk::operations::tet_mesh::EdgeOperationData::IncidentTetData", "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html", null ],
-    [ "wmtk::components::internal::InputOptions", "structwmtk_1_1components_1_1internal_1_1_input_options.html", null ],
+    [ "wmtk::components::input::InputOptions", "structwmtk_1_1components_1_1input_1_1_input_options.html", null ],
     [ "wmtk::invariants::Invariant", "classwmtk_1_1invariants_1_1_invariant.html", [
       [ "wmtk::EnergyFilterInvariant", "classwmtk_1_1_energy_filter_invariant.html", null ],
       [ "wmtk::MaxEdgeLengthInvariant", "classwmtk_1_1_max_edge_length_invariant.html", null ],
-      [ "wmtk::MinEdgeLengthInvariant", "classwmtk_1_1_min_edge_length_invariant.html", null ],
       [ "wmtk::MultiMeshEdgeTopologyInvariant", "classwmtk_1_1_multi_mesh_edge_topology_invariant.html", null ],
-      [ "wmtk::MultiMeshLinkConditionInvariant", "classwmtk_1_1_multi_mesh_link_condition_invariant.html", null ],
       [ "wmtk::MultiMeshMapValidInvariant", "classwmtk_1_1_multi_mesh_map_valid_invariant.html", null ],
       [ "wmtk::RoundedInvariant", "classwmtk_1_1_rounded_invariant.html", null ],
       [ "wmtk::SimplexInversionInvariant< T >", "classwmtk_1_1_simplex_inversion_invariant.html", null ],
@@ -220,7 +216,9 @@ var hierarchy =
       ] ],
       [ "wmtk::invariants::InvariantCollection", "classwmtk_1_1invariants_1_1_invariant_collection.html", null ],
       [ "wmtk::invariants::MaxFunctionInvariant", "classwmtk_1_1invariants_1_1_max_function_invariant.html", null ],
+      [ "wmtk::invariants::MinEdgeLengthInvariant", "classwmtk_1_1invariants_1_1_min_edge_length_invariant.html", null ],
       [ "wmtk::invariants::MinIncidentValenceInvariant", "classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html", null ],
+      [ "wmtk::invariants::MultiMeshLinkConditionInvariant", "classwmtk_1_1invariants_1_1_multi_mesh_link_condition_invariant.html", null ],
       [ "wmtk::invariants::NoBoundaryCollapseToInteriorInvariant", "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant.html", null ],
       [ "wmtk::invariants::NoChildMeshAttachingInvariant", "classwmtk_1_1invariants_1_1_no_child_mesh_attaching_invariant.html", null ],
       [ "wmtk::invariants::SeparateSubstructuresInvariant", "classwmtk_1_1invariants_1_1_separate_substructures_invariant.html", null ],
@@ -232,8 +230,7 @@ var hierarchy =
     ] ],
     [ "wmtk::attribute::internal::is_typed_attribute_handle< T >", "structwmtk_1_1attribute_1_1internal_1_1is__typed__attribute__handle.html", null ],
     [ "wmtk::attribute::internal::is_typed_attribute_handle< TypedAttributeHandle< T > >", "structwmtk_1_1attribute_1_1internal_1_1is__typed__attribute__handle_3_01_typed_attribute_handle_3_01_t_01_4_01_4.html", null ],
-    [ "wmtk::components::internal::IsotropicRemeshingAttributes", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes.html", null ],
-    [ "wmtk::components::internal::IsotropicRemeshingOptions", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_options.html", null ],
+    [ "wmtk::components::isotropic_remeshing::IsotropicRemeshingOptions", "structwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing_options.html", null ],
     [ "wmtk::utils::detail::PrimitiveTypeRange< Start, End, Inverted >::iterator", "classwmtk_1_1utils_1_1detail_1_1_primitive_type_range_1_1iterator.html", null ],
     [ "wmtk::simplex::utils::MeshSimplexComparator::Less", "classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator_1_1_less.html", null ],
     [ "wmtk::utils::metaprogramming::detail::DefaultComparatorType::Less", "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type_1_1_less.html", null ],
@@ -243,12 +240,14 @@ var hierarchy =
     ] ],
     [ "wmtk::components::Marching", "classwmtk_1_1components_1_1_marching.html", null ],
     [ "wmtk::components::MarchingOptions", "structwmtk_1_1components_1_1_marching_options.html", null ],
+    [ "wmtk::utils::mesh_type_from_dimension< DIM >", "structwmtk_1_1utils_1_1mesh__type__from__dimension.html", null ],
     [ "wmtk::utils::mesh_type_from_primitive_type< pt >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type.html", null ],
     [ "wmtk::utils::mesh_type_from_primitive_type< PrimitiveType::Edge >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_edge_01_4.html", null ],
     [ "wmtk::utils::mesh_type_from_primitive_type< PrimitiveType::Tetrahedron >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4.html", null ],
     [ "wmtk::utils::mesh_type_from_primitive_type< PrimitiveType::Triangle >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_triangle_01_4.html", null ],
     [ "wmtk::utils::mesh_type_from_primitive_type< PrimitiveType::Vertex >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_vertex_01_4.html", null ],
     [ "wmtk::attribute::MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", null ],
+    [ "wmtk::components::input::MeshCollection", "classwmtk_1_1components_1_1input_1_1_mesh_collection.html", null ],
     [ "wmtk::components::internal::MeshInfoOptions", "structwmtk_1_1components_1_1internal_1_1_mesh_info_options.html", null ],
     [ "wmtk::simplex::utils::MeshSimplexComparator", "classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator.html", null ],
     [ "wmtk::MeshWriter", "classwmtk_1_1_mesh_writer.html", [
@@ -256,7 +255,7 @@ var hierarchy =
       [ "wmtk::io::ParaviewWriter", "classwmtk_1_1io_1_1_paraview_writer.html", null ],
       [ "wmtk::utils::EigenMatrixWriter", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html", null ]
     ] ],
-    [ "wmtk::MshReader", "classwmtk_1_1_msh_reader.html", null ],
+    [ "wmtk::io::MshReader", "classwmtk_1_1io_1_1_msh_reader.html", null ],
     [ "wmtk::components::MultimeshBOptions", "structwmtk_1_1components_1_1_multimesh_b_options.html", null ],
     [ "wmtk::operations::utils::MultiMeshEdgeCollapseFunctor", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html", null ],
     [ "wmtk::operations::utils::MultiMeshEdgeSplitFunctor", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html", null ],
@@ -268,6 +267,8 @@ var hierarchy =
     [ "wmtk::components::MultimeshUVOptions", "structwmtk_1_1components_1_1_multimesh_u_v_options.html", null ],
     [ "wmtk::multimesh::MultiMeshVisitor< NodeFunctor_ >", "classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html", null ],
     [ "wmtk::multimesh::MultiMeshVisitorExecutor< MMVisitor >", "classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html", null ],
+    [ "wmtk::components::input::NamedMultiMesh", "classwmtk_1_1components_1_1input_1_1_named_multi_mesh.html", null ],
+    [ "wmtk::components::input::NamedMultiMesh::Node", "structwmtk_1_1components_1_1input_1_1_named_multi_mesh_1_1_node.html", null ],
     [ "std::numeric_limits< DScalar1< _Scalar, _Gradient > >", "classstd_1_1numeric__limits_3_01_d_scalar1_3_01___scalar_00_01___gradient_01_4_01_4.html", null ],
     [ "std::numeric_limits< DScalar2< _Scalar, _Gradient, _Hessian > >", "classstd_1_1numeric__limits_3_01_d_scalar2_3_01___scalar_00_01___gradient_00_01___hessian_01_4_01_4.html", null ],
     [ "wmtk::simplex::OpenStarIterable", "classwmtk_1_1simplex_1_1_open_star_iterable.html", null ],
@@ -279,8 +280,7 @@ var hierarchy =
         [ "wmtk::operations::OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", null ],
         [ "wmtk::operations::Rounding", "classwmtk_1_1operations_1_1_rounding.html", null ],
         [ "wmtk::operations::TetWildTangentialLaplacianSmoothing", "classwmtk_1_1operations_1_1_tet_wild_tangential_laplacian_smoothing.html", null ],
-        [ "wmtk::operations::composite::ProjectOperation", "classwmtk_1_1operations_1_1composite_1_1_project_operation.html", null ],
-        [ "wmtk::operations::utils::RoundRationalToDouble", "classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double.html", null ]
+        [ "wmtk::operations::composite::ProjectOperation", "classwmtk_1_1operations_1_1composite_1_1_project_operation.html", null ]
       ] ],
       [ "wmtk::operations::EdgeCollapse", "classwmtk_1_1operations_1_1_edge_collapse.html", null ],
       [ "wmtk::operations::EdgeSplit", "classwmtk_1_1operations_1_1_edge_split.html", null ],
@@ -295,6 +295,7 @@ var hierarchy =
       [ "wmtk::operations::composite::TriEdgeSwap", "classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html", null ],
       [ "wmtk::operations::composite::TriFaceSplit", "classwmtk_1_1operations_1_1composite_1_1_tri_face_split.html", null ]
     ] ],
+    [ "wmtk::components::output::OutputOptions", "structwmtk_1_1components_1_1output_1_1_output_options.html", null ],
     [ "wmtk::io::ParaviewWriter::ParaviewInternalWriter", "classwmtk_1_1io_1_1_paraview_writer_1_1_paraview_internal_writer.html", null ],
     [ "wmtk::components::PeriodicOptimizationOptions", "structwmtk_1_1components_1_1_periodic_optimization_options.html", null ],
     [ "wmtk::function::PerSimplexFunction", "classwmtk_1_1function_1_1_per_simplex_function.html", [
@@ -376,7 +377,6 @@ var hierarchy =
     [ "wmtk::components::ToPtsOptions", "classwmtk_1_1components_1_1_to_pts_options.html", null ],
     [ "wmtk::components::procedural::TriangleFanOptions", "classwmtk_1_1components_1_1procedural_1_1_triangle_fan_options.html", null ],
     [ "std::tuple", null, [
-      [ "wmtk::attribute::utils::HybridRationalAttribute< D >", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html", null ],
       [ "wmtk::autogen::Dart", "classwmtk_1_1autogen_1_1_dart.html", null ]
     ] ],
     [ "wmtk::Tuple", "classwmtk_1_1_tuple.html", null ],

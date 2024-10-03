@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['none_5492',['None',['../namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50a6adf97f83acf6453d4a6a4b1070f3754',1,'wmtk::operations::None()'],['../namespacewmtk_1_1operations.html#a66f2eeff5a03569f85abf655b0f64d48a6adf97f83acf6453d4a6a4b1070f3754',1,'wmtk::operations::None()'],['../namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa6adf97f83acf6453d4a6a4b1070f3754',1,'wmtk::operations::None()'],['../namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda6adf97f83acf6453d4a6a4b1070f3754',1,'wmtk::operations::None()']]]
+  ['mean_5561',['Mean',['../namespacewmtk_1_1operations.html#a66f2eeff5a03569f85abf655b0f64d48a3d6c9ac08ada31c184094bbc67afe00d',1,'wmtk::operations::Mean()'],['../namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa3d6c9ac08ada31c184094bbc67afe00d',1,'wmtk::operations::Mean()']]],
+  ['mirror_5frepeat_5562',['MIRROR_REPEAT',['../namespacewmtk_1_1components_1_1adaptive__tessellation_1_1image.html#a5718de370807d62b030d0d93ed8863a3a31dbbe4319ea02c28dad7cde7b782710',1,'wmtk::components::adaptive_tessellation::image']]],
+  ['msh_5563',['Msh',['../namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774a212bdda0427313f2b50852a9a31ea179',1,'wmtk::io']]]
 ];

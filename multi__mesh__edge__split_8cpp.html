@@ -130,6 +130,7 @@ $(document).ready(function(){initNavTree('multi__mesh__edge__split_8cpp.html',''
 <code>#include &lt;<a class="el" href="cofaces__single__dimension_8hpp_source.html">wmtk/simplex/cofaces_single_dimension.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="top__dimension__cofaces_8hpp_source.html">wmtk/simplex/top_dimension_cofaces.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_tri_mesh_8hpp_source.html">wmtk/TriMesh.hpp</a>&gt;</code><br />
+<code>#include &quot;<a class="el" href="_navigatable_simplex_8hpp_source.html">wmtk/simplex/NavigatableSimplex.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for multi_mesh_edge_split.cpp:</div>
 <div class="dyncontent">
@@ -152,8 +153,8 @@ Namespaces</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:a7bca77e672db67bfde31efa2cc334eb4"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; invariants::InvariantCollection &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations_1_1utils.html#a7bca77e672db67bfde31efa2cc334eb4">wmtk::operations::utils::multimesh_edge_split_invariants</a> (const Mesh &amp;m)</td></tr>
 <tr class="separator:a7bca77e672db67bfde31efa2cc334eb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a33075caa2e1a9c07c05c5f7ef56dd0e6"><td class="memItemLeft" align="right" valign="top">SplitReturnData&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations_1_1utils.html#a33075caa2e1a9c07c05c5f7ef56dd0e6">wmtk::operations::utils::multi_mesh_edge_split</a> (Mesh &amp;mesh, const Tuple &amp;t, const std::vector&lt; std::shared_ptr&lt; const operations::BaseSplitNewAttributeStrategy &gt;&gt; &amp;new_attr_strategies)</td></tr>
-<tr class="separator:a33075caa2e1a9c07c05c5f7ef56dd0e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d58594c72cac47d909963121b182010"><td class="memItemLeft" align="right" valign="top">SplitReturnData&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations_1_1utils.html#a6d58594c72cac47d909963121b182010">wmtk::operations::utils::multi_mesh_edge_split</a> (Mesh &amp;mesh, const simplex::NavigatableSimplex &amp;t, const std::vector&lt; std::shared_ptr&lt; const operations::BaseSplitNewAttributeStrategy &gt;&gt; &amp;new_attr_strategies)</td></tr>
+<tr class="separator:a6d58594c72cac47d909963121b182010"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab008dc1eb0fca4ff969f6cb4be312e91"><td class="memItemLeft" align="right" valign="top">std::vector&lt; simplex::Simplex &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations_1_1utils.html#ab008dc1eb0fca4ff969f6cb4be312e91">wmtk::operations::utils::multi_mesh_edge_split_with_modified_simplices</a> (Mesh &amp;mesh, const simplex::Simplex &amp;simplex, const std::vector&lt; std::shared_ptr&lt; const operations::BaseSplitNewAttributeStrategy &gt;&gt; &amp;new_attr_strategies)</td></tr>
 <tr class="separator:ab008dc1eb0fca4ff969f6cb4be312e91"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>

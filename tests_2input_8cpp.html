@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/input/wmtk/components/input/tests/input.cpp File Reference</title>
+<title>Wildmeshing Toolkit: components/input/tests/input.cpp File Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -113,15 +113,16 @@ $(document).ready(function(){initNavTree('tests_2input_8cpp.html',''); initResiz
 <div class="header">
   <div class="summary">
 <a href="#typedef-members">Typedefs</a> &#124;
-<a href="#var-members">Variables</a>  </div>
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">input.cpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;catch2/catch_test_macros.hpp&gt;</code><br />
 <code>#include &lt;nlohmann/json.hpp&gt;</code><br />
+<code>#include &lt;<a class="el" href="_input_options_8hpp_source.html">wmtk/components/input/InputOptions.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="input_8hpp_source.html">wmtk/components/input/input.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="mesh__with__tag__from__image_8hpp_source.html">wmtk/components/input/internal/mesh_with_tag_from_image.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="mesh__with__tag__from__image_8hpp_source.html">wmtk/components/input/mesh_with_tag_from_image.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_cache_8hpp_source.html">wmtk/io/Cache.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_paraview_writer_8hpp_source.html">wmtk/io/ParaviewWriter.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
@@ -138,10 +139,14 @@ Typedefs</h2></td></tr>
 <tr class="memitem:ab701e3ac61a85b337ec5c1abaad6742d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="tests_2input_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> = nlohmann::json</td></tr>
 <tr class="separator:ab701e3ac61a85b337ec5c1abaad6742d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:a11f4f0ba3d40e8ec7661f18a6f1072b5"><td class="memItemLeft" align="right" valign="top">const std::filesystem::path&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="tests_2input_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> = WMTK_DATA_DIR</td></tr>
-<tr class="separator:a11f4f0ba3d40e8ec7661f18a6f1072b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:a16c891bca32fed14c4bf443bedbae763"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="tests_2input_8cpp.html#a16c891bca32fed14c4bf443bedbae763">TEST_CASE</a> (&quot;component_input&quot;, &quot;[components][input]&quot;)</td></tr>
+<tr class="separator:a16c891bca32fed14c4bf443bedbae763"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a97fb6790b608344bdf6e248a85b2ab7a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="tests_2input_8cpp.html#a97fb6790b608344bdf6e248a85b2ab7a">TEST_CASE</a> (&quot;component_input_point&quot;, &quot;[components][input][.]&quot;)</td></tr>
+<tr class="separator:a97fb6790b608344bdf6e248a85b2ab7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac75dc6f525d583460008c72f843a1ffc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="tests_2input_8cpp.html#ac75dc6f525d583460008c72f843a1ffc">TEST_CASE</a> (&quot;mesh_with_tag_from_image&quot;, &quot;[components][input]&quot;)</td></tr>
+<tr class="separator:ac75dc6f525d583460008c72f843a1ffc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Typedef Documentation</h2>
 <a id="ab701e3ac61a85b337ec5c1abaad6742d"></a>
@@ -156,26 +161,122 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tests_2input_8cpp_source.html#l00008">8</a> of file <a class="el" href="tests_2input_8cpp_source.html">input.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tests_2input_8cpp_source.html#l00009">9</a> of file <a class="el" href="tests_2input_8cpp_source.html">input.cpp</a>.</p>
 
 </div>
 </div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="a11f4f0ba3d40e8ec7661f18a6f1072b5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a11f4f0ba3d40e8ec7661f18a6f1072b5">&#9670;&nbsp;</a></span>data_dir</h2>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="a16c891bca32fed14c4bf443bedbae763"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a16c891bca32fed14c4bf443bedbae763">&#9670;&nbsp;</a></span>TEST_CASE() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const std::filesystem::path data_dir = WMTK_DATA_DIR</td>
+          <td class="memname">TEST_CASE </td>
+          <td>(</td>
+          <td class="paramtype">&quot;component_input&quot;&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&quot;&quot;&#160;</td>
+          <td class="paramname">[components][input]&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="tests_2input_8cpp_source.html#l00010">10</a> of file <a class="el" href="tests_2input_8cpp_source.html">input.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="tests_2input_8cpp_source.html#l00015">15</a> of file <a class="el" href="tests_2input_8cpp_source.html">input.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l01161">wmtk::components::internal::write()</a>.</p>
+<p class="reference">References <a class="el" href="test__component__delaunay_8cpp_source.html#l00015">data_dir</a>, and <a class="el" href="src_2wmtk_2components_2input_2input_8cpp_source.html#l00010">wmtk::components::input::input()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="tests_2input_8cpp_a16c891bca32fed14c4bf443bedbae763_cgraph.svg" width="342" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a97fb6790b608344bdf6e248a85b2ab7a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a97fb6790b608344bdf6e248a85b2ab7a">&#9670;&nbsp;</a></span>TEST_CASE() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">TEST_CASE </td>
+          <td>(</td>
+          <td class="paramtype">&quot;component_input_point&quot;&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&quot;&quot;&#160;</td>
+          <td class="paramname">[components][input][.]&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tests_2input_8cpp_source.html#l00070">70</a> of file <a class="el" href="tests_2input_8cpp_source.html">input.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="test__component__delaunay_8cpp_source.html#l00015">data_dir</a>, and <a class="el" href="src_2wmtk_2components_2input_2input_8cpp_source.html#l00010">wmtk::components::input::input()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="tests_2input_8cpp_a97fb6790b608344bdf6e248a85b2ab7a_cgraph.svg" width="342" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="ac75dc6f525d583460008c72f843a1ffc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac75dc6f525d583460008c72f843a1ffc">&#9670;&nbsp;</a></span>TEST_CASE() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">TEST_CASE </td>
+          <td>(</td>
+          <td class="paramtype">&quot;mesh_with_tag_from_image&quot;&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&quot;&quot;&#160;</td>
+          <td class="paramname">[components][input]&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tests_2input_8cpp_source.html#l00076">76</a> of file <a class="el" href="tests_2input_8cpp_source.html">input.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="test__component__delaunay_8cpp_source.html#l00015">data_dir</a>, <a class="el" href="_cache_8cpp_source.html#l00146">wmtk::io::Cache::get_cache_path()</a>, and <a class="el" href="mesh__with__tag__from__image_8cpp_source.html#l00035">wmtk::components::input::mesh_with_tag_from_image()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="tests_2input_8cpp_ac75dc6f525d583460008c72f843a1ffc_cgraph.svg" width="100%" height="437"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
 
 </div>
 </div>
@@ -185,7 +286,7 @@ Variables</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_667f484269a706bdfedaceac6b9e3e52.html">input</a></li><li class="navelem"><a class="el" href="dir_92dc982b280d1a9ac4b9b354153089b5.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_3618e291d42a7181da498bf02491fa8c.html">components</a></li><li class="navelem"><a class="el" href="dir_d9097221194ed9e6db2f4b619e3649e0.html">input</a></li><li class="navelem"><a class="el" href="dir_6e0802c499c6666be51cc2b7c20ce938.html">tests</a></li><li class="navelem"><a class="el" href="tests_2input_8cpp.html">input.cpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_667f484269a706bdfedaceac6b9e3e52.html">input</a></li><li class="navelem"><a class="el" href="dir_9cbeb0cb319d16b1f827aac5aa609029.html">tests</a></li><li class="navelem"><a class="el" href="tests_2input_8cpp.html">input.cpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

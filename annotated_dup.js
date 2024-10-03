@@ -1,6 +1,8 @@
 var annotated_dup =
 [
     [ "nlohmann", "namespacenlohmann.html", [
+      [ "adl_serializer< wmtk::components::input::InputOptions >", "structnlohmann_1_1adl__serializer_3_01wmtk_1_1components_1_1input_1_1_input_options_01_4.html", "structnlohmann_1_1adl__serializer_3_01wmtk_1_1components_1_1input_1_1_input_options_01_4" ],
+      [ "adl_serializer< wmtk::components::output::OutputOptions >", "structnlohmann_1_1adl__serializer_3_01wmtk_1_1components_1_1output_1_1_output_options_01_4.html", "structnlohmann_1_1adl__serializer_3_01wmtk_1_1components_1_1output_1_1_output_options_01_4" ],
       [ "adl_serializer< std::filesystem::path >", "structnlohmann_1_1adl__serializer_3_01std_1_1filesystem_1_1path_01_4.html", null ]
     ] ],
     [ "std", "namespacestd.html", [
@@ -10,7 +12,6 @@ var annotated_dup =
       [ "hash< wmtk::attribute::TypedAttributeHandle< char > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01char_01_4_01_4.html", null ],
       [ "hash< wmtk::attribute::TypedAttributeHandle< wmtk::Rational > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01wmtk_1_1_rational_01_4_01_4.html", null ],
       [ "hash< wmtk::attribute::MeshAttributeHandle >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4.html", null ],
-      [ "hash< wmtk::attribute::utils::HybridRationalAttribute< D > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute_3_01_d_01_4_01_4.html", null ],
       [ "numeric_limits< DScalar1< _Scalar, _Gradient > >", "classstd_1_1numeric__limits_3_01_d_scalar1_3_01___scalar_00_01___gradient_01_4_01_4.html", null ],
       [ "numeric_limits< DScalar2< _Scalar, _Gradient, _Hessian > >", "classstd_1_1numeric__limits_3_01_d_scalar2_3_01___scalar_00_01___gradient_00_01___hessian_01_4_01_4.html", null ]
     ] ],
@@ -24,10 +25,6 @@ var annotated_dup =
           [ "CompoundAccessor", "classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html", "classwmtk_1_1attribute_1_1internal_1_1_compound_accessor" ],
           [ "is_typed_attribute_handle", "structwmtk_1_1attribute_1_1internal_1_1is__typed__attribute__handle.html", null ],
           [ "is_typed_attribute_handle< TypedAttributeHandle< T > >", "structwmtk_1_1attribute_1_1internal_1_1is__typed__attribute__handle_3_01_typed_attribute_handle_3_01_t_01_4_01_4.html", null ]
-        ] ],
-        [ "utils", "namespacewmtk_1_1attribute_1_1utils.html", [
-          [ "HybridRationalAttribute", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute" ],
-          [ "HybridRationalAccessor", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_accessor.html", "classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_accessor" ]
         ] ],
         [ "Accessor", "classwmtk_1_1attribute_1_1_accessor.html", "classwmtk_1_1attribute_1_1_accessor" ],
         [ "Attribute", "classwmtk_1_1attribute_1_1_attribute.html", "classwmtk_1_1attribute_1_1_attribute" ],
@@ -70,13 +67,15 @@ var annotated_dup =
             [ "SamplingBicubic", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_bicubic.html", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_bicubic" ]
           ] ]
         ] ],
+        [ "input", "namespacewmtk_1_1components_1_1input.html", [
+          [ "InputOptions", "structwmtk_1_1components_1_1input_1_1_input_options.html", "structwmtk_1_1components_1_1input_1_1_input_options" ],
+          [ "MeshCollection", "classwmtk_1_1components_1_1input_1_1_mesh_collection.html", "classwmtk_1_1components_1_1input_1_1_mesh_collection" ],
+          [ "NamedMultiMesh", "classwmtk_1_1components_1_1input_1_1_named_multi_mesh.html", "classwmtk_1_1components_1_1input_1_1_named_multi_mesh" ]
+        ] ],
         [ "internal", "namespacewmtk_1_1components_1_1internal.html", [
           [ "ExportCacheOptions", "structwmtk_1_1components_1_1internal_1_1_export_cache_options.html", "structwmtk_1_1components_1_1internal_1_1_export_cache_options" ],
           [ "GetAllMeshesOptions", "structwmtk_1_1components_1_1internal_1_1_get_all_meshes_options.html", "structwmtk_1_1components_1_1internal_1_1_get_all_meshes_options" ],
           [ "ImportCacheOptions", "structwmtk_1_1components_1_1internal_1_1_import_cache_options.html", "structwmtk_1_1components_1_1internal_1_1_import_cache_options" ],
-          [ "InputOptions", "structwmtk_1_1components_1_1internal_1_1_input_options.html", "structwmtk_1_1components_1_1internal_1_1_input_options" ],
-          [ "IsotropicRemeshingAttributes", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes.html", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes" ],
-          [ "IsotropicRemeshingOptions", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_options.html", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_options" ],
           [ "MeshInfoOptions", "structwmtk_1_1components_1_1internal_1_1_mesh_info_options.html", "structwmtk_1_1components_1_1internal_1_1_mesh_info_options" ],
           [ "MultiMeshFromTag", "classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html", "classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag" ],
           [ "TagAttribute", "classwmtk_1_1components_1_1internal_1_1_tag_attribute.html", "classwmtk_1_1components_1_1internal_1_1_tag_attribute" ],
@@ -86,6 +85,12 @@ var annotated_dup =
           [ "TagIntersectionValues", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values" ],
           [ "TagIntersectionOptions", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options" ],
           [ "WindingNumberOptions", "structwmtk_1_1components_1_1internal_1_1_winding_number_options.html", "structwmtk_1_1components_1_1internal_1_1_winding_number_options" ]
+        ] ],
+        [ "isotropic_remeshing", "namespacewmtk_1_1components_1_1isotropic__remeshing.html", [
+          [ "IsotropicRemeshingOptions", "structwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing_options.html", "structwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing_options" ]
+        ] ],
+        [ "output", "namespacewmtk_1_1components_1_1output.html", [
+          [ "OutputOptions", "structwmtk_1_1components_1_1output_1_1_output_options.html", "structwmtk_1_1components_1_1output_1_1_output_options" ]
         ] ],
         [ "procedural", "namespacewmtk_1_1components_1_1procedural.html", [
           [ "DiskOptions", "classwmtk_1_1components_1_1procedural_1_1_disk_options.html", "classwmtk_1_1components_1_1procedural_1_1_disk_options" ],
@@ -98,10 +103,10 @@ var annotated_dup =
         [ "utils", "namespacewmtk_1_1components_1_1utils.html", [
           [ "ComponentOptionsBase", "structwmtk_1_1components_1_1utils_1_1_component_options_base.html", "structwmtk_1_1components_1_1utils_1_1_component_options_base" ]
         ] ],
-        [ "FusionOptions", "structwmtk_1_1components_1_1_fusion_options.html", "structwmtk_1_1components_1_1_fusion_options" ],
         [ "TagAttribute", "classwmtk_1_1components_1_1_tag_attribute.html", "classwmtk_1_1components_1_1_tag_attribute" ],
         [ "Marching", "classwmtk_1_1components_1_1_marching.html", "classwmtk_1_1components_1_1_marching" ],
         [ "MarchingOptions", "structwmtk_1_1components_1_1_marching_options.html", "structwmtk_1_1components_1_1_marching_options" ],
+        [ "FusionOptions", "structwmtk_1_1components_1_1_fusion_options.html", "structwmtk_1_1components_1_1_fusion_options" ],
         [ "MultimeshUVOptions", "structwmtk_1_1components_1_1_multimesh_u_v_options.html", "structwmtk_1_1components_1_1_multimesh_u_v_options" ],
         [ "MultimeshBOptions", "structwmtk_1_1components_1_1_multimesh_b_options.html", "structwmtk_1_1components_1_1_multimesh_b_options" ],
         [ "MultimeshTOptions", "structwmtk_1_1components_1_1_multimesh_t_options.html", "structwmtk_1_1components_1_1_multimesh_t_options" ],
@@ -150,7 +155,9 @@ var annotated_dup =
         [ "Invariant", "classwmtk_1_1invariants_1_1_invariant.html", "classwmtk_1_1invariants_1_1_invariant" ],
         [ "InvariantCollection", "classwmtk_1_1invariants_1_1_invariant_collection.html", "classwmtk_1_1invariants_1_1_invariant_collection" ],
         [ "MaxFunctionInvariant", "classwmtk_1_1invariants_1_1_max_function_invariant.html", "classwmtk_1_1invariants_1_1_max_function_invariant" ],
+        [ "MinEdgeLengthInvariant", "classwmtk_1_1invariants_1_1_min_edge_length_invariant.html", "classwmtk_1_1invariants_1_1_min_edge_length_invariant" ],
         [ "MinIncidentValenceInvariant", "classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html", "classwmtk_1_1invariants_1_1_min_incident_valence_invariant" ],
+        [ "MultiMeshLinkConditionInvariant", "classwmtk_1_1invariants_1_1_multi_mesh_link_condition_invariant.html", "classwmtk_1_1invariants_1_1_multi_mesh_link_condition_invariant" ],
         [ "NoBoundaryCollapseToInteriorInvariant", "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant.html", "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant" ],
         [ "NoChildMeshAttachingInvariant", "classwmtk_1_1invariants_1_1_no_child_mesh_attaching_invariant.html", "classwmtk_1_1invariants_1_1_no_child_mesh_attaching_invariant" ],
         [ "SeparateSubstructuresInvariant", "classwmtk_1_1invariants_1_1_separate_substructures_invariant.html", "classwmtk_1_1invariants_1_1_separate_substructures_invariant" ],
@@ -162,6 +169,7 @@ var annotated_dup =
       [ "io", "namespacewmtk_1_1io.html", [
         [ "Cache", "classwmtk_1_1io_1_1_cache.html", "classwmtk_1_1io_1_1_cache" ],
         [ "CachedMultiMesh", "classwmtk_1_1io_1_1_cached_multi_mesh.html", "classwmtk_1_1io_1_1_cached_multi_mesh" ],
+        [ "MshReader", "classwmtk_1_1io_1_1_msh_reader.html", "classwmtk_1_1io_1_1_msh_reader" ],
         [ "ParaviewWriter", "classwmtk_1_1io_1_1_paraview_writer.html", "classwmtk_1_1io_1_1_paraview_writer" ]
       ] ],
       [ "multimesh", "namespacewmtk_1_1multimesh.html", [
@@ -224,7 +232,6 @@ var annotated_dup =
         [ "utils", "namespacewmtk_1_1operations_1_1utils.html", [
           [ "MultiMeshEdgeCollapseFunctor", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor" ],
           [ "MultiMeshEdgeSplitFunctor", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor" ],
-          [ "RoundRationalToDouble", "classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double.html", "classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double" ],
           [ "UpdateEdgeOperationMultiMeshMapFunctor", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor" ]
         ] ],
         [ "AMIPSOptimizationSmoothing", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing.html", "classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing" ],
@@ -268,11 +275,13 @@ var annotated_dup =
           [ "MeshSimplexComparator", "classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator.html", "classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator" ],
           [ "SimplexComparisons", "classwmtk_1_1simplex_1_1utils_1_1_simplex_comparisons.html", null ]
         ] ],
+        [ "IdSimplex", "classwmtk_1_1simplex_1_1_id_simplex.html", "classwmtk_1_1simplex_1_1_id_simplex" ],
         [ "ClosedStarIterable", "classwmtk_1_1simplex_1_1_closed_star_iterable.html", "classwmtk_1_1simplex_1_1_closed_star_iterable" ],
         [ "FacesIterable", "classwmtk_1_1simplex_1_1_faces_iterable.html", "classwmtk_1_1simplex_1_1_faces_iterable" ],
         [ "LinkIterable", "classwmtk_1_1simplex_1_1_link_iterable.html", "classwmtk_1_1simplex_1_1_link_iterable" ],
         [ "OpenStarIterable", "classwmtk_1_1simplex_1_1_open_star_iterable.html", "classwmtk_1_1simplex_1_1_open_star_iterable" ],
         [ "TopDimensionCofacesIterable", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable" ],
+        [ "NavigatableSimplex", "classwmtk_1_1simplex_1_1_navigatable_simplex.html", "classwmtk_1_1simplex_1_1_navigatable_simplex" ],
         [ "RawSimplex", "classwmtk_1_1simplex_1_1_raw_simplex.html", "classwmtk_1_1simplex_1_1_raw_simplex" ],
         [ "RawSimplexCollection", "classwmtk_1_1simplex_1_1_raw_simplex_collection.html", "classwmtk_1_1simplex_1_1_raw_simplex_collection" ],
         [ "Simplex", "classwmtk_1_1simplex_1_1_simplex.html", "classwmtk_1_1simplex_1_1_simplex" ],
@@ -334,6 +343,7 @@ var annotated_dup =
         [ "mesh_type_from_primitive_type< PrimitiveType::Edge >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_edge_01_4.html", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_edge_01_4" ],
         [ "mesh_type_from_primitive_type< PrimitiveType::Triangle >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_triangle_01_4.html", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_triangle_01_4" ],
         [ "mesh_type_from_primitive_type< PrimitiveType::Tetrahedron >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4.html", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4" ],
+        [ "mesh_type_from_dimension", "structwmtk_1_1utils_1_1mesh__type__from__dimension.html", "structwmtk_1_1utils_1_1mesh__type__from__dimension" ],
         [ "RandomSeedSingleton", "classwmtk_1_1utils_1_1_random_seed_singleton.html", "classwmtk_1_1utils_1_1_random_seed_singleton" ],
         [ "StopWatch", "classwmtk_1_1utils_1_1_stop_watch.html", "classwmtk_1_1utils_1_1_stop_watch" ],
         [ "TupleCellLessThan", "classwmtk_1_1utils_1_1_tuple_cell_less_than.html", "classwmtk_1_1utils_1_1_tuple_cell_less_than" ],
@@ -343,13 +353,10 @@ var annotated_dup =
       [ "hash< wmtk::attribute::AttributeHandle >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4" ],
       [ "hash< wmtk::attribute::TypedAttributeHandle< T > >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01_t_01_4_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01_t_01_4_01_4" ],
       [ "hash< wmtk::attribute::MeshAttributeHandle >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4" ],
-      [ "hash< attribute::utils::HybridRationalAttribute< D > >", "classwmtk_1_1hash_3_01attribute_1_1utils_1_1_hybrid_rational_attribute_3_01_d_01_4_01_4.html", "classwmtk_1_1hash_3_01attribute_1_1utils_1_1_hybrid_rational_attribute_3_01_d_01_4_01_4" ],
       [ "Cell", "classwmtk_1_1_cell.html", "classwmtk_1_1_cell" ],
       [ "EdgeMesh", "classwmtk_1_1_edge_mesh.html", "classwmtk_1_1_edge_mesh" ],
       [ "EnergyFilterInvariant", "classwmtk_1_1_energy_filter_invariant.html", "classwmtk_1_1_energy_filter_invariant" ],
       [ "MaxEdgeLengthInvariant", "classwmtk_1_1_max_edge_length_invariant.html", "classwmtk_1_1_max_edge_length_invariant" ],
-      [ "MinEdgeLengthInvariant", "classwmtk_1_1_min_edge_length_invariant.html", "classwmtk_1_1_min_edge_length_invariant" ],
-      [ "MultiMeshLinkConditionInvariant", "classwmtk_1_1_multi_mesh_link_condition_invariant.html", "classwmtk_1_1_multi_mesh_link_condition_invariant" ],
       [ "MultiMeshMapValidInvariant", "classwmtk_1_1_multi_mesh_map_valid_invariant.html", "classwmtk_1_1_multi_mesh_map_valid_invariant" ],
       [ "MultiMeshEdgeTopologyInvariant", "classwmtk_1_1_multi_mesh_edge_topology_invariant.html", "classwmtk_1_1_multi_mesh_edge_topology_invariant" ],
       [ "RoundedInvariant", "classwmtk_1_1_rounded_invariant.html", "classwmtk_1_1_rounded_invariant" ],
@@ -367,7 +374,6 @@ var annotated_dup =
       [ "HDF5Reader", "classwmtk_1_1_h_d_f5_reader.html", "classwmtk_1_1_h_d_f5_reader" ],
       [ "HDF5Writer", "classwmtk_1_1_h_d_f5_writer.html", "classwmtk_1_1_h_d_f5_writer" ],
       [ "MeshWriter", "classwmtk_1_1_mesh_writer.html", "classwmtk_1_1_mesh_writer" ],
-      [ "MshReader", "classwmtk_1_1_msh_reader.html", "classwmtk_1_1_msh_reader" ],
       [ "Mesh", "classwmtk_1_1_mesh.html", "classwmtk_1_1_mesh" ],
       [ "MeshCRTP", "classwmtk_1_1_mesh_c_r_t_p.html", "classwmtk_1_1_mesh_c_r_t_p" ],
       [ "MultiMeshManager", "classwmtk_1_1_multi_mesh_manager.html", null ],

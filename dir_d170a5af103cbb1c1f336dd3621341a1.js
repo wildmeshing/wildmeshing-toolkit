@@ -12,10 +12,6 @@ var dir_d170a5af103cbb1c1f336dd3621341a1 =
     [ "MultiMeshEdgeSplitFunctor.hpp", "_multi_mesh_edge_split_functor_8hpp.html", [
       [ "MultiMeshEdgeSplitFunctor", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor" ]
     ] ],
-    [ "RoundRationalToDouble.cpp", "_round_rational_to_double_8cpp.html", null ],
-    [ "RoundRationalToDouble.hpp", "_round_rational_to_double_8hpp.html", [
-      [ "RoundRationalToDouble", "classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double.html", "classwmtk_1_1operations_1_1utils_1_1_round_rational_to_double" ]
-    ] ],
     [ "UpdateEdgeOperationMultiMeshMapFunctor.cpp", "_update_edge_operation_multi_mesh_map_functor_8cpp.html", null ],
     [ "UpdateEdgeOperationMultiMeshMapFunctor.hpp", "_update_edge_operation_multi_mesh_map_functor_8hpp.html", [
       [ "UpdateEdgeOperationMultiMeshMapFunctor", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor" ]

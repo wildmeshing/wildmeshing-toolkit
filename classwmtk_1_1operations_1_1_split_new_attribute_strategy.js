@@ -1,6 +1,6 @@
 var classwmtk_1_1operations_1_1_split_new_attribute_strategy =
 [
-    [ "OperationTupleData", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#aee386e40ba9c559be4a612fcf97a969f", null ],
+    [ "OperationInOutData", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a03bf6054eec5d87d4faaeccbbad48ecf", null ],
     [ "ReturnData", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a1e5f10fabe4fddc6683b125556a9a947", null ],
     [ "ReturnVariant", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#aaeccdbb2a0e7dc55814eddf42d3c81f9", null ],
     [ "SplitFuncType", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#af912c69770945e15dc0a3ef6c3f0cda8", null ],
@@ -9,22 +9,26 @@ var classwmtk_1_1operations_1_1_split_new_attribute_strategy =
     [ "SplitNewAttributeStrategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#aa54d76c92c262b3957a5a13a2efdaf12", null ],
     [ "assign_split", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#ac54bd48905ae5ea6e4bc9804c4474149", null ],
     [ "assign_split_ribs", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a7e7c06eb23bd1747c4dd7368dd1ceac5", null ],
+    [ "invalid_state", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a276e9e5f7fc4e194577d117312c173fd", null ],
     [ "matches_attribute", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#ae3aad387cde5d744e158ca1134b6ff26", null ],
     [ "mesh", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#af0bf0b5d09ece987dcb12d524729bd1d", null ],
     [ "mesh", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a95eebb873a5127cd4780eed44be6444b", null ],
     [ "mesh", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a300e2227384eb243a10cbe928f738f8a", null ],
+    [ "name", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a446357ab5d3fc777e471f50b4d696f6e", null ],
     [ "primitive_type", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#ab831bc27ad79289c4dffdd372c888ff4", null ],
     [ "set_rib_strategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#af72084a0af62c320bbaa2e4387b68b26", null ],
     [ "set_rib_strategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a736dff31e721f6af81a578fd5ad41eab", null ],
     [ "set_strategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a948548c534775a2ca3a3e003b562d75f", null ],
     [ "set_strategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#ab87413423c9340c5506dccdcc94553e0", null ],
-    [ "standard_split_rib_strategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a32d8359d4041603d3c64fb27645cc6d4", null ],
-    [ "standard_split_strategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a82f4cc71d4768b0454a27c287a4a5e69", null ],
+    [ "standard_split_rib_strategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a8c65eab0fa2d4be4bd568a39de41c8f7", null ],
+    [ "standard_split_strategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a1282c0c0bb587db235a9c40f9a78471f", null ],
     [ "targets", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a5316dc81645330ce1db31e2e1af43893", null ],
-    [ "update", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a1c2de04fee7657334e3bd94eefc6f194", null ],
+    [ "update", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a3148ebf2e9128c41eaa8fd35d650c5ef", null ],
     [ "update_handle_mesh", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a0435f2af604239de539271d971914b4d", null ],
     [ "m_handle", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a1a58edd9b054d9b7ef6e04dd64c8893b", null ],
     [ "m_split_op", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a9c523fc216e8061232d893c4adfe2af1", null ],
     [ "m_split_rib_op", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#add762e49e3060c57b3cecf423c8cc67a", null ],
-    [ "m_topo_info", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a766c88f23e0b44f567866eeef8936a8f", null ]
+    [ "m_topo_info", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a766c88f23e0b44f567866eeef8936a8f", null ],
+    [ "m_will_throw", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#ab850436ac24ec364ea9c6184876fe152", null ],
+    [ "m_will_throw_rib", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a8867047e54817d937db1f6f4c9914dff", null ]
 ];

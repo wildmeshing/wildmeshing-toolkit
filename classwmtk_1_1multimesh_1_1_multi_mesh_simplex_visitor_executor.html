@@ -134,8 +134,8 @@ Public Types</h2></td></tr>
 <tr class="memitem:aa4fe3af74f998f3440504be4d63056e1"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:aa4fe3af74f998f3440504be4d63056e1"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#aa4fe3af74f998f3440504be4d63056e1">GetReturnType_t</a> = typename MMVisitor::template <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#aa4fe3af74f998f3440504be4d63056e1">GetReturnType_t</a>&lt; T &gt;</td></tr>
 <tr class="separator:aa4fe3af74f998f3440504be4d63056e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5c2f2a097323c550eec2c13a3ec7f87"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#ac5c2f2a097323c550eec2c13a3ec7f87">ReturnDataType</a> = <a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#aaa890d0d4c247bf30f3dbd55747e667e">wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCacheCustomComparator</a>&lt; <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#ada9498226ae41acbebce8a2e917f1186">NodeFunctor</a>, <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#a849d59dd59f45849c3dc70b46d2299a7">MeshVariantTraits</a>, <a class="el" href="classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator.html">wmtk::simplex::utils::MeshSimplexComparator</a>, <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt;</td></tr>
-<tr class="separator:ac5c2f2a097323c550eec2c13a3ec7f87"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3b8bb5e4a25fb86e58279aeb1b4ab7c"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#ab3b8bb5e4a25fb86e58279aeb1b4ab7c">ReturnDataType</a> = <a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#aaa890d0d4c247bf30f3dbd55747e667e">wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCacheCustomComparator</a>&lt; <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#ada9498226ae41acbebce8a2e917f1186">NodeFunctor</a>, <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#a849d59dd59f45849c3dc70b46d2299a7">MeshVariantTraits</a>, <a class="el" href="classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator.html">wmtk::simplex::utils::MeshSimplexComparator</a>, <a class="el" href="classwmtk_1_1simplex_1_1_navigatable_simplex.html">simplex::NavigatableSimplex</a> &gt;</td></tr>
+<tr class="separator:ab3b8bb5e4a25fb86e58279aeb1b4ab7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a064d408c56fe8e3f3b0313cb2260d6ba"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#a064d408c56fe8e3f3b0313cb2260d6ba">KeyType</a> = std::conditional_t&lt; <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#ac08ca2e99c4d96c7cb98bdc2222c0374">HasReturnCache</a>, typename ReturnDataType::KeyType, std::tuple&lt; const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> * &gt; &gt;</td></tr>
 <tr class="separator:a064d408c56fe8e3f3b0313cb2260d6ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -143,13 +143,13 @@ Public Types</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a373f9958d5cd27bd5c31dc0a8bd6ae9f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#a373f9958d5cd27bd5c31dc0a8bd6ae9f">MultiMeshSimplexVisitorExecutor</a> (const MMVisitor &amp;v)</td></tr>
 <tr class="separator:a373f9958d5cd27bd5c31dc0a8bd6ae9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afc758292782366e2ce4f6f2b83354ce6"><td class="memTemplParams" colspan="2">template&lt;typename MeshType &gt; </td></tr>
-<tr class="memitem:afc758292782366e2ce4f6f2b83354ce6"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#afc758292782366e2ce4f6f2b83354ce6">execute</a> (MeshType &amp;&amp;mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;simplex)</td></tr>
-<tr class="separator:afc758292782366e2ce4f6f2b83354ce6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7933f8d74e247125e4f5d0eb5ee319c9"><td class="memTemplParams" colspan="2">template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:a7933f8d74e247125e4f5d0eb5ee319c9"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#a7933f8d74e247125e4f5d0eb5ee319c9">execute</a> (MeshType &amp;&amp;mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_navigatable_simplex.html">simplex::NavigatableSimplex</a> &amp;simplex)</td></tr>
+<tr class="separator:a7933f8d74e247125e4f5d0eb5ee319c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:acb6be85a6f1029a6ffb3984cc21490b3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#ac5c2f2a097323c550eec2c13a3ec7f87">ReturnDataType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#acb6be85a6f1029a6ffb3984cc21490b3">m_return_data</a></td></tr>
+<tr class="memitem:acb6be85a6f1029a6ffb3984cc21490b3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#ab3b8bb5e4a25fb86e58279aeb1b4ab7c">ReturnDataType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#acb6be85a6f1029a6ffb3984cc21490b3">m_return_data</a></td></tr>
 <tr class="separator:acb6be85a6f1029a6ffb3984cc21490b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a389bde8aafca2816fc3f135332953f19"><td class="memItemLeft" align="right" valign="top">const MMVisitor &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#a389bde8aafca2816fc3f135332953f19">visitor</a></td></tr>
 <tr class="separator:a389bde8aafca2816fc3f135332953f19"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -165,9 +165,9 @@ Static Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:a29d39ea2e7d21e898e2ac7e9c35c60b3"><td class="memTemplParams" colspan="2">template&lt;typename MeshType_ &gt; </td></tr>
-<tr class="memitem:a29d39ea2e7d21e898e2ac7e9c35c60b3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#a29d39ea2e7d21e898e2ac7e9c35c60b3">run</a> (MeshType_ &amp;&amp;current_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;simplex)</td></tr>
-<tr class="separator:a29d39ea2e7d21e898e2ac7e9c35c60b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72f23b9620585b126dd9a607ce84341c"><td class="memTemplParams" colspan="2">template&lt;typename MeshType_ &gt; </td></tr>
+<tr class="memitem:a72f23b9620585b126dd9a607ce84341c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#a72f23b9620585b126dd9a607ce84341c">run</a> (MeshType_ &amp;&amp;current_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_navigatable_simplex.html">simplex::NavigatableSimplex</a> &amp;simplex)</td></tr>
+<tr class="separator:a72f23b9620585b126dd9a607ce84341c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;typename MMVisitor&gt;<br />
@@ -250,8 +250,8 @@ template&lt;typename MMVisitor &gt; </div>
 
 </div>
 </div>
-<a id="ac5c2f2a097323c550eec2c13a3ec7f87"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5c2f2a097323c550eec2c13a3ec7f87">&#9670;&nbsp;</a></span>ReturnDataType</h2>
+<a id="ab3b8bb5e4a25fb86e58279aeb1b4ab7c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab3b8bb5e4a25fb86e58279aeb1b4ab7c">&#9670;&nbsp;</a></span>ReturnDataType</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -259,7 +259,7 @@ template&lt;typename MMVisitor &gt; </div>
 template&lt;typename MMVisitor &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html">wmtk::multimesh::MultiMeshSimplexVisitorExecutor</a>&lt; MMVisitor &gt;::<a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#ac5c2f2a097323c550eec2c13a3ec7f87">ReturnDataType</a> =  <a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#aaa890d0d4c247bf30f3dbd55747e667e">wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCacheCustomComparator</a>&lt; <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#ada9498226ae41acbebce8a2e917f1186">NodeFunctor</a>, <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#a849d59dd59f45849c3dc70b46d2299a7">MeshVariantTraits</a>, <a class="el" href="classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator.html">wmtk::simplex::utils::MeshSimplexComparator</a>, <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html">wmtk::multimesh::MultiMeshSimplexVisitorExecutor</a>&lt; MMVisitor &gt;::<a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#ab3b8bb5e4a25fb86e58279aeb1b4ab7c">ReturnDataType</a> =  <a class="el" href="namespacewmtk_1_1utils_1_1metaprogramming.html#aaa890d0d4c247bf30f3dbd55747e667e">wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCacheCustomComparator</a>&lt; <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#ada9498226ae41acbebce8a2e917f1186">NodeFunctor</a>, <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#a849d59dd59f45849c3dc70b46d2299a7">MeshVariantTraits</a>, <a class="el" href="classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator.html">wmtk::simplex::utils::MeshSimplexComparator</a>, <a class="el" href="classwmtk_1_1simplex_1_1_navigatable_simplex.html">simplex::NavigatableSimplex</a>&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -300,8 +300,8 @@ template&lt;typename MMVisitor &gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="afc758292782366e2ce4f6f2b83354ce6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afc758292782366e2ce4f6f2b83354ce6">&#9670;&nbsp;</a></span>execute()</h2>
+<a id="a7933f8d74e247125e4f5d0eb5ee319c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7933f8d74e247125e4f5d0eb5ee319c9">&#9670;&nbsp;</a></span>execute()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -322,7 +322,7 @@ template&lt;typename MeshType &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_navigatable_simplex.html">simplex::NavigatableSimplex</a> &amp;&#160;</td>
           <td class="paramname"><em>simplex</em>&#160;</td>
         </tr>
         <tr>
@@ -346,20 +346,20 @@ template&lt;typename MeshType &gt; </div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor_afc758292782366e2ce4f6f2b83354ce6_cgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor_a7933f8d74e247125e4f5d0eb5ee319c9_cgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor_afc758292782366e2ce4f6f2b83354ce6_icgraph.svg" width="100%" height="500"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor_a7933f8d74e247125e4f5d0eb5ee319c9_icgraph.svg" width="100%" height="500"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
 </div>
 </div>
-<a id="a29d39ea2e7d21e898e2ac7e9c35c60b3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a29d39ea2e7d21e898e2ac7e9c35c60b3">&#9670;&nbsp;</a></span>run()</h2>
+<a id="a72f23b9620585b126dd9a607ce84341c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a72f23b9620585b126dd9a607ce84341c">&#9670;&nbsp;</a></span>run()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -380,7 +380,7 @@ template&lt;typename MeshType_ &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_navigatable_simplex.html">simplex::NavigatableSimplex</a> &amp;&#160;</td>
           <td class="paramname"><em>simplex</em>&#160;</td>
         </tr>
         <tr>
@@ -398,19 +398,19 @@ template&lt;typename MeshType_ &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_multi_mesh_simplex_visitor_8hpp_source.html#l00197">197</a> of file <a class="el" href="_multi_mesh_simplex_visitor_8hpp_source.html">MultiMeshSimplexVisitor.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_multi_mesh_simplex_visitor_8hpp_source.html#l00147">wmtk::multimesh::MultiMeshSimplexVisitorExecutor&lt; MMVisitor &gt;::cell_dimension</a>, and <a class="el" href="_simplex_8hpp_source.html#l00056">wmtk::simplex::Simplex::tuple()</a>.</p>
+<p class="reference">References <a class="el" href="_multi_mesh_simplex_visitor_8hpp_source.html#l00147">wmtk::multimesh::MultiMeshSimplexVisitorExecutor&lt; MMVisitor &gt;::cell_dimension</a>, and <a class="el" href="_navigatable_simplex_8hpp_source.html#l00024">wmtk::simplex::NavigatableSimplex::tuple()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_multi_mesh_simplex_visitor_8hpp_source.html#l00184">wmtk::multimesh::MultiMeshSimplexVisitorExecutor&lt; MMVisitor &gt;::execute()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor_a29d39ea2e7d21e898e2ac7e9c35c60b3_cgraph.svg" width="452" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor_a72f23b9620585b126dd9a607ce84341c_cgraph.svg" width="479" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor_a29d39ea2e7d21e898e2ac7e9c35c60b3_icgraph.svg" width="100%" height="500"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor_a72f23b9620585b126dd9a607ce84341c_icgraph.svg" width="100%" height="500"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -503,7 +503,7 @@ template&lt;typename MMVisitor &gt; </div>
 template&lt;typename MMVisitor &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#ac5c2f2a097323c550eec2c13a3ec7f87">ReturnDataType</a> <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html">wmtk::multimesh::MultiMeshSimplexVisitorExecutor</a>&lt; MMVisitor &gt;::m_return_data</td>
+          <td class="memname"><a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#ab3b8bb5e4a25fb86e58279aeb1b4ab7c">ReturnDataType</a> <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html">wmtk::multimesh::MultiMeshSimplexVisitorExecutor</a>&lt; MMVisitor &gt;::m_return_data</td>
         </tr>
       </table>
 </div><div class="memdoc">

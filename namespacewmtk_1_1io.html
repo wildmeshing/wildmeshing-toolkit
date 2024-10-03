@@ -112,21 +112,219 @@ $(document).ready(function(){initNavTree('namespacewmtk_1_1io.html',''); initRes
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a>  </div>
+<a href="#namespaces">Namespaces</a> &#124;
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#enum-members">Enumerations</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">wmtk::io Namespace Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
+Namespaces</h2></td></tr>
+<tr class="memitem:namespacewmtk_1_1io_1_1utils"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1io_1_1utils.html">utils</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_cache.html">Cache</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_cached_multi_mesh.html">CachedMultiMesh</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_msh_reader.html">MshReader</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1io_1_1_paraview_writer.html">ParaviewWriter</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:a03bb12435fc3ac33a35ad4fd8a38a774"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774">FileType</a> { <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774a06b9281e396db002010bde1de57262eb">Auto</a>
+, <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774a212bdda0427313f2b50852a9a31ea179">Msh</a>
+, <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774a86459eb6a9c3edb9d09e9d6fe8d5b9fa">HDF5</a>
+ }</td></tr>
+<tr class="separator:a03bb12435fc3ac33a35ad4fd8a38a774"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:a821417f1256959629cd64a293f5fcac0"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1io.html#a821417f1256959629cd64a293f5fcac0">read_mesh</a> (const std::filesystem::path &amp;filename, <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774">FileType</a> file_type)</td></tr>
+<tr class="separator:a821417f1256959629cd64a293f5fcac0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a989afa6c04c17d8cf3964b46b90fdf52"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1io.html#a989afa6c04c17d8cf3964b46b90fdf52">read_mesh</a> (const std::filesystem::path &amp;filename, const std::vector&lt; std::vector&lt; std::string &gt;&gt; &amp;retrieved_attributes, <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774">FileType</a> file_type)</td></tr>
+<tr class="separator:a989afa6c04c17d8cf3964b46b90fdf52"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3fb44ac44b33ab004986e57b753c9f7b"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1io.html#a3fb44ac44b33ab004986e57b753c9f7b">read_mesh</a> (const std::filesystem::path &amp;filename, const bool ignore_z, const std::vector&lt; std::string &gt; &amp;tetrahedron_attributes, <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774">FileType</a> file_type)</td></tr>
+<tr class="separator:a3fb44ac44b33ab004986e57b753c9f7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="a03bb12435fc3ac33a35ad4fd8a38a774"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03bb12435fc3ac33a35ad4fd8a38a774">&#9670;&nbsp;</a></span>FileType</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774">wmtk::io::FileType</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a03bb12435fc3ac33a35ad4fd8a38a774a06b9281e396db002010bde1de57262eb"></a>Auto&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a03bb12435fc3ac33a35ad4fd8a38a774a212bdda0427313f2b50852a9a31ea179"></a>Msh&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a03bb12435fc3ac33a35ad4fd8a38a774a86459eb6a9c3edb9d09e9d6fe8d5b9fa"></a>HDF5&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="read__mesh_8hpp_source.html#l00011">11</a> of file <a class="el" href="read__mesh_8hpp_source.html">read_mesh.hpp</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="a3fb44ac44b33ab004986e57b753c9f7b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3fb44ac44b33ab004986e57b753c9f7b">&#9670;&nbsp;</a></span>read_mesh() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; wmtk::io::read_mesh </td>
+          <td>(</td>
+          <td class="paramtype">const std::filesystem::path &amp;&#160;</td>
+          <td class="paramname"><em>filename</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>ignore_z</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::string &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tetrahedron_attributes</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774">FileType</a>&#160;</td>
+          <td class="paramname"><em>file_type</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="read__mesh_8cpp_source.html#l00081">81</a> of file <a class="el" href="read__mesh_8cpp_source.html">read_mesh.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774a06b9281e396db002010bde1de57262eb">Auto</a>, <a class="el" href="read__mesh_8cpp_source.html#l00020">wmtk::io::utils::guess_file_type()</a>, <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774a86459eb6a9c3edb9d09e9d6fe8d5b9fa">HDF5</a>, <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774a212bdda0427313f2b50852a9a31ea179">Msh</a>, <a class="el" href="_h_d_f5_reader_8cpp_source.html#l00044">wmtk::HDF5Reader::read()</a>, and <a class="el" href="_msh_reader_8cpp_source.html#l00038">wmtk::io::MshReader::read()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1io_a3fb44ac44b33ab004986e57b753c9f7b_cgraph.svg" width="100%" height="566"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a989afa6c04c17d8cf3964b46b90fdf52"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a989afa6c04c17d8cf3964b46b90fdf52">&#9670;&nbsp;</a></span>read_mesh() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; wmtk::io::read_mesh </td>
+          <td>(</td>
+          <td class="paramtype">const std::filesystem::path &amp;&#160;</td>
+          <td class="paramname"><em>filename</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; std::vector&lt; std::string &gt;&gt; &amp;&#160;</td>
+          <td class="paramname"><em>retrieved_attributes</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774">FileType</a>&#160;</td>
+          <td class="paramname"><em>file_type</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="read__mesh_8cpp_source.html#l00056">56</a> of file <a class="el" href="read__mesh_8cpp_source.html">read_mesh.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774a06b9281e396db002010bde1de57262eb">Auto</a>, <a class="el" href="read__mesh_8cpp_source.html#l00020">wmtk::io::utils::guess_file_type()</a>, <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774a86459eb6a9c3edb9d09e9d6fe8d5b9fa">HDF5</a>, <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774a212bdda0427313f2b50852a9a31ea179">Msh</a>, <a class="el" href="_h_d_f5_reader_8cpp_source.html#l00044">wmtk::HDF5Reader::read()</a>, and <a class="el" href="_msh_reader_8cpp_source.html#l00038">wmtk::io::MshReader::read()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1io_a989afa6c04c17d8cf3964b46b90fdf52_cgraph.svg" width="100%" height="566"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a821417f1256959629cd64a293f5fcac0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a821417f1256959629cd64a293f5fcac0">&#9670;&nbsp;</a></span>read_mesh() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; wmtk::io::read_mesh </td>
+          <td>(</td>
+          <td class="paramtype">const std::filesystem::path &amp;&#160;</td>
+          <td class="paramname"><em>filename</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774">FileType</a>&#160;</td>
+          <td class="paramname"><em>file_type</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="read__mesh_8cpp_source.html#l00035">35</a> of file <a class="el" href="read__mesh_8cpp_source.html">read_mesh.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774a06b9281e396db002010bde1de57262eb">Auto</a>, <a class="el" href="read__mesh_8cpp_source.html#l00020">wmtk::io::utils::guess_file_type()</a>, <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774a86459eb6a9c3edb9d09e9d6fe8d5b9fa">HDF5</a>, <a class="el" href="namespacewmtk_1_1io.html#a03bb12435fc3ac33a35ad4fd8a38a774a212bdda0427313f2b50852a9a31ea179">Msh</a>, <a class="el" href="_h_d_f5_reader_8cpp_source.html#l00044">wmtk::HDF5Reader::read()</a>, and <a class="el" href="_msh_reader_8cpp_source.html#l00038">wmtk::io::MshReader::read()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="src_2wmtk_2components_2input_2input_8cpp_source.html#l00024">wmtk::components::input::input()</a>, and <a class="el" href="_mesh_reader_8cpp_source.html#l00011">wmtk::read_mesh()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1io_a821417f1256959629cd64a293f5fcac0_cgraph.svg" width="100%" height="566"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1io_a821417f1256959629cd64a293f5fcac0_icgraph.svg" width="100%" height="405"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

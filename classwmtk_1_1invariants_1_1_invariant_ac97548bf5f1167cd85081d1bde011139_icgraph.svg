@@ -376,10 +376,10 @@ var sectionId = 'dynsection-7';
 <!-- Node24 -->
 <g id="node24" class="node">
 <title>Node24</title>
-<g id="a_node24"><a xlink:href="classwmtk_1_1_min_edge_length_invariant.html#a3f91b337ad8726c17243901068a07721" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="427.5,-1064.5 427.5,-1094.5 596.5,-1094.5 596.5,-1064.5 427.5,-1064.5"/>
-<text text-anchor="start" x="435.5" y="-1082.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MinEdgeLengthInvariant</text>
-<text text-anchor="middle" x="512" y="-1071.5" font-family="Helvetica,sans-Serif" font-size="10.00">::before</text>
+<g id="a_node24"><a xlink:href="classwmtk_1_1invariants_1_1_min_edge_length_invariant.html#a1a7c5e14c86e1b5dae5fc8ddefa945f7" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="438.5,-1064.5 438.5,-1094.5 585.5,-1094.5 585.5,-1064.5 438.5,-1064.5"/>
+<text text-anchor="start" x="446.5" y="-1082.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::invariants::MinEdge</text>
+<text text-anchor="middle" x="512" y="-1071.5" font-family="Helvetica,sans-Serif" font-size="10.00">LengthInvariant::before</text>
 </a>
 </g>
 </g>
@@ -392,17 +392,17 @@ var sectionId = 'dynsection-7';
 <!-- Node25 -->
 <g id="node25" class="node">
 <title>Node25</title>
-<g id="a_node25"><a xlink:href="classwmtk_1_1_multi_mesh_link_condition_invariant.html#a57a1a58849c2b75bb85c3f8e9d09ea43" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="428,-1015.5 428,-1045.5 596,-1045.5 596,-1015.5 428,-1015.5"/>
-<text text-anchor="start" x="436" y="-1033.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshLinkCondition</text>
-<text text-anchor="middle" x="512" y="-1022.5" font-family="Helvetica,sans-Serif" font-size="10.00">Invariant::before</text>
+<g id="a_node25"><a xlink:href="classwmtk_1_1invariants_1_1_multi_mesh_link_condition_invariant.html#a0a616eeecbe8a37dc5c0d1f6978cf20a" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="430,-1015.5 430,-1045.5 594,-1045.5 594,-1015.5 430,-1015.5"/>
+<text text-anchor="start" x="438" y="-1033.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::invariants::MultiMesh</text>
+<text text-anchor="middle" x="512" y="-1022.5" font-family="Helvetica,sans-Serif" font-size="10.00">LinkConditionInvariant::before</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node25 -->
 <g id="edge25" class="edge">
 <title>Node1&#45;&gt;Node25</title>
-<path fill="none" stroke="midnightblue" d="M632.7,-1030.5C620.63,-1030.5 608.22,-1030.5 596.16,-1030.5"/>
+<path fill="none" stroke="midnightblue" d="M632.62,-1030.5C619.88,-1030.5 606.75,-1030.5 594.07,-1030.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="632.74,-1034 642.74,-1030.5 632.74,-1027 632.74,-1034"/>
 </g>
 <!-- Node26 -->

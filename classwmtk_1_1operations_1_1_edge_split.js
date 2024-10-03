@@ -1,6 +1,7 @@
 var classwmtk_1_1operations_1_1_edge_split =
 [
     [ "EdgeSplit", "classwmtk_1_1operations_1_1_edge_split.html#a81bb31c49a0200610f79af9a5253a11d", null ],
+    [ "attribute_new_all_configured", "classwmtk_1_1operations_1_1_edge_split.html#a897909b796f472dc1a5c447e76f76833", null ],
     [ "clear_attribute_new_strategies", "classwmtk_1_1operations_1_1_edge_split.html#a9f7c2cb0882244cf41cbbf820f597a98", null ],
     [ "execute", "classwmtk_1_1operations_1_1_edge_split.html#acf2afde09bd19955800804d11f7dfc2b", null ],
     [ "get_new_attribute_strategy", "classwmtk_1_1operations_1_1_edge_split.html#ad148ca1d15ca8eb4f9b25f5cf4191481", null ],

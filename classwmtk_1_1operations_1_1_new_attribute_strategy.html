@@ -162,6 +162,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad12ea38bd7b82104a207caccc82b33db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad4aa674449fe9855157c0b577e337449"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ad4aa674449fe9855157c0b577e337449">sources</a> () const final override</td></tr>
 <tr class="separator:ad4aa674449fe9855157c0b577e337449"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d6c35a23a1e7baffbc28ce1c17aa253"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a7d6c35a23a1e7baffbc28ce1c17aa253">invalid_state</a> () const =0</td></tr>
+<tr class="separator:a7d6c35a23a1e7baffbc28ce1c17aa253"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a155ed8a03db1ff2f4659e30ee59ac11a"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a155ed8a03db1ff2f4659e30ee59ac11a">name</a> () const =0</td></tr>
+<tr class="separator:a155ed8a03db1ff2f4659e30ee59ac11a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1operations_1_1_attribute_transfer_edge"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1operations_1_1_attribute_transfer_edge')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_edge.html">wmtk::operations::AttributeTransferEdge</a></td></tr>
 <tr class="memitem:aef64944c919739b144e22ba16a6ea96a inherit pub_methods_classwmtk_1_1operations_1_1_attribute_transfer_edge"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_edge.html#aef64944c919739b144e22ba16a6ea96a">~AttributeTransferEdge</a> ()=0</td></tr>
 <tr class="separator:aef64944c919739b144e22ba16a6ea96a inherit pub_methods_classwmtk_1_1operations_1_1_attribute_transfer_edge"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -246,7 +250,42 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00032">32</a> of file <a class="el" href="_new_attribute_strategy_8cpp_source.html">NewAttributeStrategy.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00034">34</a> of file <a class="el" href="_new_attribute_strategy_8cpp_source.html">NewAttributeStrategy.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_new_attribute_strategy_8hpp_source.html#l00049">m_simplex_predicate</a>, <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a300e2227384eb243a10cbe928f738f8a">mesh()</a>, and <a class="el" href="classwmtk_1_1_mesh.html#ac5778c1f8afef3a2b1b1c33a140b3166">wmtk::Mesh::parent_scope()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_new_attribute_strategy_ad12ea38bd7b82104a207caccc82b33db_cgraph.svg" width="520" height="118"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a7d6c35a23a1e7baffbc28ce1c17aa253"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7d6c35a23a1e7baffbc28ce1c17aa253">&#9670;&nbsp;</a></span>invalid_state()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::operations::NewAttributeStrategy::invalid_state </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a276e9e5f7fc4e194577d117312c173fd">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>, and <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac0aec2bf1b8744295ad053b663764e09">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;</a>.</p>
 
 </div>
 </div>
@@ -293,7 +332,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00010">10</a> of file <a class="el" href="_new_attribute_strategy_8cpp_source.html">NewAttributeStrategy.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00012">12</a> of file <a class="el" href="_new_attribute_strategy_8cpp_source.html">NewAttributeStrategy.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a300e2227384eb243a10cbe928f738f8a">mesh()</a>.</p>
 <div class="dynheader">
@@ -330,13 +369,40 @@ Here is the call graph for this function:</div>
 
 <p>Implemented in <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a300e2227384eb243a10cbe928f738f8a">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>, <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a300e2227384eb243a10cbe928f738f8a">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;</a>, <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a95eebb873a5127cd4780eed44be6444b">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>, <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a643a1eb55b6f91f93055616d59fa0488">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;</a>, <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#af0bf0b5d09ece987dcb12d524729bd1d">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>, and <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#af0bf0b5d09ece987dcb12d524729bd1d">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00010">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;::mesh()</a>, <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00010">mesh()</a>, and <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00019">set_simplex_predicate()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00034">evaluate_predicate()</a>, <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00012">mesh()</a>, and <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00021">set_simplex_predicate()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_new_attribute_strategy_a300e2227384eb243a10cbe928f738f8a_icgraph.svg" width="520" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
+
+</div>
+</div>
+<a id="a155ed8a03db1ff2f4659e30ee59ac11a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a155ed8a03db1ff2f4659e30ee59ac11a">&#9670;&nbsp;</a></span>name()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual std::string wmtk::operations::NewAttributeStrategy::name </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a446357ab5d3fc777e471f50b4d696f6e">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>, and <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a1d942c02684c1d7151764d39d74ee4ad">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;</a>.</p>
 
 </div>
 </div>
@@ -383,9 +449,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00019">19</a> of file <a class="el" href="_new_attribute_strategy_8cpp_source.html">NewAttributeStrategy.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00021">21</a> of file <a class="el" href="_new_attribute_strategy_8cpp_source.html">NewAttributeStrategy.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda7a1920d61156abc05a60135aefe8bc67">wmtk::operations::Default</a>, <a class="el" href="_mesh_8cpp_source.html#l00058">wmtk::Mesh::is_boundary()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda4bb9eea168adf0aa284949f41dc52087">wmtk::operations::IsInterior</a>, <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a300e2227384eb243a10cbe928f738f8a">mesh()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda6adf97f83acf6453d4a6a4b1070f3754">wmtk::operations::None</a>, and <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00014">set_simplex_predicate()</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda7a1920d61156abc05a60135aefe8bc67">wmtk::operations::Default</a>, <a class="el" href="_mesh_8cpp_source.html#l00058">wmtk::Mesh::is_boundary()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda4bb9eea168adf0aa284949f41dc52087">wmtk::operations::IsInterior</a>, <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a300e2227384eb243a10cbe928f738f8a">mesh()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda6adf97f83acf6453d4a6a4b1070f3754">wmtk::operations::None</a>, and <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00016">set_simplex_predicate()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -411,11 +477,11 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00014">14</a> of file <a class="el" href="_new_attribute_strategy_8cpp_source.html">NewAttributeStrategy.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00016">16</a> of file <a class="el" href="_new_attribute_strategy_8cpp_source.html">NewAttributeStrategy.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_new_attribute_strategy_8hpp_source.html#l00046">m_simplex_predicate</a>.</p>
+<p class="reference">References <a class="el" href="_new_attribute_strategy_8hpp_source.html#l00049">m_simplex_predicate</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00019">set_simplex_predicate()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00021">set_simplex_predicate()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -503,9 +569,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_new_attribute_strategy_8hpp_source.html#l00046">46</a> of file <a class="el" href="_new_attribute_strategy_8hpp_source.html">NewAttributeStrategy.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_new_attribute_strategy_8hpp_source.html#l00049">49</a> of file <a class="el" href="_new_attribute_strategy_8hpp_source.html">NewAttributeStrategy.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00010">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;::mesh()</a>, and <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00014">set_simplex_predicate()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00034">evaluate_predicate()</a>, and <a class="el" href="_new_attribute_strategy_8cpp_source.html#l00016">set_simplex_predicate()</a>.</p>
 
 </div>
 </div>

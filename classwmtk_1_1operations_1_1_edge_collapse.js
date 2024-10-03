@@ -2,6 +2,7 @@ var classwmtk_1_1operations_1_1_edge_collapse =
 [
     [ "EdgeCollapse", "classwmtk_1_1operations_1_1_edge_collapse.html#a64450fa42ff00ebaba65ddca6e94c605", null ],
     [ "after", "classwmtk_1_1operations_1_1_edge_collapse.html#ac075c26432623a8592f66d7c4966353c", null ],
+    [ "attribute_new_all_configured", "classwmtk_1_1operations_1_1_edge_collapse.html#ac30431a3c6528369fdef3d62bbacfb84", null ],
     [ "clear_attribute_new_strategies", "classwmtk_1_1operations_1_1_edge_collapse.html#ab543ed81913d415e5dfcfabfcfdeeef2", null ],
     [ "execute", "classwmtk_1_1operations_1_1_edge_collapse.html#a8d52e8ef34eb9d5b32c8d290270fe5d3", null ],
     [ "get_new_attribute_strategy", "classwmtk_1_1operations_1_1_edge_collapse.html#a42002d22eacaab86ed9acffab84b7097", null ],

@@ -10,10 +10,12 @@ var namespacewmtk_1_1utils =
     [ "mesh_type_from_primitive_type< PrimitiveType::Edge >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_edge_01_4.html", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_edge_01_4" ],
     [ "mesh_type_from_primitive_type< PrimitiveType::Triangle >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_triangle_01_4.html", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_triangle_01_4" ],
     [ "mesh_type_from_primitive_type< PrimitiveType::Tetrahedron >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4.html", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4" ],
+    [ "mesh_type_from_dimension", "structwmtk_1_1utils_1_1mesh__type__from__dimension.html", "structwmtk_1_1utils_1_1mesh__type__from__dimension" ],
     [ "RandomSeedSingleton", "classwmtk_1_1utils_1_1_random_seed_singleton.html", "classwmtk_1_1utils_1_1_random_seed_singleton" ],
     [ "StopWatch", "classwmtk_1_1utils_1_1_stop_watch.html", "classwmtk_1_1utils_1_1_stop_watch" ],
     [ "TupleCellLessThan", "classwmtk_1_1utils_1_1_tuple_cell_less_than.html", "classwmtk_1_1utils_1_1_tuple_cell_less_than" ],
     [ "TupleInspector", "classwmtk_1_1utils_1_1_tuple_inspector.html", null ],
+    [ "mesh_type_from_dimension_t", "namespacewmtk_1_1utils.html#a02b16973a282fa6a4702845ea983d170", null ],
     [ "mesh_type_from_primitive_type_t", "namespacewmtk_1_1utils.html#a4a14004fe275472582e54f21d079b230", null ],
     [ "array_to_map", "namespacewmtk_1_1utils.html#ab868c1a067fef7acace11234f38e71cc", null ],
     [ "array_to_map", "namespacewmtk_1_1utils.html#a7242fc5d30774209f96e68bf959a4080", null ],
@@ -52,6 +54,7 @@ var namespacewmtk_1_1utils =
     [ "wmtk_orient1d", "namespacewmtk_1_1utils.html#a1c5198487b4421eb17ef97f5b8d410a3", null ],
     [ "wmtk_orient2d", "namespacewmtk_1_1utils.html#a262780be4273f42d2840b444247dfb54", null ],
     [ "wmtk_orient2d", "namespacewmtk_1_1utils.html#a6310fa1d5aca1db566ef5eb4508ec956", null ],
+    [ "wmtk_orient3d", "namespacewmtk_1_1utils.html#ae9909d772a51855effa0ab75c701df5c", null ],
     [ "wmtk_orient3d", "namespacewmtk_1_1utils.html#a30615d6bfe6a3e2098e965dc7a29d527", null ],
     [ "wmtk_orient3d", "namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce", null ]
 ];

@@ -20,7 +20,6 @@ var classwmtk_1_1attribute_1_1_typed_attribute_handle =
     [ "AccessorBase", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a45a470617083e2afdca1b76b5c0377c7", null ],
     [ "AttributeManager", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a667110497747903023648e2ef6ff02ea", null ],
     [ "MeshAttributes< T >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a8665d99a647fdffe278f2e4745ffd726", null ],
-    [ "utils::HybridRationalAttribute", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a3701286e442216dda37135cd40b97168", null ],
     [ "wmtk::hash< TypedAttributeHandle< T > >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a9bda601960cf5f161ccd0250714d1d22", null ],
     [ "wmtk::Mesh", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a40e16ebf947f9980244ad9e954e38aa3", null ],
     [ "m_base_handle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ade337a19e83a2c6a2386dc8e5386bb89", null ],

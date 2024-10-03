@@ -24,6 +24,8 @@ var namespacewmtk_1_1multimesh_1_1utils =
     [ "read_tuple_map_attribute", "namespacewmtk_1_1multimesh_1_1utils.html#a8526e68986fef51108b07e98237018a0", null ],
     [ "read_tuple_map_attribute_slow", "namespacewmtk_1_1multimesh_1_1utils.html#ad94e77dd28232bdd696412d346f30f62", null ],
     [ "symmetric_write_tuple_map_attributes", "namespacewmtk_1_1multimesh_1_1utils.html#ab19d57f46b80f20b1b4685ed83e305d5", null ],
+    [ "transfer_attribute", "namespacewmtk_1_1multimesh_1_1utils.html#a84bc450f40ee45624726d8f1ad6e8001", null ],
+    [ "transfer_attribute", "namespacewmtk_1_1multimesh_1_1utils.html#af54c5909f9b1b8fe2c714cbd92f44e57", null ],
     [ "transport_tuple", "namespacewmtk_1_1multimesh_1_1utils.html#aa0392bf28bb6c304127cf0eea634fee8", null ],
     [ "transport_tuple", "namespacewmtk_1_1multimesh_1_1utils.html#af803d30f20f8182d97c4e298c0bd7d59", null ],
     [ "tuple_to_vector", "namespacewmtk_1_1multimesh_1_1utils.html#a1e2e083555fd22678fcf96094992aaae", null ],

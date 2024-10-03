@@ -189,9 +189,6 @@ $(document).ready(function(){initNavTree('functions_t.html',''); initResizable()
 , <a class="el" href="classwmtk_1_1_primitive.html#ae6ea47e788a39f79a71311a8c703496f">wmtk::Primitive</a>
 , <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html#a7cff84ea4d1ff4f5ba3ec96a7ddd5c01">wmtk::simplex::Simplex</a>
 </li>
-<li>tetrahedron_attributes
-: <a class="el" href="structwmtk_1_1components_1_1internal_1_1_input_options.html#a952a4d4c48a40dacc6720576c3318aea">wmtk::components::internal::InputOptions</a>
-</li>
 <li>tetrahedron_labels
 : <a class="el" href="structwmtk_1_1components_1_1internal_1_1_tag_intersection_attributes.html#ac1691d97108f2876d4a1047a83cda7d8">wmtk::components::internal::TagIntersectionAttributes</a>
 </li>
@@ -238,6 +235,8 @@ $(document).ready(function(){initNavTree('functions_t.html',''); initResizable()
 </li>
 <li>to_json()
 : <a class="el" href="structnlohmann_1_1adl__serializer_3_01std_1_1filesystem_1_1path_01_4.html#ab1fcb5e8552a1e4272092b05195aeb21">nlohmann::adl_serializer&lt; std::filesystem::path &gt;</a>
+, <a class="el" href="structnlohmann_1_1adl__serializer_3_01wmtk_1_1components_1_1input_1_1_input_options_01_4.html#a09eba2a4a55147a13b8c6f947084a251">nlohmann::adl_serializer&lt; wmtk::components::input::InputOptions &gt;</a>
+, <a class="el" href="structnlohmann_1_1adl__serializer_3_01wmtk_1_1components_1_1output_1_1_output_options_01_4.html#a168dda79d9e4a3c6fa1301e93449d69d">nlohmann::adl_serializer&lt; wmtk::components::output::OutputOptions &gt;</a>
 , <a class="el" href="classwmtk_1_1components_1_1procedural_1_1_disk_options.html#a18171989b3a53d61d5a19a74b6f819f8">wmtk::components::procedural::DiskOptions</a>
 , <a class="el" href="classwmtk_1_1components_1_1procedural_1_1_grid2_options.html#a29fa0efd4968fbc46985cb957d4cac46">wmtk::components::procedural::Grid2Options</a>
 , <a class="el" href="classwmtk_1_1components_1_1procedural_1_1_grid3_options.html#af68146e1935c15b4af4608ed0851a614">wmtk::components::procedural::Grid3Options</a>
@@ -265,7 +264,7 @@ $(document).ready(function(){initNavTree('functions_t.html',''); initResizable()
 : <a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#ac70fe010d575fd3801d3b5b078094b89">wmtk::simplex::TopDimensionCofacesIterable</a>
 </li>
 <li>topological_scalar_attribute()
-: <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#ade65a7ab4befb8b00f930212da75c893">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;</a>
+: <a class="el" href="classwmtk_1_1attribute_1_1_accessor.html#af0d26112b0ea76c4dd3e2369b7b560bd">wmtk::attribute::Accessor&lt; T, MeshType, Dim &gt;</a>
 </li>
 <li>total_time()
 : <a class="el" href="classwmtk_1_1_scheduler_stats.html#a1fd67de12d109a2ccd651a495ede7423">wmtk::SchedulerStats</a>
@@ -318,10 +317,11 @@ $(document).ready(function(){initNavTree('functions_t.html',''); initResizable()
 <li>tuple()
 : <a class="el" href="classwmtk_1_1_cell.html#a754aaee3b13a7d3989e2e4b9b23611f3">wmtk::Cell</a>
 , <a class="el" href="classwmtk_1_1_primitive.html#ad2924a3e3a4ce08343bc9c3eed1c7a16">wmtk::Primitive</a>
+, <a class="el" href="classwmtk_1_1simplex_1_1_navigatable_simplex.html#a73a4306a604b3a0cc9e39f34e89fc6ba">wmtk::simplex::NavigatableSimplex</a>
 , <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html#a3650fd31ff1864285502dba66db3c73c">wmtk::simplex::Simplex</a>
 </li>
 <li>Tuple()
-: <a class="el" href="classwmtk_1_1_tuple.html#a74ae4ebe777eb97285ddab68acbfd346">wmtk::Tuple</a>
+: <a class="el" href="classwmtk_1_1_tuple.html#ae723236d95ba6bd3a28a590d968036dd">wmtk::Tuple</a>
 </li>
 <li>tuple_from_dart()
 : <a class="el" href="classwmtk_1_1autogen_1_1_simplex_dart.html#a05e188f1fafc9fb7067843de4b5c09a5">wmtk::autogen::SimplexDart</a>
@@ -353,22 +353,24 @@ $(document).ready(function(){initNavTree('functions_t.html',''); initResizable()
 : <a class="el" href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acca3241a2661355c5351269aa5a275c6">wmtk::multimesh::utils::internal::TupleTag</a>
 </li>
 <li>TupleType
-: <a class="el" href="classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html#a25e12020e3dae288bc8731cb294078a2">wmtk::attribute::utils::HybridRationalAttribute&lt; D &gt;</a>
-, <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#ab2f99618b7a8b189f1ca55c25a9c6ff9">wmtk::utils::metaprogramming::detail::as_variant_impl&lt; BaseVariantTraitsType, IsConst, std::tuple&lt; DerivedTypes... &gt;, Index &gt;</a>
+: <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#ab2f99618b7a8b189f1ca55c25a9c6ff9">wmtk::utils::metaprogramming::detail::as_variant_impl&lt; BaseVariantTraitsType, IsConst, std::tuple&lt; DerivedTypes... &gt;, Index &gt;</a>
 , <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a4b22ae12458355b069affa4ca107c3a8">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, ComparatorType, OtherArgumentTypes &gt;</a>
 </li>
 <li>tv_accessor
 : <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#ad0558a77e5fed417af06269975d85a1e">wmtk::TetMesh::TetMeshOperationExecutor</a>
 </li>
 <li>Type
-: <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html#aa7ffdd9d78b35cab8ae1a88ff0ccb4ee">wmtk::attribute::internal::CompoundAccessor&lt; N, MeshType, AttributeType &gt;</a>
+: <a class="el" href="structnlohmann_1_1adl__serializer_3_01wmtk_1_1components_1_1input_1_1_input_options_01_4.html#a0bd9e6f779feb5f67b0fa7b009adf8b6">nlohmann::adl_serializer&lt; wmtk::components::input::InputOptions &gt;</a>
+, <a class="el" href="structnlohmann_1_1adl__serializer_3_01wmtk_1_1components_1_1output_1_1_output_options_01_4.html#aed954a9cc834fb40a0be2250522db13b">nlohmann::adl_serializer&lt; wmtk::components::output::OutputOptions &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1internal_1_1_compound_accessor.html#aa7ffdd9d78b35cab8ae1a88ff0ccb4ee">wmtk::attribute::internal::CompoundAccessor&lt; N, MeshType, AttributeType &gt;</a>
 , <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a0615d4ff21dd321382a239c9bccacc87">wmtk::attribute::TypedAttributeHandle&lt; T &gt;</a>
-, <a class="el" href="classwmtk_1_1attribute_1_1utils_1_1_hybrid_rational_attribute.html#abb5fc4865b7b790198e63b66f34e978c">wmtk::attribute::utils::HybridRationalAttribute&lt; D &gt;</a>
 </li>
 <li>type
 : <a class="el" href="structwmtk_1_1components_1_1_multimesh_b_options.html#a20c0f0d138f8d229b228fc8e008ed282">wmtk::components::MultimeshBOptions</a>
 , <a class="el" href="structwmtk_1_1components_1_1_multimesh_t_options.html#a80912a2fba4ac515a8f006f082c2c125">wmtk::components::MultimeshTOptions</a>
 , <a class="el" href="structwmtk_1_1components_1_1_multimesh_u_v_options.html#a2c320354ffa79d4f23692b2adac26f4e">wmtk::components::MultimeshUVOptions</a>
+, <a class="el" href="structwmtk_1_1components_1_1output_1_1_output_options.html#ae2eafe3ae8b868aaea7b9c5702ee6f2f">wmtk::components::output::OutputOptions</a>
+, <a class="el" href="structwmtk_1_1utils_1_1mesh__type__from__dimension.html#aed23f4086e73892e8c70e5d3c4135f7b">wmtk::utils::mesh_type_from_dimension&lt; DIM &gt;</a>
 , <a class="el" href="structwmtk_1_1utils_1_1mesh__type__from__primitive__type.html#a4692ccf5a21878064ab224b7c2af1c6a">wmtk::utils::mesh_type_from_primitive_type&lt; pt &gt;</a>
 , <a class="el" href="structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_edge_01_4.html#a9a77815b86c687547ad52679e7bacdbb">wmtk::utils::mesh_type_from_primitive_type&lt; PrimitiveType::Edge &gt;</a>
 , <a class="el" href="structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4.html#a3029e28e555f6f84e913a6c68638da8b">wmtk::utils::mesh_type_from_primitive_type&lt; PrimitiveType::Tetrahedron &gt;</a>

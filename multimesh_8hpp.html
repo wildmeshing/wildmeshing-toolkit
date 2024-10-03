@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/multimesh/wmtk/components/multimesh/multimesh.hpp File Reference</title>
+<title>Wildmeshing Toolkit: components/multimesh/src/wmtk/components/multimesh/multimesh.hpp File Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -120,6 +120,7 @@ $(document).ready(function(){initNavTree('multimesh_8hpp.html',''); initResizabl
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;<a class="el" href="_mesh_8hpp_source.html">wmtk/Mesh.hpp</a>&gt;</code><br />
+<code>#include &lt;memory&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for multimesh.hpp:</div>
 <div class="dyncontent">
@@ -129,7 +130,7 @@ Include dependency graph for multimesh.hpp:</div>
 </div><div class="textblock"><div class="dynheader">
 This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="multimesh_8hpp__dep__incl.svg" width="232" height="171"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="multimesh_8hpp__dep__incl.svg" width="210" height="171"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 </div>
@@ -141,19 +142,21 @@ Namespaces</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacewmtk_1_1components"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html">wmtk::components</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespacewmtk_1_1components_1_1multimesh"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1multimesh.html">wmtk::components::multimesh</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:a07b8411c41467d2241e65d956146259d"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a07b8411c41467d2241e65d956146259d">wmtk::components::MultiMeshType</a> { <a class="el" href="namespacewmtk_1_1components.html#a07b8411c41467d2241e65d956146259dadeaa2adbeb26802ae61609c3f3642d82">wmtk::components::UV</a>
-, <a class="el" href="namespacewmtk_1_1components.html#a07b8411c41467d2241e65d956146259dae234de581c9c5ef91322f1469a585f9e">wmtk::components::Boundary</a>
-, <a class="el" href="namespacewmtk_1_1components.html#a07b8411c41467d2241e65d956146259dac101058e7ea21bbbf2a5ac893088e90b">wmtk::components::Tag</a>
+<tr class="memitem:a4fee03e23971feff7d37c1f9be2c1f85"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1multimesh.html#a4fee03e23971feff7d37c1f9be2c1f85">wmtk::components::multimesh::MultiMeshType</a> { <a class="el" href="namespacewmtk_1_1components_1_1multimesh.html#a4fee03e23971feff7d37c1f9be2c1f85adeaa2adbeb26802ae61609c3f3642d82">wmtk::components::multimesh::UV</a>
+, <a class="el" href="namespacewmtk_1_1components_1_1multimesh.html#a4fee03e23971feff7d37c1f9be2c1f85ae234de581c9c5ef91322f1469a585f9e">wmtk::components::multimesh::Boundary</a>
+, <a class="el" href="namespacewmtk_1_1components_1_1multimesh.html#a4fee03e23971feff7d37c1f9be2c1f85ac101058e7ea21bbbf2a5ac893088e90b">wmtk::components::multimesh::Tag</a>
  }</td></tr>
-<tr class="separator:a07b8411c41467d2241e65d956146259d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a4fee03e23971feff7d37c1f9be2c1f85"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a52f9ca12856b67dee17249c6172e2bbe"><td class="memItemLeft" align="right" valign="top">std::pair&lt; std::shared_ptr&lt; Mesh &gt;, std::shared_ptr&lt; Mesh &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a52f9ca12856b67dee17249c6172e2bbe">wmtk::components::multimesh</a> (const MultiMeshType &amp;type, Mesh &amp;parent, const std::shared_ptr&lt; Mesh &gt; &amp;child, const attribute::MeshAttributeHandle parent_position_handle, const std::string &amp;tag_name, const int64_t tag_value, const int64_t primitive)</td></tr>
-<tr class="separator:a52f9ca12856b67dee17249c6172e2bbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5af816bd3804ba5430992812b388eb6b"><td class="memItemLeft" align="right" valign="top">std::pair&lt; std::shared_ptr&lt; Mesh &gt;, std::shared_ptr&lt; Mesh &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1multimesh.html#a5af816bd3804ba5430992812b388eb6b">wmtk::components::multimesh::multimesh</a> (const MultiMeshType &amp;type, Mesh &amp;parent, std::shared_ptr&lt; Mesh &gt; child, const attribute::MeshAttributeHandle parent_position_handle, const std::string &amp;tag_name, const int64_t tag_value, const int64_t primitive)</td></tr>
+<tr class="separator:a5af816bd3804ba5430992812b388eb6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -161,7 +164,7 @@ Functions</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_70e3a2ee9e25893df7f24c6156c1d472.html">multimesh</a></li><li class="navelem"><a class="el" href="dir_babc65c045b073128d9dd114f0a0ab0c.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_2de2cb5e151a588da5394dc666621491.html">components</a></li><li class="navelem"><a class="el" href="dir_54aaffdfed1613b19825e069e30f2fb4.html">multimesh</a></li><li class="navelem"><a class="el" href="multimesh_8hpp.html">multimesh.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_70e3a2ee9e25893df7f24c6156c1d472.html">multimesh</a></li><li class="navelem"><a class="el" href="dir_6abf6f13df217c782767f6a0a9ff14a8.html">src</a></li><li class="navelem"><a class="el" href="dir_c31842a4f31cc7008914677070ccbda8.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_4b1cf5d592a01ed4c6d8e9a0954cca2b.html">components</a></li><li class="navelem"><a class="el" href="dir_5ed31316642ba9bde544467a58fa3c0f.html">multimesh</a></li><li class="navelem"><a class="el" href="multimesh_8hpp.html">multimesh.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

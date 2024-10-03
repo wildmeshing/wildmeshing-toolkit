@@ -22,9 +22,9 @@ var dir_5f5962d46c0c2d5a2dbf0efb09269d04 =
       [ "MeshWriter", "classwmtk_1_1_mesh_writer.html", "classwmtk_1_1_mesh_writer" ]
     ] ],
     [ "MshReader.cpp", "_msh_reader_8cpp.html", null ],
-    [ "MshReader.hpp", "_msh_reader_8hpp.html", [
-      [ "MshReader", "classwmtk_1_1_msh_reader.html", "classwmtk_1_1_msh_reader" ]
-    ] ],
+    [ "MshReader.hpp", "_msh_reader_8hpp.html", "_msh_reader_8hpp" ],
     [ "ParaviewWriter.cpp", "_paraview_writer_8cpp.html", null ],
-    [ "ParaviewWriter.hpp", "_paraview_writer_8hpp.html", "_paraview_writer_8hpp" ]
+    [ "ParaviewWriter.hpp", "_paraview_writer_8hpp.html", "_paraview_writer_8hpp" ],
+    [ "read_mesh.cpp", "read__mesh_8cpp.html", "read__mesh_8cpp" ],
+    [ "read_mesh.hpp", "read__mesh_8hpp.html", "read__mesh_8hpp" ]
 ];

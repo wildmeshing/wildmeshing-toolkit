@@ -17,6 +17,10 @@ var dir_cbc9327ef122fb9d2e3099bcf15f379f =
     [ "faces_iterable.hpp", "faces__iterable_8hpp.html", "faces__iterable_8hpp" ],
     [ "faces_single_dimension.cpp", "faces__single__dimension_8cpp.html", "faces__single__dimension_8cpp" ],
     [ "faces_single_dimension.hpp", "faces__single__dimension_8hpp.html", "faces__single__dimension_8hpp" ],
+    [ "IdSimplex.cpp", "_id_simplex_8cpp.html", null ],
+    [ "IdSimplex.hpp", "_id_simplex_8hpp.html", [
+      [ "IdSimplex", "classwmtk_1_1simplex_1_1_id_simplex.html", "classwmtk_1_1simplex_1_1_id_simplex" ]
+    ] ],
     [ "k_ring.cpp", "k__ring_8cpp.html", "k__ring_8cpp" ],
     [ "k_ring.hpp", "k__ring_8hpp.html", "k__ring_8hpp" ],
     [ "link.cpp", "link_8cpp.html", "link_8cpp" ],
@@ -27,6 +31,10 @@ var dir_cbc9327ef122fb9d2e3099bcf15f379f =
     [ "link_iterable.hpp", "link__iterable_8hpp.html", "link__iterable_8hpp" ],
     [ "link_single_dimension.cpp", "link__single__dimension_8cpp.html", "link__single__dimension_8cpp" ],
     [ "link_single_dimension.hpp", "link__single__dimension_8hpp.html", "link__single__dimension_8hpp" ],
+    [ "NavigatableSimplex.cpp", "_navigatable_simplex_8cpp.html", null ],
+    [ "NavigatableSimplex.hpp", "_navigatable_simplex_8hpp.html", [
+      [ "NavigatableSimplex", "classwmtk_1_1simplex_1_1_navigatable_simplex.html", "classwmtk_1_1simplex_1_1_navigatable_simplex" ]
+    ] ],
     [ "neighbors_single_dimension.cpp", "neighbors__single__dimension_8cpp.html", "neighbors__single__dimension_8cpp" ],
     [ "neighbors_single_dimension.hpp", "neighbors__single__dimension_8hpp.html", "neighbors__single__dimension_8hpp" ],
     [ "open_star.cpp", "open__star_8cpp.html", "open__star_8cpp" ],
