@@ -541,6 +541,7 @@ void handle_one_segment(
                     last_edge_bc = edge_bc;
                     curve.next_segment_ids[id] =
                         curve.segments.size(); // next segment will add to the end
+
                     break;
                 }
             }
@@ -616,7 +617,8 @@ void handle_one_segment(
 
                     // push the new segment
                     curve.segments.push_back(qs_new);
-                    curve.next_segment_ids.push_back(curve.next_segment_ids.size());
+                    curve.next_segment_ids.push_back(curve.next_segment_ids.size() + 1);
+
 
                     // record the last edge
                     last_edge_bc = edge_bc;

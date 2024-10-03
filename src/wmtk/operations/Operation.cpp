@@ -98,7 +98,8 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
 #ifdef WMTK_RECORD_OPERATIONS
 
             if (m_record && operation_name != "MeshConsolidate") {
-                std::cout << "operation id: " << succ_operations_count << "\n";
+                if (succ_operations_count % 10000 == 0)
+                    std::cout << "operation id: " << succ_operations_count << "\n";
 
                 // create a local atlas file
                 // std::cout << "operation " << operation_name << " is successful\n";
@@ -444,6 +445,31 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                         // TODO: implement this for tetrahedron mesh
                         auto [T_after, V_after, id_map_after, v_id_map_after] =
                             utils::get_local_tetmesh(static_cast<const TetMesh&>(mesh()), mods[0]);
+                        auto [T_before, V_before, id_map_before, v_id_map_before] =
+                            mesh().parent_scope(
+                                [&](const simplex::Simplex& s) {
+                                    if (operation_name == "EdgeCollapse")
+                                        return utils::get_local_tetmesh_before_collapse(
+                                            static_cast<const TetMesh&>(mesh()),
+                                            s);
+                                    return utils::get_local_tetmesh(
+                                        static_cast<const TetMesh&>(mesh()),
+                                        s);
+                                },
+                                simplex);
+                        // STORE information to logfile
+                        operation_log["T_after"]["rows"] = T_after.rows();
+                        operation_log["T_after"]["values"] = matrix_to_json(T_after);
+                        operation_log["V_after"]["rows"] = V_after.rows();
+                        operation_log["V_after"]["values"] = matrix_to_json(V_after);
+                        operation_log["T_id_map_after"] = id_map_after;
+                        operation_log["V_id_map_after"] = v_id_map_after;
+                        operation_log["T_before"]["rows"] = T_before.rows();
+                        operation_log["T_before"]["values"] = matrix_to_json(T_before);
+                        operation_log["V_before"]["rows"] = V_before.rows();
+                        operation_log["V_before"]["values"] = matrix_to_json(V_before);
+                        operation_log["T_id_map_before"] = id_map_before;
+                        operation_log["V_id_map_before"] = v_id_map_before;
                     }
 
                     // TODO: get a larger json file to do this:

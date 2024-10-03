@@ -871,6 +871,15 @@ void check_iso_lines(
     const std::vector<query_curve>& curves_in,
     const std::vector<query_curve>& curves_out)
 {
+    std::cout << "curves_in sizes:\n";
+    for (const auto& c : curves_in) {
+        std::cout << c.segments.size() << std::endl;
+    }
+    std::cout << "curves_out sizes:\n";
+    for (const auto& c : curves_out) {
+        std::cout << c.segments.size() << std::endl;
+    }
+
     if (true) {
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_in, F_in);
@@ -951,81 +960,87 @@ void check_iso_lines(
 
         return false; // No intersection
     };
+    auto count_curve_intersection = [&](const std::vector<query_curve>& curve) {
+        for (int i = 0; i < curve.size(); i++) {
+            // for (int j = i; j < curve.size(); j++) {
+            for (int j = i; j < i + 1; j++) {
+                int intersect_count = 0;
+                for (int seg_i = 0; seg_i < curve[i].segments.size(); seg_i++) {
+                    for (int seg_j = 0; seg_j < curve[j].segments.size(); seg_j++) {
+                        if (i == j &&
+                            (seg_i == seg_j || curve[i].next_segment_ids[seg_i] == seg_j ||
+                             curve[j].next_segment_ids[seg_j] == seg_i)) {
+                            continue;
+                        }
+                        if (curve[i].segments[seg_i].f_id != curve[j].segments[seg_j].f_id) {
+                            continue;
+                        }
 
-    for (int i = 0; i < curves_out.size(); i++) {
-        for (int j = i; j < curves_out.size(); j++) {
-            int intersect_count = 0;
-            for (int seg_i = 0; seg_i < curves_out[i].segments.size(); seg_i++) {
-                for (int seg_j = 0; seg_j < curves_out[j].segments.size(); seg_j++) {
-                    if (i == j &&
-                        (seg_i == seg_j || curves_out[i].next_segment_ids[seg_i] == seg_j ||
-                         curves_out[j].next_segment_ids[seg_j] == seg_i)) {
-                        continue;
-                    }
-                    if (curves_out[i].segments[seg_i].f_id != curves_out[j].segments[seg_j].f_id) {
-                        continue;
-                    }
+                        Eigen::RowVector2d p1, q1, p2, q2;
+                        p1 = curve[i].segments[seg_i].bcs[0].head(2);
+                        q1 = curve[i].segments[seg_i].bcs[1].head(2);
+                        p2 = curve[j].segments[seg_j].bcs[0].head(2);
+                        q2 = curve[j].segments[seg_j].bcs[1].head(2);
 
-                    Eigen::RowVector2d p1, q1, p2, q2;
-                    p1 = curves_out[i].segments[seg_i].bcs[0].head(2);
-                    q1 = curves_out[i].segments[seg_i].bcs[1].head(2);
-                    p2 = curves_out[j].segments[seg_j].bcs[0].head(2);
-                    q2 = curves_out[j].segments[seg_j].bcs[1].head(2);
+                        // if ((p1 - p2).norm() < 1e-8 || (p1 - q2).norm() < 1e-8 ||
+                        //     (q1 - p2).norm() < 1e-8 || (q1 - q2).norm() < 1e-8) {
+                        //     continue;
+                        // }
 
-                    if ((p1 - p2).norm() < 1e-8 || (p1 - q2).norm() < 1e-8 ||
-                        (q1 - p2).norm() < 1e-8 || (q1 - q2).norm() < 1e-8) {
-                        continue;
-                    }
+                        if (doIntersect(p1, q1, p2, q2)) {
+                            intersect_count++;
+                            std::cout << "i = " << i << ", seg_i = " << seg_i
+                                      << ", next[seg_i] = " << curves_out[i].next_segment_ids[seg_i]
+                                      << std::endl;
+                            std::cout << "p1: " << p1 << std::endl;
+                            std::cout << "q1: " << q1 << std::endl;
+                            std::cout << "j = " << j << ", seg_j = " << seg_j
+                                      << ", next[seg_j] = " << curves_out[j].next_segment_ids[seg_j]
+                                      << std::endl;
+                            std::cout << "p2: " << p2 << std::endl;
+                            std::cout << "q2: " << q2 << std::endl;
 
-                    if (doIntersect(p1, q1, p2, q2)) {
-                        intersect_count++;
-                        // std::cout << "i = " << i << ", seg_i = " << seg_i
-                        //           << ", next[seg_i] = " << curves_out[i].next_segment_ids[seg_i]
-                        //           << std::endl;
-                        // std::cout << "p1: " << p1 << std::endl;
-                        // std::cout << "q1: " << q1 << std::endl;
-                        // std::cout << "j = " << j << ", seg_j = " << seg_j
-                        //           << ", next[seg_j] = " << curves_out[j].next_segment_ids[seg_j]
-                        //           << std::endl;
-                        // std::cout << "p2: " << p2 << std::endl;
-                        // std::cout << "q2: " << q2 << std::endl;
+                            std::cout << "next[seg_i]: "
+                                      << curves_out[i]
+                                             .segments[curves_out[i].next_segment_ids[seg_i]]
+                                             .bcs[0]
+                                             .head(2)
+                                             .transpose()
+                                      << ", "
+                                      << curves_out[i]
+                                             .segments[curves_out[i].next_segment_ids[seg_i]]
+                                             .bcs[1]
+                                             .head(2)
+                                             .transpose()
+                                      << std::endl;
+                            std::cout << "next[seg_j]: "
+                                      << curves_out[j]
+                                             .segments[curves_out[j].next_segment_ids[seg_j]]
+                                             .bcs[0]
+                                             .head(2)
+                                             .transpose()
+                                      << ", "
+                                      << curves_out[j]
+                                             .segments[curves_out[j].next_segment_ids[seg_j]]
+                                             .bcs[1]
+                                             .head(2)
+                                             .transpose()
 
-                        // std::cout << "next[seg_i]: "
-                        //           << curves_out[i]
-                        //                  .segments[curves_out[i].next_segment_ids[seg_i]]
-                        //                  .bcs[0]
-                        //                  .head(2)
-                        //                  .transpose()
-                        //           << ", "
-                        //           << curves_out[i]
-                        //                  .segments[curves_out[i].next_segment_ids[seg_i]]
-                        //                  .bcs[1]
-                        //                  .head(2)
-                        //                  .transpose()
-                        //           << std::endl;
-                        // std::cout << "next[seg_j]: "
-                        //           << curves_out[j]
-                        //                  .segments[curves_out[j].next_segment_ids[seg_j]]
-                        //                  .bcs[0]
-                        //                  .head(2)
-                        //                  .transpose()
-                        //           << ", "
-                        //           << curves_out[j]
-                        //                  .segments[curves_out[j].next_segment_ids[seg_j]]
-                        //                  .bcs[1]
-                        //                  .head(2)
-                        //                  .transpose()
-
-                        //           << std::endl;
-                        // std::cout << std::endl;
+                                      << std::endl;
+                            std::cout << std::endl;
+                        }
                     }
                 }
+                std::cout << "curve " << i << " and curve " << j << " intersect " << intersect_count
+                          << " times" << std::endl;
             }
-            std::cout << "curve " << i << " and curve " << j << " intersect " << intersect_count
-                      << " times" << std::endl;
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
-    }
+    };
+    std::cout << "count curve_in intersection" << std::endl;
+    count_curve_intersection(curves_in);
+    std::cout << "count curve_out intersection" << std::endl;
+    count_curve_intersection(curves_out);
 }
 
 int main(int argc, char** argv)
