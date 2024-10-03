@@ -34,7 +34,7 @@ CofacesSingleDimensionIterable::Iterator::Iterator(
     init();
 }
 
-CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterator::operator++()
+CofacesSingleDimensionIterable::Iterator& CofacesSingleDimensionIterable::Iterator::operator++()
 {
     if (m_container->m_simplex.primitive_type() == m_container->m_cofaces_type) {
         return step_depth_0();
@@ -49,7 +49,8 @@ CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterato
     }
 
     assert(false); // unknown simplex or mesh type
-    return Iterator(*m_container);
+    m_t = Tuple();
+    return *this;
 }
 
 bool CofacesSingleDimensionIterable::Iterator::operator!=(const Iterator& other) const
@@ -57,7 +58,7 @@ bool CofacesSingleDimensionIterable::Iterator::operator!=(const Iterator& other)
     return m_t != other.m_t;
 }
 
-Tuple CofacesSingleDimensionIterable::Iterator::operator*()
+Tuple& CofacesSingleDimensionIterable::Iterator::operator*()
 {
     return m_t;
 }
@@ -119,13 +120,13 @@ void CofacesSingleDimensionIterable::Iterator::init()
     }
 }
 
-CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterator::step_depth_0()
+CofacesSingleDimensionIterable::Iterator& CofacesSingleDimensionIterable::Iterator::step_depth_0()
 {
     m_t = Tuple();
     return *this;
 }
 
-CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterator::step_depth_1()
+CofacesSingleDimensionIterable::Iterator& CofacesSingleDimensionIterable::Iterator::step_depth_1()
 {
     const Mesh& mesh = *(m_container->m_mesh);
     const simplex::Simplex& simplex = m_container->m_simplex;
@@ -140,7 +141,7 @@ CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterato
     }
 }
 
-CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterator::step_depth_2()
+CofacesSingleDimensionIterable::Iterator& CofacesSingleDimensionIterable::Iterator::step_depth_2()
 {
     const Mesh& mesh = *(m_container->m_mesh);
     const simplex::Simplex& simplex = m_container->m_simplex;
@@ -183,7 +184,7 @@ CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterato
     return *this;
 }
 
-CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterator::step_depth_3()
+CofacesSingleDimensionIterable::Iterator& CofacesSingleDimensionIterable::Iterator::step_depth_3()
 {
     const Mesh& mesh = *(m_container->m_mesh);
     const simplex::Simplex& simplex = m_container->m_simplex;
@@ -224,9 +225,8 @@ CofacesSingleDimensionIterable::Iterator CofacesSingleDimensionIterable::Iterato
         return *this;
     } else {
         if (m_queue.empty()) {
-            Tuple rt = m_t;
             m_t = Tuple();
-            return Iterator(*m_container, rt); // check if `rt` needed
+            return *this;
         }
 
         m_t = m_queue.front();

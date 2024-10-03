@@ -53,7 +53,7 @@ bool CofacesInSimplexIterable::Iterator::operator!=(const Iterator& other) const
     return m_t != other.m_t;
 }
 
-Tuple CofacesInSimplexIterable::Iterator::operator*()
+Tuple& CofacesInSimplexIterable::Iterator::operator*()
 {
     return m_t;
 }
