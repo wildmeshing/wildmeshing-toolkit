@@ -6,7 +6,7 @@
 
 #include "NamedMultiMesh.hpp"
 namespace wmtk::components::input {
-class InputOptions;
+struct InputOptions;
 
 
 /*
