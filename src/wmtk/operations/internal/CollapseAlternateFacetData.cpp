@@ -10,6 +10,7 @@
 #include <wmtk/utils/primitive_range.hpp>
 #include "wmtk/autogen/SimplexDart.hpp"
 #include "wmtk/utils/TupleInspector.hpp"
+#include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::operations::internal {
 namespace {

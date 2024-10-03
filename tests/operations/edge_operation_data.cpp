@@ -199,6 +199,7 @@ void collapse_facet_maps_impl(
     const std::vector<std::tuple<wmtk::Tuple, std::bitset<2>>>& tuples_with_boundary_info)
 {
     for (const auto& [tuple, bits] : tuples_with_boundary_info) {
+        spdlog::info("Adding {}", wmtk::utils::TupleInspector::as_string(tuple));
         data.add(m, tuple);
     }
 
@@ -233,11 +234,11 @@ TEST_CASE("collapse_facet_maps_1d", "[operations][data][1D][.]")
                 const auto& d = data_vec[j];
                 const auto& b = bdata[j];
                 const auto& bits = std::get<1>(b);
-                for (size_t j = 0; j < 2; ++j) {
-                    const auto& alt = d.alts[j];
-                    REQUIRE(alt.is_null() == bits[j]);
-                    // const auto& i = d.local_boundary_indices[j];
-                    // spdlog::info("{} {} => {}", alt.global_id(), alt.local_orientation(), i);
+                for (size_t k = 0; k < 2; ++k) {
+                    const auto& alt = d.alts[k];
+                    REQUIRE(alt.is_null() == bits[k]);
+                     const auto& i = d.local_boundary_indices[k];
+                     spdlog::info("Bdata {}:{} global id {}  with local orientation {} => points to {}", j, k, alt.global_id(), alt.local_orientation(), i);
                 }
             }
         }
@@ -246,6 +247,7 @@ TEST_CASE("collapse_facet_maps_1d", "[operations][data][1D][.]")
             // make sure there were alternatives to begin with
 
             int64_t index = m_debug.id(t, m.top_simplex_type());
+            spdlog::info("Testing on {}", index);
             REQUIRE(bits != 3);
             auto both = data.get_alternatives(m.top_simplex_type(), t, wmtk::PrimitiveType::Vertex);
             auto [a, b] = both;
@@ -265,11 +267,11 @@ TEST_CASE("collapse_facet_maps_1d", "[operations][data][1D][.]")
 
                 const auto& tup = both[j];
                 // boundary == bits is 1
-                // spdlog::info(
-                //    "{}: {} => {}",
-                //    j,
-                //    wmtk::utils::TupleInspector::as_string(tup),
-                //    bits[j]);
+                 spdlog::info(
+                    "{}: {} => {}",
+                    j,
+                    wmtk::utils::TupleInspector::as_string(tup),
+                    bits[j]);
                 REQUIRE(tup.is_null() == bits[j]);
                 if (!bits[j]) { // not boundary
                     // check that the tuple returned makes sense

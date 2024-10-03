@@ -6,6 +6,7 @@
 #include <wmtk/autogen/local_switch_tuple.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 #include "ear_actions.hpp"
+#include <wmtk/utils/Logger.hpp>
 namespace wmtk::operations::internal {
 
 CollapseAlternateFacetOptionData::CollapseAlternateFacetOptionData(
