@@ -26,7 +26,7 @@ TopDimensionCofacesIterable::Iterator::Iterator(
     init(depth());
 }
 
-TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::operator++()
+TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::operator++()
 {
     switch (depth()) {
     case 0: return step_depth_0();
@@ -37,7 +37,8 @@ TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::ope
     }
 
     assert(false); // unknown simplex or mesh type
-    return Iterator(*m_container);
+    m_t = Tuple();
+    return *this;
 }
 
 bool TopDimensionCofacesIterable::Iterator::operator!=(const Iterator& other) const
@@ -93,22 +94,20 @@ void TopDimensionCofacesIterable::Iterator::init(int64_t depth)
     }
 }
 
-TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::step_depth_0()
+TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::step_depth_0()
 {
-    Tuple rt = m_t;
     m_t = Tuple();
-    return Iterator(*m_container, rt);
+    return *this;
 }
 
-TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::step_depth_1()
+TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::step_depth_1()
 {
     const Mesh& mesh = *(m_container->m_mesh);
     const simplex::Simplex& simplex = m_container->m_simplex;
 
     if (m_phase == IteratorPhase::End || mesh.is_boundary(pt(1), m_t)) {
-        Tuple rt = m_t;
         m_t = Tuple();
-        return Iterator(*m_container, rt);
+        return *this;
     } else {
         m_t = mesh.switch_tuple(m_t, pt(0));
         m_phase = IteratorPhase::End;
@@ -116,7 +115,7 @@ TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::ste
     }
 }
 
-TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::step_depth_2()
+TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::step_depth_2()
 {
     const Mesh& mesh = *(m_container->m_mesh);
     const simplex::Simplex& simplex = m_container->m_simplex;
@@ -155,14 +154,13 @@ TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::ste
     return *this;
 }
 
-TopDimensionCofacesIterable::Iterator TopDimensionCofacesIterable::Iterator::step_depth_3()
+TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::step_depth_3()
 {
     const Mesh& mesh = *(m_container->m_mesh);
 
     if (m_queue.empty()) {
-        Tuple rt = m_t;
         m_t = Tuple();
-        return Iterator(*m_container, rt);
+        return *this;
     }
 
     m_t = m_queue.front();
