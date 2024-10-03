@@ -7,7 +7,7 @@
 #include <wmtk/utils/Logger.hpp>
 
 
-namespace wmtk::components {
+namespace wmtk::components::output {
 
 void output(
     const Mesh& mesh,
@@ -17,6 +17,7 @@ void output(
     wmtk::logger().info("Saving on {}", file.string());
 
     if (file.extension().empty()) {
+        assert(!position_attr_name.empty());
         std::array<bool, 4> out = {{false, false, false, false}};
         for (int64_t d = 0; d <= mesh.top_cell_dimension(); ++d) {
             out[d] = true;
