@@ -441,6 +441,9 @@ std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simp
                             }
                         }
                     } else if (mesh().top_simplex_type() == PrimitiveType::Tetrahedron) {
+                        // TODO: implement this for tetrahedron mesh
+                        auto [T_after, V_after, id_map_after, v_id_map_after] =
+                            utils::get_local_tetmesh(static_cast<const TetMesh&>(mesh()), mods[0]);
                     }
 
                     // TODO: get a larger json file to do this:

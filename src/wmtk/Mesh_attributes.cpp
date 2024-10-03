@@ -314,7 +314,7 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
     }
 #ifdef WMTK_RECORD_OPERATIONS
 
-    // TODO: Write the new_2_old id map to file
+    // Write the new_2_old id map to file
     // std::cout << "Record Consolidate\n";
     // std::cout << "succ operations count: " << succ_operations_count << "\n";
     std::string filename =
