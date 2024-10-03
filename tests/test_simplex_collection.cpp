@@ -1887,7 +1887,7 @@ TEST_CASE("simplex_cofaces_single_dimension_tri_iterable", "[simplex_collection]
     }
 }
 
-TEST_CASE("simplex_cofaces_single_dimension_tet_iterable", "[simplex_collection][3D][.]")
+TEST_CASE("simplex_cofaces_single_dimension_tet_iterable", "[simplex_collection][3D]")
 {
     auto mp = std::make_unique<TetMesh>(tests_3d::six_cycle_tets());
     Mesh& m = *mp;
