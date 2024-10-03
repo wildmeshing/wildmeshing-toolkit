@@ -1,8 +1,9 @@
 #include "TopDimensionCofacesIterable.hpp"
 
-#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
+
+#include <wmtk/simplex/cofaces_in_simplex_iterable.hpp>
 
 namespace wmtk::simplex {
 
@@ -14,10 +15,12 @@ TopDimensionCofacesIterable::TopDimensionCofacesIterable(const Mesh& mesh, const
 
 TopDimensionCofacesIterable::Iterator::Iterator(
     const TopDimensionCofacesIterable& container,
-    const Tuple& t)
+    const Tuple& t,
+    const bool retrieve_intermediate_tuple)
     : m_container(&container)
     , m_t(t)
     , m_phase(IteratorPhase::Forward)
+    , m_retrieve_intermediate_tuple(retrieve_intermediate_tuple)
 {
     if (m_t.is_null()) {
         return;
@@ -46,7 +49,7 @@ bool TopDimensionCofacesIterable::Iterator::operator!=(const Iterator& other) co
     return m_t != other.m_t;
 }
 
-Tuple TopDimensionCofacesIterable::Iterator::operator*()
+Tuple& TopDimensionCofacesIterable::Iterator::operator*()
 {
     return m_t;
 }
@@ -88,9 +91,8 @@ void TopDimensionCofacesIterable::Iterator::init(int64_t depth)
         // d - 3 --> BFS
 
         m_visited.is_visited(wmtk::utils::TupleInspector::global_cid(m_t));
-        m_queue.push(m_t);
 
-        step_depth_3();
+        add_neighbors_to_queue();
     }
 }
 
@@ -129,6 +131,9 @@ TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::st
             // switch to backward phase
             m_phase = IteratorPhase::Backward;
         }
+        if (m_retrieve_intermediate_tuple) {
+            return *this;
+        }
     }
 
     if (m_phase == IteratorPhase::End) {
@@ -166,10 +171,21 @@ TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::st
     m_t = m_queue.front();
     m_queue.pop();
 
-    const std::array<Tuple, 3> t_tris = {
-        {m_t, mesh.switch_tuple(m_t, pt(1)), mesh.switch_tuples(m_t, {pt(2), pt(1)})}};
+    add_neighbors_to_queue();
 
-    for (const Tuple& tt : t_tris) {
+
+    return *this;
+}
+
+void TopDimensionCofacesIterable::Iterator::add_neighbors_to_queue()
+{
+    const Mesh& mesh = *(m_container->m_mesh);
+    const simplex::Simplex& simplex = m_container->m_simplex;
+
+    for (const Tuple& tt : cofaces_in_simplex_iterable(
+             mesh,
+             simplex::Simplex(mesh, simplex.primitive_type(), m_t),
+             mesh.top_simplex_type())) {
         if (mesh.is_boundary(pt(1), tt)) {
             continue;
         }
@@ -180,9 +196,6 @@ TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::st
             m_queue.push(neigh);
         }
     }
-
-
-    return *this;
 }
 
 } // namespace wmtk::simplex
