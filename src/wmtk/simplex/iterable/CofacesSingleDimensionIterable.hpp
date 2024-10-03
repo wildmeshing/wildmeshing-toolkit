@@ -31,9 +31,9 @@ public:
     {
     public:
         Iterator(const CofacesSingleDimensionIterable& container, const Tuple& t = Tuple());
-        Iterator operator++();
+        Iterator& operator++();
         bool operator!=(const Iterator& other) const;
-        Tuple operator*();
+        Tuple& operator*();
         const Tuple& operator*() const;
 
     private:
@@ -64,27 +64,27 @@ public:
          *
          * Example: triangle in a TriMesh.
          */
-        Iterator step_depth_0();
+        Iterator& step_depth_0();
         /**
          * @brief There are at max two d-simplices.
          *
          * Example: edge in a TriMesh.
          * Example: triangle in a TetMesh.
          */
-        Iterator step_depth_1();
+        Iterator& step_depth_1();
         /**
          * @brief Iterate around simplex to find all d-simplices.
          *
          * Example: vertex in a TriMesh.
          * Example: edge in a TetMesh.
          */
-        Iterator step_depth_2();
+        Iterator& step_depth_2();
         /**
          * @brief Use breadth first search to find all d-simplices.
          *
          * Example: vertex in a TetMesh.
          */
-        Iterator step_depth_3();
+        Iterator& step_depth_3();
 
         void add_neighbors_to_queue();
 
