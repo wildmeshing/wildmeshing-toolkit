@@ -67,7 +67,7 @@ void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json
         }
     } else {
         if (v.imported_attributes.has_value()) {
-            v.imported_attributes = j["imported_attributes"];
+            v.imported_attributes = j["imported_attributes"].get<std::vector<std::vector<std::string>>>();
         }
     }
 }
