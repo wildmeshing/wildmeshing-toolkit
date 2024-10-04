@@ -3,7 +3,7 @@
 #include <queue>
 
 #include <wmtk/Mesh.hpp>
-#include <wmtk/simplex/RawSimplex.hpp>
+#include <wmtk/simplex/IdSimplex.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/simplex/internal/VisitedArray.hpp>
@@ -76,7 +76,7 @@ private:
     TopDimensionCofacesIterable m_tdc_itrbl;
     TopDimensionCofacesIterable::Iterator m_it_end;
 
-    simplex::internal::VisitedArray<simplex::RawSimplex> m_visited_cofaces; // for depth 3 iteration
+    simplex::internal::VisitedArray<simplex::IdSimplex> m_visited_cofaces; // for depth 3 iteration
 };
 
 } // namespace wmtk::simplex

@@ -86,8 +86,7 @@ void CofacesSingleDimensionIterable::Iterator::init()
         const Mesh& mesh = *(m_container->m_mesh);
         const PrimitiveType& cofaces_type = m_container->m_cofaces_type;
 
-        m_container->m_visited_cofaces.is_visited(
-            simplex::RawSimplex(mesh, simplex::Simplex(mesh, cofaces_type, *m_it)));
+        m_container->m_visited_cofaces.is_visited(mesh.get_id_simplex(*m_it, cofaces_type));
     }
 }
 
@@ -105,7 +104,7 @@ CofacesSingleDimensionIterable::Iterator& CofacesSingleDimensionIterable::Iterat
                      simplex::Simplex(mesh, simplex.primitive_type(), *m_it),
                      mesh.top_simplex_type())) {
                 if (!m_container->m_visited_cofaces.is_visited(
-                        simplex::RawSimplex(mesh, simplex::Simplex(mesh, cofaces_type, t)))) {
+                        mesh.get_id_simplex(t, cofaces_type))) {
                     *m_it = t;
                     return *this;
                 }

@@ -14,7 +14,7 @@ template <typename T, uint64_t ArraySize = 50>
 class VisitedArray
 {
 public:
-    bool is_visited(const T obj);
+    bool is_visited(const T& obj);
 
     const wmtk::utils::DynamicArray<T, ArraySize>& visited_array() const;
 
@@ -23,7 +23,7 @@ private:
 };
 
 template <typename T, uint64_t ArraySize>
-inline bool VisitedArray<T, ArraySize>::is_visited(const T obj)
+inline bool VisitedArray<T, ArraySize>::is_visited(const T& obj)
 {
     for (const T& v : m_visited) {
         if (v == obj) {

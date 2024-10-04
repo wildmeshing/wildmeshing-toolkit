@@ -20,6 +20,11 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
     return get_all(type, false);
 }
 
+simplex::IdSimplex Mesh::get_id_simplex(const Tuple& tuple, PrimitiveType pt) const
+{
+    return simplex::IdSimplex(pt, id(tuple, pt));
+}
+
 
 std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted) const
 {
