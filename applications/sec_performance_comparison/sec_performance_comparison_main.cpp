@@ -46,7 +46,7 @@ nlohmann::json test_run(const fs::path& input_file, const bool run_tetwild_simpl
         wmtk::utils::StopWatch sw("shortestedge_collapse");
         shortestedge_collapse(*mesh_in, pos_handle, 1000);
     }
-    output::output(*mesh_in, run_tetwild_simplification ? "tws_out" : "sec_out", pos_handle);
+    // output::output(*mesh_in, run_tetwild_simplification ? "tws_out" : "sec_out", pos_handle);
 
     logger().info(
         "Output {} #top_simplices = {}",
