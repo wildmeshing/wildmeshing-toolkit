@@ -21,6 +21,7 @@
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/attribute_update/TopologicalTransferStrategy.hpp>
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
+#include <wmtk/simplex/cofaces_single_dimension_iterable.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -87,8 +88,11 @@ void shortestedge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& option
                                       const simplex::Simplex& s) -> void {
         assert(s.primitive_type() == PrimitiveType::Vertex);
 
-        const auto edges = simplex::cofaces_single_dimension(mesh, s, PrimitiveType::Edge);
-        for (const simplex::Simplex& e : edges) {
+        // const auto edge_tuples =
+        //     simplex::cofaces_single_dimension_tuples(mesh, s, PrimitiveType::Edge);
+        auto edge_tuples = simplex::cofaces_single_dimension_iterable(mesh, s, PrimitiveType::Edge);
+        for (const Tuple& e_tup : edge_tuples) {
+            const simplex::Simplex e(mesh, PrimitiveType::Edge, e_tup);
             visited_edge_flag_acc.scalar_attribute(e) = char(1);
             const auto vertices = simplex::faces_single_dimension(mesh, e, PrimitiveType::Vertex);
             const auto p0 = pos_acc.const_vector_attribute(vertices.simplex_vector()[0]);
