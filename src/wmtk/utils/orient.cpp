@@ -78,6 +78,12 @@ int wmtk_orient3d(
     const Eigen::Ref<const Eigen::Vector3<Rational>>& p2,
     const Eigen::Ref<const Eigen::Vector3<Rational>>& p3)
 {
+    static bool initialized = false;
+    if (!initialized) {
+        vol_rem::initFPU();
+        initialized = true;
+    }
+
     if (is_rounded(p0) && is_rounded(p1) && is_rounded(p2) && is_rounded(p3)) {
         return wmtk_orient3d(
             p0.cast<double>(),
@@ -111,13 +117,13 @@ int wmtk_orient3d(
         Eigen::Vector3<vol_rem::interval_number> p2r_i;
         Eigen::Vector3<vol_rem::interval_number> p3r_i;
 
+        vol_rem::setFPUModeToRoundUP();
         for (int64_t i = 0; i < 3; ++i) {
             p0r_i[i] = rational_to_interval(p0[i]);
             p1r_i[i] = rational_to_interval(p1[i]);
             p2r_i[i] = rational_to_interval(p2[i]);
             p3r_i[i] = rational_to_interval(p3[i]);
         }
-
         Eigen::Matrix3<vol_rem::interval_number> M_i;
         M_i.row(0) = p0r_i - p3r_i;
         M_i.row(1) = p1r_i - p3r_i;
@@ -125,9 +131,12 @@ int wmtk_orient3d(
 
 
         const auto det_i = determinant<vol_rem::interval_number>(M_i);
+        auto reliable = det_i.signIsReliable();
+        auto sign = det_i.sign();
+        vol_rem::setFPUModeToRoundNEAR();
         // assert(!det.is_rounded());
-        if (det_i.signIsReliable()) {
-            return det_i.sign();
+        if (reliable) {
+            return sign;
         }
 
         // Slow version using rationals
