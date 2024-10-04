@@ -1,5 +1,8 @@
 #include "LinkSingleDimensionIterable.hpp"
 
+#include <wmtk/autogen/SimplexDart.hpp>
+#include <wmtk/autogen/local_switch_tuple.hpp>
+#include <wmtk/simplex/RawSimplex.hpp>
 #include <wmtk/simplex/cofaces_in_simplex_iterable.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -80,7 +83,6 @@ bool LinkSingleDimensionIterable::Iterator::is_link_d1()
 
 void LinkSingleDimensionIterable::Iterator::init()
 {
-    log_and_throw_error("missing");
     navigate_to_link();
 
     if (depth() == 3 && !is_link_d1()) {
@@ -123,9 +125,30 @@ LinkSingleDimensionIterable::Iterator& LinkSingleDimensionIterable::Iterator::st
 
 void LinkSingleDimensionIterable::Iterator::navigate_to_link()
 {
-    log_and_throw_error("navigate_to_link not implemented");
-
+    if (m_t.is_null()) {
+        return;
+    }
     // invert the simplex using SimplexDart
+    const Mesh& mesh = *(m_container->m_mesh);
+    const PrimitiveType& mesh_pt = mesh.top_simplex_type();
+    autogen::SimplexDart sd(mesh_pt);
+
+    // const simplex::RawSimplex v0(mesh, simplex::Simplex(mesh, PrimitiveType::Vertex, m_t));
+    // const simplex::RawSimplex e0(mesh, simplex::Simplex(mesh, PrimitiveType::Edge, m_t));
+
+    switch (mesh.top_simplex_type()) {
+    case PrimitiveType::Triangle: {
+        const int8_t index_switch = sd.product(
+            sd.primitive_as_index(PrimitiveType::Edge),
+            sd.primitive_as_index(PrimitiveType::Vertex));
+        m_t = autogen::local_switch_tuple(mesh_pt, m_t, index_switch);
+        break;
+    }
+    default: log_and_throw_error("missing mesh navigation in link"); break;
+    }
+
+    // const simplex::RawSimplex v1(mesh, simplex::Simplex(mesh, PrimitiveType::Vertex, m_t));
+    // const simplex::RawSimplex e1(mesh, simplex::Simplex(mesh, PrimitiveType::Edge, m_t));
 }
 
 } // namespace wmtk::simplex
