@@ -360,6 +360,9 @@ generate_raw_tetmesh_from_input_surface(
     const RowVectors3d& bgV,
     const RowVectors4l& bgT)
 {
+    polysolve::StopWatch timer("tri insertion", logger());
+
+
     // compute bounding box
     Vector3d bbox_min = V.colwise().minCoeff();
     Vector3d bbox_max = V.colwise().maxCoeff();
@@ -435,7 +438,7 @@ generate_raw_tetmesh_from_input_surface(
     std::vector<uint32_t> final_tets_parent;
     std::vector<bool> cells_with_faces_on_input;
     std::vector<std::vector<uint32_t>> final_tets_parent_faces;
-
+    timer.start();
     // run volume remesher
     vol_rem::embed_tri_in_poly_mesh(
         tri_vrt_coords,
@@ -451,11 +454,13 @@ generate_raw_tetmesh_from_input_surface(
         cells_with_faces_on_input,
         final_tets_parent_faces,
         wmtk::logger().level() < spdlog::level::info);
-
+    timer.stop();
     assert(tets_final.size() == final_tets_parent.size());
 
     wmtk::logger().info(
-        "volume remesher finished, polycell mesh generated, #vertices: {},  #cells: {}, #tets {}",
+        "volume remesher finished {}s, polycell mesh generated, #vertices: {},  #cells: {}, #tets "
+        "{}",
+        timer.getElapsedTimeInSec(),
         embedded_vertices.size() / 3,
         embedded_cells.size(),
         tets_final.size());
@@ -520,7 +525,6 @@ generate_raw_tetmesh_from_input_surface(
 
 
     wmtk::logger().info("tracking surface starting...");
-    polysolve::StopWatch timer("tracking surface starting", logger());
     timer.start();
     assert(final_tets_parent_faces.size() == tets_final.size());
     for (int64_t i = 0; i < tets_final.size(); ++i) {
@@ -601,14 +605,14 @@ generate_raw_tetmesh_from_input_surface(
     // check tets
     // for (auto& t : tets_final) {
     //     if (wmtk_orient3d(
-    //             v_coords_final_rational[t[1]],
-    //             v_coords_final_rational[t[0]],
-    //             v_coords_final_rational[t[2]],
-    //             v_coords_final_rational[t[3]]) <= 0) {
+    //             v_coords_final[t[0]],
+    //             v_coords_final[t[1]],
+    //             v_coords_final[t[2]],
+    //             v_coords_final[t[3]]) <= 0) {
     //         Eigen::Matrix<Rational, 3, 3> tmp;
-    //         tmp.col(0) = v_coords_final_rational[t[1]] - v_coords_final_rational[t[0]];
-    //         tmp.col(1) = v_coords_final_rational[t[2]] - v_coords_final_rational[t[0]];
-    //         tmp.col(2) = v_coords_final_rational[t[3]] - v_coords_final_rational[t[0]];
+    //         tmp.col(0) = v_coords_final[t[1]] - v_coords_final[t[0]];
+    //         tmp.col(1) = v_coords_final[t[2]] - v_coords_final[t[0]];
+    //         tmp.col(2) = v_coords_final[t[3]] - v_coords_final[t[0]];
     //         log_and_throw_error(
     //             "flipped tet=({},{},{},{}) crash vol={} orient={}",
     //             t[0],
@@ -617,10 +621,10 @@ generate_raw_tetmesh_from_input_surface(
     //             t[3],
     //             tmp.determinant().serialize(),
     //             wmtk_orient3d(
-    //                 v_coords_final_rational[t[1]],
-    //                 v_coords_final_rational[t[0]],
-    //                 v_coords_final_rational[t[2]],
-    //                 v_coords_final_rational[t[3]]));
+    //                 v_coords_final[t[0]],
+    //                 v_coords_final[t[1]],
+    //                 v_coords_final[t[2]],
+    //                 v_coords_final[t[3]]));
     //     }
     // }
 
