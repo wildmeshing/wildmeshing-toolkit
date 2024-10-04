@@ -17,5 +17,5 @@ using SplitReturnData =
         wmtk::operations::utils::MultiMeshEdgeSplitFunctor,
         wmtk::utils::metaprogramming::MeshVariantTraits,
         wmtk::simplex::utils::MeshSimplexComparator,
-        simplex::Simplex>;
+        simplex::NavigatableSimplex>;
 } // namespace wmtk::multimesh::operations

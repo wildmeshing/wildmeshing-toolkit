@@ -7,13 +7,22 @@ import subprocess
 import tempfile
 import argparse
 
+def fix_path(path):
+    cwd = os.getcwd()
+    return path if os.path.isabs(path) else os.path.join(cwd, path)
 
 class IntegrationTest(unittest.TestCase):
-    BINARY_FOLDER = ""
-    CONFIG_FILE = ""
+    BINARY_FOLDER = None
+    CONFIG_FILE = None
     TEST = None
 
     def setUp(self):
+        if "WMTK_BINARY_FOLDER" in os.environ:
+            IntegrationTest.BINARY_FOLDER = fix_path(os.environ['WMTK_BINARY_FOLDER'])
+        if "WMTK_CONFIG_FILE" in os.environ:
+            IntegrationTest.CONFIG_FILE = fix_path(os.environ['WMTK_CONFIG_FILE'])
+
+        # print(os.environ['FILENAME'])
         self.working_dir_fp = tempfile.TemporaryDirectory()
         self.working_dir = self.working_dir_fp.name
         print('Running all integration tests in', self.working_dir)
@@ -24,8 +33,9 @@ class IntegrationTest(unittest.TestCase):
     def tearDown(self):
         self.working_dir_fp.cleanup()
 
-    def run_one(self, executable, data_folder, config):
-        test_folder = os.path.join(data_folder, config["test_directory"])
+    def run_one(self, executable, config_folder, data_folder, config):
+        if "test_directory" in config:
+            config_folder = os.path.join(config_folder, config["test_directory"])
 
         input_tag = config["input_tag"]
         oracle_tag = config["oracle_tag"]
@@ -39,45 +49,59 @@ class IntegrationTest(unittest.TestCase):
         for test_file_name in config["tests"]:
             print("Running test", test_file_name)
 
-            test_file = os.path.join(test_folder, test_file_name)
+            test_file = os.path.join(config_folder, test_file_name)
 
+            print(f"Test file: {test_file}")
             self.assertTrue(os.path.exists(test_file))
 
             with open(test_file) as f:
-                test_oracle = json.load(f)
+                try:
+                    test_oracle = json.load(f)
+                except Exception as e:
+                    print(f"Caught exception while loading file {test_file}: {e}")
+                    raise e
 
             input = test_oracle[input_tag].copy()
-            oracle_file = tempfile.NamedTemporaryFile(mode='r')
-            input[oracle_tag] = oracle_file.name
+            with tempfile.NamedTemporaryFile(mode='r', delete=False) as oracle_file:
+                oracle_file.close()
 
             if root_tag in input:
                 if not os.path.isabs(input[root_tag]):
-                    input[root_tag] = os.path.join(test_folder, input[root_tag])
+                    input[root_tag] = os.path.join(config_folder, input[root_tag])
             else:
-                input[root_tag] = test_folder
+                input[root_tag] = config_folder
 
-            input_json = tempfile.NamedTemporaryFile(mode='w')
-            json.dump(input, input_json)
-            input_json.flush()
+                if root_tag in input:
+                    if not os.path.isabs(input[root_tag]):
+                        input[root_tag] = os.path.join(test_folder, input[root_tag])
+                else:
+                    input[root_tag] = test_folder
 
-            res = subprocess.run([executable, "-j", input_json.name], cwd=self.working_dir)
+                with tempfile.NamedTemporaryFile(mode='w', delete=False) as input_json:
+                    json.dump(input, input_json)
+                    input_json.close()
 
-            self.assertEqual(res.returncode, 0)
-            result = json.load(oracle_file)
+                    res = subprocess.run([executable, "-j", input_json.name], cwd=self.working_dir, capture_output=True)
 
-            for check in checks:
-                self.assertTrue(result[check], test_oracle[check])
+                if res.returncode != 0:
+                    print("Error running")
+                    print(res.stderr.decode('utf-8'))
+                    print(res.stdout.decode('utf-8'))
 
-            if len(checks) == 0 and not has_checks:
-                for k in test_oracle:
-                    if k == input_tag:
-                        continue
+                self.assertEqual(res.returncode, 0)
+                with open(oracle_file.name, "r") as fp:
+                    result = json.load(fp)
 
-                    self.assertTrue(k in result)
-                    self.assertEqual(result[k], test_oracle[k])
+                for check in checks:
+                    self.assertTrue(result[check], test_oracle[check])
 
-            oracle_file.close()
-            input_json.close()
+                if len(checks) == 0 and not has_checks:
+                    for k in test_oracle:
+                        if k == input_tag:
+                            continue
+
+                        self.assertTrue(k in result)
+                        self.assertEqual(result[k], test_oracle[k])
 
 
         self.assertTrue(True)
@@ -93,12 +117,16 @@ class IntegrationTest(unittest.TestCase):
                 print("Running test for", key)
 
 
-                file = self.main_config[key]["config_file"]
+                my_config = self.main_config[key]
+
+                file = my_config["config_file"]
 
                 with open(file) as fp:
                     config = json.load(fp)
 
-                self.run_one(key, self.main_config[key]["data_folder"], config)
+                data_folder = None if "data_folder" not in my_config else my_config["data_folder"]
+                config_folder = data_folder if "config_folder" not in my_config else my_config["config_folder"]
+                self.run_one(key, config_folder, data_folder, config)
 
 
 if __name__ == '__main__':
@@ -117,18 +145,21 @@ if __name__ == '__main__':
     bfin = args.binary_folder
 
     cwd = os.getcwd()
-    config_file = os.path.join(cwd, "test_config.json")
     if tcin:
-        config_file = str(tcin if os.path.isabs(tcin) else os.path.join(cwd, tcin))
+        config_file = fix_path(tcin)
         sys.argv.pop()
         sys.argv.pop()
+    else:
+        config_file = os.path.join(cwd, "test_config.json")
 
 
-    bin_dir = os.path.join(cwd, "applications")
     if bfin:
-        bin_dir = bfin if os.path.isabs(bfin) else os.path.join(cwd, bfin)
+        bin_dir = fix_path(bfin)
         sys.argv.pop()
         sys.argv.pop()
+    else:
+        bin_dir = os.path.join(cwd, "applications")
+
 
     if args.test:
         sys.argv.pop()

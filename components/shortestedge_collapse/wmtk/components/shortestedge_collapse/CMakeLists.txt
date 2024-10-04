@@ -7,6 +7,7 @@ endif()
 set(SRC_FILES
     shortestedge_collapse.hpp
     shortestedge_collapse.cpp
+    ShortestEdgeCollapseOptions.hpp
     )
 
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/simplex/NavigatableSimplex.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 namespace wmtk {
 class Mesh;
@@ -38,6 +39,8 @@ public:
      * */
     static bool equal(const Mesh& m, PrimitiveType primitive_type, const Tuple& a, const Tuple& b);
 
+    static bool equal(const Mesh& m, const IdSimplex& s0, const IdSimplex& s1);
+
 
     /* @brief checks if simplex objects are less than one another
      *
@@ -49,6 +52,8 @@ public:
      * @return true if two simplices are the same
      * */
     static bool less(const Mesh& m, const Simplex& s0, const Simplex& s1);
+
+    static bool less(const Mesh& m, const IdSimplex& s0, const IdSimplex& s1);
     /* @brief checks if simplex objects are less than one another
      *
      * uses lexicgoraphic order of (primtiive type, id)

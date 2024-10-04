@@ -10,7 +10,6 @@ set(TEST_SOURCES
     collapse_1d.cpp
     test_attribute_transfer.cpp
     vertex_optimization.cpp
-    laplacian_smoothing.cpp
     edge_operation_data.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})

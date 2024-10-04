@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
 
     fs::path input_file = resolve_paths(json_input_file, {j["root"], j["input"]});
 
-    auto mesh = wmtk::components::input(input_file);
+    auto mesh = wmtk::components::input::input(input_file);
     wmtk::logger().info("mesh has {} vertices", mesh->get_all(PrimitiveType::Vertex).size());
 
     auto mesh_after_cdt = wmtk::components::CDT(static_cast<const TriMesh&>(*mesh), true, false);
@@ -69,8 +69,8 @@ int main(int argc, char* argv[])
             mesh_after_cdt->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     }
 
-    auto [parent_mesh, child_mesh] = wmtk::components::multimesh(
-        wmtk::components::MultiMeshType::Boundary,
+    auto [parent_mesh, child_mesh] = wmtk::components::multimesh::multimesh(
+        wmtk::components::multimesh::MultiMeshType::Boundary,
         *mesh_after_cdt,
         nullptr,
         mesh_after_cdt_position_handle,
@@ -87,8 +87,8 @@ int main(int argc, char* argv[])
     }
 
     std::string output_file = j["output"];
-    wmtk::components::output(*parent_mesh, output_file + "_before_sec", "vertices");
-    wmtk::components::output(*child_mesh, output_file + "_surface_before_sec", "vertices");
+    wmtk::components::output::output(*parent_mesh, output_file + "_before_sec", "vertices");
+    wmtk::components::output::output(*child_mesh, output_file + "_surface_before_sec", "vertices");
 
     std::vector<attribute::MeshAttributeHandle> pass_through;
     auto boundary_handle =
@@ -98,22 +98,22 @@ int main(int argc, char* argv[])
     auto child_mesh_position_handle =
         child_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
-    std::optional<attribute::MeshAttributeHandle> parent_mesh_position_handle =
+    attribute::MeshAttributeHandle parent_mesh_position_handle =
         parent_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
+    {
+        components::ShortestEdgeCollapseOptions options;
+        options.position_handle = child_mesh_position_handle;
+        options.length_rel = j["length_rel"];
+        options.envelope_size = j["envelope_size"];
+        options.inversion_position_handle = parent_mesh_position_handle;
+        options.pass_through_attributes = pass_through;
 
-    auto mesh_after_sec = wmtk::components::shortestedge_collapse(
-        static_cast<TriMesh&>(*child_mesh),
-        child_mesh_position_handle,
-        parent_mesh_position_handle,
-        false,
-        j["length_rel"],
-        false,
-        j["envelope_size"],
-        pass_through);
+        components::shortestedge_collapse(static_cast<TriMesh&>(*child_mesh), options);
+    }
 
-    wmtk::components::output(*parent_mesh, output_file, "vertices");
-    wmtk::components::output(*mesh_after_sec, output_file + "_surface", "vertices");
+    wmtk::components::output::output(*parent_mesh, output_file, "vertices");
+    wmtk::components::output::output(*child_mesh, output_file + "_surface", "vertices");
 
     const std::string report = j["report"];
     if (!report.empty()) {
