@@ -9,6 +9,7 @@ namespace wmtk::components::procedural {
 class TriangleFanOptions
 {
 public:
+    constexpr static auto name() -> std::string_view { return "triangle_fan"; }
     int64_t size;
     struct Coordinates
     {
@@ -35,7 +36,14 @@ public:
     };
     std::optional<Coordinates> coordinates;
 
-    std::optional<std::string> get_coordinate_name() const { if(coordinates.has_value()) { return coordinates.value().name;} else { return {}; } }
+    std::optional<std::string> get_coordinate_name() const
+    {
+        if (coordinates.has_value()) {
+            return coordinates.value().name;
+        } else {
+            return {};
+        }
+    }
     friend void to_json(nlohmann::json& nlohmann_json_j, const TriangleFanOptions& nlohmann_json_t)
     {
         nlohmann_json_j["size"] = nlohmann_json_t.size;

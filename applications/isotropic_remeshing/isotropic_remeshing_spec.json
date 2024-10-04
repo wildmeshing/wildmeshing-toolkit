@@ -1,0 +1,98 @@
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": [
+      "input",
+      "output",
+      "attributes",
+      "iterations",
+      "position_attribute"
+    ],
+    "optional": [
+      "pass_through",
+      "length_abs",
+      "length_rel",
+      "lock_boundary",
+      "use_for_periodic",
+      "dont_disable_split",
+      "inversion_position_attribute",
+      "other_position_attributes"
+    ]
+  },
+  {
+    "pointer": "/input",
+    "type": "include",
+    "spec_file": "input_spec.json",
+    "doc": "input mesh path"
+  },
+  {
+    "pointer": "/output",
+    "type": "string",
+    "doc": "output mesh"
+  },
+  {
+    "pointer": "/position_attribute",
+    "type": "include",
+    "spec_file": "attribute_spec.json",
+    "doc": "Position attribute"
+  },
+  {
+    "pointer": "/inversion_position_attribute",
+    "type": "include",
+    "spec_file": "optional_attribute_spec.json",
+    "doc": "Position attribute for inversion check"
+  },
+  {
+    "pointer": "/other_positions_attribute",
+    "type": "include",
+    "spec_file": "optional_attribute_spec.json",
+    "doc": "Position attribute for inversion check"
+  },
+  {
+    "pointer": "/pass_through",
+    "type": "list",
+    "default": [],
+    "doc": "all attributes that are not deleted by the component but also not required"
+  },
+  {
+    "pointer": "/pass_through/*",
+    "type": "include",
+    "spec_file": "attribute_spec.json"
+  },
+  {
+    "pointer": "/iterations",
+    "type": "int",
+    "doc": "number of iterations that should be performed"
+  },
+  {
+    "pointer": "/length_abs",
+    "type": "float",
+    "default": -1
+  },
+  {
+    "pointer": "/length_rel",
+    "type": "float",
+    "default": -1
+  },
+  {
+    "pointer": "/lock_boundary",
+    "type": "bool",
+    "default": true
+  },
+  {
+    "pointer": "/use_for_periodic",
+    "type": "bool",
+    "default": false
+  },
+  {
+    "pointer": "/dont_disable_split",
+    "type": "bool",
+    "default": false
+  },
+  {
+    "pointer": "/fix_uv_seam",
+    "type": "bool",
+    "default": false
+  }
+]

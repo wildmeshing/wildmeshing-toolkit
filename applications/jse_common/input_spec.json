@@ -1,0 +1,56 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": ["file"],
+        "optional": [
+          "imported_attributes",
+          "name_spec",
+          "old_mode",
+          "ignore_z",
+          "tet_attributes"
+        ]
+},
+{
+    "pointer": "/file",
+    "type": "string"
+},
+{
+    "pointer": "/name_spec",
+    "type": "object",
+    "default": {}
+},
+{
+    "pointer": "/imported_attributes",
+    "type": "list",
+    "default": []
+},
+{
+    "pointer": "/imported_attributes/*",
+    "type": "list"
+},
+{
+    "pointer": "/imported_attributes/*/*",
+    "type": "string"
+},
+{
+    "pointer": "/old_mode",
+    "type": "bool",
+    "default": false
+},
+{
+    "pointer": "/ignore_z",
+    "type": "bool",
+    "default": false
+},
+
+{
+    "pointer": "/tet_attributes",
+    "type": "list",
+    "default": []
+},
+{
+    "pointer": "/tet_attributes/*",
+    "type": "string"
+}
+]

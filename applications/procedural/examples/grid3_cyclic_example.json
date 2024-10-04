@@ -1,0 +1,24 @@
+
+{
+    "name": "grid3d_tiled",
+    "type": "grid",
+    "grid": {
+        "cycles": [
+            true,
+            true,
+            true
+        ],
+        "dimensions": [
+            10,
+            10,
+            10
+        ],
+        "tiling": "freudenthal"
+    },
+      "output": {
+        "attributes": {
+          "position": "vertices"
+        },
+        "file": "grid2d",
+      }
+}

@@ -41,6 +41,9 @@ public:
 
     std::vector<wmtk::attribute::MeshAttributeHandle> sources() const final override { return {}; }
 
+    virtual bool invalid_state() const = 0;
+    virtual std::string name() const = 0;
+
 protected:
 private:
     SimplexPredicateType m_simplex_predicate = nullptr;

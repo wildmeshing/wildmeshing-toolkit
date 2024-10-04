@@ -55,6 +55,10 @@ bool are_all_ears_in_child(const TetMesh& parent, const EdgeMesh& child, const T
 }
 struct MultiMeshMapValidFunctor
 {
+    template <typename T>
+    bool operator()(const T& m, const simplex::Simplex& s, int64_t) {
+        return this->operator()(m,s);
+    }
     bool operator()(const Mesh& m, const simplex::Simplex& s) const { return false; }
     bool operator()(const PointMesh& m, const simplex::Simplex& s) const { return false; }
 
@@ -115,7 +119,7 @@ bool MultiMeshMapValidInvariant::before(const simplex::Simplex& t) const
         std::integral_constant<int64_t, 1>{}, // specify that this runs on edges
         MultiMeshMapValidFunctor{});
     // TODO: fix visitor to work for const data
-    visitor.execute_from_root(const_cast<Mesh&>(mesh()), t);
+    visitor.execute_from_root(const_cast<Mesh&>(mesh()), simplex::NavigatableSimplex(mesh(),t));
     const auto& data = visitor.cache();
 
     for (const auto& [key, value_var] : data) {

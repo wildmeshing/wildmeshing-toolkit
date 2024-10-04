@@ -1,3 +1,4 @@
+#include <fmt/format.h>
 #include <cassert>
 #include <tuple>
 #include <wmtk/utils/Rational.hpp>

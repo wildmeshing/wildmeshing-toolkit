@@ -43,5 +43,14 @@ struct mesh_type_from_primitive_type<PrimitiveType::Tetrahedron>
     using type = TetMesh;
 };
 
+template <int8_t DIM>
+struct mesh_type_from_dimension
+{
+    constexpr static PrimitiveType primitive_type = get_primitive_type_from_id(DIM);
+    using type = wmtk::utils::mesh_type_from_primitive_type_t<primitive_type>;
+};
 
+
+template <int8_t DIM>
+using mesh_type_from_dimension_t = typename mesh_type_from_dimension<DIM>::type;
 } // namespace wmtk::utils

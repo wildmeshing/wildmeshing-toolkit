@@ -1,0 +1,119 @@
+{
+      }
+      "procedural": {
+        "grid": {
+          "coordinates": {
+            "name": "vertices",
+            "spacing": [
+              1,
+              1
+            ]
+          },
+          "dimensions": [
+            10,
+            10
+          ],
+          "tiling": "diagonal"
+        },
+        "name": "grid2d",
+        "type": "grid"
+      }
+    },
+    {
+      "multimesh": {
+        "child": "grid2d",
+        "name": "grid2d_mm",
+        "parent": "grid2d_tiled",
+        "type": "uv"
+      }
+    },
+    {
+      "multimesh": {
+        "child": "grid3d",
+        "name": "grid3d_mm",
+        "parent": "grid3d_tiled",
+        "type": "uv"
+      }
+    },
+    {
+      "output": {
+        "attributes": {
+          "position": "vertices"
+        },
+        "file": "grid2d",
+        "input": "grid2d"
+      }
+    },
+    {
+      "output": {
+        "attributes": {
+          "position": "vertices"
+        },
+        "file": "grid3d_out",
+        "input": "grid3d"
+      }
+    },
+    {
+      "get_all_meshes": {
+        "input": "grid2d_mm",
+        "name": "grid2d_mm"
+      }
+    },
+    {
+      "get_all_meshes": {
+        "input": "grid3d_mm",
+        "name": "grid3d_mm"
+      }
+    },
+    {
+      "output": {
+        "attributes": {
+          "position": "vertices"
+        },
+        "file": "grid2d_out",
+        "input": "grid2d_mm_"
+      }
+    },
+    {
+      "output": {
+        "attributes": {
+          "position": "vertices"
+        },
+        "file": "grid3d_out",
+        "input": "grid3d_mm_"
+      }
+    }
+  ],
+  "tests": {
+    "edges": [
+      300,
+      7000,
+      320,
+      7930
+    ],
+    "faces": [
+      200,
+      12000,
+      200,
+      12600
+    ],
+    "meshes": [
+      "grid2d_tiled",
+      "grid3d_tiled",
+      "grid2d",
+      "grid3d"
+    ],
+    "tetrahedra": [
+      0,
+      6000,
+      0,
+      6000
+    ],
+    "vertices": [
+      100,
+      1000,
+      121,
+      1331
+    ]
+  }
+}

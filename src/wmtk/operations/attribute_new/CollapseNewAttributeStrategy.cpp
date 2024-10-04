@@ -1,4 +1,5 @@
 #include "CollapseNewAttributeStrategy.hpp"
+#include <fmt/format.h>
 #include <wmtk/utils/primitive_range.hpp>
 
 #include <wmtk/operations/edge_mesh/CollapseNewAttributeTopoInfo.hpp>
@@ -6,6 +7,16 @@
 #include <wmtk/operations/tri_mesh/CollapseNewAttributeTopoInfo.hpp>
 
 namespace wmtk::operations {
+template <typename T>
+bool CollapseNewAttributeStrategy<T>::invalid_state() const
+{
+    return m_will_throw;
+}
+template <typename T>
+std::string CollapseNewAttributeStrategy<T>::name() const
+{
+    return fmt::format("CollapseNewAttributeStrategy[{}]", m_handle.name());
+}
 
 template <typename T>
 typename CollapseNewAttributeStrategy<T>::CollapseFuncType
@@ -133,7 +144,7 @@ template <typename T>
 void CollapseNewAttributeStrategy<T>::update(
     Mesh& m,
     const ReturnData& data,
-    const OperationTupleData& op_datas) const
+    const OperationInOutData& op_datas) const
 {
     if (!bool(m_collapse_op)) {
         return;
@@ -142,23 +153,23 @@ void CollapseNewAttributeStrategy<T>::update(
 
     if (op_datas.find(&mesh()) == op_datas.end()) return;
     assert(&mesh() == &m);
-    const std::vector<std::array<Tuple, 2>>& tuple_pairs = op_datas.at(&mesh());
+    const std::vector<std::tuple<simplex::NavigatableSimplex, Tuple>>& tuple_pairs =
+        op_datas.at(&mesh());
 
     const PrimitiveType pt = primitive_type();
     auto acc = m.create_accessor(m_handle.as<T>());
 
     for (const auto& tuple_pair : tuple_pairs) {
-        const Tuple& input_tuple = tuple_pair[0];
-        const Tuple& output_tuple = tuple_pair[1];
+        const simplex::NavigatableSimplex& input_simplex = std::get<0>(tuple_pair);
+        const Tuple& output_tuple = std::get<1>(tuple_pair);
 
-        simplex::Simplex input_simplex = mesh().parent_scope(
-            [this, &input_tuple]() { return simplex::Simplex::edge(mesh(), input_tuple); });
 
         const auto& return_data_variant = data.get_variant(mesh(), input_simplex);
 
         // for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type()))
         {
-            auto merged_simps = m_topo_info->merged_simplices(return_data_variant, input_tuple, pt);
+            auto merged_simps =
+                m_topo_info->merged_simplices(return_data_variant, input_simplex.tuple(), pt);
             auto new_simps = m_topo_info->new_simplices(return_data_variant, output_tuple, pt);
 
 
@@ -203,11 +214,13 @@ template <typename T>
 void CollapseNewAttributeStrategy<T>::set_strategy(CollapseFuncType&& f)
 {
     m_collapse_op = std::move(f);
+    m_will_throw = false;
 }
 template <typename T>
 void CollapseNewAttributeStrategy<T>::set_strategy(CollapseBasicStrategy optype)
 {
     set_strategy(standard_collapse_strategy(optype));
+    m_will_throw = optype == CollapseBasicStrategy::Throw;
 }
 
 
