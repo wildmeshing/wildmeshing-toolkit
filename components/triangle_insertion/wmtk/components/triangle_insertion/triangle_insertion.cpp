@@ -22,7 +22,7 @@
 #include <wmtk/components/multimesh_from_tag/internal/MultiMeshFromTag.hpp>
 
 
-namespace wmtk::components {
+namespace wmtk::components::triangle_insertion {
 
 std::tuple<std::shared_ptr<wmtk::TetMesh>, ChildMeshes> triangle_insertion(
     const TetMesh& bg_mesh,
@@ -326,4 +326,4 @@ std::tuple<std::shared_ptr<wmtk::TetMesh>, ChildMeshes> triangle_insertion(
     return std::make_tuple(tetmesh, child_meshes);
 }
 
-} // namespace wmtk::components
+} // namespace wmtk::components::triangle_insertion

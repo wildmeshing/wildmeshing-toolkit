@@ -54,8 +54,8 @@ int main(int argc, char* argv[])
     fs::path tri_file = resolve_paths(json_input_file, {j["root"], j["tri_mesh"]});
     fs::path tet_file = resolve_paths(json_input_file, {j["root"], j["bg_mesh"]});
 
-    auto tri_mesh = wmtk::components::input(tri_file);
-    auto tet_mesh = wmtk::components::input(tet_file);
+    auto tri_mesh = wmtk::components::input::input(tri_file);
+    auto tet_mesh = wmtk::components::input::input(tet_file);
 
     if (tri_mesh->top_simplex_type() != PrimitiveType::Triangle)
         log_and_throw_error("triangle_insertion supports only triangle meshes");
@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
 
     const std::string bg_post = j["bg_pos_attr_name"];
     const std::string tri_pos = j["tri_pos_attr_name"];
-    auto [out, _] = wmtk::components::triangle_insertion(
+    auto [out, _] = wmtk::components::triangle_insertion::triangle_insertion(
         static_cast<const TetMesh&>(*tet_mesh),
         bg_post,
         static_cast<const TriMesh&>(*tri_mesh),
@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
         j["make_child_free"]);
 
     std::string output_file = j["output"];
-    wmtk::components::output(*out, output_file, j["bg_pos_attr_name"]);
+    wmtk::components::output::output(*out, output_file, j["bg_pos_attr_name"]);
 
     const std::string report = j["report"];
     if (!report.empty()) {

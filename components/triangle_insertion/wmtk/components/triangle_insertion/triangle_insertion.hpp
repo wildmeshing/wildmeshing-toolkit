@@ -2,8 +2,7 @@
 
 #include <wmtk/Mesh.hpp>
 
-namespace wmtk {
-namespace components {
+namespace wmtk::components::triangle_insertion {
 
 class ChildMeshes
 {
@@ -23,5 +22,4 @@ std::tuple<std::shared_ptr<wmtk::TetMesh>, ChildMeshes> triangle_insertion(
     bool track_submeshes = true,
     bool make_child_free = false);
 
-} // namespace components
-} // namespace wmtk
+} // namespace wmtk::components::triangle_insertion
