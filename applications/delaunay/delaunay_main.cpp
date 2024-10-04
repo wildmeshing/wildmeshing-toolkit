@@ -1,6 +1,7 @@
 #include <jse/jse.h>
 #include <CLI/CLI.hpp>
 #include <filesystem>
+#include <wmtk/applications/utils/element_count_report.hpp>
 #include <nlohmann/json.hpp>
 
 #include <wmtk/Mesh.hpp>
@@ -52,7 +53,7 @@ int main(int argc, char* argv[])
 
     fs::path input_file = resolve_paths(json_input_file, {j["root"], j["input"]});
 
-    auto mesh = wmtk::components::input(input_file);
+    auto mesh = wmtk::components::input::input(input_file);
     wmtk::logger().info("mesh has {} vertices", mesh->get_all(PrimitiveType::Vertex).size());
 
     wmtk::components::ToPtsOptions options;
@@ -72,17 +73,15 @@ int main(int argc, char* argv[])
     auto out = wmtk::components::delaunay(*pts_mesh, pts_pts_attr, j["output_pos_attr_name"]);
 
     std::string output_file = j["output"];
-    wmtk::components::output(*out, output_file, j["output_pos_attr_name"]);
+    wmtk::components::output::output(*out, output_file, j["output_pos_attr_name"]);
 
     const std::string report = j["report"];
     if (!report.empty()) {
         nlohmann::json out_json;
-        out_json["vertices"] = out->get_all(PrimitiveType::Vertex).size();
-        out_json["edges"] = out->get_all(PrimitiveType::Edge).size();
-        out_json["faces"] = out->get_all(PrimitiveType::Triangle).size();
-        out_json["cells"] = out->get_all(PrimitiveType::Tetrahedron).size();
-
+        out_json.update(wmtk::applications::utils::element_count_report_named(*out));
         out_json["input"] = j;
+
+        spdlog::warn("{}", out_json.dump(2));
 
         std::ofstream ofs(report);
         ofs << out_json;

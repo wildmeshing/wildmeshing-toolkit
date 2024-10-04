@@ -36,6 +36,11 @@ inline bool SimplexComparisons::equal(
     return a == b || m.id(a, primitive_type) == m.id(b, primitive_type);
 }
 
+inline bool SimplexComparisons::equal(const Mesh& m, const IdSimplex& s0, const IdSimplex& s1)
+{
+    return s0 == s1;
+}
+
 inline bool SimplexComparisons::less(const Mesh& m, const Simplex& s0, const Simplex& s1)
 {
 #if defined(WMTK_ENABLE_SIMPLEX_ID_CACHING)
@@ -49,6 +54,12 @@ inline bool SimplexComparisons::less(const Mesh& m, const Simplex& s0, const Sim
 #endif
     //    return less(m, s0.tuple(), s0.primitive_type(), s1.tuple(), s1.primitive_type());
 }
+
+inline bool SimplexComparisons::less(const Mesh& m, const IdSimplex& s0, const IdSimplex& s1)
+{
+    return s0 < s1;
+}
+
 inline bool SimplexComparisons::less(
     const Mesh& m,
     const Tuple& a,

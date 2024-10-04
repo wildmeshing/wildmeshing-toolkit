@@ -7,6 +7,7 @@
 
 namespace wmtk::components {
 
+    namespace output {
 /**
  * @brief Write the mesh to file.
  *
@@ -30,7 +31,7 @@ namespace wmtk::components {
 void output(
     const Mesh& mesh,
     const std::filesystem::path& file,
-    const std::string& position_attr_name);
+    const std::string& position_attr_name = {});
 
 /**
  * @brief Write the mesh to file.
@@ -69,4 +70,6 @@ void output(
  * @param file The desired output file(s).
  */
 void output_hdf5(const Mesh& mesh, const std::filesystem::path& file);
+
+}
 } // namespace wmtk::components

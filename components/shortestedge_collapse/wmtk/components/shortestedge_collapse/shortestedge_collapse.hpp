@@ -1,6 +1,7 @@
 #pragma once
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
 
 #include "ShortestEdgeCollapseOptions.hpp"
 

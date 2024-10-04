@@ -23,7 +23,7 @@ using wmtk::components::utils::resolve_paths;
 
 nlohmann::json test_run(const fs::path& input_file, const bool run_tetwild_simplification)
 {
-    std::shared_ptr<Mesh> mesh_in = input(input_file);
+    std::shared_ptr<Mesh> mesh_in = input::input(input_file);
 
     logger().info(
         "Input {} #top_simplices = {}",
@@ -44,9 +44,9 @@ nlohmann::json test_run(const fs::path& input_file, const bool run_tetwild_simpl
     } else {
         // shortestedge_collapse
         wmtk::utils::StopWatch sw("shortestedge_collapse");
-        shortestedge_collapse(static_cast<TriMesh&>(*mesh_in), pos_handle, 1000);
+        shortestedge_collapse(*mesh_in, pos_handle, 1000);
     }
-    output(*mesh_in, run_tetwild_simplification ? "tws_out" : "sec_out", pos_handle);
+    output::output(*mesh_in, run_tetwild_simplification ? "tws_out" : "sec_out", pos_handle);
 
     logger().info(
         "Output {} #top_simplices = {}",

@@ -78,9 +78,9 @@ bool Mesh::is_removed(const Tuple& t, PrimitiveType pt) const
         return false;
     }
 }
-simplex::Simplex Mesh::simplex_from_id(const PrimitiveType pt, const int64_t gid) const
+simplex::NavigatableSimplex Mesh::simplex_from_id(const PrimitiveType pt, const int64_t gid) const
 {
-    return simplex::Simplex(pt, tuple_from_id(pt, gid), gid);
+    return simplex::NavigatableSimplex(pt, tuple_from_id(pt, gid), gid);
 }
 bool Mesh::is_removed(int64_t index) const
 {
@@ -102,9 +102,7 @@ bool Mesh::is_valid(const simplex::Simplex& s) const
         return id_tuple == s.m_index;
     }
 #else
-    return 
-        is_valid(s.tuple()) &&
-        !is_removed(s.tuple(),s.primitive_type());
+    return is_valid(s.tuple()) && !is_removed(s.tuple(), s.primitive_type());
 #endif
 }
 

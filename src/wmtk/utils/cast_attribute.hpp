@@ -13,22 +13,11 @@ void cast_attribute(
         [&](const auto& typed_handle) noexcept {
             using ParentHandleType = std::decay_t<decltype(typed_handle)>;
             using ParentType = typename ParentHandleType::Type;
-            constexpr static bool is_hybrid_rational =
-                std::is_same_v<
-                    ParentType,
-                    wmtk::attribute::utils::HybridRationalAttribute<Eigen::Dynamic>::Type> ||
-                std::is_same_v<
-                    T,
-                    wmtk::attribute::utils::HybridRationalAttribute<Eigen::Dynamic>::Type>;
 
-            if constexpr (!is_hybrid_rational) {
-                wmtk::operations::attribute_update::CastAttributeTransferStrategy<T, ParentType> caster(
-                    new_handle,
-                    original_handle);
-                caster.run_on_all();
-            } else {
-                assert(!is_hybrid_rational);
-            }
+            wmtk::operations::attribute_update::CastAttributeTransferStrategy<T, ParentType> caster(
+                new_handle,
+                original_handle);
+            caster.run_on_all();
         },
         original_handle.handle());
 }
