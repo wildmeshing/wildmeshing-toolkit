@@ -170,20 +170,22 @@ generate_raw_tetmesh_from_input_surface(
         }
 
         // vector of std array and sort
-        std::set<int64_t> local_f0 = {tetra[1], tetra[2], tetra[3]};
-        std::set<int64_t> local_f1 = {tetra[0], tetra[2], tetra[3]};
-        std::set<int64_t> local_f2 = {tetra[0], tetra[1], tetra[3]};
-        std::set<int64_t> local_f3 = {tetra[0], tetra[1], tetra[2]};
+        std::array<int64_t, 3> local_f0{{tetra[1], tetra[2], tetra[3]}};
+        std::sort(local_f0.begin(), local_f0.end());
+        std::array<int64_t, 3> local_f1{{tetra[0], tetra[2], tetra[3]}};
+        std::sort(local_f1.begin(), local_f1.end());
+        std::array<int64_t, 3> local_f2{{tetra[0], tetra[1], tetra[3]}};
+        std::sort(local_f2.begin(), local_f2.end());
+        std::array<int64_t, 3> local_f3{{tetra[0], tetra[1], tetra[2]}};
+        std::sort(local_f3.begin(), local_f3.end());
 
         // track surface
         std::array<bool, 4> tet_face_on_input{{false, false, false, false}};
         for (auto f : final_tets_parent_faces[i]) {
             assert(polygon_faces[f].size() == 3);
 
-            std::set<int64_t> f_vs = {
-                polygon_faces[f][0],
-                polygon_faces[f][1],
-                polygon_faces[f][2]};
+            auto f_vs = polygon_faces[f];
+            std::sort(f_vs.begin(), f_vs.end());
 
             int64_t local_f_idx = -1;
 
