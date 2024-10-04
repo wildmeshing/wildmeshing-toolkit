@@ -1,7 +1,28 @@
 #include "orient.hpp"
 #include "predicates.h"
 
+#include <numerics.h>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <numbers>
+
 namespace wmtk::utils {
+
+interval_number rational_to_interval(const Rational& r)
+{
+    if (r.is_rounded())
+        return interval_number(r.to_double());
+    else
+    {
+        const double inf = std::numeric_limits<double>::max();
+        const double d = r.to_double();
+
+        if (r < 0) return interval_number(-std::nextafter(d, -inf), d);
+        if (r > 0) return interval_number(-d, std::nextafter(d, inf));
+        return interval_number(0);
+    }
+}
 
 void exactinit()
 {
@@ -31,7 +52,8 @@ bool is_rounded(const Eigen::Ref<const Eigen::Vector2<Rational>>& p)
     return p[0].is_rounded() && p[1].is_rounded();
 }
 
-Rational determinant(const Eigen::Matrix<Rational, Eigen::Dynamic, Eigen::Dynamic, 0, 3, 3>& mat)
+template <typename T>
+T determinant(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, 0, 3, 3>& mat)
 {
     assert(mat.rows() == mat.cols());
 
@@ -45,7 +67,7 @@ Rational determinant(const Eigen::Matrix<Rational, Eigen::Dynamic, Eigen::Dynami
                mat(0, 2) * (mat(1, 0) * mat(2, 1) - mat(1, 1) * mat(2, 0));
 
     assert(false);
-    return Rational();
+    return T();
 }
 
 } // namespace
@@ -62,6 +84,54 @@ int wmtk_orient3d(
             p2.cast<double>(),
             p3.cast<double>());
     } else {
+
+        // Super Fast version using double
+        Eigen::Vector3<double> p0r_d;
+        Eigen::Vector3<double> p1r_d;
+        Eigen::Vector3<double> p2r_d;
+        Eigen::Vector3<double> p3r_d;
+
+        for (int64_t i = 0; i < 3; ++i) {
+            p0r_d[i] = p0[i].to_double();
+            p1r_d[i] = p1[i].to_double();
+            p2r_d[i] = p2[i].to_double();
+            p3r_d[i] = p3[i].to_double();
+        }
+
+        Eigen::Matrix3<double> M_d;
+        M_d.row(0) = p0r_d - p3r_d;
+        M_d.row(1) = p1r_d - p3r_d;
+        M_d.row(2) = p2r_d - p3r_d;
+
+        const auto det_d = determinant<double>(M_d);
+
+        // assert(!det.is_rounded());
+        // bool is_positive = det_i.isPositive();
+
+        // Fast version using intervals
+        Eigen::Vector3<interval_number> p0r_i;
+        Eigen::Vector3<interval_number> p1r_i;
+        Eigen::Vector3<interval_number> p2r_i;
+        Eigen::Vector3<interval_number> p3r_i;
+
+        for (int64_t i = 0; i < 3; ++i) {
+            p0r_i[i] = rational_to_interval(p0[i]);
+            p1r_i[i] = rational_to_interval(p1[i]);
+            p2r_i[i] = rational_to_interval(p2[i]);
+            p3r_i[i] = rational_to_interval(p3[i]);
+        }
+
+        Eigen::Matrix3<interval_number> M_i;
+        M_i.row(0) = p0r_i - p3r_i;
+        M_i.row(1) = p1r_i - p3r_i;
+        M_i.row(2) = p2r_i - p3r_i;
+
+
+        const auto det_i = determinant<interval_number>(M_i);
+        // assert(!det.is_rounded());
+        bool is_positive = det_i.isPositive();
+
+        // Slow version using rationals
         Eigen::Vector3<Rational> p0r;
         Eigen::Vector3<Rational> p1r;
         Eigen::Vector3<Rational> p2r;
@@ -87,8 +157,14 @@ int wmtk_orient3d(
         }
 #endif
 
-        const auto det = determinant(M);
+        const auto det = determinant<Rational>(M);
         assert(!det.is_rounded());
+
+        std::cout << std::setprecision(16) << det_d << " " << det_i.inf() << " " << det_i.sup() << " " << is_positive << " " << det.get_sign() << std::endl;
+        std::cout << p0r_i[0].inf() << " " << p0r_i[0].sup() << " " << p0r_d[0] << " " << p0[0].serialize() << std::endl;
+        std::cout << M_i(0,0).inf() << " " << M_i(0,0).sup() << " " << M_d(0,0) << " " << M(0,0).to_double() << std::endl;
+
+
         return det.get_sign();
     }
 }
@@ -136,7 +212,7 @@ int wmtk_orient2d(
         Eigen::Matrix2<Rational> M;
         M.row(0) = p1r - p0r;
         M.row(1) = p2r - p0r;
-        const auto det = determinant(M);
+        const auto det = determinant<Rational>(M);
         return det.get_sign();
     }
 }
