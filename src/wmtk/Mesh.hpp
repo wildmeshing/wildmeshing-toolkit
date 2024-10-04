@@ -169,6 +169,11 @@ public:
     std::vector<Tuple> get_all(PrimitiveType type) const;
 
     /**
+     * @brief Retrieve the IdSimplex that is represented by the tuple and primitive type.
+     */
+    simplex::IdSimplex get_id_simplex(const Tuple& tuple, PrimitiveType pt) const;
+
+    /**
      * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding
      * vector
      */

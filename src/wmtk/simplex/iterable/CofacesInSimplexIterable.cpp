@@ -24,7 +24,7 @@ CofacesInSimplexIterable::Iterator::Iterator(
     }
 }
 
-CofacesInSimplexIterable::Iterator CofacesInSimplexIterable::Iterator::operator++()
+CofacesInSimplexIterable::Iterator& CofacesInSimplexIterable::Iterator::operator++()
 {
     constexpr std::array<PrimitiveType, 3> pts = {
         {PrimitiveType::Vertex, PrimitiveType::Edge, PrimitiveType::Triangle}};

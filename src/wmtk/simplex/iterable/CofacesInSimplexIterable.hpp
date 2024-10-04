@@ -16,7 +16,7 @@ public:
     {
     public:
         Iterator(const CofacesInSimplexIterable& container, const Tuple& t = Tuple());
-        Iterator operator++();
+        Iterator& operator++();
         bool operator!=(const Iterator& other) const;
         Tuple& operator*();
 

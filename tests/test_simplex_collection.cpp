@@ -26,6 +26,7 @@
 #include <wmtk/simplex/top_dimension_cofaces_iterable.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
+#include <wmtk/utils/Stopwatch.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 #include "tools/DEBUG_EdgeMesh.hpp"
 #include "tools/DEBUG_TetMesh.hpp"
@@ -224,7 +225,7 @@ TEST_CASE("simplex_faces", "[simplex_collection][2D]")
     }
 }
 
-TEST_CASE("simplex_faces_iterable", "[simplex_collection][2D]")
+TEST_CASE("simplex_faces_iterable", "[simplex_collection][iterable][2D]")
 {
     tests::DEBUG_TriMesh m = tests::single_triangle();
 
@@ -763,7 +764,7 @@ TEST_CASE("simplex_top_dimension_cofaces_tet", "[simplex_collection]")
     }
 }
 
-TEST_CASE("simplex_top_dimension_cofaces_tri_iterable", "[simplex_collection][2D]")
+TEST_CASE("simplex_top_dimension_cofaces_tri_iterable", "[simplex_collection][iterable][2D]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
@@ -833,7 +834,7 @@ TEST_CASE("simplex_top_dimension_cofaces_tri_iterable", "[simplex_collection][2D
     }
 }
 
-TEST_CASE("simplex_top_dimension_cofaces_tet_iterable", "[simplex_collection][3D]")
+TEST_CASE("simplex_top_dimension_cofaces_tet_iterable", "[simplex_collection][iterable][3D]")
 {
     tests_3d::DEBUG_TetMesh m = tests_3d::six_cycle_tets();
 
@@ -903,7 +904,7 @@ TEST_CASE("simplex_top_dimension_cofaces_tet_iterable", "[simplex_collection][3D
     }
 }
 
-TEST_CASE("simplex_top_dimension_cofaces_edge_iterable", "[simplex_collection][1D]")
+TEST_CASE("simplex_top_dimension_cofaces_edge_iterable", "[simplex_collection][iterable][1D]")
 {
     tests::DEBUG_EdgeMesh m = tests::two_segments();
 
@@ -946,6 +947,29 @@ TEST_CASE("simplex_top_dimension_cofaces_edge_iterable", "[simplex_collection][1
 
         CHECK(simplex::utils::SimplexComparisons::equal(m, irtb_s, coll_s));
     }
+}
+
+TEST_CASE("simplex_top_dimension_cofaces_performance", "[simplex_collection][iterable][3D][.]")
+{
+    tests_3d::DEBUG_TetMesh m = tests_3d::two_by_two_by_two_grids_tets();
+
+    std::unique_ptr<Simplex> simplex;
+
+
+    const auto vertex_tuples = m.get_all(PrimitiveType::Vertex);
+    int64_t counter = 0;
+    {
+        wmtk::utils::StopWatch sw("TDC_ITRBL");
+        for (size_t i = 0; i < 100000; ++i) {
+            for (const Tuple& t : vertex_tuples) {
+                const simplex::Simplex v(m, PrimitiveType::Vertex, t);
+                for (const Tuple& tt : top_dimension_cofaces_iterable(m, v)) {
+                    ++counter;
+                }
+            }
+        }
+    }
+    logger().info("Counter = {}", counter);
 }
 
 TEST_CASE("simplex_open_star", "[simplex_collection][2D]")
@@ -1105,7 +1129,7 @@ TEST_CASE("simplex_open_star_trimesh", "[simplex_collection][2D]")
     }
 }
 
-TEST_CASE("simplex_open_star_iterable", "[simplex_collection][2D]")
+TEST_CASE("simplex_open_star_iterable", "[simplex_collection][iterable][2D]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
@@ -1316,7 +1340,7 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
     }
 }
 
-TEST_CASE("simplex_closed_star_iterable", "[simplex_collection][2D]")
+TEST_CASE("simplex_closed_star_iterable", "[simplex_collection][iterable][2D]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
@@ -1461,7 +1485,7 @@ TEST_CASE("simplex_link_2d", "[simplex_collection][2D]")
     }
 }
 
-TEST_CASE("simplex_link_iterable", "[simplex_collection][2D]")
+TEST_CASE("simplex_link_iterable", "[simplex_collection][iterable][2D]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
@@ -1637,7 +1661,7 @@ TEST_CASE("simplex_link_tetmesh", "[simplex_collection]")
     }
 }
 
-TEST_CASE("simplex_cofaces_in_simplex_iterable", "[simplex_collection]")
+TEST_CASE("simplex_cofaces_in_simplex_iterable", "[simplex_collection][iterable]")
 {
     SECTION("tri")
     {
@@ -1844,7 +1868,7 @@ TEST_CASE("simplex_cofaces_single_dimension_tri", "[simplex_collection][2D]")
     }
 }
 
-TEST_CASE("simplex_cofaces_single_dimension_tri_iterable", "[simplex_collection][2D]")
+TEST_CASE("simplex_cofaces_single_dimension_tri_iterable", "[simplex_collection][iterable][2D]")
 {
     auto mp = std::make_unique<TriMesh>(tests::hex_plus_two());
     Mesh& m = *mp;
@@ -1887,7 +1911,7 @@ TEST_CASE("simplex_cofaces_single_dimension_tri_iterable", "[simplex_collection]
     }
 }
 
-TEST_CASE("simplex_cofaces_single_dimension_tet_iterable", "[simplex_collection][3D][.]")
+TEST_CASE("simplex_cofaces_single_dimension_tet_iterable", "[simplex_collection][iterable][3D]")
 {
     auto mp = std::make_unique<TetMesh>(tests_3d::six_cycle_tets());
     Mesh& m = *mp;
@@ -2765,7 +2789,7 @@ TEST_CASE("simplex_link_3d", "[simplex_collection][3D]")
     }
 }
 
-TEST_CASE("simplex_link_iterable_3d", "[simplex_collection][3D]")
+TEST_CASE("simplex_link_iterable_3d", "[simplex_collection][iterable][3D]")
 {
     tests_3d::DEBUG_TetMesh m = tests_3d::two_by_two_by_two_grids_tets();
 

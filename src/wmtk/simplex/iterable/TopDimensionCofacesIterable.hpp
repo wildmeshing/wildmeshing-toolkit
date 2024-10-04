@@ -6,6 +6,7 @@
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/simplex/internal/VisitedArray.hpp>
+#include <wmtk/utils/DynamicArray.hpp>
 
 namespace wmtk::simplex {
 
@@ -44,10 +45,10 @@ public:
     class Iterator
     {
     public:
-        Iterator(const TopDimensionCofacesIterable& container, const Tuple& t = Tuple());
+        Iterator(TopDimensionCofacesIterable& container, const Tuple& t = Tuple());
         Iterator& operator++();
         bool operator!=(const Iterator& other) const;
-        Tuple operator*();
+        Tuple& operator*();
         const Tuple& operator*() const;
 
     private:
@@ -96,26 +97,33 @@ public:
          */
         Iterator& step_depth_3();
 
+        void add_neighbors_to_queue();
 
     private:
-        const TopDimensionCofacesIterable* m_container;
+        TopDimensionCofacesIterable* m_container;
 
         Tuple m_t; // the tuple that iterates through the mesh
         IteratorPhase m_phase = IteratorPhase::Forward; // for depth 1 and 2 iteration
-
-        std::queue<Tuple> m_queue; // for depth 3 iteration
-        simplex::internal::VisitedArray<int64_t> m_visited; // for depth 3 iteration
     };
 
 public:
-    TopDimensionCofacesIterable(const Mesh& mesh, const Simplex& simplex);
+    TopDimensionCofacesIterable(
+        const Mesh& mesh,
+        const Simplex& simplex,
+        const bool retrieve_intermediate_tuple = false);
 
-    Iterator begin() const { return Iterator(*this, m_simplex.tuple()); }
-    Iterator end() const { return Iterator(*this); }
+    Iterator begin() { return Iterator(*this, m_simplex.tuple()); }
+    Iterator end() { return Iterator(*this); }
 
 private:
     const Mesh* m_mesh;
     const Simplex m_simplex;
+
+    bool m_retrieve_intermediate_tuple = false;
+
+    wmtk::utils::DynamicArray<Tuple> m_q;
+    int64_t m_q_front = 0;
+    simplex::internal::VisitedArray<int64_t> m_visited; // for depth 3 iteration
 };
 
 } // namespace wmtk::simplex
