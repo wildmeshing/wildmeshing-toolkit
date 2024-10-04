@@ -165,7 +165,7 @@ generate_raw_tetmesh_from_input_surface(
         const uint32_t tetra_parent = final_tets_parent[i];
 
         if (!cells_with_faces_on_input[tetra_parent]) {
-            tet_face_on_input_surface.push_back({false, false, false, false});
+            tet_face_on_input_surface.push_back({{false, false, false, false}});
             continue;
         }
 
