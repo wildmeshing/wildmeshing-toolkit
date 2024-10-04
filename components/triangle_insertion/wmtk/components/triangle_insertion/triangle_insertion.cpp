@@ -60,7 +60,7 @@ std::tuple<std::shared_ptr<wmtk::TetMesh>, ChildMeshes> triangle_insertion(
     constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
 
     auto [tetmesh, tet_face_on_input_surface] =
-        utils::generate_raw_tetmesh_from_input_surface(V, F, 0.1, Vbg, Fbg);
+        utils::generate_raw_tetmesh_from_input_surface(V, F, Vbg, Fbg);
 
     ChildMeshes child_meshes;
     std::shared_ptr<Mesh> surface_mesh = child_meshes.surface_mesh;
