@@ -455,9 +455,10 @@ generate_raw_tetmesh_from_input_surface(
     assert(tets_final.size() == final_tets_parent.size());
 
     wmtk::logger().info(
-        "volume remesher finished, polycell mesh generated, #vertices: {},  #cells: {}",
+        "volume remesher finished, polycell mesh generated, #vertices: {},  #cells: {}, #tets {}",
         embedded_vertices.size() / 3,
-        embedded_cells.size());
+        embedded_cells.size(),
+        tets_final.size());
 
     // convert to double and readable format
     std::vector<Vector3r> v_coords; // vertex coordinates
