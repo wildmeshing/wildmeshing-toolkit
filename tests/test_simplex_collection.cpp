@@ -26,6 +26,7 @@
 #include <wmtk/simplex/top_dimension_cofaces_iterable.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
+#include <wmtk/utils/Stopwatch.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 #include "tools/DEBUG_EdgeMesh.hpp"
 #include "tools/DEBUG_TetMesh.hpp"
@@ -946,6 +947,29 @@ TEST_CASE("simplex_top_dimension_cofaces_edge_iterable", "[simplex_collection][i
 
         CHECK(simplex::utils::SimplexComparisons::equal(m, irtb_s, coll_s));
     }
+}
+
+TEST_CASE("simplex_top_dimension_cofaces_performance", "[simplex_collection][iterable][3D][.]")
+{
+    tests_3d::DEBUG_TetMesh m = tests_3d::two_by_two_by_two_grids_tets();
+
+    std::unique_ptr<Simplex> simplex;
+
+
+    const auto vertex_tuples = m.get_all(PrimitiveType::Vertex);
+    int64_t counter = 0;
+    {
+        wmtk::utils::StopWatch sw("TDC_ITRBL");
+        for (size_t i = 0; i < 100000; ++i) {
+            for (const Tuple& t : vertex_tuples) {
+                const simplex::Simplex v(m, PrimitiveType::Vertex, t);
+                for (const Tuple& tt : top_dimension_cofaces_iterable(m, v)) {
+                    ++counter;
+                }
+            }
+        }
+    }
+    logger().info("Counter = {}", counter);
 }
 
 TEST_CASE("simplex_open_star", "[simplex_collection][2D]")

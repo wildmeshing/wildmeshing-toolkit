@@ -6,6 +6,7 @@
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/simplex/internal/VisitedArray.hpp>
+#include <wmtk/utils/DynamicArray.hpp>
 
 namespace wmtk::simplex {
 
@@ -120,7 +121,8 @@ private:
 
     bool m_retrieve_intermediate_tuple = false;
 
-    std::queue<Tuple> m_queue; // for depth 3 iteration
+    wmtk::utils::DynamicArray<Tuple> m_q;
+    int64_t m_q_front = 0;
     simplex::internal::VisitedArray<int64_t> m_visited; // for depth 3 iteration
 };
 

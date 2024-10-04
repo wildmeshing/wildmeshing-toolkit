@@ -163,15 +163,15 @@ TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::st
 TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::step_depth_3()
 {
     const Mesh& mesh = *(m_container->m_mesh);
-    auto& q = m_container->m_queue;
+    auto& q = m_container->m_q;
+    auto& q_front = m_container->m_q_front;
 
-    if (q.empty()) {
+    if (q_front == q.size()) {
         m_t = Tuple();
         return *this;
     }
 
-    m_t = q.front();
-    q.pop();
+    m_t = q[q_front++];
 
     add_neighbors_to_queue();
 
@@ -195,7 +195,7 @@ void TopDimensionCofacesIterable::Iterator::add_neighbors_to_queue()
         const int64_t neigh_id = wmtk::utils::TupleInspector::global_cid(neigh);
 
         if (!m_container->m_visited.is_visited(neigh_id)) {
-            m_container->m_queue.push(neigh);
+            m_container->m_q.emplace_back(neigh);
         }
     }
 }
