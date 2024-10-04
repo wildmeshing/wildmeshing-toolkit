@@ -20,6 +20,7 @@
 #include <wmtk/simplex/link_condition.hpp>
 #include <wmtk/simplex/link_iterable.hpp>
 #include <wmtk/simplex/link_single_dimension.hpp>
+#include <wmtk/simplex/link_single_dimension_iterable.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/simplex/open_star_iterable.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
@@ -2175,6 +2176,52 @@ TEST_CASE("simplex_link_condtion_trimesh", "[simplex_collection]")
         REQUIRE(link_condition(m, t1) == false);
         REQUIRE(link_condition(m, t2) == false);
         REQUIRE(link_condition(m, t3) == true);
+    }
+}
+
+TEST_CASE("simplex_link_single_dimension_tri_iterable", "[simplex_collection][iterable][2D][.]")
+{
+    auto mp = std::make_unique<TriMesh>(tests::hex_plus_two());
+    Mesh& m = *mp;
+
+    auto compare_collections = [&m](const simplex::Simplex& s) {
+        SimplexCollection comp = link_slow(m, s);
+        for (const PrimitiveType pt :
+             wmtk::utils::primitive_range(s.primitive_type(), m.top_simplex_type())) {
+            if (pt == m.top_simplex_type()) {
+                continue;
+            }
+            SimplexCollection single_dim_comp(m, comp.simplex_vector(pt));
+
+            auto itrb = link_single_dimension_iterable(m, s, pt);
+            SimplexCollection itrb_collection(m);
+            for (const Tuple& tt : itrb) {
+                itrb_collection.add(simplex::Simplex(m, pt, tt));
+            }
+            REQUIRE(single_dim_comp.size() == itrb_collection.size());
+            itrb_collection.sort_and_clean();
+            REQUIRE(single_dim_comp.size() == itrb_collection.size());
+
+            for (size_t i = 0; i < itrb_collection.simplex_vector().size(); ++i) {
+                CHECK(simplex::utils::SimplexComparisons::equal(
+                    m,
+                    itrb_collection.simplex_vector()[i],
+                    single_dim_comp.simplex_vector()[i]));
+            }
+        }
+    };
+
+    for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+        const simplex::Simplex s(m, PrimitiveType::Vertex, t);
+        compare_collections(s);
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
+        const simplex::Simplex s(m, PrimitiveType::Edge, t);
+        compare_collections(s);
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Triangle)) {
+        const simplex::Simplex s(m, PrimitiveType::Triangle, t);
+        compare_collections(s);
     }
 }
 
