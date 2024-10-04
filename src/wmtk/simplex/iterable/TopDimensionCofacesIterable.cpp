@@ -8,19 +8,21 @@
 namespace wmtk::simplex {
 
 
-TopDimensionCofacesIterable::TopDimensionCofacesIterable(const Mesh& mesh, const Simplex& simplex)
+TopDimensionCofacesIterable::TopDimensionCofacesIterable(
+    const Mesh& mesh,
+    const Simplex& simplex,
+    const bool retrieve_intermediate_tuple)
     : m_mesh(&mesh)
     , m_simplex(simplex)
+    , m_retrieve_intermediate_tuple(retrieve_intermediate_tuple)
 {}
 
 TopDimensionCofacesIterable::Iterator::Iterator(
-    const TopDimensionCofacesIterable& container,
-    const Tuple& t,
-    const bool retrieve_intermediate_tuple)
+    TopDimensionCofacesIterable& container,
+    const Tuple& t)
     : m_container(&container)
     , m_t(t)
     , m_phase(IteratorPhase::Forward)
-    , m_retrieve_intermediate_tuple(retrieve_intermediate_tuple)
 {
     if (m_t.is_null()) {
         return;
@@ -89,8 +91,7 @@ void TopDimensionCofacesIterable::Iterator::init(int64_t depth)
         }
     } else if (depth == 3) {
         // d - 3 --> BFS
-
-        m_visited.is_visited(wmtk::utils::TupleInspector::global_cid(m_t));
+        m_container->m_visited.is_visited(wmtk::utils::TupleInspector::global_cid(m_t));
 
         add_neighbors_to_queue();
     }
@@ -131,7 +132,7 @@ TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::st
             // switch to backward phase
             m_phase = IteratorPhase::Backward;
         }
-        if (m_retrieve_intermediate_tuple) {
+        if (m_container->m_retrieve_intermediate_tuple) {
             return *this;
         }
     }
@@ -162,14 +163,15 @@ TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::st
 TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::step_depth_3()
 {
     const Mesh& mesh = *(m_container->m_mesh);
+    auto& q = m_container->m_queue;
 
-    if (m_queue.empty()) {
+    if (q.empty()) {
         m_t = Tuple();
         return *this;
     }
 
-    m_t = m_queue.front();
-    m_queue.pop();
+    m_t = q.front();
+    q.pop();
 
     add_neighbors_to_queue();
 
@@ -192,8 +194,8 @@ void TopDimensionCofacesIterable::Iterator::add_neighbors_to_queue()
         const Tuple neigh = mesh.switch_tuple(tt, pt(0));
         const int64_t neigh_id = wmtk::utils::TupleInspector::global_cid(neigh);
 
-        if (!m_visited.is_visited(neigh_id)) {
-            m_queue.push(neigh);
+        if (!m_container->m_visited.is_visited(neigh_id)) {
+            m_container->m_queue.push(neigh);
         }
     }
 }

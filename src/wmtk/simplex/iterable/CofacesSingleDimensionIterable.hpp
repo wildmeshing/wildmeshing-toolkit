@@ -32,7 +32,7 @@ public:
     class Iterator
     {
     public:
-        Iterator(const CofacesSingleDimensionIterable& container, const Tuple& t = Tuple());
+        Iterator(CofacesSingleDimensionIterable& container, const Tuple& t = Tuple());
         Iterator& operator++();
         bool operator!=(const Iterator& other) const;
         Tuple& operator*();
@@ -63,11 +63,8 @@ public:
         Iterator& step_depth_3();
 
     private:
-        const CofacesSingleDimensionIterable* m_container;
+        CofacesSingleDimensionIterable* m_container;
         TopDimensionCofacesIterable::Iterator m_it;
-
-        simplex::internal::VisitedArray<simplex::RawSimplex>
-            m_visited_cofaces; // for depth 3 iteration
     };
 
 public:
@@ -76,8 +73,8 @@ public:
         const Simplex& simplex,
         const PrimitiveType cofaces_type);
 
-    Iterator begin() const { return Iterator(*this, m_simplex.tuple()); }
-    Iterator end() const { return Iterator(*this); }
+    Iterator begin() { return Iterator(*this, m_simplex.tuple()); }
+    Iterator end() { return Iterator(*this); }
 
 private:
     const Mesh* m_mesh;
@@ -85,6 +82,8 @@ private:
     const PrimitiveType m_cofaces_type;
     TopDimensionCofacesIterable m_tdc_itrbl;
     TopDimensionCofacesIterable::Iterator m_it_end;
+
+    simplex::internal::VisitedArray<simplex::RawSimplex> m_visited_cofaces; // for depth 3 iteration
 };
 
 } // namespace wmtk::simplex
