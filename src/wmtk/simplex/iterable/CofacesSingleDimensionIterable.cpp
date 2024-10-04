@@ -84,7 +84,6 @@ void CofacesSingleDimensionIterable::Iterator::init()
 {
     if (depth() == 3 && !is_coface_d0()) {
         const Mesh& mesh = *(m_container->m_mesh);
-        const simplex::Simplex& simplex = m_container->m_simplex;
         const PrimitiveType& cofaces_type = m_container->m_cofaces_type;
 
         m_container->m_visited_cofaces.is_visited(
