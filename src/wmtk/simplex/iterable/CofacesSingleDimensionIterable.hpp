@@ -13,22 +13,16 @@
 namespace wmtk::simplex {
 
 /**
- * This iterator works pretty much the same as TopDimensionCofacesIterable.
+ * This iterator internally uses TopDimensionCofacesIterable.
  *
- * Besides the listed iterator depths 0 to 3, this iterator requires something that I call depth 2+.
- * This is necessary, when the iterator should also stop in the intermediate phase. That happens in
- * two cases:
- * 1. TriMesh, vertex, get edges
- * 2. TetMesh, edge, get triangles
+ * The iteration for depths 0 to 2 are the same. For depth 3, the BFS is extended to find all
+ * cofaces within a single d-simplex.
+ *
+ * In depth 2, we need the iterator in the intermediate phase.
  */
 class CofacesSingleDimensionIterable
 {
 public:
-    /**
-     * The IteratorPhase is only used for depth 1 and 2.
-     */
-    enum IteratorPhase { Forward = 0, Intermediate = 1, Backward = 2, End = 3 };
-
     class Iterator
     {
     public:
@@ -46,7 +40,7 @@ public:
          */
         int64_t depth();
         /**
-         * @brief Same as `depth()` but for the coface instead of the simplex type.
+         * @brief Check if coface type is the mesh's top simplex type.
          */
         bool is_coface_d0();
 
@@ -56,9 +50,8 @@ public:
         void init();
 
         /**
-         * @brief Use breadth first search to find all d-simplices.
-         *
-         * Example: vertex in a TetMesh.
+         * Use breadth first search to find all d-simplices, and iterate through all cofaces in a
+         * d-simplex.
          */
         Iterator& step_depth_3();
 
