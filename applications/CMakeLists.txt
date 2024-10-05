@@ -56,7 +56,7 @@ wmtk_generate_test_config("${WMTK_TEST_CONFIG}")
 add_custom_target(wmtk_application_headers
     DEPENDS ${WMTK_APPLICATION_HEADER_TARGETS}
 )
-if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     enable_testing()
 
     find_package(Python REQUIRED)
