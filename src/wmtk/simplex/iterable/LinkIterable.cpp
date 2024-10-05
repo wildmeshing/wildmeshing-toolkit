@@ -105,25 +105,33 @@ LinkIterable::Iterator& LinkIterable::Iterator::step_depth_3()
 {
     const Mesh& mesh = *(m_container->m_mesh);
     const simplex::Simplex& simplex = m_container->m_simplex;
+    auto& visited = m_container->m_visited_link;
 
-    //// iterate for cofaces
-    // while (!(*m_it).is_null()) {
-    //     for (const Tuple& t : cofaces_in_simplex_iterable(
-    //              mesh,
-    //              simplex::Simplex(mesh, simplex.primitive_type(), *m_it),
-    //              mesh.top_simplex_type())) {
-    //         const Tuple link_tuple = navigate_to_link(t);
-    //
-    //         if (!m_container->m_visited_link.is_visited(
-    //                 mesh.get_id_simplex(link_tuple, link_type))) {
-    //             *m_it = t;
-    //             m_t = link_tuple;
-    //             return *this;
-    //         }
-    //     }
-    //     ++m_it;
-    // }
-    log_and_throw_error("depth 3 iteration not implemented for link");
+    const int8_t m = mesh.top_cell_dimension();
+    const int8_t s = get_primitive_type_id(simplex.primitive_type());
+
+    // iterate for cofaces
+    while (!(*m_it).is_null()) {
+        for (const Tuple& t : cofaces_in_simplex_iterable(
+                 mesh,
+                 simplex::Simplex(mesh, simplex.primitive_type(), *m_it),
+                 mesh.top_simplex_type())) {
+            const Tuple link_tuple = navigate_to_link(t);
+
+            while (m_pt < m - s) {
+                // TODO: this checks for the face multiple times. That can be optimized
+                if (!visited.is_visited(
+                        mesh.get_id_simplex(link_tuple, get_primitive_type_from_id(m_pt)))) {
+                    *m_it = t;
+                    m_t = link_tuple;
+                    return *this;
+                }
+                ++m_pt;
+            }
+            m_pt = 0;
+        }
+        ++m_it;
+    }
 
     m_t = navigate_to_link(*m_it);
     return *this;
