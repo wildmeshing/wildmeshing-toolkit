@@ -51,6 +51,8 @@ public:
         Tuple& operator*();
         const Tuple& operator*() const;
 
+        const IteratorPhase& iterator_phase() const;
+
     private:
         /**
          * @brief Get the d - depth primitive type.

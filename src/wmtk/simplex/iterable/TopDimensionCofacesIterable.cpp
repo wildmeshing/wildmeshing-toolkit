@@ -200,4 +200,10 @@ void TopDimensionCofacesIterable::Iterator::add_neighbors_to_queue()
     }
 }
 
+const TopDimensionCofacesIterable::IteratorPhase&
+TopDimensionCofacesIterable::Iterator::iterator_phase() const
+{
+    return m_phase;
+}
+
 } // namespace wmtk::simplex
