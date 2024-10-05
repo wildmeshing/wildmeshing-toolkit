@@ -17,7 +17,7 @@ LinkSingleDimensionIterable::LinkSingleDimensionIterable(
     : m_mesh(&mesh)
     , m_simplex(simplex)
     , m_link_type(link_type)
-    , m_tdc_itrbl(mesh, simplex, mesh.top_cell_dimension() - 1 != get_primitive_type_id(link_type))
+    , m_tdc_itrbl(mesh, simplex, link_type == PrimitiveType::Vertex)
     , m_it_end(m_tdc_itrbl.end())
 {}
 
