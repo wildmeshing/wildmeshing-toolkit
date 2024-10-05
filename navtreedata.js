@@ -110,18 +110,18 @@ var NAVTREEINDEX =
 "classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a84f3cfa20dedcd21b693ff923f47f7f5",
 "classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a7916a0a776c2af596d7de941bd677eb1",
 "classwmtk_1_1simplex_1_1_id_simplex.html#ad483628062bc856966d9a7519abec00b",
-"convert_8hxx.html#a9b4c9cc6aebaf0622a95cb3174d984e1",
-"edge__mesh_2simplex__index__from__valid__index_8hpp_source.html",
-"get__vf_8cpp_source.html",
-"md_src_wmtk_attribute__r_e_a_d_m_e.html#autotoc_md19",
-"namespacewmtk.html#ae975d72ae7f4a759f36108e53d2c144d",
-"namespacewmtk_1_1components_1_1internal.html#a46caf88594dc94f3a9b7264bd6807de0",
-"namespacewmtk_1_1simplex.html#a996a48358d73e378978c6d5827cb3212",
-"same__simplex__dimension__surjection_8hpp.html",
-"structwmtk_1_1components_1_1input_1_1_named_multi_mesh_1_1_node.html#a3454b04251900fdd8b1d79b872b4b208",
-"structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4.html",
-"tetwild__simplification_8cpp.html#ae1cc01bf0606071d998491e8834d6fb2",
-"utils_2_a_m_i_p_s_8cpp.html#a54632060141525ae015c018708e73d3b"
+"convert_8hxx.html",
+"edge__mesh_2simplex__index__from__valid__index_8hpp.html#a76e9a88b353dcde30081482e504d9cef",
+"get__vf_8cpp.html#ae96e456a97cc6bb91612325fce6c6abb",
+"md_src_wmtk_attribute__r_e_a_d_m_e.html#autotoc_md18",
+"namespacewmtk.html#ae4167c30ed11c607c5bc1edd86a5e2f2",
+"namespacewmtk_1_1components_1_1internal.html#a41722ce1685a7dec1703284ea7b17090",
+"namespacewmtk_1_1simplex.html#a9596b1dd0c3bbd8fc2dc1faac7321034",
+"same__simplex__dimension__surjection_8cpp_source.html",
+"structwmtk_1_1components_1_1input_1_1_named_multi_mesh_1_1_node.html#a0a7cb03b3ceb07282a60560e0b64009a",
+"structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html#aa9bc35fcc9014e67713c85269787e6ec",
+"tetwild__simplification_8cpp.html#adec286f3cfd3e5764450f37dd7df619c",
+"utils_2_a_m_i_p_s_8cpp.html#a30d0a98f6851e8c66d5035c2f1b26909"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

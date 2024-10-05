@@ -1,5 +1,6 @@
 var NAVTREEINDEX26 =
 {
+"tetwild__simplification_8cpp.html#adec286f3cfd3e5764450f37dd7df619c":[8,0,0,20,0,0,0,0,13],
 "tetwild__simplification_8cpp.html#ae1cc01bf0606071d998491e8834d6fb2":[8,0,0,20,0,0,0,0,9],
 "tetwild__simplification_8cpp.html#af4e226016df9cc871aa5477dc7bd69fa":[8,0,0,20,0,0,0,0,11],
 "tetwild__simplification_8cpp_source.html":[8,0,0,20,0,0,0,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX26 =
 "unwrap__ref_8hpp_source.html":[8,0,2,0,8,0,11],
 "utils_2_a_m_i_p_s_8cpp.html":[8,0,2,0,2,1,0],
 "utils_2_a_m_i_p_s_8cpp.html#a18f88d299cb5212b810962fac2ea76bc":[8,0,2,0,2,1,0,4],
-"utils_2_a_m_i_p_s_8cpp.html#a25934673337031320046c5f37c450d0c":[8,0,2,0,2,1,0,1],
-"utils_2_a_m_i_p_s_8cpp.html#a30d0a98f6851e8c66d5035c2f1b26909":[8,0,2,0,2,1,0,3]
+"utils_2_a_m_i_p_s_8cpp.html#a25934673337031320046c5f37c450d0c":[8,0,2,0,2,1,0,1]
 };

@@ -1,5 +1,6 @@
 var NAVTREEINDEX22 =
 {
+"namespacewmtk_1_1simplex.html#a9596b1dd0c3bbd8fc2dc1faac7321034":[6,0,10,10,75],
 "namespacewmtk_1_1simplex.html#a996a48358d73e378978c6d5827cb3212":[6,0,10,10,20],
 "namespacewmtk_1_1simplex.html#a9af33870263257a0fdb5e7c4c49548e1":[6,0,10,10,53],
 "namespacewmtk_1_1simplex.html#a9c219fd0b4f590bc836d41011761968b":[6,0,10,10,44],
@@ -248,6 +249,5 @@ var NAVTREEINDEX22 =
 "same__simplex__dimension__bijection_8hpp.html#ae9d6749c097baf5c55d25e598ecec6e1":[8,0,2,0,5,17,0],
 "same__simplex__dimension__bijection_8hpp_source.html":[8,0,2,0,5,17],
 "same__simplex__dimension__surjection_8cpp.html":[8,0,2,0,5,18],
-"same__simplex__dimension__surjection_8cpp.html#a7bd59ab748f0b54f3ab7dc9d625b04ec":[8,0,2,0,5,18,0],
-"same__simplex__dimension__surjection_8cpp_source.html":[8,0,2,0,5,18]
+"same__simplex__dimension__surjection_8cpp.html#a7bd59ab748f0b54f3ab7dc9d625b04ec":[8,0,2,0,5,18,0]
 };
