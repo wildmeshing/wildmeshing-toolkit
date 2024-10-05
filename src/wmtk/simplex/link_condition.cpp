@@ -4,7 +4,6 @@
 #include "cofaces_single_dimension_iterable.hpp"
 #include "link.hpp"
 #include "link_iterable.hpp"
-#include "link_single_dimension_iterable.hpp"
 #include "open_star.hpp"
 #include "utils/SimplexComparisons.hpp"
 
@@ -109,69 +108,24 @@ bool link_condition_closed_tetmesh(const TetMesh& mesh, const Tuple& edge)
     const Simplex v_a = Simplex::vertex(mesh, edge);
     const Simplex v_b = Simplex::vertex(mesh, mesh.switch_vertex(edge));
     const Simplex e_ab = Simplex::edge(mesh, edge);
-    //const SimplexCollection link_a = link(mesh, v_a); // link(a)
-    //const SimplexCollection link_b = link(mesh, v_b); // link(b)
+    const SimplexCollection link_a = link(mesh, v_a); // link(a)
+    const SimplexCollection link_b = link(mesh, v_b); // link(b)
+
+    const SimplexCollection link_a_link_b_intersection =
+        SimplexCollection::get_intersection(link_a, link_b);
+
     //const SimplexCollection link_ab = link(mesh, e_ab); // link(ab)
-    //
-    // const SimplexCollection link_a_link_b_intersection =
-    //    SimplexCollection::get_intersection(link_a, link_b);
-    //
     // return SimplexCollection::are_simplex_collections_equal(link_a_link_b_intersection, link_ab);
 
-    std::vector<simplex::IdSimplex> link_a;
-    std::vector<simplex::IdSimplex> link_b;
-    std::vector<simplex::IdSimplex> link_intersection_a_b;
-    std::vector<simplex::IdSimplex> link_ab;
+    std::vector<simplex::Simplex> link_ab_simplices;
+    link_ab_simplices.reserve(10);
+    for (const simplex::IdSimplex& s : link_iterable(mesh, e_ab)) {
+        link_ab_simplices.emplace_back(mesh.get_simplex(s));
+    }
+    SimplexCollection link_ab(mesh, std::move(link_ab_simplices));
+    link_ab.sort_and_clean();
 
-    // for (const simplex::IdSimplex& s : link_iterable(mesh, v_a)) {
-    //     link_a.emplace_back(s);
-    // }
-    // std::sort(link_a.begin(), link_a.end());
-    // for (const simplex::IdSimplex& s : link_iterable(mesh, v_b)) {
-    //     link_b.emplace_back(s);
-    // }
-    // std::sort(link_b.begin(), link_b.end());
-    // std::set_intersection(
-    //     link_a.begin(),
-    //     link_a.end(),
-    //     link_b.begin(),
-    //     link_b.end(),
-    //     std::back_inserter(link_intersection_a_b));
-    //
-    // for (const simplex::IdSimplex& s : link_iterable(mesh, e_ab)) {
-    //     link_ab.emplace_back(s);
-    // }
-    // std::sort(link_ab.begin(), link_ab.end());
-
-    for (const Tuple& t : link_single_dimension_iterable(mesh, v_a, PrimitiveType::Vertex)) {
-        link_a.emplace_back(mesh.get_id_simplex(t, PrimitiveType::Vertex));
-    }
-    std::sort(link_a.begin(), link_a.end());
-    for (const Tuple& t : link_single_dimension_iterable(mesh, v_b, PrimitiveType::Vertex)) {
-        link_b.emplace_back(mesh.get_id_simplex(t, PrimitiveType::Vertex));
-    }
-    std::sort(link_b.begin(), link_b.end());
-    std::set_intersection(
-        link_a.begin(),
-        link_a.end(),
-        link_b.begin(),
-        link_b.end(),
-        std::back_inserter(link_intersection_a_b));
-
-    for (const Tuple& t : link_single_dimension_iterable(mesh, e_ab, PrimitiveType::Vertex)) {
-        link_ab.emplace_back(mesh.get_id_simplex(t, PrimitiveType::Vertex));
-    }
-    std::sort(link_ab.begin(), link_ab.end());
-
-    if (link_ab.size() != link_intersection_a_b.size()) {
-        return false;
-    }
-    for (size_t i = 0; i < link_ab.size(); ++i) {
-        if (!(link_ab[i] == link_intersection_a_b[i])) {
-            return false;
-        }
-    }
-    return true;
+    return SimplexCollection::are_simplex_collections_equal(link_a_link_b_intersection, link_ab);
 }
 
 bool link_condition(const TetMesh& mesh, const Tuple& edge)
