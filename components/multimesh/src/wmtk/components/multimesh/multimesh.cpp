@@ -83,6 +83,7 @@ namespace wmtk::components::multimesh {
             tag,
             value,
             ptype);
+        child = child_mesh;
 #endif
 
         if (!use_rational_position) {
