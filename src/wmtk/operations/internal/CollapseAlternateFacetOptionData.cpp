@@ -2,6 +2,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/autogen/find_local_dart_action.hpp>
+#include <wmtk/autogen/utils/edge_mirror.hpp>
 #include <wmtk/autogen/local_dart_action.hpp>
 #include <wmtk/autogen/local_switch_tuple.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
@@ -67,4 +68,18 @@ auto CollapseAlternateFacetOptionData::get_neighbor_action(
 
     return d;
 }
+
+    auto CollapseAlternateFacetOptionData::map_dart_to_alt(const wmtk::autogen::SimplexDart& sd, const Dart& d, int8_t index) const -> Dart {
+
+
+        const wmtk::autogen::Dart& transform = alts[index];
+        const int8_t& local_boundary_index = local_boundary_indices[index];
+
+        if(transform.is_null()) {
+            Dart newd(d.global_id(), wmtk::autogen::utils::edge_mirror(sd,d.local_orientation()));
+            return map_dart_to_alt(sd,newd,1 - index);
+        }
+
+        return {};
+    }
 } // namespace wmtk::operations::internal

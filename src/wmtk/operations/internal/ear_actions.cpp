@@ -43,4 +43,15 @@ int8_t right_ear_action(PrimitiveType mesh_type)
     const size_t off = get_primitive_type_id(mesh_type);
     return right_ear_darts[off];
 }
+
+int8_t ear_action(PrimitiveType mesh_dimension, bool is_left) {
+    if(is_left) {
+        return left_ear_action(mesh_dimension);
+    } else {
+        return right_ear_action(mesh_dimension);
+    }
+}
+std::array<int8_t,2> ear_action(PrimitiveType mesh_dimension) {
+    return std::array<int8_t,2> {{left_ear_action(mesh_dimension),right_ear_action(mesh_dimension)}};
+}
 } // namespace wmtk::operations::internal
