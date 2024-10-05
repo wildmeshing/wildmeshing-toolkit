@@ -541,7 +541,6 @@ simplex::Simplex MultiMeshManager::map_to_root(
     const simplex::Simplex& my_simplex) const
 {
     return simplex::Simplex(
-        get_root_mesh(my_mesh),
         my_simplex.primitive_type(),
         map_to_root_tuple(my_mesh, my_simplex));
 }
@@ -549,14 +548,21 @@ simplex::Simplex MultiMeshManager::map_to_root(
 Tuple MultiMeshManager::map_to_root_tuple(const Mesh& my_mesh, const simplex::Simplex& my_simplex)
     const
 {
-    return map_tuple_to_root_tuple(my_mesh, my_simplex.tuple());
+    const Tuple t = map_tuple_to_root_tuple(my_mesh, my_simplex.tuple());
+    assert(get_root_mesh(my_mesh).is_valid(t));
+    return t;
 }
 Tuple MultiMeshManager::map_tuple_to_root_tuple(const Mesh& my_mesh, const Tuple& my_tuple) const
 {
+    assert(&my_mesh.m_multi_mesh_manager == this);
     if (my_mesh.m_multi_mesh_manager.is_root()) {
+        assert(my_mesh.is_valid(my_tuple));
         return my_tuple;
     } else {
-        return map_tuple_to_root_tuple(*m_parent, map_tuple_to_parent_tuple(my_mesh, my_tuple));
+
+        const Tuple ptup = map_tuple_to_parent_tuple(my_mesh, my_tuple);
+        assert(m_parent->is_valid(ptup));
+        return m_parent->m_multi_mesh_manager.map_tuple_to_root_tuple(*m_parent, ptup);
     }
 }
 
@@ -566,7 +572,6 @@ simplex::Simplex MultiMeshManager::map_to_parent(
     const simplex::Simplex& my_simplex) const
 {
     return simplex::Simplex(
-        *m_parent,
         my_simplex.primitive_type(),
         map_tuple_to_parent_tuple(my_mesh, my_simplex.tuple()));
 }

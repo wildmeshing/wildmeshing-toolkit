@@ -5,6 +5,10 @@
 
 namespace wmtk {
 class Mesh;
+
+namespace multimesh {
+    class MultiMeshManager;
+}
 template <typename Derived>
 class MeshCRTP;
 namespace attribute {
@@ -17,6 +21,7 @@ namespace wmtk::simplex {
 class Simplex
 {
     friend class wmtk::Mesh;
+    friend class multimesh::MultiMeshManager;
     template <typename Derived>
     friend class wmtk::MeshCRTP;
     template <typename T, typename MeshType, int Dim>
