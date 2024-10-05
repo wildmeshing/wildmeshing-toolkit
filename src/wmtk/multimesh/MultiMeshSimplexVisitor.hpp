@@ -116,7 +116,10 @@ public:
         // if the user passed in a mesh class lets try re-invoking with a derived type
         Mesh& root_base_mesh = mesh.get_multi_mesh_root();
         auto mesh_root_variant = wmtk::utils::metaprogramming::as_mesh_variant(root_base_mesh);
-        const simplex::NavigatableSimplex root_simplex(mesh, mesh.map_to_root(simplex));
+
+        const simplex::Simplex root_simplex_nonav =  mesh.map_to_root(simplex);
+        assert(root_base_mesh.is_valid(root_simplex_nonav.tuple()));
+        const simplex::NavigatableSimplex root_simplex(root_base_mesh, root_simplex_nonav);
         assert(root_base_mesh.is_valid(root_simplex.tuple()));
         Executor exec(*this);
         std::visit([&](auto&& root) { execute_mesh(root.get(), root_simplex); }, mesh_root_variant);
