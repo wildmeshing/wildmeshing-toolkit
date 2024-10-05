@@ -55,7 +55,7 @@ public:
          */
         Iterator& step_depth_3();
 
-        void navigate_to_link();
+        Tuple navigate_to_link(Tuple t);
 
     private:
         LinkSingleDimensionIterable* m_container;
@@ -79,7 +79,7 @@ private:
     TopDimensionCofacesIterable m_tdc_itrbl;
     TopDimensionCofacesIterable::Iterator m_it_end;
 
-    simplex::internal::VisitedArray<simplex::IdSimplex> m_visited_cofaces; // for depth 3 iteration
+    simplex::internal::VisitedArray<simplex::IdSimplex> m_visited_link; // for depth 3 iteration
 };
 
 } // namespace wmtk::simplex

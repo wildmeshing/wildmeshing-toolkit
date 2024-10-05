@@ -57,8 +57,7 @@ LinkSingleDimensionIterable::Iterator& LinkSingleDimensionIterable::Iterator::op
     }
 
     ++m_it;
-    m_t = *m_it;
-    navigate_to_link();
+    m_t = navigate_to_link(*m_it);
     return *this;
 }
 
@@ -95,13 +94,13 @@ bool LinkSingleDimensionIterable::Iterator::is_link_d1()
 
 void LinkSingleDimensionIterable::Iterator::init()
 {
-    navigate_to_link();
+    m_t = navigate_to_link(*m_it);
 
-    if (depth() == 3 && !is_link_d1()) {
+    if (depth() == 3) {
         const Mesh& mesh = *(m_container->m_mesh);
-        const PrimitiveType& cofaces_type = m_container->m_link_type;
+        const PrimitiveType& link_type = m_container->m_link_type;
 
-        m_container->m_visited_cofaces.is_visited(mesh.get_id_simplex(*m_it, cofaces_type));
+        m_container->m_visited_link.is_visited(mesh.get_id_simplex(m_t, link_type));
     }
 }
 
@@ -109,9 +108,7 @@ LinkSingleDimensionIterable::Iterator& LinkSingleDimensionIterable::Iterator::st
 {
     const Mesh& mesh = *(m_container->m_mesh);
     const simplex::Simplex& simplex = m_container->m_simplex;
-    const PrimitiveType& cofaces_type = m_container->m_link_type;
-
-    log_and_throw_error("step_depth_3 not implemented");
+    const PrimitiveType& link_type = m_container->m_link_type;
 
     if (!is_link_d1()) {
         // iterate for cofaces
@@ -120,9 +117,12 @@ LinkSingleDimensionIterable::Iterator& LinkSingleDimensionIterable::Iterator::st
                      mesh,
                      simplex::Simplex(mesh, simplex.primitive_type(), *m_it),
                      mesh.top_simplex_type())) {
-                if (!m_container->m_visited_cofaces.is_visited(
-                        mesh.get_id_simplex(t, cofaces_type))) {
+                const Tuple link_tuple = navigate_to_link(t);
+
+                if (!m_container->m_visited_link.is_visited(
+                        mesh.get_id_simplex(link_tuple, link_type))) {
                     *m_it = t;
+                    m_t = link_tuple;
                     return *this;
                 }
             }
@@ -132,13 +132,14 @@ LinkSingleDimensionIterable::Iterator& LinkSingleDimensionIterable::Iterator::st
         ++m_it;
     }
 
+    m_t = navigate_to_link(*m_it);
     return *this;
 }
 
-void LinkSingleDimensionIterable::Iterator::navigate_to_link()
+Tuple LinkSingleDimensionIterable::Iterator::navigate_to_link(Tuple t)
 {
-    if (m_t.is_null()) {
-        return;
+    if (t.is_null()) {
+        return t;
     }
     // invert the simplex using SimplexDart
     const Mesh& mesh = *(m_container->m_mesh);
@@ -178,10 +179,12 @@ void LinkSingleDimensionIterable::Iterator::navigate_to_link()
 
         for (int8_t j = s; j > -1; --j) {
             for (int8_t i = 0; i < m - s; ++i) {
-                m_t = mesh.switch_tuple(m_t, get_primitive_type_from_id(j + i));
+                t = mesh.switch_tuple(t, get_primitive_type_from_id(j + i));
             }
         }
     }
+
+    return t;
 }
 
 } // namespace wmtk::simplex
