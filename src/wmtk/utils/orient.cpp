@@ -91,26 +91,6 @@ int wmtk_orient3d(
             p2.cast<double>(),
             p3.cast<double>());
     } else {
-        // Super Fast version using double
-        // Eigen::Vector3<double> p0r_d;
-        // Eigen::Vector3<double> p1r_d;
-        // Eigen::Vector3<double> p2r_d;
-        // Eigen::Vector3<double> p3r_d;
-
-        // for (int64_t i = 0; i < 3; ++i) {
-        //     p0r_d[i] = p0[i].to_double();
-        //     p1r_d[i] = p1[i].to_double();
-        //     p2r_d[i] = p2[i].to_double();
-        //     p3r_d[i] = p3[i].to_double();
-        // }
-
-        // Eigen::Matrix3<double> M_d;
-        // M_d.row(0) = p0r_d - p3r_d;
-        // M_d.row(1) = p1r_d - p3r_d;
-        // M_d.row(2) = p2r_d - p3r_d;
-
-        // const auto det_d = determinant<double>(M_d);
-
         // Fast version using intervals
         Eigen::Vector3<vol_rem::interval_number> p0r_i;
         Eigen::Vector3<vol_rem::interval_number> p1r_i;
@@ -202,6 +182,33 @@ int wmtk_orient2d(
     if (is_rounded(p0) && is_rounded(p1) && is_rounded(p2)) {
         return wmtk_orient2d(p0.cast<double>(), p1.cast<double>(), p2.cast<double>());
     } else {
+
+        // Fast version using intervals
+        Eigen::Vector2<vol_rem::interval_number> p0r_i;
+        Eigen::Vector2<vol_rem::interval_number> p1r_i;
+        Eigen::Vector2<vol_rem::interval_number> p2r_i;
+
+        vol_rem::setFPUModeToRoundUP();
+        for (int64_t i = 0; i < 2; ++i) {
+            p0r_i[i] = rational_to_interval(p0[i]);
+            p1r_i[i] = rational_to_interval(p1[i]);
+            p2r_i[i] = rational_to_interval(p2[i]);
+        }
+
+        Eigen::Matrix2<vol_rem::interval_number> M_i;
+        M_i.row(0) = p1r_i - p0r_i;
+        M_i.row(1) = p2r_i - p0r_i;
+
+        const auto det_i = determinant<vol_rem::interval_number>(M_i);
+        auto reliable = det_i.signIsReliable();
+        auto sign = det_i.sign();
+        vol_rem::setFPUModeToRoundNEAR();
+
+        if (reliable) {
+            return sign;
+        }
+
+        // Slow version using rationals
         Eigen::Vector2<Rational> p0r;
         Eigen::Vector2<Rational> p1r;
         Eigen::Vector2<Rational> p2r;
