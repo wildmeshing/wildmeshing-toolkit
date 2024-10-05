@@ -13,7 +13,7 @@ namespace wmtk::simplex {
 LinkIterable::LinkIterable(const Mesh& mesh, const Simplex& simplex)
     : m_mesh(&mesh)
     , m_simplex(simplex)
-    , m_tdc_itrbl(mesh, simplex)
+    , m_tdc_itrbl(mesh, simplex, true)
     , m_it_end(m_tdc_itrbl.end())
 {}
 
@@ -51,11 +51,11 @@ LinkIterable::Iterator& LinkIterable::Iterator::operator++()
     const int8_t m = mesh.top_cell_dimension();
     const int8_t s = get_primitive_type_id(simplex.primitive_type());
 
-    if (m_pt < m - s &&
-        m_it.iterator_phase() != TopDimensionCofacesIterable::IteratorPhase::Intermediate) {
+    if (m_pt < m - s - 1 && !m_it.is_intermediate()) {
         // go to next primitive type
         ++m_pt;
     } else {
+        m_pt = 0;
         // change tuple
         ++m_it;
         m_t = navigate_to_link(*m_it);

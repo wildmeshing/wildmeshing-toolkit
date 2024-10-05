@@ -1505,12 +1505,12 @@ TEST_CASE("simplex_link_tri_iterable", "[simplex_collection][iterable][2D]")
     SECTION("edge_interior")
     {
         const Tuple t = m.edge_tuple_with_vs_and_t(4, 5, 2);
-        simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Edge, t);
     }
     SECTION("edge_boundary")
     {
         const Tuple t = m.edge_tuple_with_vs_and_t(3, 7, 5);
-        simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Edge, t);
     }
     SECTION("face")
     {
