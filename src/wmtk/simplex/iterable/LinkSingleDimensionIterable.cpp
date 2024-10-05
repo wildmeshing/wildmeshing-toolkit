@@ -2,7 +2,6 @@
 
 #include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/autogen/local_switch_tuple.hpp>
-#include <wmtk/simplex/RawSimplex.hpp>
 #include <wmtk/simplex/cofaces_in_simplex_iterable.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -20,9 +19,7 @@ LinkSingleDimensionIterable::LinkSingleDimensionIterable(
     , m_link_type(link_type)
     , m_tdc_itrbl(mesh, simplex, mesh.top_cell_dimension() - 1 != get_primitive_type_id(link_type))
     , m_it_end(m_tdc_itrbl.end())
-{
-    assert(link_type < mesh.top_simplex_type());
-}
+{}
 
 LinkSingleDimensionIterable::Iterator::Iterator(
     LinkSingleDimensionIterable& container,
@@ -33,6 +30,21 @@ LinkSingleDimensionIterable::Iterator::Iterator(
 {
     if (m_t.is_null()) {
         return;
+    }
+
+    // check if link_type can exist
+    {
+        const Mesh& mesh = *(m_container->m_mesh);
+        const simplex::Simplex& simplex = m_container->m_simplex;
+        const PrimitiveType link_pt = m_container->m_link_type;
+        const int8_t m = mesh.top_cell_dimension();
+        const int8_t s = get_primitive_type_id(simplex.primitive_type());
+        const int8_t l = get_primitive_type_id(link_pt);
+        if (l >= m - s) {
+            logger().warn("Trying to retrieve simplices in the link that cannot exist!");
+            m_t = Tuple();
+            return;
+        }
     }
 
     init();
@@ -130,25 +142,46 @@ void LinkSingleDimensionIterable::Iterator::navigate_to_link()
     }
     // invert the simplex using SimplexDart
     const Mesh& mesh = *(m_container->m_mesh);
-    const PrimitiveType& mesh_pt = mesh.top_simplex_type();
-    autogen::SimplexDart sd(mesh_pt);
+    // const PrimitiveType& mesh_pt = mesh.top_simplex_type();
+    // autogen::SimplexDart sd(mesh_pt);
 
-    // const simplex::RawSimplex v0(mesh, simplex::Simplex(mesh, PrimitiveType::Vertex, m_t));
-    // const simplex::RawSimplex e0(mesh, simplex::Simplex(mesh, PrimitiveType::Edge, m_t));
+    // switch (mesh.top_simplex_type()) {
+    // case PrimitiveType::Triangle: {
+    //     const int8_t index_switch = sd.product(
+    //         sd.primitive_as_index(PrimitiveType::Edge),
+    //         sd.primitive_as_index(PrimitiveType::Vertex));
+    //     m_t = autogen::local_switch_tuple(mesh_pt, m_t, index_switch);
+    //     break;
+    // }
+    // default: log_and_throw_error("missing mesh navigation in link"); break;
+    // }
 
-    switch (mesh.top_simplex_type()) {
-    case PrimitiveType::Triangle: {
-        const int8_t index_switch = sd.product(
-            sd.primitive_as_index(PrimitiveType::Edge),
-            sd.primitive_as_index(PrimitiveType::Vertex));
-        m_t = autogen::local_switch_tuple(mesh_pt, m_t, index_switch);
-        break;
+    {
+        /*
+         * Assume a tuple that contains the vertices (a,b,c,d) and the simplex is an edge, i.e.,
+         * (a,b). The link contains all the vertices that are not in the simplex. To get a tuple
+         * that represents all simplices of the link, we need to move (a,b) to the end of that
+         * tuple.
+         * (a,b,c,d) becomes (c,d,a,b) with the following permutations
+         *              (a,b,c,d)
+         * switch edge: (a,c,b,d)
+         * switch face: (a,c,d,b)
+         * switch vert: (c,a,d,b)
+         * switch edge: (c,d,a,b)
+         *
+         * The following code implements these permutations.
+         */
+        const simplex::Simplex& simplex = m_container->m_simplex;
+        const PrimitiveType link_pt = m_container->m_link_type;
+        const int8_t m = mesh.top_cell_dimension();
+        const int8_t s = get_primitive_type_id(simplex.primitive_type());
+
+        for (int8_t j = s; j > -1; --j) {
+            for (int8_t i = 0; i < m - s; ++i) {
+                m_t = mesh.switch_tuple(m_t, get_primitive_type_from_id(j + i));
+            }
+        }
     }
-    default: log_and_throw_error("missing mesh navigation in link"); break;
-    }
-
-    // const simplex::RawSimplex v1(mesh, simplex::Simplex(mesh, PrimitiveType::Vertex, m_t));
-    // const simplex::RawSimplex e1(mesh, simplex::Simplex(mesh, PrimitiveType::Edge, m_t));
 }
 
 } // namespace wmtk::simplex

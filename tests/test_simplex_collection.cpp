@@ -2187,7 +2187,7 @@ TEST_CASE("simplex_link_single_dimension_tri_iterable", "[simplex_collection][it
     auto compare_collections = [&m](const simplex::Simplex& s) {
         SimplexCollection comp = link_slow(m, s);
         for (const PrimitiveType pt :
-             wmtk::utils::primitive_range(PrimitiveType::Vertex, s.primitive_type())) {
+             wmtk::utils::primitive_range(PrimitiveType::Vertex, m.top_simplex_type())) {
             SimplexCollection single_dim_comp(m, comp.simplex_vector(pt));
 
             auto itrb = link_single_dimension_iterable(m, s, pt);
