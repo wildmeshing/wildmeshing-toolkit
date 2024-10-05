@@ -51,6 +51,8 @@ public:
         Tuple& operator*();
         const Tuple& operator*() const;
 
+        const bool is_intermediate() const;
+
     private:
         /**
          * @brief Get the d - depth primitive type.
@@ -104,6 +106,7 @@ public:
 
         Tuple m_t; // the tuple that iterates through the mesh
         IteratorPhase m_phase = IteratorPhase::Forward; // for depth 1 and 2 iteration
+        bool m_is_intermediate = false;
     };
 
 public:

@@ -123,6 +123,8 @@ TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::st
     const Mesh& mesh = *(m_container->m_mesh);
     const simplex::Simplex& simplex = m_container->m_simplex;
 
+    m_is_intermediate = false;
+
     if (m_phase == IteratorPhase::Intermediate) {
         // go to opposite of input
         m_t = mesh.switch_tuple(simplex.tuple(), pt(1));
@@ -133,6 +135,7 @@ TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::st
             m_phase = IteratorPhase::Backward;
         }
         if (m_container->m_retrieve_intermediate_tuple) {
+            m_is_intermediate = true;
             return *this;
         }
     }
@@ -198,6 +201,11 @@ void TopDimensionCofacesIterable::Iterator::add_neighbors_to_queue()
             m_container->m_q.emplace_back(neigh);
         }
     }
+}
+
+const bool TopDimensionCofacesIterable::Iterator::is_intermediate() const
+{
+    return m_is_intermediate;
 }
 
 } // namespace wmtk::simplex

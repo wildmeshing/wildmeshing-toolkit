@@ -5,6 +5,8 @@ set(SRC_FILES
     CofacesInSimplexIterable.cpp
     LinkIterable.hpp
     LinkIterable.cpp
+    LinkSingleDimensionIterable.hpp
+    LinkSingleDimensionIterable.cpp
     OpenStarIterable.hpp
     OpenStarIterable.cpp
     TopDimensionCofacesIterable.hpp

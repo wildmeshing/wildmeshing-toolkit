@@ -5,6 +5,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/IdSimplex.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/simplex/internal/VisitedArray.hpp>
 
 #include "TopDimensionCofacesIterable.hpp"
@@ -19,17 +20,17 @@ namespace wmtk::simplex {
  *
  * In depth 2, we need the iterator in the intermediate phase.
  */
-class LinkIterable
+class LinkSingleDimensionIterable
 {
 public:
     class Iterator
     {
     public:
-        Iterator(LinkIterable& container, const Tuple& t = Tuple());
+        Iterator(LinkSingleDimensionIterable& container, const Tuple& t = Tuple());
         Iterator& operator++();
         bool operator!=(const Iterator& other) const;
-        IdSimplex operator*();
-        const IdSimplex operator*() const;
+        Tuple& operator*();
+        const Tuple& operator*() const;
 
     private:
         /**
@@ -38,6 +39,10 @@ public:
          * The depth is "mesh top simplex dimension" - "simplex dimension".
          */
         int64_t depth();
+        /**
+         * @brief Check if coface type is the mesh's top simplex type.
+         */
+        bool is_link_d1();
 
         /**
          * @brief Depending on the depth, the iterator must be initialized differently.
@@ -53,14 +58,16 @@ public:
         Tuple navigate_to_link(Tuple t);
 
     private:
-        LinkIterable* m_container;
+        LinkSingleDimensionIterable* m_container;
         TopDimensionCofacesIterable::Iterator m_it;
         Tuple m_t;
-        int8_t m_pt = 0;
     };
 
 public:
-    LinkIterable(const Mesh& mesh, const Simplex& simplex);
+    LinkSingleDimensionIterable(
+        const Mesh& mesh,
+        const Simplex& simplex,
+        const PrimitiveType cofaces_type);
 
     Iterator begin() { return Iterator(*this, m_simplex.tuple()); }
     Iterator end() { return Iterator(*this); }
@@ -68,6 +75,7 @@ public:
 private:
     const Mesh* m_mesh;
     const Simplex m_simplex;
+    const PrimitiveType m_link_type;
     TopDimensionCofacesIterable m_tdc_itrbl;
     TopDimensionCofacesIterable::Iterator m_it_end;
 
