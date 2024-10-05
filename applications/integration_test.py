@@ -22,7 +22,6 @@ class IntegrationTest(unittest.TestCase):
         if "WMTK_CONFIG_FILE" in os.environ:
             IntegrationTest.CONFIG_FILE = fix_path(os.environ['WMTK_CONFIG_FILE'])
 
-        # print(os.environ['FILENAME'])
         self.working_dir_fp = tempfile.TemporaryDirectory()
         self.working_dir = self.working_dir_fp.name
         print('Running all integration tests in', self.working_dir)
@@ -33,7 +32,7 @@ class IntegrationTest(unittest.TestCase):
     def tearDown(self):
         self.working_dir_fp.cleanup()
 
-    def run_one(self, executable, config_folder, data_folder, config):
+    def run_one(self, executable, config_folder, config):
         if "test_directory" in config:
             config_folder = os.path.join(config_folder, config["test_directory"])
 
@@ -65,17 +64,13 @@ class IntegrationTest(unittest.TestCase):
             with tempfile.NamedTemporaryFile(mode='r', delete=False) as oracle_file:
                 oracle_file.close()
 
-            if root_tag in input:
-                if not os.path.isabs(input[root_tag]):
-                    input[root_tag] = os.path.join(config_folder, input[root_tag])
-            else:
-                input[root_tag] = config_folder
+                input[oracle_tag] = oracle_file.name
 
                 if root_tag in input:
                     if not os.path.isabs(input[root_tag]):
-                        input[root_tag] = os.path.join(test_folder, input[root_tag])
+                        input[root_tag] = os.path.join(config_folder, input[root_tag])
                 else:
-                    input[root_tag] = test_folder
+                    input[root_tag] = config_folder
 
                 with tempfile.NamedTemporaryFile(mode='w', delete=False) as input_json:
                     json.dump(input, input_json)
@@ -126,7 +121,7 @@ class IntegrationTest(unittest.TestCase):
 
                 data_folder = None if "data_folder" not in my_config else my_config["data_folder"]
                 config_folder = data_folder if "config_folder" not in my_config else my_config["config_folder"]
-                self.run_one(key, config_folder, data_folder, config)
+                self.run_one(key, config_folder, config)
 
 
 if __name__ == '__main__':
