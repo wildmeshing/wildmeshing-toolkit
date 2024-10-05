@@ -76,10 +76,12 @@ class IntegrationTest(unittest.TestCase):
                     json.dump(input, input_json)
                     input_json.close()
 
-                    res = subprocess.run([executable, "-j", input_json.name], cwd=self.working_dir, capture_output=True)
+
+                    cmd = [executable, "-j", input_json.name]
+                    res = subprocess.run(cmd, cwd=self.working_dir, capture_output=True)
 
                 if res.returncode != 0:
-                    print("Error running")
+                    print(f"Error running [{' '.join(cmd)}]")
                     print(res.stderr.decode('utf-8'))
                     print(res.stdout.decode('utf-8'))
 
