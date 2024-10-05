@@ -1,10 +1,5 @@
 var NAVTREEINDEX8 =
 {
-"classwmtk_1_1attribute_1_1_attribute_scope.html#a23715c0709a5380e45ad28aae38181f7":[7,0,2,0,11,6],
-"classwmtk_1_1attribute_1_1_attribute_scope.html#a37e2a2de25455ed933e400664af4eaf7":[7,0,2,0,11,8],
-"classwmtk_1_1attribute_1_1_attribute_scope.html#a5031d6d5de6cc3cf7f984dba227e475e":[7,0,2,0,11,14],
-"classwmtk_1_1attribute_1_1_attribute_scope.html#a56e50ca40781875a79fb11da4849047e":[7,0,2,0,11,5],
-"classwmtk_1_1attribute_1_1_attribute_scope.html#a5c29b7ffe679e8acd6f00d85f9dd4350":[7,0,2,0,11,11],
 "classwmtk_1_1attribute_1_1_attribute_scope.html#a605e1a7a0b1f2dd2e97fb4806295151a":[7,0,2,0,11,12],
 "classwmtk_1_1attribute_1_1_attribute_scope.html#a66557c7989cfceac6a4478eb5e02e66d":[7,0,2,0,11,4],
 "classwmtk_1_1attribute_1_1_attribute_scope.html#a7c95510e23c0a304267cbdf0b222f2b7":[7,0,2,0,11,1],
@@ -249,5 +244,10 @@ var NAVTREEINDEX8 =
 "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a6b63ef00919ebfdbb113d3e21db3cf82":[7,0,2,0,0,0,45],
 "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a6fee522f3f6222c72afa59036b29a419":[7,0,2,0,0,0,20],
 "classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a708aeff93dd6522149d83444635354a0":[7,0,2,0,0,0,25],
-"classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a76637334da59c50e5710f10ea0ad3589":[7,0,2,0,0,0,5]
+"classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a76637334da59c50e5710f10ea0ad3589":[7,0,2,0,0,0,5],
+"classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a77e7e86fa2a18c8d9e4a127fc81eb452":[7,0,2,0,0,0,26],
+"classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a7b01bf2772793d3a849a9fb3431af2a6":[7,0,2,0,0,0,18],
+"classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a815f5ec4a0b3607146043ad70181c0ba":[7,0,2,0,0,0,8],
+"classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a8615baa3a92f73a53d79cc6693c14939":[7,0,2,0,0,0,49],
+"classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a882db19f372ff916c1d636bbbbb5d3ca":[7,0,2,0,0,0,0]
 };

@@ -68,7 +68,7 @@ var annotated_dup =
           ] ]
         ] ],
         [ "input", "namespacewmtk_1_1components_1_1input.html", [
-          [ "InputOptions", "structwmtk_1_1components_1_1input_1_1_input_options.html", "structwmtk_1_1components_1_1input_1_1_input_options" ],
+          [ "InputOptions", "classwmtk_1_1components_1_1input_1_1_input_options.html", "classwmtk_1_1components_1_1input_1_1_input_options" ],
           [ "MeshCollection", "classwmtk_1_1components_1_1input_1_1_mesh_collection.html", "classwmtk_1_1components_1_1input_1_1_mesh_collection" ],
           [ "NamedMultiMesh", "classwmtk_1_1components_1_1input_1_1_named_multi_mesh.html", "classwmtk_1_1components_1_1input_1_1_named_multi_mesh" ]
         ] ],
@@ -99,6 +99,9 @@ var annotated_dup =
           [ "GridOptions", "classwmtk_1_1components_1_1procedural_1_1_grid_options.html", "classwmtk_1_1components_1_1procedural_1_1_grid_options" ],
           [ "ProceduralOptions", "structwmtk_1_1components_1_1procedural_1_1_procedural_options.html", "structwmtk_1_1components_1_1procedural_1_1_procedural_options" ],
           [ "TriangleFanOptions", "classwmtk_1_1components_1_1procedural_1_1_triangle_fan_options.html", "classwmtk_1_1components_1_1procedural_1_1_triangle_fan_options" ]
+        ] ],
+        [ "triangle_insertion", "namespacewmtk_1_1components_1_1triangle__insertion.html", [
+          [ "ChildMeshes", "classwmtk_1_1components_1_1triangle__insertion_1_1_child_meshes.html", "classwmtk_1_1components_1_1triangle__insertion_1_1_child_meshes" ]
         ] ],
         [ "utils", "namespacewmtk_1_1components_1_1utils.html", [
           [ "ComponentOptionsBase", "structwmtk_1_1components_1_1utils_1_1_component_options_base.html", "structwmtk_1_1components_1_1utils_1_1_component_options_base" ]

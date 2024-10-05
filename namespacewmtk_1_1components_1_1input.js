@@ -7,7 +7,7 @@ var namespacewmtk_1_1components_1_1input =
       [ "get_attribute", "namespacewmtk_1_1components_1_1input_1_1utils.html#a5d7207573cf4ebd096f473be3d289f92", null ],
       [ "get_attribute", "namespacewmtk_1_1components_1_1input_1_1utils.html#ac07a72f4c03a670d17e69300e3511b5f", null ]
     ] ],
-    [ "InputOptions", "structwmtk_1_1components_1_1input_1_1_input_options.html", "structwmtk_1_1components_1_1input_1_1_input_options" ],
+    [ "InputOptions", "classwmtk_1_1components_1_1input_1_1_input_options.html", "classwmtk_1_1components_1_1input_1_1_input_options" ],
     [ "MeshCollection", "classwmtk_1_1components_1_1input_1_1_mesh_collection.html", "classwmtk_1_1components_1_1input_1_1_mesh_collection" ],
     [ "NamedMultiMesh", "classwmtk_1_1components_1_1input_1_1_named_multi_mesh.html", "classwmtk_1_1components_1_1input_1_1_named_multi_mesh" ],
     [ "input", "namespacewmtk_1_1components_1_1input.html#a93e4fdac356813c30ad9dc03a4050099", null ],

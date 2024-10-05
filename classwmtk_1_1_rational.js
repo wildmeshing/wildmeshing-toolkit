@@ -9,6 +9,7 @@ var classwmtk_1_1_rational =
     [ "Rational", "classwmtk_1_1_rational.html#a4d65a912a09b3f95414056400df7992d", null ],
     [ "Rational", "classwmtk_1_1_rational.html#a1a9d9e53a473ad5e3774ab3e74263ead", null ],
     [ "~Rational", "classwmtk_1_1_rational.html#a67a355e5f0c4f2ed0c292861d8a356a4", null ],
+    [ "can_be_rounded", "classwmtk_1_1_rational.html#a6895449ff3d4221a4743afe98a765f5e", null ],
     [ "canonicalize", "classwmtk_1_1_rational.html#ad23367a722e000ec0c4235d202aea1e6", null ],
     [ "denominator", "classwmtk_1_1_rational.html#ac5466cdeb4d85645a3b561eff4a7a789", null ],
     [ "get_sign", "classwmtk_1_1_rational.html#af23196c85e42485e90d9c0ea9b47586c", null ],

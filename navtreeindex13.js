@@ -1,5 +1,12 @@
 var NAVTREEINDEX13 =
 {
+"classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a84f3cfa20dedcd21b693ff923f47f7f5":[7,0,2,7,12,1],
+"classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#ae5b468f4ef55f0963538fe7865f2a3de":[7,0,2,7,12,2],
+"classwmtk_1_1operations_1_1_edge_collapse.html":[7,0,2,7,24],
+"classwmtk_1_1operations_1_1_edge_collapse.html#a15f338a3463830f470ea1cc408257067":[7,0,2,7,24,9],
+"classwmtk_1_1operations_1_1_edge_collapse.html#a31e2fd32feacd5705864bda83c55c188":[7,0,2,7,24,8],
+"classwmtk_1_1operations_1_1_edge_collapse.html#a325e1bc523bed80de5adf695ded851d6":[7,0,2,7,24,6],
+"classwmtk_1_1operations_1_1_edge_collapse.html#a42002d22eacaab86ed9acffab84b7097":[7,0,2,7,24,5],
 "classwmtk_1_1operations_1_1_edge_collapse.html#a64450fa42ff00ebaba65ddca6e94c605":[7,0,2,7,24,0],
 "classwmtk_1_1operations_1_1_edge_collapse.html#a8d52e8ef34eb9d5b32c8d290270fe5d3":[7,0,2,7,24,4],
 "classwmtk_1_1operations_1_1_edge_collapse.html#ab543ed81913d415e5dfcfabfcfdeeef2":[7,0,2,7,24,3],
@@ -242,12 +249,5 @@ var NAVTREEINDEX13 =
 "classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a173bcc3f538ea9e8c40e810017d9a86f":[7,0,2,7,1,3,5],
 "classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a1c6714160513c0d8d933618084c5903d":[7,0,2,7,1,3,3],
 "classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a2a75d7b1e956a098f9b47bb365345f7c":[7,0,2,7,1,3,1],
-"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a31cbdc65275c3680519e077a22f0f47e":[7,0,2,7,1,3,2],
-"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a7916a0a776c2af596d7de941bd677eb1":[7,0,2,7,1,3,7],
-"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a9a54c74b5fe18c3fa86189775a5e0543":[7,0,2,7,1,3,6],
-"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#aff1d42ecd518109b952f70b4f4adbaf7":[7,0,2,7,1,3,0],
-"classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html":[7,0,2,7,1,4],
-"classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a06cc9c4f03c970d332b7349c8a46fef5":[7,0,2,7,1,4,0],
-"classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a2dbaf5b4b254fa5c63fc9909117190df":[7,0,2,7,1,4,5],
-"classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a39329ea7632e9a86d74c466b30d38597":[7,0,2,7,1,4,3]
+"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a31cbdc65275c3680519e077a22f0f47e":[7,0,2,7,1,3,2]
 };

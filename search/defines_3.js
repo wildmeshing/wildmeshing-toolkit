@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['get_5fop_5670',['GET_OP',['../_simplex_dart_8cpp.html#a42aa50bb30d352c53ffecc30d9d57c16',1,'SimplexDart.cpp']]]
+  ['get_5fop_5682',['GET_OP',['../_simplex_dart_8cpp.html#a42aa50bb30d352c53ffecc30d9d57c16',1,'SimplexDart.cpp']]]
 ];

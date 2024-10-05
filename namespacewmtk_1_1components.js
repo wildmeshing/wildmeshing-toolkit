@@ -18,6 +18,7 @@ var namespacewmtk_1_1components =
     ] ],
     [ "output", "namespacewmtk_1_1components_1_1output.html", "namespacewmtk_1_1components_1_1output" ],
     [ "procedural", "namespacewmtk_1_1components_1_1procedural.html", "namespacewmtk_1_1components_1_1procedural" ],
+    [ "triangle_insertion", "namespacewmtk_1_1components_1_1triangle__insertion.html", "namespacewmtk_1_1components_1_1triangle__insertion" ],
     [ "utils", "namespacewmtk_1_1components_1_1utils.html", "namespacewmtk_1_1components_1_1utils" ],
     [ "TagAttribute", "classwmtk_1_1components_1_1_tag_attribute.html", "classwmtk_1_1components_1_1_tag_attribute" ],
     [ "Marching", "classwmtk_1_1components_1_1_marching.html", "classwmtk_1_1components_1_1_marching" ],
@@ -81,7 +82,6 @@ var namespacewmtk_1_1components =
     [ "tag_intersection", "namespacewmtk_1_1components.html#ae22ac68a5d85a281c4aeafa97f5230bc", null ],
     [ "tetwild_simplification", "namespacewmtk_1_1components.html#ab76577dc5b3ef0ad8ac307cff60d5807", null ],
     [ "to_points", "namespacewmtk_1_1components.html#a1703c2264e52b16281828951556f8b11", null ],
-    [ "triangle_insertion", "namespacewmtk_1_1components.html#a9d6d11e3b7ba03911492ecfc79622247", null ],
     [ "vector_unique", "namespacewmtk_1_1components.html#aa0ee421954a6b56f1b280700fb55f807", null ],
     [ "wildmeshing", "namespacewmtk_1_1components.html#ac6ca52668bd22e164d4baf59ec533864", null ],
     [ "winding_number", "namespacewmtk_1_1components.html#a888d10781e8251534aa853eb50316732", null ]

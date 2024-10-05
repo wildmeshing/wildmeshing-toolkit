@@ -1,5 +1,12 @@
 var NAVTREEINDEX12 =
 {
+"classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#aee135fbde11aefaf476a00007f524d25":[7,0,2,6,9,40],
+"classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#aefe5179057c978e227c3349d13578c4a":[7,0,2,6,9,48],
+"classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#af6fd8d8b5cc1e8b2c877718b99374f03":[7,0,2,6,9,45],
+"classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#af7fc43432accd107d1b9de25240a04bd":[7,0,2,6,9,60],
+"classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#af9c47d7844feea21e37c259942446d08":[7,0,2,6,9,57],
+"classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#afda2cea3f093e5fd59ad9ed58f1c0f33":[7,0,2,6,9,32],
+"classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor.html":[7,0,2,6,10],
 "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor.html#a44d89c390e87b135b8cb9f26f8e0144e":[7,0,2,6,10,1],
 "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor.html#a6f68a64a57467d6844c782c87ece284c":[7,0,2,6,10,2],
 "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor.html#a7655c88ae0f53ca9bcfecba966fb2044":[7,0,2,6,10,7],
@@ -242,12 +249,5 @@ var NAVTREEINDEX12 =
 "classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html":[7,0,2,7,12],
 "classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a1dde056d7565157cb53e8b808b257244":[7,0,2,7,12,3],
 "classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a29e735ad215fd42ce821aae926fdb0af":[7,0,2,7,12,4],
-"classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a482409a80ee5edeb792788e549a48225":[7,0,2,7,12,0],
-"classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a84f3cfa20dedcd21b693ff923f47f7f5":[7,0,2,7,12,1],
-"classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#ae5b468f4ef55f0963538fe7865f2a3de":[7,0,2,7,12,2],
-"classwmtk_1_1operations_1_1_edge_collapse.html":[7,0,2,7,24],
-"classwmtk_1_1operations_1_1_edge_collapse.html#a15f338a3463830f470ea1cc408257067":[7,0,2,7,24,9],
-"classwmtk_1_1operations_1_1_edge_collapse.html#a31e2fd32feacd5705864bda83c55c188":[7,0,2,7,24,8],
-"classwmtk_1_1operations_1_1_edge_collapse.html#a325e1bc523bed80de5adf695ded851d6":[7,0,2,7,24,6],
-"classwmtk_1_1operations_1_1_edge_collapse.html#a42002d22eacaab86ed9acffab84b7097":[7,0,2,7,24,5]
+"classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a482409a80ee5edeb792788e549a48225":[7,0,2,7,12,0]
 };

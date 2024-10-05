@@ -1,5 +1,12 @@
 var NAVTREEINDEX14 =
 {
+"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a7916a0a776c2af596d7de941bd677eb1":[7,0,2,7,1,3,7],
+"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a9a54c74b5fe18c3fa86189775a5e0543":[7,0,2,7,1,3,6],
+"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#aff1d42ecd518109b952f70b4f4adbaf7":[7,0,2,7,1,3,0],
+"classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html":[7,0,2,7,1,4],
+"classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a06cc9c4f03c970d332b7349c8a46fef5":[7,0,2,7,1,4,0],
+"classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a2dbaf5b4b254fa5c63fc9909117190df":[7,0,2,7,1,4,5],
+"classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a39329ea7632e9a86d74c466b30d38597":[7,0,2,7,1,4,3],
 "classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a74fc200484af8bd6ea09cac45b5fb0fa":[7,0,2,7,1,4,6],
 "classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a795f9d4311363c6575412bc79015df60":[7,0,2,7,1,4,7],
 "classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a885f53abdd5dbac174431aeca4b30b1c":[7,0,2,7,1,4,4],
@@ -242,12 +249,5 @@ var NAVTREEINDEX14 =
 "classwmtk_1_1simplex_1_1_id_simplex.html#aa844ca18fbc5bcea521d4936e70aaeb6":[7,0,2,8,2,14],
 "classwmtk_1_1simplex_1_1_id_simplex.html#aad5de0284eeeaf4fb5c5055029ee7dd6":[7,0,2,8,2,1],
 "classwmtk_1_1simplex_1_1_id_simplex.html#ac066c82ddb13613c0ee16ca0b3d0a18a":[7,0,2,8,2,13],
-"classwmtk_1_1simplex_1_1_id_simplex.html#ac308770a8fa5611a414ee6dba94bf711":[7,0,2,8,2,8],
-"classwmtk_1_1simplex_1_1_id_simplex.html#ad483628062bc856966d9a7519abec00b":[7,0,2,8,2,5],
-"classwmtk_1_1simplex_1_1_id_simplex.html#ae799434daad5e343fba1a1c50197a740":[7,0,2,8,2,6],
-"classwmtk_1_1simplex_1_1_id_simplex.html#ae995120a546dfa75c198a2d7613a78d0":[7,0,2,8,2,4],
-"classwmtk_1_1simplex_1_1_id_simplex.html#aeadd14da0e9cf34e69832387407993df":[7,0,2,8,2,0],
-"classwmtk_1_1simplex_1_1_id_simplex.html#af49ed3aa12d76b225124bdaddb46fa7a":[7,0,2,8,2,11],
-"classwmtk_1_1simplex_1_1_link_iterable.html":[7,0,2,8,5],
-"classwmtk_1_1simplex_1_1_link_iterable.html#a5ed6aae454d598b1c155cf46e77d2117":[7,0,2,8,5,1]
+"classwmtk_1_1simplex_1_1_id_simplex.html#ac308770a8fa5611a414ee6dba94bf711":[7,0,2,8,2,8]
 };

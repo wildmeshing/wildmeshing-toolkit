@@ -127,6 +127,7 @@ $(document).ready(function(){initNavTree('triangle__insertion_8cpp.html',''); in
 <code>#include &lt;<a class="el" href="_mesh_8hpp_source.html">wmtk/Mesh.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_scheduler_8hpp_source.html">wmtk/Scheduler.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_tet_mesh_8hpp_source.html">wmtk/TetMesh.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_tri_mesh_8hpp_source.html">wmtk/TriMesh.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_rounding_8hpp_source.html">wmtk/operations/Rounding.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_simplex_8hpp_source.html">wmtk/simplex/Simplex.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_logger_8hpp_source.html">wmtk/utils/Logger.hpp</a>&gt;</code><br />
@@ -147,11 +148,13 @@ Namespaces</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacewmtk_1_1components"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html">wmtk::components</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespacewmtk_1_1components_1_1triangle__insertion"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1triangle__insertion.html">wmtk::components::triangle_insertion</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a9d6d11e3b7ba03911492ecfc79622247"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a9d6d11e3b7ba03911492ecfc79622247">wmtk::components::triangle_insertion</a> (const std::shared_ptr&lt; Mesh &gt; &amp;mesh_in, const std::string &amp;in_position, const std::shared_ptr&lt; Mesh &gt; &amp;bg_mesh, const std::string &amp;bg_position, bool make_child_free)</td></tr>
-<tr class="separator:a9d6d11e3b7ba03911492ecfc79622247"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d73d2303dfd2790486363fcf53ea421"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt;, ChildMeshes &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1triangle__insertion.html#a5d73d2303dfd2790486363fcf53ea421">wmtk::components::triangle_insertion::triangle_insertion</a> (const TetMesh &amp;bg_mesh, const std::string &amp;bg_position, const TriMesh &amp;mesh_in, const std::string &amp;in_position, bool round, bool track_submeshes, bool make_child_free)</td></tr>
+<tr class="separator:a5d73d2303dfd2790486363fcf53ea421"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

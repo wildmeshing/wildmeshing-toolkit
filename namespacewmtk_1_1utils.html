@@ -193,6 +193,8 @@ Functions</h2></td></tr>
 <tr class="separator:a0dca8cd0cb666277e80d2b93286cfb65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa8bd6cb2e566ee2d1badbff8eec034ea"><td class="memItemLeft" align="right" valign="top">std::optional&lt; <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#aa8bd6cb2e566ee2d1badbff8eec034ea">merkle_tree_diff</a> (const <a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;a, const <a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;b, bool detailed)</td></tr>
 <tr class="separator:aa8bd6cb2e566ee2d1badbff8eec034ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7249bf35b7f8ef39d74da6ad336da021"><td class="memItemLeft" align="right" valign="top">vol_rem::interval_number&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a7249bf35b7f8ef39d74da6ad336da021">rational_to_interval</a> (const <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &amp;r)</td></tr>
+<tr class="separator:a7249bf35b7f8ef39d74da6ad336da021"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5f6998f980cb239bfc739e9600e3d03e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a5f6998f980cb239bfc739e9600e3d03e">exactinit</a> ()</td></tr>
 <tr class="separator:a5f6998f980cb239bfc739e9600e3d03e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a34133dc338089a5141f8e84feecb81ce"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a34133dc338089a5141f8e84feecb81ce">wmtk_orient3d</a> (const Eigen::Ref&lt; const Eigen::Vector3&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt;&gt; &amp;p0, const Eigen::Ref&lt; const Eigen::Vector3&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt;&gt; &amp;p1, const Eigen::Ref&lt; const Eigen::Vector3&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt;&gt; &amp;p2, const Eigen::Ref&lt; const Eigen::Vector3&lt; <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &gt;&gt; &amp;p3)</td></tr>
@@ -250,20 +252,9 @@ Functions</h2></td></tr>
 <tr class="separator:ac02c195a92eb9c9582984a2d94fba796"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfdeacbb173bcc7af1a15955b29c78be"><td class="memItemLeft" align="right" valign="top">std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#abfdeacbb173bcc7af1a15955b29c78be">vector_hash</a> (const std::vector&lt; std::size_t &gt; &amp;data)</td></tr>
 <tr class="separator:abfdeacbb173bcc7af1a15955b29c78be"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae2c7b3137347cfeaffd619c0f6511b85"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:ae2c7b3137347cfeaffd619c0f6511b85"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#ae2c7b3137347cfeaffd619c0f6511b85">vector_unique</a> (std::vector&lt; T &gt; &amp;v)</td></tr>
-<tr class="separator:ae2c7b3137347cfeaffd619c0f6511b85"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad6ff5945e175fd6e1b15537435aa22bd"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#ad6ff5945e175fd6e1b15537435aa22bd">v_index</a> (const std::array&lt; int64_t, 3 &gt; &amp;resolution, const std::array&lt; int64_t, 3 &gt; &amp;index)</td></tr>
-<tr class="separator:ad6ff5945e175fd6e1b15537435aa22bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81fce5e5de645986df7e56f010ca2886"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a81fce5e5de645986df7e56f010ca2886">generate_background_mesh</a> (const <a class="el" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> &amp;bbox_min, const <a class="el" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> &amp;bbox_max, const std::array&lt; int64_t, 3 &gt; &amp;resolution, <a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> &amp;background_TV, <a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> &amp;background_V)</td></tr>
-<tr class="separator:a81fce5e5de645986df7e56f010ca2886"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa7ad5fef5b4d54d3da8204235650f6e8"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; int64_t, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#aa7ad5fef5b4d54d3da8204235650f6e8">triangulate_polygon_face</a> (std::vector&lt; <a class="el" href="namespacewmtk.html#a0d65e04e0096a0de2da1771c32b380ef">Vector3r</a> &gt; points)</td></tr>
-<tr class="separator:aa7ad5fef5b4d54d3da8204235650f6e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8d59b38c3560ad4f49865c212b854456"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt;, std::vector&lt; std::array&lt; bool, 4 &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456">generate_raw_tetmesh_from_input_surface</a> (const <a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> &amp;V, const <a class="el" href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">RowVectors3l</a> &amp;F, const double eps_target, const <a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> &amp;bgV=<a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a>(), const <a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> &amp;bgF=<a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a>())</td></tr>
-<tr class="memdesc:a8d59b38c3560ad4f49865c212b854456"><td class="mdescLeft">&#160;</td><td class="mdescRight">input a triangle surface mesh, embed it into a regular grid and generate a tetmesh, track the input surfaces on the tetmesh  <a href="namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456">More...</a><br /></td></tr>
-<tr class="separator:a8d59b38c3560ad4f49865c212b854456"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ea0d7c148b4066c6692a8e31c7b7b7a"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt;, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">wmtk::Mesh</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a4ea0d7c148b4066c6692a8e31c7b7b7a">generate_raw_tetmesh_with_surface_from_input</a> (const <a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> &amp;V, const <a class="el" href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">RowVectors3l</a> &amp;F, const double eps_target, const <a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> &amp;bgV, const <a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> &amp;bgF)</td></tr>
-<tr class="separator:a4ea0d7c148b4066c6692a8e31c7b7b7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3787bc051f3f90a7a2f0571c47f01957"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt;, std::vector&lt; std::array&lt; bool, 4 &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a3787bc051f3f90a7a2f0571c47f01957">generate_raw_tetmesh_from_input_surface</a> (const <a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> &amp;V, const <a class="el" href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">RowVectors3l</a> &amp;F, const <a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> &amp;bgV, const <a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> &amp;bgT)</td></tr>
+<tr class="memdesc:a3787bc051f3f90a7a2f0571c47f01957"><td class="mdescLeft">&#160;</td><td class="mdescRight">input a triangle surface mesh, embed it into a background tet mesh, track the input surfaces on the tetmesh  <a href="namespacewmtk_1_1utils.html#a3787bc051f3f90a7a2f0571c47f01957">More...</a><br /></td></tr>
+<tr class="separator:a3787bc051f3f90a7a2f0571c47f01957"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Typedef Documentation</h2>
 <a id="a02b16973a282fa6a4702845ea983d170"></a>
@@ -500,9 +491,9 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00006">6</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00028">28</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00361">wmtk::io::MshReader::validate()</a>, <a class="el" href="orient_8cpp_source.html#l00144">wmtk_orient2d()</a>, and <a class="el" href="orient_8cpp_source.html#l00096">wmtk_orient3d()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00361">wmtk::io::MshReader::validate()</a>, <a class="el" href="orient_8cpp_source.html#l00230">wmtk_orient2d()</a>, and <a class="el" href="orient_8cpp_source.html#l00155">wmtk_orient3d()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -543,72 +534,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a81fce5e5de645986df7e56f010ca2886"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a81fce5e5de645986df7e56f010ca2886">&#9670;&nbsp;</a></span>generate_background_mesh()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void wmtk::utils::generate_background_mesh </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> &amp;&#160;</td>
-          <td class="paramname"><em>bbox_min</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a8f74118e77f6f9bce5ebc12a1be515f3">Vector3d</a> &amp;&#160;</td>
-          <td class="paramname"><em>bbox_max</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::array&lt; int64_t, 3 &gt; &amp;&#160;</td>
-          <td class="paramname"><em>resolution</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> &amp;&#160;</td>
-          <td class="paramname"><em>background_TV</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> &amp;&#160;</td>
-          <td class="paramname"><em>background_V</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00033">33</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
-
-<p class="reference">References <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00027">v_index()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00144">generate_raw_tetmesh_from_input_surface()</a>.</p>
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a81fce5e5de645986df7e56f010ca2886_cgraph.svg" width="375" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
-</div>
-</div>
-<div class="dynheader">
-Here is the caller graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a81fce5e5de645986df7e56f010ca2886_icgraph.svg" width="666" height="134"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
-</div>
-</div>
-
-</div>
-</div>
-<a id="a8d59b38c3560ad4f49865c212b854456"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8d59b38c3560ad4f49865c212b854456">&#9670;&nbsp;</a></span>generate_raw_tetmesh_from_input_surface()</h2>
+<a id="a3787bc051f3f90a7a2f0571c47f01957"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3787bc051f3f90a7a2f0571c47f01957">&#9670;&nbsp;</a></span>generate_raw_tetmesh_from_input_surface()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -628,87 +555,6 @@ Here is the caller graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const double&#160;</td>
-          <td class="paramname"><em>eps_target</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> &amp;&#160;</td>
-          <td class="paramname"><em>bgV</em> = <code><a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a>()</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> &amp;&#160;</td>
-          <td class="paramname"><em>bgF</em> = <code><a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a>()</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>input a triangle surface mesh, embed it into a regular grid and generate a tetmesh, track the input surfaces on the tetmesh </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">V</td><td>input vertex coordinates </td></tr>
-    <tr><td class="paramname">F</td><td>input FV matrix </td></tr>
-    <tr><td class="paramname">target_edge_length</td><td>target edge length </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>[tetmesh ptr, tet local faces on input surface] </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00144">144</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
-
-<p class="reference">References <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00033">generate_background_mesh()</a>, <a class="el" href="_logger_8cpp_source.html#l00101">wmtk::log_and_throw_error()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="mesh__utils_8hpp_source.html#l00009">wmtk::mesh_utils::set_matrix_attribute()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00084">triangulate_polygon_face()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00021">vector_unique()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="orient_8cpp_source.html#l00052">wmtk_orient3d()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00562">generate_raw_tetmesh_with_surface_from_input()</a>, and <a class="el" href="triangle__insertion_8cpp_source.html#l00026">wmtk::components::triangle_insertion()</a>.</p>
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a8d59b38c3560ad4f49865c212b854456_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
-</div>
-</div>
-<div class="dynheader">
-Here is the caller graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a8d59b38c3560ad4f49865c212b854456_icgraph.svg" width="456" height="134"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
-</div>
-</div>
-
-</div>
-</div>
-<a id="a4ea0d7c148b4066c6692a8e31c7b7b7a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4ea0d7c148b4066c6692a8e31c7b7b7a">&#9670;&nbsp;</a></span>generate_raw_tetmesh_with_surface_from_input()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::tuple&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt;, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">wmtk::Mesh</a> &gt; &gt; wmtk::utils::generate_raw_tetmesh_with_surface_from_input </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> &amp;&#160;</td>
-          <td class="paramname"><em>V</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">RowVectors3l</a> &amp;&#160;</td>
-          <td class="paramname"><em>F</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const double&#160;</td>
-          <td class="paramname"><em>eps_target</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">const <a class="el" href="namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd">RowVectors3d</a> &amp;&#160;</td>
           <td class="paramname"><em>bgV</em>, </td>
         </tr>
@@ -716,7 +562,7 @@ Here is the caller graph for this function:</div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const <a class="el" href="namespacewmtk.html#a68b3d5c28c73e45250340c19898d8ed1">RowVectors4l</a> &amp;&#160;</td>
-          <td class="paramname"><em>bgF</em>&#160;</td>
+          <td class="paramname"><em>bgT</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -726,13 +572,33 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00562">562</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
+<p>input a triangle surface mesh, embed it into a background tet mesh, track the input surfaces on the tetmesh </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">V</td><td>input vertex coordinates </td></tr>
+    <tr><td class="paramname">F</td><td>input FV matrix </td></tr>
+    <tr><td class="paramname">bgV</td><td>input background vertex coordinates </td></tr>
+    <tr><td class="paramname">bgT</td><td>input background TV (tets) matrix </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>[tetmesh ptr, tet local faces on input surface] </dd></dl>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00202">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00144">generate_raw_tetmesh_from_input_surface()</a>, <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00017">wmtk::PE</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">PF</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00006">PT</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00016">wmtk::PV</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00025">25</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_logger_8cpp_source.html#l00058">wmtk::logger()</a>, <a class="el" href="mesh__utils_8hpp_source.html#l00009">wmtk::mesh_utils::set_matrix_attribute()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="triangle__insertion_8cpp_source.html#l00027">wmtk::components::triangle_insertion::triangle_insertion()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a4ea0d7c148b4066c6692a8e31c7b7b7a_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a3787bc051f3f90a7a2f0571c47f01957_cgraph.svg" width="100%" height="465"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a3787bc051f3f90a7a2f0571c47f01957_icgraph.svg" width="459" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -1050,6 +916,42 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
+<a id="a7249bf35b7f8ef39d74da6ad336da021"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7249bf35b7f8ef39d74da6ad336da021">&#9670;&nbsp;</a></span>rational_to_interval()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">vol_rem::interval_number wmtk::utils::rational_to_interval </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_rational.html">Rational</a> &amp;&#160;</td>
+          <td class="paramname"><em>r</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00014">14</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_rational_8hpp_source.html#l00086">wmtk::Rational::is_rounded()</a>, and <a class="el" href="_rational_8cpp_source.html#l00317">wmtk::Rational::to_double()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="orient_8cpp_source.html#l00177">wmtk_orient2d()</a>, and <a class="el" href="orient_8cpp_source.html#l00075">wmtk_orient3d()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a7249bf35b7f8ef39d74da6ad336da021_cgraph.svg" width="355" height="118"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a7249bf35b7f8ef39d74da6ad336da021_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
 <a id="a64740d03539293929ff81b84cd082485"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a64740d03539293929ff81b84cd082485">&#9670;&nbsp;</a></span>set_random_seed()</h2>
 
@@ -1211,72 +1113,6 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="aa7ad5fef5b4d54d3da8204235650f6e8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa7ad5fef5b4d54d3da8204235650f6e8">&#9670;&nbsp;</a></span>triangulate_polygon_face()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt;std::array&lt;int64_t, 3&gt; &gt; wmtk::utils::triangulate_polygon_face </td>
-          <td>(</td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="namespacewmtk.html#a0d65e04e0096a0de2da1771c32b380ef">Vector3r</a> &gt;&#160;</td>
-          <td class="paramname"><em>points</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00084">84</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00144">generate_raw_tetmesh_from_input_surface()</a>.</p>
-<div class="dynheader">
-Here is the caller graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_aa7ad5fef5b4d54d3da8204235650f6e8_icgraph.svg" width="100%" height="400"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
-</div>
-</div>
-
-</div>
-</div>
-<a id="ad6ff5945e175fd6e1b15537435aa22bd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad6ff5945e175fd6e1b15537435aa22bd">&#9670;&nbsp;</a></span>v_index()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int64_t wmtk::utils::v_index </td>
-          <td>(</td>
-          <td class="paramtype">const std::array&lt; int64_t, 3 &gt; &amp;&#160;</td>
-          <td class="paramname"><em>resolution</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::array&lt; int64_t, 3 &gt; &amp;&#160;</td>
-          <td class="paramname"><em>index</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00027">27</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00033">generate_background_mesh()</a>, and <a class="el" href="to__points_8cpp_source.html#l00016">wmtk::components::to_points()</a>.</p>
-<div class="dynheader">
-Here is the caller graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_ad6ff5945e175fd6e1b15537435aa22bd_icgraph.svg" width="100%" height="422"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
-</div>
-</div>
-
-</div>
-</div>
 <a id="a7d89b3a11163a2c07d601f86b7815085"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7d89b3a11163a2c07d601f86b7815085">&#9670;&nbsp;</a></span>vector_hash() <span class="overload">[1/6]</span></h2>
 
@@ -1411,36 +1247,6 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
-<a id="ae2c7b3137347cfeaffd619c0f6511b85"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae2c7b3137347cfeaffd619c0f6511b85">&#9670;&nbsp;</a></span>vector_unique()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class T &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void wmtk::utils::vector_unique </td>
-          <td>(</td>
-          <td class="paramtype">std::vector&lt; T &gt; &amp;&#160;</td>
-          <td class="paramname"><em>v</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00021">21</a> of file <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html">VolumeRemesherTriangleInsertion.cpp</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00144">generate_raw_tetmesh_from_input_surface()</a>.</p>
-<div class="dynheader">
-Here is the caller graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_ae2c7b3137347cfeaffd619c0f6511b85_icgraph.svg" width="648" height="134"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
-</div>
-</div>
-
-</div>
-</div>
 <a id="a6ac13755b6465d9ea3095d42f0ef4672"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6ac13755b6465d9ea3095d42f0ef4672">&#9670;&nbsp;</a></span>wmtk_orient1d() <span class="overload">[1/2]</span></h2>
 
@@ -1467,7 +1273,7 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00164">164</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00250">250</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>.</p>
 <div class="dynheader">
@@ -1505,7 +1311,7 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00169">169</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00255">255</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1541,9 +1347,9 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00144">144</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00230">230</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="orient_8cpp_source.html#l00006">exactinit()</a>.</p>
+<p class="reference">References <a class="el" href="orient_8cpp_source.html#l00028">exactinit()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1585,9 +1391,17 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00118">118</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00177">177</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="orient_8cpp_source.html#l00014">rational_to_interval()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>, <a class="el" href="_a_m_i_p_s_optimization_smoothing_8cpp_source.html#l00190">wmtk::operations::AMIPSOptimizationSmoothing::WMTKAMIPSProblem&lt; S &gt;::is_step_valid()</a>, and <a class="el" href="_a_m_i_p_s_optimization_smoothing_periodic_8cpp_source.html#l00193">wmtk::operations::AMIPSOptimizationSmoothingPeriodic::WMTKAMIPSProblem&lt; S &gt;::is_step_valid()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a6310fa1d5aca1db566ef5eb4508ec956_cgraph.svg" width="604" height="118"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -1617,11 +1431,11 @@ template&lt;typename Derived &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="orient_8hpp_source.html#l00032">32</a> of file <a class="el" href="orient_8hpp_source.html">orient.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="orient_8cpp_source.html#l00052">wmtk_orient3d()</a>.</p>
+<p class="reference">References <a class="el" href="orient_8cpp_source.html#l00075">wmtk_orient3d()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_ae9909d772a51855effa0ab75c701df5c_cgraph.svg" width="462" height="38"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_ae9909d772a51855effa0ab75c701df5c_cgraph.svg" width="100%" height="388"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -1665,9 +1479,9 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00096">96</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00155">155</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="orient_8cpp_source.html#l00006">exactinit()</a>.</p>
+<p class="reference">References <a class="el" href="orient_8cpp_source.html#l00028">exactinit()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1715,9 +1529,17 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00052">52</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="orient_8cpp_source.html#l00075">75</a> of file <a class="el" href="orient_8cpp_source.html">orient.cpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>, <a class="el" href="_collapse_energy_before_invariant_8cpp_source.html#l00024">wmtk::invariants::CollapseEnergyBeforeInvariant::before()</a>, <a class="el" href="_collapse_energy_before_invariant_double_8cpp_source.html#l00024">wmtk::invariants::CollapseEnergyBeforeInvariantDouble::before()</a>, <a class="el" href="_collapse_soft_energy_before_invariant_8cpp_source.html#l00029">wmtk::invariants::CollapseSoftEnergyBeforeInvariant::before()</a>, <a class="el" href="_swap23_energy_before_invariant_8cpp_source.html#l00014">wmtk::Swap23EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap32_energy_before_invariant_8cpp_source.html#l00016">wmtk::Swap32EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap32_energy_before_invariant_double_8cpp_source.html#l00016">wmtk::Swap32EnergyBeforeInvariantDouble::before()</a>, <a class="el" href="_swap44_energy_before_invariant_8cpp_source.html#l00019">wmtk::Swap44EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap44_energy_before_invariant_double_8cpp_source.html#l00019">wmtk::Swap44EnergyBeforeInvariantDouble::before()</a>, <a class="el" href="_swap56_energy_before_invariant_8cpp_source.html#l00019">wmtk::Swap56EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap56_energy_before_invariant_double_8cpp_source.html#l00019">wmtk::Swap56EnergyBeforeInvariantDouble::before()</a>, <a class="el" href="internal_2_c_d_t_8cpp_source.html#l00013">wmtk::components::internal::CDT_internal()</a>, <a class="el" href="_volume_remesher_triangle_insertion_8cpp_source.html#l00144">generate_raw_tetmesh_from_input_surface()</a>, <a class="el" href="_a_m_i_p_s_optimization_smoothing_8cpp_source.html#l00190">wmtk::operations::AMIPSOptimizationSmoothing::WMTKAMIPSProblem&lt; S &gt;::is_step_valid()</a>, <a class="el" href="_a_m_i_p_s_optimization_smoothing_periodic_8cpp_source.html#l00193">wmtk::operations::AMIPSOptimizationSmoothingPeriodic::WMTKAMIPSProblem&lt; S &gt;::is_step_valid()</a>, <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l00112">wmtk::components::internal::periodic_optimization()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00361">wmtk::io::MshReader::validate()</a>, <a class="el" href="wildmeshing_8cpp_source.html#l00407">wmtk::components::wildmeshing()</a>, and <a class="el" href="orient_8hpp_source.html#l00032">wmtk_orient3d()</a>.</p>
+<p class="reference">References <a class="el" href="orient_8cpp_source.html#l00014">rational_to_interval()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>, <a class="el" href="_collapse_energy_before_invariant_8cpp_source.html#l00024">wmtk::invariants::CollapseEnergyBeforeInvariant::before()</a>, <a class="el" href="_collapse_energy_before_invariant_double_8cpp_source.html#l00024">wmtk::invariants::CollapseEnergyBeforeInvariantDouble::before()</a>, <a class="el" href="_collapse_soft_energy_before_invariant_8cpp_source.html#l00029">wmtk::invariants::CollapseSoftEnergyBeforeInvariant::before()</a>, <a class="el" href="_swap23_energy_before_invariant_8cpp_source.html#l00014">wmtk::Swap23EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap32_energy_before_invariant_8cpp_source.html#l00016">wmtk::Swap32EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap32_energy_before_invariant_double_8cpp_source.html#l00016">wmtk::Swap32EnergyBeforeInvariantDouble::before()</a>, <a class="el" href="_swap44_energy_before_invariant_8cpp_source.html#l00019">wmtk::Swap44EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap44_energy_before_invariant_double_8cpp_source.html#l00019">wmtk::Swap44EnergyBeforeInvariantDouble::before()</a>, <a class="el" href="_swap56_energy_before_invariant_8cpp_source.html#l00019">wmtk::Swap56EnergyBeforeInvariant::before()</a>, <a class="el" href="_swap56_energy_before_invariant_double_8cpp_source.html#l00019">wmtk::Swap56EnergyBeforeInvariantDouble::before()</a>, <a class="el" href="internal_2_c_d_t_8cpp_source.html#l00013">wmtk::components::internal::CDT_internal()</a>, <a class="el" href="_a_m_i_p_s_optimization_smoothing_8cpp_source.html#l00190">wmtk::operations::AMIPSOptimizationSmoothing::WMTKAMIPSProblem&lt; S &gt;::is_step_valid()</a>, <a class="el" href="_a_m_i_p_s_optimization_smoothing_periodic_8cpp_source.html#l00193">wmtk::operations::AMIPSOptimizationSmoothingPeriodic::WMTKAMIPSProblem&lt; S &gt;::is_step_valid()</a>, <a class="el" href="internal_2periodic__optimization_8cpp_source.html#l00112">wmtk::components::internal::periodic_optimization()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00361">wmtk::io::MshReader::validate()</a>, <a class="el" href="wildmeshing_8cpp_source.html#l00407">wmtk::components::wildmeshing()</a>, and <a class="el" href="orient_8hpp_source.html#l00032">wmtk_orient3d()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1utils_a34133dc338089a5141f8e84feecb81ce_cgraph.svg" width="604" height="118"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">

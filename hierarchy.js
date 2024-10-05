@@ -45,6 +45,7 @@ var hierarchy =
     [ "wmtk::utils::metaprogramming::detail::cell_dimension< TriMesh >", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1cell__dimension_3_01_tri_mesh_01_4.html", null ],
     [ "wmtk::attribute::internal::CheckpointScope", "classwmtk_1_1attribute_1_1internal_1_1_checkpoint_scope.html", null ],
     [ "wmtk::multimesh::MultiMeshManager::ChildData", "structwmtk_1_1multimesh_1_1_multi_mesh_manager_1_1_child_data.html", null ],
+    [ "wmtk::components::triangle_insertion::ChildMeshes", "classwmtk_1_1components_1_1triangle__insertion_1_1_child_meshes.html", null ],
     [ "wmtk::simplex::ClosedStarIterable", "classwmtk_1_1simplex_1_1_closed_star_iterable.html", null ],
     [ "wmtk::components::cmp_l", "structwmtk_1_1components_1_1cmp__l.html", null ],
     [ "wmtk::components::cmp_s", "structwmtk_1_1components_1_1cmp__s.html", null ],
@@ -185,7 +186,7 @@ var hierarchy =
     [ "wmtk::operations::tet_mesh::EdgeOperationData::IncidentFaceData", "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_face_data.html", null ],
     [ "wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html", null ],
     [ "wmtk::operations::tet_mesh::EdgeOperationData::IncidentTetData", "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html", null ],
-    [ "wmtk::components::input::InputOptions", "structwmtk_1_1components_1_1input_1_1_input_options.html", null ],
+    [ "wmtk::components::input::InputOptions", "classwmtk_1_1components_1_1input_1_1_input_options.html", null ],
     [ "wmtk::invariants::Invariant", "classwmtk_1_1invariants_1_1_invariant.html", [
       [ "wmtk::EnergyFilterInvariant", "classwmtk_1_1_energy_filter_invariant.html", null ],
       [ "wmtk::MaxEdgeLengthInvariant", "classwmtk_1_1_max_edge_length_invariant.html", null ],

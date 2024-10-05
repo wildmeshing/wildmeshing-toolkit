@@ -128,6 +128,8 @@ $(document).ready(function(){initNavTree('_volume_remesher_triangle_insertion_8c
 <code>#include &lt;<a class="el" href="mesh__utils_8hpp_source.html">wmtk/utils/mesh_utils.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="orient_8hpp_source.html">wmtk/utils/orient.hpp</a>&gt;</code><br />
 <code>#include &lt;VolumeRemesher/embed.h&gt;</code><br />
+<code>#include &lt;numeric&gt;</code><br />
+<code>#include &lt;polysolve/Utils.hpp&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for VolumeRemesherTriangleInsertion.cpp:</div>
 <div class="dyncontent">
@@ -146,20 +148,9 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ae2c7b3137347cfeaffd619c0f6511b85"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:ae2c7b3137347cfeaffd619c0f6511b85"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#ae2c7b3137347cfeaffd619c0f6511b85">wmtk::utils::vector_unique</a> (std::vector&lt; T &gt; &amp;v)</td></tr>
-<tr class="separator:ae2c7b3137347cfeaffd619c0f6511b85"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad6ff5945e175fd6e1b15537435aa22bd"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#ad6ff5945e175fd6e1b15537435aa22bd">wmtk::utils::v_index</a> (const std::array&lt; int64_t, 3 &gt; &amp;resolution, const std::array&lt; int64_t, 3 &gt; &amp;index)</td></tr>
-<tr class="separator:ad6ff5945e175fd6e1b15537435aa22bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81fce5e5de645986df7e56f010ca2886"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a81fce5e5de645986df7e56f010ca2886">wmtk::utils::generate_background_mesh</a> (const Vector3d &amp;bbox_min, const Vector3d &amp;bbox_max, const std::array&lt; int64_t, 3 &gt; &amp;resolution, RowVectors4l &amp;background_TV, RowVectors3d &amp;background_V)</td></tr>
-<tr class="separator:a81fce5e5de645986df7e56f010ca2886"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa7ad5fef5b4d54d3da8204235650f6e8"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; int64_t, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#aa7ad5fef5b4d54d3da8204235650f6e8">wmtk::utils::triangulate_polygon_face</a> (std::vector&lt; Vector3r &gt; points)</td></tr>
-<tr class="separator:aa7ad5fef5b4d54d3da8204235650f6e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8d59b38c3560ad4f49865c212b854456"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt;, std::vector&lt; std::array&lt; bool, 4 &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456">wmtk::utils::generate_raw_tetmesh_from_input_surface</a> (const RowVectors3d &amp;V, const RowVectors3l &amp;F, const double eps_target, const RowVectors3d &amp;bgV=RowVectors3d(), const RowVectors4l &amp;bgF=RowVectors4l())</td></tr>
-<tr class="memdesc:a8d59b38c3560ad4f49865c212b854456"><td class="mdescLeft">&#160;</td><td class="mdescRight">input a triangle surface mesh, embed it into a regular grid and generate a tetmesh, track the input surfaces on the tetmesh  <a href="namespacewmtk_1_1utils.html#a8d59b38c3560ad4f49865c212b854456">More...</a><br /></td></tr>
-<tr class="separator:a8d59b38c3560ad4f49865c212b854456"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ea0d7c148b4066c6692a8e31c7b7b7a"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt;, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">wmtk::Mesh</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a4ea0d7c148b4066c6692a8e31c7b7b7a">wmtk::utils::generate_raw_tetmesh_with_surface_from_input</a> (const RowVectors3d &amp;V, const RowVectors3l &amp;F, const double eps_target, const RowVectors3d &amp;bgV, const RowVectors4l &amp;bgF)</td></tr>
-<tr class="separator:a4ea0d7c148b4066c6692a8e31c7b7b7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3787bc051f3f90a7a2f0571c47f01957"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a> &gt;, std::vector&lt; std::array&lt; bool, 4 &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1utils.html#a3787bc051f3f90a7a2f0571c47f01957">wmtk::utils::generate_raw_tetmesh_from_input_surface</a> (const RowVectors3d &amp;V, const RowVectors3l &amp;F, const RowVectors3d &amp;bgV, const RowVectors4l &amp;bgT)</td></tr>
+<tr class="memdesc:a3787bc051f3f90a7a2f0571c47f01957"><td class="mdescLeft">&#160;</td><td class="mdescRight">input a triangle surface mesh, embed it into a background tet mesh, track the input surfaces on the tetmesh  <a href="namespacewmtk_1_1utils.html#a3787bc051f3f90a7a2f0571c47f01957">More...</a><br /></td></tr>
+<tr class="separator:a3787bc051f3f90a7a2f0571c47f01957"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
