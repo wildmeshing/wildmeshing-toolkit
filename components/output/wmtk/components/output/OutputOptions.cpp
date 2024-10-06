@@ -1,12 +1,13 @@
 
 #include "OutputOptions.hpp"
+#include <fmt/std.h>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 
 namespace wmtk::components::output {
 
-bool OutputOptions::operator==(const OutputOptions& o) const = default;
+//bool OutputOptions::operator==(const OutputOptions& o) const = default;
 }
 
 namespace nlohmann {
@@ -32,11 +33,14 @@ void adl_serializer<wmtk::components::output::OutputOptions>::from_json(const js
 {
     if (j.is_string()) {
         v.file = j.get<std::string>();
-        return;
-    }
+    } else {
     v.file = j["file"].get<std::string>();
+    }
     if (j.contains("type")) {
         v.type = j["type"];
+    } else {
+        v.type = v.file.extension();
+        wmtk::logger().debug("Guessing extension type of [{}] is [{}]", v.file, v.type);
     }
     if (j.contains("position_attribute")) {
         v.position_attribute = j["position_attribute"];
