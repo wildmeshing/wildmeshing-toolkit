@@ -96,7 +96,7 @@ void LinkIterable::Iterator::init()
     if (depth() == 3) {
         const Mesh& mesh = *(m_container->m_mesh);
 
-        m_container->m_visited_link.is_visited(
+        m_container->m_visited_link[m_pt].is_visited(
             mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt)));
     }
 }
@@ -120,7 +120,7 @@ LinkIterable::Iterator& LinkIterable::Iterator::step_depth_3()
 
             while (m_pt < m - s) {
                 // TODO: this checks for the face multiple times. That can be optimized
-                if (!visited.is_visited(
+                if (!visited[m_pt].is_visited(
                         mesh.get_id_simplex(link_tuple, get_primitive_type_from_id(m_pt)))) {
                     *m_it = t;
                     m_t = link_tuple;

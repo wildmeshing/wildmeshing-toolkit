@@ -71,7 +71,8 @@ private:
     TopDimensionCofacesIterable m_tdc_itrbl;
     TopDimensionCofacesIterable::Iterator m_it_end;
 
-    simplex::internal::VisitedArray<simplex::IdSimplex> m_visited_link; // for depth 3 iteration
+    std::array<simplex::internal::VisitedArray<simplex::IdSimplex, 100>, 3>
+        m_visited_link; // for depth 3 iteration
 };
 
 } // namespace wmtk::simplex
