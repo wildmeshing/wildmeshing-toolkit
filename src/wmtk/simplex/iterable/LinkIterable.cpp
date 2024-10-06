@@ -96,7 +96,7 @@ void LinkIterable::Iterator::init()
     if (depth() == 3) {
         const Mesh& mesh = *(m_container->m_mesh);
 
-        m_container->m_visited_link.is_visited(
+        m_container->m_visited_link[m_pt].is_visited(
             mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt)));
     }
 }
