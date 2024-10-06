@@ -107,33 +107,32 @@ LinkIterable::Iterator& LinkIterable::Iterator::step_depth_3()
     const simplex::Simplex& simplex = m_container->m_simplex;
     auto& visited = m_container->m_visited_link;
 
-    const int8_t m = mesh.top_cell_dimension();
-    const int8_t s = get_primitive_type_id(simplex.primitive_type());
+    ++m_pt;
 
-    // iterate for cofaces
-    while (!(*m_it).is_null()) {
-        for (const Tuple& t : cofaces_in_simplex_iterable(
-                 mesh,
-                 simplex::Simplex(mesh, simplex.primitive_type(), *m_it),
-                 mesh.top_simplex_type())) {
-            const Tuple link_tuple = navigate_to_link(t);
-
-            while (m_pt < m - s) {
-                // TODO: this checks for the face multiple times. That can be optimized
-                if (!visited[m_pt].is_visited(
-                        mesh.get_id_simplex(link_tuple, get_primitive_type_from_id(m_pt)))) {
-                    *m_it = t;
-                    m_t = link_tuple;
-                    return *this;
-                }
-                ++m_pt;
-            }
-            m_pt = 0;
-        }
+    if (m_pt == 3) {
+        // go to next cell
+        m_pt = 0;
+        m_edge_counter = 0;
         ++m_it;
+        m_t = navigate_to_link(*m_it);
+        if (m_t.is_null()) {
+            return *this;
+        }
     }
 
-    m_t = navigate_to_link(*m_it);
+    for (; m_edge_counter < 3; ++m_edge_counter) {
+        for (; m_pt < 2; ++m_pt) {
+            if (!visited[m_pt].is_visited(
+                    mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt)))) {
+                return *this;
+            }
+        }
+        m_t = mesh.switch_tuples(m_t, {PrimitiveType::Vertex, PrimitiveType::Edge});
+        m_pt = 0;
+    }
+
+    // return face
+    m_pt = 2;
     return *this;
 }
 
