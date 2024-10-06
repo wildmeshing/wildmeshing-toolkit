@@ -57,6 +57,7 @@ public:
         TopDimensionCofacesIterable::Iterator m_it;
         Tuple m_t;
         int8_t m_pt = 0;
+        int8_t m_edge_counter = 0;
     };
 
 public:
@@ -71,7 +72,8 @@ private:
     TopDimensionCofacesIterable m_tdc_itrbl;
     TopDimensionCofacesIterable::Iterator m_it_end;
 
-    simplex::internal::VisitedArray<simplex::IdSimplex> m_visited_link; // for depth 3 iteration
+    std::array<simplex::internal::VisitedArray<simplex::IdSimplex>, 2>
+        m_visited_link; // for depth 3 iteration
 };
 
 } // namespace wmtk::simplex
