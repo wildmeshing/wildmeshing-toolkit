@@ -108,24 +108,64 @@ bool link_condition_closed_tetmesh(const TetMesh& mesh, const Tuple& edge)
     const Simplex v_a = Simplex::vertex(mesh, edge);
     const Simplex v_b = Simplex::vertex(mesh, mesh.switch_vertex(edge));
     const Simplex e_ab = Simplex::edge(mesh, edge);
-    const SimplexCollection link_a = link(mesh, v_a); // link(a)
-    const SimplexCollection link_b = link(mesh, v_b); // link(b)
-
-    const SimplexCollection link_a_link_b_intersection =
-        SimplexCollection::get_intersection(link_a, link_b);
-
-    //const SimplexCollection link_ab = link(mesh, e_ab); // link(ab)
+    //const SimplexCollection link_a = link(mesh, v_a); // link(a)
+    //const SimplexCollection link_b = link(mesh, v_b); // link(b)
+    //
+    // const SimplexCollection link_a_link_b_intersection =
+    //    SimplexCollection::get_intersection(link_a, link_b);
+    //
+    ////const SimplexCollection link_ab = link(mesh, e_ab); // link(ab)
+    //// return SimplexCollection::are_simplex_collections_equal(link_a_link_b_intersection, link_ab);
+    //
+    // std::vector<simplex::Simplex> link_ab_simplices;
+    // link_ab_simplices.reserve(10);
+    // for (const simplex::IdSimplex& s : link_iterable(mesh, e_ab)) {
+    //    link_ab_simplices.emplace_back(mesh.get_simplex(s));
+    //}
+    // SimplexCollection link_ab(mesh, std::move(link_ab_simplices));
+    // link_ab.sort_and_clean();
+    //
     // return SimplexCollection::are_simplex_collections_equal(link_a_link_b_intersection, link_ab);
 
-    std::vector<simplex::Simplex> link_ab_simplices;
-    link_ab_simplices.reserve(10);
-    for (const simplex::IdSimplex& s : link_iterable(mesh, e_ab)) {
-        link_ab_simplices.emplace_back(mesh.get_simplex(s));
+    std::vector<simplex::IdSimplex> link_a;
+    link_a.reserve(100);
+    for (const simplex::IdSimplex& s : link_iterable(mesh, v_a)) {
+        link_a.emplace_back(s);
     }
-    SimplexCollection link_ab(mesh, std::move(link_ab_simplices));
-    link_ab.sort_and_clean();
+    std::sort(link_a.begin(), link_a.end());
 
-    return SimplexCollection::are_simplex_collections_equal(link_a_link_b_intersection, link_ab);
+    std::vector<simplex::IdSimplex> link_b;
+    link_b.reserve(100);
+    for (const simplex::IdSimplex& s : link_iterable(mesh, v_b)) {
+        link_b.emplace_back(s);
+    }
+    std::sort(link_b.begin(), link_b.end());
+
+    std::vector<simplex::IdSimplex> link_a_link_b_intersection;
+    std::set_intersection(
+        link_a.begin(),
+        link_a.end(),
+        link_b.begin(),
+        link_b.end(),
+        std::back_inserter(link_a_link_b_intersection));
+
+    std::vector<simplex::IdSimplex> link_ab;
+    link_ab.reserve(10);
+    for (const simplex::IdSimplex& s : link_iterable(mesh, e_ab)) {
+        link_ab.emplace_back(s);
+    }
+    std::sort(link_ab.begin(), link_ab.end());
+
+    if (link_a_link_b_intersection.size() != link_ab.size()) {
+        return false;
+    }
+
+    for (size_t i = 0; i < link_ab.size(); ++i) {
+        if (!(link_ab[i] == link_a_link_b_intersection[i])) {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool link_condition(const TetMesh& mesh, const Tuple& edge)
