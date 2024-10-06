@@ -15,9 +15,13 @@ inline auto split_path(const std::string_view& view)
            });
 
 #else
+    std::vector<std::string> tokens;
+    if(view.empty()) {
+        tokens.emplace_back("");
+    
+    } else {
     std::string v = std::string(view);
     std::istringstream iss(v);
-    std::vector<std::string> tokens;
     std::string token;
     if(v.size() > 0 && v[0] == '.') {
         tokens.emplace_back("");
@@ -25,6 +29,7 @@ inline auto split_path(const std::string_view& view)
     while (std::getline(iss, token, '.')) {
         if (!token.empty())
             tokens.push_back(token);
+    }
     }
     return tokens;
 #endif
