@@ -1,6 +1,5 @@
 #include "CofacesSingleDimensionIterable.hpp"
 
-#include <wmtk/simplex/cofaces_in_simplex_iterable.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
@@ -95,20 +94,22 @@ CofacesSingleDimensionIterable::Iterator& CofacesSingleDimensionIterable::Iterat
     const Mesh& mesh = *(m_container->m_mesh);
     const simplex::Simplex& simplex = m_container->m_simplex;
     const PrimitiveType& cofaces_type = m_container->m_cofaces_type;
+    auto& visited = m_container->m_visited_cofaces;
 
     if (!is_coface_d0()) {
-        // iterate for cofaces
+        *m_it = mesh.switch_tuples(*m_it, {PrimitiveType::Edge, PrimitiveType::Triangle});
+        ++m_edge_counter;
+
         while (!(*m_it).is_null()) {
-            for (const Tuple& t : cofaces_in_simplex_iterable(
-                     mesh,
-                     simplex::Simplex(mesh, simplex.primitive_type(), *m_it),
-                     mesh.top_simplex_type())) {
-                if (!m_container->m_visited_cofaces.is_visited(
-                        mesh.get_id_simplex(t, cofaces_type))) {
-                    *m_it = t;
+            for (; m_edge_counter < 3; ++m_edge_counter) {
+                if (!visited.is_visited(mesh.get_id_simplex(*m_it, cofaces_type))) {
                     return *this;
                 }
+                *m_it = mesh.switch_tuples(*m_it, {PrimitiveType::Edge, PrimitiveType::Triangle});
             }
+
+            // go to next cell
+            m_edge_counter = 0;
             ++m_it;
         }
     } else {
