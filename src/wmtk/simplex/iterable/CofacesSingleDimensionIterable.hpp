@@ -58,6 +58,7 @@ public:
     private:
         CofacesSingleDimensionIterable* m_container;
         TopDimensionCofacesIterable::Iterator m_it;
+        int8_t m_edge_counter = 0;
     };
 
 public:
