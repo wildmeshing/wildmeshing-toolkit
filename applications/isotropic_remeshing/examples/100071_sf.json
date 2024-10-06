@@ -1,0 +1,21 @@
+{
+    "input": {
+        "input": {
+            "file": "100071_sf.msh",
+            "name_spec":
+            "main"
+        },
+        "position_attribute": "vertices",
+        "other_position_attributes": [
+            "vertices"
+        ],
+        "iterations": 30,
+        "length_rel": 0.05,
+        "length_abs": -1,
+        "use_for_periodic": false,
+        "dont_disable_split": false,
+        "fix_uv_seam": false,
+        "lock_boundary": false,
+        "output": "100071_sf"
+    }
+}

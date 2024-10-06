@@ -15,6 +15,7 @@
 #include <wmtk/components/isotropic_remeshing/IsotropicRemeshingOptions.hpp>
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
 #include <wmtk/components/output/output.hpp>
+#include <wmtk/components/output/OutputOptions.hpp>
 #include <wmtk/components/utils/resolve_path.hpp>
 
 #include "make_multimesh.hpp"
@@ -98,6 +99,7 @@ int main(int argc, char* argv[])
     // call isotropic_remeshing
 
 
-    const std::string output_path = j["output"];
-    wmtk::components::output::output(*mesh_ptr, j["output"]);
+    auto out_opts = j["output"].get<wmtk::components::output::OutputOptions>();
+    out_opts.position_attribute = options.position_attribute;
+    wmtk::components::output::output(*mesh_ptr, out_opts);
 }
