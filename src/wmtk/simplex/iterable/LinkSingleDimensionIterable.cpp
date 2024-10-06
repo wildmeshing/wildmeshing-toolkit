@@ -107,32 +107,30 @@ void LinkSingleDimensionIterable::Iterator::init()
 LinkSingleDimensionIterable::Iterator& LinkSingleDimensionIterable::Iterator::step_depth_3()
 {
     const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
     const PrimitiveType& link_type = m_container->m_link_type;
+    auto& visited = m_container->m_visited_link;
 
     if (!is_link_d1()) {
-        // iterate for cofaces
-        while (!(*m_it).is_null()) {
-            for (const Tuple& t : cofaces_in_simplex_iterable(
-                     mesh,
-                     simplex::Simplex(mesh, simplex.primitive_type(), *m_it),
-                     mesh.top_simplex_type())) {
-                const Tuple link_tuple = navigate_to_link(t);
+        m_t = mesh.switch_tuples(m_t, {PrimitiveType::Vertex, PrimitiveType::Edge});
+        ++m_edge_counter;
 
-                if (!m_container->m_visited_link.is_visited(
-                        mesh.get_id_simplex(link_tuple, link_type))) {
-                    *m_it = t;
-                    m_t = link_tuple;
+        while (!m_t.is_null()) {
+            for (; m_edge_counter < 3; ++m_edge_counter) {
+                if (!visited.is_visited(mesh.get_id_simplex(m_t, link_type))) {
                     return *this;
                 }
+                m_t = mesh.switch_tuples(m_t, {PrimitiveType::Vertex, PrimitiveType::Edge});
             }
+
+            // go to next cell
+            m_edge_counter = 0;
             ++m_it;
+            m_t = navigate_to_link(*m_it);
         }
     } else {
         ++m_it;
+        m_t = navigate_to_link(*m_it);
     }
-
-    m_t = navigate_to_link(*m_it);
     return *this;
 }
 

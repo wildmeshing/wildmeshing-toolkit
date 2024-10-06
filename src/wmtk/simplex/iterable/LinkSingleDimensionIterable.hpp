@@ -61,6 +61,7 @@ public:
         LinkSingleDimensionIterable* m_container;
         TopDimensionCofacesIterable::Iterator m_it;
         Tuple m_t;
+        int8_t m_edge_counter = 0;
     };
 
 public:
