@@ -163,8 +163,21 @@ bool SimplexCollection::are_simplex_collections_equal(
     if (collection_a.m_simplices.size() != collection_b.m_simplices.size()) {
         return false;
     }
-    SimplexCollection sc_union = SimplexCollection::get_union(collection_a, collection_b);
-    return sc_union.m_simplices.size() == collection_a.m_simplices.size();
+    // SimplexCollection sc_union = SimplexCollection::get_union(collection_a, collection_b);
+    // return sc_union.m_simplices.size() == collection_a.m_simplices.size();
+
+    internal::SimplexEqualFunctor sef(collection_a.mesh());
+
+    for (size_t i = 0; i < collection_a.size(); ++i) {
+        const auto& a = collection_a.simplex_vector()[i];
+        const auto& b = collection_b.simplex_vector()[i];
+
+        if (!sef(a, b)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool SimplexCollection::operator==(const SimplexCollection& other) const
