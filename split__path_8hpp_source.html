@@ -132,21 +132,26 @@ $(document).ready(function(){initNavTree('split__path_8hpp_source.html',''); ini
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;           });</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#else</span></div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    std::string v = std::string(view);</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    std::istringstream iss(v);</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    std::vector&lt;std::string&gt; tokens;</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    std::string token;</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keywordflow">if</span>(v.size() &gt; 0 &amp;&amp; v[0] == <span class="charliteral">&#39;.&#39;</span>) {</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        tokens.emplace_back(<span class="stringliteral">&quot;&quot;</span>);</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    }</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <span class="keywordflow">while</span> (std::getline(iss, token, <span class="charliteral">&#39;.&#39;</span>)) {</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        <span class="keywordflow">if</span> (!token.empty())</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;            tokens.push_back(token);</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    std::vector&lt;std::string&gt; tokens;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keywordflow">if</span>(view.empty()) {</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;        tokens.emplace_back(<span class="stringliteral">&quot;&quot;</span>);</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    </div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    std::string v = std::string(view);</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    std::istringstream iss(v);</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    std::string token;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keywordflow">if</span>(v.size() &gt; 0 &amp;&amp; v[0] == <span class="charliteral">&#39;.&#39;</span>) {</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        tokens.emplace_back(<span class="stringliteral">&quot;&quot;</span>);</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    }</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="keywordflow">return</span> tokens;</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;}</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;} <span class="comment">// namespace wmtk::components::input::internal</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="keywordflow">while</span> (std::getline(iss, token, <span class="charliteral">&#39;.&#39;</span>)) {</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        <span class="keywordflow">if</span> (!token.empty())</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;            tokens.push_back(token);</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    }</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    }</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keywordflow">return</span> tokens;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;}</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;} <span class="comment">// namespace wmtk::components::input::internal</span></div>
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdef"><b>Definition:</b> <a href="autodiff_8h_source.html#l00995">autodiff.h:995</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_1_1input_1_1internal_html"><div class="ttname"><a href="namespacewmtk_1_1components_1_1input_1_1internal.html">wmtk::components::input::internal</a></div><div class="ttdef"><b>Definition:</b> <a href="split__path_8hpp_source.html#l00006">split_path.hpp:6</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_1_1input_1_1internal_html_a653e7d326e49bb052a0b2b15c635bf1c"><div class="ttname"><a href="namespacewmtk_1_1components_1_1input_1_1internal.html#a653e7d326e49bb052a0b2b15c635bf1c">wmtk::components::input::internal::split_path</a></div><div class="ttdeci">auto split_path(const std::string_view &amp;view)</div><div class="ttdef"><b>Definition:</b> <a href="split__path_8hpp_source.html#l00008">split_path.hpp:8</a></div></div>
