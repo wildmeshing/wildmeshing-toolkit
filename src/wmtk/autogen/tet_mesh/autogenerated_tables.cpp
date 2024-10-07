@@ -125,6 +125,9 @@ const int8_t auto_valid_switch_inverse_table[24] = {0,  1, 5,  3,  4,  2,  6,  7
 
 const int8_t auto_valid_tuple_switch_indices[5] = {7, 3, 0, 1, 22};
 
+const int8_t auto_valid_switch_edge_mirror_indices[24] = {
+    6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 14, 15, 12, 13, 17, 16, 20, 21, 18, 19, 23, 22};
+
 const int8_t subdart_preserving_action_1[24][6] = {
     {1, 5, 3, 21, 15, 23}, {1, 3, 5, 15, 21, 23}, {5, 1, 3, 21, 23, 15}, {3, 1, 5, 15, 23, 21},
     {5, 3, 1, 23, 21, 15}, {3, 5, 1, 23, 15, 21}, {1, 21, 15, 5, 3, 23}, {1, 15, 21, 3, 5, 23},

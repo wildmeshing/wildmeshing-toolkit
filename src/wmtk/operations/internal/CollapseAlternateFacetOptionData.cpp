@@ -76,7 +76,7 @@ auto CollapseAlternateFacetOptionData::get_neighbor_action(
         const int8_t& local_boundary_index = local_boundary_indices[index];
 
         if(transform.is_null()) {
-            Dart newd(d.global_id(), wmtk::autogen::utils::edge_mirror(sd,d.local_orientation()));
+            Dart newd(d.global_id(), wmtk::autogen::utils::edge_mirror(sd,d.local_orientation(), input.local_orientation()));
             return map_dart_to_alt(sd,newd,1 - index);
         }
 

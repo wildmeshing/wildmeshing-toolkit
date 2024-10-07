@@ -37,6 +37,8 @@ const int8_t auto_valid_switch_inverse_table[6] = {0, 1, 5, 3, 4, 2};
 
 const int8_t auto_valid_tuple_switch_indices[4] = {3, 0, 1, 4};
 
+const int8_t auto_valid_switch_edge_mirror_indices[6] = {2, 3, 0, 1, 5, 4};
+
 const int8_t subdart_preserving_action_1[6][3] =
     {{4, 1, 0}, {4, 0, 1}, {1, 4, 0}, {0, 4, 1}, {1, 0, 4}, {0, 1, 4}};
 

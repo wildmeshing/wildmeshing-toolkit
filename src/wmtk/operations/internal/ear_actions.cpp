@@ -51,7 +51,7 @@ int8_t ear_action(PrimitiveType mesh_dimension, bool is_left) {
         return right_ear_action(mesh_dimension);
     }
 }
-std::array<int8_t,2> ear_action(PrimitiveType mesh_dimension) {
+std::array<int8_t,2> ear_actions(PrimitiveType mesh_dimension) {
     return std::array<int8_t,2> {{left_ear_action(mesh_dimension),right_ear_action(mesh_dimension)}};
 }
 } // namespace wmtk::operations::internal

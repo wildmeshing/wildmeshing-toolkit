@@ -34,8 +34,8 @@ class SimplexComplex:
                      for d in range(len(ss)-1))
 
     def valid_tuple_index_as_simplicial_set(self, index):
-        t = valid_tuple_from_valid_index(index)
-        return self
+        t = self.valid_tuple_from_valid_index(index)
+        return self.valid_tuple_as_simplicial_set(t)
 
     def simplicial_set_as_valid_tuple_index(self,ss):
         tup = self.simplicial_set_as_valid_tuple(ss)
@@ -127,18 +127,15 @@ def valid_switch_edge_mirror_table(sc):
     size = sc.valid_tuple_size()
 
     def swap_01(s):
-        a = s.index(0)
-        b = s.index(1)
-        assert(a != -1)
-        assert(b != -1)
-        r = s.copy()
-        r[a] = 1
-        r[b] = 0
-        return r
+        def f(x):
+            if x == 0: return 1
+            elif x == 1: return 0
+            else: return x
+        return tuple(map(f,s))
 
 
 
-    ss = [sc.valid_tuple_as_simplicial_set(i) for i in range(size)]
+    ss = [sc.valid_tuple_index_as_simplicial_set(i) for i in range(size)]
     mirror_ss = list(map(swap_01,ss))
     return list(map(sc.simplicial_set_as_valid_tuple_index,mirror_ss))
 

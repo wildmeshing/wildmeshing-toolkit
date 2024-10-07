@@ -141,14 +141,14 @@ std::array<Tuple, 2> CollapseAlternateFacetData::get_alternatives(
         wmtk::multimesh::utils::find_local_dart_action(mesh_pt, t_dart, data.input);
     auto map = [action, &sd, &data, ear_orientations](const size_t index) -> Tuple {
 
-        const int8_t ear_orientation = ear_orientation[index];
+        //const int8_t ear_orientation = ear_orientation[index];
 
-        const int8_t in_ear_action =
-            wmtk::autogen::find_local_dart_action(sd, t_dart.local_orientation(), ear_orientation);
+        //const int8_t in_ear_action =
+        //    wmtk::autogen::find_local_dart_action(sd, t_dart.local_orientation(), ear_orientation);
 
-        if(wmtk::autogen::subgroup::can_convert(mesh_pt, mesh_pt - 1, in_ear_action)) {
+        //if(wmtk::autogen::subgroup::can_convert(mesh_pt, mesh_pt - 1, in_ear_action)) {
 
-        }
+        //}
         // const PrimitiveType mappable_dart_dimension = a;
         // if (transform.is_null() || mappable_dart_dimension < simplex_dimension) {
         //     return {};
