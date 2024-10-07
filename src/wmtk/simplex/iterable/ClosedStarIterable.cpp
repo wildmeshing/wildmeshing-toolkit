@@ -29,6 +29,11 @@ ClosedStarIterable::Iterator::Iterator(ClosedStarIterable& container, const Tupl
     m_pt = get_primitive_type_id(container.m_simplex.primitive_type());
     m_sub_pt = 0;
 
+    if (depth() == 3) {
+        m_sub_pt = m_pt;
+        m_phase = IteratorPhase::OpenStar;
+    }
+
     init();
 }
 
@@ -262,39 +267,70 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_depth_3()
 {
     const Mesh& mesh = *(m_container->m_mesh);
     const simplex::Simplex& simplex = m_container->m_simplex;
-    auto& visited = m_container->m_visited_cofaces;
+    auto& visited_c = m_container->m_visited_cofaces;
+    auto& visited_l = m_container->m_visited_link;
 
     assert(mesh.top_simplex_type() == PrimitiveType::Tetrahedron);
     assert(simplex.primitive_type() == PrimitiveType::Vertex);
 
-    ++m_pt;
+    ++m_sub_pt;
+    while (true) {
+        if (m_phase == IteratorPhase::OpenStar) {
+            if (m_sub_pt == 4) {
+                // go to link
+                m_t = navigate_to_link(*m_it);
+                m_sub_pt = 0;
+                m_face_counter = 0;
+                m_phase = IteratorPhase::Link;
 
-    if (m_pt == 4) {
-        // go to next cell
-        m_pt = 1;
-        m_face_counter = 0;
-        ++m_it;
-        m_t = *m_it;
-        if (m_t.is_null()) {
-            m_pt = -1;
-            return *this;
-        }
-    }
+            } else {
+                for (; m_face_counter < 3; ++m_face_counter) {
+                    for (; m_sub_pt < 3; ++m_sub_pt) {
+                        if (!visited_c[m_sub_pt - 1].is_visited(
+                                mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_sub_pt)))) {
+                            return *this;
+                        }
+                    }
+                    m_t = mesh.switch_tuples(m_t, {PrimitiveType::Edge, PrimitiveType::Triangle});
+                    m_sub_pt = 1;
+                }
 
-    for (; m_face_counter < 3; ++m_face_counter) {
-        for (; m_pt < 3; ++m_pt) {
-            if (!visited[m_pt - 1].is_visited(
-                    mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt)))) {
+                // return tet
+                m_sub_pt = 3;
                 return *this;
             }
         }
-        m_t = mesh.switch_tuples(m_t, {PrimitiveType::Edge, PrimitiveType::Triangle});
-        m_pt = 1;
-    }
+        if (m_phase == IteratorPhase::Link) {
+            if (m_sub_pt == 3) {
+                // go to next cell
+                m_phase = IteratorPhase::OpenStar;
+                m_sub_pt = 1;
+                m_face_counter = 0;
+                ++m_it;
+                m_t = *m_it;
+                if (m_t.is_null()) {
+                    m_pt = -1;
+                    m_sub_pt = m_pt;
+                    return *this;
+                }
+            } else {
+                for (; m_face_counter < 3; ++m_face_counter) {
+                    for (; m_sub_pt < 2; ++m_sub_pt) {
+                        if (!visited_l[m_sub_pt].is_visited(
+                                mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_sub_pt)))) {
+                            return *this;
+                        }
+                    }
+                    m_t = mesh.switch_tuples(m_t, {PrimitiveType::Vertex, PrimitiveType::Edge});
+                    m_sub_pt = 0;
+                }
 
-    // return tet
-    m_pt = 3;
-    return *this;
+                // return face
+                m_sub_pt = 2;
+                return *this;
+            }
+        }
+    }
 }
 
 Tuple ClosedStarIterable::Iterator::navigate_to_link(Tuple t)

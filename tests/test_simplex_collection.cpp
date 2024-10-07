@@ -1499,6 +1499,122 @@ TEST_CASE("simplex_closed_star_tri_iterable", "[simplex_collection][iterable][2D
     }
 }
 
+TEST_CASE("simplex_closed_star_tet_iterable", "[simplex_collection][iterable][3D]")
+{
+    tests_3d::DEBUG_TetMesh m = tests_3d::six_cycle_tets();
+
+    std::unique_ptr<Simplex> simplex;
+
+    SECTION("vertex_boundary_1")
+    {
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
+    }
+    SECTION("vertex_boundary_2")
+    {
+        const Tuple t = m.edge_tuple_with_vs_and_t(2, 0, 0);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
+    }
+    SECTION("vertex_boundary_3")
+    {
+        const Tuple t = m.edge_tuple_with_vs_and_t(2, 3, 0);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
+    }
+    SECTION("edge_interior")
+    {
+        const Tuple t = m.edge_tuple_with_vs_and_t(2, 3, 0);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Edge, t);
+    }
+    SECTION("edge_boundary_1")
+    {
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 2, 0);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Edge, t);
+    }
+    SECTION("edge_boundary_2")
+    {
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Edge, t);
+    }
+    SECTION("face_interior")
+    {
+        const Tuple t = m.face_tuple_from_vids(0, 2, 3);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Triangle, t);
+    }
+    SECTION("face_boundary")
+    {
+        const Tuple t = m.face_tuple_from_vids(0, 1, 2);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Triangle, t);
+    }
+    SECTION("tet")
+    {
+        const Tuple t = m.tet_tuple_from_vids(0, 1, 2, 3);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Tetrahedron, t);
+    }
+
+    ClosedStarIterable itrb = closed_star_iterable(m, *simplex);
+    SimplexCollection coll = closed_star(m, *simplex);
+
+    SimplexCollection itrb_collection(m);
+    for (const simplex::IdSimplex& s : itrb) {
+        itrb_collection.add(m.get_simplex(s));
+    }
+    REQUIRE(itrb_collection.size() == coll.size());
+
+    itrb_collection.sort_and_clean();
+
+    REQUIRE(itrb_collection.size() == coll.size());
+
+    for (size_t i = 0; i < coll.size(); ++i) {
+        const Simplex& irtb_s = itrb_collection.simplex_vector()[i];
+        const Simplex& coll_s = coll.simplex_vector()[i];
+
+        CHECK(simplex::utils::SimplexComparisons::equal(m, irtb_s, coll_s));
+    }
+}
+
+TEST_CASE("simplex_closed_star_edge_iterable", "[simplex_collection][iterable][1D]")
+{
+    tests::DEBUG_EdgeMesh m = tests::two_segments();
+
+    std::unique_ptr<Simplex> simplex;
+
+    SECTION("vertex_boundary")
+    {
+        const Tuple t = m.edge_tuple_from_vids(0, 1);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
+    }
+    SECTION("vertex_interior")
+    {
+        const Tuple t = m.edge_tuple_from_vids(1, 0);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
+    }
+    SECTION("edge")
+    {
+        const Tuple t = m.edge_tuple_from_vids(0, 1);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Edge, t);
+    }
+
+    ClosedStarIterable itrb = closed_star_iterable(m, *simplex);
+    SimplexCollection coll = closed_star(m, *simplex);
+
+    SimplexCollection itrb_collection(m);
+    for (const simplex::IdSimplex& s : itrb) {
+        itrb_collection.add(m.get_simplex(s));
+    }
+    REQUIRE(itrb_collection.size() == coll.size());
+
+    itrb_collection.sort_and_clean();
+
+    REQUIRE(itrb_collection.size() == coll.size());
+
+    for (size_t i = 0; i < coll.size(); ++i) {
+        const Simplex& irtb_s = itrb_collection.simplex_vector()[i];
+        const Simplex& coll_s = coll.simplex_vector()[i];
+
+        CHECK(simplex::utils::SimplexComparisons::equal(m, irtb_s, coll_s));
+    }
+}
+
 TEST_CASE("simplex_link_2d", "[simplex_collection][2D]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
