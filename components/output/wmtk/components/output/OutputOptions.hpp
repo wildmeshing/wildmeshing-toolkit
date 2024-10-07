@@ -15,7 +15,8 @@ struct OutputOptions
     std::variant<wmtk::attribute::MeshAttributeHandle, std::string> position_attribute;
 
 
-    bool operator==(const OutputOptions& o) const;
+    // This was intended to be implemenetd easily with default, too lazy to properly implement now without c++20
+    //bool operator==(const OutputOptions& o) const;
 };
 } // namespace wmtk::components::output
 

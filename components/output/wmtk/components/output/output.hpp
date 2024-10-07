@@ -8,6 +8,7 @@
 namespace wmtk::components {
 
     namespace output {
+        struct OutputOptions;
 /**
  * @brief Write the mesh to file.
  *
@@ -58,6 +59,9 @@ void output(
     const std::filesystem::path& file,
     const attribute::MeshAttributeHandle& position_attr);
 
+void output(
+    const Mesh& mesh,
+    const OutputOptions&);
 
 /**
  * @brief Write the mesh to file.
