@@ -39,7 +39,7 @@ void adl_serializer<wmtk::components::output::OutputOptions>::from_json(const js
     if (j.contains("type")) {
         v.type = j["type"];
     } else {
-        v.type = v.file.extension();
+        v.type = v.file.extension().string();
         wmtk::logger().debug("Guessing extension type of [{}] is [{}]", v.file, v.type);
     }
     if (j.contains("position_attribute")) {
