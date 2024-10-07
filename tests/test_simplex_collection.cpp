@@ -1431,7 +1431,7 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
     }
 }
 
-TEST_CASE("simplex_closed_star_iterable", "[simplex_collection][iterable][2D]")
+TEST_CASE("simplex_closed_star_tri_iterable", "[simplex_collection][iterable][2D]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
@@ -1442,20 +1442,35 @@ TEST_CASE("simplex_closed_star_iterable", "[simplex_collection][iterable][2D]")
         const Tuple t = m.edge_tuple_with_vs_and_t(4, 5, 2);
         simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
     }
-    SECTION("vertex_boundary")
+    SECTION("vertex_boundary_1")
     {
         const Tuple t = m.edge_tuple_with_vs_and_t(3, 4, 0);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
+    }
+    SECTION("vertex_boundary2")
+    {
+        const Tuple t = m.edge_tuple_with_vs_and_t(3, 0, 0);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
+    }
+    SECTION("vertex_boundary_3")
+    {
+        const Tuple t = m.edge_tuple_with_vs_and_t(6, 5, 4);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
+    }
+    SECTION("vertex_boundary_4")
+    {
+        const Tuple t = m.edge_tuple_with_vs_and_t(1, 4, 2);
         simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
     }
     SECTION("edge_interior")
     {
         const Tuple t = m.edge_tuple_with_vs_and_t(4, 5, 2);
-        simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Edge, t);
     }
     SECTION("edge_boundary")
     {
         const Tuple t = m.edge_tuple_with_vs_and_t(3, 7, 5);
-        simplex = std::make_unique<Simplex>(m, PrimitiveType::Vertex, t);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Edge, t);
     }
     SECTION("face")
     {
@@ -1467,18 +1482,20 @@ TEST_CASE("simplex_closed_star_iterable", "[simplex_collection][iterable][2D]")
     SimplexCollection coll = closed_star(m, *simplex);
 
     SimplexCollection itrb_collection(m);
-    for (const Simplex& s : itrb) {
-        itrb_collection.add(s);
+    for (const simplex::IdSimplex& s : itrb) {
+        itrb_collection.add(m.get_simplex(s));
     }
+    REQUIRE(itrb_collection.size() == coll.size());
+
     itrb_collection.sort_and_clean();
 
-    REQUIRE(itrb_collection.simplex_vector().size() == coll.simplex_vector().size());
+    REQUIRE(itrb_collection.size() == coll.size());
 
-    for (size_t i = 0; i < coll.simplex_vector().size(); ++i) {
-        CHECK(simplex::utils::SimplexComparisons::equal(
-            m,
-            itrb_collection.simplex_vector()[i],
-            coll.simplex_vector()[i]));
+    for (size_t i = 0; i < coll.size(); ++i) {
+        const Simplex& irtb_s = itrb_collection.simplex_vector()[i];
+        const Simplex& coll_s = coll.simplex_vector()[i];
+
+        CHECK(simplex::utils::SimplexComparisons::equal(m, irtb_s, coll_s));
     }
 }
 
