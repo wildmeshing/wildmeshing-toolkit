@@ -55,9 +55,7 @@ public:
         TopDimensionCofacesIterable::Iterator m_it;
         Tuple m_t;
         int8_t m_pt = -1;
-        int8_t m_sub_pt = -1;
         int8_t m_face_counter = 0;
-        int8_t m_sub_face_counter = 0;
         IteratorPhase m_phase = IteratorPhase::Faces;
     };
 
