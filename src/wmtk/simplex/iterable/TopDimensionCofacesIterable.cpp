@@ -187,19 +187,20 @@ void TopDimensionCofacesIterable::Iterator::add_neighbors_to_queue()
     const Mesh& mesh = *(m_container->m_mesh);
     const simplex::Simplex& simplex = m_container->m_simplex;
 
-    for (const Tuple& tt : cofaces_in_simplex_iterable(
-             mesh,
-             simplex::Simplex(mesh, simplex.primitive_type(), m_t),
-             mesh.top_simplex_type())) {
-        if (mesh.is_boundary(pt(1), tt)) {
-            continue;
-        }
-        const Tuple neigh = mesh.switch_tuple(tt, pt(0));
-        const int64_t neigh_id = wmtk::utils::TupleInspector::global_cid(neigh);
+    assert(mesh.top_simplex_type() == PrimitiveType::Tetrahedron);
+    assert(simplex.primitive_type() == PrimitiveType::Vertex);
 
-        if (!m_container->m_visited.is_visited(neigh_id)) {
-            m_container->m_q.emplace_back(neigh);
+    Tuple t = m_t;
+    for (size_t i = 0; i < 3; ++i) {
+        if (!mesh.is_boundary(PrimitiveType::Triangle, t)) {
+            const Tuple neigh = mesh.switch_tuple(t, PrimitiveType::Tetrahedron);
+            const int64_t neigh_id = wmtk::utils::TupleInspector::global_cid(neigh);
+
+            if (!m_container->m_visited.is_visited(neigh_id)) {
+                m_container->m_q.emplace_back(neigh);
+            }
         }
+        t = mesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Triangle});
     }
 }
 

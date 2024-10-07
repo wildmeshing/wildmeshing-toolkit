@@ -1,7 +1,5 @@
 #pragma once
 
-#include <queue>
-
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/IdSimplex.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -15,9 +13,8 @@ namespace wmtk::simplex {
  * This iterator internally uses TopDimensionCofacesIterable.
  *
  * The iteration for depths 0 to 2 are the same. For depth 3, the BFS is extended to find all
- * cofaces within a single d-simplex.
+ * link simplices within a single d-simplex.
  *
- * In depth 2, we need the iterator in the intermediate phase.
  */
 class LinkIterable
 {
