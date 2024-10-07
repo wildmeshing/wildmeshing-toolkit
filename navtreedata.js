@@ -116,12 +116,12 @@ var NAVTREEINDEX =
 "md_src_wmtk_attribute__r_e_a_d_m_e.html#autotoc_md18",
 "namespacewmtk.html#ae4167c30ed11c607c5bc1edd86a5e2f2",
 "namespacewmtk_1_1components_1_1internal.html#a41722ce1685a7dec1703284ea7b17090",
-"namespacewmtk_1_1simplex.html#a9596b1dd0c3bbd8fc2dc1faac7321034",
-"same__simplex__dimension__surjection_8cpp_source.html",
-"structwmtk_1_1components_1_1input_1_1_named_multi_mesh_1_1_node.html#a0a7cb03b3ceb07282a60560e0b64009a",
-"structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html#aa9bc35fcc9014e67713c85269787e6ec",
-"tetwild__simplification_8cpp.html#adec286f3cfd3e5764450f37dd7df619c",
-"utils_2_a_m_i_p_s_8cpp.html#a30d0a98f6851e8c66d5035c2f1b26909"
+"namespacewmtk_1_1simplex.html#a89b80936c94037ab30a930a69a0ab13f",
+"same__simplex__dimension__bijection_8hpp_source.html",
+"structwmtk_1_1components_1_1cmp__s.html",
+"structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__ref__decay.html",
+"tetwild__simplification_8cpp.html#ac70c00ff28dd31bb7109e7da8c89860f",
+"utils_2_a_m_i_p_s_8cpp.html#a18f88d299cb5212b810962fac2ea76bc"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

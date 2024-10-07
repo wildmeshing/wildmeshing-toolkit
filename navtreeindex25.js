@@ -1,5 +1,7 @@
 var NAVTREEINDEX25 =
 {
+"structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__ref__decay.html":[7,0,2,9,1,5],
+"structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html":[7,0,2,9,1,3],
 "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html#aa9bc35fcc9014e67713c85269787e6ec":[7,0,2,9,1,3,0],
 "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4.html":[7,0,2,9,1,4],
 "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4.html#a676fc2b5fe63c025971c63dff338d36f":[7,0,2,9,1,4,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX25 =
 "tetwild__simplification_8cpp.html#a9030c2868475595c9de07d942791b673":[8,0,0,20,0,0,0,0,14],
 "tetwild__simplification_8cpp.html#aa0ee421954a6b56f1b280700fb55f807":[8,0,0,20,0,0,0,0,16],
 "tetwild__simplification_8cpp.html#ab76577dc5b3ef0ad8ac307cff60d5807":[8,0,0,20,0,0,0,0,15],
-"tetwild__simplification_8cpp.html#abb231223702b86fa717f34d4985d8c04":[8,0,0,20,0,0,0,0,8],
-"tetwild__simplification_8cpp.html#ac70c00ff28dd31bb7109e7da8c89860f":[8,0,0,20,0,0,0,0,5],
-"tetwild__simplification_8cpp.html#ad12cb27f259bc36dae03ccf73a88087f":[8,0,0,20,0,0,0,0,12]
+"tetwild__simplification_8cpp.html#abb231223702b86fa717f34d4985d8c04":[8,0,0,20,0,0,0,0,8]
 };

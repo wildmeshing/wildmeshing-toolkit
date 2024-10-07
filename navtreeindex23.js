@@ -1,5 +1,8 @@
 var NAVTREEINDEX23 =
 {
+"same__simplex__dimension__bijection_8hpp_source.html":[8,0,2,0,5,17],
+"same__simplex__dimension__surjection_8cpp.html":[8,0,2,0,5,18],
+"same__simplex__dimension__surjection_8cpp.html#a7bd59ab748f0b54f3ab7dc9d625b04ec":[8,0,2,0,5,18,0],
 "same__simplex__dimension__surjection_8cpp_source.html":[8,0,2,0,5,18],
 "same__simplex__dimension__surjection_8hpp.html":[8,0,2,0,5,19],
 "same__simplex__dimension__surjection_8hpp.html#a7bd59ab748f0b54f3ab7dc9d625b04ec":[8,0,2,0,5,19,0],
@@ -246,8 +249,5 @@ var NAVTREEINDEX23 =
 "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh.html#a24e96e4effa62e8b9bee736c61ec8118":[7,0,2,2,25,1],
 "structwmtk_1_1components_1_1_wildmeshing_options_envelope_mesh.html#a29765798ed29f6df2566321a4ffa1b6f":[7,0,2,2,25,0],
 "structwmtk_1_1components_1_1cmp__l.html":[7,0,2,2,22],
-"structwmtk_1_1components_1_1cmp__l.html#a5d12db8186c2b290ab7b34696badf3dc":[7,0,2,2,22,0],
-"structwmtk_1_1components_1_1cmp__s.html":[7,0,2,2,21],
-"structwmtk_1_1components_1_1cmp__s.html#af74e6235321d55863540b2ad18130b35":[7,0,2,2,21,0],
-"structwmtk_1_1components_1_1input_1_1_named_multi_mesh_1_1_node.html":[7,0,2,2,1,2,0]
+"structwmtk_1_1components_1_1cmp__l.html#a5d12db8186c2b290ab7b34696badf3dc":[7,0,2,2,22,0]
 };

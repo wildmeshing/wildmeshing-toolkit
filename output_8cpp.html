@@ -120,10 +120,13 @@ $(document).ready(function(){initNavTree('output_8cpp.html',''); initResizable()
 <div class="contents">
 <div class="textblock"><code>#include &quot;<a class="el" href="output_8hpp_source.html">output.hpp</a>&quot;</code><br />
 <code>#include &lt;<a class="el" href="_mesh_8hpp_source.html">wmtk/Mesh.hpp</a>&gt;</code><br />
+<code>#include &lt;fmt/std.h&gt;</code><br />
+<code>#include &lt;type_traits&gt;</code><br />
 <code>#include &lt;<a class="el" href="resolve__path_8hpp_source.html">wmtk/components/utils/resolve_path.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_h_d_f5_writer_8hpp_source.html">wmtk/io/HDF5Writer.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_paraview_writer_8hpp_source.html">wmtk/io/ParaviewWriter.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_logger_8hpp_source.html">wmtk/utils/Logger.hpp</a>&gt;</code><br />
+<code>#include &quot;<a class="el" href="_output_options_8hpp_source.html">OutputOptions.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for output.cpp:</div>
 <div class="dyncontent">
@@ -153,6 +156,8 @@ Functions</h2></td></tr>
 <tr class="memitem:adfc106aa7b29e0a2ef8d408f7b38b990"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1output.html#adfc106aa7b29e0a2ef8d408f7b38b990">wmtk::components::output::output_hdf5</a> (const Mesh &amp;mesh, const std::filesystem::path &amp;file)</td></tr>
 <tr class="memdesc:adfc106aa7b29e0a2ef8d408f7b38b990"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write the mesh to file.  <a href="namespacewmtk_1_1components_1_1output.html#adfc106aa7b29e0a2ef8d408f7b38b990">More...</a><br /></td></tr>
 <tr class="separator:adfc106aa7b29e0a2ef8d408f7b38b990"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8cd641df797580acbda99c4266ca000"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1output.html#ab8cd641df797580acbda99c4266ca000">wmtk::components::output::output</a> (const Mesh &amp;mesh, const OutputOptions &amp;opts)</td></tr>
+<tr class="separator:ab8cd641df797580acbda99c4266ca000"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
