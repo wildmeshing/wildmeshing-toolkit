@@ -67,7 +67,19 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::operator++()
 
     ++m_face_counter;
     switch (mesh.top_simplex_type()) {
-    case PE: log_and_throw_error("not implemented");
+    case PE: {
+        switch (m_face_counter) {
+        case 1: m_sub_pt = 1; return *this;
+        case 2:
+            m_t = mesh.switch_tuple(m_t, PV);
+            m_sub_pt = 0;
+            return *this;
+        default: break;
+        }
+        m_sub_pt = 1;
+        m_face_counter = 1;
+        break;
+    }
     case PF: {
         switch (simplex.primitive_type()) {
         case PV: {
