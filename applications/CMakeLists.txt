@@ -30,7 +30,7 @@ if(WMTK_ENABLE_APPLICATION_multimesh)
 add_subdirectory(multimesh)
 endif()
 
-option(WMTK_ENABLE_APPLICATION_isotropic_remeshing "Runs isotropic_remeshing application" OFF)
+option(WMTK_ENABLE_APPLICATION_isotropic_remeshing "Runs isotropic_remeshing application" ON)
 if(WMTK_ENABLE_APPLICATION_isotropic_remeshing)
 add_subdirectory(isotropic_remeshing)
 endif()
