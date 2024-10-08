@@ -131,10 +131,10 @@ std::shared_ptr<Mesh> cdt_optimization(
         edge_length_attribute.as<double>(),
         4. / 5. * length_abs); // MTAO: why is this 4/5?
 
-    auto todo_larger= = std::make_shared<TodoLargerInvariant>(
+    auto todo_larger = std::make_shared<TodoLargerInvariant>(
         mesh,
         edge_length_attribute.as<double>(),
-        4.0 / 3.0);
+        4.0 / 3.0 * length_abs);
 
     //////////////////////////invariants
 
@@ -172,7 +172,7 @@ std::shared_ptr<Mesh> cdt_optimization(
             inversion_position_handle.value().mesh(),
             inversion_position_handle.value().as<double>()));
     }
-    
+
     split->set_priority(long_edges_first_priority);
 
     split->set_new_attribute_strategy(
@@ -193,7 +193,6 @@ std::shared_ptr<Mesh> cdt_optimization(
             wmtk::operations::SplitBasicStrategy::None,
             wmtk::operations::SplitRibBasicStrategy::None);
     }
-
 
 
     //////////////////////////////////////////
@@ -316,7 +315,34 @@ std::shared_ptr<Mesh> cdt_optimization(
 
     Scheduler scheduler;
 
+    auto collapse_stats_pre =
+        scheduler.run_operation_on_all(*collapse, visited_edge_flag.as<char>());
+
+    logger().info(
+        "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
+        "executing: {}",
+        "collapse",
+        collapse_stats_pre.number_of_performed_operations(),
+        collapse_stats_pre.number_of_successful_operations(),
+        collapse_stats_pre.number_of_failed_operations(),
+        collapse_stats_pre.collecting_time,
+        collapse_stats_pre.sorting_time,
+        collapse_stats_pre.executing_time);
+
     for (int64_t i = 0; i < passes; ++i) {
+        auto split_stats = scheduler.run_operation_on_all(*split, visited_edge_flag.as<char>());
+
+        logger().info(
+            "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
+            "executing: {}",
+            "split",
+            split_stats.number_of_performed_operations(),
+            split_stats.number_of_successful_operations(),
+            split_stats.number_of_failed_operations(),
+            split_stats.collecting_time,
+            split_stats.sorting_time,
+            split_stats.executing_time);
+
         auto collapse_stats =
             scheduler.run_operation_on_all(*collapse, visited_edge_flag.as<char>());
 
@@ -347,6 +373,21 @@ std::shared_ptr<Mesh> cdt_optimization(
         multimesh::consolidate(mesh);
     }
 
+    auto collapse_stats_after =
+        scheduler.run_operation_on_all(*collapse, visited_edge_flag.as<char>());
+
+    logger().info(
+        "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
+        "executing: {}",
+        "collapse",
+        collapse_stats_after.number_of_performed_operations(),
+        collapse_stats_after.number_of_successful_operations(),
+        collapse_stats_after.number_of_failed_operations(),
+        collapse_stats_after.collecting_time,
+        collapse_stats_after.sorting_time,
+        collapse_stats_after.executing_time);
+
+    multimesh::consolidate(mesh);
 
     // debug code
     for (const auto& e : mesh.get_all(PrimitiveType::Edge)) {

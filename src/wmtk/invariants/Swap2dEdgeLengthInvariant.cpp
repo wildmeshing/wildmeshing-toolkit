@@ -48,8 +48,12 @@ bool Swap2dEdgeLengthInvariant::before(const simplex::Simplex& t) const
     const double h2 = ((p2 - p0).cross(p2 - p1)).norm() / (p0 - p1).norm();
     const double h3 = ((p3 - p0).cross(p3 - p1)).norm() / (p0 - p1).norm();
 
-    const double min_old = std::min(h0, h1);
-    const double min_new = std::min(h2, h3);
+    const double min_old = std::min(h2, h3);
+    const double min_new = std::min(h0, h1);
+
+    if (((p0 - p1).norm() * h2 / 2) < 1e-10 || ((p0 - p1).norm() * h3 / 2) < 1e-10) {
+        return true;
+    }
 
     return min_old < min_new;
 }
