@@ -36,11 +36,12 @@ void adl_serializer<wmtk::components::input::InputOptions>::to_json(json& j, con
 }
 void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json& j, Type& v)
 {
+    spdlog::info("{}", j.dump());
     if (j.is_string()) {
         v.file = j.get<std::string>();
-        return;
+    } else {
+        v.file = j["file"].get<std::string>();
     }
-    v.file = j["file"].get<std::string>();
     if (j.contains("name_spec")) {
         v.name_spec = j["name_spec"];
     }
@@ -73,7 +74,7 @@ void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json
                 j["tetrahedron_attributes"].get<std::vector<std::string>>()};
         }
     } else {
-        if (v.imported_attributes.has_value()) {
+        if (j.contains("imported_attributes")) {
             v.imported_attributes = j["imported_attributes"].get<std::vector<std::vector<std::string>>>();
         }
     }
