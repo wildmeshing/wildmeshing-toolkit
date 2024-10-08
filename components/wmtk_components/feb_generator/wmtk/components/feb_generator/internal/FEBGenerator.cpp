@@ -745,7 +745,8 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
 
                     const auto& face_tuples = face_tuple_list[main_idx];
 
-                    f << "\t\t<Surface name=\"" << name << "(" << main_idx << ")" << "\">\n";
+                    //f << "\t\t<Surface name=\"" << name << "(" << main_idx << ")" << "\">\n";
+                    f << "\t\t<Surface name=\"" << name << "\">\n";
                     int64_t cnt = 1;
 
                     for (const auto& t : face_tuples) {
@@ -772,6 +773,10 @@ void generate_feb_files(TetMesh& mesh, const json& j, const std::string& output_
                         if (main_idx == include_ids[0]) {
                             another_side_tag =
                                 tag_acc.scalar_attribute(temp_t);
+                            // only extract the surfaces near the empty
+                            if (tag_acc.scalar_attribute(mesh.switch_tetrahedron(temp_t)) != 0) {
+                                continue;
+                            }
                         } else {
                             another_side_tag =
                                 tag_acc.scalar_attribute(mesh.switch_tetrahedron(temp_t));
