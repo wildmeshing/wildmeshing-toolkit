@@ -81,7 +81,7 @@ class IntegrationTest(unittest.TestCase):
                     res = subprocess.run(cmd, cwd=self.working_dir, capture_output=True)
 
                 if res.returncode != 0:
-                    print(f"Error running [{' '.join(cmd)}]")
+                    print(f"Error running [{' '.join(cmd)}] from working directory [{self.working_dir}]")
                     print(res.stderr.decode('utf-8'))
                     print(res.stdout.decode('utf-8'))
 
