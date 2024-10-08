@@ -36,7 +36,6 @@ void adl_serializer<wmtk::components::input::InputOptions>::to_json(json& j, con
 }
 void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json& j, Type& v)
 {
-    spdlog::info("{}", j.dump());
     if (j.is_string()) {
         v.file = j.get<std::string>();
     } else {

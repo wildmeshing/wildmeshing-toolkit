@@ -60,11 +60,11 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
 
     auto position = options.position_attribute;
 
-    if (position.mesh().top_simplex_type() != PrimitiveType::Triangle) {
-        log_and_throw_error(
-            "isotropic remeshing works only for triangle meshes: {}",
-            primitive_type_name(position.mesh().top_simplex_type()));
-    }
+    //if (position.mesh().top_simplex_type() != PrimitiveType::Triangle) {
+    //    log_and_throw_error(
+    //        "isotropic remeshing works only for triangle meshes: {}",
+    //        primitive_type_name(position.mesh().top_simplex_type()));
+    //}
 
     auto pass_through_attributes = options.pass_through_attributes;
     auto other_positions = options.other_position_attributes;
@@ -95,9 +95,10 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
         options.inversion_position_attribute;
 
 
-    assert(dynamic_cast<TriMesh*>(&position.mesh()) != nullptr);
+    //assert(dynamic_cast<TriMesh*>(&position.mesh()) != nullptr);
 
-    TriMesh& mesh = static_cast<TriMesh&>(position.mesh());
+    //TriMesh& mesh = static_cast<TriMesh&>(position.mesh());
+    Mesh& mesh = position.mesh();
 
     const double length_min = (4. / 5.) * length;
     const double length_max = (4. / 3.) * length;
@@ -122,10 +123,11 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     auto invariant_interior_vertex = std::make_shared<invariants::InvariantCollection>(mesh);
 
     auto set_all_invariants = [&](auto&& m) {
-        invariant_interior_edge->add(
-            std::make_shared<invariants::InteriorSimplexInvariant>(m, PrimitiveType::Edge));
+        // TODO: this used to do vertex+edge, but just checkign for vertex should be sufficient?
+        for(PrimitiveType pt = PrimitiveType::Vertex; pt < m.top_simplex_type(); pt = pt + 1) {
         invariant_interior_vertex->add(
-            std::make_shared<invariants::InteriorSimplexInvariant>(m, PrimitiveType::Vertex));
+            std::make_shared<invariants::InteriorSimplexInvariant>(m, pt));
+        }
     };
     multimesh::MultiMeshVisitor visitor(set_all_invariants);
     visitor.execute_from_root(mesh);
@@ -206,6 +208,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
             op_collapse->set_new_attribute_strategy(p, tmp);
         }
     } else if (options.use_for_periodic) {
+        assert(false); // TODO: make fusion simplex invariant
         op_collapse->add_invariant(
             std::make_shared<invariants::FusionEdgeInvariant>(mesh, mesh.get_multi_mesh_root()));
         for (auto& p : positions) {
@@ -266,7 +269,7 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     //////////////////////////////////////////
     // smooth
     auto op_smooth = std::make_shared<AttributesUpdateWithFunction>(mesh);
-    if (position.dimension() == 3) {
+    if (position.dimension() == 3 && mesh.top_simplex_type() == PrimitiveType::Triangle) {
         op_smooth->set_function(VertexTangentialLaplacianSmooth(position));
     } else {
         op_smooth->set_function(VertexLaplacianSmooth(position));
