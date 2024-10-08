@@ -20,6 +20,7 @@
 #include <wmtk/multimesh/consolidate.hpp>
 #include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
+#include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_new/NewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
@@ -120,11 +121,20 @@ std::shared_ptr<Mesh> cdt_optimization(
         assert(s.primitive_type() == PrimitiveType::Edge);
         return edge_length_accessor.const_scalar_attribute(s.tuple());
     };
+    auto long_edges_first_priority = [&](const simplex::Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        return -edge_length_accessor.const_scalar_attribute(s.tuple());
+    };
     pass_through_attributes.push_back(edge_length_attribute);
-    auto todo = std::make_shared<TodoSmallerInvariant>(
+    auto todo_smaller = std::make_shared<TodoSmallerInvariant>(
         mesh,
         edge_length_attribute.as<double>(),
         4. / 5. * length_abs); // MTAO: why is this 4/5?
+
+    auto todo_larger= = std::make_shared<TodoLargerInvariant>(
+        mesh,
+        edge_length_attribute.as<double>(),
+        4.0 / 3.0);
 
     //////////////////////////invariants
 
@@ -152,10 +162,45 @@ std::shared_ptr<Mesh> cdt_optimization(
     }
 
     //////////////////////////////////////////
+    // split
+    //////////////////////////////////////////
+
+    auto split = std::make_shared<wmtk::operations::EdgeSplit>(mesh);
+    split->add_invariant(todo_larger);
+    if (check_inversion) {
+        split->add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
+            inversion_position_handle.value().mesh(),
+            inversion_position_handle.value().as<double>()));
+    }
+    
+    split->set_priority(long_edges_first_priority);
+
+    split->set_new_attribute_strategy(
+        visited_edge_flag,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+
+    split->add_transfer_strategy(tag_update);
+    split->add_transfer_strategy(edge_length_update);
+
+    for (auto& p : positions) {
+        split->set_new_attribute_strategy(p);
+    }
+
+    for (const auto& attr : pass_through_attributes) {
+        split->set_new_attribute_strategy(
+            attr,
+            wmtk::operations::SplitBasicStrategy::None,
+            wmtk::operations::SplitRibBasicStrategy::None);
+    }
+
+
+
+    //////////////////////////////////////////
     // collapse
     //////////////////////////////////////////
     auto collapse = std::make_shared<wmtk::operations::EdgeCollapse>(mesh);
-    collapse->add_invariant(todo);
+    collapse->add_invariant(todo_smaller);
     collapse->add_invariant(invariant_link_condition);
     collapse->add_invariant(invariant_mm_map);
 
