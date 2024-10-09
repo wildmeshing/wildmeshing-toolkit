@@ -19,7 +19,7 @@ class RawSimplexCollection;
 class RawSimplex
 {
 public:
-    RawSimplex();
+    RawSimplex() = default;
 
     RawSimplex(const Mesh& mesh, const std::vector<Tuple>& vertices);
 

@@ -7,7 +7,6 @@
 #include "faces_single_dimension.hpp"
 
 namespace wmtk::simplex {
-RawSimplex::RawSimplex() {}
 
 RawSimplex::RawSimplex(const Mesh& mesh, const std::vector<Tuple>& vertices)
 {
