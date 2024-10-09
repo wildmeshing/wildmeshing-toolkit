@@ -132,8 +132,11 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     multimesh::MultiMeshVisitor visitor(set_all_invariants);
     visitor.execute_from_root(mesh);
 
-    auto invariant_valence_improve =
-        std::make_shared<invariants::ValenceImprovementInvariant>(mesh);
+    std::shared_ptr<invariants::Invariant> invariant_valence_improve ;
+    if(mesh.top_simplex_type() == PrimitiveType::Triangle) {
+        invariant_valence_improve =
+        std::make_shared<invariants::ValenceImprovementInvariant>(dynamic_cast<TriMesh&>(mesh));
+    }
 
     auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(mesh);
 
@@ -240,7 +243,10 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
             std::make_shared<invariants::uvEdgeInvariant>(mesh, other_positions.front().mesh()));
     }
 
-    op_swap->add_invariant(invariant_valence_improve);
+    if(invariant_valence_improve) {
+        
+        op_swap->add_invariant(invariant_valence_improve);
+    }
     op_swap->collapse().add_invariant(invariant_link_condition);
     op_swap->collapse().add_invariant(invariant_mm_map);
     for (auto& p : positions) {
