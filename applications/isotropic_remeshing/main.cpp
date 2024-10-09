@@ -52,7 +52,6 @@ int main(int argc, char* argv[])
     wmtk::components::input::MeshCollection mc;
     auto& named_mesh = mc.add_mesh(input_opts);
     auto mesh_ptr = named_mesh.root().shared_from_this();
-    spdlog::warn("Input js: {}", input_js.dump(2));
     if(input_js.contains("multimesh")) {
         mesh_ptr = make_multimesh(*mesh_ptr, input_js["multimesh"]);
 
