@@ -12,7 +12,7 @@ TopDimensionCofacesIterable::TopDimensionCofacesIterable(
     const Mesh& mesh,
     const Simplex& simplex,
     const bool retrieve_intermediate_tuple)
-    : m_mesh(&mesh)
+    : m_mesh(mesh)
     , m_simplex(simplex)
     , m_retrieve_intermediate_tuple(retrieve_intermediate_tuple)
 {}
@@ -20,7 +20,7 @@ TopDimensionCofacesIterable::TopDimensionCofacesIterable(
 TopDimensionCofacesIterable::Iterator::Iterator(
     TopDimensionCofacesIterable& container,
     const Tuple& t)
-    : m_container(&container)
+    : m_container(container)
     , m_t(t)
     , m_phase(IteratorPhase::Forward)
 {
@@ -63,13 +63,13 @@ const Tuple& TopDimensionCofacesIterable::Iterator::operator*() const
 
 PrimitiveType TopDimensionCofacesIterable::Iterator::pt(int64_t depth) const
 {
-    return get_primitive_type_from_id(m_container->m_mesh->top_cell_dimension() - depth);
+    return get_primitive_type_from_id(m_container.m_mesh.top_cell_dimension() - depth);
 }
 
 int64_t TopDimensionCofacesIterable::Iterator::depth()
 {
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
     assert(mesh.top_cell_dimension() >= get_primitive_type_id(simplex.primitive_type()));
     assert(mesh.top_cell_dimension() - get_primitive_type_id(simplex.primitive_type()) < 4);
 
@@ -78,8 +78,8 @@ int64_t TopDimensionCofacesIterable::Iterator::depth()
 
 void TopDimensionCofacesIterable::Iterator::init(int64_t depth)
 {
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
     // No initialization necessary if simplex is d or d-1.
 
     if (depth == 2) {
@@ -91,7 +91,7 @@ void TopDimensionCofacesIterable::Iterator::init(int64_t depth)
         }
     } else if (depth == 3) {
         // d - 3 --> BFS
-        m_container->m_visited.is_visited(wmtk::utils::TupleInspector::global_cid(m_t));
+        m_container.m_visited.is_visited(wmtk::utils::TupleInspector::global_cid(m_t));
 
         add_neighbors_to_queue();
     }
@@ -105,8 +105,8 @@ TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::st
 
 TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::step_depth_1()
 {
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
 
     if (m_phase == IteratorPhase::End || mesh.is_boundary(pt(1), m_t)) {
         m_t = Tuple();
@@ -120,8 +120,8 @@ TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::st
 
 TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::step_depth_2()
 {
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
 
     m_is_intermediate = false;
 
@@ -134,7 +134,7 @@ TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::st
             // switch to backward phase
             m_phase = IteratorPhase::Backward;
         }
-        if (m_container->m_retrieve_intermediate_tuple) {
+        if (m_container.m_retrieve_intermediate_tuple) {
             m_is_intermediate = true;
             return *this;
         }
@@ -165,9 +165,9 @@ TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::st
 
 TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::step_depth_3()
 {
-    const Mesh& mesh = *(m_container->m_mesh);
-    auto& q = m_container->m_q;
-    auto& q_front = m_container->m_q_front;
+    const Mesh& mesh = m_container.m_mesh;
+    auto& q = m_container.m_q;
+    auto& q_front = m_container.m_q_front;
 
     if (q_front == q.size()) {
         m_t = Tuple();
@@ -184,8 +184,8 @@ TopDimensionCofacesIterable::Iterator& TopDimensionCofacesIterable::Iterator::st
 
 void TopDimensionCofacesIterable::Iterator::add_neighbors_to_queue()
 {
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
 
     assert(mesh.top_simplex_type() == PrimitiveType::Tetrahedron);
     assert(simplex.primitive_type() == PrimitiveType::Vertex);
@@ -196,8 +196,8 @@ void TopDimensionCofacesIterable::Iterator::add_neighbors_to_queue()
             const Tuple neigh = mesh.switch_tuple(t, PrimitiveType::Tetrahedron);
             const int64_t neigh_id = wmtk::utils::TupleInspector::global_cid(neigh);
 
-            if (!m_container->m_visited.is_visited(neigh_id)) {
-                m_container->m_q.emplace_back(neigh);
+            if (!m_container.m_visited.is_visited(neigh_id)) {
+                m_container.m_q.emplace_back(neigh);
             }
         }
         t = mesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Triangle});

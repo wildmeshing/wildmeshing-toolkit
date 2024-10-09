@@ -6,7 +6,7 @@ CofacesInSimplexIterable::CofacesInSimplexIterable(
     const Mesh& mesh,
     const Simplex& simplex,
     const PrimitiveType in_simplex_type)
-    : m_mesh(&mesh)
+    : m_mesh(mesh)
     , m_simplex(simplex)
     , m_in_simplex_type(in_simplex_type)
 {
@@ -16,10 +16,10 @@ CofacesInSimplexIterable::CofacesInSimplexIterable(
 CofacesInSimplexIterable::Iterator::Iterator(
     const CofacesInSimplexIterable& container,
     const Tuple& t)
-    : m_container(&container)
+    : m_container(container)
     , m_t(t)
 {
-    if (m_container->m_simplex.primitive_type() > m_container->m_in_simplex_type) {
+    if (m_container.m_simplex.primitive_type() > m_container.m_in_simplex_type) {
         m_t = Tuple();
     }
 }
@@ -29,11 +29,11 @@ CofacesInSimplexIterable::Iterator& CofacesInSimplexIterable::Iterator::operator
     constexpr std::array<PrimitiveType, 3> pts = {
         {PrimitiveType::Vertex, PrimitiveType::Edge, PrimitiveType::Triangle}};
 
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
 
     const int8_t pt_start = get_primitive_type_id(simplex.primitive_type()) + 1;
-    const int8_t pt_end = get_primitive_type_id(m_container->m_in_simplex_type);
+    const int8_t pt_end = get_primitive_type_id(m_container.m_in_simplex_type);
 
 
     for (int8_t i = pt_start; i < pt_end; ++i) {

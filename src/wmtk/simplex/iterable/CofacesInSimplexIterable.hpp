@@ -21,7 +21,7 @@ public:
         Tuple& operator*();
 
     private:
-        const CofacesInSimplexIterable* m_container;
+        const CofacesInSimplexIterable& m_container;
         Tuple m_t;
     };
 
@@ -35,7 +35,7 @@ public:
     Iterator end() const { return Iterator(*this); }
 
 private:
-    const Mesh* m_mesh;
+    const Mesh& m_mesh;
     const Simplex m_simplex;
     const PrimitiveType m_in_simplex_type;
 };

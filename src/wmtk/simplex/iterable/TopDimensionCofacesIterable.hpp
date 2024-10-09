@@ -102,7 +102,7 @@ public:
         void add_neighbors_to_queue();
 
     private:
-        TopDimensionCofacesIterable* m_container;
+        TopDimensionCofacesIterable& m_container;
 
         Tuple m_t; // the tuple that iterates through the mesh
         IteratorPhase m_phase = IteratorPhase::Forward; // for depth 1 and 2 iteration
@@ -119,7 +119,7 @@ public:
     Iterator end() { return Iterator(*this); }
 
 private:
-    const Mesh* m_mesh;
+    const Mesh& m_mesh;
     const Simplex m_simplex;
 
     bool m_retrieve_intermediate_tuple = false;

@@ -45,7 +45,7 @@ public:
         Iterator& step_depth_3();
 
     private:
-        OpenStarIterable* m_container;
+        OpenStarIterable& m_container;
         TopDimensionCofacesIterable::Iterator m_it;
         Tuple m_t;
         int8_t m_pt = -1;
@@ -59,7 +59,7 @@ public:
     Iterator end() { return Iterator(*this); }
 
 private:
-    const Mesh* m_mesh;
+    const Mesh& m_mesh;
     const Simplex m_simplex;
     TopDimensionCofacesIterable m_tdc_itrbl;
     TopDimensionCofacesIterable::Iterator m_it_end;

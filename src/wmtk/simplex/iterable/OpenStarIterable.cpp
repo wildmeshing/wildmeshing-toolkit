@@ -11,14 +11,14 @@ namespace wmtk::simplex {
 
 
 OpenStarIterable::OpenStarIterable(const Mesh& mesh, const Simplex& simplex)
-    : m_mesh(&mesh)
+    : m_mesh(mesh)
     , m_simplex(simplex)
     , m_tdc_itrbl(mesh, simplex, true)
     , m_it_end(m_tdc_itrbl.end())
 {}
 
 OpenStarIterable::Iterator::Iterator(OpenStarIterable& container, const Tuple& t)
-    : m_container(&container)
+    : m_container(container)
     , m_it(container.m_tdc_itrbl, t)
     , m_t(t)
     , m_pt(get_primitive_type_id(container.m_simplex.primitive_type()))
@@ -36,8 +36,8 @@ OpenStarIterable::Iterator& OpenStarIterable::Iterator::operator++()
         return step_depth_3();
     }
 
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
     const int8_t m = mesh.top_cell_dimension();
     const int8_t s = get_primitive_type_id(simplex.primitive_type());
 
@@ -65,18 +65,18 @@ bool OpenStarIterable::Iterator::operator!=(const Iterator& other) const
 
 IdSimplex OpenStarIterable::Iterator::operator*()
 {
-    return m_container->m_mesh->get_id_simplex(m_t, get_primitive_type_from_id(m_pt));
+    return m_container.m_mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt));
 }
 
 const IdSimplex OpenStarIterable::Iterator::operator*() const
 {
-    return m_container->m_mesh->get_id_simplex(m_t, get_primitive_type_from_id(m_pt));
+    return m_container.m_mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt));
 }
 
 int64_t OpenStarIterable::Iterator::depth()
 {
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
     assert(mesh.top_cell_dimension() >= get_primitive_type_id(simplex.primitive_type()));
     assert(mesh.top_cell_dimension() - get_primitive_type_id(simplex.primitive_type()) < 4);
 
@@ -87,9 +87,9 @@ void OpenStarIterable::Iterator::init() {}
 
 OpenStarIterable::Iterator& OpenStarIterable::Iterator::step_depth_3()
 {
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
-    auto& visited = m_container->m_visited_cofaces;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
+    auto& visited = m_container.m_visited_cofaces;
 
     assert(mesh.top_simplex_type() == PrimitiveType::Tetrahedron);
     assert(simplex.primitive_type() == PrimitiveType::Vertex);

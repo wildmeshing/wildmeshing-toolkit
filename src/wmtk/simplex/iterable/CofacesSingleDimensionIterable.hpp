@@ -56,7 +56,7 @@ public:
         Iterator& step_depth_3();
 
     private:
-        CofacesSingleDimensionIterable* m_container;
+        CofacesSingleDimensionIterable& m_container;
         TopDimensionCofacesIterable::Iterator m_it;
         int8_t m_edge_counter = 0;
     };
@@ -71,7 +71,7 @@ public:
     Iterator end() { return Iterator(*this); }
 
 private:
-    const Mesh* m_mesh;
+    const Mesh& m_mesh;
     const Simplex m_simplex;
     const PrimitiveType m_cofaces_type;
     TopDimensionCofacesIterable m_tdc_itrbl;

@@ -11,7 +11,7 @@ CofacesSingleDimensionIterable::CofacesSingleDimensionIterable(
     const Mesh& mesh,
     const Simplex& simplex,
     const PrimitiveType cofaces_type)
-    : m_mesh(&mesh)
+    : m_mesh(mesh)
     , m_simplex(simplex)
     , m_cofaces_type(cofaces_type)
     , m_tdc_itrbl(mesh, simplex, cofaces_type != mesh.top_simplex_type())
@@ -23,7 +23,7 @@ CofacesSingleDimensionIterable::CofacesSingleDimensionIterable(
 CofacesSingleDimensionIterable::Iterator::Iterator(
     CofacesSingleDimensionIterable& container,
     const Tuple& t)
-    : m_container(&container)
+    : m_container(container)
     , m_it(container.m_tdc_itrbl, t)
 {
     if ((*m_it).is_null()) {
@@ -35,7 +35,7 @@ CofacesSingleDimensionIterable::Iterator::Iterator(
 
 CofacesSingleDimensionIterable::Iterator& CofacesSingleDimensionIterable::Iterator::operator++()
 {
-    if (m_container->m_simplex.primitive_type() == m_container->m_cofaces_type) {
+    if (m_container.m_simplex.primitive_type() == m_container.m_cofaces_type) {
         *m_it = Tuple();
         return *this;
     }
@@ -65,8 +65,8 @@ const Tuple& CofacesSingleDimensionIterable::Iterator::operator*() const
 
 int64_t CofacesSingleDimensionIterable::Iterator::depth()
 {
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
     assert(mesh.top_cell_dimension() >= get_primitive_type_id(simplex.primitive_type()));
     assert(mesh.top_cell_dimension() - get_primitive_type_id(simplex.primitive_type()) < 4);
 
@@ -75,26 +75,26 @@ int64_t CofacesSingleDimensionIterable::Iterator::depth()
 
 bool CofacesSingleDimensionIterable::Iterator::is_coface_d0()
 {
-    return m_container->m_mesh->top_cell_dimension() ==
-           get_primitive_type_id(m_container->m_cofaces_type);
+    return m_container.m_mesh.top_cell_dimension() ==
+           get_primitive_type_id(m_container.m_cofaces_type);
 }
 
 void CofacesSingleDimensionIterable::Iterator::init()
 {
     if (depth() == 3 && !is_coface_d0()) {
-        const Mesh& mesh = *(m_container->m_mesh);
-        const PrimitiveType& cofaces_type = m_container->m_cofaces_type;
+        const Mesh& mesh = m_container.m_mesh;
+        const PrimitiveType& cofaces_type = m_container.m_cofaces_type;
 
-        m_container->m_visited_cofaces.is_visited(mesh.get_id_simplex(*m_it, cofaces_type));
+        m_container.m_visited_cofaces.is_visited(mesh.get_id_simplex(*m_it, cofaces_type));
     }
 }
 
 CofacesSingleDimensionIterable::Iterator& CofacesSingleDimensionIterable::Iterator::step_depth_3()
 {
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
-    const PrimitiveType& cofaces_type = m_container->m_cofaces_type;
-    auto& visited = m_container->m_visited_cofaces;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
+    const PrimitiveType& cofaces_type = m_container.m_cofaces_type;
+    auto& visited = m_container.m_visited_cofaces;
 
     if (!is_coface_d0()) {
         *m_it = mesh.switch_tuples(*m_it, {PrimitiveType::Edge, PrimitiveType::Triangle});

@@ -58,7 +58,7 @@ public:
         Tuple navigate_to_link(Tuple t);
 
     private:
-        LinkSingleDimensionIterable* m_container;
+        LinkSingleDimensionIterable& m_container;
         TopDimensionCofacesIterable::Iterator m_it;
         Tuple m_t;
         int8_t m_edge_counter = 0;
@@ -74,7 +74,7 @@ public:
     Iterator end() { return Iterator(*this); }
 
 private:
-    const Mesh* m_mesh;
+    const Mesh& m_mesh;
     const Simplex m_simplex;
     const PrimitiveType m_link_type;
     TopDimensionCofacesIterable m_tdc_itrbl;

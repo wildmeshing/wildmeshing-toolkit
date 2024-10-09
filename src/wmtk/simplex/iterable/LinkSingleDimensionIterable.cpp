@@ -14,7 +14,7 @@ LinkSingleDimensionIterable::LinkSingleDimensionIterable(
     const Mesh& mesh,
     const Simplex& simplex,
     const PrimitiveType link_type)
-    : m_mesh(&mesh)
+    : m_mesh(mesh)
     , m_simplex(simplex)
     , m_link_type(link_type)
     , m_tdc_itrbl(mesh, simplex, link_type == PrimitiveType::Vertex)
@@ -24,7 +24,7 @@ LinkSingleDimensionIterable::LinkSingleDimensionIterable(
 LinkSingleDimensionIterable::Iterator::Iterator(
     LinkSingleDimensionIterable& container,
     const Tuple& t)
-    : m_container(&container)
+    : m_container(container)
     , m_it(container.m_tdc_itrbl, t)
     , m_t(t)
 {
@@ -34,9 +34,9 @@ LinkSingleDimensionIterable::Iterator::Iterator(
 
     // check if link_type can exist
     {
-        const Mesh& mesh = *(m_container->m_mesh);
-        const simplex::Simplex& simplex = m_container->m_simplex;
-        const PrimitiveType link_pt = m_container->m_link_type;
+        const Mesh& mesh = m_container.m_mesh;
+        const simplex::Simplex& simplex = m_container.m_simplex;
+        const PrimitiveType link_pt = m_container.m_link_type;
         const int8_t m = mesh.top_cell_dimension();
         const int8_t s = get_primitive_type_id(simplex.primitive_type());
         const int8_t l = get_primitive_type_id(link_pt);
@@ -78,8 +78,8 @@ const Tuple& LinkSingleDimensionIterable::Iterator::operator*() const
 
 int64_t LinkSingleDimensionIterable::Iterator::depth()
 {
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
     assert(mesh.top_cell_dimension() >= get_primitive_type_id(simplex.primitive_type()));
     assert(mesh.top_cell_dimension() - get_primitive_type_id(simplex.primitive_type()) < 4);
 
@@ -88,8 +88,8 @@ int64_t LinkSingleDimensionIterable::Iterator::depth()
 
 bool LinkSingleDimensionIterable::Iterator::is_link_d1()
 {
-    return m_container->m_mesh->top_cell_dimension() - 1 ==
-           get_primitive_type_id(m_container->m_link_type);
+    return m_container.m_mesh.top_cell_dimension() - 1 ==
+           get_primitive_type_id(m_container.m_link_type);
 }
 
 void LinkSingleDimensionIterable::Iterator::init()
@@ -97,18 +97,18 @@ void LinkSingleDimensionIterable::Iterator::init()
     m_t = navigate_to_link(*m_it);
 
     if (depth() == 3) {
-        const Mesh& mesh = *(m_container->m_mesh);
-        const PrimitiveType& link_type = m_container->m_link_type;
+        const Mesh& mesh = m_container.m_mesh;
+        const PrimitiveType& link_type = m_container.m_link_type;
 
-        m_container->m_visited_link.is_visited(mesh.get_id_simplex(m_t, link_type));
+        m_container.m_visited_link.is_visited(mesh.get_id_simplex(m_t, link_type));
     }
 }
 
 LinkSingleDimensionIterable::Iterator& LinkSingleDimensionIterable::Iterator::step_depth_3()
 {
-    const Mesh& mesh = *(m_container->m_mesh);
-    const PrimitiveType& link_type = m_container->m_link_type;
-    auto& visited = m_container->m_visited_link;
+    const Mesh& mesh = m_container.m_mesh;
+    const PrimitiveType& link_type = m_container.m_link_type;
+    auto& visited = m_container.m_visited_link;
 
     if (!is_link_d1()) {
         m_t = mesh.switch_tuples(m_t, {PrimitiveType::Vertex, PrimitiveType::Edge});
@@ -140,7 +140,7 @@ Tuple LinkSingleDimensionIterable::Iterator::navigate_to_link(Tuple t)
         return t;
     }
     // invert the simplex using SimplexDart
-    const Mesh& mesh = *(m_container->m_mesh);
+    const Mesh& mesh = m_container.m_mesh;
     // const PrimitiveType& mesh_pt = mesh.top_simplex_type();
     // autogen::SimplexDart sd(mesh_pt);
 
@@ -170,8 +170,8 @@ Tuple LinkSingleDimensionIterable::Iterator::navigate_to_link(Tuple t)
          *
          * The following code implements these permutations.
          */
-        const simplex::Simplex& simplex = m_container->m_simplex;
-        const PrimitiveType link_pt = m_container->m_link_type;
+        const simplex::Simplex& simplex = m_container.m_simplex;
+        const PrimitiveType link_pt = m_container.m_link_type;
         const int8_t m = mesh.top_cell_dimension();
         const int8_t s = get_primitive_type_id(simplex.primitive_type());
 

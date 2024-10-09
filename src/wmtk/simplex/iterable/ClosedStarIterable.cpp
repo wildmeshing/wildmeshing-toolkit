@@ -11,14 +11,14 @@ namespace wmtk::simplex {
 
 
 ClosedStarIterable::ClosedStarIterable(const Mesh& mesh, const Simplex& simplex)
-    : m_mesh(&mesh)
+    : m_mesh(mesh)
     , m_simplex(simplex)
     , m_tdc_itrbl(mesh, simplex, true)
     , m_it_end(m_tdc_itrbl.end())
 {}
 
 ClosedStarIterable::Iterator::Iterator(ClosedStarIterable& container, const Tuple& t)
-    : m_container(&container)
+    : m_container(container)
     , m_it(container.m_tdc_itrbl, t)
     , m_t(t)
 {
@@ -43,8 +43,8 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::operator++()
     }
 
 
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
     const int8_t m = mesh.top_cell_dimension();
     const int8_t s = get_primitive_type_id(simplex.primitive_type());
 
@@ -201,18 +201,18 @@ bool ClosedStarIterable::Iterator::operator!=(const Iterator& other) const
 
 IdSimplex ClosedStarIterable::Iterator::operator*()
 {
-    return m_container->m_mesh->get_id_simplex(m_t, get_primitive_type_from_id(m_pt));
+    return m_container.m_mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt));
 }
 
 const IdSimplex ClosedStarIterable::Iterator::operator*() const
 {
-    return m_container->m_mesh->get_id_simplex(m_t, get_primitive_type_from_id(m_pt));
+    return m_container.m_mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt));
 }
 
 int64_t ClosedStarIterable::Iterator::depth()
 {
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
     assert(mesh.top_cell_dimension() >= get_primitive_type_id(simplex.primitive_type()));
     assert(mesh.top_cell_dimension() - get_primitive_type_id(simplex.primitive_type()) < 4);
 
@@ -223,10 +223,10 @@ void ClosedStarIterable::Iterator::init() {}
 
 ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_depth_3()
 {
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
-    auto& visited_c = m_container->m_visited_cofaces;
-    auto& visited_l = m_container->m_visited_link;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
+    auto& visited_c = m_container.m_visited_cofaces;
+    auto& visited_l = m_container.m_visited_link;
 
     assert(mesh.top_simplex_type() == PrimitiveType::Tetrahedron);
     assert(simplex.primitive_type() == PrimitiveType::Vertex);
@@ -296,8 +296,8 @@ Tuple ClosedStarIterable::Iterator::navigate_to_link(Tuple t)
     if (t.is_null()) {
         return t;
     }
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
 
     /*
      * Assume a tuple that contains the vertices (a,b,c,d) and the simplex is an edge, i.e.,
@@ -328,8 +328,8 @@ Tuple ClosedStarIterable::Iterator::navigate_to_link(Tuple t)
 
 void ClosedStarIterable::Iterator::step_faces()
 {
-    const Mesh& mesh = *(m_container->m_mesh);
-    const simplex::Simplex& simplex = m_container->m_simplex;
+    const Mesh& mesh = m_container.m_mesh;
+    const simplex::Simplex& simplex = m_container.m_simplex;
 
     constexpr PrimitiveType PV = PrimitiveType::Vertex;
     constexpr PrimitiveType PE = PrimitiveType::Edge;
