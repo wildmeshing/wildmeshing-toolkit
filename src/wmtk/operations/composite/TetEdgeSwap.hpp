@@ -18,7 +18,7 @@ namespace wmtk::operations::composite {
 class TetEdgeSwap : public Operation
 {
 public:
-    TetEdgeSwap(Mesh& m, int64_t collapse_index = 0);
+    TetEdgeSwap(TetMesh& m, int64_t collapse_index = 0);
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 

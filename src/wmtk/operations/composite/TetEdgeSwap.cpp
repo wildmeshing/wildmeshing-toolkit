@@ -7,7 +7,7 @@
 #include <wmtk/Mesh.hpp>
 
 namespace wmtk::operations::composite {
-TetEdgeSwap::TetEdgeSwap(Mesh& m, int64_t collapse_index)
+TetEdgeSwap::TetEdgeSwap(TetMesh& m, int64_t collapse_index)
     : Operation(m)
     , m_split(m)
     , m_collapse(m)

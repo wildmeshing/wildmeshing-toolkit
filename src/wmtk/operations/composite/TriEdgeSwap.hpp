@@ -40,7 +40,7 @@ namespace wmtk::operations::composite {
 class TriEdgeSwap : public Operation
 {
 public:
-    TriEdgeSwap(Mesh& m);
+    TriEdgeSwap(TriMesh& m);
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 
