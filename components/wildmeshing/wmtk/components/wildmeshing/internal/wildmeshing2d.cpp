@@ -687,6 +687,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
 
         op.add_transfer_strategy(amips_update);
         op.add_transfer_strategy(edge_length_update);
+        op.add_transfer_strategy(tag_update);
         // op.add_transfer_strategy(target_edge_length_update);
         // for (auto& s : update_child_position) {
         //     op.add_transfer_strategy(s);
@@ -698,6 +699,15 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
 
         collapse.set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::CopyOther);
         split.set_new_attribute_strategy(pt_attribute);
+
+        split.set_new_attribute_strategy(
+            visited_edge_flag,
+            wmtk::operations::SplitBasicStrategy::None,
+            wmtk::operations::SplitRibBasicStrategy::None);
+
+        collapse.set_new_attribute_strategy(
+            visited_edge_flag,
+            wmtk::operations::CollapseBasicStrategy::None);
 
         split.set_new_attribute_strategy(
             target_edge_length_attribute,
@@ -852,17 +862,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
 
     logger().info("----------------------- Preprocess Collapse -----------------------");
 
-    // TODO: remove for performance
-    for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
-        const auto vertices = mesh->orient_vertices(t);
-        std::vector<Vector3r> pos;
-        for (int i = 0; i < vertices.size(); ++i) {
-            pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
-        }
-        if (wmtk::utils::wmtk_orient3d(pos[0], pos[1], pos[2], pos[3]) <= 0) {
-            wmtk::logger().error("Flipped tet!");
-        }
-    }
     logger().info("Executing collapse ...");
 
 
@@ -935,17 +934,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
         SchedulerStats pass_stats;
         int jj = 0;
         for (auto& op : ops) {
-            // TODO: remove for performance
-            for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
-                const auto vertices = mesh->orient_vertices(t);
-                std::vector<Vector3r> pos;
-                for (int i = 0; i < vertices.size(); ++i) {
-                    pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
-                }
-                if (wmtk::utils::wmtk_orient3d(pos[0], pos[1], pos[2], pos[3]) <= 0) {
-                    wmtk::logger().error("Flipped tet!");
-                }
-            }
             logger().info("Executing {} ...", ops_name[jj]);
             SchedulerStats stats;
             if (op->primitive_type() == PrimitiveType::Edge) {

@@ -3,12 +3,12 @@
 
 namespace wmtk::triwild {
 
-std::shared_ptr<TriMesh> generate_bg_grid(
+wmtk::TriMesh generate_bg_grid(
     const double x_min,
     const double y_min,
     const double x_max,
     const double y_max,
     const double length_rel,
-    const double margin_eps);
+    const double margin_eps = 0.1);
 
 } // namespace wmtk::triwild

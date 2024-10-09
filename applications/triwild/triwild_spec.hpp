@@ -13,7 +13,7 @@ nlohmann::json triwild_spec = R"(
           "report",
           "envelope_size",
           "target_edge_length",
-          "max_amips",
+          "target_max_amips",
           "max_passes",
           "intermediate_output"
         ]
@@ -38,9 +38,14 @@ nlohmann::json triwild_spec = R"(
     "default": false
 },
 {
-    "pointer": "/max_amips",
+    "pointer": "/target_max_amips",
     "type": "float",
     "default": 10.0
+},
+{
+    "pointer": "/target_edge_length",
+    "type": "float",
+    "default": 0.05
 },
 {
     "pointer": "/max_passes",

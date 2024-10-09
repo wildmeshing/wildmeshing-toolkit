@@ -20,6 +20,7 @@
 #include <wmtk/components/winding_number/winding_number.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
+#include "triwild_grid.hpp"
 #include "triwild_spec.hpp"
 
 using namespace wmtk;
@@ -57,8 +58,11 @@ int main(int argc, char* argv[])
 
     fs::path input_file = resolve_paths(json_input_file, {j["root"], j["input"]});
 
-    auto mesh = wmtk::components::input(input_file);
-    wmtk::logger().info("mesh has {} vertices", mesh->get_all(PrimitiveType::Vertex).size());
+    auto mesh = wmtk::components::input(input_file, true);
+    wmtk::logger().info(
+        "mesh has {} vertices and {} edges",
+        mesh->get_all(PrimitiveType::Vertex).size(),
+        mesh->get_all(PrimitiveType::Edge).size());
 
     // TODO: use procedural
 
@@ -79,40 +83,58 @@ int main(int argc, char* argv[])
         y_max = std::max(y_max, mesh_pt_accessor.const_vector_attribute(v)[1]);
     }
 
-    const double diag = (Eigen::Vector2d(x_min, y_min) - Eigen::Vector2d(x_max, y_max)).norm();
-    const double eps = 0.2; // TODO: change with length_rel
-    x_min -= diag * eps;
-    y_min -= diag * eps;
-    x_max += diag * eps;
-    y_max += diag * eps;
+    // const double diag = (Eigen::Vector2d(x_min, y_min) - Eigen::Vector2d(x_max, y_max)).norm();
+    // const double eps = 0.2; // TODO: change with length_rel
+    // x_min -= diag * eps;
+    // y_min -= diag * eps;
+    // x_max += diag * eps;
+    // y_max += diag * eps;
 
-    MatrixX<Rational> V;
-    V.resize(4, 2);
-    V.row(0) = Vector2r(x_min, y_min);
-    V.row(1) = Vector2r(x_max, y_min);
-    V.row(2) = Vector2r(x_max, y_max);
-    V.row(3) = Vector2r(x_min, y_max);
+    // MatrixX<Rational> V;
+    // V.resize(4, 2);
+    // V.row(0) = Vector2r(x_min, y_min);
+    // V.row(1) = Vector2r(x_max, y_min);
+    // V.row(2) = Vector2r(x_max, y_max);
+    // V.row(3) = Vector2r(x_min, y_max);
 
-    RowVectors3l F;
-    F.resize(2, 3);
-    F.row(0) << 0, 1, 2;
-    F.row(1) << 0, 2, 3;
+    // RowVectors3l F;
+    // F.resize(2, 3);
+    // F.row(0) << 0, 1, 2;
+    // F.row(1) << 0, 2, 3;
 
-    wmtk::TriMesh bg_mesh;
-    bg_mesh.initialize(F, false);
-    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, bg_mesh);
+    // wmtk::TriMesh bg_mesh;
+    // bg_mesh.initialize(F, false);
+    // mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, bg_mesh);
+
+    auto bg_mesh =
+        wmtk::triwild::generate_bg_grid(x_min, y_min, x_max, y_max, j["target_edge_length"]);
+
+    wmtk::components::output(bg_mesh, "bg_mesh", "vertices");
+
+    wmtk::logger().info("generated bg mesh");
 
     // auto em = static_cast<const wmtk::EdgeMesh&>(*mesh);
 
     wmtk::components::EdgeInsertionMeshes eim =
         wmtk::components::edge_insertion(static_cast<EdgeMesh&>(*mesh), bg_mesh);
 
+    wmtk::logger().info("finised edge insertion");
+
     std::vector<attribute::MeshAttributeHandle> pass_through;
     auto trimesh = eim.tri_mesh;
     auto edgemesh = eim.inserted_edge_mesh;
+    auto bboxmesh = eim.bbox_mesh;
+
+    std::string output_file = j["output"];
+
+    wmtk::components::output(*trimesh, output_file + "_after_insertion", "vertices");
+    wmtk::components::output(*edgemesh, output_file + "_after_insertion_edge_mesh", "vertices");
 
     auto input_handle = trimesh->get_attribute_handle<int64_t>("input", PrimitiveType::Edge);
     pass_through.push_back(input_handle);
+    auto bbox_handle = trimesh->get_attribute_handle<int64_t>("bbox", PrimitiveType::Edge);
+    pass_through.push_back(bbox_handle);
+
 
     // TODO: add open vertex boundary
     std::vector<wmtk::components::EnvelopeOptions> enves;
@@ -130,6 +152,16 @@ int main(int argc, char* argv[])
     }
 
     enves.push_back(e);
+
+    wmtk::components::EnvelopeOptions e2;
+    e2.envelope_name = "bbox";
+    e2.envelope_constrained_mesh = bboxmesh;
+    e2.envelope_geometry_mesh = bboxmesh;
+    e2.constrained_position_name = "vertices";
+    e2.geometry_position_name = "vertices";
+    e2.thickness = 0.0001;
+
+    enves.push_back(e2);
 
 
     wmtk::components::WildMeshingOptions wmo;
@@ -149,7 +181,7 @@ int main(int argc, char* argv[])
     auto meshes_after_tetwild = wildmeshing(wmo);
     auto main_mesh = meshes_after_tetwild[0].first;
 
-    std::string output_file = j["output"];
+    wmtk::components::output(*main_mesh, output_file, "vertices");
 
     std::shared_ptr<Mesh> input_mesh;
     for (int64_t i = 1; i < meshes_after_tetwild.size(); ++i) {
@@ -164,18 +196,12 @@ int main(int argc, char* argv[])
         }
     }
 
-
-    auto mesh_after_winding_number = winding_number(main_mesh, input_mesh);
-
-    wmtk::components::output(*mesh_after_winding_number, output_file, "vertices");
-
     const std::string report = j["report"];
     if (!report.empty()) {
         nlohmann::json out_json;
-        out_json["vertices"] = mesh_after_winding_number->get_all(PrimitiveType::Vertex).size();
-        out_json["edges"] = mesh_after_winding_number->get_all(PrimitiveType::Edge).size();
-        out_json["faces"] = mesh_after_winding_number->get_all(PrimitiveType::Triangle).size();
-        out_json["cells"] = mesh_after_winding_number->get_all(PrimitiveType::Tetrahedron).size();
+        out_json["vertices"] = main_mesh->get_all(PrimitiveType::Vertex).size();
+        out_json["edges"] = main_mesh->get_all(PrimitiveType::Edge).size();
+        out_json["cells"] = main_mesh->get_all(PrimitiveType::Triangle).size();
 
         out_json["input"] = j;
 
@@ -183,6 +209,24 @@ int main(int argc, char* argv[])
         ofs << out_json;
     }
 
+    // auto mesh_after_winding_number = winding_number(main_mesh, input_mesh);
+
+    // wmtk::components::output(*mesh_after_winding_number, output_file, "vertices");
+
+    // const std::string report = j["report"];
+    // if (!report.empty()) {
+    //     nlohmann::json out_json;
+    //     out_json["vertices"] = mesh_after_winding_number->get_all(PrimitiveType::Vertex).size();
+    //     out_json["edges"] = mesh_after_winding_number->get_all(PrimitiveType::Edge).size();
+    //     out_json["faces"] = mesh_after_winding_number->get_all(PrimitiveType::Triangle).size();
+    //     out_json["cells"] =
+    //     mesh_after_winding_number->get_all(PrimitiveType::Tetrahedron).size();
+
+    //     out_json["input"] = j;
+
+    //     std::ofstream ofs(report);
+    //     ofs << out_json;
+    // }
 
     return 0;
 }
