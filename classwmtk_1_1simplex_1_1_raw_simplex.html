@@ -127,6 +127,8 @@ $(document).ready(function(){initNavTree('classwmtk_1_1simplex_1_1_raw_simplex.h
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a0afd698af23c3f24f1932e3368ceef7c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_raw_simplex.html#a0afd698af23c3f24f1932e3368ceef7c">RawSimplex</a> ()=default</td></tr>
+<tr class="separator:a0afd698af23c3f24f1932e3368ceef7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4a2cf09ebca37f5d061fbfa76a545468"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_raw_simplex.html#a4a2cf09ebca37f5d061fbfa76a545468">RawSimplex</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;<a class="el" href="namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455">vertices</a>)</td></tr>
 <tr class="separator:a4a2cf09ebca37f5d061fbfa76a545468"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea5b8edb4bf1a8634f1341e0d917a3d8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_raw_simplex.html#aea5b8edb4bf1a8634f1341e0d917a3d8">RawSimplex</a> (std::vector&lt; int64_t &gt; &amp;&amp;<a class="el" href="namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455">vertices</a>)</td></tr>
@@ -164,8 +166,41 @@ Private Attributes</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="_raw_simplex_8hpp_source.html#l00019">19</a> of file <a class="el" href="_raw_simplex_8hpp_source.html">RawSimplex.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a0afd698af23c3f24f1932e3368ceef7c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0afd698af23c3f24f1932e3368ceef7c">&#9670;&nbsp;</a></span>RawSimplex() <span class="overload">[1/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::simplex::RawSimplex::RawSimplex </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="reference">Referenced by <a class="el" href="_raw_simplex_8cpp_source.html#l00111">faces()</a>, and <a class="el" href="_raw_simplex_8cpp_source.html#l00089">opposite_face()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_raw_simplex_a0afd698af23c3f24f1932e3368ceef7c_icgraph.svg" width="475" height="118"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
 <a id="a4a2cf09ebca37f5d061fbfa76a545468"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4a2cf09ebca37f5d061fbfa76a545468">&#9670;&nbsp;</a></span>RawSimplex() <span class="overload">[1/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a2cf09ebca37f5d061fbfa76a545468">&#9670;&nbsp;</a></span>RawSimplex() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -190,28 +225,20 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00010">10</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00011">11</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00995">wmtk::Mesh::id()</a>, <a class="el" href="_mesh_8cpp_source.html#l00064">wmtk::Mesh::is_valid()</a>, <a class="el" href="_raw_simplex_8hpp_source.html#l00071">m_vertices</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="faces__single__dimension_8cpp_source.html#l00009">wmtk::simplex::vertices()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="_raw_simplex_8cpp_source.html#l00115">faces()</a>, and <a class="el" href="_raw_simplex_8cpp_source.html#l00093">opposite_face()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l01005">wmtk::Mesh::id()</a>, <a class="el" href="_mesh_8cpp_source.html#l00075">wmtk::Mesh::is_valid()</a>, <a class="el" href="_raw_simplex_8hpp_source.html#l00073">m_vertices</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="faces__single__dimension_8cpp_source.html#l00009">wmtk::simplex::vertices()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_raw_simplex_a4a2cf09ebca37f5d061fbfa76a545468_cgraph.svg" width="100%" height="550"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
-<div class="dynheader">
-Here is the caller graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_raw_simplex_a4a2cf09ebca37f5d061fbfa76a545468_icgraph.svg" width="475" height="118"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
-</div>
-</div>
 
 </div>
 </div>
 <a id="aea5b8edb4bf1a8634f1341e0d917a3d8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aea5b8edb4bf1a8634f1341e0d917a3d8">&#9670;&nbsp;</a></span>RawSimplex() <span class="overload">[2/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aea5b8edb4bf1a8634f1341e0d917a3d8">&#9670;&nbsp;</a></span>RawSimplex() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -226,14 +253,14 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00026">26</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00024">24</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_raw_simplex_8hpp_source.html#l00071">m_vertices</a>.</p>
+<p class="reference">References <a class="el" href="_raw_simplex_8hpp_source.html#l00073">m_vertices</a>.</p>
 
 </div>
 </div>
 <a id="ab34f801a0205148981e72fde09c26083"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab34f801a0205148981e72fde09c26083">&#9670;&nbsp;</a></span>RawSimplex() <span class="overload">[3/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ab34f801a0205148981e72fde09c26083">&#9670;&nbsp;</a></span>RawSimplex() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -258,7 +285,7 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00032">32</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00030">30</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_simplex_8hpp_source.html#l00053">wmtk::simplex::Simplex::tuple()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
@@ -286,11 +313,11 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00040">40</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00038">38</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_raw_simplex_8hpp_source.html#l00071">m_vertices</a>.</p>
+<p class="reference">References <a class="el" href="_raw_simplex_8hpp_source.html#l00073">m_vertices</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_raw_simplex_8cpp_source.html#l00115">faces()</a>, <a class="el" href="_raw_simplex_8cpp_source.html#l00054">operator&lt;()</a>, and <a class="el" href="_raw_simplex_8cpp_source.html#l00067">opposite_face()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_raw_simplex_8cpp_source.html#l00111">faces()</a>, <a class="el" href="_raw_simplex_8cpp_source.html#l00052">operator&lt;()</a>, and <a class="el" href="_raw_simplex_8cpp_source.html#l00065">opposite_face()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -317,13 +344,13 @@ Here is the caller graph for this function:</div>
 
 <p>Get all faces of the simplex. </p>
 
-<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00115">115</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00111">111</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_raw_simplex_8cpp_source.html#l00040">dimension()</a>, <a class="el" href="_raw_simplex_8hpp_source.html#l00071">m_vertices</a>, and <a class="el" href="_raw_simplex_8cpp_source.html#l00010">RawSimplex()</a>.</p>
+<p class="reference">References <a class="el" href="_raw_simplex_8cpp_source.html#l00038">dimension()</a>, <a class="el" href="_raw_simplex_8hpp_source.html#l00073">m_vertices</a>, and <a class="el" href="classwmtk_1_1simplex_1_1_raw_simplex.html#a0afd698af23c3f24f1932e3368ceef7c">RawSimplex()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_raw_simplex_a7be4fe53fa55a6b42f064623b4edefbb_cgraph.svg" width="100%" height="550"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_raw_simplex_a7be4fe53fa55a6b42f064623b4edefbb_cgraph.svg" width="475" height="118"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -345,9 +372,9 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00054">54</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00052">52</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_raw_simplex_8cpp_source.html#l00040">dimension()</a>, and <a class="el" href="_raw_simplex_8hpp_source.html#l00071">m_vertices</a>.</p>
+<p class="reference">References <a class="el" href="_raw_simplex_8cpp_source.html#l00038">dimension()</a>, and <a class="el" href="_raw_simplex_8hpp_source.html#l00073">m_vertices</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -373,9 +400,9 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00045">45</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00043">43</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_raw_simplex_8hpp_source.html#l00071">m_vertices</a>.</p>
+<p class="reference">References <a class="el" href="_raw_simplex_8hpp_source.html#l00073">m_vertices</a>.</p>
 
 </div>
 </div>
@@ -405,11 +432,11 @@ Here is the call graph for this function:</div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classwmtk_1_1simplex_1_1_raw_simplex.html" title="A meshless implementation of the simplex that just stores an array of ids.">RawSimplex</a> representing the face opposing the given vertex. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00067">67</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00065">65</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_raw_simplex_8cpp_source.html#l00040">dimension()</a>, and <a class="el" href="_raw_simplex_8hpp_source.html#l00071">m_vertices</a>.</p>
+<p class="reference">References <a class="el" href="_raw_simplex_8cpp_source.html#l00038">dimension()</a>, and <a class="el" href="_raw_simplex_8hpp_source.html#l00073">m_vertices</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_raw_simplex_8cpp_source.html#l00084">opposite_face()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_raw_simplex_8cpp_source.html#l00082">opposite_face()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -462,9 +489,9 @@ Here is the caller graph for this function:</div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classwmtk_1_1simplex_1_1_raw_simplex.html" title="A meshless implementation of the simplex that just stores an array of ids.">RawSimplex</a> representing the face opposing the given vertex. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00084">84</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00082">82</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00995">wmtk::Mesh::id()</a>, <a class="el" href="_mesh_8cpp_source.html#l00064">wmtk::Mesh::is_valid()</a>, <a class="el" href="_raw_simplex_8cpp_source.html#l00067">opposite_face()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l01005">wmtk::Mesh::id()</a>, <a class="el" href="_mesh_8cpp_source.html#l00075">wmtk::Mesh::is_valid()</a>, <a class="el" href="_raw_simplex_8cpp_source.html#l00065">opposite_face()</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -500,13 +527,13 @@ Here is the call graph for this function:</div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classwmtk_1_1simplex_1_1_raw_simplex.html" title="A meshless implementation of the simplex that just stores an array of ids.">RawSimplex</a> representing the face opposing the given face. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00093">93</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_raw_simplex_8cpp_source.html#l00089">89</a> of file <a class="el" href="_raw_simplex_8cpp_source.html">RawSimplex.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_raw_simplex_8hpp_source.html#l00071">m_vertices</a>, and <a class="el" href="_raw_simplex_8cpp_source.html#l00010">RawSimplex()</a>.</p>
+<p class="reference">References <a class="el" href="_raw_simplex_8hpp_source.html#l00073">m_vertices</a>, and <a class="el" href="classwmtk_1_1simplex_1_1_raw_simplex.html#a0afd698af23c3f24f1932e3368ceef7c">RawSimplex()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_raw_simplex_a71ffd28f240b5d3868306fd4c5c8143d_cgraph.svg" width="100%" height="550"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_raw_simplex_a71ffd28f240b5d3868306fd4c5c8143d_cgraph.svg" width="475" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -533,9 +560,9 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_raw_simplex_8hpp_source.html#l00071">71</a> of file <a class="el" href="_raw_simplex_8hpp_source.html">RawSimplex.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_raw_simplex_8hpp_source.html#l00073">73</a> of file <a class="el" href="_raw_simplex_8hpp_source.html">RawSimplex.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_raw_simplex_8cpp_source.html#l00040">dimension()</a>, <a class="el" href="_raw_simplex_8cpp_source.html#l00115">faces()</a>, <a class="el" href="_raw_simplex_8cpp_source.html#l00054">operator&lt;()</a>, <a class="el" href="_raw_simplex_8cpp_source.html#l00045">operator==()</a>, <a class="el" href="_raw_simplex_8cpp_source.html#l00067">opposite_face()</a>, and <a class="el" href="_raw_simplex_8cpp_source.html#l00010">RawSimplex()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_raw_simplex_8cpp_source.html#l00038">dimension()</a>, <a class="el" href="_raw_simplex_8cpp_source.html#l00111">faces()</a>, <a class="el" href="_raw_simplex_8cpp_source.html#l00052">operator&lt;()</a>, <a class="el" href="_raw_simplex_8cpp_source.html#l00043">operator==()</a>, <a class="el" href="_raw_simplex_8cpp_source.html#l00065">opposite_face()</a>, and <a class="el" href="_raw_simplex_8cpp_source.html#l00011">RawSimplex()</a>.</p>
 
 </div>
 </div>

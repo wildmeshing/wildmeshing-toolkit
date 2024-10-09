@@ -118,6 +118,9 @@ $(document).ready(function(){initNavTree('namespacewmtk_1_1simplex_1_1internal.h
 <div class="title">wmtk::simplex::internal Namespace Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>This class is a utility to perform breadth first search on simplices.  
+<a href="namespacewmtk_1_1simplex_1_1internal.html#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
@@ -128,6 +131,8 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html">SimplexEqualFunctor</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html">SimplexLessFunctor</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1internal_1_1_visited_array.html">VisitedArray</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
@@ -148,7 +153,9 @@ Functions</h2></td></tr>
 <tr class="memdesc:a79e56c4a28bee846e3eadeb8031c3091"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the faces (single-dimension) of a simplex that are also cofaces of a given face.  <a href="namespacewmtk_1_1simplex_1_1internal.html#a79e56c4a28bee846e3eadeb8031c3091">More...</a><br /></td></tr>
 <tr class="separator:a79e56c4a28bee846e3eadeb8031c3091"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>This class is a utility to perform breadth first search on simplices. </p>
+</div><h2 class="groupheader">Function Documentation</h2>
 <a id="a79e56c4a28bee846e3eadeb8031c3091"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a79e56c4a28bee846e3eadeb8031c3091">&#9670;&nbsp;</a></span>boundary_with_preserved_face_simplices() <span class="overload">[1/2]</span></h2>
 
@@ -388,9 +395,9 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="boundary__with__preserved__face_8cpp_source.html#l00007">7</a> of file <a class="el" href="boundary__with__preserved__face_8cpp_source.html">boundary_with_preserved_face.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00017">wmtk::PE</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">PF</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00006">PT</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00016">wmtk::PV</a>, <a class="el" href="_mesh_8hpp_source.html#l00942">wmtk::Mesh::switch_tuples()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00017">wmtk::PE</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">PF</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00006">PT</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00016">wmtk::PV</a>, <a class="el" href="_mesh_8hpp_source.html#l00952">wmtk::Mesh::switch_tuples()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b">wmtk::Triangle</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="boundary__with__preserved__face_8cpp_source.html#l00057">boundary_with_preserved_face_simplices()</a>, <a class="el" href="boundary__with__preserved__face_8cpp_source.html#l00048">boundary_with_preserved_face_tuples()</a>, and <a class="el" href="cofaces__single__dimension_8cpp_source.html#l00048">wmtk::simplex::cofaces_single_dimension_tuples()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="boundary__with__preserved__face_8cpp_source.html#l00057">boundary_with_preserved_face_simplices()</a>, <a class="el" href="boundary__with__preserved__face_8cpp_source.html#l00048">boundary_with_preserved_face_tuples()</a>, and <a class="el" href="cofaces__single__dimension_8cpp_source.html#l00130">wmtk::simplex::cofaces_single_dimension_tuples()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">

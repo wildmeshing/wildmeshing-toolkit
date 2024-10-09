@@ -9,8 +9,12 @@ var dir_cbc9327ef122fb9d2e3099bcf15f379f =
     [ "closed_star.hpp", "closed__star_8hpp.html", "closed__star_8hpp" ],
     [ "closed_star_iterable.cpp", "closed__star__iterable_8cpp.html", "closed__star__iterable_8cpp" ],
     [ "closed_star_iterable.hpp", "closed__star__iterable_8hpp.html", "closed__star__iterable_8hpp" ],
+    [ "cofaces_in_simplex_iterable.cpp", "cofaces__in__simplex__iterable_8cpp.html", "cofaces__in__simplex__iterable_8cpp" ],
+    [ "cofaces_in_simplex_iterable.hpp", "cofaces__in__simplex__iterable_8hpp.html", "cofaces__in__simplex__iterable_8hpp" ],
     [ "cofaces_single_dimension.cpp", "cofaces__single__dimension_8cpp.html", "cofaces__single__dimension_8cpp" ],
     [ "cofaces_single_dimension.hpp", "cofaces__single__dimension_8hpp.html", "cofaces__single__dimension_8hpp" ],
+    [ "cofaces_single_dimension_iterable.cpp", "cofaces__single__dimension__iterable_8cpp.html", "cofaces__single__dimension__iterable_8cpp" ],
+    [ "cofaces_single_dimension_iterable.hpp", "cofaces__single__dimension__iterable_8hpp.html", "cofaces__single__dimension__iterable_8hpp" ],
     [ "faces.cpp", "faces_8cpp.html", "faces_8cpp" ],
     [ "faces.hpp", "faces_8hpp.html", "faces_8hpp" ],
     [ "faces_iterable.cpp", "faces__iterable_8cpp.html", "faces__iterable_8cpp" ],
@@ -31,6 +35,8 @@ var dir_cbc9327ef122fb9d2e3099bcf15f379f =
     [ "link_iterable.hpp", "link__iterable_8hpp.html", "link__iterable_8hpp" ],
     [ "link_single_dimension.cpp", "link__single__dimension_8cpp.html", "link__single__dimension_8cpp" ],
     [ "link_single_dimension.hpp", "link__single__dimension_8hpp.html", "link__single__dimension_8hpp" ],
+    [ "link_single_dimension_iterable.cpp", "link__single__dimension__iterable_8cpp.html", "link__single__dimension__iterable_8cpp" ],
+    [ "link_single_dimension_iterable.hpp", "link__single__dimension__iterable_8hpp.html", "link__single__dimension__iterable_8hpp" ],
     [ "NavigatableSimplex.cpp", "_navigatable_simplex_8cpp.html", null ],
     [ "NavigatableSimplex.hpp", "_navigatable_simplex_8hpp.html", [
       [ "NavigatableSimplex", "classwmtk_1_1simplex_1_1_navigatable_simplex.html", "classwmtk_1_1simplex_1_1_navigatable_simplex" ]

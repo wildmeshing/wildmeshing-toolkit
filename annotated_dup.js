@@ -272,7 +272,8 @@ var annotated_dup =
           [ "HomogeneousSimplexEqualFunctor", "structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_equal_functor.html", "structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_equal_functor" ],
           [ "HomogeneousSimplexLessFunctor", "structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_less_functor.html", "structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_less_functor" ],
           [ "SimplexEqualFunctor", "structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html", "structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor" ],
-          [ "SimplexLessFunctor", "structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html", "structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor" ]
+          [ "SimplexLessFunctor", "structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html", "structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor" ],
+          [ "VisitedArray", "classwmtk_1_1simplex_1_1internal_1_1_visited_array.html", "classwmtk_1_1simplex_1_1internal_1_1_visited_array" ]
         ] ],
         [ "utils", "namespacewmtk_1_1simplex_1_1utils.html", [
           [ "MeshSimplexComparator", "classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator.html", "classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator" ],
@@ -280,8 +281,11 @@ var annotated_dup =
         ] ],
         [ "IdSimplex", "classwmtk_1_1simplex_1_1_id_simplex.html", "classwmtk_1_1simplex_1_1_id_simplex" ],
         [ "ClosedStarIterable", "classwmtk_1_1simplex_1_1_closed_star_iterable.html", "classwmtk_1_1simplex_1_1_closed_star_iterable" ],
+        [ "CofacesInSimplexIterable", "classwmtk_1_1simplex_1_1_cofaces_in_simplex_iterable.html", "classwmtk_1_1simplex_1_1_cofaces_in_simplex_iterable" ],
+        [ "CofacesSingleDimensionIterable", "classwmtk_1_1simplex_1_1_cofaces_single_dimension_iterable.html", "classwmtk_1_1simplex_1_1_cofaces_single_dimension_iterable" ],
         [ "FacesIterable", "classwmtk_1_1simplex_1_1_faces_iterable.html", "classwmtk_1_1simplex_1_1_faces_iterable" ],
         [ "LinkIterable", "classwmtk_1_1simplex_1_1_link_iterable.html", "classwmtk_1_1simplex_1_1_link_iterable" ],
+        [ "LinkSingleDimensionIterable", "classwmtk_1_1simplex_1_1_link_single_dimension_iterable.html", "classwmtk_1_1simplex_1_1_link_single_dimension_iterable" ],
         [ "OpenStarIterable", "classwmtk_1_1simplex_1_1_open_star_iterable.html", "classwmtk_1_1simplex_1_1_open_star_iterable" ],
         [ "TopDimensionCofacesIterable", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable" ],
         [ "NavigatableSimplex", "classwmtk_1_1simplex_1_1_navigatable_simplex.html", "classwmtk_1_1simplex_1_1_navigatable_simplex" ],
@@ -338,6 +342,7 @@ var annotated_dup =
           [ "unwrap_reference< std::reference_wrapper< U > >", "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4.html", "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4" ],
           [ "unwrap_ref_decay", "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__ref__decay.html", null ]
         ] ],
+        [ "DynamicArray", "classwmtk_1_1utils_1_1_dynamic_array.html", "classwmtk_1_1utils_1_1_dynamic_array" ],
         [ "EigenMatrixWriter", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html", "classwmtk_1_1utils_1_1_eigen_matrix_writer" ],
         [ "Hashable", "classwmtk_1_1utils_1_1_hashable.html", "classwmtk_1_1utils_1_1_hashable" ],
         [ "MerkleTreeInteriorNode", "classwmtk_1_1utils_1_1_merkle_tree_interior_node.html", "classwmtk_1_1utils_1_1_merkle_tree_interior_node" ],

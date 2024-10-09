@@ -4,6 +4,11 @@ var namespaces_dup =
     [ "cdt_lib", "namespacecdt__lib.html", [
       [ "Accessors", "md_src_wmtk_attribute__r_e_a_d_m_e.html#autotoc_md18", null ],
       [ "Handles", "md_src_wmtk_attribute__r_e_a_d_m_e.html#autotoc_md19", null ],
+      [ "Top Dimension Cofaces", "md_src_wmtk_simplex_iterable__r_e_a_d_m_e.html#autotoc_md21", null ],
+      [ "Other Iterables", "md_src_wmtk_simplex_iterable__r_e_a_d_m_e.html#autotoc_md22", null ],
+      [ "Simplex Classes", "md_src_wmtk_simplex__r_e_a_d_m_e.html#autotoc_md24", null ],
+      [ "SimplexCollection", "md_src_wmtk_simplex__r_e_a_d_m_e.html#autotoc_md25", null ],
+      [ "Navigation", "md_src_wmtk_simplex__r_e_a_d_m_e.html#autotoc_md26", null ],
       [ "cdt_to_string", "namespacecdt__lib.html#a40192b03240def7444809efadd874e75", null ],
       [ "convert_cdt_to_stl", "namespacecdt__lib.html#ac062c4c4f484d064f21504548bb59cd5", null ],
       [ "convert_trimesh_to_input_plc", "namespacecdt__lib.html#a52084504838ae63f4bee25cc36eafe9b", null ],

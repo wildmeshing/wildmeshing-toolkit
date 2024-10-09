@@ -2,6 +2,7 @@ var namespacewmtk_1_1utils =
 [
     [ "detail", "namespacewmtk_1_1utils_1_1detail.html", "namespacewmtk_1_1utils_1_1detail" ],
     [ "metaprogramming", "namespacewmtk_1_1utils_1_1metaprogramming.html", "namespacewmtk_1_1utils_1_1metaprogramming" ],
+    [ "DynamicArray", "classwmtk_1_1utils_1_1_dynamic_array.html", "classwmtk_1_1utils_1_1_dynamic_array" ],
     [ "EigenMatrixWriter", "classwmtk_1_1utils_1_1_eigen_matrix_writer.html", "classwmtk_1_1utils_1_1_eigen_matrix_writer" ],
     [ "Hashable", "classwmtk_1_1utils_1_1_hashable.html", "classwmtk_1_1utils_1_1_hashable" ],
     [ "MerkleTreeInteriorNode", "classwmtk_1_1utils_1_1_merkle_tree_interior_node.html", "classwmtk_1_1utils_1_1_merkle_tree_interior_node" ],

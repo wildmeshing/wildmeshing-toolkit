@@ -112,6 +112,8 @@ $(document).ready(function(){initNavTree('classwmtk_1_1simplex_1_1_top_dimension
 
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable-members.html">List of all members</a>  </div>
@@ -120,34 +122,102 @@ $(document).ready(function(){initNavTree('classwmtk_1_1simplex_1_1_top_dimension
 </div><!--header-->
 <div class="contents">
 
+<p>Iterating through the d-simplices of a mesh can be done in different ways, depending on the simplex dimension x around which the iteration is done.  
+ <a href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html">TopDimensionCofacesIterable.hpp</a>&gt;</code></p>
 <div class="dynheader">
 Collaboration diagram for wmtk::simplex::TopDimensionCofacesIterable:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable__coll__graph.svg" width="100%" height="554"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable__coll__graph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html">Iterator</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a5f144c693ff365ec763f8cb8c7835944"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#a5f144c693ff365ec763f8cb8c7835944">IteratorPhase</a> { <a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#a5f144c693ff365ec763f8cb8c7835944a15f41b31a3f2de28bef9885330de4f9e">Forward</a> = 0
+, <a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#a5f144c693ff365ec763f8cb8c7835944ab0b545a823a0ed681521b654daff5130">Intermediate</a> = 1
+, <a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#a5f144c693ff365ec763f8cb8c7835944a82101c117a5da54dcfac8d9054266cc1">Backward</a> = 2
+, <a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#a5f144c693ff365ec763f8cb8c7835944a9f1fc1c5486fd1608e35edd24d79989b">End</a> = 3
+ }</td></tr>
+<tr class="memdesc:a5f144c693ff365ec763f8cb8c7835944"><td class="mdescLeft">&#160;</td><td class="mdescRight">The IteratorPhase is only used for depth 1 and 2.  <a href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#a5f144c693ff365ec763f8cb8c7835944">More...</a><br /></td></tr>
+<tr class="separator:a5f144c693ff365ec763f8cb8c7835944"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ac70fe010d575fd3801d3b5b078094b89"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#ac70fe010d575fd3801d3b5b078094b89">TopDimensionCofacesIterable</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex)</td></tr>
-<tr class="separator:ac70fe010d575fd3801d3b5b078094b89"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae62f0dd321209cfb95c0276db6fc90a1"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#ae62f0dd321209cfb95c0276db6fc90a1">begin</a> ()</td></tr>
-<tr class="separator:ae62f0dd321209cfb95c0276db6fc90a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a33c83134c14d0efd86600727eff0527a"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#a33c83134c14d0efd86600727eff0527a">end</a> ()</td></tr>
-<tr class="separator:a33c83134c14d0efd86600727eff0527a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a786e490181a29d4af0c85ef9c4e34867"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#a786e490181a29d4af0c85ef9c4e34867">TopDimensionCofacesIterable</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex, const bool retrieve_intermediate_tuple=false)</td></tr>
+<tr class="separator:a786e490181a29d4af0c85ef9c4e34867"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4ea9bea196c86bfe468bba99023e590"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html">Iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#ab4ea9bea196c86bfe468bba99023e590">begin</a> ()</td></tr>
+<tr class="separator:ab4ea9bea196c86bfe468bba99023e590"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0152269c4339d8184a077eeb14123940"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html">Iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#a0152269c4339d8184a077eeb14123940">end</a> ()</td></tr>
+<tr class="separator:a0152269c4339d8184a077eeb14123940"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a5bb09e93f7e86eb609761c0d494cf325"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">SimplexCollection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#a5bb09e93f7e86eb609761c0d494cf325">m_collection</a></td></tr>
-<tr class="separator:a5bb09e93f7e86eb609761c0d494cf325"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa9d17e08df7da78bfe78554d201db613"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#aa9d17e08df7da78bfe78554d201db613">m_mesh</a></td></tr>
+<tr class="separator:aa9d17e08df7da78bfe78554d201db613"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6d1574381da3f04cf8ab248e80b8061"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#ab6d1574381da3f04cf8ab248e80b8061">m_simplex</a></td></tr>
+<tr class="separator:ab6d1574381da3f04cf8ab248e80b8061"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeab582c52aae6cd8ec315e4fdc463129"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#aeab582c52aae6cd8ec315e4fdc463129">m_retrieve_intermediate_tuple</a> = false</td></tr>
+<tr class="separator:aeab582c52aae6cd8ec315e4fdc463129"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b0bcca306c07673996327a4d6307d5f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1utils_1_1_dynamic_array.html">wmtk::utils::DynamicArray</a>&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#a8b0bcca306c07673996327a4d6307d5f">m_q</a></td></tr>
+<tr class="separator:a8b0bcca306c07673996327a4d6307d5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1b87e1b0f39320169dcd93fa79381fd5"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#a1b87e1b0f39320169dcd93fa79381fd5">m_q_front</a> = 0</td></tr>
+<tr class="separator:a1b87e1b0f39320169dcd93fa79381fd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af03d7ecd47bc149debc5e16997077229"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1internal_1_1_visited_array.html">simplex::internal::VisitedArray</a>&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#af03d7ecd47bc149debc5e16997077229">m_visited</a></td></tr>
+<tr class="separator:af03d7ecd47bc149debc5e16997077229"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00010">10</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html">TopDimensionCofacesIterable.hpp</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ac70fe010d575fd3801d3b5b078094b89"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac70fe010d575fd3801d3b5b078094b89">&#9670;&nbsp;</a></span>TopDimensionCofacesIterable()</h2>
+<div class="textblock"><p>Iterating through the d-simplices of a mesh can be done in different ways, depending on the simplex dimension x around which the iteration is done. </p>
+<p>More precisely, the type of iteration depends on the depth = d - x.</p>
+<ul>
+<li>depth 0: no iteration necessary</li>
+<li>depth 1: there are at most 2 d-simplices</li>
+<li>depth 2: circular iteration</li>
+<li>depth 3: breadth first search</li>
+</ul>
+<p>Iteration for depth 0 and 1 are straight forward. Depth 3 is also rather simple as an entire breadth first search must be performed.</p>
+<p>Depth 2 is more complex, especially because the input simplex could be on the boundary. To reach all simplices, iteration is divided in 4 phases:</p><ul>
+<li>forward: Starting from the input simplex's tuple, use tuple switches of type d-1 and d until either the iteration reaches again the input simplex, or it hits a boundary.</li>
+<li>intermediate: If the forward iteration stopped at a boundary, the iteration needs to switch to the backward phase. The intermediate phase prepares that by setting the iterator to the input simplex's tuple and performing a d-1 switch.</li>
+<li>backward: After successful switch, the iteration continues just like in the forward phase until another boundary is hit.</li>
+<li>end: In this phase, the iteration is ended, <code>is_end = true</code>. </li>
+</ul>
+
+<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00037">37</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html">TopDimensionCofacesIterable.hpp</a>.</p>
+</div><h2 class="groupheader">Member Enumeration Documentation</h2>
+<a id="a5f144c693ff365ec763f8cb8c7835944"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f144c693ff365ec763f8cb8c7835944">&#9670;&nbsp;</a></span>IteratorPhase</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html#a5f144c693ff365ec763f8cb8c7835944">wmtk::simplex::TopDimensionCofacesIterable::IteratorPhase</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The IteratorPhase is only used for depth 1 and 2. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a5f144c693ff365ec763f8cb8c7835944a15f41b31a3f2de28bef9885330de4f9e"></a>Forward&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5f144c693ff365ec763f8cb8c7835944ab0b545a823a0ed681521b654daff5130"></a>Intermediate&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5f144c693ff365ec763f8cb8c7835944a82101c117a5da54dcfac8d9054266cc1"></a>Backward&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5f144c693ff365ec763f8cb8c7835944a9f1fc1c5486fd1608e35edd24d79989b"></a>End&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00043">43</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html">TopDimensionCofacesIterable.hpp</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a786e490181a29d4af0c85ef9c4e34867"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a786e490181a29d4af0c85ef9c4e34867">&#9670;&nbsp;</a></span>TopDimensionCofacesIterable()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -162,7 +232,13 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;&#160;</td>
-          <td class="paramname"><em>simplex</em>&#160;</td>
+          <td class="paramname"><em>simplex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>retrieve_intermediate_tuple</em> = <code>false</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -172,13 +248,13 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8cpp_source.html#l00008">8</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8cpp_source.html">TopDimensionCofacesIterable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8cpp_source.html#l00011">11</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8cpp_source.html">TopDimensionCofacesIterable.cpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ae62f0dd321209cfb95c0276db6fc90a1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae62f0dd321209cfb95c0276db6fc90a1">&#9670;&nbsp;</a></span>begin()</h2>
+<a id="ab4ea9bea196c86bfe468bba99023e590"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4ea9bea196c86bfe468bba99023e590">&#9670;&nbsp;</a></span>begin()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -187,7 +263,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">auto wmtk::simplex::TopDimensionCofacesIterable::begin </td>
+          <td class="memname"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html">Iterator</a> wmtk::simplex::TopDimensionCofacesIterable::begin </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -200,20 +276,20 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00015">15</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html">TopDimensionCofacesIterable.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00118">118</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html">TopDimensionCofacesIterable.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00019">m_collection</a>, and <a class="el" href="_simplex_collection_8hpp_source.html#l00025">wmtk::simplex::SimplexCollection::simplex_vector()</a>.</p>
+<p class="reference">References <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00123">m_simplex</a>, and <a class="el" href="_simplex_8hpp_source.html#l00053">wmtk::simplex::Simplex::tuple()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_ae62f0dd321209cfb95c0276db6fc90a1_cgraph.svg" width="523" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_ab4ea9bea196c86bfe468bba99023e590_cgraph.svg" width="458" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
 </div>
 </div>
-<a id="a33c83134c14d0efd86600727eff0527a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a33c83134c14d0efd86600727eff0527a">&#9670;&nbsp;</a></span>end()</h2>
+<a id="a0152269c4339d8184a077eeb14123940"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0152269c4339d8184a077eeb14123940">&#9670;&nbsp;</a></span>end()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -222,7 +298,7 @@ Here is the call graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">auto wmtk::simplex::TopDimensionCofacesIterable::end </td>
+          <td class="memname"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html">Iterator</a> wmtk::simplex::TopDimensionCofacesIterable::end </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -235,21 +311,13 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00016">16</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html">TopDimensionCofacesIterable.hpp</a>.</p>
-
-<p class="reference">References <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00019">m_collection</a>, and <a class="el" href="_simplex_collection_8hpp_source.html#l00025">wmtk::simplex::SimplexCollection::simplex_vector()</a>.</p>
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_a33c83134c14d0efd86600727eff0527a_cgraph.svg" width="523" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
-</div>
-</div>
+<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00119">119</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html">TopDimensionCofacesIterable.hpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a5bb09e93f7e86eb609761c0d494cf325"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5bb09e93f7e86eb609761c0d494cf325">&#9670;&nbsp;</a></span>m_collection</h2>
+<a id="aa9d17e08df7da78bfe78554d201db613"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa9d17e08df7da78bfe78554d201db613">&#9670;&nbsp;</a></span>m_mesh</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -258,7 +326,7 @@ Here is the call graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">SimplexCollection</a> wmtk::simplex::TopDimensionCofacesIterable::m_collection</td>
+          <td class="memname">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; wmtk::simplex::TopDimensionCofacesIterable::m_mesh</td>
         </tr>
       </table>
   </td>
@@ -268,9 +336,129 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00019">19</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html">TopDimensionCofacesIterable.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00122">122</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html">TopDimensionCofacesIterable.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00015">begin()</a>, and <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00016">end()</a>.</p>
+</div>
+</div>
+<a id="a8b0bcca306c07673996327a4d6307d5f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b0bcca306c07673996327a4d6307d5f">&#9670;&nbsp;</a></span>m_q</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1utils_1_1_dynamic_array.html">wmtk::utils::DynamicArray</a>&lt;<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&gt; wmtk::simplex::TopDimensionCofacesIterable::m_q</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00127">127</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html">TopDimensionCofacesIterable.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a1b87e1b0f39320169dcd93fa79381fd5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1b87e1b0f39320169dcd93fa79381fd5">&#9670;&nbsp;</a></span>m_q_front</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64_t wmtk::simplex::TopDimensionCofacesIterable::m_q_front = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00128">128</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html">TopDimensionCofacesIterable.hpp</a>.</p>
+
+</div>
+</div>
+<a id="aeab582c52aae6cd8ec315e4fdc463129"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeab582c52aae6cd8ec315e4fdc463129">&#9670;&nbsp;</a></span>m_retrieve_intermediate_tuple</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::simplex::TopDimensionCofacesIterable::m_retrieve_intermediate_tuple = false</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00125">125</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html">TopDimensionCofacesIterable.hpp</a>.</p>
+
+</div>
+</div>
+<a id="ab6d1574381da3f04cf8ab248e80b8061"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab6d1574381da3f04cf8ab248e80b8061">&#9670;&nbsp;</a></span>m_simplex</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> wmtk::simplex::TopDimensionCofacesIterable::m_simplex</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00123">123</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html">TopDimensionCofacesIterable.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00118">begin()</a>.</p>
+
+</div>
+</div>
+<a id="af03d7ecd47bc149debc5e16997077229"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af03d7ecd47bc149debc5e16997077229">&#9670;&nbsp;</a></span>m_visited</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1simplex_1_1internal_1_1_visited_array.html">simplex::internal::VisitedArray</a>&lt;int64_t&gt; wmtk::simplex::TopDimensionCofacesIterable::m_visited</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00129">129</a> of file <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html">TopDimensionCofacesIterable.hpp</a>.</p>
 
 </div>
 </div>

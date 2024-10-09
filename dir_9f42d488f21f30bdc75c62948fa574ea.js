@@ -3,6 +3,11 @@ var dir_9f42d488f21f30bdc75c62948fa574ea =
     [ "metaprogramming", "dir_7094acbd2526777900e9c94c9c26ba58.html", "dir_7094acbd2526777900e9c94c9c26ba58" ],
     [ "array_to_map.hpp", "array__to__map_8hpp.html", "array__to__map_8hpp" ],
     [ "cast_attribute.hpp", "cast__attribute_8hpp.html", "cast__attribute_8hpp" ],
+    [ "DynamicArray.hpp", "_dynamic_array_8hpp.html", [
+      [ "DynamicArray", "classwmtk_1_1utils_1_1_dynamic_array.html", "classwmtk_1_1utils_1_1_dynamic_array" ],
+      [ "Iterator", "classwmtk_1_1utils_1_1_dynamic_array_1_1_iterator.html", "classwmtk_1_1utils_1_1_dynamic_array_1_1_iterator" ]
+    ] ],
+    [ "DynamicArray.hxx", "_dynamic_array_8hxx.html", null ],
     [ "edgemesh_topology_initialization.cpp", "edgemesh__topology__initialization_8cpp.html", "edgemesh__topology__initialization_8cpp" ],
     [ "edgemesh_topology_initialization.h", "edgemesh__topology__initialization_8h.html", "edgemesh__topology__initialization_8h" ],
     [ "EigenMatrixWriter.cpp", "_eigen_matrix_writer_8cpp.html", null ],

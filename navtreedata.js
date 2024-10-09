@@ -47,10 +47,12 @@ var NAVTREE =
       ] ]
     ] ],
     [ "Attributes", "md_src_wmtk_attribute__r_e_a_d_m_e.html", null ],
+    [ "Simplex Iterables", "md_src_wmtk_simplex_iterable__r_e_a_d_m_e.html", null ],
+    [ "Simplex", "md_src_wmtk_simplex__r_e_a_d_m_e.html", null ],
     [ "README", "md_src_wmtk_utils_metaprogramming__r_e_a_d_m_e.html", null ],
     [ "Procedural Component", "md_components_procedural_wmtk_components_procedural__r_e_a_d_m_e.html", null ],
     [ "Components", "md_components__r_e_a_d_m_e.html", [
-      [ "Components VS Applications", "md_components__r_e_a_d_m_e.html#autotoc_md22", null ]
+      [ "Components VS Applications", "md_components__r_e_a_d_m_e.html#autotoc_md29", null ]
     ] ],
     [ "Guide for Using Integration Test", "md_components_tests_integration_guide.html", null ],
     [ "Namespaces", "namespaces.html", [
@@ -74,6 +76,7 @@ var NAVTREE =
         [ "Variables", "functions_vars.html", "functions_vars" ],
         [ "Typedefs", "functions_type.html", null ],
         [ "Enumerations", "functions_enum.html", null ],
+        [ "Enumerator", "functions_eval.html", null ],
         [ "Related Functions", "functions_rela.html", null ]
       ] ]
     ] ],
@@ -95,33 +98,34 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "_a_m_i_p_s_optimization_smoothing_8cpp.html",
-"_function_invariant_8cpp.html",
-"_multi_mesh_topology_invariant_8cpp_source.html",
-"_split_new_attribute_strategy_8hpp_source.html",
-"autodiff_8h.html#acc63291223eea7915ec4a5733c079e69",
-"classwmtk_1_1_mesh.html#a2d2027cb4b70a75350f147fed7a373f9",
-"classwmtk_1_1_scheduler.html",
-"classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ad45678a7d8a3d9ffc7bad92f8cd3cf94",
-"classwmtk_1_1attribute_1_1_attribute_scope.html#a605e1a7a0b1f2dd2e97fb4806295151a",
-"classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a8c185984bc3d696f736851a96cabf45d",
-"classwmtk_1_1components_1_1internal_1_1_multi_mesh_from_tag.html#a96647e9413f2b7e13dd17f02cf29b12d",
-"classwmtk_1_1invariants_1_1_invariant_collection.html#ae6dc738fa69d122cb277733f3668b72f",
-"classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#aee135fbde11aefaf476a00007f524d25",
-"classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a84f3cfa20dedcd21b693ff923f47f7f5",
-"classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a7916a0a776c2af596d7de941bd677eb1",
-"classwmtk_1_1simplex_1_1_id_simplex.html#ad483628062bc856966d9a7519abec00b",
-"convert_8hxx.html",
-"edge__mesh_2simplex__index__from__valid__index_8hpp.html#a76e9a88b353dcde30081482e504d9cef",
-"get__vf_8cpp.html#ae96e456a97cc6bb91612325fce6c6abb",
-"md_src_wmtk_attribute__r_e_a_d_m_e.html#autotoc_md18",
-"namespacewmtk.html#ae4167c30ed11c607c5bc1edd86a5e2f2",
-"namespacewmtk_1_1components_1_1internal.html#a41722ce1685a7dec1703284ea7b17090",
-"namespacewmtk_1_1simplex.html#a89b80936c94037ab30a930a69a0ab13f",
-"same__simplex__dimension__bijection_8hpp_source.html",
-"structwmtk_1_1components_1_1cmp__s.html",
-"structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__ref__decay.html",
-"tetwild__simplification_8cpp.html#ac70c00ff28dd31bb7109e7da8c89860f",
-"utils_2_a_m_i_p_s_8cpp.html#a18f88d299cb5212b810962fac2ea76bc"
+"_envelope_invariant_8hpp_source.html",
+"_multi_mesh_manager_8hpp_source.html",
+"_simplex_inversion_invariant_8cpp_source.html",
+"as__variant__type_8hpp.html",
+"classwmtk_1_1_mesh.html#a0d7627098b83729f1060ec22677450cf",
+"classwmtk_1_1_rational.html#ac6dea2d2a68452b2c2cf91a658543000",
+"classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a15a37c1d8c6556c11d387fbf78060f4e",
+"classwmtk_1_1attribute_1_1_attribute_manager.html#ab37901c560fe81350c6e2ec34ff3769c",
+"classwmtk_1_1attribute_1_1internal_1_1_attribute_transaction_stack.html#a3e3065e340e68fcff63bb57ab8ef5090",
+"classwmtk_1_1components_1_1input_1_1_named_multi_mesh.html#a966b242906c61176ac3a775c40b5f44e",
+"classwmtk_1_1invariants_1_1_invariant.html#ac97548bf5f1167cd85081d1bde011139",
+"classwmtk_1_1multimesh_1_1_multi_mesh_manager.html#ab92a2744829078ea791ffdd02ad1e4a0",
+"classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a63bd2ddcea98178e1271dc508ae792b8",
+"classwmtk_1_1operations_1_1composite_1_1_tet_cell_split.html#a754239380f54401f92530f4225172d79",
+"classwmtk_1_1simplex_1_1_closed_star_iterable.html#a2a564d14dec664ac4e5e05c32a6ca8eb",
+"classwmtk_1_1simplex_1_1_simplex_collection.html#af66394c610ee9b919b56aab5026a0d41",
+"delaunay__3d_8cpp.html",
+"edge__mesh_2valid__index__from__tuple_8hxx.html",
+"grid__utils_8cpp_source.html",
+"merkle__tree__diff_8cpp.html#aa8bd6cb2e566ee2d1badbff8eec034ea",
+"namespacewmtk.html#af1ebbed7ad1cf47dacc11c113236c210",
+"namespacewmtk_1_1components_1_1internal.html#ab4d5aa85b7e849adbde7c7fedc6453bf",
+"namespacewmtk_1_1simplex.html#a9dec91b832501228f5b8b05646d0b89d",
+"same__simplex__dimension__surjection_8hpp.html",
+"structwmtk_1_1components_1_1input_1_1_named_multi_mesh_1_1_node.html#a3454b04251900fdd8b1d79b872b4b208",
+"structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4.html#a676fc2b5fe63c025971c63dff338d36f",
+"tetwild__simplification_8cpp.html#af4e226016df9cc871aa5477dc7bd69fa",
+"utils_2_a_m_i_p_s_8cpp.html#a818b9b16f06339c34d08eceeb5342470"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

@@ -112,6 +112,8 @@ $(document).ready(function(){initNavTree('classwmtk_1_1simplex_1_1_closed_star_i
 
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1simplex_1_1_closed_star_iterable-members.html">List of all members</a>  </div>
@@ -120,32 +122,81 @@ $(document).ready(function(){initNavTree('classwmtk_1_1simplex_1_1_closed_star_i
 </div><!--header-->
 <div class="contents">
 
+<p>This iterator internally uses <a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html" title="Iterating through the d-simplices of a mesh can be done in different ways, depending on the simplex d...">TopDimensionCofacesIterable</a>.  
+ <a href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="_closed_star_iterable_8hpp_source.html">ClosedStarIterable.hpp</a>&gt;</code></p>
 <div class="dynheader">
 Collaboration diagram for wmtk::simplex::ClosedStarIterable:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_closed_star_iterable__coll__graph.svg" width="100%" height="554"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_closed_star_iterable__coll__graph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable_1_1_iterator.html">Iterator</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a548c1204c09a13b31737ab6702144af7"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#a548c1204c09a13b31737ab6702144af7">IteratorPhase</a> { <a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#a548c1204c09a13b31737ab6702144af7a2752d32eb36a1abd33bdea1ab93aac76">Faces</a>
+, <a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#a548c1204c09a13b31737ab6702144af7a4fe705e433f6bd6dbc22cbdec20a80eb">OpenStar</a>
+, <a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#a548c1204c09a13b31737ab6702144af7afd7bd1a32528fca9823a90b9056494e3">Link</a>
+ }</td></tr>
+<tr class="separator:a548c1204c09a13b31737ab6702144af7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:aa501c7fd1d14a03c5cb75e0688c0999c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#aa501c7fd1d14a03c5cb75e0688c0999c">ClosedStarIterable</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex)</td></tr>
 <tr class="separator:aa501c7fd1d14a03c5cb75e0688c0999c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a91c462df91b6039d62c672a29a5e6a83"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#a91c462df91b6039d62c672a29a5e6a83">begin</a> ()</td></tr>
-<tr class="separator:a91c462df91b6039d62c672a29a5e6a83"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abfd7d7fdd1e05b15e3449c78c96cd371"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#abfd7d7fdd1e05b15e3449c78c96cd371">end</a> ()</td></tr>
-<tr class="separator:abfd7d7fdd1e05b15e3449c78c96cd371"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a805c8386622fec0fc6d1dfbf92c3327e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable_1_1_iterator.html">Iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#a805c8386622fec0fc6d1dfbf92c3327e">begin</a> ()</td></tr>
+<tr class="separator:a805c8386622fec0fc6d1dfbf92c3327e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a564d14dec664ac4e5e05c32a6ca8eb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable_1_1_iterator.html">Iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#a2a564d14dec664ac4e5e05c32a6ca8eb">end</a> ()</td></tr>
+<tr class="separator:a2a564d14dec664ac4e5e05c32a6ca8eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a9f7945cdbca9d5a1a48c80f1246e23b8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">SimplexCollection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#a9f7945cdbca9d5a1a48c80f1246e23b8">m_collection</a></td></tr>
-<tr class="separator:a9f7945cdbca9d5a1a48c80f1246e23b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a894b0d0cb50ff697972393371bff4c00"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#a894b0d0cb50ff697972393371bff4c00">m_mesh</a></td></tr>
+<tr class="separator:a894b0d0cb50ff697972393371bff4c00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2d92b6b2b470349bb85f17fbc2d42e65"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#a2d92b6b2b470349bb85f17fbc2d42e65">m_simplex</a></td></tr>
+<tr class="separator:a2d92b6b2b470349bb85f17fbc2d42e65"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6245b4e03fd035592c8869ffc95174aa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html">TopDimensionCofacesIterable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#a6245b4e03fd035592c8869ffc95174aa">m_tdc_itrbl</a></td></tr>
+<tr class="separator:a6245b4e03fd035592c8869ffc95174aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a927bc59269db1ab1f2b713758e457abc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html">TopDimensionCofacesIterable::Iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#a927bc59269db1ab1f2b713758e457abc">m_it_end</a></td></tr>
+<tr class="separator:a927bc59269db1ab1f2b713758e457abc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5eaabdd0749bafef45496d7175a0ecb1"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="classwmtk_1_1simplex_1_1internal_1_1_visited_array.html">simplex::internal::VisitedArray</a>&lt; <a class="el" href="classwmtk_1_1simplex_1_1_id_simplex.html">simplex::IdSimplex</a> &gt;, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#a5eaabdd0749bafef45496d7175a0ecb1">m_visited_cofaces</a></td></tr>
+<tr class="separator:a5eaabdd0749bafef45496d7175a0ecb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad99705e2b9a6f660098de64f50dd63f2"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="classwmtk_1_1simplex_1_1internal_1_1_visited_array.html">simplex::internal::VisitedArray</a>&lt; <a class="el" href="classwmtk_1_1simplex_1_1_id_simplex.html">simplex::IdSimplex</a> &gt;, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#ad99705e2b9a6f660098de64f50dd63f2">m_visited_link</a></td></tr>
+<tr class="separator:ad99705e2b9a6f660098de64f50dd63f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8hpp_source.html#l00010">10</a> of file <a class="el" href="_closed_star_iterable_8hpp_source.html">ClosedStarIterable.hpp</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<div class="textblock"><p>This iterator internally uses <a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html" title="Iterating through the d-simplices of a mesh can be done in different ways, depending on the simplex d...">TopDimensionCofacesIterable</a>. </p>
+
+<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8hpp_source.html#l00016">16</a> of file <a class="el" href="_closed_star_iterable_8hpp_source.html">ClosedStarIterable.hpp</a>.</p>
+</div><h2 class="groupheader">Member Enumeration Documentation</h2>
+<a id="a548c1204c09a13b31737ab6702144af7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a548c1204c09a13b31737ab6702144af7">&#9670;&nbsp;</a></span>IteratorPhase</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable.html#a548c1204c09a13b31737ab6702144af7">wmtk::simplex::ClosedStarIterable::IteratorPhase</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a548c1204c09a13b31737ab6702144af7a2752d32eb36a1abd33bdea1ab93aac76"></a>Faces&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a548c1204c09a13b31737ab6702144af7a4fe705e433f6bd6dbc22cbdec20a80eb"></a>OpenStar&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a548c1204c09a13b31737ab6702144af7afd7bd1a32528fca9823a90b9056494e3"></a>Link&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8hpp_source.html#l00019">19</a> of file <a class="el" href="_closed_star_iterable_8hpp_source.html">ClosedStarIterable.hpp</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aa501c7fd1d14a03c5cb75e0688c0999c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa501c7fd1d14a03c5cb75e0688c0999c">&#9670;&nbsp;</a></span>ClosedStarIterable()</h2>
 
@@ -172,13 +223,13 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8cpp_source.html#l00008">8</a> of file <a class="el" href="_closed_star_iterable_8cpp_source.html">ClosedStarIterable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8cpp_source.html#l00013">13</a> of file <a class="el" href="_closed_star_iterable_8cpp_source.html">ClosedStarIterable.cpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a91c462df91b6039d62c672a29a5e6a83"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a91c462df91b6039d62c672a29a5e6a83">&#9670;&nbsp;</a></span>begin()</h2>
+<a id="a805c8386622fec0fc6d1dfbf92c3327e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a805c8386622fec0fc6d1dfbf92c3327e">&#9670;&nbsp;</a></span>begin()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -187,7 +238,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">auto wmtk::simplex::ClosedStarIterable::begin </td>
+          <td class="memname"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable_1_1_iterator.html">Iterator</a> wmtk::simplex::ClosedStarIterable::begin </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -200,20 +251,20 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8hpp_source.html#l00015">15</a> of file <a class="el" href="_closed_star_iterable_8hpp_source.html">ClosedStarIterable.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8hpp_source.html#l00074">74</a> of file <a class="el" href="_closed_star_iterable_8hpp_source.html">ClosedStarIterable.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_closed_star_iterable_8hpp_source.html#l00019">m_collection</a>, and <a class="el" href="_simplex_collection_8hpp_source.html#l00025">wmtk::simplex::SimplexCollection::simplex_vector()</a>.</p>
+<p class="reference">References <a class="el" href="_closed_star_iterable_8hpp_source.html#l00079">m_simplex</a>, and <a class="el" href="_simplex_8hpp_source.html#l00053">wmtk::simplex::Simplex::tuple()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_closed_star_iterable_a91c462df91b6039d62c672a29a5e6a83_cgraph.svg" width="502" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_closed_star_iterable_a805c8386622fec0fc6d1dfbf92c3327e_cgraph.svg" width="436" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
 </div>
 </div>
-<a id="abfd7d7fdd1e05b15e3449c78c96cd371"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abfd7d7fdd1e05b15e3449c78c96cd371">&#9670;&nbsp;</a></span>end()</h2>
+<a id="a2a564d14dec664ac4e5e05c32a6ca8eb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2a564d14dec664ac4e5e05c32a6ca8eb">&#9670;&nbsp;</a></span>end()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -222,7 +273,7 @@ Here is the call graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">auto wmtk::simplex::ClosedStarIterable::end </td>
+          <td class="memname"><a class="el" href="classwmtk_1_1simplex_1_1_closed_star_iterable_1_1_iterator.html">Iterator</a> wmtk::simplex::ClosedStarIterable::end </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -235,21 +286,13 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8hpp_source.html#l00016">16</a> of file <a class="el" href="_closed_star_iterable_8hpp_source.html">ClosedStarIterable.hpp</a>.</p>
-
-<p class="reference">References <a class="el" href="_closed_star_iterable_8hpp_source.html#l00019">m_collection</a>, and <a class="el" href="_simplex_collection_8hpp_source.html#l00025">wmtk::simplex::SimplexCollection::simplex_vector()</a>.</p>
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_closed_star_iterable_abfd7d7fdd1e05b15e3449c78c96cd371_cgraph.svg" width="502" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
-</div>
-</div>
+<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8hpp_source.html#l00075">75</a> of file <a class="el" href="_closed_star_iterable_8hpp_source.html">ClosedStarIterable.hpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a9f7945cdbca9d5a1a48c80f1246e23b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9f7945cdbca9d5a1a48c80f1246e23b8">&#9670;&nbsp;</a></span>m_collection</h2>
+<a id="a927bc59269db1ab1f2b713758e457abc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a927bc59269db1ab1f2b713758e457abc">&#9670;&nbsp;</a></span>m_it_end</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -258,7 +301,7 @@ Here is the call graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">SimplexCollection</a> wmtk::simplex::ClosedStarIterable::m_collection</td>
+          <td class="memname"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html">TopDimensionCofacesIterable::Iterator</a> wmtk::simplex::ClosedStarIterable::m_it_end</td>
         </tr>
       </table>
   </td>
@@ -268,9 +311,131 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8hpp_source.html#l00019">19</a> of file <a class="el" href="_closed_star_iterable_8hpp_source.html">ClosedStarIterable.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8hpp_source.html#l00081">81</a> of file <a class="el" href="_closed_star_iterable_8hpp_source.html">ClosedStarIterable.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_closed_star_iterable_8hpp_source.html#l00015">begin()</a>, and <a class="el" href="_closed_star_iterable_8hpp_source.html#l00016">end()</a>.</p>
+</div>
+</div>
+<a id="a894b0d0cb50ff697972393371bff4c00"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a894b0d0cb50ff697972393371bff4c00">&#9670;&nbsp;</a></span>m_mesh</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; wmtk::simplex::ClosedStarIterable::m_mesh</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8hpp_source.html#l00078">78</a> of file <a class="el" href="_closed_star_iterable_8hpp_source.html">ClosedStarIterable.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_closed_star_iterable_8cpp_source.html#l00091">wmtk::simplex::ClosedStarIterable::Iterator::depth()</a>, <a class="el" href="_closed_star_iterable_8cpp_source.html#l00330">wmtk::simplex::ClosedStarIterable::Iterator::navigate_to_link()</a>, <a class="el" href="_closed_star_iterable_8cpp_source.html#l00039">wmtk::simplex::ClosedStarIterable::Iterator::operator++()</a>, <a class="el" href="_closed_star_iterable_8cpp_source.html#l00102">wmtk::simplex::ClosedStarIterable::Iterator::step_depth_3()</a>, <a class="el" href="_closed_star_iterable_8cpp_source.html#l00171">wmtk::simplex::ClosedStarIterable::Iterator::step_edge_mesh()</a>, <a class="el" href="_closed_star_iterable_8cpp_source.html#l00401">wmtk::simplex::ClosedStarIterable::Iterator::step_faces_tetrahedron()</a>, <a class="el" href="_closed_star_iterable_8cpp_source.html#l00258">wmtk::simplex::ClosedStarIterable::Iterator::step_tet_mesh()</a>, and <a class="el" href="_closed_star_iterable_8cpp_source.html#l00196">wmtk::simplex::ClosedStarIterable::Iterator::step_tri_mesh()</a>.</p>
+
+</div>
+</div>
+<a id="a2d92b6b2b470349bb85f17fbc2d42e65"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2d92b6b2b470349bb85f17fbc2d42e65">&#9670;&nbsp;</a></span>m_simplex</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> wmtk::simplex::ClosedStarIterable::m_simplex</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8hpp_source.html#l00079">79</a> of file <a class="el" href="_closed_star_iterable_8hpp_source.html">ClosedStarIterable.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_closed_star_iterable_8hpp_source.html#l00074">begin()</a>, and <a class="el" href="_closed_star_iterable_8cpp_source.html#l00020">wmtk::simplex::ClosedStarIterable::Iterator::Iterator()</a>.</p>
+
+</div>
+</div>
+<a id="a6245b4e03fd035592c8869ffc95174aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6245b4e03fd035592c8869ffc95174aa">&#9670;&nbsp;</a></span>m_tdc_itrbl</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html">TopDimensionCofacesIterable</a> wmtk::simplex::ClosedStarIterable::m_tdc_itrbl</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8hpp_source.html#l00080">80</a> of file <a class="el" href="_closed_star_iterable_8hpp_source.html">ClosedStarIterable.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a5eaabdd0749bafef45496d7175a0ecb1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5eaabdd0749bafef45496d7175a0ecb1">&#9670;&nbsp;</a></span>m_visited_cofaces</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt;<a class="el" href="classwmtk_1_1simplex_1_1internal_1_1_visited_array.html">simplex::internal::VisitedArray</a>&lt;<a class="el" href="classwmtk_1_1simplex_1_1_id_simplex.html">simplex::IdSimplex</a>&gt;, 2&gt; wmtk::simplex::ClosedStarIterable::m_visited_cofaces</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8hpp_source.html#l00084">84</a> of file <a class="el" href="_closed_star_iterable_8hpp_source.html">ClosedStarIterable.hpp</a>.</p>
+
+</div>
+</div>
+<a id="ad99705e2b9a6f660098de64f50dd63f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad99705e2b9a6f660098de64f50dd63f2">&#9670;&nbsp;</a></span>m_visited_link</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt;<a class="el" href="classwmtk_1_1simplex_1_1internal_1_1_visited_array.html">simplex::internal::VisitedArray</a>&lt;<a class="el" href="classwmtk_1_1simplex_1_1_id_simplex.html">simplex::IdSimplex</a>&gt;, 2&gt; wmtk::simplex::ClosedStarIterable::m_visited_link</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_closed_star_iterable_8hpp_source.html#l00086">86</a> of file <a class="el" href="_closed_star_iterable_8hpp_source.html">ClosedStarIterable.hpp</a>.</p>
 
 </div>
 </div>

@@ -15,5 +15,8 @@ var dir_9c4b67ff81d399cfe3e15a799e94af72 =
     ] ],
     [ "SimplexLessFunctor.hpp", "_simplex_less_functor_8hpp.html", [
       [ "SimplexLessFunctor", "structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html", "structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor" ]
+    ] ],
+    [ "VisitedArray.hpp", "_visited_array_8hpp.html", [
+      [ "VisitedArray", "classwmtk_1_1simplex_1_1internal_1_1_visited_array.html", "classwmtk_1_1simplex_1_1internal_1_1_visited_array" ]
     ] ]
 ];
