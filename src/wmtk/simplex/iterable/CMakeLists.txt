@@ -1,12 +1,18 @@
 set(SRC_FILES
     ClosedStarIterable.hpp
     ClosedStarIterable.cpp
+    CofacesInSimplexIterable.hpp
+    CofacesInSimplexIterable.cpp
     LinkIterable.hpp
     LinkIterable.cpp
+    LinkSingleDimensionIterable.hpp
+    LinkSingleDimensionIterable.cpp
     OpenStarIterable.hpp
     OpenStarIterable.cpp
     TopDimensionCofacesIterable.hpp
     TopDimensionCofacesIterable.cpp
+    CofacesSingleDimensionIterable.hpp
+    CofacesSingleDimensionIterable.cpp
     FacesIterable.hpp
     FacesIterable.cpp
 )

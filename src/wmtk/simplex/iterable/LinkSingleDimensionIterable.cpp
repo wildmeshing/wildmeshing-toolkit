@@ -1,4 +1,4 @@
-#include "LinkIterable.hpp"
+#include "LinkSingleDimensionIterable.hpp"
 
 #include <wmtk/autogen/SimplexDart.hpp>
 #include <wmtk/autogen/local_switch_tuple.hpp>
@@ -10,14 +10,20 @@
 namespace wmtk::simplex {
 
 
-LinkIterable::LinkIterable(const Mesh& mesh, const Simplex& simplex)
+LinkSingleDimensionIterable::LinkSingleDimensionIterable(
+    const Mesh& mesh,
+    const Simplex& simplex,
+    const PrimitiveType link_type)
     : m_mesh(mesh)
     , m_simplex(simplex)
-    , m_tdc_itrbl(mesh, simplex, true)
+    , m_link_type(link_type)
+    , m_tdc_itrbl(mesh, simplex, link_type == PrimitiveType::Vertex)
     , m_it_end(m_tdc_itrbl.end())
 {}
 
-LinkIterable::Iterator::Iterator(LinkIterable& container, const Tuple& t)
+LinkSingleDimensionIterable::Iterator::Iterator(
+    LinkSingleDimensionIterable& container,
+    const Tuple& t)
     : m_container(container)
     , m_it(container.m_tdc_itrbl, t)
     , m_t(t)
@@ -26,12 +32,16 @@ LinkIterable::Iterator::Iterator(LinkIterable& container, const Tuple& t)
         return;
     }
 
-    // check if link exists
+    // check if link_type can exist
     {
-        const int8_t m = m_container.m_mesh.top_cell_dimension();
-        const int8_t s = get_primitive_type_id(m_container.m_simplex.primitive_type());
-        if (m <= s) {
-            logger().warn("Trying to retrieve link that cannot exist!");
+        const Mesh& mesh = m_container.m_mesh;
+        const simplex::Simplex& simplex = m_container.m_simplex;
+        const PrimitiveType link_pt = m_container.m_link_type;
+        const int8_t m = mesh.top_cell_dimension();
+        const int8_t s = get_primitive_type_id(simplex.primitive_type());
+        const int8_t l = get_primitive_type_id(link_pt);
+        if (l >= m - s) {
+            logger().warn("Trying to retrieve simplices in the link that cannot exist!");
             m_t = Tuple();
             return;
         }
@@ -40,46 +50,33 @@ LinkIterable::Iterator::Iterator(LinkIterable& container, const Tuple& t)
     init();
 }
 
-LinkIterable::Iterator& LinkIterable::Iterator::operator++()
+LinkSingleDimensionIterable::Iterator& LinkSingleDimensionIterable::Iterator::operator++()
 {
     if (depth() == 3) {
         return step_depth_3();
     }
 
-    const Mesh& mesh = m_container.m_mesh;
-    const simplex::Simplex& simplex = m_container.m_simplex;
-    const int8_t m = mesh.top_cell_dimension();
-    const int8_t s = get_primitive_type_id(simplex.primitive_type());
-
-    if (m_pt < m - s - 1 && !m_it.is_intermediate()) {
-        // go to next primitive type
-        ++m_pt;
-    } else {
-        m_pt = 0;
-        // change tuple
-        ++m_it;
-        m_t = navigate_to_link(*m_it);
-    }
-
+    ++m_it;
+    m_t = navigate_to_link(*m_it);
     return *this;
 }
 
-bool LinkIterable::Iterator::operator!=(const Iterator& other) const
+bool LinkSingleDimensionIterable::Iterator::operator!=(const Iterator& other) const
 {
-    return (m_t != other.m_t) || (m_pt != other.m_pt);
+    return m_t != *other;
 }
 
-IdSimplex LinkIterable::Iterator::operator*()
+Tuple& LinkSingleDimensionIterable::Iterator::operator*()
 {
-    return m_container.m_mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt));
+    return m_t;
 }
 
-const IdSimplex LinkIterable::Iterator::operator*() const
+const Tuple& LinkSingleDimensionIterable::Iterator::operator*() const
 {
-    return m_container.m_mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt));
+    return m_t;
 }
 
-int64_t LinkIterable::Iterator::depth()
+int64_t LinkSingleDimensionIterable::Iterator::depth()
 {
     const Mesh& mesh = m_container.m_mesh;
     const simplex::Simplex& simplex = m_container.m_simplex;
@@ -89,54 +86,55 @@ int64_t LinkIterable::Iterator::depth()
     return mesh.top_cell_dimension() - get_primitive_type_id(simplex.primitive_type());
 }
 
-void LinkIterable::Iterator::init()
+bool LinkSingleDimensionIterable::Iterator::is_link_d1()
+{
+    return m_container.m_mesh.top_cell_dimension() - 1 ==
+           get_primitive_type_id(m_container.m_link_type);
+}
+
+void LinkSingleDimensionIterable::Iterator::init()
 {
     m_t = navigate_to_link(*m_it);
 
     if (depth() == 3) {
         const Mesh& mesh = m_container.m_mesh;
+        const PrimitiveType& link_type = m_container.m_link_type;
 
-        m_container.m_visited_link[m_pt].is_visited(
-            mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt)));
+        m_container.m_visited_link.is_visited(mesh.get_id_simplex(m_t, link_type));
     }
 }
 
-LinkIterable::Iterator& LinkIterable::Iterator::step_depth_3()
+LinkSingleDimensionIterable::Iterator& LinkSingleDimensionIterable::Iterator::step_depth_3()
 {
     const Mesh& mesh = m_container.m_mesh;
-    const simplex::Simplex& simplex = m_container.m_simplex;
+    const PrimitiveType& link_type = m_container.m_link_type;
     auto& visited = m_container.m_visited_link;
 
-    ++m_pt;
+    if (!is_link_d1()) {
+        m_t = mesh.switch_tuples(m_t, {PrimitiveType::Vertex, PrimitiveType::Edge});
+        ++m_edge_counter;
 
-    if (m_pt == 3) {
-        // go to next cell
-        m_pt = 0;
-        m_edge_counter = 0;
+        while (!m_t.is_null()) {
+            for (; m_edge_counter < 3; ++m_edge_counter) {
+                if (!visited.is_visited(mesh.get_id_simplex(m_t, link_type))) {
+                    return *this;
+                }
+                m_t = mesh.switch_tuples(m_t, {PrimitiveType::Vertex, PrimitiveType::Edge});
+            }
+
+            // go to next cell
+            m_edge_counter = 0;
+            ++m_it;
+            m_t = navigate_to_link(*m_it);
+        }
+    } else {
         ++m_it;
         m_t = navigate_to_link(*m_it);
-        if (m_t.is_null()) {
-            return *this;
-        }
     }
-
-    for (; m_edge_counter < 3; ++m_edge_counter) {
-        for (; m_pt < 2; ++m_pt) {
-            if (!visited[m_pt].is_visited(
-                    mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt)))) {
-                return *this;
-            }
-        }
-        m_t = mesh.switch_tuples(m_t, {PrimitiveType::Vertex, PrimitiveType::Edge});
-        m_pt = 0;
-    }
-
-    // return face
-    m_pt = 2;
     return *this;
 }
 
-Tuple LinkIterable::Iterator::navigate_to_link(Tuple t)
+Tuple LinkSingleDimensionIterable::Iterator::navigate_to_link(Tuple t)
 {
     if (t.is_null()) {
         return t;
@@ -173,6 +171,7 @@ Tuple LinkIterable::Iterator::navigate_to_link(Tuple t)
          * The following code implements these permutations.
          */
         const simplex::Simplex& simplex = m_container.m_simplex;
+        const PrimitiveType link_pt = m_container.m_link_type;
         const int8_t m = mesh.top_cell_dimension();
         const int8_t s = get_primitive_type_id(simplex.primitive_type());
 
