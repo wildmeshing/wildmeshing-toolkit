@@ -46,6 +46,10 @@ public:
          */
         Iterator& step_depth_3();
 
+        Iterator& step_edge_mesh();
+        Iterator& step_tri_mesh();
+        Iterator& step_tet_mesh();
+
         Tuple navigate_to_link(Tuple t);
 
         bool step_faces();
