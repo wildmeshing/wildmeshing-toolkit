@@ -19,6 +19,7 @@ ClosedStarIterable::ClosedStarIterable(const Mesh& mesh, const Simplex& simplex)
 
 ClosedStarIterable::Iterator::Iterator(ClosedStarIterable& container, const Tuple& t)
     : m_container(container)
+    , m_mesh(container.m_mesh)
     , m_it(container.m_tdc_itrbl, t)
     , m_t(t)
 {
@@ -41,10 +42,7 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::operator++()
         return step_depth_3();
     }
 
-    const Mesh& mesh = m_container.m_mesh;
-    const simplex::Simplex& simplex = m_container.m_simplex;
-    const int8_t m = mesh.top_cell_dimension();
-    const int8_t s = get_primitive_type_id(simplex.primitive_type());
+    const int8_t s = get_primitive_type_id(m_container.m_simplex.primitive_type());
 
     if (m_phase == IteratorPhase::Faces) {
         if (step_faces()) {
@@ -56,22 +54,16 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::operator++()
         }
     }
 
-    if (s == m) {
+    if (s == m_mesh.top_cell_dimension()) {
         m_t = Tuple();
         m_pt = -1;
         return *this;
     }
 
-    constexpr PrimitiveType PV = PrimitiveType::Vertex;
-    constexpr PrimitiveType PE = PrimitiveType::Edge;
-    constexpr PrimitiveType PF = PrimitiveType::Triangle;
-    constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
-
-    ++m_face_counter;
-    switch (mesh.top_simplex_type()) {
-    case PE: return step_edge_mesh();
-    case PF: return step_tri_mesh();
-    case PT: return step_tet_mesh();
+    switch (m_mesh.top_simplex_type()) {
+    case PrimitiveType::Edge: return step_edge_mesh();
+    case PrimitiveType::Triangle: return step_tri_mesh();
+    case PrimitiveType::Tetrahedron: return step_tet_mesh();
     default: assert(false); break;
     }
 
@@ -98,24 +90,22 @@ const IdSimplex ClosedStarIterable::Iterator::operator*() const
 
 int64_t ClosedStarIterable::Iterator::depth()
 {
-    const Mesh& mesh = m_container.m_mesh;
     const simplex::Simplex& simplex = m_container.m_simplex;
-    assert(mesh.top_cell_dimension() >= get_primitive_type_id(simplex.primitive_type()));
-    assert(mesh.top_cell_dimension() - get_primitive_type_id(simplex.primitive_type()) < 4);
+    assert(m_mesh.top_cell_dimension() >= get_primitive_type_id(simplex.primitive_type()));
+    assert(m_mesh.top_cell_dimension() - get_primitive_type_id(simplex.primitive_type()) < 4);
 
-    return mesh.top_cell_dimension() - get_primitive_type_id(simplex.primitive_type());
+    return m_mesh.top_cell_dimension() - get_primitive_type_id(simplex.primitive_type());
 }
 
 void ClosedStarIterable::Iterator::init() {}
 
 ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_depth_3()
 {
-    const Mesh& mesh = m_container.m_mesh;
     const simplex::Simplex& simplex = m_container.m_simplex;
     auto& visited_c = m_container.m_visited_cofaces;
     auto& visited_l = m_container.m_visited_link;
 
-    assert(mesh.top_simplex_type() == PrimitiveType::Tetrahedron);
+    assert(m_mesh.top_simplex_type() == PrimitiveType::Tetrahedron);
     assert(simplex.primitive_type() == PrimitiveType::Vertex);
 
     ++m_pt;
@@ -132,11 +122,11 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_depth_3()
                 for (; m_face_counter < 3; ++m_face_counter) {
                     for (; m_pt < 3; ++m_pt) {
                         if (!visited_c[m_pt - 1].is_visited(
-                                mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt)))) {
+                                m_mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt)))) {
                             return *this;
                         }
                     }
-                    m_t = mesh.switch_tuples(m_t, {PrimitiveType::Edge, PrimitiveType::Triangle});
+                    m_t = m_mesh.switch_tuples(m_t, {PrimitiveType::Edge, PrimitiveType::Triangle});
                     m_pt = 1;
                 }
 
@@ -162,11 +152,11 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_depth_3()
                 for (; m_face_counter < 3; ++m_face_counter) {
                     for (; m_pt < 2; ++m_pt) {
                         if (!visited_l[m_pt].is_visited(
-                                mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt)))) {
+                                m_mesh.get_id_simplex(m_t, get_primitive_type_from_id(m_pt)))) {
                             return *this;
                         }
                     }
-                    m_t = mesh.switch_tuples(m_t, {PrimitiveType::Vertex, PrimitiveType::Edge});
+                    m_t = m_mesh.switch_tuples(m_t, {PrimitiveType::Vertex, PrimitiveType::Edge});
                     m_pt = 0;
                 }
 
@@ -180,15 +170,13 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_depth_3()
 
 ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_edge_mesh()
 {
-    const Mesh& mesh = m_container.m_mesh;
-
-    constexpr PrimitiveType PV = PrimitiveType::Vertex;
+    ++m_face_counter;
 
     switch (m_face_counter) {
     case 1: m_pt = 1; return *this;
     case 2:
-        m_t = mesh.switch_tuple(m_t, PV);
         m_pt = 0;
+        m_t = m_mesh.switch_tuple(m_t, PrimitiveType::Vertex);
         return *this;
     default: break;
     }
@@ -207,17 +195,18 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_edge_mesh()
 
 ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_tri_mesh()
 {
-    const Mesh& mesh = m_container.m_mesh;
     const simplex::Simplex& simplex = m_container.m_simplex;
 
     constexpr PrimitiveType PV = PrimitiveType::Vertex;
     constexpr PrimitiveType PE = PrimitiveType::Edge;
 
+    ++m_face_counter;
+
     switch (simplex.primitive_type()) {
     case PV: {
         if (m_it.is_intermediate() && m_face_counter == 2) {
             m_pt = 0;
-            m_t = mesh.switch_tuple(m_t, PV);
+            m_t = m_mesh.switch_tuple(m_t, PV);
             m_face_counter = 4;
             return *this;
         }
@@ -226,7 +215,7 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_tri_mesh()
         case 2: m_pt = 2; return *this;
         case 3:
             m_pt = 0;
-            m_t = mesh.switch_tuples(m_t, {PV, PE});
+            m_t = m_mesh.switch_tuples(m_t, {PV, PE});
             return *this;
         case 4: m_pt = 1; return *this;
         default: break;
@@ -239,11 +228,11 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_tri_mesh()
         case 1: m_pt = 2; return *this;
         case 2:
             m_pt = 1;
-            m_t = mesh.switch_tuple(m_t, PE);
+            m_t = m_mesh.switch_tuple(m_t, PE);
             return *this;
         case 3:
             m_pt = 0;
-            m_t = mesh.switch_tuples(m_t, {PV, PE});
+            m_t = m_mesh.switch_tuples(m_t, {PV, PE});
             return *this;
         case 4: m_pt = 1; return *this;
         default: break;
@@ -268,12 +257,13 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_tri_mesh()
 
 ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_tet_mesh()
 {
-    const Mesh& mesh = m_container.m_mesh;
     const simplex::Simplex& simplex = m_container.m_simplex;
 
     constexpr PrimitiveType PV = PrimitiveType::Vertex;
     constexpr PrimitiveType PE = PrimitiveType::Edge;
     constexpr PrimitiveType PF = PrimitiveType::Triangle;
+
+    ++m_face_counter;
 
     switch (simplex.primitive_type()) {
     case PE: {
@@ -285,13 +275,13 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_tet_mesh()
         case 1: m_pt = 2; return *this; // coface triangle
         case 2: // link vertex
             m_pt = 0;
-            m_t = mesh.switch_tuples(m_t, {PE, PV});
+            m_t = m_mesh.switch_tuples(m_t, {PE, PV});
             return *this;
         case 3: m_pt = 1; return *this;
-        case 4: m_t = mesh.switch_tuple(m_t, PE); return *this;
-        case 5: m_t = mesh.switch_tuples(m_t, {PF, PE}); return *this;
+        case 4: m_t = m_mesh.switch_tuple(m_t, PE); return *this;
+        case 5: m_t = m_mesh.switch_tuples(m_t, {PF, PE}); return *this;
         case 6: m_pt = 2; return *this;
-        case 7: m_t = mesh.switch_tuple(m_t, PF); return *this;
+        case 7: m_t = m_mesh.switch_tuple(m_t, PF); return *this;
         case 8: m_pt = 3; return *this;
         default: break;
         }
@@ -303,18 +293,18 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_tet_mesh()
         case 1: m_pt = 3; return *this;
         case 2: // link vertex
             m_pt = 0;
-            m_t = mesh.switch_tuples(m_t, {PF, PE, PV});
+            m_t = m_mesh.switch_tuples(m_t, {PF, PE, PV});
             return *this;
         case 3: m_pt = 1; return *this;
         case 4: m_pt = 2; return *this;
         case 5:
             m_pt = 1;
-            m_t = mesh.switch_tuples(m_t, {PF, PE});
+            m_t = m_mesh.switch_tuples(m_t, {PF, PE});
             return *this;
         case 6: m_pt = 2; return *this;
         case 7:
             m_pt = 1;
-            m_t = mesh.switch_tuples(m_t, {PF, PE});
+            m_t = m_mesh.switch_tuples(m_t, {PF, PE});
             return *this;
         case 8: m_pt = 2; return *this;
         default: break;
@@ -342,7 +332,6 @@ Tuple ClosedStarIterable::Iterator::navigate_to_link(Tuple t)
     if (t.is_null()) {
         return t;
     }
-    const Mesh& mesh = m_container.m_mesh;
     const simplex::Simplex& simplex = m_container.m_simplex;
 
     /*
@@ -359,12 +348,12 @@ Tuple ClosedStarIterable::Iterator::navigate_to_link(Tuple t)
      *
      * The following code implements these permutations.
      */
-    const int8_t m = mesh.top_cell_dimension();
+    const int8_t m = m_mesh.top_cell_dimension();
     const int8_t s = get_primitive_type_id(simplex.primitive_type());
 
     for (int8_t j = s; j > -1; --j) {
         for (int8_t i = 0; i < m - s; ++i) {
-            t = mesh.switch_tuple(t, get_primitive_type_from_id(j + i));
+            t = m_mesh.switch_tuple(t, get_primitive_type_from_id(j + i));
         }
     }
 
@@ -411,8 +400,6 @@ bool ClosedStarIterable::Iterator::step_faces_triangle()
 
 bool ClosedStarIterable::Iterator::step_faces_tetrahedron()
 {
-    const Mesh& mesh = m_container.m_mesh;
-
     constexpr PrimitiveType PV = PrimitiveType::Vertex;
     constexpr PrimitiveType PE = PrimitiveType::Edge;
     constexpr PrimitiveType PF = PrimitiveType::Triangle;
@@ -421,29 +408,29 @@ bool ClosedStarIterable::Iterator::step_faces_tetrahedron()
     case 0: m_pt = 0; break; // the tet itself
     case 1: m_pt = 1; break;
     case 2:
-        m_t = mesh.switch_tuples(m_t, {PV, PE});
+        m_t = m_mesh.switch_tuples(m_t, {PV, PE});
         m_pt = 0;
         break;
     case 3: m_pt = 1; break;
     case 4:
-        m_t = mesh.switch_tuples(m_t, {PV, PE});
+        m_t = m_mesh.switch_tuples(m_t, {PV, PE});
         m_pt = 0;
         break;
     case 5: m_pt = 1; break;
     case 6: m_pt = 2; break; // base triangle
     case 7: // opposite vertex
-        m_t = mesh.switch_tuples(m_t, {PF, PE, PV});
+        m_t = m_mesh.switch_tuples(m_t, {PF, PE, PV});
         m_pt = 0;
         break;
     case 8: m_pt = 1; break;
     case 9: m_pt = 2; break;
     case 10:
-        m_t = mesh.switch_tuples(m_t, {PF, PE});
+        m_t = m_mesh.switch_tuples(m_t, {PF, PE});
         m_pt = 1;
         break;
     case 11: m_pt = 2; break;
     case 12:
-        m_t = mesh.switch_tuples(m_t, {PF, PE});
+        m_t = m_mesh.switch_tuples(m_t, {PF, PE});
         m_pt = 1;
         break;
     case 13: m_pt = 2; break;

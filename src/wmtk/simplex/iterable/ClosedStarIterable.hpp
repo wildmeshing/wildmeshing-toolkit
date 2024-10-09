@@ -59,6 +59,8 @@ public:
 
     private:
         ClosedStarIterable& m_container;
+        const Mesh& m_mesh;
+
         TopDimensionCofacesIterable::Iterator m_it;
         Tuple m_t;
         int8_t m_pt = -1;
