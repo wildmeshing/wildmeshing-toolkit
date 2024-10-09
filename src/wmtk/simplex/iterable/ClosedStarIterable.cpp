@@ -26,10 +26,9 @@ ClosedStarIterable::Iterator::Iterator(ClosedStarIterable& container, const Tupl
         return;
     }
 
-    m_pt = 0;
+    m_pt = get_primitive_type_id(container.m_simplex.primitive_type());
 
     if (depth() == 3) {
-        m_pt = get_primitive_type_id(container.m_simplex.primitive_type());
         m_phase = IteratorPhase::OpenStar;
     }
 
@@ -49,10 +48,11 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::operator++()
     const int8_t s = get_primitive_type_id(simplex.primitive_type());
 
     if (m_phase == IteratorPhase::Faces) {
-        if (s > 0) {
-            step_faces();
+        if (step_faces()) {
             return *this;
         } else {
+            m_face_counter = 0;
+            m_pt = s;
             m_phase = IteratorPhase::OpenStar;
         }
     }
@@ -326,81 +326,86 @@ Tuple ClosedStarIterable::Iterator::navigate_to_link(Tuple t)
     return t;
 }
 
-void ClosedStarIterable::Iterator::step_faces()
+bool ClosedStarIterable::Iterator::step_faces()
+{
+    switch (m_container.m_simplex.primitive_type()) {
+    case PrimitiveType::Vertex: return false;
+    case PrimitiveType::Edge: return step_faces_edge();
+    case PrimitiveType::Triangle: return step_faces_triangle();
+    case PrimitiveType::Tetrahedron: return step_faces_tetrahedron();
+    default: assert(false);
+    }
+    return false;
+}
+
+bool ClosedStarIterable::Iterator::step_faces_edge()
+{
+    if (m_face_counter == 2) {
+        return false;
+    }
+    m_pt = 0;
+    m_t = m_container.m_mesh.switch_tuple(m_t, PrimitiveType::Vertex);
+    ++m_face_counter;
+    return true;
+}
+
+bool ClosedStarIterable::Iterator::step_faces_triangle()
+{
+    ++m_pt;
+    if (m_pt > 1) {
+        if (m_face_counter == 3) {
+            return false;
+        }
+        ++m_face_counter;
+        m_pt = 0;
+        m_t = m_container.m_mesh.switch_tuples(m_t, {PrimitiveType::Vertex, PrimitiveType::Edge});
+    }
+    return true;
+}
+
+bool ClosedStarIterable::Iterator::step_faces_tetrahedron()
 {
     const Mesh& mesh = m_container.m_mesh;
-    const simplex::Simplex& simplex = m_container.m_simplex;
 
     constexpr PrimitiveType PV = PrimitiveType::Vertex;
     constexpr PrimitiveType PE = PrimitiveType::Edge;
     constexpr PrimitiveType PF = PrimitiveType::Triangle;
-    constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
-    switch (simplex.primitive_type()) {
-    case PV: {
+    switch (m_face_counter) {
+    case 0: m_pt = 0; break; // the tet itself
+    case 1: m_pt = 1; break;
+    case 2:
+        m_t = mesh.switch_tuples(m_t, {PV, PE});
+        m_pt = 0;
         break;
-    }
-    case PE: {
-        ++m_face_counter;
-        if (m_face_counter == 2) {
-            break;
-        }
-        m_t = mesh.switch_tuple(m_t, PV);
-        return;
-    }
-    case PF: {
-        ++m_pt;
-        if (m_pt == 2) {
-            m_pt = 0;
-            ++m_face_counter;
-            if (m_face_counter == 3) {
-                break;
-            }
-            m_t = mesh.switch_tuples(m_t, {PV, PE});
-        }
-        return;
-    }
-    case PT: {
-        ++m_face_counter;
-        switch (m_face_counter) {
-        case 1: m_pt = 1; return;
-        case 2:
-            m_pt = 0;
-            m_t = mesh.switch_tuples(m_t, {PV, PE});
-            return;
-        case 3: m_pt = 1; return;
-        case 4:
-            m_pt = 0;
-            m_t = mesh.switch_tuples(m_t, {PV, PE});
-            return;
-        case 5: m_pt = 1; return;
-        case 6: m_pt = 2; return;
-        case 7: // opposite vertex
-            m_pt = 0;
-            m_t = mesh.switch_tuples(m_t, {PF, PE, PV});
-            return;
-        case 8: m_pt = 1; return;
-        case 9: m_pt = 2; return;
-        case 10:
-            m_pt = 1;
-            m_t = mesh.switch_tuples(m_t, {PF, PE});
-            return;
-        case 11: m_pt = 2; return;
-        case 12:
-            m_pt = 1;
-            m_t = mesh.switch_tuples(m_t, {PF, PE});
-            return;
-        case 13: m_pt = 2; return;
-        default: break;
-        }
+    case 3: m_pt = 1; break;
+    case 4:
+        m_t = mesh.switch_tuples(m_t, {PV, PE});
+        m_pt = 0;
         break;
-    }
-    default: break;
+    case 5: m_pt = 1; break;
+    case 6: m_pt = 2; break; // base triangle
+    case 7: // opposite vertex
+        m_t = mesh.switch_tuples(m_t, {PF, PE, PV});
+        m_pt = 0;
+        break;
+    case 8: m_pt = 1; break;
+    case 9: m_pt = 2; break;
+    case 10:
+        m_t = mesh.switch_tuples(m_t, {PF, PE});
+        m_pt = 1;
+        break;
+    case 11: m_pt = 2; break;
+    case 12:
+        m_t = mesh.switch_tuples(m_t, {PF, PE});
+        m_pt = 1;
+        break;
+    case 13: m_pt = 2; break;
+    default: return false;
     }
 
-    m_face_counter = 0;
-    m_pt = get_primitive_type_id(simplex.primitive_type());
-    m_phase = IteratorPhase::OpenStar;
+    ++m_face_counter;
+    return true;
 }
 
 } // namespace wmtk::simplex

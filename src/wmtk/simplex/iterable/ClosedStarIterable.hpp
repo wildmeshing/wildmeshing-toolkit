@@ -48,7 +48,10 @@ public:
 
         Tuple navigate_to_link(Tuple t);
 
-        void step_faces();
+        bool step_faces();
+        bool step_faces_edge();
+        bool step_faces_triangle();
+        bool step_faces_tetrahedron();
 
     private:
         ClosedStarIterable& m_container;
