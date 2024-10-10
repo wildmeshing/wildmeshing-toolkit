@@ -14,6 +14,7 @@ public:
     {
         return PointMesh::id(tup, wmtk::PrimitiveType::Vertex);
     }
+    using PointMesh::id;
     template <typename T>
     attribute::AccessorBase<T> create_base_accessor(const attribute::TypedAttributeHandle<T>& handle)
     {
