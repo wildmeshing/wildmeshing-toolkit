@@ -8,9 +8,7 @@
 
 namespace wmtk::operations::composite {
 TetEdgeSwap::TetEdgeSwap(TetMesh& m, int64_t collapse_index)
-    : Operation(m)
-    , m_split(m)
-    , m_collapse(m)
+    : EdgeSwap(m)
     , m_collapse_index(collapse_index)
 {}
 

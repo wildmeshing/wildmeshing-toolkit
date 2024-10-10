@@ -1,8 +1,7 @@
 
 #pragma once
 
-#include <wmtk/operations/EdgeCollapse.hpp>
-#include <wmtk/operations/EdgeSplit.hpp>
+#include "EdgeSwap.hpp"
 
 namespace wmtk::operations::composite {
 /**
@@ -37,24 +36,19 @@ namespace wmtk::operations::composite {
  *     X
  */
 
-class TriEdgeSwap : public Operation
+class TriEdgeSwap : public EdgeSwap
 {
 public:
     TriEdgeSwap(TriMesh& m);
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 
-    inline EdgeSplit& split() { return m_split; }
-    inline EdgeCollapse& collapse() { return m_collapse; }
 
 protected:
     std::vector<simplex::Simplex> unmodified_primitives(
         const simplex::Simplex& simplex) const override;
     std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
 
-private:
-    EdgeSplit m_split;
-    EdgeCollapse m_collapse;
 };
 
 } // namespace wmtk::operations::composite

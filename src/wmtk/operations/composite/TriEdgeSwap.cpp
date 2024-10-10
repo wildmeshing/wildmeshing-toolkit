@@ -5,9 +5,7 @@
 namespace wmtk::operations::composite {
 
 TriEdgeSwap::TriEdgeSwap(TriMesh& m)
-    : Operation(m)
-    , m_split(m)
-    , m_collapse(m)
+    : EdgeSwap(m)
 {}
 
 

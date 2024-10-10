@@ -1,4 +1,8 @@
 set(SRC_FILES
+
+    EdgeSwap.cpp
+    EdgeSwap.hpp
+
     TriFaceSplit.hpp
     TriFaceSplit.cpp
 

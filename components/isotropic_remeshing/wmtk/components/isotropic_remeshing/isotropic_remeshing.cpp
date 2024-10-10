@@ -233,12 +233,12 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
 
     //////////////////////////////////////////
     // swap
-    std::shared_ptr<operations::Operation> op_swap;
+    std::shared_ptr<operations::composite::EdgeSwap> op_swap;
         wmtk::logger().debug("Configure isotropic remeshing swap");
     if(mesh.top_simplex_type() == PrimitiveType::Triangle) {
-        op_swap = std::make_shared<composite::TriEdgeSwap>(mesh);
+        op_swap = std::static_pointer_cast<operations::composite::EdgeSwap>(std::make_shared<composite::TriEdgeSwap>(static_cast<TriMesh&>(mesh)));
     }
-        op_swap->add_invariant(invariant_interior_edge);
+    op_swap->add_invariant(invariant_interior_edge);
 
     // hack for uv
     if (options.fix_uv_seam) {
