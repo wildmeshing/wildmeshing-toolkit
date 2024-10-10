@@ -216,6 +216,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6d2a546c8f661bf6386cf845a1693d2f inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f">get_all</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type) const</td></tr>
 <tr class="memdesc:a6d2a546c8f661bf6386cf845a1693d2f inherit pub_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index.  <a href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f">More...</a><br /></td></tr>
 <tr class="separator:a6d2a546c8f661bf6386cf845a1693d2f inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c4d2d73a53aa94cfae3b27b6b1cd188 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_id_simplex.html">simplex::IdSimplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a7c4d2d73a53aa94cfae3b27b6b1cd188">get_all_id_simplex</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type) const</td></tr>
+<tr class="separator:a7c4d2d73a53aa94cfae3b27b6b1cd188 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aadce5155d380ef52a28eefe9e3bf0d29 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1_id_simplex.html">simplex::IdSimplex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#aadce5155d380ef52a28eefe9e3bf0d29">get_id_simplex</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> pt) const</td></tr>
 <tr class="memdesc:aadce5155d380ef52a28eefe9e3bf0d29 inherit pub_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the IdSimplex that is represented by the tuple and primitive type.  <a href="classwmtk_1_1_mesh.html#aadce5155d380ef52a28eefe9e3bf0d29">More...</a><br /></td></tr>
 <tr class="separator:aadce5155d380ef52a28eefe9e3bf0d29 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -456,6 +458,16 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:a8883ca9a14143b3902a47081a1434e55"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh_c_r_t_p.html#a8883ca9a14143b3902a47081a1434e55">tuple_from_id</a> (const <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type, const int64_t gid) const override</td></tr>
 <tr class="memdesc:a8883ca9a14143b3902a47081a1434e55"><td class="mdescLeft">&#160;</td><td class="mdescRight">internal function that returns the tuple of requested type, and has the global index cid  <a href="classwmtk_1_1_mesh_c_r_t_p.html#a8883ca9a14143b3902a47081a1434e55">More...</a><br /></td></tr>
 <tr class="separator:a8883ca9a14143b3902a47081a1434e55"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a58243712dc3e0d258ad645e7b08870db"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh_c_r_t_p.html#a58243712dc3e0d258ad645e7b08870db">id</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type) const</td></tr>
+<tr class="memdesc:a58243712dc3e0d258ad645e7b08870db"><td class="mdescLeft">&#160;</td><td class="mdescRight">return the global id of the <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> of the given dimension  <a href="classwmtk_1_1_mesh_c_r_t_p.html#a58243712dc3e0d258ad645e7b08870db">More...</a><br /></td></tr>
+<tr class="separator:a58243712dc3e0d258ad645e7b08870db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0faf12348ab11780f465a6b88ddec18f"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh_c_r_t_p.html#a0faf12348ab11780f465a6b88ddec18f">id</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_navigatable_simplex.html">simplex::NavigatableSimplex</a> &amp;s) const</td></tr>
+<tr class="separator:a0faf12348ab11780f465a6b88ddec18f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0aa53119cd9e53b1625587d69d5c27f9"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh_c_r_t_p.html#a0aa53119cd9e53b1625587d69d5c27f9">id</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_id_simplex.html">simplex::IdSimplex</a> &amp;s) const</td></tr>
+<tr class="separator:a0aa53119cd9e53b1625587d69d5c27f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac39c92deddc96e0855c33f4a38c1e131"><td class="memItemLeft" align="right" valign="top">virtual int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh_c_r_t_p.html#ac39c92deddc96e0855c33f4a38c1e131">id</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;s) const=0</td></tr>
+<tr class="memdesc:ac39c92deddc96e0855c33f4a38c1e131"><td class="mdescLeft">&#160;</td><td class="mdescRight">Forwarding version of id on simplices that does id caching.  <a href="classwmtk_1_1_mesh_c_r_t_p.html#ac39c92deddc96e0855c33f4a38c1e131">More...</a><br /></td></tr>
+<tr class="separator:ac39c92deddc96e0855c33f4a38c1e131"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></td></tr>
 <tr class="memitem:a4f254908d8e8ca966ad4e62c66f33c64 inherit pro_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_accessor.html">attribute::Accessor</a>&lt; char &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a4f254908d8e8ca966ad4e62c66f33c64">get_flag_accessor</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> type)</td></tr>
 <tr class="separator:a4f254908d8e8ca966ad4e62c66f33c64 inherit pro_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -750,7 +762,7 @@ template&lt;typename Derived &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00036">36</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00067">wmtk::MeshCRTP&lt; Derived &gt;::create_accessor()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00074">wmtk::MeshCRTP&lt; Derived &gt;::create_const_accessor()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00103">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00060">wmtk::MeshCRTP&lt; Derived &gt;::is_boundary()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00058">wmtk::MeshCRTP&lt; Derived &gt;::is_ccw()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00040">wmtk::MeshCRTP&lt; Derived &gt;::switch_tuple()</a>, and <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00127">wmtk::MeshCRTP&lt; Derived &gt;::tuple_from_id()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00067">wmtk::MeshCRTP&lt; Derived &gt;::create_accessor()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00074">wmtk::MeshCRTP&lt; Derived &gt;::create_const_accessor()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00103">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00060">wmtk::MeshCRTP&lt; Derived &gt;::is_boundary()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00058">wmtk::MeshCRTP&lt; Derived &gt;::is_ccw()</a>, <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00040">wmtk::MeshCRTP&lt; Derived &gt;::switch_tuple()</a>, and <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00123">wmtk::MeshCRTP&lt; Derived &gt;::tuple_from_id()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -791,8 +803,60 @@ template&lt;typename Derived &gt; </div>
 
 </div>
 </div>
+<a id="a0aa53119cd9e53b1625587d69d5c27f9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0aa53119cd9e53b1625587d69d5c27f9">&#9670;&nbsp;</a></span>id() <span class="overload">[1/6]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Derived &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64_t wmtk::Mesh::id</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_mesh_8hpp_source.html#l00802">802</a> of file <a class="el" href="_mesh_8hpp_source.html">Mesh.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a0faf12348ab11780f465a6b88ddec18f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0faf12348ab11780f465a6b88ddec18f">&#9670;&nbsp;</a></span>id() <span class="overload">[2/6]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Derived &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64_t wmtk::Mesh::id</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_mesh_8hpp_source.html#l00801">801</a> of file <a class="el" href="_mesh_8hpp_source.html">Mesh.hpp</a>.</p>
+
+</div>
+</div>
 <a id="aa2fdf40173bc0169bd933235a00ded4b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa2fdf40173bc0169bd933235a00ded4b">&#9670;&nbsp;</a></span>id() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa2fdf40173bc0169bd933235a00ded4b">&#9670;&nbsp;</a></span>id() <span class="overload">[3/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -823,18 +887,44 @@ template&lt;typename Derived &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00112">112</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00103">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l01009">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_mesh_c_r_t_p_aa2fdf40173bc0169bd933235a00ded4b_cgraph.svg" width="608" height="38"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_mesh_c_r_t_p_aa2fdf40173bc0169bd933235a00ded4b_cgraph.svg" width="368" height="38"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
 </div>
 </div>
+<a id="ac39c92deddc96e0855c33f4a38c1e131"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac39c92deddc96e0855c33f4a38c1e131">&#9670;&nbsp;</a></span>id() <span class="overload">[4/6]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Derived &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual int64_t wmtk::Mesh::id</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Forwarding version of id on simplices that does id caching. </p>
+
+</div>
+</div>
 <a id="a95ffde19b33a0309a9195c71c3077599"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a95ffde19b33a0309a9195c71c3077599">&#9670;&nbsp;</a></span>id() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a95ffde19b33a0309a9195c71c3077599">&#9670;&nbsp;</a></span>id() <span class="overload">[5/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -874,18 +964,55 @@ template&lt;typename Derived &gt; </div>
 <p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00103">103</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00036">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00112">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>, and <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00106">wmtk::MeshCRTP&lt; Derived &gt;::id_virtual()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_mesh_c_r_t_p_a95ffde19b33a0309a9195c71c3077599_cgraph.svg" width="406" height="38"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
+
+</div>
+</div>
+<a id="a58243712dc3e0d258ad645e7b08870db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a58243712dc3e0d258ad645e7b08870db">&#9670;&nbsp;</a></span>id() <span class="overload">[6/6]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Derived &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64_t wmtk::Mesh::id</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>return the global id of the <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> of the given dimension </p>
+<p>This function uses the implementation defined in a derived class (like a Tri/TetMesh) using a virtual function, but to enable more opportunities teh actual virtual function is id_virtual</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">m</td><td></td></tr>
+    <tr><td class="paramname">type</td><td>d-0 -&gt; vertex d-1 -&gt; edge d-2 -&gt; face d-3 -&gt; tetrahedron </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>int64_t id of the entity </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="_mesh_8hpp_source.html#l00799">799</a> of file <a class="el" href="_mesh_8hpp_source.html">Mesh.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00112">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>, and <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00106">wmtk::MeshCRTP&lt; Derived &gt;::id_virtual()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_mesh_c_r_t_p_a95ffde19b33a0309a9195c71c3077599_icgraph.svg" width="368" height="104"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_mesh_c_r_t_p_a58243712dc3e0d258ad645e7b08870db_icgraph.svg" width="368" height="104"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -934,11 +1061,11 @@ template&lt;typename Derived &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00106">106</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00103">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l01009">wmtk::MeshCRTP&lt; Derived &gt;::id()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_mesh_c_r_t_p_a09b6f5adf237950ddef0f8d78abe4089_cgraph.svg" width="608" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_mesh_c_r_t_p_a09b6f5adf237950ddef0f8d78abe4089_cgraph.svg" width="368" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -1166,7 +1293,7 @@ template&lt;typename Derived &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00040">40</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00036">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>, and <a class="el" href="_mesh_8hpp_source.html#l00981">wmtk::Mesh::top_simplex_type()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00036">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>, and <a class="el" href="_mesh_8hpp_source.html#l00985">wmtk::Mesh::top_simplex_type()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1209,7 +1336,7 @@ template&lt;typename ContainerType &gt; </div>
 <p>Performs a sequence of switch_tuple operations in the order specified in op_sequence. </p>
 <p>in debug mode this will assert a failure, in release this will return a null tuple </p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00139">139</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00135">135</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_simplex_inversion_invariant_8cpp_source.html#l00022">wmtk::SimplexInversionInvariant&lt; T &gt;::after()</a>, <a class="el" href="link_8cpp_source.html#l00124">wmtk::simplex::link()</a>, <a class="el" href="link__single__dimension_8cpp_source.html#l00183">wmtk::simplex::link_single_dimension()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00032">wmtk::TriMesh::TriMeshOperationExecutor::next_edge()</a>, and <a class="el" href="open__star_8cpp_source.html#l00062">wmtk::simplex::open_star()</a>.</p>
 <div class="dynheader">
@@ -1251,7 +1378,7 @@ template&lt;typename Derived &gt; </div>
 
 <p>annoying initializer list prototype to catch switch_tuples(t, {PV,PE}) </p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00162">162</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00158">158</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
 </div>
 </div>
@@ -1302,7 +1429,7 @@ template&lt;typename Derived &gt; </div>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a60165ceb4c2db2731df90e4ac100637d">wmtk::Mesh</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00127">127</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00123">123</a> of file <a class="el" href="_mesh_c_r_t_p_8hpp_source.html">MeshCRTP.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_mesh_c_r_t_p_8hpp_source.html#l00036">wmtk::MeshCRTP&lt; Derived &gt;::derived()</a>.</p>
 <div class="dynheader">

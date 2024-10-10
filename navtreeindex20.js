@@ -1,5 +1,7 @@
 var NAVTREEINDEX20 =
 {
+"merkle__tree_8hpp_source.html":[10,0,2,0,8,19],
+"merkle__tree__diff_8cpp.html":[10,0,2,0,8,20],
 "merkle__tree__diff_8cpp.html#aa8bd6cb2e566ee2d1badbff8eec034ea":[10,0,2,0,8,20,0],
 "merkle__tree__diff_8cpp_source.html":[10,0,2,0,8,20],
 "merkle__tree__diff_8hpp.html":[10,0,2,0,8,21],
@@ -108,8 +110,8 @@ var NAVTREEINDEX20 =
 "namespaceinternal.html":[8,0,4],
 "namespaceinternal.html#a3fa61cd9a5bc07d701326b589bafc9ad":[8,0,4,0],
 "namespaceinternal.html#ac7d044af3e6028ae2a916de6fa9c05ef":[8,0,4,1],
-"namespacemembers.html":[8,1,0,0],
 "namespacemembers.html":[8,1,0],
+"namespacemembers.html":[8,1,0,0],
 "namespacemembers_b.html":[8,1,0,1],
 "namespacemembers_c.html":[8,1,0,2],
 "namespacemembers_d.html":[8,1,0,3],
@@ -117,8 +119,8 @@ var NAVTREEINDEX20 =
 "namespacemembers_enum.html":[8,1,4],
 "namespacemembers_eval.html":[8,1,5],
 "namespacemembers_f.html":[8,1,0,5],
-"namespacemembers_func.html":[8,1,1],
 "namespacemembers_func.html":[8,1,1,0],
+"namespacemembers_func.html":[8,1,1],
 "namespacemembers_func_b.html":[8,1,1,1],
 "namespacemembers_func_c.html":[8,1,1,2],
 "namespacemembers_func_d.html":[8,1,1,3],
@@ -247,7 +249,5 @@ var NAVTREEINDEX20 =
 "namespacewmtk.html#aedc5944c76b67357bbdf8174977cf37c":[8,0,10,52],
 "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345":[8,0,10,86],
 "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a5e5500cb2b82eb72d550de644bd1b64b":[8,0,10,86,2],
-"namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6":[8,0,10,86,0],
-"namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80":[8,0,10,86,3],
-"namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e":[8,0,10,86,1]
+"namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6":[8,0,10,86,0]
 };

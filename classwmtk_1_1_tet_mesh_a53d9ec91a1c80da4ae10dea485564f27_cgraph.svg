@@ -67,17 +67,18 @@ var sectionId = 'dynsection-45';
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="classwmtk_1_1_tet_mesh.html#aa8424e5e4d709981e9e10d659f87f97d" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="202,-224 202,-243 308,-243 308,-224 202,-224"/>
-<text text-anchor="middle" x="255" y="-231" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::id</text>
+<g id="a_node2"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a58243712dc3e0d258ad645e7b08870db" target="_top" xlink:title="return the global id of the Tuple of the given dimension">
+<polygon fill="none" stroke="black" points="178.5,-224.5 178.5,-254.5 331.5,-254.5 331.5,-224.5 178.5,-224.5"/>
+<text text-anchor="start" x="186.5" y="-242.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP&lt; TetMesh</text>
+<text text-anchor="middle" x="255" y="-231.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &gt;::id</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M100.27,-191.6C118.97,-199.21 142.46,-208.14 164,-214.5 172.89,-217.13 182.37,-219.54 191.71,-221.7"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="191.25,-225.18 201.77,-223.94 192.77,-218.35 191.25,-225.18"/>
+<path fill="none" stroke="midnightblue" d="M101.84,-191.6C120.34,-198.94 143.2,-207.64 164,-214.5 171.36,-216.93 179.12,-219.32 186.85,-221.61"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="186.04,-225.02 196.62,-224.45 187.99,-218.3 186.04,-225.02"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
@@ -128,7 +129,7 @@ var sectionId = 'dynsection-45';
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26" target="_top" xlink:title=" ">
+<g id="a_node4"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#ada896c7e7910630ca0d3424baa3c3258" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="396,-294.5 396,-324.5 538,-324.5 538,-294.5 396,-294.5"/>
 <text text-anchor="start" x="404" y="-312.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
 <text text-anchor="middle" x="467" y="-301.5" font-family="Helvetica,sans-Serif" font-size="10.00">::const_vector_attribute</text>
@@ -138,8 +139,8 @@ var sectionId = 'dynsection-45';
 <!-- Node3&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
 <title>Node3&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M329.72,-205.14C335.54,-207.63 341.06,-210.71 346,-214.5 374.06,-236.05 354.71,-262.98 382,-285.5 383.58,-286.8 385.23,-288.04 386.93,-289.2"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="385.46,-292.4 395.85,-294.49 389.03,-286.38 385.46,-292.4"/>
+<path fill="none" stroke="midnightblue" d="M327.47,-205.08C334.11,-207.78 340.42,-211.2 346,-215.5 373.7,-236.87 354.95,-263.31 382,-285.5 383.58,-286.8 385.23,-288.03 386.94,-289.19"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="385.48,-292.39 395.87,-294.46 389.04,-286.36 385.48,-292.39"/>
 </g>
 <!-- Node6 -->
 <g id="node6" class="node">

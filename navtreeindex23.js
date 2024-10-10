@@ -1,5 +1,7 @@
 var NAVTREEINDEX23 =
 {
+"namespacewmtk_1_1simplex.html#a9c219fd0b4f590bc836d41011761968b":[8,0,10,10,52],
+"namespacewmtk_1_1simplex.html#a9cd714440f235fdd4df798e86dc2d597":[8,0,10,10,57],
 "namespacewmtk_1_1simplex.html#a9dec91b832501228f5b8b05646d0b89d":[8,0,10,10,37],
 "namespacewmtk_1_1simplex.html#aa1d3e147980cb48d6365c208e0222260":[8,0,10,10,31],
 "namespacewmtk_1_1simplex.html#aa3b816a2d6ab96e04f8d67470c93ef89":[8,0,10,10,69],
@@ -247,7 +249,5 @@ var NAVTREEINDEX23 =
 "same__simplex__dimension__bijection_8hpp.html":[10,0,2,0,5,17],
 "same__simplex__dimension__bijection_8hpp.html#ae9d6749c097baf5c55d25e598ecec6e1":[10,0,2,0,5,17,0],
 "same__simplex__dimension__bijection_8hpp_source.html":[10,0,2,0,5,17],
-"same__simplex__dimension__surjection_8cpp.html":[10,0,2,0,5,18],
-"same__simplex__dimension__surjection_8cpp.html#a7bd59ab748f0b54f3ab7dc9d625b04ec":[10,0,2,0,5,18,0],
-"same__simplex__dimension__surjection_8cpp_source.html":[10,0,2,0,5,18]
+"same__simplex__dimension__surjection_8cpp.html":[10,0,2,0,5,18]
 };

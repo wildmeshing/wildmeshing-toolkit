@@ -69,16 +69,16 @@ var sectionId = 'dynsection-6';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classwmtk_1_1_tet_mesh.html#ab06d615fb517f9fa4c20e4593ae46500" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="413.5,-208 413.5,-227 538.5,-227 538.5,-208 413.5,-208"/>
-<text text-anchor="middle" x="476" y="-215" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::id_tet</text>
+<polygon fill="none" stroke="black" points="413.5,-212 413.5,-231 538.5,-231 538.5,-212 413.5,-212"/>
+<text text-anchor="middle" x="476" y="-219" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::id_tet</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M147.67,-178.05C170.06,-185.71 196.47,-193.71 221,-198.5 281.7,-210.36 351.89,-214.93 403.08,-216.64"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="403.28,-220.14 413.39,-216.95 403.5,-213.15 403.28,-220.14"/>
+<path fill="none" stroke="midnightblue" d="M148.33,-178.07C170.59,-185.64 196.73,-193.56 221,-198.5 281.69,-210.85 351.88,-216.57 403.07,-219.22"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="403.22,-222.73 413.38,-219.72 403.56,-215.74 403.22,-222.73"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
@@ -129,22 +129,23 @@ var sectionId = 'dynsection-6';
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
-<g id="a_node3"><a xlink:href="classwmtk_1_1_tet_mesh.html#aa8424e5e4d709981e9e10d659f87f97d" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="614,-208 614,-227 720,-227 720,-208 614,-208"/>
-<text text-anchor="middle" x="667" y="-215" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::id</text>
+<g id="a_node3"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a58243712dc3e0d258ad645e7b08870db" target="_top" xlink:title="return the global id of the Tuple of the given dimension">
+<polygon fill="none" stroke="black" points="590.5,-208.5 590.5,-238.5 743.5,-238.5 743.5,-208.5 590.5,-208.5"/>
+<text text-anchor="start" x="598.5" y="-226.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP&lt; TetMesh</text>
+<text text-anchor="middle" x="667" y="-215.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &gt;::id</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node3 -->
 <g id="edge2" class="edge">
 <title>Node2&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M538.62,-217.5C559.55,-217.5 582.92,-217.5 603.88,-217.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="603.96,-221 613.96,-217.5 603.96,-214 603.96,-221"/>
+<path fill="none" stroke="midnightblue" d="M538.62,-222.15C551.89,-222.29 566.14,-222.44 580.13,-222.59"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="580.22,-226.09 590.26,-222.7 580.3,-219.09 580.22,-226.09"/>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
-<g id="a_node5"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26" target="_top" xlink:title=" ">
+<g id="a_node5"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#ada896c7e7910630ca0d3424baa3c3258" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="808,-71.5 808,-101.5 950,-101.5 950,-71.5 808,-71.5"/>
 <text text-anchor="start" x="816" y="-89.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
 <text text-anchor="middle" x="879" y="-78.5" font-family="Helvetica,sans-Serif" font-size="10.00">::const_vector_attribute</text>
@@ -161,29 +162,29 @@ var sectionId = 'dynsection-6';
 <g id="node7" class="node">
 <title>Node7</title>
 <g id="a_node7"><a xlink:href="classwmtk_1_1_tet_mesh.html#a53d9ec91a1c80da4ae10dea485564f27" target="_top" xlink:title="switch the orientation of the Tuple of the given dimension">
-<polygon fill="none" stroke="black" points="412,-139.5 412,-169.5 540,-169.5 540,-139.5 412,-139.5"/>
-<text text-anchor="start" x="420" y="-157.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::switch</text>
-<text text-anchor="middle" x="476" y="-146.5" font-family="Helvetica,sans-Serif" font-size="10.00">_tuple</text>
+<polygon fill="none" stroke="black" points="412,-141.5 412,-171.5 540,-171.5 540,-141.5 412,-141.5"/>
+<text text-anchor="start" x="420" y="-159.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::switch</text>
+<text text-anchor="middle" x="476" y="-148.5" font-family="Helvetica,sans-Serif" font-size="10.00">_tuple</text>
 </a>
 </g>
 </g>
 <!-- Node6&#45;&gt;Node7 -->
 <g id="edge6" class="edge">
 <title>Node6&#45;&gt;Node7</title>
-<path fill="none" stroke="midnightblue" d="M366.35,-169.98C377.89,-168.33 389.94,-166.62 401.64,-164.95"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="402.4,-168.38 411.81,-163.5 401.41,-161.45 402.4,-168.38"/>
+<path fill="none" stroke="midnightblue" d="M372.15,-169.98C381.95,-168.69 392,-167.38 401.81,-166.09"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="402.46,-169.54 411.92,-164.77 401.55,-162.6 402.46,-169.54"/>
 </g>
 <!-- Node7&#45;&gt;Node3 -->
 <g id="edge7" class="edge">
 <title>Node7&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M506.69,-169.66C526.02,-179.04 552.02,-190.74 576,-198.5 584.81,-201.35 594.26,-203.89 603.59,-206.11"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="603.11,-209.59 613.64,-208.38 604.66,-202.76 603.11,-209.59"/>
+<path fill="none" stroke="midnightblue" d="M509.58,-171.59C528.69,-180.12 553.44,-190.62 576,-198.5 582.95,-200.93 590.26,-203.28 597.59,-205.51"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="596.98,-208.98 607.56,-208.46 598.97,-202.26 596.98,-208.98"/>
 </g>
 <!-- Node7&#45;&gt;Node4 -->
 <g id="edge8" class="edge">
 <title>Node7&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M506.69,-139.34C526.02,-129.96 552.02,-118.26 576,-110.5 584.28,-107.82 593.11,-105.42 601.89,-103.3"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="602.78,-106.69 611.74,-101.03 601.21,-99.87 602.78,-106.69"/>
+<path fill="none" stroke="midnightblue" d="M504.89,-141.46C524.36,-131.49 551.19,-118.76 576,-110.5 583.95,-107.85 592.42,-105.49 600.87,-103.41"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="601.8,-106.79 610.74,-101.1 600.2,-99.97 601.8,-106.79"/>
 </g>
 <!-- Node8 -->
 <g id="node8" class="node">
@@ -197,8 +198,8 @@ var sectionId = 'dynsection-6';
 <!-- Node7&#45;&gt;Node8 -->
 <g id="edge9" class="edge">
 <title>Node7&#45;&gt;Node8</title>
-<path fill="none" stroke="midnightblue" d="M540.2,-162.86C556.1,-164.96 573.35,-167.24 589.82,-169.42"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="589.58,-172.92 599.95,-170.76 590.5,-165.98 589.58,-172.92"/>
+<path fill="none" stroke="midnightblue" d="M540.2,-164.19C556.1,-166.13 573.35,-168.22 589.82,-170.23"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="589.6,-173.73 599.95,-171.46 590.45,-166.78 589.6,-173.73"/>
 </g>
 <!-- Node29 -->
 <g id="node29" class="node">
@@ -213,8 +214,8 @@ var sectionId = 'dynsection-6';
 <!-- Node7&#45;&gt;Node29 -->
 <g id="edge31" class="edge">
 <title>Node7&#45;&gt;Node29</title>
-<path fill="none" stroke="midnightblue" d="M540.2,-148.15C554.32,-146.73 569.5,-145.2 584.25,-143.72"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="584.78,-147.18 594.38,-142.7 584.08,-140.22 584.78,-147.18"/>
+<path fill="none" stroke="midnightblue" d="M540.2,-149.48C554.32,-147.91 569.5,-146.22 584.25,-144.58"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="584.83,-148.04 594.38,-143.46 584.06,-141.08 584.83,-148.04"/>
 </g>
 <!-- Node9 -->
 <g id="node9" class="node">
@@ -549,8 +550,8 @@ var sectionId = 'dynsection-6';
 <!-- Node30&#45;&gt;Node7 -->
 <g id="edge34" class="edge">
 <title>Node30&#45;&gt;Node7</title>
-<path fill="none" stroke="midnightblue" d="M362.86,-142.36C375.41,-143.72 388.68,-145.16 401.54,-146.55"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="401.41,-150.05 411.73,-147.65 402.17,-143.09 401.41,-150.05"/>
+<path fill="none" stroke="midnightblue" d="M362.86,-143.08C375.41,-144.58 388.68,-146.17 401.54,-147.71"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="401.39,-151.22 411.73,-148.93 402.22,-144.27 401.39,-151.22"/>
 </g>
 </g>
 </svg>

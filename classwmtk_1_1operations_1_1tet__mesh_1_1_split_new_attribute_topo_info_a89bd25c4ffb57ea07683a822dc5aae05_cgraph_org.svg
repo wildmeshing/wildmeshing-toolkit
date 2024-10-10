@@ -177,17 +177,18 @@
 <!-- Node10 -->
 <g id="node10" class="node">
 <title>Node10</title>
-<g id="a_node10"><a xlink:href="classwmtk_1_1_tet_mesh.html#aa8424e5e4d709981e9e10d659f87f97d" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="640,-294 640,-313 746,-313 746,-294 640,-294"/>
-<text text-anchor="middle" x="693" y="-301" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::id</text>
+<g id="a_node10"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a58243712dc3e0d258ad645e7b08870db" target="_top" xlink:title="return the global id of the Tuple of the given dimension">
+<polygon fill="none" stroke="black" points="616.5,-294.5 616.5,-324.5 769.5,-324.5 769.5,-294.5 616.5,-294.5"/>
+<text text-anchor="start" x="624.5" y="-312.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP&lt; TetMesh</text>
+<text text-anchor="middle" x="693" y="-301.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &gt;::id</text>
 </a>
 </g>
 </g>
 <!-- Node9&#45;&gt;Node10 -->
 <g id="edge10" class="edge">
 <title>Node9&#45;&gt;Node10</title>
-<path fill="none" stroke="midnightblue" d="M540.05,-276.64C568.31,-281.64 601.53,-287.51 629.69,-292.49"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="629.36,-295.98 639.82,-294.28 630.58,-289.09 629.36,-295.98"/>
+<path fill="none" stroke="midnightblue" d="M540.05,-278.4C561.43,-282.78 585.64,-287.73 608.36,-292.38"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="607.83,-295.85 618.33,-294.42 609.24,-288.99 607.83,-295.85"/>
 </g>
 <!-- Node11 -->
 <g id="node11" class="node">
@@ -238,7 +239,7 @@
 <!-- Node12 -->
 <g id="node12" class="node">
 <title>Node12</title>
-<g id="a_node12"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26" target="_top" xlink:title=" ">
+<g id="a_node12"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#ada896c7e7910630ca0d3424baa3c3258" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="834,-291.5 834,-321.5 976,-321.5 976,-291.5 834,-291.5"/>
 <text text-anchor="start" x="842" y="-309.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
 <text text-anchor="middle" x="905" y="-298.5" font-family="Helvetica,sans-Serif" font-size="10.00">::const_vector_attribute</text>

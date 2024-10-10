@@ -590,17 +590,18 @@ var sectionId = 'dynsection-37';
 <!-- Node31 -->
 <g id="node31" class="node">
 <title>Node31</title>
-<g id="a_node31"><a xlink:href="classwmtk_1_1_tet_mesh.html#aa8424e5e4d709981e9e10d659f87f97d" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="664,-304 664,-323 770,-323 770,-304 664,-304"/>
-<text text-anchor="middle" x="717" y="-311" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::id</text>
+<g id="a_node31"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a58243712dc3e0d258ad645e7b08870db" target="_top" xlink:title="return the global id of the Tuple of the given dimension">
+<polygon fill="none" stroke="black" points="640.5,-304.5 640.5,-334.5 793.5,-334.5 793.5,-304.5 640.5,-304.5"/>
+<text text-anchor="start" x="648.5" y="-322.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP&lt; TetMesh</text>
+<text text-anchor="middle" x="717" y="-311.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &gt;::id</text>
 </a>
 </g>
 </g>
 <!-- Node30&#45;&gt;Node31 -->
 <g id="edge39" class="edge">
 <title>Node30&#45;&gt;Node31</title>
-<path fill="none" stroke="midnightblue" d="M561.05,-286.49C590.19,-291.57 624.68,-297.58 653.72,-302.64"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="653.29,-306.12 663.75,-304.39 654.5,-299.23 653.29,-306.12"/>
+<path fill="none" stroke="midnightblue" d="M561.05,-288.23C583.06,-292.67 608.13,-297.73 631.59,-302.46"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="631.03,-305.92 641.53,-304.47 632.42,-299.06 631.03,-305.92"/>
 </g>
 <!-- Node32 -->
 <g id="node32" class="node">
@@ -651,7 +652,7 @@ var sectionId = 'dynsection-37';
 <!-- Node33 -->
 <g id="node33" class="node">
 <title>Node33</title>
-<g id="a_node33"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26" target="_top" xlink:title=" ">
+<g id="a_node33"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#ada896c7e7910630ca0d3424baa3c3258" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="866,-163.5 866,-193.5 1008,-193.5 1008,-163.5 866,-163.5"/>
 <text text-anchor="start" x="874" y="-181.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
 <text text-anchor="middle" x="937" y="-170.5" font-family="Helvetica,sans-Serif" font-size="10.00">::const_vector_attribute</text>

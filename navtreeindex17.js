@@ -1,5 +1,7 @@
 var NAVTREEINDEX17 =
 {
+"delaunay__2d_8hpp.html#ae80c4178ab57d7bc05e9512f49be096a":[10,0,0,2,0,0,0,0,1,0],
+"delaunay__2d_8hpp_source.html":[10,0,0,2,0,0,0,0,1],
 "delaunay__3d_8cpp.html":[10,0,0,2,0,0,0,0,2],
 "delaunay__3d_8cpp.html#a2b8f841c866f2be5ad04a5b453746b6e":[10,0,0,2,0,0,0,0,2,0],
 "delaunay__3d_8cpp_source.html":[10,0,0,2,0,0,0,0,2],
@@ -247,7 +249,5 @@ var NAVTREEINDEX17 =
 "edge__mesh_2tuple__from__valid__index_8hxx.html":[10,0,2,0,1,0,14],
 "edge__mesh_2tuple__from__valid__index_8hxx.html#ad40c19fe80f32212cb9c23a3313cd16c":[10,0,2,0,1,0,14,0],
 "edge__mesh_2tuple__from__valid__index_8hxx_source.html":[10,0,2,0,1,0,14],
-"edge__mesh_2valid__index__from__tuple_8hpp.html":[10,0,2,0,1,0,15],
-"edge__mesh_2valid__index__from__tuple_8hpp.html#ad8db449e7b22a064811821ad935d2554":[10,0,2,0,1,0,15,0],
-"edge__mesh_2valid__index__from__tuple_8hpp_source.html":[10,0,2,0,1,0,15]
+"edge__mesh_2valid__index__from__tuple_8hpp.html":[10,0,2,0,1,0,15]
 };

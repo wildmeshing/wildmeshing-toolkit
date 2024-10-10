@@ -36,17 +36,18 @@
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
-<g id="a_node3"><a xlink:href="classwmtk_1_1_tet_mesh.html#aa8424e5e4d709981e9e10d659f87f97d" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="393,-224 393,-243 499,-243 499,-224 393,-224"/>
-<text text-anchor="middle" x="446" y="-231" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::id</text>
+<g id="a_node3"><a xlink:href="classwmtk_1_1_mesh_c_r_t_p.html#a58243712dc3e0d258ad645e7b08870db" target="_top" xlink:title="return the global id of the Tuple of the given dimension">
+<polygon fill="none" stroke="black" points="369.5,-224.5 369.5,-254.5 522.5,-254.5 522.5,-224.5 369.5,-224.5"/>
+<text text-anchor="start" x="377.5" y="-242.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MeshCRTP&lt; TetMesh</text>
+<text text-anchor="middle" x="446" y="-231.5" font-family="Helvetica,sans-Serif" font-size="10.00"> &gt;::id</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node3 -->
 <g id="edge2" class="edge">
 <title>Node2&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M291.27,-191.6C309.97,-199.21 333.46,-208.14 355,-214.5 363.89,-217.13 373.37,-219.54 382.71,-221.7"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="382.25,-225.18 392.77,-223.94 383.77,-218.35 382.25,-225.18"/>
+<path fill="none" stroke="midnightblue" d="M292.84,-191.6C311.34,-198.94 334.2,-207.64 355,-214.5 362.36,-216.93 370.12,-219.32 377.85,-221.61"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="377.04,-225.02 387.62,-224.45 378.99,-218.3 377.04,-225.02"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
@@ -97,7 +98,7 @@
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
-<g id="a_node5"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#acbfbd5a98532cf295fdf6dd64066bb26" target="_top" xlink:title=" ">
+<g id="a_node5"><a xlink:href="classwmtk_1_1attribute_1_1_accessor.html#ada896c7e7910630ca0d3424baa3c3258" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="587,-294.5 587,-324.5 729,-324.5 729,-294.5 587,-294.5"/>
 <text text-anchor="start" x="595" y="-312.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::Accessor</text>
 <text text-anchor="middle" x="658" y="-301.5" font-family="Helvetica,sans-Serif" font-size="10.00">::const_vector_attribute</text>
@@ -107,8 +108,8 @@
 <!-- Node4&#45;&gt;Node5 -->
 <g id="edge4" class="edge">
 <title>Node4&#45;&gt;Node5</title>
-<path fill="none" stroke="midnightblue" d="M520.72,-205.14C526.54,-207.63 532.06,-210.71 537,-214.5 565.06,-236.05 545.71,-262.98 573,-285.5 574.58,-286.8 576.23,-288.04 577.93,-289.2"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="576.46,-292.4 586.85,-294.49 580.03,-286.38 576.46,-292.4"/>
+<path fill="none" stroke="midnightblue" d="M518.47,-205.08C525.11,-207.78 531.42,-211.2 537,-215.5 564.7,-236.87 545.95,-263.31 573,-285.5 574.58,-286.8 576.23,-288.03 577.94,-289.19"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="576.48,-292.39 586.87,-294.46 580.04,-286.36 576.48,-292.39"/>
 </g>
 <!-- Node7 -->
 <g id="node7" class="node">
