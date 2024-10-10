@@ -8,7 +8,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-#include <wmtk/components/input/input.hpp>
+#include <wmtk/components/output/OutputOptions.hpp>
 #include <wmtk/components/output/output.hpp>
 #include <wmtk/components/utils/resolve_path.hpp>
 
@@ -80,12 +80,9 @@ int main(int argc, char* argv[])
     }
 
 
-    const std::string output_path = j["output"];
+    auto out_opts = j["output"].get<wmtk::components::output::OutputOptions>();
     if (coordinate_handle_opt.has_value()) {
-        wmtk::components::output::output(*mesh, output_path, *coordinate_handle_opt);
-    } else {
-        assert(output_path.size() > 4);
-        assert(output_path.substr(output_path.size() - 4) == ".hdf5");
-        wmtk::components::output::output_hdf5(*mesh, j["output"]);
+        out_opts.position_attribute = *coordinate_handle_opt;
     }
+    wmtk::components::output::output(*mesh, out_opts);
 }

@@ -15,6 +15,7 @@
 #include <wmtk/components/isotropic_remeshing/IsotropicRemeshingOptions.hpp>
 #include <wmtk/components/isotropic_remeshing/isotropic_remeshing.hpp>
 #include <wmtk/components/output/output.hpp>
+#include <wmtk/components/output/OutputOptions.hpp>
 #include <wmtk/components/utils/resolve_path.hpp>
 
 #include "make_multimesh.hpp"
@@ -51,7 +52,6 @@ int main(int argc, char* argv[])
     wmtk::components::input::MeshCollection mc;
     auto& named_mesh = mc.add_mesh(input_opts);
     auto mesh_ptr = named_mesh.root().shared_from_this();
-    spdlog::warn("Input js: {}", input_js.dump(2));
     if(input_js.contains("multimesh")) {
         mesh_ptr = make_multimesh(*mesh_ptr, input_js["multimesh"]);
 
@@ -98,6 +98,7 @@ int main(int argc, char* argv[])
     // call isotropic_remeshing
 
 
-    const std::string output_path = j["output"];
-    wmtk::components::output::output(*mesh_ptr, j["output"]);
+    auto out_opts = j["output"].get<wmtk::components::output::OutputOptions>();
+    out_opts.position_attribute = options.position_attribute;
+    wmtk::components::output::output(*mesh_ptr, out_opts);
 }

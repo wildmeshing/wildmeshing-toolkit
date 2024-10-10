@@ -15,6 +15,10 @@ void adl_serializer<wmtk::components::input::InputOptions>::to_json(json& j, con
     if (!v.name_spec.is_null()) {
         j["name_spec"] = v.name_spec;
     }
+    if(v.working_directory.has_value()) {
+        j["working_directory"] = v.working_directory.value().string();
+    }
+
     if (v.old_mode) {
         j["old_mode"] = true;
         j["ignore_z"] = v.ignore_z;
@@ -34,11 +38,14 @@ void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json
 {
     if (j.is_string()) {
         v.file = j.get<std::string>();
-        return;
+    } else {
+        v.file = j["file"].get<std::string>();
     }
-    v.file = j["file"].get<std::string>();
     if (j.contains("name_spec")) {
         v.name_spec = j["name_spec"];
+    }
+    if (j.contains("working_directory")) {
+        v.working_directory = std::filesystem::path(j["working_directory"].get<std::string>());
     }
 
     v.old_mode = false;
@@ -66,7 +73,7 @@ void adl_serializer<wmtk::components::input::InputOptions>::from_json(const json
                 j["tetrahedron_attributes"].get<std::vector<std::string>>()};
         }
     } else {
-        if (v.imported_attributes.has_value()) {
+        if (j.contains("imported_attributes")) {
             v.imported_attributes = j["imported_attributes"].get<std::vector<std::vector<std::string>>>();
         }
     }
