@@ -834,9 +834,17 @@ void forward_track_line_app(
     save_query_curves(curves, "curves.in");
 
     // forward track lines
-    for (auto& curve : curves) {
-        back_track_lines(operation_logs_dir, curve, true);
-    }
+    // for (int i = 0; i < curves.size(); i++) {
+    //     back_track_lines(operation_logs_dir, curves[(i + 2) % curves.size()], true);
+    // }
+
+    // for (auto& curve : curves) {
+    //     back_track_lines(operation_logs_dir, curve, true);
+    // }
+    // use igl::parallel_for
+    igl::parallel_for(curves.size(), [&](int i) {
+        back_track_lines(operation_logs_dir, curves[i], true);
+    });
 
     save_query_curves(curves, "curves.out");
 
@@ -901,7 +909,7 @@ void check_iso_lines(
         }
         viewer.launch();
     }
-    if (false) {
+    if (true) {
         igl::opengl::glfw::Viewer viewer;
         viewer.data().set_mesh(V_out, F_out);
         viewer.data().point_size /= 3;
@@ -962,8 +970,8 @@ void check_iso_lines(
     };
     auto count_curve_intersection = [&](const std::vector<query_curve>& curve) {
         for (int i = 0; i < curve.size(); i++) {
-            // for (int j = i; j < curve.size(); j++) {
-            for (int j = i; j < i + 1; j++) {
+            for (int j = i; j < curve.size(); j++) {
+                // for (int j = i; j < i + 1; j++) {
                 int intersect_count = 0;
                 for (int seg_i = 0; seg_i < curve[i].segments.size(); seg_i++) {
                     for (int seg_j = 0; seg_j < curve[j].segments.size(); seg_j++) {

@@ -12,6 +12,7 @@
 // TODO: DEBUG
 #include <igl/opengl/glfw/Viewer.h>
 
+const int scaf_iterations = 20;
 
 // flatten part is done
 namespace wmtk::operations::utils {
@@ -261,6 +262,9 @@ void flatten(
     } else {
         igl::triangle::scaf_solve(scaf_data, n_iterations);
     }
+
+    std::cout << "final energy = " << scaf_data.energy << std::endl;
+
     // return UVjoint
     UVjoint = scaf_data.w_uv.topRows(V_joint_before.rows());
 }
@@ -535,7 +539,7 @@ void local_joint_flatten(
         F_joint_after,
         b_hard,
         UV_joint,
-        5,
+        scaf_iterations,
         debug_mode);
 
     // modify UV_joint, F_after
@@ -655,7 +659,15 @@ void local_joint_flatten_smoothing(
     std::vector<std::pair<int, int>> b_hard; // empty
 
     std::cout << "Start flatten smoothing" << std::endl;
-    flatten(V_joint, V_joint, F_joint_before, F_joint_after, b_hard, UV_joint, 8, debug_mode);
+    flatten(
+        V_joint,
+        V_joint,
+        F_joint_before,
+        F_joint_after,
+        b_hard,
+        UV_joint,
+        scaf_iterations,
+        debug_mode);
     std::cout << "Finish flatten smoothing" << std::endl;
     /*
     {
@@ -740,7 +752,7 @@ void local_joint_flatten_swap(
     std::vector<std::pair<int, int>> b_hard; // empty
 
     std::cout << "Start flatten swapping" << std::endl;
-    flatten(V_before, V_before, F_before, F_after_joint, b_hard, UV_joint, 5);
+    flatten(V_before, V_before, F_before, F_after_joint, b_hard, UV_joint, scaf_iterations);
     std::cout << "Finish flatten swapping" << std::endl;
 
 
