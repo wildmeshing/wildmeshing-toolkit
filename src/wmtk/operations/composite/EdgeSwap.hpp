@@ -10,8 +10,10 @@ public:
     EdgeSwap(Mesh& m);
     EdgeSwap(Mesh& m, std::shared_ptr<EdgeSplit> split, std::shared_ptr<EdgeCollapse> collapse);
 
-    inline EdgeSplit& split() { return *m_split; }
-    inline EdgeCollapse& collapse() { return *m_collapse; }
+    EdgeSplit& split() { return *m_split; }
+    EdgeCollapse& collapse() { return *m_collapse; }
+    const EdgeSplit& split() const { return *m_split; }
+    const EdgeCollapse& collapse() const { return *m_collapse; }
 
 protected:
     std::shared_ptr<EdgeSplit> m_split;
