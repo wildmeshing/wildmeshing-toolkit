@@ -470,8 +470,8 @@ void handle_one_segment(
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& v_id_map_joint,
     const std::vector<int64_t>& id_map_before,
-    const Eigen::MatrixXi& TT,
-    const Eigen::MatrixXi& TTi)
+    Eigen::MatrixXi& TT,
+    Eigen::MatrixXi& TTi)
 {
     query_segment& qs = curve.segments[id];
 
@@ -482,6 +482,9 @@ void handle_one_segment(
         qs.bcs[1] = query_points[1].bc;
         qs.fv_ids = query_points[0].fv_ids;
     } else {
+        if (TT.rows() == 0) {
+            igl::triangle_triangle_adjacency(F_before, TT, TTi);
+        }
         // TODO: maybe not need eps any more
         double eps = 1e-8;
 
@@ -540,7 +543,7 @@ void handle_one_segment(
                     UV_joint_r.row(F_before(current_fid, (edge_id + 1) % 3));
 
                 Eigen::Vector2<wmtk::Rational> edge_bc;
-                if (intersectSegmentEdge_r(p0, p1, a, b, edge_bc, true)) {
+                if (intersectSegmentEdge_r(p0, p1, a, b, edge_bc)) {
                     next_edge_id0 = edge_id;
                     qs.f_id = query_points[0].f_id;
                     qs.bcs[0] = query_points[0].bc;
@@ -676,7 +679,6 @@ void handle_collapse_edge_curve(
     std::cout << "Handling EdgeCollapse curve" << std::endl;
     int curve_length = curve.segments.size();
     Eigen::MatrixXi TT, TTi;
-    igl::triangle_triangle_adjacency(F_before, TT, TTi);
 
     for (int id = 0; id < curve_length; id++) {
         ////////////////////////////////////
@@ -929,7 +931,6 @@ void handle_swap_edge_curve(
     std::cout << "Handling swap/smooth curve" << std::endl;
     int curve_length = curve.segments.size();
     Eigen::MatrixXi TT, TTi;
-    igl::triangle_triangle_adjacency(F_before, TT, TTi);
 
     for (int id = 0; id < curve_length; id++) {
         query_segment& qs = curve.segments[id];
