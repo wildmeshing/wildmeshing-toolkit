@@ -3,7 +3,6 @@
 #include <sstream>
 
 #include "track_operations.hpp"
-
 // Function to save a vector<query_curve> to a file
 void save_query_curves(const std::vector<query_curve>& curves, const std::string& filename)
 {
@@ -470,7 +469,9 @@ void handle_one_segment(
     const Eigen::MatrixXd& UV_joint,
     const Eigen::MatrixXi& F_before,
     const std::vector<int64_t>& v_id_map_joint,
-    const std::vector<int64_t>& id_map_before)
+    const std::vector<int64_t>& id_map_before,
+    const Eigen::MatrixXi& TT,
+    const Eigen::MatrixXi& TTi)
 {
     query_segment& qs = curve.segments[id];
 
@@ -494,9 +495,6 @@ void handle_one_segment(
 
         // cache for the last new segment
         int old_next_seg = curve.next_segment_ids[id];
-
-        Eigen::MatrixXi TT, TTi;
-        igl::triangle_triangle_adjacency(F_before, TT, TTi);
 
         // compute the two end points
         auto it = std::find(id_map_before.begin(), id_map_before.end(), query_points[0].f_id);
@@ -585,7 +583,9 @@ void handle_one_segment(
                     UV_joint,
                     F_before,
                     v_id_map_joint,
-                    id_map_before);
+                    id_map_before,
+                    TT,
+                    TTi);
                 return;
 
                 std::cout << "no intersection found place 1" << std::endl;
@@ -675,6 +675,9 @@ void handle_collapse_edge_curve(
 {
     std::cout << "Handling EdgeCollapse curve" << std::endl;
     int curve_length = curve.segments.size();
+    Eigen::MatrixXi TT, TTi;
+    igl::triangle_triangle_adjacency(F_before, TT, TTi);
+
     for (int id = 0; id < curve_length; id++) {
         ////////////////////////////////////
         // map the two end points of one segment
@@ -700,7 +703,9 @@ void handle_collapse_edge_curve(
             UV_joint,
             F_before,
             v_id_map_joint,
-            id_map_before);
+            id_map_before,
+            TT,
+            TTi);
     }
 }
 
@@ -792,7 +797,6 @@ void handle_split_edge(
             for (int i = 0; i < 3; i++) {
                 qp.fv_ids[i] = v_id_map_before[F_before(local_index_in_f_before, i)];
             }
-            // avoid numerical issue
             qp.bc[0] = std::max(0.0, std::min(1.0, qp.bc[0]));
             qp.bc[1] = std::max(0.0, std::min(1.0, qp.bc[1]));
             qp.bc[2] = std::max(0.0, std::min(1.0, qp.bc[2]));
@@ -924,6 +928,9 @@ void handle_swap_edge_curve(
     double eps = 1e-8;
     std::cout << "Handling swap/smooth curve" << std::endl;
     int curve_length = curve.segments.size();
+    Eigen::MatrixXi TT, TTi;
+    igl::triangle_triangle_adjacency(F_before, TT, TTi);
+
     for (int id = 0; id < curve_length; id++) {
         query_segment& qs = curve.segments[id];
         query_point qp0 = {qs.f_id, qs.bcs[0], qs.fv_ids};
@@ -948,7 +955,9 @@ void handle_swap_edge_curve(
             V_before,
             F_before,
             v_id_map_before,
-            id_map_before);
+            id_map_before,
+            TT,
+            TTi);
     }
 }
 

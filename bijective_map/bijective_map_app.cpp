@@ -351,11 +351,6 @@ void back_track_lines(path dirPath, query_curve& curve, bool do_forward = false)
     }
 }
 
-void back_track_lines_rational(path dirPath, query_curve& curve)
-{
-    // TODO: implement this
-}
-
 void forward_track_app(
     const Eigen::MatrixXd& V_in,
     const Eigen::MatrixXi& F_in,
@@ -832,11 +827,6 @@ void forward_track_line_app(
     }
 
     save_query_curves(curves, "curves.in");
-
-    // forward track lines
-    // for (int i = 0; i < curves.size(); i++) {
-    //     back_track_lines(operation_logs_dir, curves[(i + 2) % curves.size()], true);
-    // }
 
     // for (auto& curve : curves) {
     //     back_track_lines(operation_logs_dir, curve, true);
