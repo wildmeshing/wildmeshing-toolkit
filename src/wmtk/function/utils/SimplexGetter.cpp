@@ -1,6 +1,7 @@
 #include "SimplexGetter.hpp"
 
 #include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/simplex/utils/SimplexComparisons.hpp>
 
 namespace wmtk::function::utils {
 

@@ -2,31 +2,30 @@
 
 #include <vector>
 #include <wmtk/Mesh.hpp>
-#include "Simplex.hpp"
-#include "internal/SimplexEqualFunctor.hpp"
-#include "internal/SimplexLessFunctor.hpp"
+#include "IdSimplex.hpp"
 
 namespace wmtk::simplex {
 class SimplexCollection
 {
 public:
-    SimplexCollection(const Mesh& mesh, std::vector<Simplex>&& simplices = {})
+    SimplexCollection(const Mesh& mesh, std::vector<IdSimplex>&& simplices = {})
         : m_mesh{mesh}
         , m_simplices(std::move(simplices))
-        , m_simplex_is_less(mesh)
-        , m_simplex_is_equal(mesh)
     {
         m_simplices.reserve(100);
     }
 
+    SimplexCollection(const Mesh& mesh, std::vector<Simplex>& simplices);
+
     /**
      * @brief Return const reference to the simplex vector.
      */
-    const std::vector<Simplex>& simplex_vector() const { return m_simplices; }
+    const std::vector<IdSimplex>& simplex_vector() const { return m_simplices; }
     /**
      * @brief Return vector of all simplices of the requested type.
      */
     std::vector<Simplex> simplex_vector(const PrimitiveType& ptype) const;
+    std::vector<IdSimplex> id_simplex_vector(const PrimitiveType& ptype) const;
 
     const Mesh& mesh() const;
 
@@ -40,6 +39,8 @@ public:
      *
      * There is no sorting or any check if the vertex already exists
      */
+    void add(const IdSimplex& simplex);
+
     void add(const Simplex& simplex);
 
     void add(const SimplexCollection& simplex_collection);
@@ -58,7 +59,7 @@ public:
      *
      * Collection musst be sorted! Peform `sort_and_clean` before calling this function.
      */
-    bool contains(const Simplex& simplex) const;
+    bool contains(const IdSimplex& simplex) const;
 
     /**
      * @brief Get union of two simplex collections.
@@ -104,10 +105,6 @@ public:
 
 protected:
     const Mesh& m_mesh;
-    std::vector<Simplex> m_simplices;
-
-protected:
-    internal::SimplexLessFunctor m_simplex_is_less;
-    internal::SimplexEqualFunctor m_simplex_is_equal;
+    std::vector<IdSimplex> m_simplices;
 };
 } // namespace wmtk::simplex

@@ -685,7 +685,7 @@ top_dimension_cofaces(const TriMesh& mesh, const Simplex& simplex, const bool so
 {
     SimplexCollection collection(
         mesh,
-        utils::tuple_vector_to_homogeneous_simplex_vector(
+        utils::tuple_vector_to_homogeneous_id_simplex_vector(
             mesh,
             top_dimension_cofaces_tuples(mesh, simplex),
             PrimitiveType::Triangle));
@@ -701,7 +701,7 @@ top_dimension_cofaces(const TetMesh& mesh, const Simplex& simplex, const bool so
 {
     SimplexCollection collection(
         mesh,
-        utils::tuple_vector_to_homogeneous_simplex_vector(
+        utils::tuple_vector_to_homogeneous_id_simplex_vector(
             mesh,
             top_dimension_cofaces_tuples(mesh, simplex),
             PrimitiveType::Tetrahedron));
@@ -717,7 +717,7 @@ top_dimension_cofaces(const Mesh& mesh, const Simplex& simplex, const bool sort_
 {
     SimplexCollection collection(
         mesh,
-        utils::tuple_vector_to_homogeneous_simplex_vector(
+        utils::tuple_vector_to_homogeneous_id_simplex_vector(
             mesh,
             top_dimension_cofaces_tuples(mesh, simplex),
             mesh.top_simplex_type()));

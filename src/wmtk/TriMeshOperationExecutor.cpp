@@ -130,7 +130,7 @@ TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete(
 {
     const simplex::SimplexCollection sc = simplex::open_star(m, simplex::Simplex::edge(m, tuple));
     std::array<std::vector<int64_t>, 3> ids;
-    for (const simplex::Simplex& s : sc) {
+    for (const simplex::IdSimplex& s : sc) {
         ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
     }
 
@@ -162,7 +162,7 @@ TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete(
     return sc;
     }
     };
-    for (const simplex::Simplex& s : get_sc()) {
+    for (const simplex::IdSimplex& s : get_sc()) {
         ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
     }
 
@@ -495,12 +495,12 @@ void TriMesh::TriMeshOperationExecutor::split_edge_precompute()
     }
 
     faces.sort_and_clean();
-    for (const auto& s : faces) {
+    for (const simplex::IdSimplex& s : faces) {
         const int64_t index = static_cast<int64_t>(s.primitive_type());
         if (!m_mesh.has_child_mesh_in_dimension(index)) continue;
         global_ids_to_potential_tuples.at(index).emplace_back(
             m_mesh.id(s),
-            wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
+            wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, m_mesh.get_simplex(s)));
     }
 
     create_spine_simplices();
@@ -641,12 +641,12 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_precompute()
     }
 
     faces.sort_and_clean();
-    for (const auto& s : faces) {
+    for (const simplex::IdSimplex& s : faces) {
         const int64_t index = static_cast<int64_t>(s.primitive_type());
         if (!m_mesh.has_child_mesh_in_dimension(index)) continue;
         global_ids_to_potential_tuples.at(index).emplace_back(
             m_mesh.id(s),
-            wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
+            wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, m_mesh.get_simplex(s)));
     }
     simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
 }

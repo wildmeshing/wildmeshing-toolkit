@@ -2,6 +2,7 @@
 #include <vector>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/simplex/IdSimplex.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
 namespace wmtk::simplex {
@@ -31,6 +32,11 @@ std::vector<Tuple> cofaces_single_dimension_tuples(
     const Simplex& my_simplex,
     PrimitiveType cofaces_type);
 
+std::vector<IdSimplex> cofaces_single_dimension_id_simplices(
+    const Mesh& mesh,
+    const Simplex& simplex,
+    PrimitiveType cofaces_type);
+
 std::vector<Simplex> cofaces_single_dimension_simplices(
     const Mesh& mesh,
     const Simplex& simplex,
@@ -45,6 +51,11 @@ SimplexCollection cofaces_single_dimension(
 std::vector<Tuple> cofaces_single_dimension_tuples(
     const TriMesh& mesh,
     const Simplex& my_simplex,
+    PrimitiveType cofaces_type);
+
+std::vector<IdSimplex> cofaces_single_dimension_id_simplices(
+    const TriMesh& mesh,
+    const Simplex& simplex,
     PrimitiveType cofaces_type);
 
 std::vector<Simplex> cofaces_single_dimension_simplices(

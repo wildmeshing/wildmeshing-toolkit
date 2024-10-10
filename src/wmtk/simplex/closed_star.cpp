@@ -29,7 +29,7 @@ SimplexCollection closed_star(const Mesh& mesh, const Simplex& simplex, const bo
 
     for (size_t i = 0; i < n_top_dimension_cofaces; ++i) {
         // breaks if simplex vector needs to allocate memory due to reference!
-        faces(collection, collection.simplex_vector()[i], false);
+        faces(collection, mesh.get_simplex(collection.simplex_vector()[i]), false);
     }
 
     collection.add(simplex);

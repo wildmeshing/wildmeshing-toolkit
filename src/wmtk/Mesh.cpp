@@ -25,10 +25,20 @@ simplex::IdSimplex Mesh::get_id_simplex(const Tuple& tuple, PrimitiveType pt) co
     return simplex::IdSimplex(pt, id(tuple, pt));
 }
 
+simplex::IdSimplex Mesh::get_id_simplex(const simplex::Simplex& s) const
+{
+    return simplex::IdSimplex(s.primitive_type(), id(s.tuple(), s.primitive_type()));
+}
+
 simplex::Simplex Mesh::get_simplex(const simplex::IdSimplex& s) const
 {
     const Tuple& t = tuple_from_id(s.primitive_type(), s.index());
     return simplex::Simplex(*this, s.primitive_type(), t);
+}
+
+Tuple Mesh::get_tuple_from_id_simplex(const simplex::IdSimplex& s) const
+{
+    return tuple_from_id(s.primitive_type(), s.index());
 }
 
 

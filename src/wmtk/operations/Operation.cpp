@@ -151,9 +151,9 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
     all.sort_and_clean();
     for (const auto& at_ptr : m_attr_transfer_strategies) {
         if (&m_mesh == &(at_ptr->mesh())) {
-            for (const auto& s : all.simplex_vector()) {
+            for (const simplex::IdSimplex& s : all.simplex_vector()) {
                 if (s.primitive_type() == at_ptr->primitive_type()) {
-                    at_ptr->run(s);
+                    at_ptr->run(m_mesh.get_simplex(s));
                 }
             }
         } else {
@@ -169,7 +169,7 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
 
             for (const auto& s : at_mesh_all.simplex_vector()) {
                 if (s.primitive_type() == at_ptr->primitive_type()) {
-                    at_ptr->run(s);
+                    at_ptr->run(m_mesh.get_simplex(s));
                 }
             }
         }

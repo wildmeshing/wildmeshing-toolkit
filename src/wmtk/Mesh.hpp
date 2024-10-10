@@ -173,10 +173,14 @@ public:
      */
     simplex::IdSimplex get_id_simplex(const Tuple& tuple, PrimitiveType pt) const;
 
+    simplex::IdSimplex get_id_simplex(const simplex::Simplex& s) const;
+
     /**
      * @brief Convert an IdSimplex into a Simplex.
      */
     simplex::Simplex get_simplex(const simplex::IdSimplex& s) const;
+
+    Tuple get_tuple_from_id_simplex(const simplex::IdSimplex& s) const;
 
     /**
      * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding

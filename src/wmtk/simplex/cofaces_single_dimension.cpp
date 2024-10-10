@@ -151,6 +151,17 @@ std::vector<Tuple> cofaces_single_dimension_tuples(
 }
 
 
+std::vector<IdSimplex> cofaces_single_dimension_id_simplices(
+    const Mesh& mesh,
+    const Simplex& simplex,
+    PrimitiveType cofaces_type)
+{
+    return utils::tuple_vector_to_homogeneous_id_simplex_vector(
+        mesh,
+        cofaces_single_dimension_tuples(mesh, simplex, cofaces_type),
+        cofaces_type);
+}
+
 std::vector<Simplex> cofaces_single_dimension_simplices(
     const Mesh& mesh,
     const Simplex& simplex,
@@ -170,7 +181,7 @@ SimplexCollection cofaces_single_dimension(
 {
     SimplexCollection collection(
         mesh,
-        cofaces_single_dimension_simplices(mesh, my_simplex, cofaces_type));
+        cofaces_single_dimension_id_simplices(mesh, my_simplex, cofaces_type));
     if (sort_and_clean) {
         collection.sort_and_clean();
     }
@@ -186,7 +197,7 @@ SimplexCollection cofaces_single_dimension(
 {
     SimplexCollection collection(
         mesh,
-        cofaces_single_dimension_simplices(mesh, my_simplex, cofaces_type));
+        cofaces_single_dimension_id_simplices(mesh, my_simplex, cofaces_type));
     if (sort_and_clean) {
         collection.sort();
     }
@@ -209,6 +220,17 @@ std::vector<Tuple> cofaces_single_dimension_tuples(
         log_and_throw_error("Unknown primitive type in cofaces_single_dimension_tuples");
         break;
     }
+}
+
+std::vector<IdSimplex> cofaces_single_dimension_id_simplices(
+    const TriMesh& mesh,
+    const Simplex& simplex,
+    PrimitiveType cofaces_type)
+{
+    return utils::tuple_vector_to_homogeneous_id_simplex_vector(
+        mesh,
+        cofaces_single_dimension_tuples(mesh, simplex, cofaces_type),
+        cofaces_type);
 }
 
 std::vector<Simplex> cofaces_single_dimension_simplices(

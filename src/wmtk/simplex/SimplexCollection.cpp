@@ -4,6 +4,15 @@
 
 namespace wmtk::simplex {
 
+SimplexCollection::SimplexCollection(const Mesh& mesh, std::vector<Simplex>& simplices)
+    : m_mesh(mesh)
+{
+    m_simplices.reserve(simplices.size());
+    m_simplices.reserve(100);
+    for (const simplex::Simplex& s : simplices) {
+        m_simplices.emplace_back(mesh.get_id_simplex(s));
+    }
+}
 
 std::vector<Simplex> SimplexCollection::simplex_vector(const PrimitiveType& ptype) const
 {
@@ -11,7 +20,22 @@ std::vector<Simplex> SimplexCollection::simplex_vector(const PrimitiveType& ptyp
     simplices.reserve(m_simplices.size() / 3); // giving the vector some (hopefully) resonable size
 
     // add simplices to the vector
-    for (const Simplex& s : m_simplices) {
+    for (const IdSimplex& s : m_simplices) {
+        if (s.primitive_type() == ptype) {
+            simplices.emplace_back(m_mesh.get_simplex(s));
+        }
+    }
+
+    return simplices;
+}
+
+std::vector<IdSimplex> SimplexCollection::id_simplex_vector(const PrimitiveType& ptype) const
+{
+    std::vector<IdSimplex> simplices;
+    simplices.reserve(m_simplices.size() / 3); // giving the vector some (hopefully) resonable size
+
+    // add simplices to the vector
+    for (const IdSimplex& s : m_simplices) {
         if (s.primitive_type() == ptype) {
             simplices.emplace_back(s);
         }
@@ -31,18 +55,23 @@ std::vector<Tuple> SimplexCollection::simplex_vector_tuples(PrimitiveType ptype)
     tuples.reserve(m_simplices.size() / 3); // giving the vector some (hopefully) resonable size
 
     // add simplices to the vector
-    for (const Simplex& s : m_simplices) {
+    for (const IdSimplex& s : m_simplices) {
         if (s.primitive_type() == ptype) {
-            tuples.emplace_back(s.tuple());
+            tuples.emplace_back(m_mesh.get_tuple_from_id_simplex(s));
         }
     }
 
     return tuples;
 }
 
-void SimplexCollection::add(const Simplex& simplex)
+void SimplexCollection::add(const IdSimplex& simplex)
 {
     m_simplices.push_back(simplex);
+}
+
+void SimplexCollection::add(const Simplex& simplex)
+{
+    m_simplices.push_back(m_mesh.get_id_simplex(simplex.tuple(), simplex.primitive_type()));
 }
 
 void SimplexCollection::add(const SimplexCollection& simplex_collection)
@@ -56,13 +85,13 @@ void SimplexCollection::add(const PrimitiveType ptype, const std::vector<Tuple>&
     m_simplices.reserve(m_simplices.size() + tuple_vec.size());
 
     for (const Tuple& t : tuple_vec) {
-        m_simplices.emplace_back(Simplex(mesh(), ptype, t));
+        m_simplices.emplace_back(m_mesh.get_id_simplex(t, ptype));
     }
 }
 
 void SimplexCollection::add(const PrimitiveType ptype, const Tuple& tuple)
 {
-    m_simplices.emplace_back(Simplex(mesh(), ptype, tuple));
+    m_simplices.emplace_back(m_mesh.get_id_simplex(tuple, ptype));
 }
 
 void SimplexCollection::sort_and_clean()
@@ -99,21 +128,21 @@ void SimplexCollection::sort_and_clean()
     //     std::back_inserter(m_simplices),
     //     [&](const SimplexIdPair& p) { return p.second; });
 
-    std::sort(m_simplices.begin(), m_simplices.end(), m_simplex_is_less);
-    const auto last = std::unique(m_simplices.begin(), m_simplices.end(), m_simplex_is_equal);
+    std::sort(m_simplices.begin(), m_simplices.end());
+    const auto last = std::unique(m_simplices.begin(), m_simplices.end());
     m_simplices.erase(last, m_simplices.end());
 }
 
 void SimplexCollection::sort()
 {
-    std::sort(m_simplices.begin(), m_simplices.end(), m_simplex_is_less);
+    std::sort(m_simplices.begin(), m_simplices.end());
 }
 
 
-bool SimplexCollection::contains(const Simplex& simplex) const
+bool SimplexCollection::contains(const IdSimplex& simplex) const
 {
-    assert(std::is_sorted(m_simplices.begin(), m_simplices.end(), m_simplex_is_less));
-    return std::binary_search(m_simplices.begin(), m_simplices.end(), simplex, m_simplex_is_less);
+    assert(std::is_sorted(m_simplices.begin(), m_simplices.end()));
+    return std::binary_search(m_simplices.begin(), m_simplices.end(), simplex);
 }
 
 SimplexCollection SimplexCollection::get_union(
@@ -125,13 +154,7 @@ SimplexCollection SimplexCollection::get_union(
     const auto& a = collection_a.m_simplices;
     const auto& b = collection_b.m_simplices;
 
-    std::set_union(
-        a.cbegin(),
-        a.cend(),
-        b.cbegin(),
-        b.cend(),
-        std::back_inserter(sc.m_simplices),
-        sc.m_simplex_is_less);
+    std::set_union(a.cbegin(), a.cend(), b.cbegin(), b.cend(), std::back_inserter(sc.m_simplices));
 
     return sc;
 }
@@ -150,8 +173,7 @@ SimplexCollection SimplexCollection::get_intersection(
         a.cend(),
         b.cbegin(),
         b.cend(),
-        std::back_inserter(sc.m_simplices),
-        sc.m_simplex_is_less);
+        std::back_inserter(sc.m_simplices));
 
     return sc;
 }

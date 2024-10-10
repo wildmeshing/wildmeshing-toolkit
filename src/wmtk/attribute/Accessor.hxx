@@ -68,9 +68,40 @@ auto Accessor<T, MeshType, Dim>::vector_attribute(const simplex::Simplex& t) -> 
 }
 
 template <typename T, typename MeshType, int Dim>
+template <int D>
+auto Accessor<T, MeshType, Dim>::const_vector_attribute(const simplex::IdSimplex& s) const
+    -> ConstMapResult<D>
+{
+    const int64_t idx = index(s);
+    return CachingBaseType::template const_vector_attribute<D>(idx);
+}
+
+template <typename T, typename MeshType, int Dim>
+template <int D>
+auto Accessor<T, MeshType, Dim>::vector_attribute(const simplex::IdSimplex& s) -> MapResult<D>
+{
+    const int64_t idx = index(s);
+    return CachingBaseType::template vector_attribute<D>(idx);
+}
+
+template <typename T, typename MeshType, int Dim>
 auto Accessor<T, MeshType, Dim>::scalar_attribute(const simplex::Simplex& t) -> T&
 {
     const int64_t idx = index(t);
+    return CachingBaseType::scalar_attribute(idx);
+}
+
+template <typename T, typename MeshType, int Dim>
+inline T Accessor<T, MeshType, Dim>::const_scalar_attribute(const simplex::IdSimplex& s) const
+{
+    const int64_t idx = index(s);
+    return CachingBaseType::const_scalar_attribute(idx);
+}
+
+template <typename T, typename MeshType, int Dim>
+inline T& Accessor<T, MeshType, Dim>::scalar_attribute(const simplex::IdSimplex& s)
+{
+    const int64_t idx = index(s);
     return CachingBaseType::scalar_attribute(idx);
 }
 
@@ -105,7 +136,12 @@ int64_t Accessor<T, MeshType, Dim>::index(const simplex::Simplex& t) const
 #else
     return index(t.tuple());
 #endif
+}
 
+template <typename T, typename MeshType, int Dim>
+inline int64_t Accessor<T, MeshType, Dim>::index(const simplex::IdSimplex& s) const
+{
+    return mesh().id(s);
 }
 
 template <typename T, typename MeshType, int Dim>

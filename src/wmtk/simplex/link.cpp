@@ -103,7 +103,7 @@ link(const TriMesh& mesh, const simplex::Simplex& simplex, const bool sort_and_c
     case PrimitiveType::Vertex: {
         std::vector<Simplex> link_simplices;
         link_vertex(mesh, simplex, link_simplices);
-        SimplexCollection collection(mesh, std::move(link_simplices));
+        SimplexCollection collection(mesh, link_simplices);
         if (sort_and_clean) {
             collection.sort();
         }
@@ -172,7 +172,7 @@ link(const TetMesh& mesh, const simplex::Simplex& simplex, const bool sort_and_c
     default: log_and_throw_error("Unknown primitive type in open_star."); break;
     }
 
-    SimplexCollection collection(mesh, std::move(all_cofaces));
+    SimplexCollection collection(mesh, all_cofaces);
 
     if (sort_and_clean) {
         collection.sort_and_clean();
@@ -192,8 +192,8 @@ link_slow(const Mesh& mesh, const simplex::Simplex& simplex, const bool sort_and
     simplex_w_bd.add(simplex);
     simplex_w_bd.sort_and_clean();
 
-    for (const Simplex& s : cs.simplex_vector()) {
-        SimplexCollection bd = faces(mesh, s, false);
+    for (const IdSimplex& s : cs.simplex_vector()) {
+        SimplexCollection bd = faces(mesh, mesh.get_simplex(s), false);
         bd.add(s);
         bd.sort_and_clean();
         SimplexCollection intersection = SimplexCollection::get_intersection(simplex_w_bd, bd);

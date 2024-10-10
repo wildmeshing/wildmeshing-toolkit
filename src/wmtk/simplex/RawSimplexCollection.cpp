@@ -43,12 +43,12 @@ void RawSimplexCollection::add(const RawSimplexCollection& simplex_collection)
 
 void RawSimplexCollection::add(const SimplexCollection& simplex_collection)
 {
-    const std::vector<Simplex>& simplices = simplex_collection.simplex_vector();
+    const std::vector<IdSimplex>& simplices = simplex_collection.simplex_vector();
 
     m_simplices.reserve(m_simplices.size() + simplices.size());
 
-    for (const Simplex& s : simplices) {
-        add(RawSimplex(simplex_collection.mesh(), s));
+    for (const IdSimplex& s : simplices) {
+        add(RawSimplex(simplex_collection.mesh(), simplex_collection.mesh().get_simplex(s)));
     }
 }
 

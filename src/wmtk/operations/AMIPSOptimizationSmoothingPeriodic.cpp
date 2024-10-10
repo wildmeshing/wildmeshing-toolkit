@@ -6,6 +6,7 @@
 #include <wmtk/attribute/Accessor.hpp>
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/orient.hpp>
 
@@ -295,10 +296,7 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothingPeriodic::execute(
 
 
             assert(vertices.size() == 4);
-            if (!simplex::utils::SimplexComparisons::equal(
-                    mesh(),
-                    vertices.simplex_vector()[0],
-                    simplex)) {
+            if (vertices.simplex_vector()[0] != mesh().get_id_simplex(simplex)) {
                 std::cout << "error here" << std::endl;
             }
 
@@ -306,7 +304,7 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothingPeriodic::execute(
             std::array<double, 12> single_cell;
             std::vector<Vector3d> ps;
             for (size_t i = 0; i < 4; ++i) {
-                const simplex::Simplex& v = vertices.simplex_vector()[i];
+                const simplex::IdSimplex& v = vertices.simplex_vector()[i];
                 // const auto p = accessor.const_vector_attribute(vertices[i]);
                 const auto p = accessor.const_vector_attribute(v);
                 ps.push_back(p);
@@ -416,7 +414,7 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothingPeriodic::execute(
             std::array<double, 12> single_cell;
             std::vector<Vector3d> ps;
             for (size_t i = 0; i < 4; ++i) {
-                const simplex::Simplex& v = vertices.simplex_vector()[i];
+                const simplex::IdSimplex& v = vertices.simplex_vector()[i];
                 // const auto p = accessor.const_vector_attribute(vertices[i]);
                 const auto p = accessor.const_vector_attribute(v);
                 ps.push_back(p);
@@ -452,7 +450,7 @@ std::vector<simplex::Simplex> AMIPSOptimizationSmoothingPeriodic::execute(
             std::array<double, 12> single_cell;
             std::vector<Vector3d> ps;
             for (size_t i = 0; i < 4; ++i) {
-                const simplex::Simplex& v = vertices.simplex_vector()[i];
+                const simplex::IdSimplex& v = vertices.simplex_vector()[i];
                 // const auto p = accessor.const_vector_attribute(vertices[i]);
                 const auto p = accessor.const_vector_attribute(v);
                 ps.push_back(p);

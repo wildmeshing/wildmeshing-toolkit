@@ -45,7 +45,7 @@ SimplexCollection boundary(const Mesh& mesh, const Simplex& simplex, const bool 
 {
     SimplexCollection collection(
         mesh,
-        utils::tuple_vector_to_homogeneous_simplex_vector(
+        utils::tuple_vector_to_homogeneous_id_simplex_vector(
             mesh,
             boundary_tuples(mesh, simplex),
 
