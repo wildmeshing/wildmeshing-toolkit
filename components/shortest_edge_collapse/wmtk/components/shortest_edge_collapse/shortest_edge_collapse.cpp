@@ -1,4 +1,4 @@
-#include "shortestedge_collapse.hpp"
+#include "shortest_edge_collapse.hpp"
 
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
@@ -22,9 +22,9 @@
 #include <wmtk/utils/Logger.hpp>
 
 
-namespace wmtk::components {
+namespace wmtk::components::shortest_edge_collapse {
 
-void shortestedge_collapse(TriMesh& mesh, const ShortestEdgeCollapseOptions& options)
+void shortest_edge_collapse(TriMesh& mesh, const ShortestEdgeCollapseOptions& options)
 {
     if (mesh.top_simplex_type() != PrimitiveType::Triangle) {
         log_and_throw_error(
@@ -219,7 +219,7 @@ void shortestedge_collapse(TriMesh& mesh, const ShortestEdgeCollapseOptions& opt
         pass_stats.executing_time);
 }
 
-void shortestedge_collapse(
+void shortest_edge_collapse(
     TriMesh& mesh,
     const attribute::MeshAttributeHandle& position_handle,
     const double length_rel,
@@ -239,6 +239,6 @@ void shortestedge_collapse(
         options.inversion_position_handle = inversion_position_handle.value();
     }
     options.pass_through_attributes = pass_through;
-    shortestedge_collapse(mesh, options);
+    shortest_edge_collapse(mesh, options);
 }
-} // namespace wmtk::components
+} // namespace wmtk::components::shortest_edge_collapse
