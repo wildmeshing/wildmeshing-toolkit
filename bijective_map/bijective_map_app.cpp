@@ -997,45 +997,47 @@ void check_iso_lines(
 
                         if (doIntersect(p1, q1, p2, q2)) {
                             intersect_count++;
-                            std::cout << "i = " << i << ", seg_i = " << seg_i
-                                      << ", next[seg_i] = " << curves_out[i].next_segment_ids[seg_i]
-                                      << std::endl;
-                            std::cout << "p1: " << p1 << std::endl;
-                            std::cout << "q1: " << q1 << std::endl;
-                            std::cout << "j = " << j << ", seg_j = " << seg_j
-                                      << ", next[seg_j] = " << curves_out[j].next_segment_ids[seg_j]
-                                      << std::endl;
-                            std::cout << "p2: " << p2 << std::endl;
-                            std::cout << "q2: " << q2 << std::endl;
+                            // std::cout << "i = " << i << ", seg_i = " << seg_i
+                            //           << ", next[seg_i] = " <<
+                            //           curves_out[i].next_segment_ids[seg_i]
+                            //           << std::endl;
+                            // std::cout << "p1: " << p1 << std::endl;
+                            // std::cout << "q1: " << q1 << std::endl;
+                            // std::cout << "j = " << j << ", seg_j = " << seg_j
+                            //           << ", next[seg_j] = " <<
+                            //           curves_out[j].next_segment_ids[seg_j]
+                            //           << std::endl;
+                            // std::cout << "p2: " << p2 << std::endl;
+                            // std::cout << "q2: " << q2 << std::endl;
 
-                            std::cout << "next[seg_i]: "
-                                      << curves_out[i]
-                                             .segments[curves_out[i].next_segment_ids[seg_i]]
-                                             .bcs[0]
-                                             .head(2)
-                                             .transpose()
-                                      << ", "
-                                      << curves_out[i]
-                                             .segments[curves_out[i].next_segment_ids[seg_i]]
-                                             .bcs[1]
-                                             .head(2)
-                                             .transpose()
-                                      << std::endl;
-                            std::cout << "next[seg_j]: "
-                                      << curves_out[j]
-                                             .segments[curves_out[j].next_segment_ids[seg_j]]
-                                             .bcs[0]
-                                             .head(2)
-                                             .transpose()
-                                      << ", "
-                                      << curves_out[j]
-                                             .segments[curves_out[j].next_segment_ids[seg_j]]
-                                             .bcs[1]
-                                             .head(2)
-                                             .transpose()
+                            // std::cout << "next[seg_i]: "
+                            //           << curves_out[i]
+                            //                  .segments[curves_out[i].next_segment_ids[seg_i]]
+                            //                  .bcs[0]
+                            //                  .head(2)
+                            //                  .transpose()
+                            //           << ", "
+                            //           << curves_out[i]
+                            //                  .segments[curves_out[i].next_segment_ids[seg_i]]
+                            //                  .bcs[1]
+                            //                  .head(2)
+                            //                  .transpose()
+                            //           << std::endl;
+                            // std::cout << "next[seg_j]: "
+                            //           << curves_out[j]
+                            //                  .segments[curves_out[j].next_segment_ids[seg_j]]
+                            //                  .bcs[0]
+                            //                  .head(2)
+                            //                  .transpose()
+                            //           << ", "
+                            //           << curves_out[j]
+                            //                  .segments[curves_out[j].next_segment_ids[seg_j]]
+                            //                  .bcs[1]
+                            //                  .head(2)
+                            //                  .transpose()
 
-                                      << std::endl;
-                            std::cout << std::endl;
+                            //           << std::endl;
+                            // std::cout << std::endl;
                         }
                     }
                 }

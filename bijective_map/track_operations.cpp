@@ -536,7 +536,6 @@ void handle_one_segment(
             // find the first intersection
             for (int edge_id = 0; edge_id < 3; edge_id++) {
                 if (edge_id == current_edge_id) continue; // we need to find the other intersection
-                std::cout << "try local edge: " << edge_id << std::endl;
 
                 Eigen::VectorX<wmtk::Rational> a = UV_joint_r.row(F_before(current_fid, edge_id));
                 Eigen::VectorX<wmtk::Rational> b =
@@ -563,27 +562,6 @@ void handle_one_segment(
                 // case that the first point is not on a edge, then it is a bug
                 if (current_edge_id == -1) {
                     std::cout << "no first intersection found" << std::endl;
-
-                    // print everything for debugging
-                    std::cout << "current_fid: " << current_fid << std::endl;
-                    std::cout << "target_fid: " << target_fid << std::endl;
-                    std::cout << "current_edge_id: " << current_edge_id << std::endl;
-                    std::cout << "TT(current_fid): " << TT.row(current_fid) << std::endl;
-                    std::cout << "TTi(current_fid): " << TTi.row(current_fid) << std::endl;
-                    // std::cout << "p0: " << p0 << std::endl;
-                    // std::cout << "p1: " << p1 << std::endl;
-                    std::cout << "query_points[0].bc: " << query_points[0].bc << std::endl;
-                    std::cout << "query_points[1].bc: " << query_points[1].bc << std::endl;
-                    std::cout << "v_id_map_joint: ";
-                    for (int i = 0; i < v_id_map_joint.size(); i++) {
-                        std::cout << v_id_map_joint[i] << ", ";
-                    }
-                    std::cout << std::endl;
-                    std::cout << "id_map_before: ";
-                    for (int i = 0; i < id_map_before.size(); i++) {
-                        std::cout << id_map_before[i] << ", ";
-                    }
-                    std::cout << std::endl;
                     throw std::runtime_error("no first intersection found");
                 }
                 // solve this by changing the first point
@@ -614,27 +592,12 @@ void handle_one_segment(
                 throw std::runtime_error("no intersection found");
             }
 
-            std::cout << "found first intersection" << std::endl;
-            std::cout << "before: \ncurrent_fid: " << current_fid << std::endl;
-            std::cout << "current edge id: " << current_edge_id << std::endl;
-            std::cout << "next_edge_id0: " << next_edge_id0 << std::endl;
-
             current_edge_id = TTi(current_fid, next_edge_id0);
             current_fid = TT(current_fid, next_edge_id0);
-            std::cout << "after:\n";
-            std::cout << "current_fid: " << current_fid << std::endl;
-            std::cout << "current edge id: " << current_edge_id << std::endl;
-
-            // std::cout << "last_edge_bc:\n" << last_edge_bc << std::endl;
         }
 
         // find the rest intersections
         while (current_fid != target_fid) {
-            // std::cout << "current fid: " << current_fid << std::endl;
-            // std::cout << "target fid: " << target_fid << std::endl;
-            // std::cout << "current edge id: " << current_edge_id << std::endl;
-            // std::cout << "last_edge_bc: " << last_edge_bc << std::endl;
-
             int next_edge_id = -1;
             for (int edge_id = 0; edge_id < 3; edge_id++) {
                 if (edge_id == current_edge_id) continue;
@@ -672,20 +635,10 @@ void handle_one_segment(
 
             if (next_edge_id == -1) {
                 std::cout << "no intersection found place 2" << std::endl;
-                std::cout << "current_fid: " << current_fid << std::endl;
-                std::cout << "current edge id : " << current_edge_id << std::endl;
-
-                std::cout << "query_points[0].bc: " << query_points[0].bc << std::endl;
-                std::cout << "query_points[1].bc: " << query_points[1].bc << std::endl;
                 throw std::runtime_error("no intersection found");
                 continue;
             }
-            // else {
-            //     std::cout << "next_edge_id: " << next_edge_id << std::endl;
-            //     std::cout << "TT(current_fid): " << TT.row(current_fid) << std::endl;
-            //     std::cout << "TTi(current_fid): " << TTi.row(current_fid) << std::endl;
-            //     std::cout << std::endl;
-            // }
+
             current_edge_id = TTi(current_fid, next_edge_id);
             current_fid = TT(current_fid, next_edge_id);
         }
