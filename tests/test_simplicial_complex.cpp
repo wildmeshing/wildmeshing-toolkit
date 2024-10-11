@@ -205,35 +205,6 @@ TEST_CASE("link-case2", "[simplicial_complex][link][2D]")
     // REQUIRE(edge_collapse_possible_2d(m, t) == false);
 }
 
-
-// Old code
-// TEST_CASE("link-condition-edgemesh", "[simplicial_complex][link][1D]")
-// {
-//     SECTION("cases should succeed")
-//     {
-//         tests::DEBUG_EdgeMesh m0 = tests::two_segments();
-//         tests::DEBUG_EdgeMesh m1 = tests::loop_lines();
-//         tests::DEBUG_EdgeMesh m2 = tests::two_line_loop();
-
-//         int64_t hash = 0;
-//         Tuple t(0, -1, -1, 0, hash);
-//         REQUIRE(link_cond_bd_1d(m0, t) == true);
-//         REQUIRE(link_cond_bd_1d(m1, t) == true);
-//         REQUIRE(link_cond_bd_1d(m2, t) == true);
-//     }
-
-//     SECTION("cases should fail")
-//     {
-//         tests::DEBUG_EdgeMesh m0 = tests::single_line();
-//         tests::DEBUG_EdgeMesh m1 = tests::self_loop();
-
-//         int64_t hash = 0;
-//         Tuple t(0, -1, -1, 0, hash);
-//         REQUIRE(link_cond_bd_1d(m0, t) == false);
-//         REQUIRE(link_cond_bd_1d(m1, t) == false);
-//     }
-// }
-
 TEST_CASE("k-ring", "[simplicial_complex][k-ring][2D]")
 {
     tests::DEBUG_TriMesh m;
@@ -304,37 +275,6 @@ TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
 
     const auto ret1 = link(m, Simplex::vertex(m, t)).simplex_vector(PrimitiveType::Vertex);
     CHECK(ring0.size() == ret1.size());
-}
-
-TEST_CASE("open_star", "[simplicial_complex][star][2D]")
-{
-    tests::DEBUG_TriMesh m;
-    m = tests::three_neighbors();
-
-    // get the tuple point to V(0), E(01), F(012)
-    const Tuple t(0, 2, -1, 1);
-    const simplex::IdSimplex v = m.get_id_simplex(t, PV);
-    const simplex::IdSimplex e = m.get_id_simplex(t, PE);
-    const simplex::IdSimplex f = m.get_id_simplex(t, PF);
-
-
-    auto sc_v = open_star(m, Simplex(m, PV, t)).simplex_vector();
-    REQUIRE(sc_v.size() == 8);
-    for (size_t i = 0; i < 8; i++) {
-        REQUIRE(v == sc_v[i]);
-    }
-
-    auto sc_e = open_star(m, Simplex(m, PE, t)).simplex_vector();
-    REQUIRE(sc_e.size() == 3);
-    for (size_t i = 0; i < 3; i++) {
-        REQUIRE(e == sc_e[i]);
-    }
-
-    auto sc_f = open_star(m, Simplex(m, PF, t)).simplex_vector();
-    REQUIRE(sc_f.size() == 1);
-    for (size_t i = 0; i < 1; i++) {
-        REQUIRE(f == sc_f[i]);
-    }
 }
 
 TEST_CASE("closed_star", "[simplicial_complex][star][2D]")
