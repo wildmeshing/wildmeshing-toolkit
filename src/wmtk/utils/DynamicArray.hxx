@@ -96,7 +96,7 @@ bool DynamicArray<T, ArraySize>::uses_vector() const
 template <typename T, uint64_t ArraySize>
 void DynamicArray<T, ArraySize>::switch_to_vector()
 {
-    logger().info("Switching from array to vector.");
+    logger().debug("Switching from array to vector.");
     m_use_vector = true;
     m_vector.reserve(ArraySize * 2);
     std::copy(m_array.begin(), m_array.end(), std::back_inserter(m_vector));
