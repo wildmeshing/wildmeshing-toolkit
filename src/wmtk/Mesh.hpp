@@ -775,6 +775,8 @@ public:
         return m_multi_mesh_manager.has_child_mesh_in_dimension(dimension);
     }
 
+    bool has_child_mesh() const { return m_multi_mesh_manager.has_child_mesh(); }
+
     /*
      * @brief returns if the other mesh is part of the same multi-mesh structure
      * @param other the other being mesh being checked

@@ -352,6 +352,8 @@ public:
         return m_has_child_mesh_in_dimension[dimension];
     }
 
+    bool has_child_mesh() const;
+
 protected:
     // Storage of a child mesh (a pointer from the mesh + the map from this mesh -> the child)
     struct ChildData
