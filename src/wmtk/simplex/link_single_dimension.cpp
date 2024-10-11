@@ -248,7 +248,7 @@ SimplexCollection link_single_dimension(
             all_cofaces.reserve(cell_tuples.size());
             for (Tuple t : cell_tuples) {
                 t = mesh.switch_tuples(t, {PE, PF, PE, PV});
-                all_cofaces.emplace_back(mesh.get_id_simplex(t, PT));
+                all_cofaces.emplace_back(mesh.get_id_simplex(t, PV));
             }
         }
         break;
