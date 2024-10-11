@@ -644,6 +644,8 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_precompute()
     }
 
     if (m_mesh.has_child_mesh()) {
+        global_ids_to_potential_tuples.resize(3);
+
         simplex::SimplexCollection faces(m_mesh);
         {
             const simplex::Simplex v0(m_mesh, PrimitiveType::Vertex, m_operating_tuple);
@@ -675,6 +677,7 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_precompute()
 
         for (const simplex::IdSimplex& s : faces) {
             const int64_t index = static_cast<int64_t>(s.primitive_type());
+
             global_ids_to_potential_tuples.at(index).emplace_back(
                 m_mesh.id(s),
                 wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, m_mesh.get_simplex(s)));
