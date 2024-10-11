@@ -4,7 +4,7 @@
 
 namespace wmtk::simplex {
 
-SimplexCollection::SimplexCollection(const Mesh& mesh, std::vector<Simplex>& simplices)
+SimplexCollection::SimplexCollection(const Mesh& mesh, const std::vector<Simplex>& simplices)
     : m_mesh(mesh)
 {
     m_simplices.reserve(simplices.size());

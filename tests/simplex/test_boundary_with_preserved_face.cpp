@@ -4,6 +4,7 @@
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/internal/boundary_with_preserved_face.hpp>
+#include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 #include "../tools/DEBUG_EdgeMesh.hpp"
 #include "../tools/DEBUG_TetMesh.hpp"
@@ -31,7 +32,7 @@ TEST_CASE("simplex_coface_preserving_boundary_tuples", "[simplex_collection]")
             return true;
         }
         const simplex::SimplexCollection faces = simplex::faces(m, b);
-        return faces.contains(a);
+        return faces.contains(m.get_id_simplex(a));
     };
 
     auto run = [&](const auto& m,
@@ -82,7 +83,6 @@ TEST_CASE("simplex_coface_preserving_boundary_tuples", "[simplex_collection]")
     {
         tests_3d::DEBUG_TetMesh m = tests_3d::single_tet();
         auto all_tuples = all_valid_local_tuples(PrimitiveType::Tetrahedron);
-
 
         for (const Tuple& t : all_tuples) {
             run(m, Simplex(m, PV, t), Simplex(m, PV, t), 0);

@@ -1,5 +1,6 @@
 #include "neighbors_single_dimension.hpp"
 #include "cofaces_single_dimension.hpp"
+#include "cofaces_single_dimension_iterable.hpp"
 #include "faces_single_dimension.hpp"
 #include "utils/tuple_vector_to_homogeneous_simplex_vector.hpp"
 namespace wmtk::simplex {
@@ -13,6 +14,7 @@ neighbors_single_dimension(const Mesh& m, const Simplex& s, const PrimitiveType 
         neighbors_single_dimension_tuples(m, s, pt),
         pt);
 }
+
 std::vector<Tuple>
 neighbors_single_dimension_tuples(const Mesh& m, const Simplex& s, const PrimitiveType tpt)
 {
@@ -26,6 +28,27 @@ neighbors_single_dimension_tuples(const Mesh& m, const Simplex& s, const Primiti
         return faces_single_dimension_tuples(m, s, tpt);
     } else {
         return {s.tuple()};
+    }
+}
+
+void neighbors_single_dimension_tuples(
+    const Mesh& m,
+    const Simplex& s,
+    const PrimitiveType tpt,
+    std::vector<Tuple>& collection)
+{
+    const PrimitiveType mypt = s.primitive_type();
+    assert(m.top_simplex_type() >= mypt);
+    assert(m.top_simplex_type() >= tpt);
+
+    if (mypt < tpt) {
+        for (const Tuple& t : cofaces_single_dimension_iterable(m, s, tpt)) {
+            collection.emplace_back(t);
+        }
+    } else if (mypt > tpt) {
+        faces_single_dimension_tuples(m, s, tpt, collection);
+    } else {
+        collection.emplace_back(s.tuple());
     }
 }
 } // namespace wmtk::simplex

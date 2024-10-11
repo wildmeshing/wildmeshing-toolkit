@@ -312,34 +312,28 @@ TEST_CASE("open_star", "[simplicial_complex][star][2D]")
     m = tests::three_neighbors();
 
     // get the tuple point to V(0), E(01), F(012)
-    Tuple t(0, 2, -1, 1);
+    const Tuple t(0, 2, -1, 1);
+    const simplex::IdSimplex v = m.get_id_simplex(t, PV);
+    const simplex::IdSimplex e = m.get_id_simplex(t, PE);
+    const simplex::IdSimplex f = m.get_id_simplex(t, PF);
 
 
     auto sc_v = open_star(m, Simplex(m, PV, t)).simplex_vector();
     REQUIRE(sc_v.size() == 8);
     for (size_t i = 0; i < 8; i++) {
-        REQUIRE(simplex::utils::SimplexComparisons::equal(
-            m,
-            Simplex(m, PV, t),
-            Simplex(m, PV, sc_v[i].tuple())));
+        REQUIRE(v == sc_v[i]);
     }
 
     auto sc_e = open_star(m, Simplex(m, PE, t)).simplex_vector();
     REQUIRE(sc_e.size() == 3);
     for (size_t i = 0; i < 3; i++) {
-        REQUIRE(simplex::utils::SimplexComparisons::equal(
-            m,
-            Simplex(m, PE, t),
-            Simplex(m, PE, sc_e[i].tuple())));
+        REQUIRE(e == sc_e[i]);
     }
 
     auto sc_f = open_star(m, Simplex(m, PF, t)).simplex_vector();
     REQUIRE(sc_f.size() == 1);
     for (size_t i = 0; i < 1; i++) {
-        REQUIRE(simplex::utils::SimplexComparisons::equal(
-            m,
-            Simplex(m, PF, t),
-            Simplex(m, PF, sc_f[i].tuple())));
+        REQUIRE(f == sc_f[i]);
     }
 }
 

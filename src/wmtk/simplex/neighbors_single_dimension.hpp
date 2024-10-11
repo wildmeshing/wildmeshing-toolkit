@@ -18,4 +18,10 @@ std::vector<Tuple> neighbors_single_dimension_tuples(
     const Mesh& m,
     const Simplex& input_simplex,
     const PrimitiveType target_primitive_type);
+
+void neighbors_single_dimension_tuples(
+    const Mesh& m,
+    const Simplex& input_simplex,
+    const PrimitiveType target_primitive_type,
+    std::vector<Tuple>& collection);
 } // namespace wmtk::simplex

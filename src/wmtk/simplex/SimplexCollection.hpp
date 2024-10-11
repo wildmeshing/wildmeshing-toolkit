@@ -15,7 +15,7 @@ public:
         m_simplices.reserve(100);
     }
 
-    SimplexCollection(const Mesh& mesh, std::vector<Simplex>& simplices);
+    SimplexCollection(const Mesh& mesh, const std::vector<Simplex>& simplices);
 
     /**
      * @brief Return const reference to the simplex vector.

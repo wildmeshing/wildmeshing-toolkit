@@ -74,6 +74,43 @@ void vertices(SimplexCollection& simplex_collection, const Simplex& simplex)
     assert(false); // "unknown primitive type"
 }
 
+void vertices(const Mesh& m, const Simplex& simplex, std::vector<Tuple>& collection)
+{
+    if (simplex.primitive_type() == PrimitiveType::Vertex) {
+        return;
+    }
+
+    const Tuple v0 = simplex.tuple();
+    const Tuple v1 = m.switch_tuple(v0, PV);
+
+    if (simplex.primitive_type() == PrimitiveType::Edge) {
+        collection.emplace_back(v0);
+        collection.emplace_back(v1);
+        return;
+    }
+
+    const Tuple v2 = m.switch_tuples(v0, {PE, PV});
+
+    if (simplex.primitive_type() == PrimitiveType::Triangle) {
+        collection.emplace_back(v0);
+        collection.emplace_back(v1);
+        collection.emplace_back(v2);
+        return;
+    }
+
+    const Tuple v3 = m.switch_tuples(v0, {PF, PE, PV});
+
+    if (simplex.primitive_type() == PrimitiveType::Tetrahedron) {
+        collection.emplace_back(v0);
+        collection.emplace_back(v1);
+        collection.emplace_back(v2);
+        collection.emplace_back(v3);
+        return;
+    }
+
+    assert(false); // "unknown primitive type"
+}
+
 std::vector<Tuple> edges(const Mesh& m, const Simplex& simplex)
 {
     if (simplex.primitive_type() == PrimitiveType::Vertex ||
@@ -138,6 +175,41 @@ void edges(SimplexCollection& simplex_collection, const Simplex& simplex)
     assert(false); // "unknown primitive type"
 }
 
+void edges(const Mesh& m, const Simplex& simplex, std::vector<Tuple>& collection)
+{
+    if (simplex.primitive_type() == PrimitiveType::Vertex ||
+        simplex.primitive_type() == PrimitiveType::Edge) {
+        return;
+    }
+
+    const Tuple e0 = simplex.tuple();
+    const Tuple e1 = m.switch_tuples(e0, {PV, PE});
+    const Tuple e2 = m.switch_tuples(e0, {PE, PV});
+
+    if (simplex.primitive_type() == PrimitiveType::Triangle) {
+        collection.emplace_back(e0);
+        collection.emplace_back(e1);
+        collection.emplace_back(e2);
+        return;
+    }
+
+    const Tuple e3 = m.switch_tuples(e0, {PF, PE});
+    const Tuple e4 = m.switch_tuples(e1, {PF, PE});
+    const Tuple e5 = m.switch_tuples(e2, {PF, PE});
+
+    if (simplex.primitive_type() == PrimitiveType::Tetrahedron) {
+        collection.emplace_back(e0);
+        collection.emplace_back(e1);
+        collection.emplace_back(e2);
+        collection.emplace_back(e3);
+        collection.emplace_back(e4);
+        collection.emplace_back(e5);
+        return;
+    }
+
+    assert(false); // "unknown primitive type"
+}
+
 std::vector<Tuple> faces(const Mesh& m, const Simplex& simplex)
 {
     if (simplex.primitive_type() == PrimitiveType::Vertex ||
@@ -179,6 +251,30 @@ void faces(SimplexCollection& simplex_collection, const Simplex& simplex)
         simplex_collection.add(PrimitiveType::Triangle, f1);
         simplex_collection.add(PrimitiveType::Triangle, f2);
         simplex_collection.add(PrimitiveType::Triangle, f3);
+        return;
+    }
+
+    assert(false); // "unknown primitive type"
+}
+
+void faces(const Mesh& m, const Simplex& simplex, std::vector<Tuple>& collection)
+{
+    if (simplex.primitive_type() == PrimitiveType::Vertex ||
+        simplex.primitive_type() == PrimitiveType::Edge ||
+        simplex.primitive_type() == PrimitiveType::Triangle) {
+        return;
+    }
+
+    const Tuple f0 = simplex.tuple();
+    const Tuple f1 = m.switch_tuples(f0, {PF, PE});
+    const Tuple f2 = m.switch_tuples(f0, {PV, PE, PF, PE});
+    const Tuple f3 = m.switch_tuples(f0, {PE, PV, PF, PE});
+
+    if (simplex.primitive_type() == PrimitiveType::Tetrahedron) {
+        collection.emplace_back(f0);
+        collection.emplace_back(f1);
+        collection.emplace_back(f2);
+        collection.emplace_back(f3);
         return;
     }
 
@@ -227,6 +323,23 @@ std::vector<Tuple> faces_single_dimension_tuples(
     }
 
     return {};
+}
+
+void faces_single_dimension_tuples(
+    const Mesh& mesh,
+    const Simplex& simplex,
+    const PrimitiveType face_type,
+    std::vector<Tuple>& collection)
+{
+    assert(simplex.primitive_type() <= mesh.top_simplex_type());
+    assert(face_type <= mesh.top_simplex_type());
+    switch (face_type) {
+    case PrimitiveType::Vertex: vertices(mesh, simplex, collection); break;
+    case PrimitiveType::Edge: edges(mesh, simplex, collection); break;
+    case PrimitiveType::Triangle: faces(mesh, simplex, collection); break;
+    case PrimitiveType::Tetrahedron: break;
+    default: assert(false); // "unknown primitive type"
+    }
 }
 
 } // namespace wmtk::simplex
