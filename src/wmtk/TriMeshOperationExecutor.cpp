@@ -156,27 +156,33 @@ TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete(
     const TriMesh& m)
 {
     std::array<std::vector<int64_t>, 3> ids;
-    auto get_sc = [&]() -> simplex::SimplexCollection {
-        if (m.is_free()) {
+    if (m.is_free()) {
+        auto get_sc = [&]() -> simplex::SimplexCollection {
             simplex::Simplex simp(m, PrimitiveType::Triangle, tuple);
 
             simplex::SimplexCollection sc = simplex::faces(m, simp);
             sc.add(simp);
             return sc;
-        } else {
-            const simplex::SimplexCollection vertex_open_star =
-                simplex::open_star(m, simplex::Simplex::vertex(m, tuple));
-            const simplex::SimplexCollection edge_closed_star =
-                simplex::closed_star(m, simplex::Simplex::edge(m, tuple));
-
-            simplex::SimplexCollection sc =
-                simplex::SimplexCollection::get_intersection(vertex_open_star, edge_closed_star);
-
-            return sc;
+        };
+        for (const simplex::IdSimplex& s : get_sc()) {
+            ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
         }
-    };
-    for (const simplex::IdSimplex& s : get_sc()) {
-        ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
+    } else {
+        const simplex::Simplex v(m, PrimitiveType::Vertex, tuple);
+        const simplex::Simplex e(m, PrimitiveType::Edge, tuple);
+        ids[0].emplace_back(m.id(v));
+        ids[1].emplace_back(m.id(e));
+        /* `top_dimension_cofaces_iterable()` preserves the tuple as much as possible. It always
+         * contains the edge and the vertex.
+         */
+        for (Tuple t : simplex::top_dimension_cofaces_iterable(m, e)) {
+            ids[2].emplace_back(m.id(t, PrimitiveType::Triangle));
+            t = m.switch_edge(t);
+            ids[1].emplace_back(m.id(t, PrimitiveType::Edge));
+        }
+        for (size_t i = 0; i < ids.size(); ++i) {
+            std::sort(ids[i].begin(), ids[i].end());
+        }
     }
 
     return ids;
@@ -685,9 +691,11 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge()
 
     if (!m_mesh.is_free()) {
         // must collect star before changing connectivity
-        const simplex::SimplexCollection v0_star =
-            simplex::closed_star(m_mesh, simplex::Simplex::vertex(m_mesh, m_operating_tuple));
-
+        const simplex::Simplex v0_simplex(m_mesh, PrimitiveType::Vertex, m_operating_tuple);
+        simplex::SimplexCollection v0_star(m_mesh);
+        for (const Tuple& t : simplex::top_dimension_cofaces_iterable(m_mesh, v0_simplex)) {
+            v0_star.add(PrimitiveType::Triangle, t);
+        }
 
         connect_ears();
 
@@ -695,7 +703,7 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge()
         const int64_t& v1 = m_spine_vids[1];
 
         // replace v0 by v1 in incident faces
-        for (const simplex::Simplex& f : v0_star.simplex_vector(PrimitiveType::Triangle)) {
+        for (const simplex::IdSimplex& f : v0_star.simplex_vector()) {
             const int64_t fid = m_mesh.id(f);
             bool is_fid_deleted = false;
             for (int64_t i = 0; i < m_incident_face_datas.size(); ++i) {
