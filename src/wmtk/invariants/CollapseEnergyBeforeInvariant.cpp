@@ -46,18 +46,17 @@ bool CollapseEnergyBeforeInvariant::before(const simplex::Simplex& s) const
 
             // TODO: check sort and clean
             const auto& v0_incident_tets =
-                simplex::top_dimension_cofaces(mesh(), simplex::Simplex::vertex(mesh(), v0), false);
+                simplex::top_dimension_cofaces_tuples(mesh(), simplex::Simplex::vertex(mesh(), v0));
             const auto& v1_incident_tets =
-                simplex::top_dimension_cofaces(mesh(), simplex::Simplex::vertex(mesh(), v1), false);
+                simplex::top_dimension_cofaces_tuples(mesh(), simplex::Simplex::vertex(mesh(), v1));
 
             // compute energy for v1 incident tets
-            for (const auto& t : v1_incident_tets) {
-                auto lv = mesh().orient_vertices(t.tuple()); // get orient tet vertices
+            for (const Tuple& t : v1_incident_tets) {
+                auto lv = mesh().orient_vertices(t); // get orient tet vertices
                 assert(lv.size() == 4);
 
                 // compute old max
-                old_energy_max =
-                    std::max(old_energy_max, amips_accessor.const_scalar_attribute(t.tuple()));
+                old_energy_max = std::max(old_energy_max, amips_accessor.const_scalar_attribute(t));
 
                 // skip if incident both vertices
                 bool incident_both = false;
@@ -120,8 +119,8 @@ bool CollapseEnergyBeforeInvariant::before(const simplex::Simplex& s) const
             }
 
             // compute energy for v0 incident, old and new are the same because v0 is not moved
-            for (const auto& t : v0_incident_tets) {
-                auto lv = mesh().orient_vertices(t.tuple()); // get orient tet vertices
+            for (const Tuple& t : v0_incident_tets) {
+                auto lv = mesh().orient_vertices(t); // get orient tet vertices
 
                 // skip if incident both vertices
                 bool incident_both = false;
@@ -137,7 +136,7 @@ bool CollapseEnergyBeforeInvariant::before(const simplex::Simplex& s) const
                 if (incident_both) continue;
 
                 // compute old max
-                const double energy = amips_accessor.const_scalar_attribute(t.tuple());
+                const double energy = amips_accessor.const_scalar_attribute(t);
                 old_energy_max = std::max(old_energy_max, energy);
 
                 // compute new energy
@@ -155,18 +154,17 @@ bool CollapseEnergyBeforeInvariant::before(const simplex::Simplex& s) const
 
             // TODO: check sort and clean
             const auto& v0_incident_tets =
-                simplex::top_dimension_cofaces(mesh(), simplex::Simplex::vertex(mesh(), v0), false);
+                simplex::top_dimension_cofaces_tuples(mesh(), simplex::Simplex::vertex(mesh(), v0));
             const auto& v1_incident_tets =
-                simplex::top_dimension_cofaces(mesh(), simplex::Simplex::vertex(mesh(), v1), false);
+                simplex::top_dimension_cofaces_tuples(mesh(), simplex::Simplex::vertex(mesh(), v1));
 
             // compute energy for v0 incident tets
-            for (const auto& t : v0_incident_tets) {
-                auto lv = mesh().orient_vertices(t.tuple()); // get orient tet vertices
+            for (const Tuple& t : v0_incident_tets) {
+                auto lv = mesh().orient_vertices(t); // get orient tet vertices
                 assert(lv.size() == 4);
 
                 // compute old max
-                old_energy_max =
-                    std::max(old_energy_max, amips_accessor.const_scalar_attribute(t.tuple()));
+                old_energy_max = std::max(old_energy_max, amips_accessor.const_scalar_attribute(t));
 
                 // compute new energy
                 // skip if incident both vertices
@@ -229,8 +227,8 @@ bool CollapseEnergyBeforeInvariant::before(const simplex::Simplex& s) const
             }
 
             // compute energy for v1 incident, old and new are the same because v0 is not moved
-            for (const auto& t : v1_incident_tets) {
-                auto lv = mesh().orient_vertices(t.tuple()); // get orient tet vertices
+            for (const Tuple& t : v1_incident_tets) {
+                auto lv = mesh().orient_vertices(t); // get orient tet vertices
 
                 // skip if incident both vertices
                 bool incident_both = false;
@@ -246,7 +244,7 @@ bool CollapseEnergyBeforeInvariant::before(const simplex::Simplex& s) const
                 if (incident_both) continue;
 
                 // compute old max
-                const double energy = amips_accessor.const_scalar_attribute(t.tuple());
+                const double energy = amips_accessor.const_scalar_attribute(t);
                 old_energy_max = std::max(old_energy_max, energy);
 
                 // compute new energy

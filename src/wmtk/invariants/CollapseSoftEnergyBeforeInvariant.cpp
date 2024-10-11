@@ -56,21 +56,20 @@ bool CollapseSoftEnergyBeforeInvariant::before(const simplex::Simplex& s) const
 
             // TODO: check sort and clean
             const auto& v0_incident_tets =
-                simplex::top_dimension_cofaces(mesh(), simplex::Simplex::vertex(mesh(), v0), false);
+                simplex::top_dimension_cofaces_tuples(mesh(), simplex::Simplex::vertex(mesh(), v0));
             const auto& v1_incident_tets =
-                simplex::top_dimension_cofaces(mesh(), simplex::Simplex::vertex(mesh(), v1), false);
+                simplex::top_dimension_cofaces_tuples(mesh(), simplex::Simplex::vertex(mesh(), v1));
 
             // compute energy for v1 incident tets
-            for (const auto& t : v1_incident_tets) {
+            for (const Tuple& t : v1_incident_tets) {
                 const std::array<Tuple, 4> lv = {
-                    {t.tuple(),
-                     mesh().switch_tuple(t.tuple(), PV),
-                     mesh().switch_tuples(t.tuple(), {PE, PV}),
-                     mesh().switch_tuples(t.tuple(), {PF, PE, PV})}};
+                    {t,
+                     mesh().switch_tuple(t, PV),
+                     mesh().switch_tuples(t, {PE, PV}),
+                     mesh().switch_tuples(t, {PF, PE, PV})}};
 
                 // compute old max
-                old_energy_max =
-                    std::max(old_energy_max, amips_accessor.const_scalar_attribute(t.tuple()));
+                old_energy_max = std::max(old_energy_max, amips_accessor.const_scalar_attribute(t));
 
                 // compute new energy
                 const simplex::Simplex v0_s(mesh(), PV, v0);
@@ -157,12 +156,12 @@ bool CollapseSoftEnergyBeforeInvariant::before(const simplex::Simplex& s) const
             }
 
             // compute energy for v0 incident, old and new are the same because v0 is not moved
-            for (const auto& t : v0_incident_tets) {
+            for (const Tuple& t : v0_incident_tets) {
                 const std::array<Tuple, 4> lv = {
-                    {t.tuple(),
-                     mesh().switch_tuple(t.tuple(), PV),
-                     mesh().switch_tuples(t.tuple(), {PE, PV}),
-                     mesh().switch_tuples(t.tuple(), {PF, PE, PV})}};
+                    {t,
+                     mesh().switch_tuple(t, PV),
+                     mesh().switch_tuples(t, {PE, PV}),
+                     mesh().switch_tuples(t, {PF, PE, PV})}};
 
                 // skip tets incident the edge, old is already computed above
                 const simplex::Simplex v1_s(mesh(), PV, v1);
@@ -183,7 +182,7 @@ bool CollapseSoftEnergyBeforeInvariant::before(const simplex::Simplex& s) const
                 }
 
                 // compute old max
-                const double energy = amips_accessor.const_scalar_attribute(t.tuple());
+                const double energy = amips_accessor.const_scalar_attribute(t);
                 old_energy_max = std::max(old_energy_max, energy);
 
                 // compute new energy
@@ -199,21 +198,20 @@ bool CollapseSoftEnergyBeforeInvariant::before(const simplex::Simplex& s) const
 
             // TODO: check sort and clean
             const auto& v0_incident_tets =
-                simplex::top_dimension_cofaces(mesh(), simplex::Simplex::vertex(mesh(), v0), false);
+                simplex::top_dimension_cofaces_tuples(mesh(), simplex::Simplex::vertex(mesh(), v0));
             const auto& v1_incident_tets =
-                simplex::top_dimension_cofaces(mesh(), simplex::Simplex::vertex(mesh(), v1), false);
+                simplex::top_dimension_cofaces_tuples(mesh(), simplex::Simplex::vertex(mesh(), v1));
 
             // compute energy for v0 incident tets
-            for (const auto& t : v0_incident_tets) {
+            for (const Tuple& t : v0_incident_tets) {
                 const std::array<Tuple, 4> lv = {
-                    {t.tuple(),
-                     mesh().switch_tuple(t.tuple(), PV),
-                     mesh().switch_tuples(t.tuple(), {PE, PV}),
-                     mesh().switch_tuples(t.tuple(), {PF, PE, PV})}};
+                    {t,
+                     mesh().switch_tuple(t, PV),
+                     mesh().switch_tuples(t, {PE, PV}),
+                     mesh().switch_tuples(t, {PF, PE, PV})}};
 
                 // compute old max
-                old_energy_max =
-                    std::max(old_energy_max, amips_accessor.const_scalar_attribute(t.tuple()));
+                old_energy_max = std::max(old_energy_max, amips_accessor.const_scalar_attribute(t));
 
                 // compute new energy
                 const simplex::Simplex v1_s(mesh(), PV, v1);
@@ -299,12 +297,12 @@ bool CollapseSoftEnergyBeforeInvariant::before(const simplex::Simplex& s) const
             }
 
             // compute energy for v1 incident, old and new are the same because v0 is not moved
-            for (const auto& t : v1_incident_tets) {
+            for (const Tuple& t : v1_incident_tets) {
                 const std::array<Tuple, 4> lv = {
-                    {t.tuple(),
-                     mesh().switch_tuple(t.tuple(), PV),
-                     mesh().switch_tuples(t.tuple(), {PE, PV}),
-                     mesh().switch_tuples(t.tuple(), {PF, PE, PV})}};
+                    {t,
+                     mesh().switch_tuple(t, PV),
+                     mesh().switch_tuples(t, {PE, PV}),
+                     mesh().switch_tuples(t, {PF, PE, PV})}};
 
                 // skip tets incident the edge, old is already computed above
                 const simplex::Simplex v0_s(mesh(), PV, v0);
@@ -325,7 +323,7 @@ bool CollapseSoftEnergyBeforeInvariant::before(const simplex::Simplex& s) const
                 }
 
                 // compute old max
-                const double energy = amips_accessor.const_scalar_attribute(t.tuple());
+                const double energy = amips_accessor.const_scalar_attribute(t);
                 old_energy_max = std::max(old_energy_max, energy);
 
                 // compute new energy

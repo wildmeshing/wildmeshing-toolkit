@@ -46,8 +46,9 @@ std::vector<simplex::Simplex> TetEdgeSwap::execute(const simplex::Simplex& simpl
     const auto split_tuple_open_star =
         simplex::open_star(mesh(), simplex::Simplex::vertex(mesh(), split_ret));
     std::array<std::vector<simplex::Simplex>, 4> simplices_generated_by_split;
-    for (const simplex::Simplex& s : split_tuple_open_star.simplex_vector()) {
-        simplices_generated_by_split[get_primitive_type_id(s.primitive_type())].emplace_back(s);
+    for (const simplex::IdSimplex& s : split_tuple_open_star.simplex_vector()) {
+        simplices_generated_by_split[get_primitive_type_id(s.primitive_type())].emplace_back(
+            mesh().get_simplex(s));
     }
 
     const auto v_open_star =
@@ -58,8 +59,9 @@ std::vector<simplex::Simplex> TetEdgeSwap::execute(const simplex::Simplex& simpl
 
     std::array<std::vector<simplex::Simplex>, 4> simplices_deleted_by_collapse;
 
-    for (const simplex::Simplex& s : sc.simplex_vector()) {
-        simplices_deleted_by_collapse[get_primitive_type_id(s.primitive_type())].emplace_back(s);
+    for (const simplex::IdSimplex& s : sc.simplex_vector()) {
+        simplices_deleted_by_collapse[get_primitive_type_id(s.primitive_type())].emplace_back(
+            mesh().get_simplex(s));
     }
 
     // check if #edge_generated_by_split > #edges_deleted_by_collapse, if not, return face instead
