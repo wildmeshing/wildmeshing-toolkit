@@ -21,7 +21,10 @@ public:
     //     const simplex::Simplex& s) const final override;
 };
 
-
+/**
+ * @tparam MyType The type to which transfer should go to.
+ * @tparam ParentType The type that causes the change in MyType.
+ */
 template <typename MyType, typename ParentType>
 class SingleAttributeTransferStrategy : public AttributeTransferStrategy<MyType>
 {

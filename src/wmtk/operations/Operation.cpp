@@ -60,7 +60,7 @@ void Operation::set_transfer_strategy(
 void Operation::add_transfer_strategy(
     const std::shared_ptr<const operations::AttributeTransferStrategyBase>& other)
 {
-    spdlog::info("Adding a transfer");
+    spdlog::debug("Adding a transfer");
     m_attr_transfer_strategies.emplace_back(other);
 }
 
