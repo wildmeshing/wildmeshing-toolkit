@@ -181,6 +181,8 @@ public:
      */
     simplex::Simplex get_simplex(const simplex::IdSimplex& s) const;
 
+    Tuple get_tuple_from_id_simplex(const simplex::IdSimplex& s) const;
+
     /**
      * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding
      * vector

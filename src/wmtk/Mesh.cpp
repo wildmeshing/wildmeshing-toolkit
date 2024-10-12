@@ -41,6 +41,11 @@ simplex::Simplex Mesh::get_simplex(const simplex::IdSimplex& s) const
     return simplex::Simplex(*this, s.primitive_type(), t);
 }
 
+Tuple Mesh::get_tuple_from_id_simplex(const simplex::IdSimplex& s) const
+{
+    return tuple_from_id(s.primitive_type(), s.index());
+}
+
 std::vector<simplex::IdSimplex> Mesh::get_all_id_simplex(
     PrimitiveType type,
     const bool include_deleted) const

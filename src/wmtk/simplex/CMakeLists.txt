@@ -11,6 +11,8 @@ set(SRC_FILES
 
     SimplexCollection.hpp
     SimplexCollection.cpp
+    IdSimplexCollection.hpp
+    IdSimplexCollection.cpp
     RawSimplex.cpp
     RawSimplex.hpp
     RawSimplexCollection.hpp
