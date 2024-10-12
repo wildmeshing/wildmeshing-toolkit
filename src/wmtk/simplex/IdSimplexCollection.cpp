@@ -56,13 +56,13 @@ void IdSimplexCollection::add(const PrimitiveType ptype, const std::vector<Tuple
     m_simplices.reserve(m_simplices.size() + tuple_vec.size());
 
     for (const Tuple& t : tuple_vec) {
-        m_simplices.emplace_back(Simplex(mesh(), ptype, t));
+        m_simplices.emplace_back(mesh().get_id_simplex(t, ptype));
     }
 }
 
 void IdSimplexCollection::add(const PrimitiveType ptype, const Tuple& tuple)
 {
-    m_simplices.emplace_back(Simplex(mesh(), ptype, tuple));
+    m_simplices.emplace_back(mesh().get_id_simplex(tuple, ptype));
 }
 
 void IdSimplexCollection::sort_and_clean()
