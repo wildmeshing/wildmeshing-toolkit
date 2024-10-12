@@ -124,8 +124,16 @@ bool IdSimplexCollection::are_simplex_collections_equal(
     if (collection_a.m_simplices.size() != collection_b.m_simplices.size()) {
         return false;
     }
-    IdSimplexCollection sc_union = IdSimplexCollection::get_union(collection_a, collection_b);
-    return sc_union.m_simplices.size() == collection_a.m_simplices.size();
+
+    for (int64_t i = 0; i < collection_a.size(); ++i) {
+        if (collection_a.m_simplices[i] != collection_b.m_simplices[i]) {
+            return false;
+        }
+    }
+    return true;
+
+    // IdSimplexCollection sc_union = IdSimplexCollection::get_union(collection_a, collection_b);
+    // return sc_union.m_simplices.size() == collection_a.m_simplices.size();
 }
 
 bool IdSimplexCollection::operator==(const IdSimplexCollection& other) const
