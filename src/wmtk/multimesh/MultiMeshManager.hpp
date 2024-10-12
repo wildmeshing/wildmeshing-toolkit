@@ -7,10 +7,9 @@
 #include <wmtk/attribute/MeshAttributes.hpp>
 // included to make a friend as this requires IDs
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
+// just for friending later on
+#include <wmtk/multimesh/utils/check_map_valid.hpp>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
-
-// debug function that reads into this structure
-#include "utils/check_map_valid.hpp"
 
 
 namespace wmtk {

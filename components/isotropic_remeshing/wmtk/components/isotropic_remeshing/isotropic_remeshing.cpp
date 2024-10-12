@@ -11,7 +11,6 @@
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
-#include <wmtk/invariants/ValenceImprovementInvariant.hpp>
 #include <wmtk/invariants/uvEdgeInvariant.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
@@ -22,19 +21,15 @@
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
-#include <wmtk/operations/composite/TriEdgeSwap.hpp>
 #include <wmtk/operations/utils/VertexLaplacianSmooth.hpp>
 #include <wmtk/operations/utils/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-#include <wmtk/invariants/Swap23EnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/Swap32EnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/Swap44EnergyBeforeInvariant.hpp>
-#include <wmtk/invariants/Swap56EnergyBeforeInvariant.hpp>
 
 #include <Eigen/Geometry>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include "IsotropicRemeshingOptions.hpp"
+#include "internal/configure_swap.hpp"
 
 namespace wmtk::components::isotropic_remeshing {
 // compute the length relative to the bounding box diagonal
@@ -136,11 +131,6 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
     multimesh::MultiMeshVisitor visitor(set_all_invariants);
     visitor.execute_from_root(mesh);
 
-    std::shared_ptr<invariants::Invariant> invariant_valence_improve;
-    if (mesh.top_simplex_type() == PrimitiveType::Triangle) {
-        invariant_valence_improve =
-            std::make_shared<invariants::ValenceImprovementInvariant>(dynamic_cast<TriMesh&>(mesh));
-    }
 
     auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(mesh);
 
@@ -236,109 +226,12 @@ void isotropic_remeshing(const IsotropicRemeshingOptions& options)
 
     //////////////////////////////////////////
     // swap
-    std::shared_ptr<operations::composite::EdgeSwap> op_swap;
+    std::shared_ptr<operations::Operation> op_swap = configure_swap(mesh, options);
+
+    // adds common invariants like inversion check and asserts taht the swap is ready for prime time
     wmtk::logger().debug("Configure isotropic remeshing swap");
-    if (mesh.top_simplex_type() == PrimitiveType::Triangle) {
-        std::shared_ptr<operations::composite::EdgeSwap> swap;
-        TriMesh& trimesh = static_cast<TriMesh&>(mesh);
-        op_swap = std::static_pointer_cast<operations::composite::EdgeSwap>(
-            std::make_shared<composite::TriEdgeSwap>(trimesh));
-        // hack for uv
-        if (options.fix_uv_seam) {
-            op_swap->add_invariant(std::make_shared<invariants::uvEdgeInvariant>(
-                mesh,
-                other_positions.front().mesh()));
-        }
-        if (invariant_valence_improve) {
-            op_swap->add_invariant(invariant_valence_improve);
-        }
-        op_swap->collapse().add_invariant(invariant_link_condition);
-        op_swap->collapse().add_invariant(invariant_mm_map);
-        for (auto& p : positions) {
-            op_swap->split().set_new_attribute_strategy(
-                p,
-                SplitBasicStrategy::None,
-                SplitRibBasicStrategy::Mean);
-        }
-        for (auto& p : positions)
-            op_swap->collapse().set_new_attribute_strategy(p, CollapseBasicStrategy::CopyOther);
-        for (const auto& attr : pass_through_attributes) {
-            op_swap->split().set_new_attribute_strategy(attr);
-            op_swap->collapse().set_new_attribute_strategy(attr);
-        }
-    } else {
-        /*
-        TetMesh& tetmesh = static_cast<TetMesh&>(mesh);
-        op_swap = std::static_pointer_cast<operations::composite::EdgeSwap>(
-            std::make_shared<composite::TetEdgeSwap>(tetmesh));
-        auto swap56 = std::make_shared<MinOperationSequence>(*mesh);
-        for (int i = 0; i < 5; ++i) {
-            auto swap = std::make_shared<TetEdgeSwap>(*mesh, i);
-            swap->collapse().add_invariant(invariant_separate_substructures);
-            swap->collapse().add_invariant(link_condition);
-            swap->collapse().set_new_attribute_strategy(
-                pt_attribute,
-                CollapseBasicStrategy::CopyOther);
-            swap->collapse().set_new_attribute_strategy(
-                sizing_field_scalar_attribute,
-                CollapseBasicStrategy::CopyOther);
-            swap->split().set_new_attribute_strategy(pt_attribute);
-            swap->split().set_new_attribute_strategy(sizing_field_scalar_attribute);
-            // swap->split().add_transfer_strategy(amips_update);
-            // swap->collapse().add_transfer_strategy(amips_update);
-            swap->split().set_new_attribute_strategy(
-                visited_edge_flag,
-                wmtk::operations::SplitBasicStrategy::None,
-                wmtk::operations::SplitRibBasicStrategy::None);
-            swap->collapse().set_new_attribute_strategy(
-                visited_edge_flag,
-                wmtk::operations::CollapseBasicStrategy::None);
 
-            swap->split().set_new_attribute_strategy(
-                target_edge_length_attribute,
-                wmtk::operations::SplitBasicStrategy::Copy,
-                wmtk::operations::SplitRibBasicStrategy::Mean);
-            swap->collapse().set_new_attribute_strategy(
-                target_edge_length_attribute,
-                wmtk::operations::CollapseBasicStrategy::None);
-
-            swap->add_invariant(std::make_shared<Swap56EnergyBeforeInvariant>(
-                *mesh,
-                pt_attribute.as<Rational>(),
-                i));
-
-            swap->add_transfer_strategy(amips_update);
-
-            // swap->add_invariant(inversion_invariant);
-            swap->collapse().add_invariant(inversion_invariant);
-
-            // swap->collapse().add_invariant(envelope_invariant);
-
-            for (const auto& attr : pass_through_attributes) {
-                swap->split().set_new_attribute_strategy(
-                    attr,
-                    wmtk::operations::SplitBasicStrategy::None,
-                    wmtk::operations::SplitRibBasicStrategy::None);
-                swap->collapse().set_new_attribute_strategy(
-                    attr,
-                    wmtk::operations::CollapseBasicStrategy::None);
-            }
-
-            swap56->add_operation(swap);
-        }
-        */
-    }
     op_swap->add_invariant(invariant_interior_edge);
-
-
-    if (position_for_inversion) {
-        op_swap->collapse().add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
-            position_for_inversion.value().mesh(),
-            position_for_inversion.value().as<double>()));
-    }
-
-    assert(op_swap->split().attribute_new_all_configured());
-    assert(op_swap->collapse().attribute_new_all_configured());
     ops.push_back(op_swap);
 
 

@@ -9,6 +9,11 @@ set(SRC_FILES
     IsotropicRemeshingOptions.hpp
 	isotropic_remeshing.hpp
     isotropic_remeshing.cpp
+
+    internal/configure_swap.hpp
+    internal/configure_swap.cpp
+    internal/configure_collapse.hpp
+    internal/configure_collapse.cpp
     )
 
 

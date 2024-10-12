@@ -1,6 +1,8 @@
 #include "MultiMeshManager.hpp"
 #include <cassert>
 #include <wmtk/utils/vector_hash.hpp>
+// debug function that reads into this structure
+#include "utils/check_map_valid.hpp"
 //#include <fmt/ranges.h>
 #include <functional>
 #include <wmtk/Mesh.hpp>
@@ -540,9 +542,7 @@ simplex::Simplex MultiMeshManager::map_to_root(
     const Mesh& my_mesh,
     const simplex::Simplex& my_simplex) const
 {
-    return simplex::Simplex(
-        my_simplex.primitive_type(),
-        map_to_root_tuple(my_mesh, my_simplex));
+    return simplex::Simplex(my_simplex.primitive_type(), map_to_root_tuple(my_mesh, my_simplex));
 }
 
 Tuple MultiMeshManager::map_to_root_tuple(const Mesh& my_mesh, const simplex::Simplex& my_simplex)
@@ -559,7 +559,6 @@ Tuple MultiMeshManager::map_tuple_to_root_tuple(const Mesh& my_mesh, const Tuple
         assert(my_mesh.is_valid(my_tuple));
         return my_tuple;
     } else {
-
         const Tuple ptup = map_tuple_to_parent_tuple(my_mesh, my_tuple);
         assert(m_parent->is_valid(ptup));
         return m_parent->m_multi_mesh_manager.map_tuple_to_root_tuple(*m_parent, ptup);
