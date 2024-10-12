@@ -1,7 +1,9 @@
 #include "link_condition.hpp"
 #include <wmtk/utils/metaprogramming/as_mesh_variant.hpp>
 #include "cofaces_single_dimension.hpp"
+#include "cofaces_single_dimension_iterable.hpp"
 #include "link.hpp"
+#include "link_iterable.hpp"
 #include "open_star.hpp"
 #include "utils/SimplexComparisons.hpp"
 
@@ -52,17 +54,12 @@ bool link_condition(const TriMesh& mesh, const Tuple& edge)
         const Simplex input_v(mesh, PrimitiveType::Vertex, _v);
         std::vector<Tuple> ret;
         // get incident_edges from open_star
-        auto incident_edges = open_star(mesh, input_v).simplex_vector(PrimitiveType::Edge);
-        for (const Simplex& _e : incident_edges) {
-            if (mesh.is_boundary(PrimitiveType::Edge, _e.tuple())) {
-                if (utils::SimplexComparisons::equal(
-                        mesh,
-                        Simplex(mesh, PrimitiveType::Vertex, _e.tuple()),
-                        input_v)) {
-                    ret.push_back(mesh.switch_tuple(_e.tuple(), PrimitiveType::Vertex));
-                } else {
-                    ret.push_back(_e.tuple());
-                }
+        // incident_edges = cofaces_single_dimension_tuples(mesh, input_v,
+        // PrimitiveType::Edge);
+        auto incident_edges = cofaces_single_dimension_iterable(mesh, input_v, PrimitiveType::Edge);
+        for (const Tuple& _e : incident_edges) {
+            if (mesh.is_boundary(PrimitiveType::Edge, _e)) {
+                ret.push_back(mesh.switch_tuple(_e, PrimitiveType::Vertex));
             }
         }
         return ret;

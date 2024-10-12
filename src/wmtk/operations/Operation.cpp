@@ -154,6 +154,8 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
     all.reserve(100);
 
     if (direct_mods.size() == 1 && direct_mods[0].primitive_type() == PrimitiveType::Vertex) {
+        // !!!! This changes the result
+
         // check if there is only one primitive type to transfer to
         bool only_one_pt = true;
         const PrimitiveType coface_pt = m_attr_transfer_strategies[0]->primitive_type();
