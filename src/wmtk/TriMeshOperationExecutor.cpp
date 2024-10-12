@@ -17,10 +17,14 @@
 #endif
 
 #include "TriMeshOperationExecutor.hpp"
+#include <wmtk/simplex/IdSimplexCollection.hpp>
 #include <wmtk/simplex/closed_star.hpp>
+#include <wmtk/simplex/closed_star_iterable.hpp>
 #include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/open_star.hpp>
+#include <wmtk/simplex/open_star_iterable.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
+#include <wmtk/simplex/top_dimension_cofaces_iterable.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
 
 #include <wmtk/operations/internal/SplitAlternateFacetData.hpp>
@@ -152,27 +156,33 @@ TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete(
     const TriMesh& m)
 {
     std::array<std::vector<int64_t>, 3> ids;
-    auto get_sc = [&]() -> simplex::SimplexCollection {
-        if (m.is_free()) {
+    if (m.is_free()) {
+        auto get_sc = [&]() -> simplex::SimplexCollection {
             simplex::Simplex simp(m, PrimitiveType::Triangle, tuple);
 
             simplex::SimplexCollection sc = simplex::faces(m, simp);
             sc.add(simp);
             return sc;
-        } else {
-            const simplex::SimplexCollection vertex_open_star =
-                simplex::open_star(m, simplex::Simplex::vertex(m, tuple));
-            const simplex::SimplexCollection edge_closed_star =
-                simplex::closed_star(m, simplex::Simplex::edge(m, tuple));
-
-            simplex::SimplexCollection sc =
-                simplex::SimplexCollection::get_intersection(vertex_open_star, edge_closed_star);
-
-            return sc;
+        };
+        for (const simplex::Simplex& s : get_sc()) {
+            ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
         }
-    };
-    for (const simplex::Simplex& s : get_sc()) {
-        ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
+    } else {
+        const simplex::Simplex v(m, PrimitiveType::Vertex, tuple);
+        const simplex::Simplex e(m, PrimitiveType::Edge, tuple);
+        ids[0].emplace_back(m.id(v));
+        ids[1].emplace_back(m.id(e));
+        /* `top_dimension_cofaces_iterable()` preserves the tuple as much as possible. It always
+         * contains the edge and the vertex.
+         */
+        for (Tuple t : simplex::top_dimension_cofaces_iterable(m, e)) {
+            ids[2].emplace_back(m.id(t, PrimitiveType::Triangle));
+            t = m.switch_edge(t);
+            ids[1].emplace_back(m.id(t, PrimitiveType::Edge));
+        }
+        for (size_t i = 0; i < ids.size(); ++i) {
+            std::sort(ids[i].begin(), ids[i].end());
+        }
     }
 
     return ids;
@@ -620,12 +630,11 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_precompute()
     set_collapse();
     is_collapse = true;
 
-    const simplex::SimplexCollection edge_closed_star =
-        simplex::closed_star(m_mesh, simplex::Simplex::edge(m_mesh, m_operating_tuple));
+    const simplex::Simplex edge_operating(m_mesh, PrimitiveType::Edge, m_operating_tuple);
 
     // get all faces incident to the edge
-    for (const simplex::Simplex& f : edge_closed_star.simplex_vector(PrimitiveType::Triangle)) {
-        m_incident_face_datas.emplace_back(get_incident_face_data(f.tuple()));
+    for (const Tuple& f : simplex::top_dimension_cofaces_iterable(m_mesh, edge_operating)) {
+        m_incident_face_datas.emplace_back(get_incident_face_data(f));
     }
 
     assert(m_incident_face_datas.size() <= 2);
@@ -634,30 +643,47 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_precompute()
         std::swap(m_incident_face_datas[0], m_incident_face_datas[1]);
     }
 
-    // update hash on all faces in the two-ring neighborhood
-    simplex::SimplexCollection hash_update_region(m_mesh);
-    for (const simplex::Simplex& v : edge_closed_star.simplex_vector(PrimitiveType::Vertex)) {
-        const simplex::SimplexCollection v_closed_star = simplex::top_dimension_cofaces(m_mesh, v);
-        hash_update_region.add(v_closed_star);
-    }
-    hash_update_region.sort_and_clean();
+    if (m_mesh.has_child_mesh()) {
+        global_ids_to_potential_tuples.resize(3);
 
-    global_ids_to_potential_tuples.resize(3);
-    simplex::SimplexCollection faces(m_mesh);
+        simplex::IdSimplexCollection faces(m_mesh);
+        {
+            const simplex::Simplex v0(m_mesh, PrimitiveType::Vertex, m_operating_tuple);
+            const simplex::Simplex v1(
+                m_mesh,
+                PrimitiveType::Vertex,
+                m_mesh.switch_vertex(m_operating_tuple));
+            std::array<simplex::internal::VisitedArray<wmtk::simplex::IdSimplex>, 3> visited;
 
-    for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Triangle)) {
-        faces.add(wmtk::simplex::faces(m_mesh, f, false));
-        faces.add(f);
+            for (const simplex::IdSimplex& s : simplex::closed_star_iterable(m_mesh, v0)) {
+                visited[get_primitive_type_id(s.primitive_type())].is_visited(s);
+            }
+            for (const simplex::IdSimplex& s : simplex::closed_star_iterable(m_mesh, v1)) {
+                visited[get_primitive_type_id(s.primitive_type())].is_visited(s);
+            }
+            faces.reserve(
+                visited[0].visited_array().size() + visited[1].visited_array().size() +
+                visited[2].visited_array().size());
+            for (size_t j = 0; j < visited.size(); ++j) {
+                if (!m_mesh.has_child_mesh_in_dimension(j)) {
+                    continue;
+                }
+                const auto& arr = visited[j];
+                for (size_t i = 0; i < arr.visited_array().size(); ++i) {
+                    faces.add(arr.visited_array()[i]);
+                }
+            }
+        }
+
+        for (const simplex::IdSimplex& s : faces) {
+            const int64_t index = static_cast<int64_t>(s.primitive_type());
+
+            global_ids_to_potential_tuples.at(index).emplace_back(
+                m_mesh.id(s),
+                wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, m_mesh.get_simplex(s)));
+        }
     }
 
-    faces.sort_and_clean();
-    for (const auto& s : faces) {
-        const int64_t index = static_cast<int64_t>(s.primitive_type());
-        if (!m_mesh.has_child_mesh_in_dimension(index)) continue;
-        global_ids_to_potential_tuples.at(index).emplace_back(
-            m_mesh.id(s),
-            wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
-    }
     simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
 }
 
