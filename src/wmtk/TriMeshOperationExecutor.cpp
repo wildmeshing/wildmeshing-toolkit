@@ -694,8 +694,11 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge()
 
     if (!m_mesh.is_free()) {
         // must collect star before changing connectivity
-        const simplex::SimplexCollection v0_star =
-            simplex::closed_star(m_mesh, simplex::Simplex::vertex(m_mesh, m_operating_tuple));
+        const simplex::Simplex v0_simplex(m_mesh, PrimitiveType::Vertex, m_operating_tuple);
+        utils::DynamicArray<int64_t, 20> v0_neighbors;
+        for (const Tuple& t : simplex::top_dimension_cofaces_iterable(m_mesh, v0_simplex)) {
+            v0_neighbors.emplace_back(m_mesh.id(t, PrimitiveType::Triangle));
+        }
 
 
         connect_ears();
@@ -704,8 +707,7 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge()
         const int64_t& v1 = m_spine_vids[1];
 
         // replace v0 by v1 in incident faces
-        for (const simplex::Simplex& f : v0_star.simplex_vector(PrimitiveType::Triangle)) {
-            const int64_t fid = m_mesh.id(f);
+        for (const int64_t fid : v0_neighbors) {
             bool is_fid_deleted = false;
             for (int64_t i = 0; i < m_incident_face_datas.size(); ++i) {
                 if (m_incident_face_datas[i].fid == fid) {
@@ -713,7 +715,9 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge()
                     break;
                 }
             }
-            if (is_fid_deleted) continue;
+            if (is_fid_deleted) {
+                continue;
+            }
             auto fv = fv_accessor.index_access().vector_attribute(fid);
             for (int64_t i = 0; i < 3; ++i) {
                 if (fv[i] == v0) {
