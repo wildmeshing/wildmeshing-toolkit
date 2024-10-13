@@ -21,6 +21,8 @@ set(SRC_FILES
     closed_star.cpp
     closed_star_iterable.hpp
     closed_star_iterable.cpp
+    half_closed_star_iterable.hpp
+    half_closed_star_iterable.cpp
     top_dimension_cofaces.hpp
     top_dimension_cofaces.cpp
     top_dimension_cofaces_iterable.hpp
