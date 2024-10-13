@@ -1,5 +1,6 @@
 #include <nlohmann/json.hpp>
 #include "IsotropicRemeshingOptions.hpp"
+#include <algorithm>
 
 
 namespace wmtk::components::isotropic_remeshing {
@@ -21,5 +22,18 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     }
     void IsotropicRemeshingOptions::write_json(nlohmann::json& js) const {
         to_json(js,*this);
+    }
+
+    std::vector<wmtk::attribute::MeshAttributeHandle> IsotropicRemeshingOptions::all_positions() const {
+        auto r = other_position_attributes;
+        r.emplace_back(position_attribute);
+        if(inversion_position_attribute.has_value()) {
+            r.emplace_back(inversion_position_attribute.value());
+        }
+        std::sort(r.begin(),r.end());
+
+        r.erase(std::unique(r.begin(),r.end()),r.end());
+
+        return r;
     }
 }

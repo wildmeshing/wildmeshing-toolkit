@@ -43,20 +43,19 @@ std::shared_ptr<wmtk::operations::composite::EdgeSwap> tri_swap(
     swap->add_invariant(invariant_valence_improve);
     swap->add_invariant(collapse_invars);
 
-    for (auto& p : positions) {
+    for (const auto& p : options.all_positions()) {
         swap->split().set_new_attribute_strategy(
             p,
-            SplitBasicStrategy::None,
-            SplitRibBasicStrategy::Mean);
+            wmtk::operations::SplitBasicStrategy::None,
+            wmtk::operations::SplitRibBasicStrategy::Mean);
+        swap->collapse().set_new_attribute_strategy(p, wmtk::operations::CollapseBasicStrategy::CopyOther);
     }
-    for (auto& p : positions)
-        swap->collapse().set_new_attribute_strategy(p, CollapseBasicStrategy::CopyOther);
-    for (const auto& attr : pass_through_attributes) {
+    for (const auto& attr : options.pass_through_attributes) {
         swap->split().set_new_attribute_strategy(attr);
         swap->collapse().set_new_attribute_strategy(attr);
     }
-    finalize(*swap);
-    op_swap = swap;
+    finalize_swap(*swap, options);
+    return swap;
 }
 
 // std::shared_ptr<wmtk::operations::Operation>

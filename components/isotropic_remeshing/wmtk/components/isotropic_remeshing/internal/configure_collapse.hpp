@@ -21,7 +21,7 @@ namespace internal {
 
 std::shared_ptr<invariants::InvariantCollection> collapse_invariants(
     Mesh& m,
-    IsotropicRemeshingOptions&);
-void configure_collapse(operations::EdgeCollapse& ec, Mesh& m, IsotropicRemeshingOptions&);
+    const IsotropicRemeshingOptions&);
+void configure_collapse(operations::EdgeCollapse& ec, Mesh& m, const IsotropicRemeshingOptions&);
 } // namespace internal
 } // namespace wmtk::components::isotropic_remeshing

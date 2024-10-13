@@ -26,6 +26,8 @@ struct IsotropicRemeshingOptions
 
     void load_json(const nlohmann::json& js);
     void write_json(nlohmann::json& js) const;
+
+    std::vector<wmtk::attribute::MeshAttributeHandle> all_positions() const;
 };
 
 
