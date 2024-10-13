@@ -51,6 +51,8 @@ HalfClosedStarIterable::Iterator& HalfClosedStarIterable::Iterator::operator++()
     switch (m_mesh.top_simplex_type()) {
     case PrimitiveType::Triangle: return step_tri_mesh();
     case PrimitiveType::Tetrahedron: return step_tet_mesh();
+    case PrimitiveType::Edge:
+    case PrimitiveType::Vertex:
     default: assert(false); break;
     }
 
