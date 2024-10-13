@@ -6,6 +6,7 @@
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/simplex/half_closed_star_iterable.hpp>
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/simplex/link_single_dimension.hpp>
 #include <wmtk/simplex/link_single_dimension_iterable.hpp>
@@ -215,19 +216,10 @@ TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete(
     const Tuple& tuple,
     const TetMesh& m)
 {
-    const simplex::SimplexCollection vertex_open_star =
-        simplex::open_star(m, simplex::Simplex::vertex(m, tuple));
-    const simplex::SimplexCollection edge_closed_star =
-        simplex::closed_star(m, simplex::Simplex::edge(m, tuple));
-
-    const simplex::SimplexCollection sc =
-        simplex::SimplexCollection::get_intersection(vertex_open_star, edge_closed_star);
-
     std::array<std::vector<int64_t>, 4> ids;
-    for (const simplex::Simplex& s : sc) {
+    for (const simplex::IdSimplex& s : simplex::half_closed_star_iterable(m, tuple)) {
         ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
     }
-
     return ids;
 }
 
@@ -791,11 +783,14 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
 
     // collect star before changing connectivity
     // update all tv's after other updates
-    // const simplex::SimplexCollection v0_star =
-    //     simplex::closed_star(m_mesh, simplex::Simplex::vertex(m_operating_tuple));
+    simplex::IdSimplexCollection v0_star(m_mesh);
+    v0_star.reserve(32);
+    for (const Tuple& t : simplex::top_dimension_cofaces_iterable(
+             m_mesh,
+             simplex::Simplex::vertex(m_mesh, m_operating_tuple))) {
+        v0_star.add(PrimitiveType::Tetrahedron, t);
+    }
 
-    const simplex::SimplexCollection v0_star =
-        simplex::top_dimension_cofaces(m_mesh, simplex::Simplex::vertex(m_mesh, m_operating_tuple));
 
     // collect incident tets and their ears
     // loop case and boundary case
@@ -1055,7 +1050,7 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
     const int64_t v0 = m_spine_vids[0];
     const int64_t v1 = m_spine_vids[1];
 
-    for (const simplex::Simplex& t : v0_star) {
+    for (const simplex::IdSimplex& t : v0_star) {
         // for (const simplex::Simplex& t : v0_star.simplex_vector(PrimitiveType::Tetrahedron)) {
         const int64_t tid = m_mesh.id(t);
         auto tv = tv_accessor.index_access().vector_attribute(tid);
