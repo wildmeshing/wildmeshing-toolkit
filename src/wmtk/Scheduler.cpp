@@ -13,7 +13,10 @@
 
 #include <polysolve/Utils.hpp>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wredundant-decls"
 #include <tbb/parallel_for.h>
+#pragma GCC diagnostic pop
 // #include <tbb/task_arena.h>
 #include <atomic>
 
