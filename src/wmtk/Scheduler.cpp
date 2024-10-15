@@ -13,10 +13,15 @@
 
 #include <polysolve/Utils.hpp>
 
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wredundant-decls"
+#endif
 #include <tbb/parallel_for.h>
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
+
 // #include <tbb/task_arena.h>
 #include <atomic>
 
