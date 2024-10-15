@@ -324,6 +324,7 @@ void back_track_lines(path dirPath, query_curve& curve, bool do_forward = false)
                 v_id_map_joint,
                 id_map_before,
                 id_map_after);
+
             if (do_forward) {
                 handle_collapse_edge_curve(
                     UV_joint,
@@ -835,6 +836,7 @@ void forward_track_line_app(
     igl::parallel_for(curves.size(), [&](int i) {
         back_track_lines(operation_logs_dir, curves[i], true);
     });
+
 
     save_query_curves(curves, "curves.out");
 

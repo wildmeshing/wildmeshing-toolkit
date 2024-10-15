@@ -177,7 +177,7 @@ void handle_collapse_edge(
             query_points);
         return;
     }
-    std::cout << "Handling EdgeCollapse" << std::endl;
+    // std::cout << "Handling EdgeCollapse" << std::endl;
     for (int id = 0; id < query_points.size(); id++) {
         query_point& qp = query_points[id];
         if (qp.f_id < 0) continue;
@@ -688,8 +688,9 @@ void handle_collapse_edge_curve(
         query_point qp0 = {qs.f_id, qs.bcs[0], qs.fv_ids};
         query_point qp1 = {qs.f_id, qs.bcs[1], qs.fv_ids};
         std::vector<query_point> query_points = {qp0, qp1};
+        auto query_points_copy = query_points;
 
-        handle_collapse_edge_r(
+        handle_collapse_edge(
             UV_joint,
             F_before,
             F_after,
@@ -697,7 +698,17 @@ void handle_collapse_edge_curve(
             id_map_before,
             id_map_after,
             query_points);
-
+        if (query_points[0].bc.minCoeff() < 1e-8 || query_points[0].bc.minCoeff() < 1e-8) {
+            query_points = query_points_copy;
+            handle_collapse_edge_r(
+                UV_joint,
+                F_before,
+                F_after,
+                v_id_map_joint,
+                id_map_before,
+                id_map_after,
+                query_points);
+        }
         handle_one_segment(
             curve,
             id,
