@@ -74,6 +74,10 @@ auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> Incid
     face_data.fid = m_mesh.id_face(t);
     face_data.opposite_vid = m_mesh.id_vertex(m_mesh.switch_vertex(ear_edges[0]));
 
+    //debug code
+    face_data.v0 = m_mesh.id_vertex(t);
+    face_data.v1 = m_mesh.id_vertex(m_mesh.switch_vertex(t));
+
     std::transform(
         ear_edges.begin(),
         ear_edges.end(),
