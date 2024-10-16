@@ -61,6 +61,9 @@ public:
         int64_t new_edge_id = -1;
 
         int64_t merged_edge_fid = -1;
+
+        // for debug
+        int64_t v0, v1;
     };
 
     const std::vector<IncidentFaceData>& incident_face_datas() const

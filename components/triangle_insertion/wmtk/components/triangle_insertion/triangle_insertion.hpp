@@ -18,6 +18,7 @@ std::tuple<std::shared_ptr<wmtk::TetMesh>, ChildMeshes> triangle_insertion(
     const std::string& bg_position,
     const TriMesh& mesh_in,
     const std::string& in_position,
+    std::vector<attribute::MeshAttributeHandle>& pass_through,
     bool round = true,
     bool track_submeshes = true,
     bool make_child_free = false);

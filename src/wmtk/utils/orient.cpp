@@ -174,6 +174,23 @@ int wmtk_orient3d(
         return 0;
 }
 
+
+int wmtk_orient2d(double p0x, double p0y, double p1x, double p1y, double p2x, double p2y)
+{
+    exactinit();
+    double p0[2]{p0x, p0y};
+    double p1[2]{p1x, p1y};
+    double p2[2]{p2x, p2y};
+    const auto res = orient2d(p0, p1, p2);
+
+    if (res > 0)
+        return 1;
+    else if (res < 0)
+        return -1;
+    else
+        return 0;
+}
+
 int wmtk_orient2d(
     const Eigen::Ref<const Eigen::Vector2<Rational>>& p0,
     const Eigen::Ref<const Eigen::Vector2<Rational>>& p1,
