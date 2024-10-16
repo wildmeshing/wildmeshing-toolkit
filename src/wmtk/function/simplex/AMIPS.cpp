@@ -478,7 +478,7 @@ double Tri_AMIPS_energy(const std::array<double, 6>& T)
     double res = Tri_AMIPS_energy_aux(T);
 
     // Maybe use tet_is_energy_unstable
-    if (std::abs(res) > 1e8) {
+    if (res > 1e8 || res <= 0) {
         std::array<Rational, 6> r_T;
         for (int j = 0; j < 6; j++) {
             r_T[j] = T[j];
@@ -487,7 +487,7 @@ double Tri_AMIPS_energy(const std::array<double, 6>& T)
         const auto tmp = r_T[0] * r_T[3] - r_T[0] * r_T[5] - r_T[1] * r_T[2] + r_T[1] * r_T[4] +
                          r_T[2] * r_T[5] - r_T[3] * r_T[4];
 
-        if (tmp == 0) return std::numeric_limits<double>::infinity();
+        if (tmp <= 0) return std::numeric_limits<double>::infinity();
 
         const auto res_r = two_third * sqrt3 *
                            (r_T[0] * r_T[0] - r_T[0] * r_T[2] - r_T[0] * r_T[4] + r_T[1] * r_T[1] -
