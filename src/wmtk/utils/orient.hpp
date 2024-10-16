@@ -49,6 +49,8 @@ int wmtk_orient3d(const Eigen::MatrixBase<Derived>& A)
 //     throw std::runtime_error("unsupported type");
 // }
 
+int wmtk_orient2d(double p0x, double p0y, double p1x, double p1y, double p2x, double p2y);
+
 int wmtk_orient2d(
     const Eigen::Ref<const Eigen::Vector2<Rational>>& p0,
     const Eigen::Ref<const Eigen::Vector2<Rational>>& p1,
