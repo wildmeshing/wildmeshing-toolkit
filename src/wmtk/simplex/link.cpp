@@ -63,21 +63,21 @@ void link_vertex(
     } while (true);
 }
 
-void link_edge(
-    const TriMesh& mesh,
-    const simplex::Simplex& simplex,
-    std::vector<Simplex>& collection)
-{
-    constexpr PrimitiveType PV = PrimitiveType::Vertex;
-    constexpr PrimitiveType PE = PrimitiveType::Edge;
-    constexpr PrimitiveType PF = PrimitiveType::Triangle;
-    const Tuple& t = simplex.tuple();
+// void link_edge(
+//     const TriMesh& mesh,
+//     const simplex::Simplex& simplex,
+//     std::vector<Simplex>& collection)
+// {
+//     constexpr PrimitiveType PV = PrimitiveType::Vertex;
+//     constexpr PrimitiveType PE = PrimitiveType::Edge;
+//     constexpr PrimitiveType PF = PrimitiveType::Triangle;
+//     const Tuple& t = simplex.tuple();
 
-    collection.emplace_back(simplex::Simplex(mesh, PV, mesh.switch_tuples(t, {PE, PV})));
-    if (!mesh.is_boundary_edge(t)) {
-        collection.emplace_back(simplex::Simplex(mesh, PV, mesh.switch_tuples(t, {PF, PE, PV})));
-    }
-}
+//     collection.emplace_back(simplex::Simplex(mesh, PV, mesh.switch_tuples(t, {PE, PV})));
+//     if (!mesh.is_boundary_edge(t)) {
+//         collection.emplace_back(simplex::Simplex(mesh, PV, mesh.switch_tuples(t, {PF, PE, PV})));
+//     }
+// }
 
 } // namespace
 

@@ -1,7 +1,10 @@
 #include "link_condition.hpp"
 #include <wmtk/utils/metaprogramming/as_mesh_variant.hpp>
+#include "IdSimplexCollection.hpp"
 #include "cofaces_single_dimension.hpp"
+#include "cofaces_single_dimension_iterable.hpp"
 #include "link.hpp"
+#include "link_iterable.hpp"
 #include "open_star.hpp"
 #include "utils/SimplexComparisons.hpp"
 
@@ -11,14 +14,30 @@ bool link_condition_closed_trimesh(const TriMesh& mesh, const Tuple& edge)
     const Simplex v_a = Simplex::vertex(mesh, edge);
     const Simplex v_b = Simplex::vertex(mesh, mesh.switch_tuple(edge, PrimitiveType::Vertex));
     const Simplex e_ab = Simplex::edge(mesh, edge);
-    const SimplexCollection link_a = link(mesh, v_a); // link(a)
-    const SimplexCollection link_b = link(mesh, v_b); // link(b)
-    const SimplexCollection link_ab = link(mesh, e_ab); // link(ab)
 
-    const SimplexCollection link_a_link_b_intersection =
-        SimplexCollection::get_intersection(link_a, link_b);
+    IdSimplexCollection link_a(mesh);
+    link_a.reserve(24);
+    for (const IdSimplex& s : link_iterable(mesh, v_a)) {
+        link_a.add(s);
+    }
+    link_a.sort_and_clean();
+    IdSimplexCollection link_b(mesh);
+    link_b.reserve(24);
+    for (const IdSimplex& s : link_iterable(mesh, v_b)) {
+        link_b.add(s);
+    }
+    link_b.sort_and_clean();
+    IdSimplexCollection link_ab(mesh);
+    link_ab.reserve(2);
+    for (const IdSimplex& s : link_iterable(mesh, e_ab)) {
+        link_ab.add(s);
+    }
+    link_ab.sort_and_clean();
 
-    return SimplexCollection::are_simplex_collections_equal(link_a_link_b_intersection, link_ab);
+    const IdSimplexCollection link_a_link_b_intersection =
+        IdSimplexCollection::get_intersection(link_a, link_b);
+
+    return IdSimplexCollection::are_simplex_collections_equal(link_a_link_b_intersection, link_ab);
 }
 
 bool link_condition(const EdgeMesh& mesh, const Tuple& edge)
@@ -52,17 +71,12 @@ bool link_condition(const TriMesh& mesh, const Tuple& edge)
         const Simplex input_v(mesh, PrimitiveType::Vertex, _v);
         std::vector<Tuple> ret;
         // get incident_edges from open_star
-        auto incident_edges = open_star(mesh, input_v).simplex_vector(PrimitiveType::Edge);
-        for (const Simplex& _e : incident_edges) {
-            if (mesh.is_boundary(PrimitiveType::Edge, _e.tuple())) {
-                if (utils::SimplexComparisons::equal(
-                        mesh,
-                        Simplex(mesh, PrimitiveType::Vertex, _e.tuple()),
-                        input_v)) {
-                    ret.push_back(mesh.switch_tuple(_e.tuple(), PrimitiveType::Vertex));
-                } else {
-                    ret.push_back(_e.tuple());
-                }
+        // incident_edges = cofaces_single_dimension_tuples(mesh, input_v,
+        // PrimitiveType::Edge);
+        auto incident_edges = cofaces_single_dimension_iterable(mesh, input_v, PrimitiveType::Edge);
+        for (const Tuple& _e : incident_edges) {
+            if (mesh.is_boundary(PrimitiveType::Edge, _e)) {
+                ret.push_back(mesh.switch_tuple(_e, PrimitiveType::Vertex));
             }
         }
         return ret;
@@ -106,14 +120,30 @@ bool link_condition_closed_tetmesh(const TetMesh& mesh, const Tuple& edge)
     const Simplex v_a = Simplex::vertex(mesh, edge);
     const Simplex v_b = Simplex::vertex(mesh, mesh.switch_vertex(edge));
     const Simplex e_ab = Simplex::edge(mesh, edge);
-    const SimplexCollection link_a = link(mesh, v_a); // link(a)
-    const SimplexCollection link_b = link(mesh, v_b); // link(b)
-    const SimplexCollection link_ab = link(mesh, e_ab); // link(ab)
 
-    const SimplexCollection link_a_link_b_intersection =
-        SimplexCollection::get_intersection(link_a, link_b);
+    IdSimplexCollection link_a(mesh);
+    link_a.reserve(128);
+    for (const IdSimplex& s : link_iterable(mesh, v_a)) {
+        link_a.add(s);
+    }
+    link_a.sort_and_clean();
+    IdSimplexCollection link_b(mesh);
+    link_b.reserve(128);
+    for (const IdSimplex& s : link_iterable(mesh, v_b)) {
+        link_b.add(s);
+    }
+    link_b.sort_and_clean();
+    IdSimplexCollection link_ab(mesh);
+    link_ab.reserve(32);
+    for (const IdSimplex& s : link_iterable(mesh, e_ab)) {
+        link_ab.add(s);
+    }
+    link_ab.sort_and_clean();
 
-    return SimplexCollection::are_simplex_collections_equal(link_a_link_b_intersection, link_ab);
+    const IdSimplexCollection link_a_link_b_intersection =
+        IdSimplexCollection::get_intersection(link_a, link_b);
+
+    return IdSimplexCollection::are_simplex_collections_equal(link_a_link_b_intersection, link_ab);
 }
 
 bool link_condition(const TetMesh& mesh, const Tuple& edge)
@@ -134,9 +164,12 @@ bool link_condition(const TetMesh& mesh, const Tuple& edge)
         const Simplex input_v(mesh, PrimitiveType::Vertex, _v);
         std::vector<Tuple> ret;
         // get incident_faces from open_star
-        auto incident_faces = cofaces_single_dimension(mesh, input_v, PrimitiveType::Triangle);
-        for (const Simplex& _f : incident_faces) {
-            if (mesh.is_boundary(PrimitiveType::Triangle, _f.tuple())) {
+        // auto incident_faces =
+        //    cofaces_single_dimension_tuples(mesh, input_v, PrimitiveType::Triangle);
+        auto incident_faces =
+            cofaces_single_dimension_iterable(mesh, input_v, PrimitiveType::Triangle);
+        for (const Tuple& _f : incident_faces) {
+            if (mesh.is_boundary(PrimitiveType::Triangle, _f)) {
                 // if (utils::SimplexComparisons::equal(
                 //         mesh,
                 //         Simplex(PrimitiveType::Vertex, _f.tuple()),
@@ -156,7 +189,7 @@ bool link_condition(const TetMesh& mesh, const Tuple& edge)
 
                 // assuming cofaces_single_dimension always return the tuple point to the input
                 // vertex
-                ret.push_back(mesh.switch_edge(mesh.switch_vertex(_f.tuple())));
+                ret.push_back(mesh.switch_edge(mesh.switch_vertex(_f)));
             }
         }
         return ret;

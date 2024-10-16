@@ -51,7 +51,7 @@ public:
         Tuple& operator*();
         const Tuple& operator*() const;
 
-        const bool is_intermediate() const;
+        bool is_intermediate() const;
 
     private:
         /**
