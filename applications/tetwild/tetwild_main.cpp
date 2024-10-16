@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 
     fs::path input_file = resolve_paths(json_input_file, {j["root"], j["input"]});
 
-    auto mesh = wmtk::components::input(input_file);
+    auto mesh = wmtk::components::input::input(input_file);
     wmtk::logger().info("mesh has {} vertices", mesh->get_all(PrimitiveType::Vertex).size());
 
     auto mesh_after_simp = mesh;
@@ -92,41 +92,63 @@ int main(int argc, char* argv[])
     auto mesh_after_delaunay = delaunay(*mesh_after_to_points, pts_attr_tp);
 
     std::vector<attribute::MeshAttributeHandle> pass_through;
-    auto meshes_after_insertion = triangle_insertion(
-        mesh_after_simp,
+
+    auto [main_mesh, child_meshes] = wmtk::components::triangle_insertion::triangle_insertion(
+        static_cast<const TetMesh&>(*mesh_after_delaunay),
         "vertices",
-        mesh_after_delaunay,
+        static_cast<const TriMesh&>(*mesh_after_simp),
         "vertices",
-        pass_through);
-
-    assert(meshes_after_insertion[0].second == "main");
-
-    auto main_mesh = meshes_after_insertion[0].first;
-    // std::vector<std::pair<std::shared_ptr<wmtk::Mesh>, std::string>> envelope_meshes;
-
-    // for (int64_t i = 1; i < meshes_after_insertion.size(); ++i) {
-    //     envelope_meshes.push_back(meshes_after_insertion[i]);
-    // }
-
-    // assert(envelope_meshes.size() >= 2);
+        pass_through,
+        true,
+        true,
+        false);
 
     std::vector<wmtk::components::EnvelopeOptions> enves;
 
-    for (int64_t i = 1; i < meshes_after_insertion.size(); ++i) {
-        wmtk::components::EnvelopeOptions e;
-        e.envelope_name = meshes_after_insertion[i].second;
-        e.envelope_constrained_mesh = meshes_after_insertion[i].first;
-        e.envelope_geometry_mesh = meshes_after_insertion[i].first;
-        e.constrained_position_name = "vertices";
-        e.geometry_position_name = "vertices";
-        e.thickness = j["envelope_size"];
+    wmtk::components::EnvelopeOptions e_surface;
+    e_surface.envelope_name = "surface";
+    e_surface.envelope_constrained_mesh = child_meshes.surface_mesh;
+    e_surface.envelope_geometry_mesh = mesh_after_simp;
+    e_surface.constrained_position_name = "vertices";
+    e_surface.geometry_position_name = "vertices";
+    e_surface.thickness = j["envelope_size"];
 
-        if (e.envelope_name == "surface") {
-            e.envelope_geometry_mesh = mesh; // set as input
-        }
+    enves.push_back(e_surface);
 
-        enves.push_back(e);
+    wmtk::components::EnvelopeOptions e_bbox;
+    e_bbox.envelope_name = "bbox";
+    e_bbox.envelope_constrained_mesh = child_meshes.bbox_mesh;
+    e_bbox.envelope_geometry_mesh = child_meshes.bbox_mesh;
+    e_bbox.constrained_position_name = "vertices";
+    e_bbox.geometry_position_name = "vertices";
+    e_bbox.thickness = j["envelope_size"];
+
+    enves.push_back(e_bbox);
+
+    if (child_meshes.open_boundary_mesh != nullptr) {
+        wmtk::components::EnvelopeOptions e_open_boundary;
+        e_open_boundary.envelope_name = "open_boundary";
+        e_open_boundary.envelope_constrained_mesh = child_meshes.open_boundary_mesh;
+        e_open_boundary.envelope_geometry_mesh = child_meshes.open_boundary_mesh;
+        e_open_boundary.constrained_position_name = "vertices";
+        e_open_boundary.geometry_position_name = "vertices";
+        e_open_boundary.thickness = j["envelope_size"];
+
+        enves.push_back(e_open_boundary);
     }
+
+    if (child_meshes.nonmanifold_edge_mesh != nullptr) {
+        wmtk::components::EnvelopeOptions e_nonmanifold_edge;
+        e_nonmanifold_edge.envelope_name = "nonmanifold_edge";
+        e_nonmanifold_edge.envelope_constrained_mesh = child_meshes.nonmanifold_edge_mesh;
+        e_nonmanifold_edge.envelope_geometry_mesh = child_meshes.nonmanifold_edge_mesh;
+        e_nonmanifold_edge.constrained_position_name = "vertices";
+        e_nonmanifold_edge.geometry_position_name = "vertices";
+        e_nonmanifold_edge.thickness = j["envelope_size"];
+
+        enves.push_back(e_nonmanifold_edge);
+    }
+
 
     wmtk::components::WildMeshingOptions wmo;
     wmo.input_mesh = main_mesh;
@@ -143,14 +165,14 @@ int main(int argc, char* argv[])
     wmo.pass_through = pass_through;
 
     auto meshes_after_tetwild = wildmeshing(wmo);
-    main_mesh = meshes_after_tetwild[0].first;
+    auto main_mesh_after_tetwild = meshes_after_tetwild[0].first;
 
     std::string output_file = j["output"];
 
     std::shared_ptr<Mesh> surface_mesh;
     for (int64_t i = 1; i < meshes_after_tetwild.size(); ++i) {
         // output child meshes
-        wmtk::components::output(
+        wmtk::components::output::output(
             *(meshes_after_tetwild[i].first),
             output_file + "_" + meshes_after_tetwild[i].second,
             "vertices");
@@ -161,9 +183,9 @@ int main(int argc, char* argv[])
     }
 
 
-    auto mesh_after_winding_number = winding_number(main_mesh, surface_mesh);
+    auto mesh_after_winding_number = winding_number(main_mesh_after_tetwild, surface_mesh);
 
-    wmtk::components::output(*mesh_after_winding_number, output_file, "vertices");
+    wmtk::components::output::output(*mesh_after_winding_number, output_file, "vertices");
 
     const std::string report = j["report"];
     if (!report.empty()) {

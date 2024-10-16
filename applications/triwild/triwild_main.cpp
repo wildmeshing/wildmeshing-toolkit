@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
 
     fs::path input_file = resolve_paths(json_input_file, {j["root"], j["input"]});
 
-    auto mesh = wmtk::components::input(input_file, true);
+    auto mesh = wmtk::components::input::input(input_file, true);
     wmtk::logger().info(
         "mesh has {} vertices and {} edges",
         mesh->get_all(PrimitiveType::Vertex).size(),
@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
     auto bg_mesh =
         wmtk::triwild::generate_bg_grid(x_min, y_min, x_max, y_max, j["target_edge_length"]);
 
-    wmtk::components::output(bg_mesh, "bg_mesh", "vertices");
+    wmtk::components::output::output(bg_mesh, "bg_mesh", "vertices");
 
     wmtk::logger().info("generated bg mesh");
 
@@ -127,8 +127,11 @@ int main(int argc, char* argv[])
 
     std::string output_file = j["output"];
 
-    wmtk::components::output(*trimesh, output_file + "_after_insertion", "vertices");
-    wmtk::components::output(*edgemesh, output_file + "_after_insertion_edge_mesh", "vertices");
+    wmtk::components::output::output(*trimesh, output_file + "_after_insertion", "vertices");
+    wmtk::components::output::output(
+        *edgemesh,
+        output_file + "_after_insertion_edge_mesh",
+        "vertices");
 
     auto input_handle = trimesh->get_attribute_handle<int64_t>("input", PrimitiveType::Edge);
     pass_through.push_back(input_handle);
@@ -181,12 +184,12 @@ int main(int argc, char* argv[])
     auto meshes_after_tetwild = wildmeshing(wmo);
     auto main_mesh = meshes_after_tetwild[0].first;
 
-    wmtk::components::output(*main_mesh, output_file, "vertices");
+    wmtk::components::output::output(*main_mesh, output_file, "vertices");
 
     std::shared_ptr<Mesh> input_mesh;
     for (int64_t i = 1; i < meshes_after_tetwild.size(); ++i) {
         // output child meshes
-        wmtk::components::output(
+        wmtk::components::output::output(
             *(meshes_after_tetwild[i].first),
             output_file + "_" + meshes_after_tetwild[i].second,
             "vertices");
