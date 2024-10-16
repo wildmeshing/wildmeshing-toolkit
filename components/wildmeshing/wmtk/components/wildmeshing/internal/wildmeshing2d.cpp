@@ -43,6 +43,7 @@
 #include <wmtk/invariants/EdgeValenceInvariant.hpp>
 #include <wmtk/invariants/EnergyFilterInvariant.hpp>
 #include <wmtk/invariants/EnvelopeInvariant.hpp>
+#include <wmtk/invariants/FrozenVertexInvariant.hpp>
 #include <wmtk/invariants/FunctionInvariant.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
@@ -264,6 +265,38 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
             compute_edge_length);
     edge_length_update->run_on_all();
 
+
+    //////////////////////////////////
+    // compute frozen vertices
+    //////////////////////////////////
+    auto frozen_vertex_attribute =
+        mesh->register_attribute<int64_t>("frozen_vertex", PrimitiveType::Vertex, 1);
+    auto frozen_vertex_accessor = mesh->create_accessor(frozen_vertex_attribute.as<int64_t>());
+
+    auto input_ptr = mesh->get_child_meshes().front();
+
+    int64_t frozen_cnt = 0;
+    for (const auto& v : input_ptr->get_all(PrimitiveType::Vertex)) {
+        if (input_ptr->is_boundary(PrimitiveType::Vertex, v)) {
+            const auto& parent_v =
+                input_ptr->map_to_parent(simplex::Simplex::vertex(*input_ptr, v));
+            frozen_vertex_accessor.scalar_attribute(parent_v) = 1;
+            frozen_cnt++;
+        } else {
+            // frozen_vertex_accessor.scalar_attribute(parent_v) = 0; // redundant, just for safe
+        }
+    }
+
+    frozen_cnt = 0;
+
+    for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
+        if (frozen_vertex_accessor.scalar_attribute(v) == 1) {
+            frozen_cnt++;
+        }
+    }
+
+    wmtk::logger().info("mesh has {} frozen vertices", frozen_cnt);
+
     //////////////////////////////////
     // default transfer
     auto pass_through_attributes = options.pass_through;
@@ -344,8 +377,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
             /*target=*/constrained_pt_handle));
     }
 
-    //////////////////////////////////
-
 
     //////////////////////////////////
     // Invariants
@@ -385,6 +416,13 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
 
     auto invariant_separate_substructures =
         std::make_shared<invariants::SeparateSubstructuresInvariant>(*mesh);
+
+    auto frozen_vertex_invariant = std::make_shared<invariants::FrozenVertexInvariant>(
+        *mesh,
+        frozen_vertex_attribute.as<int64_t>());
+    auto frozen_opp_vertex_invariant = std::make_shared<invariants::FrozenOppVertexInvariant>(
+        *mesh,
+        frozen_vertex_attribute.as<int64_t>());
 
     //////////////////////////////////
     // renew flags
@@ -473,6 +511,11 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
         visited_edge_flag,
         wmtk::operations::SplitBasicStrategy::None,
         wmtk::operations::SplitRibBasicStrategy::None);
+
+    split->set_new_attribute_strategy(
+        frozen_vertex_attribute,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
     split->set_new_attribute_strategy(
         target_edge_length_attribute,
         wmtk::operations::SplitBasicStrategy::Copy,
@@ -485,7 +528,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
             wmtk::operations::SplitRibBasicStrategy::None);
     }
 
-    split->add_transfer_strategy(amips_update);
+    // split->add_transfer_strategy(amips_update);
     split->add_transfer_strategy(edge_length_update);
     split->add_transfer_strategy(tag_update); // for renew the queue
     // split->add_transfer_strategy(energy_filter_update);
@@ -536,6 +579,10 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
     // split_unrounded->set_new_attribute_strategy(sizing_field_scalar_attribute);
     split_unrounded->set_new_attribute_strategy(
         visited_edge_flag,
+        wmtk::operations::SplitBasicStrategy::None,
+        wmtk::operations::SplitRibBasicStrategy::None);
+    split_unrounded->set_new_attribute_strategy(
+        frozen_vertex_attribute,
         wmtk::operations::SplitBasicStrategy::None,
         wmtk::operations::SplitRibBasicStrategy::None);
     for (const auto& attr : pass_through_attributes) {
@@ -625,24 +672,32 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
     auto collapse1 = std::make_shared<EdgeCollapse>(*mesh);
 
     // TODO: implement for 2d
-    collapse1->add_invariant(std::make_shared<CollapseEnergyBeforeInvariant>(
-        *mesh,
-        pt_attribute.as<Rational>(),
-        amips_attribute.as<double>(),
-        1));
+    // collapse1->add_invariant(std::make_shared<CollapseEnergyBeforeInvariant>(
+    //     *mesh,
+    //     pt_attribute.as<Rational>(),
+    //     amips_attribute.as<double>(),
+    //     1));
 
+    collapse1->add_invariant(frozen_vertex_invariant);
     collapse1->set_new_attribute_strategy(pt_attribute, clps_strat1);
+    collapse1->set_new_attribute_strategy(
+        frozen_vertex_attribute,
+        CollapseBasicStrategy::CopyOther);
     // collapse1->set_new_attribute_strategy(sizing_field_scalar_attribute, clps_strat1);
     setup_collapse(collapse1);
 
     auto collapse2 = std::make_shared<EdgeCollapse>(*mesh);
-    collapse2->add_invariant(std::make_shared<CollapseEnergyBeforeInvariant>(
-        *mesh,
-        pt_attribute.as<Rational>(),
-        amips_attribute.as<double>(),
-        0));
+    // collapse2->add_invariant(std::make_shared<CollapseEnergyBeforeInvariant>(
+    //     *mesh,
+    //     pt_attribute.as<Rational>(),
+    //     amips_attribute.as<double>(),
+    //     0));
 
+    collapse2->add_invariant(frozen_opp_vertex_invariant);
     collapse2->set_new_attribute_strategy(pt_attribute, clps_strat2);
+    collapse2->set_new_attribute_strategy(
+        frozen_vertex_attribute,
+        CollapseBasicStrategy::CopyTuple);
     // collapse2->set_new_attribute_strategy(sizing_field_scalar_attribute, clps_strat2);
     setup_collapse(collapse2);
 
@@ -708,6 +763,15 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
         collapse.set_new_attribute_strategy(
             visited_edge_flag,
             wmtk::operations::CollapseBasicStrategy::None);
+
+        split.set_new_attribute_strategy(
+            frozen_vertex_attribute,
+            wmtk::operations::SplitBasicStrategy::None,
+            wmtk::operations::SplitRibBasicStrategy::None);
+
+        collapse.set_new_attribute_strategy(
+            frozen_vertex_attribute,
+            CollapseBasicStrategy::CopyOther);
 
         split.set_new_attribute_strategy(
             target_edge_length_attribute,
@@ -795,6 +859,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
     auto smoothing = std::make_shared<AMIPSOptimizationSmoothing>(*mesh, pt_attribute);
     smoothing->add_invariant(
         std::make_shared<RoundedInvariant>(*mesh, pt_attribute.as<Rational>()));
+    smoothing->add_invariant(frozen_vertex_invariant);
     smoothing->add_invariant(inversion_invariant);
     for (auto& s : update_child_position) {
         smoothing->add_transfer_strategy(s);
@@ -802,7 +867,6 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
 
     // test code
     // smoothing->add_invariant(envelope_invariant);
-    // smoothing->add_transfer_strategy(amips_update);
     // smoothing->add_transfer_strategy(edge_length_update);
     // ops.push_back(smoothing);
     // ops_name.push_back("SMOOTHING");
@@ -812,7 +876,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
 
     auto proj_smoothing = std::make_shared<ProjectOperation>(smoothing, mesh_constraint_pairs);
     proj_smoothing->use_random_priority() = true;
-
+    proj_smoothing->add_invariant(frozen_vertex_invariant);
     proj_smoothing->add_invariant(envelope_invariant);
     proj_smoothing->add_invariant(inversion_invariant);
     // proj_smoothing->add_invariant(
@@ -858,6 +922,18 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
     // preprocessing
     //////////////////////////////////
 
+    // debug code
+    for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
+        const auto vertices = mesh->orient_vertices(t);
+        std::vector<Vector2r> pos;
+        for (int i = 0; i < vertices.size(); ++i) {
+            pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
+        }
+        if (wmtk::utils::wmtk_orient2d(pos[0], pos[1], pos[2]) <= 0) {
+            wmtk::logger().error("Flipped triangle!");
+        }
+    }
+
     SchedulerStats pre_stats;
 
     logger().info("----------------------- Preprocess Collapse -----------------------");
@@ -883,6 +959,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
 
     // verbose logger, can be removed
     int64_t unrounded = 0;
+    int64_t frozen = 0;
     for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
         const auto p = pt_accessor.vector_attribute(v);
         for (int64_t d = 0; d < 3; ++d) {
@@ -891,9 +968,27 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
                 break;
             }
         }
+
+        if (frozen_vertex_accessor.scalar_attribute(v) == 1) {
+            frozen++;
+        }
     }
 
     logger().info("Mesh has {} unrounded vertices", unrounded);
+    logger().error("Mesh has {} frozen vertices", frozen);
+
+    // debug code
+    for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
+        const auto vertices = mesh->orient_vertices(t);
+        std::vector<Vector2r> pos;
+        for (int i = 0; i < vertices.size(); ++i) {
+            pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
+        }
+        if (wmtk::utils::wmtk_orient2d(pos[0], pos[1], pos[2]) <= 0) {
+            wmtk::logger().error("Flipped triangle!");
+        }
+    }
+
 
     // compute max energy
     double max_energy = std::numeric_limits<double>::lowest();
@@ -973,6 +1068,18 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
             }
 
             logger().info("Mesh has {} unrounded vertices", unrounded);
+
+            // debug code
+            for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
+                const auto vertices = mesh->orient_vertices(t);
+                std::vector<Vector2r> pos;
+                for (int i = 0; i < vertices.size(); ++i) {
+                    pos.push_back(pt_accessor.const_vector_attribute(vertices[i]));
+                }
+                if (wmtk::utils::wmtk_orient2d(pos[0], pos[1], pos[2]) <= 0) {
+                    wmtk::logger().error("Flipped triangle!");
+                }
+            }
 
             avg_energy = 0;
 

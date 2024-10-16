@@ -54,7 +54,7 @@ wmtk::TriMesh generate_bg_grid(
         }
     }
 
-    std::cout << F << std::endl;
+    // std::cout << F << std::endl;
 
     wmtk::TriMesh mesh;
     mesh.initialize(F, false);
