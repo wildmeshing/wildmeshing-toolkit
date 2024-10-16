@@ -3,6 +3,7 @@
 #include <set>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/simplex/IdSimplexCollection.hpp>
 #include <wmtk/simplex/RawSimplex.hpp>
 #include <wmtk/simplex/RawSimplexCollection.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -148,6 +149,58 @@ TEST_CASE("simplex_collection_sorting", "[simplex_collection][2D]")
     REQUIRE(simplex_collection.simplex_vector().size() == 12);
     simplex_collection.sort_and_clean();
     REQUIRE(simplex_collection.simplex_vector().size() == 11);
+}
+
+TEST_CASE("id_simplex_collection", "[id_simplex_collection][2D]")
+{
+    tests::DEBUG_TriMesh m = tests::quad();
+    const std::vector<Tuple> vertices = m.get_all(PV);
+    REQUIRE(vertices.size() == 4);
+    const std::vector<Tuple> edges = m.get_all(PE);
+    REQUIRE(edges.size() == 5);
+    const std::vector<Tuple> faces = m.get_all(PF);
+    REQUIRE(faces.size() == 2);
+
+    IdSimplexCollection simplex_collection(m);
+    for (const auto& t : vertices) {
+        simplex_collection.add(m.get_id_simplex(t, PrimitiveType::Vertex));
+    }
+    for (const auto& t : edges) {
+        simplex_collection.add(m.get_id_simplex(t, PrimitiveType::Edge));
+    }
+    for (const auto& t : faces) {
+        simplex_collection.add(m.get_id_simplex(t, PrimitiveType::Triangle));
+    }
+    REQUIRE(simplex_collection.simplex_vector().size() == 11);
+    CHECK(simplex_collection.simplex_vector(PrimitiveType::Vertex).size() == 4);
+    CHECK(simplex_collection.simplex_vector(PrimitiveType::Edge).size() == 5);
+    CHECK(simplex_collection.simplex_vector(PrimitiveType::Triangle).size() == 2);
+    CHECK(simplex_collection.simplex_vector_tuples(PrimitiveType::Vertex).size() == 4);
+    CHECK(simplex_collection.simplex_vector_tuples(PrimitiveType::Edge).size() == 5);
+    CHECK(simplex_collection.simplex_vector_tuples(PrimitiveType::Triangle).size() == 2);
+
+    // test sorting and clean-up
+    IdSimplex v0 = m.get_id_simplex(m.vertex_tuple_from_id(0), PrimitiveType::Vertex);
+    simplex_collection.add(v0);
+    REQUIRE(simplex_collection.simplex_vector().size() == 12);
+    simplex_collection.sort_and_clean();
+    REQUIRE(simplex_collection.simplex_vector().size() == 11);
+
+    CHECK(simplex_collection.contains(v0));
+
+    {
+        IdSimplexCollection sc2(m);
+        sc2.add(simplex_collection);
+        CHECK(simplex_collection.simplex_vector().size() == 11);
+
+        IdSimplexCollection sc_union = IdSimplexCollection::get_union(simplex_collection, sc2);
+        IdSimplexCollection sc_intersection =
+            IdSimplexCollection::get_intersection(simplex_collection, sc2);
+
+        CHECK(sc_union.size() == simplex_collection.size());
+        CHECK(sc_intersection.size() == simplex_collection.size());
+        CHECK(sc_union == sc_intersection);
+    }
 }
 
 TEST_CASE("simplex_faces", "[simplex_collection][2D]")
