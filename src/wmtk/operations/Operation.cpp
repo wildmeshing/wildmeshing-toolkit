@@ -162,7 +162,9 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
             }
         }
     }
-    all.sort_and_clean();
+    if (direct_mods.size() > 1) {
+        all.sort_and_clean();
+    }
 
     for (const auto& at_ptr : m_attr_transfer_strategies) {
         if (&m_mesh == &(at_ptr->mesh())) {
