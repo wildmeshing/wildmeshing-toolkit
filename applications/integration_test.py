@@ -12,8 +12,8 @@ def fix_path(path):
     return path if os.path.isabs(path) else os.path.join(cwd, path)
 
 class IntegrationTest(unittest.TestCase):
-    BINARY_FOLDER = ""
-    CONFIG_FILE = ""
+    BINARY_FOLDER = None
+    CONFIG_FILE = None
     TEST = None
 
     def setUp(self):
@@ -22,7 +22,6 @@ class IntegrationTest(unittest.TestCase):
         if "WMTK_CONFIG_FILE" in os.environ:
             IntegrationTest.CONFIG_FILE = fix_path(os.environ['WMTK_CONFIG_FILE'])
 
-        # print(os.environ['FILENAME'])
         self.working_dir_fp = tempfile.TemporaryDirectory()
         self.working_dir = self.working_dir_fp.name
         print('Running all integration tests in', self.working_dir)
@@ -33,8 +32,9 @@ class IntegrationTest(unittest.TestCase):
     def tearDown(self):
         self.working_dir_fp.cleanup()
 
-    def run_one(self, executable, data_folder, config):
-        test_folder = os.path.join(data_folder, config["test_directory"])
+    def run_one(self, executable, config_folder, config):
+        if "test_directory" in config:
+            config_folder = os.path.join(config_folder, config["test_directory"])
 
         input_tag = config["input_tag"]
         oracle_tag = config["oracle_tag"]
@@ -48,12 +48,17 @@ class IntegrationTest(unittest.TestCase):
         for test_file_name in config["tests"]:
             print("Running test", test_file_name)
 
-            test_file = os.path.join(test_folder, test_file_name)
+            test_file = os.path.join(config_folder, test_file_name)
 
+            print(f"Test file: {test_file}")
             self.assertTrue(os.path.exists(test_file))
 
             with open(test_file) as f:
-                test_oracle = json.load(f)
+                try:
+                    test_oracle = json.load(f)
+                except Exception as e:
+                    print(f"Caught exception while loading file {test_file}: {e}")
+                    raise e
 
             input = test_oracle[input_tag].copy()
             with tempfile.NamedTemporaryFile(mode='r', delete=False) as oracle_file:
@@ -63,18 +68,20 @@ class IntegrationTest(unittest.TestCase):
 
                 if root_tag in input:
                     if not os.path.isabs(input[root_tag]):
-                        input[root_tag] = os.path.join(test_folder, input[root_tag])
+                        input[root_tag] = os.path.join(config_folder, input[root_tag])
                 else:
-                    input[root_tag] = test_folder
+                    input[root_tag] = config_folder
 
                 with tempfile.NamedTemporaryFile(mode='w', delete=False) as input_json:
                     json.dump(input, input_json)
                     input_json.close()
 
-                    res = subprocess.run([executable, "-j", input_json.name], cwd=self.working_dir, capture_output=True)
+
+                    cmd = [executable, "-j", input_json.name]
+                    res = subprocess.run(cmd, cwd=self.working_dir, capture_output=True)
 
                 if res.returncode != 0:
-                    print("Error running")
+                    print(f"Error running [{' '.join(cmd)}]")
                     print(res.stderr.decode('utf-8'))
                     print(res.stdout.decode('utf-8'))
 
@@ -107,12 +114,16 @@ class IntegrationTest(unittest.TestCase):
                 print("Running test for", key)
 
 
-                file = self.main_config[key]["config_file"]
+                my_config = self.main_config[key]
+
+                file = my_config["config_file"]
 
                 with open(file) as fp:
                     config = json.load(fp)
 
-                self.run_one(key, self.main_config[key]["data_folder"], config)
+                data_folder = None if "data_folder" not in my_config else my_config["data_folder"]
+                config_folder = data_folder if "config_folder" not in my_config else my_config["config_folder"]
+                self.run_one(key, config_folder, config)
 
 
 if __name__ == '__main__':
@@ -131,18 +142,21 @@ if __name__ == '__main__':
     bfin = args.binary_folder
 
     cwd = os.getcwd()
-    config_file = os.path.join(cwd, "test_config.json")
     if tcin:
         config_file = fix_path(tcin)
         sys.argv.pop()
         sys.argv.pop()
+    else:
+        config_file = os.path.join(cwd, "test_config.json")
 
 
-    bin_dir = os.path.join(cwd, "applications")
     if bfin:
         bin_dir = fix_path(bfin)
         sys.argv.pop()
         sys.argv.pop()
+    else:
+        bin_dir = os.path.join(cwd, "applications")
+
 
     if args.test:
         sys.argv.pop()

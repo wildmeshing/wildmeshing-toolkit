@@ -1,0 +1,20 @@
+
+[
+    {
+        // An example that glues a tiled with an untiled with coordinates, should have one in both 2d and 3d
+      "multimesh": {
+        "child": "grid2d",
+        "name": "grid2d_mm",
+        "parent": "grid2d_tiled",
+        "type": "uv"
+      }
+    },
+      "multimesh": {
+        "child": "grid3d",
+        "name": "grid3d_mm",
+        "parent": "grid3d_tiled",
+        "type": "uv"
+      }
+    },
+]
+

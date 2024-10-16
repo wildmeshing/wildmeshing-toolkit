@@ -12,7 +12,8 @@ wmtk::input
 wmtk::tetwild_simplification
 wmtk::output)
 
-wmtk_register_integration_test(tw_simplification_app
-    ${CMAKE_CURRENT_SOURCE_DIR}/tw_simplification_test_config.json
-    "https://github.com/wildmeshing/data.git"
-    5a74c7ffda3bf1014875944f59e42a3db39775df)
+wmtk_register_integration_test(
+    EXEC_NAME tw_simplification_app
+    CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tw_simplification_test_config.json
+    GIT_REPOSITORY "https://github.com/wildmeshing/data.git"
+    GIT_TAG 5a74c7ffda3bf1014875944f59e42a3db39775df)

@@ -6,6 +6,8 @@ namespace wmtk::operations {
 
 NewAttributeStrategy::~NewAttributeStrategy() = default;
 
+//NewAttributeStrategy::NewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle& handle) {
+//}
 
 const Mesh& NewAttributeStrategy::mesh() const
 {

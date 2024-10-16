@@ -10,13 +10,18 @@
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/link_condition.hpp>
 
-namespace wmtk {
+namespace wmtk::invariants {
 namespace {
 
 struct MultiMeshLinkConditionFunctor
 {
+    template <typename T>
+    bool operator()(const T& m, const simplex::Simplex& s, int64_t) {
+        return this->operator()(m,s);
+    }
     template <typename MeshType>
-    bool operator()(const MeshType& m, const simplex::Simplex& s) const { 
+    bool operator()(const MeshType& m, const simplex::Simplex& s) const
+    {
         return m.is_free() || simplex::link_condition(m, s.tuple());
     }
 };
@@ -32,7 +37,7 @@ bool MultiMeshLinkConditionInvariant::before(const simplex::Simplex& t) const
         std::integral_constant<int64_t, 1>{}, // specify that this runs on edges
         MultiMeshLinkConditionFunctor{});
     // TODO: fix visitor to work for const data
-    visitor.execute_from_root(const_cast<Mesh&>(mesh()), t);
+    visitor.execute_from_root(const_cast<Mesh&>(mesh()), simplex::NavigatableSimplex(mesh(),t));
     const auto& data = visitor.cache();
 
     for (const auto& [key, value_var] : data) {
@@ -44,4 +49,4 @@ bool MultiMeshLinkConditionInvariant::before(const simplex::Simplex& t) const
 
     return true;
 }
-} // namespace wmtk
+} // namespace wmtk::invariants

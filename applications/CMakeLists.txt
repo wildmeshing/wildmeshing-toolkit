@@ -1,8 +1,14 @@
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/applications")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/applications/cmake")
+
+
+# clear out the parent targets
+set(WMTK_APPLICATION_HEADER_TARGETS )
 
 include(wmtk_add_application)
 include(wmtk_register_integration_test)
 include(wmtk_generate_test_config)
+
+add_subdirectory(utils)
 
 option(WMTK_ENABLE_APPLICATION_delaunay "Runs delaunay application" ON)
 if(WMTK_ENABLE_APPLICATION_delaunay)
@@ -49,18 +55,42 @@ if(WMTK_ENABLE_APPLICATION_cdt_sec)
 add_subdirectory(cdt_sec)
 endif()
 
+option(WMTK_ENABLE_APPLICATION_insertion "Runs insertion application" ON)
+if(WMTK_ENABLE_APPLICATION_insertion)
+add_subdirectory(insertion)
+endif()
+
 wmtk_generate_test_config("${WMTK_TEST_CONFIG}")
 
 
-if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
-    enable_testing()
+add_custom_target(wmtk_application_headers
+    DEPENDS ${WMTK_APPLICATION_HEADER_TARGETS}
+)
 
-    find_package(Python REQUIRED)
+if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(INTEGRATION_TESTING_ENABLED_DEFAULT  ON)
+else()
+    set(INTEGRATION_TESTING_ENABLED_DEFAULT  OFF)
+endif()
 
-    add_test(
-        NAME wmtk_integration_test
-        COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/integration_test.py
-        -c ${CMAKE_BINARY_DIR}/test_config.json
-        -b ${CMAKE_BINARY_DIR}/applications
-    )
+find_package(Python)
+if(NOT Python_FOUND AND INTEGRATION_TESTING_ENABLED_DEFAULT)
+
+    set(INTEGRATION_TESTING_ENABLED_DEFAULT  OFF)
+    message(WARNING "Disabling Integration testing by default because python was not found, Install python and then enable WMTK_ENABLE_INTEGRATION_TESTING")
+endif()
+
+option(WMTK_ENABLE_INTEGRATION_TESTING "Whether integration testing is enabled, requires python" ${INTEGRATION_TESTING_ENABLED_DEFAULT})
+if(WMTK_ENABLE_INTEGRATION_TESTING)
+enable_testing()
+
+find_package(Python REQUIRED)
+
+
+add_test(
+    NAME wmtk_integration_test
+    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/integration_test.py
+    -c ${CMAKE_BINARY_DIR}/test_config.json
+    -b ${CMAKE_BINARY_DIR}/applications
+)
 endif()

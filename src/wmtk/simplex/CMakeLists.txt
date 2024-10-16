@@ -1,6 +1,14 @@
 set(SRC_FILES
     Simplex.cpp
     Simplex.hpp
+
+    IdSimplex.hpp
+    IdSimplex.cpp
+
+    NavigatableSimplex.hpp
+    NavigatableSimplex.cpp
+
+
     SimplexCollection.hpp
     SimplexCollection.cpp
     RawSimplex.cpp
@@ -15,12 +23,18 @@ set(SRC_FILES
     top_dimension_cofaces.cpp
     top_dimension_cofaces_iterable.hpp
     top_dimension_cofaces_iterable.cpp
+    cofaces_in_simplex_iterable.hpp
+    cofaces_in_simplex_iterable.cpp
     cofaces_single_dimension.hpp
     cofaces_single_dimension.cpp
+    cofaces_single_dimension_iterable.hpp
+    cofaces_single_dimension_iterable.cpp
     link.hpp
     link.cpp
     link_single_dimension.hpp
     link_single_dimension.cpp
+    link_single_dimension_iterable.hpp
+    link_single_dimension_iterable.cpp
     link_condition.hpp
     link_condition.cpp
     link_iterable.hpp

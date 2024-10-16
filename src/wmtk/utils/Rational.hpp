@@ -71,6 +71,13 @@ public:
         mpq_clear(value);
     }
 
+    inline bool can_be_rounded()
+    {
+        if (m_is_rounded) return true;
+
+        return this->to_double() == *this;
+    }
+
     void init_from_binary(const std::string& v);
     std::string to_binary() const;
 

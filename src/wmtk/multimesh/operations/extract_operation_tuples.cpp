@@ -3,6 +3,7 @@
 #include <wmtk/multimesh/operations/SplitReturnData.hpp>
 #include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
 #include <wmtk/operations/utils/multi_mesh_edge_split.hpp>
+#include "wmtk/simplex/NavigatableSimplex.hpp"
 
 
 #include "extract_operation_tuples.hpp"
@@ -61,6 +62,32 @@ std::map<const Mesh*, std::vector<std::array<Tuple, 2>>> extract_operation_tuple
         auto tups = std::visit(ExtractTuple{}, value_var);
         assert(tups[0] == input_simplex.tuple());
         ret[mesh_ptr].emplace_back(tups);
+    }
+
+    return ret;
+}
+OperationInOutData extract_operation_in_out(const CollapseReturnData& return_data)
+{
+    std::map<const Mesh*, std::vector<std::tuple<simplex::NavigatableSimplex, Tuple>>> ret;
+
+    for (const auto& [key, value_var] : return_data) {
+        const auto [mesh_ptr, input_simplex] = key;
+        auto tups = std::visit(ExtractTuple{}, value_var);
+        assert(tups[0] == input_simplex.tuple());
+        ret[mesh_ptr].emplace_back(input_simplex, tups[1]);
+    }
+
+    return ret;
+}
+OperationInOutData extract_operation_in_out(const SplitReturnData& return_data)
+{
+    std::map<const Mesh*, std::vector<std::tuple<simplex::NavigatableSimplex, Tuple>>> ret;
+
+    for (const auto& [key, value_var] : return_data) {
+        const auto [mesh_ptr, input_simplex] = key;
+        auto tups = std::visit(ExtractTuple{}, value_var);
+        assert(tups[0] == input_simplex.tuple());
+        ret[mesh_ptr].emplace_back(input_simplex, tups[1]);
     }
 
     return ret;

@@ -28,6 +28,8 @@
 
 #include "multimesh/attribute/UseParentScopeRAII.hpp"
 
+#include "simplex/IdSimplex.hpp"
+#include "simplex/NavigatableSimplex.hpp"
 #include "simplex/Simplex.hpp"
 
 
@@ -38,14 +40,14 @@
 
 
 namespace wmtk {
-    namespace tests {
-        class DEBUG_Mesh;
+namespace tests {
+class DEBUG_Mesh;
 namespace tools {
 
 class TestTools;
 
 }
-}
+} // namespace tests
 // thread management tool that we will PImpl
 namespace attribute {
 class AttributeManager;
@@ -128,6 +130,7 @@ public:
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::RawSimplex;
     friend class simplex::Simplex;
+    friend class simplex::IdSimplex;
     friend class simplex::SimplexCollection;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
@@ -164,6 +167,17 @@ public:
      * @return vector of Tuples referring to each type
      */
     std::vector<Tuple> get_all(PrimitiveType type) const;
+
+    std::vector<simplex::IdSimplex> get_all_id_simplex(PrimitiveType type) const;
+    /**
+     * @brief Retrieve the IdSimplex that is represented by the tuple and primitive type.
+     */
+    simplex::IdSimplex get_id_simplex(const Tuple& tuple, PrimitiveType pt) const;
+
+    /**
+     * @brief Convert an IdSimplex into a Simplex.
+     */
+    simplex::Simplex get_simplex(const simplex::IdSimplex& s) const;
 
     /**
      * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding
@@ -301,7 +315,7 @@ protected:
      * @return Tuple
      */
     virtual Tuple tuple_from_id(const PrimitiveType type, const int64_t gid) const = 0;
-    simplex::Simplex simplex_from_id(const PrimitiveType type, const int64_t gid) const;
+    simplex::NavigatableSimplex simplex_from_id(const PrimitiveType type, const int64_t gid) const;
     std::vector<std::vector<int64_t>> simplices_to_gids(
         const std::vector<std::vector<simplex::Simplex>>& simplices) const;
     /**
@@ -783,6 +797,9 @@ protected:
         * @return int64_t id of the entity
     */
     int64_t id(const Tuple& tuple, PrimitiveType type) const;
+
+    int64_t id(const simplex::NavigatableSimplex& s) const { return s.index(); }
+    int64_t id(const simplex::IdSimplex& s) const { return s.index(); }
     /// Forwarding version of id on simplices that does id caching
     virtual int64_t id(const simplex::Simplex& s) const = 0;
     /// Internal utility to allow id to be virtual with a non-virtual overload in derived -Mesh classes.
@@ -847,6 +864,9 @@ private:
      * @return vector of Tuples referring to each type
      */
     std::vector<Tuple> get_all(PrimitiveType type, const bool include_deleted) const;
+    std::vector<simplex::IdSimplex> get_all_id_simplex(
+        PrimitiveType type,
+        const bool include_deleted) const;
 };
 
 
@@ -929,7 +949,7 @@ inline decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args) const
 }
 
 #if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
-    template <std::ranges::forward_range ContainerType>
+template <std::ranges::forward_range ContainerType>
 #else
 template <typename ContainerType>
 #endif
@@ -972,7 +992,7 @@ inline PrimitiveType Mesh::top_simplex_type() const
 
 
 #if defined(__cpp_concepts) && defined(__cpp_lib_ranges)
-    template <std::ranges::forward_range ContainerType>
+template <std::ranges::forward_range ContainerType>
 #else
 template <typename ContainerType>
 #endif

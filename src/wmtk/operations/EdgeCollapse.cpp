@@ -11,6 +11,17 @@
 
 namespace wmtk::operations {
 
+bool EdgeCollapse::attribute_new_all_configured() const
+{
+    bool all_configured = true;
+    for (const auto& strat : m_new_attr_strategies) {
+        if (strat->invalid_state()) {
+            all_configured = false;
+            wmtk::logger().warn("Attribute new {} was not configured", strat->name());
+        }
+    }
+    return all_configured;
+}
 
 EdgeCollapse::EdgeCollapse(Mesh& m)
     : Operation(m)
