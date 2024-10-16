@@ -48,10 +48,6 @@ EdgeInsertionMeshes edge_insertion(EdgeMesh& input_mesh, TriMesh& bg_mesh)
         FV(i, 2) = FV_new[i][2];
     }
 
-    // debug code
-    std::ofstream f("ei_debug.txt");
-    f << FV << std::endl;
-
     // remove unused vertices
     std::vector<bool> v_is_used(V.rows(), false);
     for (int64_t i = 0; i < FV.rows(); ++i) {

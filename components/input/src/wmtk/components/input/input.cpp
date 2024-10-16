@@ -15,6 +15,7 @@ std::shared_ptr<Mesh> input(
     InputOptions options;
     options.old_mode = true;
     options.file = file;
+    options.ignore_z = ignore_z;
     if (!tetrahedron_attributes.empty()) {
         options.imported_attributes = {{}, {}, {}, tetrahedron_attributes};
     }
