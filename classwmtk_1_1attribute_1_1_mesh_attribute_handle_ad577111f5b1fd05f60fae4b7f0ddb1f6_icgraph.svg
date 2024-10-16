@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 1052;
+var viewWidth = 1028;
 var viewHeight = 382;
 var sectionId = 'dynsection-10';
 </script>
@@ -58,9 +58,9 @@ var sectionId = 'dynsection-10';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="877,-74.5 877,-104.5 1044,-104.5 1044,-74.5 877,-74.5"/>
-<text text-anchor="start" x="885" y="-92.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::MeshAttribute</text>
-<text text-anchor="middle" x="960.5" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00">Handle::is_valid</text>
+<polygon fill="#bfbfbf" stroke="black" points="853,-74.5 853,-104.5 1020,-104.5 1020,-74.5 853,-74.5"/>
+<text text-anchor="start" x="861" y="-92.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::MeshAttribute</text>
+<text text-anchor="middle" x="936.5" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00">Handle::is_valid</text>
 </a>
 </g>
 </g>
@@ -68,17 +68,17 @@ var sectionId = 'dynsection-10';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classwmtk_1_1function_1_1_per_simplex_function.html#a0df382a56885d99b8f1c480f016387e1" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="675,-220.5 675,-250.5 827,-250.5 827,-220.5 675,-220.5"/>
-<text text-anchor="start" x="683" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
-<text text-anchor="middle" x="751" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">Function::attribute_handle</text>
+<polygon fill="none" stroke="black" points="663,-220.5 663,-250.5 815,-250.5 815,-220.5 663,-220.5"/>
+<text text-anchor="start" x="671" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
+<text text-anchor="middle" x="739" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">Function::attribute_handle</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M929.85,-110.36C887.57,-140.11 810.95,-194.02 773.62,-220.29"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="931.91,-113.19 938.08,-104.57 927.88,-107.47 931.91,-113.19"/>
+<path fill="none" stroke="midnightblue" d="M907.06,-110.74C867.13,-140.56 795.4,-194.13 760.37,-220.29"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="909.4,-113.36 915.31,-104.57 905.21,-107.75 909.4,-113.36"/>
 </g>
 <!-- Node14 -->
 <g id="node14" class="node">
@@ -93,24 +93,25 @@ var sectionId = 'dynsection-10';
 <!-- Node1&#45;&gt;Node14 -->
 <g id="edge17" class="edge">
 <title>Node1&#45;&gt;Node14</title>
-<path fill="none" stroke="midnightblue" d="M866.36,-89.5C787.01,-89.5 674.86,-89.5 603.8,-89.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="866.84,-93 876.84,-89.5 866.84,-86 866.84,-93"/>
+<path fill="none" stroke="midnightblue" d="M842.6,-89.5C769.52,-89.5 669.41,-89.5 603.75,-89.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="842.72,-93 852.72,-89.5 842.72,-86 842.72,-93"/>
 </g>
 <!-- Node15 -->
 <g id="node15" class="node">
 <title>Node15</title>
-<g id="a_node15"><a xlink:href="namespacewmtk_1_1components.html#ae3a4b32383fdc9c2eb8334cc8ef947a5" target="_top" xlink:title="Perform shortest&#45;edge collapse on a triangular surface mesh.">
-<polygon fill="none" stroke="black" points="661,-28.5 661,-58.5 841,-58.5 841,-28.5 661,-28.5"/>
-<text text-anchor="start" x="669" y="-46.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::components::shortestedge</text>
-<text text-anchor="middle" x="751" y="-35.5" font-family="Helvetica,sans-Serif" font-size="10.00">_collapse</text>
+<g id="a_node15"><a xlink:href="namespacewmtk_1_1components_1_1shortest__edge__collapse.html#a13c53b8b70fc1b63e7bdb22318139dd9" target="_top" xlink:title="Perform shortest&#45;edge collapse on a triangular surface mesh.">
+<polygon fill="none" stroke="black" points="661,-17 661,-58 817,-58 817,-17 661,-17"/>
+<text text-anchor="start" x="669" y="-46" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::components::shortest</text>
+<text text-anchor="start" x="669" y="-35" font-family="Helvetica,sans-Serif" font-size="10.00">_edge_collapse::shortest</text>
+<text text-anchor="middle" x="739" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">_edge_collapse</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node15 -->
 <g id="edge21" class="edge">
 <title>Node1&#45;&gt;Node15</title>
-<path fill="none" stroke="midnightblue" d="M881.69,-72.25C861.32,-67.74 839.53,-62.91 819.74,-58.52"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="881.04,-75.69 891.56,-74.44 882.55,-68.86 881.04,-75.69"/>
+<path fill="none" stroke="midnightblue" d="M869.27,-71.88C852.52,-67.43 834.38,-62.6 817.15,-58.02"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="868.39,-75.27 878.95,-74.46 870.19,-68.51 868.39,-75.27"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
@@ -125,8 +126,8 @@ var sectionId = 'dynsection-10';
 <!-- Node2&#45;&gt;Node3 -->
 <g id="edge2" class="edge">
 <title>Node2&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M664.57,-225.92C650.29,-224.32 635.48,-222.66 621.2,-221.06"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="664.52,-229.44 674.85,-227.07 665.3,-222.48 664.52,-229.44"/>
+<path fill="none" stroke="midnightblue" d="M652.82,-225.38C642.34,-224.13 631.62,-222.86 621.14,-221.62"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="652.44,-228.86 662.78,-226.56 653.27,-221.91 652.44,-228.86"/>
 </g>
 <!-- Node9 -->
 <g id="node9" class="node">
@@ -141,8 +142,8 @@ var sectionId = 'dynsection-10';
 <!-- Node2&#45;&gt;Node9 -->
 <g id="edge16" class="edge">
 <title>Node2&#45;&gt;Node9</title>
-<path fill="none" stroke="midnightblue" d="M706.8,-254.54C682.97,-264.6 652.69,-276.65 625,-285.5 544.07,-311.37 448.37,-333.15 387.08,-346.01"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="708.43,-257.65 716.26,-250.52 705.69,-251.21 708.43,-257.65"/>
+<path fill="none" stroke="midnightblue" d="M698.78,-254.92C677.35,-265 650.13,-276.97 625,-285.5 544.43,-312.87 448.43,-334.33 387,-346.71"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="700.37,-258.04 707.89,-250.59 697.36,-251.72 700.37,-258.04"/>
 </g>
 <!-- Node13 -->
 <g id="node13" class="node">
@@ -157,8 +158,8 @@ var sectionId = 'dynsection-10';
 <!-- Node2&#45;&gt;Node13 -->
 <g id="edge12" class="edge">
 <title>Node2&#45;&gt;Node13</title>
-<path fill="none" stroke="midnightblue" d="M664.59,-245.48C651.66,-246.99 638.29,-248.55 625.28,-250.07"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="665.33,-248.92 674.85,-244.28 664.51,-241.96 665.33,-248.92"/>
+<path fill="none" stroke="midnightblue" d="M652.65,-246.06C643.59,-247.18 634.36,-248.33 625.27,-249.45"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="653.29,-249.51 662.78,-244.81 652.43,-242.56 653.29,-249.51"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
@@ -333,18 +334,19 @@ var sectionId = 'dynsection-10';
 <!-- Node16 -->
 <g id="node16" class="node">
 <title>Node16</title>
-<g id="a_node16"><a xlink:href="namespacewmtk_1_1components.html#a3154cdbc6047eee67258b69cc7d5e7cf" target="_top" xlink:title="Perform shortest&#45;edge collapse on a triangular surface mesh.">
-<polygon fill="none" stroke="black" points="445,-25.5 445,-55.5 625,-55.5 625,-25.5 445,-25.5"/>
-<text text-anchor="start" x="453" y="-43.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::components::shortestedge</text>
-<text text-anchor="middle" x="535" y="-32.5" font-family="Helvetica,sans-Serif" font-size="10.00">_collapse</text>
+<g id="a_node16"><a xlink:href="namespacewmtk_1_1components_1_1shortest__edge__collapse.html#af035fa61c334a3a1a1a8596004fee40c" target="_top" xlink:title="Perform shortest&#45;edge collapse on a triangular surface mesh.">
+<polygon fill="none" stroke="black" points="457,-14 457,-55 613,-55 613,-14 457,-14"/>
+<text text-anchor="start" x="465" y="-43" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::components::shortest</text>
+<text text-anchor="start" x="465" y="-32" font-family="Helvetica,sans-Serif" font-size="10.00">_edge_collapse::shortest</text>
+<text text-anchor="middle" x="535" y="-21" font-family="Helvetica,sans-Serif" font-size="10.00">_edge_collapse</text>
 </a>
 </g>
 </g>
 <!-- Node15&#45;&gt;Node16 -->
 <g id="edge22" class="edge">
 <title>Node15&#45;&gt;Node16</title>
-<path fill="none" stroke="midnightblue" d="M650.77,-42.11C642.19,-41.99 633.55,-41.87 625.06,-41.75"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="650.75,-45.61 660.79,-42.25 650.84,-38.61 650.75,-45.61"/>
+<path fill="none" stroke="midnightblue" d="M650.44,-36.2C638.04,-36.02 625.37,-35.83 613.19,-35.65"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="650.72,-39.7 660.77,-36.35 650.82,-32.7 650.72,-39.7"/>
 </g>
 </g>
 </svg>

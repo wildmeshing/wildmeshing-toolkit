@@ -1,5 +1,13 @@
 var NAVTREEINDEX3 =
 {
+"_simplex_getter_8cpp.html#a93a78948a97a1fce1283b4d1ef19704c":[10,0,2,0,2,1,9,1],
+"_simplex_getter_8cpp.html#ab8499e1d9a778486c7ce86426bc43b91":[10,0,2,0,2,1,9,2],
+"_simplex_getter_8cpp.html#ad875347d7be1124d3e413056c254d633":[10,0,2,0,2,1,9,3],
+"_simplex_getter_8cpp_source.html":[10,0,2,0,2,1,9],
+"_simplex_getter_8hpp.html":[10,0,2,0,2,1,10],
+"_simplex_getter_8hpp.html#a10708966079a04e25ba0ea7953479662":[10,0,2,0,2,1,10,0],
+"_simplex_getter_8hpp_source.html":[10,0,2,0,2,1,10],
+"_simplex_inversion_invariant_8cpp.html":[10,0,2,0,3,50],
 "_simplex_inversion_invariant_8cpp_source.html":[10,0,2,0,3,50],
 "_simplex_inversion_invariant_8hpp.html":[10,0,2,0,3,51],
 "_simplex_inversion_invariant_8hpp_source.html":[10,0,2,0,3,51],
@@ -100,10 +108,10 @@ var NAVTREEINDEX3 =
 "_todo_invariant_8cpp_source.html":[10,0,2,0,3,68],
 "_todo_invariant_8hpp.html":[10,0,2,0,3,69],
 "_todo_invariant_8hpp_source.html":[10,0,2,0,3,69],
-"_top_dimension_cofaces_iterable_8cpp.html":[10,0,2,0,7,1,14],
-"_top_dimension_cofaces_iterable_8cpp_source.html":[10,0,2,0,7,1,14],
-"_top_dimension_cofaces_iterable_8hpp.html":[10,0,2,0,7,1,15],
-"_top_dimension_cofaces_iterable_8hpp_source.html":[10,0,2,0,7,1,15],
+"_top_dimension_cofaces_iterable_8cpp.html":[10,0,2,0,7,1,16],
+"_top_dimension_cofaces_iterable_8cpp_source.html":[10,0,2,0,7,1,16],
+"_top_dimension_cofaces_iterable_8hpp.html":[10,0,2,0,7,1,17],
+"_top_dimension_cofaces_iterable_8hpp_source.html":[10,0,2,0,7,1,17],
 "_tri_edge_swap_8cpp.html":[10,0,2,0,6,2,8],
 "_tri_edge_swap_8cpp_source.html":[10,0,2,0,6,2,8],
 "_tri_edge_swap_8hpp.html":[10,0,2,0,6,2,9],
@@ -241,13 +249,5 @@ var NAVTREEINDEX3 =
 "as__mesh__variant_8cpp.html":[10,0,2,0,8,0,1],
 "as__mesh__variant_8cpp.html#a960863b4ff77683286c7b21062aeab8d":[10,0,2,0,8,0,1,0],
 "as__mesh__variant_8cpp.html#aa5a891c5f82fc2a28e4fbdfc325b46f0":[10,0,2,0,8,0,1,1],
-"as__mesh__variant_8cpp_source.html":[10,0,2,0,8,0,1],
-"as__mesh__variant_8hpp.html":[10,0,2,0,8,0,2],
-"as__mesh__variant_8hpp.html#a960863b4ff77683286c7b21062aeab8d":[10,0,2,0,8,0,2,0],
-"as__mesh__variant_8hpp.html#aa5a891c5f82fc2a28e4fbdfc325b46f0":[10,0,2,0,8,0,2,1],
-"as__mesh__variant_8hpp_source.html":[10,0,2,0,8,0,2],
-"as__variant_8hpp.html":[10,0,2,0,8,0,3],
-"as__variant_8hpp.html#a0afbab5688eebca9617e4910e3b7fbb2":[10,0,2,0,8,0,3,3],
-"as__variant_8hpp.html#ab18df618f964d4cb34717b41fa760069":[10,0,2,0,8,0,3,2],
-"as__variant_8hpp_source.html":[10,0,2,0,8,0,3]
+"as__mesh__variant_8cpp_source.html":[10,0,2,0,8,0,1]
 };

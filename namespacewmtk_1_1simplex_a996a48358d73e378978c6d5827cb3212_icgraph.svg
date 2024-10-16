@@ -48,7 +48,7 @@ if (edges && edges.length) {
 <script type="text/javascript">
 var viewWidth = 612;
 var viewHeight = 307;
-var sectionId = 'dynsection-10';
+var sectionId = 'dynsection-11';
 </script>
 <script xlink:href="svgpan.js"/>
 <svg id="graph" class="graph">
@@ -114,117 +114,101 @@ var sectionId = 'dynsection-10';
 <path fill="none" stroke="midnightblue" d="M434.74,-147.85C414.61,-150.19 393.58,-152.64 374.62,-154.85"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="435.32,-151.3 444.85,-146.67 434.51,-144.35 435.32,-151.3"/>
 </g>
-<!-- Node6 -->
-<g id="node6" class="node">
-<title>Node6</title>
-<g id="a_node6"><a xlink:href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a9a8a406910f491899eaaa0c8e5b400c2" target="_top" xlink:title=" ">
+<!-- Node5 -->
+<g id="node5" class="node">
+<title>Node5</title>
+<g id="a_node5"><a xlink:href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a9a8a406910f491899eaaa0c8e5b400c2" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="222.5,-98.5 222.5,-128.5 393.5,-128.5 393.5,-98.5 222.5,-98.5"/>
 <text text-anchor="start" x="230.5" y="-116.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::LocalNeighbors</text>
 <text text-anchor="middle" x="308" y="-105.5" font-family="Helvetica,sans-Serif" font-size="10.00">SumFunction::domain</text>
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node6 -->
-<g id="edge5" class="edge">
-<title>Node1&#45;&gt;Node6</title>
+<!-- Node1&#45;&gt;Node5 -->
+<g id="edge4" class="edge">
+<title>Node1&#45;&gt;Node5</title>
 <path fill="none" stroke="midnightblue" d="M434.61,-127.55C421.1,-126.04 407.2,-124.49 393.78,-122.99"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="434.52,-131.07 444.85,-128.7 435.3,-124.11 434.52,-131.07"/>
 </g>
-<!-- Node10 -->
-<g id="node10" class="node">
-<title>Node10</title>
-<g id="a_node10"><a xlink:href="classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing.html#a2c409cd3da46f4360119e142ef3c3682" target="_top" xlink:title="returns an empty vector in case of failure">
+<!-- Node9 -->
+<g id="node9" class="node">
+<title>Node9</title>
+<g id="a_node9"><a xlink:href="classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing.html#a2c409cd3da46f4360119e142ef3c3682" target="_top" xlink:title="returns an empty vector in case of failure">
 <polygon fill="none" stroke="black" points="207,-49.5 207,-79.5 409,-79.5 409,-49.5 207,-49.5"/>
 <text text-anchor="start" x="215" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::AMIPSOptimization</text>
 <text text-anchor="middle" x="308" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">Smoothing::execute</text>
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node10 -->
-<g id="edge9" class="edge">
-<title>Node1&#45;&gt;Node10</title>
-<path fill="none" stroke="midnightblue" d="M481.78,-118.21C460.33,-108.76 433.59,-97.67 409,-89.5 398.22,-85.91 386.63,-82.57 375.3,-79.57"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="480.38,-121.42 490.94,-122.29 483.23,-115.02 480.38,-121.42"/>
+<!-- Node1&#45;&gt;Node9 -->
+<g id="edge8" class="edge">
+<title>Node1&#45;&gt;Node9</title>
+<path fill="none" stroke="midnightblue" d="M482.78,-118.09C461.2,-108.31 434.03,-96.79 409,-88.5 399.17,-85.24 388.66,-82.23 378.29,-79.52"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="481.43,-121.32 491.98,-122.3 484.34,-114.95 481.43,-121.32"/>
 </g>
-<!-- Node11 -->
-<g id="node11" class="node">
-<title>Node11</title>
-<g id="a_node11"><a xlink:href="classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing_periodic.html#a86df18fe3713cb41dca1687487dea61b" target="_top" xlink:title="returns an empty vector in case of failure">
+<!-- Node10 -->
+<g id="node10" class="node">
+<title>Node10</title>
+<g id="a_node10"><a xlink:href="classwmtk_1_1operations_1_1_a_m_i_p_s_optimization_smoothing_periodic.html#a86df18fe3713cb41dca1687487dea61b" target="_top" xlink:title="returns an empty vector in case of failure">
 <polygon fill="none" stroke="black" points="207,-0.5 207,-30.5 409,-30.5 409,-0.5 207,-0.5"/>
 <text text-anchor="start" x="215" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::AMIPSOptimization</text>
 <text text-anchor="middle" x="308" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">SmoothingPeriodic::execute</text>
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node11 -->
-<g id="edge10" class="edge">
-<title>Node1&#45;&gt;Node11</title>
+<!-- Node1&#45;&gt;Node10 -->
+<g id="edge9" class="edge">
+<title>Node1&#45;&gt;Node10</title>
 <path fill="none" stroke="midnightblue" d="M503.41,-114.94C482.15,-92.48 446.53,-58.65 409,-39.5 402.24,-36.05 394.97,-33.09 387.54,-30.54"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="500.94,-117.43 510.31,-122.38 506.07,-112.67 500.94,-117.43"/>
 </g>
-<!-- Node5 -->
-<g id="node5" class="node">
-<title>Node5</title>
-<g id="a_node5"><a xlink:href="namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="29,-172.5 29,-202.5 142,-202.5 142,-172.5 29,-172.5"/>
-<text text-anchor="start" x="37" y="-190.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::simplex::link</text>
-<text text-anchor="middle" x="85.5" y="-179.5" font-family="Helvetica,sans-Serif" font-size="10.00">_condition</text>
+<!-- Node6 -->
+<g id="node6" class="node">
+<title>Node6</title>
+<g id="a_node6"><a xlink:href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a8f4a1942d320c2d613d1af447738f1ea" target="_top" xlink:title="get_gradient collects the local neigh and call the gradient of m_function on all simplicies">
+<polygon fill="none" stroke="black" points="0,-147.5 0,-177.5 171,-177.5 171,-147.5 0,-147.5"/>
+<text text-anchor="start" x="8" y="-165.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::LocalNeighbors</text>
+<text text-anchor="middle" x="85.5" y="-154.5" font-family="Helvetica,sans-Serif" font-size="10.00">SumFunction::get_gradient</text>
 </a>
 </g>
 </g>
-<!-- Node4&#45;&gt;Node5 -->
-<g id="edge4" class="edge">
-<title>Node4&#45;&gt;Node5</title>
-<path fill="none" stroke="midnightblue" d="M231.26,-171.09C202,-174.4 169.14,-178.13 142.12,-181.19"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="231.9,-174.54 241.44,-169.93 231.11,-167.58 231.9,-174.54"/>
+<!-- Node5&#45;&gt;Node6 -->
+<g id="edge5" class="edge">
+<title>Node5&#45;&gt;Node6</title>
+<path fill="none" stroke="midnightblue" d="M229.34,-130.76C204.77,-136.22 177.83,-142.21 154.03,-147.49"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="230.34,-134.12 239.34,-128.53 228.82,-127.29 230.34,-134.12"/>
 </g>
 <!-- Node7 -->
 <g id="node7" class="node">
 <title>Node7</title>
-<g id="a_node7"><a xlink:href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a8f4a1942d320c2d613d1af447738f1ea" target="_top" xlink:title="get_gradient collects the local neigh and call the gradient of m_function on all simplicies">
-<polygon fill="none" stroke="black" points="0,-123.5 0,-153.5 171,-153.5 171,-123.5 0,-123.5"/>
-<text text-anchor="start" x="8" y="-141.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::LocalNeighbors</text>
-<text text-anchor="middle" x="85.5" y="-130.5" font-family="Helvetica,sans-Serif" font-size="10.00">SumFunction::get_gradient</text>
+<g id="a_node7"><a xlink:href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a45bfd84c9f092364f449605199731442" target="_top" xlink:title="get_hessian evaluates the hessian of the function f(x) defined wrt the variable x.">
+<polygon fill="none" stroke="black" points="0,-98.5 0,-128.5 171,-128.5 171,-98.5 0,-98.5"/>
+<text text-anchor="start" x="8" y="-116.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::LocalNeighbors</text>
+<text text-anchor="middle" x="85.5" y="-105.5" font-family="Helvetica,sans-Serif" font-size="10.00">SumFunction::get_hessian</text>
 </a>
 </g>
 </g>
-<!-- Node6&#45;&gt;Node7 -->
+<!-- Node5&#45;&gt;Node7 -->
 <g id="edge6" class="edge">
-<title>Node6&#45;&gt;Node7</title>
-<path fill="none" stroke="midnightblue" d="M212.08,-124.26C198.51,-125.8 184.62,-127.38 171.26,-128.89"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="212.84,-127.7 222.38,-123.09 212.05,-120.74 212.84,-127.7"/>
+<title>Node5&#45;&gt;Node7</title>
+<path fill="none" stroke="midnightblue" d="M212.08,-113.5C198.51,-113.5 184.62,-113.5 171.26,-113.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="212.38,-117 222.38,-113.5 212.38,-110 212.38,-117"/>
 </g>
 <!-- Node8 -->
 <g id="node8" class="node">
 <title>Node8</title>
-<g id="a_node8"><a xlink:href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a45bfd84c9f092364f449605199731442" target="_top" xlink:title="get_hessian evaluates the hessian of the function f(x) defined wrt the variable x.">
-<polygon fill="none" stroke="black" points="0,-74.5 0,-104.5 171,-104.5 171,-74.5 0,-74.5"/>
-<text text-anchor="start" x="8" y="-92.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::LocalNeighbors</text>
-<text text-anchor="middle" x="85.5" y="-81.5" font-family="Helvetica,sans-Serif" font-size="10.00">SumFunction::get_hessian</text>
+<g id="a_node8"><a xlink:href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a0b81383595fa81fb270266bb6cee71da" target="_top" xlink:title="collects the local neigh and call the same m_function on all simplicies">
+<polygon fill="none" stroke="black" points="0,-49.5 0,-79.5 171,-79.5 171,-49.5 0,-49.5"/>
+<text text-anchor="start" x="8" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::LocalNeighbors</text>
+<text text-anchor="middle" x="85.5" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">SumFunction::get_value</text>
 </a>
 </g>
 </g>
-<!-- Node6&#45;&gt;Node8 -->
+<!-- Node5&#45;&gt;Node8 -->
 <g id="edge7" class="edge">
-<title>Node6&#45;&gt;Node8</title>
-<path fill="none" stroke="midnightblue" d="M212.08,-103.17C198.51,-101.69 184.62,-100.18 171.26,-98.73"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="212.06,-106.69 222.38,-104.29 212.82,-99.73 212.06,-106.69"/>
-</g>
-<!-- Node9 -->
-<g id="node9" class="node">
-<title>Node9</title>
-<g id="a_node9"><a xlink:href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a0b81383595fa81fb270266bb6cee71da" target="_top" xlink:title="collects the local neigh and call the same m_function on all simplicies">
-<polygon fill="none" stroke="black" points="0,-25.5 0,-55.5 171,-55.5 171,-25.5 0,-25.5"/>
-<text text-anchor="start" x="8" y="-43.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::LocalNeighbors</text>
-<text text-anchor="middle" x="85.5" y="-32.5" font-family="Helvetica,sans-Serif" font-size="10.00">SumFunction::get_value</text>
-</a>
-</g>
-</g>
-<!-- Node6&#45;&gt;Node9 -->
-<g id="edge8" class="edge">
-<title>Node6&#45;&gt;Node9</title>
-<path fill="none" stroke="midnightblue" d="M224.61,-95.34C218.57,-93.27 212.64,-90.99 207,-88.5 189.41,-80.72 188.46,-72.56 171,-64.5 163.8,-61.18 156.04,-58.21 148.24,-55.6"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="223.59,-98.69 234.18,-98.43 225.74,-92.03 223.59,-98.69"/>
+<title>Node5&#45;&gt;Node8</title>
+<path fill="none" stroke="midnightblue" d="M229.34,-96.24C204.77,-90.78 177.83,-84.79 154.03,-79.51"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="228.82,-99.71 239.34,-98.47 230.34,-92.88 228.82,-99.71"/>
 </g>
 </g>
 </svg>

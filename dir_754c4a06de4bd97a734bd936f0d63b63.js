@@ -19,6 +19,11 @@ var dir_754c4a06de4bd97a734bd936f0d63b63 =
     [ "FacesIterable.hpp", "_faces_iterable_8hpp.html", [
       [ "FacesIterable", "classwmtk_1_1simplex_1_1_faces_iterable.html", "classwmtk_1_1simplex_1_1_faces_iterable" ]
     ] ],
+    [ "HalfClosedStarIterable.cpp", "_half_closed_star_iterable_8cpp.html", null ],
+    [ "HalfClosedStarIterable.hpp", "_half_closed_star_iterable_8hpp.html", [
+      [ "HalfClosedStarIterable", "classwmtk_1_1simplex_1_1_half_closed_star_iterable.html", "classwmtk_1_1simplex_1_1_half_closed_star_iterable" ],
+      [ "Iterator", "classwmtk_1_1simplex_1_1_half_closed_star_iterable_1_1_iterator.html", "classwmtk_1_1simplex_1_1_half_closed_star_iterable_1_1_iterator" ]
+    ] ],
     [ "LinkIterable.cpp", "_link_iterable_8cpp.html", null ],
     [ "LinkIterable.hpp", "_link_iterable_8hpp.html", [
       [ "LinkIterable", "classwmtk_1_1simplex_1_1_link_iterable.html", "classwmtk_1_1simplex_1_1_link_iterable" ],

@@ -17,7 +17,7 @@ var dir_409f97388efe006bc3438b95e9edef48 =
     [ "periodic_optimization", "dir_69fcabe2ce4db5cdf31db52e9f6201b0.html", "dir_69fcabe2ce4db5cdf31db52e9f6201b0" ],
     [ "procedural", "dir_b59c7c9369294562dd241a4f76f533c3.html", "dir_b59c7c9369294562dd241a4f76f533c3" ],
     [ "regular_space", "dir_9a31fb3f23109e2405f27175508a72ca.html", "dir_9a31fb3f23109e2405f27175508a72ca" ],
-    [ "shortestedge_collapse", "dir_15c95373a5f8fd8ab8b0a2eb23f63f7a.html", "dir_15c95373a5f8fd8ab8b0a2eb23f63f7a" ],
+    [ "shortest_edge_collapse", "dir_4683d5269fa6ab856ff870c7c80aa635.html", "dir_4683d5269fa6ab856ff870c7c80aa635" ],
     [ "tag_intersection", "dir_1da9f9998ef4ee4df08947b71783203b.html", "dir_1da9f9998ef4ee4df08947b71783203b" ],
     [ "tests", "dir_c21dcb83944ea43676e621511efa15bf.html", "dir_c21dcb83944ea43676e621511efa15bf" ],
     [ "tetwild_simplification", "dir_25a60a1b35a21b111b76bccccd6770d7.html", "dir_25a60a1b35a21b111b76bccccd6770d7" ],

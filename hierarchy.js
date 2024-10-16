@@ -149,6 +149,7 @@ var hierarchy =
     [ "wmtk::components::procedural::Grid2Options", "classwmtk_1_1components_1_1procedural_1_1_grid2_options.html", null ],
     [ "wmtk::components::procedural::Grid3Options", "classwmtk_1_1components_1_1procedural_1_1_grid3_options.html", null ],
     [ "wmtk::components::procedural::GridOptions", "classwmtk_1_1components_1_1procedural_1_1_grid_options.html", null ],
+    [ "wmtk::simplex::HalfClosedStarIterable", "classwmtk_1_1simplex_1_1_half_closed_star_iterable.html", null ],
     [ "wmtk::hash< T >", "classwmtk_1_1hash.html", null ],
     [ "wmtk::hash< wmtk::attribute::AttributeHandle >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html", [
       [ "std::hash< wmtk::attribute::AttributeHandle >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html", null ]
@@ -186,6 +187,7 @@ var hierarchy =
     [ "wmtk::simplex::IdSimplex", "classwmtk_1_1simplex_1_1_id_simplex.html", [
       [ "wmtk::simplex::NavigatableSimplex", "classwmtk_1_1simplex_1_1_navigatable_simplex.html", null ]
     ] ],
+    [ "wmtk::simplex::IdSimplexCollection", "classwmtk_1_1simplex_1_1_id_simplex_collection.html", null ],
     [ "wmtk::components::adaptive_tessellation::image::Image", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html", null ],
     [ "wmtk::components::internal::ImportCacheOptions", "structwmtk_1_1components_1_1internal_1_1_import_cache_options.html", null ],
     [ "wmtk::operations::tet_mesh::EdgeOperationData::IncidentFaceData", "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_face_data.html", null ],
@@ -240,6 +242,7 @@ var hierarchy =
     [ "wmtk::simplex::ClosedStarIterable::Iterator", "classwmtk_1_1simplex_1_1_closed_star_iterable_1_1_iterator.html", null ],
     [ "wmtk::simplex::CofacesInSimplexIterable::Iterator", "classwmtk_1_1simplex_1_1_cofaces_in_simplex_iterable_1_1_iterator.html", null ],
     [ "wmtk::simplex::CofacesSingleDimensionIterable::Iterator", "classwmtk_1_1simplex_1_1_cofaces_single_dimension_iterable_1_1_iterator.html", null ],
+    [ "wmtk::simplex::HalfClosedStarIterable::Iterator", "classwmtk_1_1simplex_1_1_half_closed_star_iterable_1_1_iterator.html", null ],
     [ "wmtk::simplex::LinkIterable::Iterator", "classwmtk_1_1simplex_1_1_link_iterable_1_1_iterator.html", null ],
     [ "wmtk::simplex::LinkSingleDimensionIterable::Iterator", "classwmtk_1_1simplex_1_1_link_single_dimension_iterable_1_1_iterator.html", null ],
     [ "wmtk::simplex::OpenStarIterable::Iterator", "classwmtk_1_1simplex_1_1_open_star_iterable_1_1_iterator.html", null ],
@@ -359,7 +362,7 @@ var hierarchy =
     ] ],
     [ "wmtk::Scheduler", "classwmtk_1_1_scheduler.html", null ],
     [ "wmtk::SchedulerStats", "classwmtk_1_1_scheduler_stats.html", null ],
-    [ "wmtk::components::ShortestEdgeCollapseOptions", "structwmtk_1_1components_1_1_shortest_edge_collapse_options.html", null ],
+    [ "wmtk::components::shortest_edge_collapse::ShortestEdgeCollapseOptions", "structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_options.html", null ],
     [ "wmtk::simplex::Simplex", "classwmtk_1_1simplex_1_1_simplex.html", null ],
     [ "wmtk::simplex::SimplexCollection", "classwmtk_1_1simplex_1_1_simplex_collection.html", null ],
     [ "wmtk::simplex::utils::SimplexComparisons", "classwmtk_1_1simplex_1_1utils_1_1_simplex_comparisons.html", null ],

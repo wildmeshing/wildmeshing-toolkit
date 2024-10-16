@@ -4,7 +4,7 @@ var classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator =
     [ "add_neighbors_to_queue", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html#a6e2b9cb551390a78067ea5db8f078f61", null ],
     [ "depth", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html#a85c851dc7c171fabf179b917001771af", null ],
     [ "init", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html#ad4c0bee607f050aba717384956e5b433", null ],
-    [ "is_intermediate", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html#a78d28f5e0fb4f47f52e442c13db2c01f", null ],
+    [ "is_intermediate", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html#a72474ad0d749ed10aa57a8c3a54fc91f", null ],
     [ "operator!=", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html#aad84ff282fbb2c58bdaae1192829f208", null ],
     [ "operator*", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html#a4712a2d433743334b6420c359fec5660", null ],
     [ "operator*", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable_1_1_iterator.html#aa4567358808aab3defa993186d0911d8", null ],

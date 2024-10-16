@@ -21,9 +21,15 @@ var dir_cbc9327ef122fb9d2e3099bcf15f379f =
     [ "faces_iterable.hpp", "faces__iterable_8hpp.html", "faces__iterable_8hpp" ],
     [ "faces_single_dimension.cpp", "faces__single__dimension_8cpp.html", "faces__single__dimension_8cpp" ],
     [ "faces_single_dimension.hpp", "faces__single__dimension_8hpp.html", "faces__single__dimension_8hpp" ],
+    [ "half_closed_star_iterable.cpp", "half__closed__star__iterable_8cpp.html", "half__closed__star__iterable_8cpp" ],
+    [ "half_closed_star_iterable.hpp", "half__closed__star__iterable_8hpp.html", "half__closed__star__iterable_8hpp" ],
     [ "IdSimplex.cpp", "_id_simplex_8cpp.html", null ],
     [ "IdSimplex.hpp", "_id_simplex_8hpp.html", [
       [ "IdSimplex", "classwmtk_1_1simplex_1_1_id_simplex.html", "classwmtk_1_1simplex_1_1_id_simplex" ]
+    ] ],
+    [ "IdSimplexCollection.cpp", "_id_simplex_collection_8cpp.html", null ],
+    [ "IdSimplexCollection.hpp", "_id_simplex_collection_8hpp.html", [
+      [ "IdSimplexCollection", "classwmtk_1_1simplex_1_1_id_simplex_collection.html", "classwmtk_1_1simplex_1_1_id_simplex_collection" ]
     ] ],
     [ "k_ring.cpp", "k__ring_8cpp.html", "k__ring_8cpp" ],
     [ "k_ring.hpp", "k__ring_8hpp.html", "k__ring_8hpp" ],

@@ -1,18 +1,18 @@
 var searchData=
 [
-  ['eardata_2906',['EarData',['../structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html',1,'wmtk::operations::tri_mesh::EdgeOperationData']]],
-  ['eartet_2907',['EarTet',['../structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_ear_tet.html',1,'wmtk::operations::tet_mesh::EdgeOperationData']]],
-  ['edgecollapse_2908',['EdgeCollapse',['../classwmtk_1_1operations_1_1_edge_collapse.html',1,'wmtk::operations']]],
-  ['edgemesh_2909',['EdgeMesh',['../classwmtk_1_1_edge_mesh.html',1,'wmtk']]],
-  ['edgemeshoperationexecutor_2910',['EdgeMeshOperationExecutor',['../classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html',1,'wmtk::EdgeMesh']]],
-  ['edgeoperationdata_2911',['EdgeOperationData',['../classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html',1,'wmtk::operations::edge_mesh::EdgeOperationData'],['../classwmtk_1_1operations_1_1_edge_operation_data.html',1,'wmtk::operations::EdgeOperationData'],['../classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html',1,'wmtk::operations::tet_mesh::EdgeOperationData'],['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html',1,'wmtk::operations::tri_mesh::EdgeOperationData']]],
-  ['edgesplit_2912',['EdgeSplit',['../classwmtk_1_1operations_1_1_edge_split.html',1,'wmtk::operations']]],
-  ['edgevalenceenergy_2913',['EdgeValenceEnergy',['../classwmtk_1_1function_1_1_edge_valence_energy.html',1,'wmtk::function']]],
-  ['edgevalenceinvariant_2914',['EdgeValenceInvariant',['../classwmtk_1_1invariants_1_1_edge_valence_invariant.html',1,'wmtk::invariants']]],
-  ['eigenmatrixwriter_2915',['EigenMatrixWriter',['../classwmtk_1_1utils_1_1_eigen_matrix_writer.html',1,'wmtk::utils']]],
-  ['elementinqueue_2916',['ElementInQueue',['../classwmtk_1_1components_1_1_element_in_queue.html',1,'wmtk::components']]],
-  ['energyfilterinvariant_2917',['EnergyFilterInvariant',['../classwmtk_1_1_energy_filter_invariant.html',1,'wmtk']]],
-  ['envelopeinvariant_2918',['EnvelopeInvariant',['../classwmtk_1_1invariants_1_1_envelope_invariant.html',1,'wmtk::invariants']]],
-  ['equal_2919',['Equal',['../classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator_1_1_equal.html',1,'wmtk::simplex::utils::MeshSimplexComparator::Equal'],['../classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type_1_1_equal.html',1,'wmtk::utils::metaprogramming::detail::DefaultComparatorType::Equal']]],
-  ['exportcacheoptions_2920',['ExportCacheOptions',['../structwmtk_1_1components_1_1internal_1_1_export_cache_options.html',1,'wmtk::components::internal']]]
+  ['eardata_2911',['EarData',['../structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html',1,'wmtk::operations::tri_mesh::EdgeOperationData']]],
+  ['eartet_2912',['EarTet',['../structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_ear_tet.html',1,'wmtk::operations::tet_mesh::EdgeOperationData']]],
+  ['edgecollapse_2913',['EdgeCollapse',['../classwmtk_1_1operations_1_1_edge_collapse.html',1,'wmtk::operations']]],
+  ['edgemesh_2914',['EdgeMesh',['../classwmtk_1_1_edge_mesh.html',1,'wmtk']]],
+  ['edgemeshoperationexecutor_2915',['EdgeMeshOperationExecutor',['../classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html',1,'wmtk::EdgeMesh']]],
+  ['edgeoperationdata_2916',['EdgeOperationData',['../classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html',1,'wmtk::operations::edge_mesh::EdgeOperationData'],['../classwmtk_1_1operations_1_1_edge_operation_data.html',1,'wmtk::operations::EdgeOperationData'],['../classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html',1,'wmtk::operations::tet_mesh::EdgeOperationData'],['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html',1,'wmtk::operations::tri_mesh::EdgeOperationData']]],
+  ['edgesplit_2917',['EdgeSplit',['../classwmtk_1_1operations_1_1_edge_split.html',1,'wmtk::operations']]],
+  ['edgevalenceenergy_2918',['EdgeValenceEnergy',['../classwmtk_1_1function_1_1_edge_valence_energy.html',1,'wmtk::function']]],
+  ['edgevalenceinvariant_2919',['EdgeValenceInvariant',['../classwmtk_1_1invariants_1_1_edge_valence_invariant.html',1,'wmtk::invariants']]],
+  ['eigenmatrixwriter_2920',['EigenMatrixWriter',['../classwmtk_1_1utils_1_1_eigen_matrix_writer.html',1,'wmtk::utils']]],
+  ['elementinqueue_2921',['ElementInQueue',['../classwmtk_1_1components_1_1_element_in_queue.html',1,'wmtk::components']]],
+  ['energyfilterinvariant_2922',['EnergyFilterInvariant',['../classwmtk_1_1_energy_filter_invariant.html',1,'wmtk']]],
+  ['envelopeinvariant_2923',['EnvelopeInvariant',['../classwmtk_1_1invariants_1_1_envelope_invariant.html',1,'wmtk::invariants']]],
+  ['equal_2924',['Equal',['../classwmtk_1_1simplex_1_1utils_1_1_mesh_simplex_comparator_1_1_equal.html',1,'wmtk::simplex::utils::MeshSimplexComparator::Equal'],['../classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_default_comparator_type_1_1_equal.html',1,'wmtk::utils::metaprogramming::detail::DefaultComparatorType::Equal']]],
+  ['exportcacheoptions_2925',['ExportCacheOptions',['../structwmtk_1_1components_1_1internal_1_1_export_cache_options.html',1,'wmtk::components::internal']]]
 ];

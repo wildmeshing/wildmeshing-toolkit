@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 989;
+var viewWidth = 1157;
 var viewHeight = 117;
 var sectionId = 'dynsection-1';
 </script>
@@ -58,9 +58,9 @@ var sectionId = 'dynsection-1';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="402,-78.5 402,-108.5 533,-108.5 533,-78.5 402,-78.5"/>
-<text text-anchor="start" x="410" y="-96.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/autogen/local</text>
-<text text-anchor="middle" x="467.5" y="-85.5" font-family="Helvetica,sans-Serif" font-size="10.00">_switch_tuple.hpp</text>
+<polygon fill="#bfbfbf" stroke="black" points="486,-78.5 486,-108.5 617,-108.5 617,-78.5 486,-78.5"/>
+<text text-anchor="start" x="494" y="-96.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/autogen/local</text>
+<text text-anchor="middle" x="551.5" y="-85.5" font-family="Helvetica,sans-Serif" font-size="10.00">_switch_tuple.hpp</text>
 </a>
 </g>
 </g>
@@ -77,8 +77,8 @@ var sectionId = 'dynsection-1';
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M391.75,-83.27C324.99,-74.56 225.29,-60.14 139.5,-42 131.3,-40.27 122.65,-38.17 114.27,-36.01"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="391.4,-86.75 401.77,-84.57 392.3,-79.81 391.4,-86.75"/>
+<path fill="none" stroke="midnightblue" d="M475.65,-86.46C392.61,-79.08 255.77,-64.72 139.5,-42 131.01,-40.34 122.06,-38.24 113.43,-36.02"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="475.49,-89.95 485.76,-87.34 476.1,-82.98 475.49,-89.95"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
@@ -94,8 +94,8 @@ var sectionId = 'dynsection-1';
 <!-- Node1&#45;&gt;Node3 -->
 <g id="edge2" class="edge">
 <title>Node1&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M409.04,-75.68C373.45,-65.44 327.81,-52.3 290.59,-41.59"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="408.23,-79.09 418.8,-78.49 410.16,-72.36 408.23,-79.09"/>
+<path fill="none" stroke="midnightblue" d="M476.01,-77.69C427.27,-67.96 362.53,-54.72 305.5,-42 302.46,-41.32 299.36,-40.62 296.24,-39.91"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="475.36,-81.13 485.85,-79.65 476.73,-74.27 475.36,-81.13"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
@@ -110,56 +110,72 @@ var sectionId = 'dynsection-1';
 <!-- Node1&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
 <title>Node1&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M443.33,-71.46C430.16,-60 414.23,-46.14 402.59,-36"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="441.27,-74.31 451.11,-78.23 445.86,-69.03 441.27,-74.31"/>
+<path fill="none" stroke="midnightblue" d="M509.01,-74.34C481.11,-62.42 445.16,-47.07 419.44,-36.07"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="507.94,-77.69 518.51,-78.4 510.69,-71.26 507.94,-77.69"/>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
-<g id="a_node5"><a xlink:href="_link_iterable_8cpp.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="476.5,-6 476.5,-36 620.5,-36 620.5,-6 476.5,-6"/>
+<g id="a_node5"><a xlink:href="_half_closed_star_iterable_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="476.5,-6 476.5,-36 626.5,-36 626.5,-6 476.5,-6"/>
 <text text-anchor="start" x="484.5" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/simplex/iterable</text>
-<text text-anchor="middle" x="548.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">/LinkIterable.cpp</text>
+<text text-anchor="middle" x="551.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">/HalfClosedStarIterable.cpp</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node5 -->
 <g id="edge4" class="edge">
 <title>Node1&#45;&gt;Node5</title>
-<path fill="none" stroke="midnightblue" d="M491.67,-71.46C504.84,-60 520.77,-46.14 532.41,-36"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="489.14,-69.03 483.89,-78.23 493.73,-74.31 489.14,-69.03"/>
+<path fill="none" stroke="midnightblue" d="M551.5,-68.23C551.5,-57.57 551.5,-45.41 551.5,-36.25"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="548,-68.23 551.5,-78.23 555,-68.23 548,-68.23"/>
 </g>
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
-<g id="a_node6"><a xlink:href="_link_single_dimension_iterable_8cpp.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="638.5,-6 638.5,-36 818.5,-36 818.5,-6 638.5,-6"/>
-<text text-anchor="start" x="646.5" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/simplex/iterable</text>
-<text text-anchor="middle" x="728.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">/LinkSingleDimensionIterable.cpp</text>
+<g id="a_node6"><a xlink:href="_link_iterable_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="644.5,-6 644.5,-36 788.5,-36 788.5,-6 644.5,-6"/>
+<text text-anchor="start" x="652.5" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/simplex/iterable</text>
+<text text-anchor="middle" x="716.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">/LinkIterable.cpp</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node6 -->
 <g id="edge5" class="edge">
 <title>Node1&#45;&gt;Node6</title>
-<path fill="none" stroke="midnightblue" d="M529.26,-75.82C574.02,-63.73 633.89,-47.56 676.27,-36.11"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="528.12,-72.5 519.38,-78.49 529.94,-79.26 528.12,-72.5"/>
+<path fill="none" stroke="midnightblue" d="M593.99,-74.34C621.89,-62.42 657.84,-47.07 683.56,-36.07"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="592.31,-71.26 584.49,-78.4 595.06,-77.69 592.31,-71.26"/>
 </g>
 <!-- Node7 -->
 <g id="node7" class="node">
 <title>Node7</title>
-<g id="a_node7"><a xlink:href="_open_star_iterable_8cpp.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="836.5,-6 836.5,-36 980.5,-36 980.5,-6 836.5,-6"/>
-<text text-anchor="start" x="844.5" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/simplex/iterable</text>
-<text text-anchor="middle" x="908.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">/OpenStarIterable.cpp</text>
+<g id="a_node7"><a xlink:href="_link_single_dimension_iterable_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="806.5,-6 806.5,-36 986.5,-36 986.5,-6 806.5,-6"/>
+<text text-anchor="start" x="814.5" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/simplex/iterable</text>
+<text text-anchor="middle" x="896.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">/LinkSingleDimensionIterable.cpp</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node7 -->
 <g id="edge6" class="edge">
 <title>Node1&#45;&gt;Node7</title>
-<path fill="none" stroke="midnightblue" d="M543.24,-84.17C616.35,-75.59 729.99,-60.83 827.5,-42 836.46,-40.27 845.92,-38.18 855.08,-36.01"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="542.73,-80.7 533.2,-85.34 543.54,-87.66 542.73,-80.7"/>
+<path fill="none" stroke="midnightblue" d="M627.35,-77C687.17,-64.78 769.9,-47.87 827.79,-36.04"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="626.3,-73.64 617.2,-79.07 627.7,-80.5 626.3,-73.64"/>
+</g>
+<!-- Node8 -->
+<g id="node8" class="node">
+<title>Node8</title>
+<g id="a_node8"><a xlink:href="_open_star_iterable_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="1004.5,-6 1004.5,-36 1148.5,-36 1148.5,-6 1004.5,-6"/>
+<text text-anchor="start" x="1012.5" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/simplex/iterable</text>
+<text text-anchor="middle" x="1076.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">/OpenStarIterable.cpp</text>
+</a>
+</g>
+</g>
+<!-- Node1&#45;&gt;Node8 -->
+<g id="edge7" class="edge">
+<title>Node1&#45;&gt;Node8</title>
+<path fill="none" stroke="midnightblue" d="M627.31,-86.87C716.05,-79.59 867.2,-65.04 995.5,-42 1004.77,-40.34 1014.55,-38.23 1023.99,-36.01"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="627.02,-83.38 617.33,-87.68 627.58,-90.36 627.02,-83.38"/>
 </g>
 </g>
 </svg>

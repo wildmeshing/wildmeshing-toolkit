@@ -1,24 +1,14 @@
 <map id="wmtk::TriMesh::TriMeshOperationExecutor::collapse_edge_precompute" name="wmtk::TriMesh::TriMeshOperationExecutor::collapse_edge_precompute">
-<area shape="rect" id="node1" title=" " alt="" coords="5,510,269,551"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1simplex_1_1_simplex_collection.html#a1e7079b3b75f70dd28c524556cab76cf" title="Add simplex to the collection." alt="" coords="1153,95,1431,121"/>
-<area shape="rect" id="node3" href="$namespacewmtk_1_1simplex.html#a2ed8f83fbda4dc05306bfe8d2ce7ab94" title="The closed star contains the input simplex, all its top dimension cofaces, and their faces." alt="" coords="317,313,519,340"/>
-<area shape="rect" id="node4" href="$namespacewmtk_1_1simplex.html#aee89641a0de7b5ddf8d15bf376f9d33b" title="Returns all faces of a simplex." alt="" coords="608,44,771,71"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128" title="Return const reference to the simplex vector." alt="" coords="567,481,812,522"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1simplex_1_1_simplex_collection.html#ab318c99d54327383ff1b985bed043f3a" title="Sort simplex vector and remove duplicates." alt="" coords="860,513,1105,554"/>
-<area shape="rect" id="node14" href="$namespacewmtk_1_1simplex.html#a87de7137d8d21f1643dd604d73e8f765" title="Get all top dimension cofaces of the given simplex." alt="" coords="612,546,767,587"/>
-<area shape="rect" id="node16" href="$namespacewmtk_1_1simplex.html#a0101f27eb2ad82814390b92ab1a4d1a0" title=" " alt="" coords="882,578,1083,619"/>
-<area shape="rect" id="node21" href="$classwmtk_1_1simplex_1_1_simplex.html#a753a9245716f207b57cd92fcab5936e7" title=" " alt="" coords="328,714,508,755"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1_mesh.html#a8cc8686f0688613806f43720b6db49e7" title="check validity of tuple including its hash" alt="" coords="609,145,769,172"/>
-<area shape="rect" id="node8" href="$namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925" title=" " alt="" coords="1211,359,1373,401"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1simplex_1_1_simplex_collection.html#a1973c83eede96b64f422049c6fc52976" title=" " alt="" coords="567,247,812,289"/>
-<area shape="rect" id="node18" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="576,313,803,340"/>
-<area shape="rect" id="node20" href="$classwmtk_1_1simplex_1_1_simplex.html#a3650fd31ff1864285502dba66db3c73c" title=" " alt="" coords="599,415,779,457"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1_tuple.html#a0023f575be92cd5ceeeaaaa3762ea06d" title="Checks if a tuple is &quot;null&quot;. This merely implies the global index is &#45;1." alt="" coords="907,145,1058,172"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1_mesh.html#ade176d345902d97af8c5da04aa3a095b" title=" " alt="" coords="889,196,1076,223"/>
-<area shape="rect" id="node9" href="$namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06" title="Retrieves the current logger." alt="" coords="1479,367,1587,393"/>
-<area shape="rect" id="node10" href="$namespacewmtk.html#a3daa7951a5f8b78cf4600dc047fcc180" title="Setup a logger object to be used by WildmeshToolkit." alt="" coords="1635,367,1769,393"/>
-<area shape="rect" id="node15" href="$classwmtk_1_1simplex_1_1_simplex_collection.html#a0d0c1765c4ed8ffd0f163661111bfb08" title=" " alt="" coords="860,447,1105,489"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163" title=" " alt="" coords="1202,578,1382,619"/>
-<area shape="rect" id="node19" href="$classwmtk_1_1_mesh.html#a933f681cf24a63b155c9462280385200" title=" " alt="" coords="902,306,1063,347"/>
-<area shape="rect" id="node22" href="$classwmtk_1_1simplex_1_1_simplex.html#ab6d51ca0c220792c1c09824d152bb53a" title=" " alt="" coords="599,714,779,755"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,161,269,202"/>
+<area shape="rect" id="node2" href="$classwmtk_1_1simplex_1_1_simplex_collection.html#a1e7079b3b75f70dd28c524556cab76cf" title="Add simplex to the collection." alt="" coords="611,132,888,159"/>
+<area shape="rect" id="node3" href="$namespacewmtk_1_1simplex.html#ae37e7bd61fb3f9b968b6ce6f9cf6f11f" title=" " alt="" coords="355,44,525,85"/>
+<area shape="rect" id="node4" href="$namespacewmtk_1_1simplex.html#aee89641a0de7b5ddf8d15bf376f9d33b" title="Returns all faces of a simplex." alt="" coords="359,110,521,136"/>
+<area shape="rect" id="node5" href="$namespacewmtk.html#a5cf45c152e856196bb734c6f48919a24" title="Get a unique integer id corresponding to each primitive type." alt="" coords="363,161,517,202"/>
+<area shape="rect" id="node6" href="$classwmtk_1_1simplex_1_1_simplex_collection.html#a1973c83eede96b64f422049c6fc52976" title=" " alt="" coords="317,226,563,268"/>
+<area shape="rect" id="node7" href="$namespacewmtk_1_1simplex.html#a0d1ccc8ee1bfbe2657f869c2fb95a699" title=" " alt="" coords="335,292,545,333"/>
+<area shape="rect" id="node8" href="$namespacewmtk_1_1simplex.html#a0101f27eb2ad82814390b92ab1a4d1a0" title=" " alt="" coords="339,357,541,398"/>
+<area shape="rect" id="node9" href="$namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925" title=" " alt="" coords="668,324,831,365"/>
+<area shape="rect" id="node12" href="$classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163" title=" " alt="" coords="659,389,839,430"/>
+<area shape="rect" id="node10" href="$namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06" title="Retrieves the current logger." alt="" coords="936,331,1044,358"/>
+<area shape="rect" id="node11" href="$namespacewmtk.html#a3daa7951a5f8b78cf4600dc047fcc180" title="Setup a logger object to be used by WildmeshToolkit." alt="" coords="1092,331,1227,358"/>
 </map>

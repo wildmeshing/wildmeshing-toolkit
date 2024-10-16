@@ -6,6 +6,7 @@ var classwmtk_1_1simplex_1_1_id_simplex =
     [ "as_tuple", "classwmtk_1_1simplex_1_1_id_simplex.html#a12a0de9e744f487a3c70f02205f67a31", null ],
     [ "dimension", "classwmtk_1_1simplex_1_1_id_simplex.html#ae995120a546dfa75c198a2d7613a78d0", null ],
     [ "index", "classwmtk_1_1simplex_1_1_id_simplex.html#ad483628062bc856966d9a7519abec00b", null ],
+    [ "operator!=", "classwmtk_1_1simplex_1_1_id_simplex.html#a18ddce5635cb51d695be20129e7f504a", null ],
     [ "operator<", "classwmtk_1_1simplex_1_1_id_simplex.html#ae799434daad5e343fba1a1c50197a740", null ],
     [ "operator==", "classwmtk_1_1simplex_1_1_id_simplex.html#a879a38530318a4c6bfe5565a9277fadf", null ],
     [ "primitive_type", "classwmtk_1_1simplex_1_1_id_simplex.html#ac308770a8fa5611a414ee6dba94bf711", null ],
