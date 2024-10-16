@@ -962,7 +962,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
     int64_t frozen = 0;
     for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
         const auto p = pt_accessor.vector_attribute(v);
-        for (int64_t d = 0; d < 3; ++d) {
+        for (int64_t d = 0; d < 2; ++d) {
             if (!p[d].is_rounded()) {
                 ++unrounded;
                 break;
@@ -1059,7 +1059,7 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
             int64_t unrounded = 0;
             for (const auto& v : mesh->get_all(PrimitiveType::Vertex)) {
                 const auto p = pt_accessor.vector_attribute(v);
-                for (int64_t d = 0; d < 3; ++d) {
+                for (int64_t d = 0; d < 2; ++d) {
                     if (!p[d].is_rounded()) {
                         ++unrounded;
                         break;
