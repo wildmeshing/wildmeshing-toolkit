@@ -7,6 +7,7 @@
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/closed_star_iterable.hpp>
 #include <wmtk/simplex/cofaces_single_dimension_iterable.hpp>
+#include <wmtk/simplex/link_single_dimension_iterable.hpp>
 #include <wmtk/simplex/open_star_iterable.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 
@@ -153,43 +154,15 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
     simplex::IdSimplexCollection all(m_mesh);
     all.reserve(100);
 
-    if (direct_mods.size() == 1 && direct_mods[0].primitive_type() == PrimitiveType::Vertex) {
-        // !!!! This changes the result
 
-        // check if there is only one primitive type to transfer to
-        bool only_one_pt = true;
-        const PrimitiveType coface_pt = m_attr_transfer_strategies[0]->primitive_type();
-        for (int64_t i = 1; i < m_attr_transfer_strategies.size(); ++i) {
-            if (m_attr_transfer_strategies[i]->primitive_type() != coface_pt) {
-                only_one_pt = false;
-                break;
-            }
-        }
-
-        const simplex::Simplex& s = direct_mods[0];
+    for (const auto& s : direct_mods) {
         if (!s.tuple().is_null()) {
-            if (only_one_pt) {
-                for (const Tuple& t :
-                     simplex::cofaces_single_dimension_iterable(m_mesh, s, coface_pt)) {
-                    all.add(m_mesh.get_id_simplex(t, coface_pt));
-                }
-            } else {
-                for (const simplex::IdSimplex& ss : simplex::open_star_iterable(m_mesh, s)) {
-                    all.add(ss);
-                }
+            for (const simplex::IdSimplex& ss : simplex::closed_star_iterable(m_mesh, s)) {
+                all.add(ss);
             }
         }
-    } else {
-        // general case
-        for (const auto& s : direct_mods) {
-            if (!s.tuple().is_null()) {
-                for (const simplex::IdSimplex& ss : simplex::closed_star_iterable(m_mesh, s)) {
-                    all.add(ss);
-                }
-            }
-        }
-        all.sort_and_clean();
     }
+    all.sort_and_clean();
 
     for (const auto& at_ptr : m_attr_transfer_strategies) {
         if (&m_mesh == &(at_ptr->mesh())) {
