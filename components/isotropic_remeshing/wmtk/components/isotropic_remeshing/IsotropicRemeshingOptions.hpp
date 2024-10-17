@@ -24,6 +24,9 @@ struct IsotropicRemeshingOptions
     bool dont_disable_split = false;
     bool fix_uv_seam = true;
 
+    double envelope_size = 1e-3;
+
+
     void load_json(const nlohmann::json& js);
     void write_json(nlohmann::json& js) const;
 

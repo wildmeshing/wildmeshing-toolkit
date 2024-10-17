@@ -340,4 +340,18 @@ std::shared_ptr<wmtk::operations::Operation> configure_swap(
     }
     return {};
 }
+
+
+
+void configure_swap_transfer(
+    operations::composite::EdgeSwap& swap,
+    const attribute::MeshAttributeHandle& vertex_handle) {
+
+        swap.split().set_new_attribute_strategy(vertex_handle);
+        swap.collapse().set_new_attribute_strategy(
+            vertex_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
+
+}
+
 } // namespace wmtk::components::isotropic_remeshing::internal
