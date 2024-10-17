@@ -1,6 +1,6 @@
 #pragma once
-#include <wmtk/PrimitiveType.hpp>
 #include <tuple>
+#include <wmtk/PrimitiveType.hpp>
 
 
 namespace wmtk {
@@ -25,6 +25,7 @@ public:
 
     bool operator<(const IdSimplex& o) const;
     bool operator==(const IdSimplex& o) const;
+    bool operator!=(const IdSimplex& o) const;
 
 protected:
     friend class Mesh;
@@ -53,5 +54,9 @@ inline bool IdSimplex::operator<(const IdSimplex& o) const
 inline bool IdSimplex::operator==(const IdSimplex& o) const
 {
     return as_tuple() == o.as_tuple();
+}
+inline bool IdSimplex::operator!=(const IdSimplex& o) const
+{
+    return as_tuple() != o.as_tuple();
 }
 } // namespace wmtk::simplex
