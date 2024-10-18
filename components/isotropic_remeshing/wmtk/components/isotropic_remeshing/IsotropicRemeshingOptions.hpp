@@ -3,6 +3,7 @@
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <optional>
+#include "EdgeSwapMode.hpp"
 
 
 namespace wmtk::components::isotropic_remeshing {
@@ -24,11 +25,18 @@ struct IsotropicRemeshingOptions
     bool dont_disable_split = false;
     bool fix_uv_seam = true;
 
+    EdgeSwapMode edge_swap_mode = EdgeSwapMode::Skip;
+
     double envelope_size = 1e-3;
 
 
     void load_json(const nlohmann::json& js);
     void write_json(nlohmann::json& js) const;
+
+    friend void to_json(nlohmann::json& nlohmann_json_j, const IsotropicRemeshingOptions& nlohmann_json_t);
+    friend void from_json(
+        const nlohmann::json& nlohmann_json_j,
+        IsotropicRemeshingOptions& nlohmann_json_t);
 
     std::vector<wmtk::attribute::MeshAttributeHandle> all_positions() const;
 };

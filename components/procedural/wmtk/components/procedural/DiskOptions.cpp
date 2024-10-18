@@ -46,4 +46,19 @@ std::shared_ptr<Mesh> make_mesh(const DiskOptions& opt)
     }
     return mptr;
 }
+
+    void to_json(nlohmann::json& nlohmann_json_j, const DiskOptions& nlohmann_json_t)
+    {
+        nlohmann_json_j["size"] = nlohmann_json_t.size;
+        if (nlohmann_json_t.coordinates.has_value()) {
+            nlohmann_json_j["coordinates"] = *nlohmann_json_t.coordinates;
+        }
+    }
+    void from_json(const nlohmann::json& nlohmann_json_j, DiskOptions& nlohmann_json_t)
+    {
+        nlohmann_json_t.size = nlohmann_json_j["size"];
+        if (const auto& coords = nlohmann_json_j["coordinates"]; !coords.is_null()) {
+            nlohmann_json_t.coordinates = coords.get<DiskOptions::Coordinates>();
+        }
+    }
 } // namespace wmtk::components::procedural
