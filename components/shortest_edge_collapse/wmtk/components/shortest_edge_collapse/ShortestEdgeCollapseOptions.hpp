@@ -4,6 +4,8 @@
 
 namespace wmtk::components::shortest_edge_collapse {
 
+enum class MultiMeshOptions { None, OptBoundary, OptInterior };
+
 struct ShortestEdgeCollapseOptions
 {
     /**
@@ -31,6 +33,8 @@ struct ShortestEdgeCollapseOptions
      * Any other attribute goes here. They are handled with the default attribute behavior.
      */
     std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
+
+    MultiMeshOptions use_multimesh = MultiMeshOptions::None;
 };
 
 } // namespace wmtk::components::shortest_edge_collapse

@@ -2,6 +2,7 @@
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Scheduler.hpp>
+#include <wmtk/components/multimesh/multimesh.hpp>
 #include <wmtk/components/utils/get_attributes.hpp>
 #include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
@@ -24,24 +25,55 @@
 
 namespace wmtk::components::shortest_edge_collapse {
 
-void shortest_edge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& options)
+void shortest_edge_collapse(Mesh& meshin, const ShortestEdgeCollapseOptions& options)
 {
-    if (mesh.top_simplex_type() != PrimitiveType::Edge &&
-        mesh.top_simplex_type() != PrimitiveType::Triangle &&
-        mesh.top_simplex_type() != PrimitiveType::Tetrahedron) {
+    if (meshin.top_simplex_type() != PrimitiveType::Edge &&
+        meshin.top_simplex_type() != PrimitiveType::Triangle &&
+        meshin.top_simplex_type() != PrimitiveType::Tetrahedron) {
         log_and_throw_error(
             "shortest edge collapse works only for triangle or tet meshes: {}",
-            primitive_type_name(mesh.top_simplex_type()));
+            primitive_type_name(meshin.top_simplex_type()));
     }
 
-    const attribute::MeshAttributeHandle& position_handle = options.position_handle;
+    std::shared_ptr<Mesh> current_mesh;
+    attribute::MeshAttributeHandle position_handle = options.position_handle;
+    attribute::MeshAttributeHandle other_position_handle;
+
+    if (options.use_multimesh != MultiMeshOptions::None) {
+        auto [parent_mesh, child_mesh] = wmtk::components::multimesh::multimesh(
+            wmtk::components::multimesh::MultiMeshType::Boundary,
+            meshin,
+            nullptr,
+            options.position_handle,
+            "",
+            -1,
+            -1);
+        parent_mesh->clear_attributes({options.position_handle});
+
+        if (options.use_multimesh == MultiMeshOptions::OptBoundary) {
+            current_mesh = child_mesh;
+            position_handle =
+                child_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+            other_position_handle = options.position_handle;
+        } else {
+            current_mesh = parent_mesh;
+            other_position_handle =
+                child_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        }
+    }
+
+
+    Mesh& mesh = options.use_multimesh != MultiMeshOptions::None ? *current_mesh : meshin;
+
     const attribute::MeshAttributeHandle& inversion_position_handle =
         options.inversion_position_handle;
 
-    // TriMesh& mesh = static_cast<TriMesh&>(position_handle.mesh());
 
     std::vector<attribute::MeshAttributeHandle> pass_through_attributes =
         options.pass_through_attributes;
+    if (options.use_multimesh != MultiMeshOptions::None) {
+        pass_through_attributes.push_back(other_position_handle);
+    }
 
     /////////////////////////////////////////////
 
@@ -129,7 +161,7 @@ void shortest_edge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& optio
         invariant_interior_vertex->add(
             std::make_shared<invariants::InteriorSimplexInvariant>(m, PrimitiveType::Vertex));
     };
-    multimesh::MultiMeshVisitor visitor(set_all_invariants);
+    wmtk::multimesh::MultiMeshVisitor visitor(set_all_invariants);
     visitor.execute_from_root(mesh);
 
     auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(mesh);
@@ -195,6 +227,16 @@ void shortest_edge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& optio
         collapse->set_new_attribute_strategy(attr);
     }
 
+    auto propagate_position = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd { return P; };
+    if (options.use_multimesh != MultiMeshOptions::None) {
+        auto transfer_position =
+            std::make_shared<operations::SingleAttributeTransferStrategy<double, double>>(
+                other_position_handle,
+                position_handle,
+                propagate_position);
+        collapse->add_transfer_strategy(transfer_position);
+    }
+
 
     //////////////////////////////////////////
     Scheduler scheduler;
@@ -209,7 +251,7 @@ void shortest_edge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& optio
     //     }
     // }
 
-    multimesh::consolidate(mesh);
+    wmtk::multimesh::consolidate(mesh);
 
     logger().info(
         "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
