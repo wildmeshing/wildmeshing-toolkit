@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
         }
         options.lock_boundary = j["lock_boundary"];
 
-        shortest_edge_collapse(static_cast<TriMesh&>(mesh), options);
+        shortest_edge_collapse(mesh, options);
     }
 
     wmtk::components::output::output(mesh, j["output"], pos_handle);

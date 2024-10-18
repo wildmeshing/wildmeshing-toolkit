@@ -26,7 +26,8 @@ namespace wmtk::components::shortest_edge_collapse {
 
 void shortest_edge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& options)
 {
-    if (mesh.top_simplex_type() != PrimitiveType::Triangle &&
+    if (mesh.top_simplex_type() != PrimitiveType::Edge &&
+        mesh.top_simplex_type() != PrimitiveType::Triangle &&
         mesh.top_simplex_type() != PrimitiveType::Tetrahedron) {
         log_and_throw_error(
             "shortest edge collapse works only for triangle or tet meshes: {}",
