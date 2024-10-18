@@ -41,7 +41,7 @@ bool both_map_to_child(const Mesh& parent, const Mesh& child, const Tuple& input
     const simplex::Simplex right(
         child_type,
         opposite(parent.switch_tuple(input, PrimitiveType::Vertex)));
-    return parent.can_map(child, left) && parent.can_map(child, right);
+    return both_map_to_child(parent, child, left, right);
 }
 
 
