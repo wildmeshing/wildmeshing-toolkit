@@ -7,13 +7,17 @@ nlohmann::json shortest_edge_collapse_spec = R"(
   {
     "pointer": "/",
     "type": "object",
-    "required": ["input", "output"],
+    "required": [
+      "input",
+      "output"
+    ],
     "optional": [
       "length_rel",
       "envelope_size",
       "lock_boundary",
       "report",
-      "input_path"
+      "input_path",
+      "use_multimesh"
     ]
   },
   {
@@ -51,6 +55,16 @@ nlohmann::json shortest_edge_collapse_spec = R"(
     "pointer": "/input_path",
     "type": "string",
     "default": ""
+  },
+  {
+    "pointer": "/use_multimesh",
+    "type": "string",
+    "default": "none",
+    "options": [
+      "none",
+      "interior",
+      "boundary"
+    ]
   }
 ]
 )"_json;
