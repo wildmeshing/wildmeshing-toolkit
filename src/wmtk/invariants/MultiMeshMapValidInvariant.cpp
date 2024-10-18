@@ -7,101 +7,81 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/MultiMeshSimplexVisitor.hpp>
+#include <wmtk/simplex/cofaces_single_dimension_iterable.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
+#include "wmtk/simplex/cofaces_single_dimension.hpp"
 
 namespace wmtk {
 namespace {
 
-bool are_all_ears_in_child(const TriMesh& parent, const EdgeMesh& child, const Tuple& t)
+// checks if two simplices both are mappable
+bool both_map_to_child(
+    const Mesh& parent,
+    const Mesh& child,
+    const simplex::Simplex& left,
+    const simplex::Simplex& right)
 {
-    const Tuple parent_ear_0 = parent.switch_edge(t);
-    const Tuple paretn_ear_1 = parent.switch_edge(parent.switch_vertex(t));
-    bool find_ear_0 =
-        !parent.map_to_child(child, simplex::Simplex::edge(parent, parent_ear_0)).empty();
-    bool find_ear_1 =
-        !parent.map_to_child(child, simplex::Simplex::edge(parent, paretn_ear_1)).empty();
-    return find_ear_0 && find_ear_1;
+    return parent.can_map(child, left) && parent.can_map(child, right);
 }
 
-bool are_all_ears_in_child(const TetMesh& parent, const TriMesh& child, const Tuple& t)
+
+// computes teh two ears in a K+1 simplex over the input edge to see if their facets will be mapped
+// into one another
+bool both_map_to_child(const Mesh& parent, const Mesh& child, const Tuple& input)
 {
-    const Tuple parent_ear_0 = parent.switch_face(parent.switch_edge(t));
-    const Tuple parent_ear_1 = parent.switch_face(parent.switch_edge(parent.switch_vertex(t)));
-    bool find_ear_0 =
-        !parent.map_to_child(child, simplex::Simplex::face(parent, parent_ear_0)).empty();
-    bool find_ear_1 =
-        !parent.map_to_child(child, simplex::Simplex::face(parent, parent_ear_1)).empty();
-    return find_ear_0 && find_ear_1;
+    const PrimitiveType child_type = child.top_simplex_type();
+    const PrimitiveType collapsed_simplex_type = child_type + 1;
+    auto opposite = [&parent, collapsed_simplex_type](Tuple t) {
+        for (PrimitiveType pt = collapsed_simplex_type; pt > PrimitiveType::Vertex; pt = pt - 1) {
+            t = parent.switch_tuple(t, pt);
+        }
+        return t;
+    };
+    const simplex::Simplex left(child_type, opposite(input));
+    const simplex::Simplex right(
+        child_type,
+        opposite(parent.switch_tuple(input, PrimitiveType::Vertex)));
+    return parent.can_map(child, left) && parent.can_map(child, right);
 }
 
-bool are_all_ears_in_child(const TetMesh& parent, const EdgeMesh& child, const Tuple& t)
+
+// two child  K-facets will merge into one another if they are the ears of a K+1 simplex whose
+// "input edge" is the input edge. This function iterates through those K+1 simplices and lets
+// both_map_to_child check for if both ears are mapped
+bool any_pairs_both_map_to_child(
+    const Mesh& parent,
+    const Mesh& child,
+    const simplex::Simplex& edge)
 {
-    const Tuple parent_ear_0 = parent.switch_edge(t);
-    const Tuple parent_ear_1 = parent.switch_edge(parent.switch_vertex(t));
-    bool find_ear_0 =
-        !parent.map_to_child(child, simplex::Simplex::edge(parent, parent_ear_0)).empty();
-    bool find_ear_1 =
-        !parent.map_to_child(child, simplex::Simplex::edge(parent, parent_ear_1)).empty();
-
-    const Tuple t_switch_face = parent.switch_face(t);
-    const Tuple parent_ear_2 = parent.switch_edge(t_switch_face);
-    const Tuple parent_ear_3 = parent.switch_edge(parent.switch_vertex(t_switch_face));
-    bool find_ear_2 =
-        !parent.map_to_child(child, simplex::Simplex::edge(parent, parent_ear_2)).empty();
-    bool find_ear_3 =
-        !parent.map_to_child(child, simplex::Simplex::edge(parent, parent_ear_3)).empty();
-
-    return (find_ear_0 && find_ear_1) || (find_ear_2 && find_ear_3);
+    assert(edge.primitive_type() == PrimitiveType::Edge);
+    const PrimitiveType parent_type = parent.top_simplex_type();
+    const PrimitiveType child_type = child.top_simplex_type();
+    assert(parent_type > child_type);
+    if (parent_type == child_type + 1) {
+        return both_map_to_child(parent, child, edge.tuple());
+    }
+    for (const Tuple& tuple :
+         simplex::cofaces_single_dimension_iterable(parent, edge, child.top_simplex_type() + 1)) {
+        if (both_map_to_child(parent, child, tuple)) {
+            return true;
+        }
+    }
+    return false;
 }
+
+
 struct MultiMeshMapValidFunctor
 {
     template <typename T>
-    bool operator()(const T& m, const simplex::Simplex& s, int64_t) {
-        return this->operator()(m,s);
-    }
-    bool operator()(const Mesh& m, const simplex::Simplex& s) const { return false; }
-    bool operator()(const PointMesh& m, const simplex::Simplex& s) const { return false; }
-
-    bool operator()(const EdgeMesh& m, const simplex::Simplex& s) const { return false; }
-    bool operator()(const TriMesh& m, const simplex::Simplex& s) const
+    bool operator()(const T& m, const simplex::Simplex& s, int64_t)
     {
-        const std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(m, s);
-
-        for (auto child_ptr : m.get_child_meshes()) {
-            if (child_ptr->top_cell_dimension() != 1) {
-                continue;
-            }
-
-            for (const Tuple& t : equivalent_tuples) {
-                const EdgeMesh& child = dynamic_cast<const EdgeMesh&>(*child_ptr);
-                if (m.map_to_child(child, s).empty() && are_all_ears_in_child(m, child, t)) {
-                    return false;
-                }
-            }
-        }
-        return true;
+        return this->operator()(m, s);
     }
-    bool operator()(const TetMesh& m, const simplex::Simplex& s) const
+    bool operator()(const Mesh& m, const simplex::Simplex& s) const
     {
-        const std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(m, s);
-
         for (auto child_ptr : m.get_child_meshes()) {
-            if (child_ptr->top_cell_dimension() != 2 && child_ptr->top_cell_dimension() != 1) {
-                continue;
-            }
-
-            for (const Tuple& t : equivalent_tuples) {
-                if (child_ptr->top_cell_dimension() == 2) {
-                    const TriMesh& child = dynamic_cast<const TriMesh&>(*child_ptr);
-                    if (m.map_to_child(child, s).empty() && are_all_ears_in_child(m, child, t)) {
-                        return false;
-                    }
-                } else {
-                    const EdgeMesh& child = dynamic_cast<const EdgeMesh&>(*child_ptr);
-                    if (m.map_to_child(child, s).empty() && are_all_ears_in_child(m, child, t)) {
-                        return false;
-                    }
-                }
+            if (any_pairs_both_map_to_child(m, *child_ptr, s)) {
+                return false;
             }
         }
         return true;
@@ -119,7 +99,7 @@ bool MultiMeshMapValidInvariant::before(const simplex::Simplex& t) const
         std::integral_constant<int64_t, 1>{}, // specify that this runs on edges
         MultiMeshMapValidFunctor{});
     // TODO: fix visitor to work for const data
-    visitor.execute_from_root(const_cast<Mesh&>(mesh()), simplex::NavigatableSimplex(mesh(),t));
+    visitor.execute_from_root(const_cast<Mesh&>(mesh()), simplex::NavigatableSimplex(mesh(), t));
     const auto& data = visitor.cache();
 
     for (const auto& [key, value_var] : data) {
