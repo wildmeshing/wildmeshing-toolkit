@@ -851,7 +851,7 @@ TEST_CASE("test_split_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     // Do another edge_split
     {
         Tuple edge = parent.edge_tuple_with_vs_and_t(1, 2, 3);
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
         REQUIRE(parent.is_valid_with_hash(edge));
 #else
         REQUIRE(parent.is_valid(edge));
@@ -991,12 +991,12 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             std::vector<simplex::Simplex> children = parent.map_to_child(child0, edge_simplex);
             REQUIRE(children.size() == 1);
             const Simplex& cs = children[0];
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
             REQUIRE(child0.is_valid_with_hash(cs.tuple()));
 #else
             REQUIRE(child0.is_valid(cs.tuple()));
 #endif
-            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child0,cs ,edge_f0_simplex));
+            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child0, cs, edge_f0_simplex));
         }
 
         // CHILD1:
@@ -1011,12 +1011,12 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             std::vector<simplex::Simplex> children = parent.map_to_child(child1, edge_simplex);
             REQUIRE(children.size() == 1);
             const Simplex& cs = children[0];
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
             REQUIRE(child1.is_valid_with_hash(cs.tuple()));
 #else
             REQUIRE(child1.is_valid(cs.tuple()));
 #endif
-            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child1,cs ,edge_simplex));
+            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child1, cs, edge_simplex));
         }
 
         // CHILD2:
@@ -1044,14 +1044,14 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             std::cout << std::string(DEBUG_Tuple(edge_f0_simplex.tuple())) << " "
                       << std::string(DEBUG_Tuple(edge_simplex.tuple())) << std::endl;
 
-#if defined(WMTK_ENABLE_HASH_UPDATE) 
+#if defined(WMTK_ENABLE_HASH_UPDATE)
             REQUIRE(child2.is_valid_with_hash(cs0.tuple()));
             REQUIRE(child2.is_valid_with_hash(cs1.tuple()));
 #else
             REQUIRE(child2.is_valid(cs0.tuple()));
             REQUIRE(child2.is_valid(cs1.tuple()));
 #endif
-            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child2,cs0 ,edge_f0_simplex));
+            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child2, cs0, edge_f0_simplex));
             REQUIRE(cs1.tuple() == edge_simplex.tuple());
             REQUIRE(cs1.primitive_type() == edge_simplex.primitive_type());
         }
@@ -1122,6 +1122,80 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
     CHECK(child2.fv_from_fid(8) == Vector3l(9, 7, 2));
     CHECK(child2.fv_from_fid(9) == Vector3l(3, 10, 6));
     CHECK(child2.fv_from_fid(10) == Vector3l(3, 8, 10));
+
+    p_mul_manager.check_map_valid(parent);
+}
+
+TEST_CASE("test_split_multi_mesh_fail", "[multimesh][2D]")
+{
+    DEBUG_TriMesh parent = two_neighbors();
+    std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
+
+    auto& child1 = *child1_ptr;
+
+    parent.reserve_more_attributes({10, 10, 10});
+    child1.reserve_more_attributes({10, 10, 10});
+
+    auto child1_map = multimesh::same_simplex_dimension_surjection(parent, child1, {0, 1});
+
+
+    parent.register_child_mesh(child1_ptr, child1_map);
+
+    // test id computation
+    REQUIRE(parent.absolute_multi_mesh_id().empty());
+    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<int64_t>{0});
+
+    const auto& p_mul_manager = parent.multi_mesh_manager();
+    p_mul_manager.check_map_valid(parent);
+
+    {
+        // PARENT:
+        //  3-- --- 0 ---- 4
+        //   |     X \     |
+        //   | f1 X   \ f2 |
+        //   |   X f0  \   |
+        //   |  X       \  |
+        //   1  ---------  2
+        // vertex = 1
+        // face = f1
+        // (XXXX indicates the edge)
+        //
+        Tuple edge = parent.edge_tuple_with_vs_and_t(1, 0, 1);
+        simplex::Simplex edge_simplex = simplex::Simplex(parent, PrimitiveType::Edge, edge);
+
+        // CHILD1:
+        //  3------ 0
+        //   |     X \ .
+        //   | f1 X   \  .
+        //   |   X f0  \ .
+        //   |  X       \ .
+        //  1  --------- 2
+        //
+        {
+            std::vector<simplex::Simplex> children = parent.map_to_child(child1, edge_simplex);
+            REQUIRE(children.size() == 1);
+            const Simplex& cs = children[0];
+            REQUIRE(child1.is_valid(cs.tuple()));
+            REQUIRE(wmtk::simplex::utils::SimplexComparisons::equal(child1, cs, edge_simplex));
+        }
+
+        operations::EdgeSplit split(parent);
+        REQUIRE(!split(Simplex::edge(parent, edge)).empty());
+    }
+
+    REQUIRE(parent.is_connectivity_valid());
+    REQUIRE(child1.is_connectivity_valid());
+
+    CHECK(parent.fv_from_fid(2) == Vector3l(0, 2, 4));
+    CHECK(parent.fv_from_fid(3) == Vector3l(3, 1, 5));
+    CHECK(parent.fv_from_fid(4) == Vector3l(3, 5, 0));
+    CHECK(parent.fv_from_fid(5) == Vector3l(5, 1, 2));
+    CHECK(parent.fv_from_fid(6) == Vector3l(0, 5, 2));
+
+    CHECK(child1.fv_from_fid(2) == Vector3l(3, 1, 4));
+    CHECK(child1.fv_from_fid(3) == Vector3l(3, 4, 0));
+    CHECK(child1.fv_from_fid(4) == Vector3l(4, 1, 2));
+    CHECK(child1.fv_from_fid(5) == Vector3l(0, 4, 2));
 
     p_mul_manager.check_map_valid(parent);
 }
