@@ -27,7 +27,7 @@ public:
             return {};
         }
     }
-    void to_json(nlohmann::json& nlohmann_json_j, const DiskOptions& nlohmann_json_t);
-    void from_json(const nlohmann::json& nlohmann_json_j, DiskOptions& nlohmann_json_t);
+    friend void to_json(nlohmann::json& nlohmann_json_j, const DiskOptions& nlohmann_json_t);
+    friend void from_json(const nlohmann::json& nlohmann_json_j, DiskOptions& nlohmann_json_t);
 };
 } // namespace wmtk::components::procedural
