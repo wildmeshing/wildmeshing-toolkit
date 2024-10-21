@@ -9,6 +9,7 @@
 namespace wmtk::components::procedural {
 class GridOptions
 {
+public:
     constexpr static auto name() -> std::string_view { return "grid"; }
 
 public:

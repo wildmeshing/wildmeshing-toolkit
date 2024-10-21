@@ -12,11 +12,12 @@ namespace wmtk::components::procedural {
 
 struct ProceduralOptions
 {
-    std::string name;
     std::variant<GridOptions, TriangleFanOptions, DiskOptions> settings;
 
     friend void to_json(nlohmann::json& nlohmann_json_j, const ProceduralOptions& nlohmann_json_t);
-    friend void from_json(const nlohmann::json& nlohmann_json_j, ProceduralOptions& nlohmann_json_t);
+    friend void from_json(
+        const nlohmann::json& nlohmann_json_j,
+        ProceduralOptions& nlohmann_json_t);
 };
 
 

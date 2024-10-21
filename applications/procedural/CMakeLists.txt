@@ -5,6 +5,7 @@ wmtk_add_application(procedural_app
     spec.hpp
     )
 
+target_compile_features(procedural_app PUBLIC cxx_std_20)
     #register_jse_json(APPLICATION_NAME procedural INPUT procedural_spec.json )
 
 # procedural requires the output component and the procedural component
