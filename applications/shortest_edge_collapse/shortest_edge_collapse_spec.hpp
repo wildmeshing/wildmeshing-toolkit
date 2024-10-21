@@ -17,7 +17,8 @@ nlohmann::json shortest_edge_collapse_spec = R"(
       "lock_boundary",
       "report",
       "input_path",
-      "use_multimesh"
+      "use_multimesh",
+      "check_inversion"
     ]
   },
   {
@@ -55,6 +56,11 @@ nlohmann::json shortest_edge_collapse_spec = R"(
     "pointer": "/input_path",
     "type": "string",
     "default": ""
+  },
+  {
+    "pointer": "/check_inversion",
+    "type": "bool",
+    "default": false
   },
   {
     "pointer": "/use_multimesh",
