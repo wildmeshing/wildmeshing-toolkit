@@ -17,6 +17,13 @@ using namespace wmtk;
 namespace fs = std::filesystem;
 
 using wmtk::components::utils::resolve_paths;
+namespace wmtk::components::shortest_edge_collapse {
+NLOHMANN_JSON_SERIALIZE_ENUM(
+    wmtk::components::shortest_edge_collapse::MultiMeshOptions,
+    {{wmtk::components::shortest_edge_collapse::MultiMeshOptions::None, "none"},
+     {wmtk::components::shortest_edge_collapse::MultiMeshOptions::OptInterior, "interior"},
+     {wmtk::components::shortest_edge_collapse::MultiMeshOptions::OptBoundary, "boundary"}});
+}
 
 int main(int argc, char* argv[])
 {
@@ -65,8 +72,10 @@ int main(int argc, char* argv[])
             options.envelope_size = j["envelope_size"];
         }
         options.lock_boundary = j["lock_boundary"];
+        options.use_multimesh = j["use_multimesh"];
+        options.check_inversions = j["check_inversion"];
 
-        shortest_edge_collapse(static_cast<TriMesh&>(mesh), options);
+        shortest_edge_collapse(mesh, options);
     }
 
     wmtk::components::output::output(mesh, j["output"], pos_handle);

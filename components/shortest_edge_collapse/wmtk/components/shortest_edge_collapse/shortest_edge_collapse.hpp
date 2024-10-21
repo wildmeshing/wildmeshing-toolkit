@@ -31,7 +31,7 @@ void shortest_edge_collapse(
     const double length_rel,
     std::optional<bool> lock_boundary = {},
     std::optional<double> envelope_size = {},
-    std::optional<attribute::MeshAttributeHandle> inversion_position_handle = {},
+    bool check_inversion = false,
     const std::vector<attribute::MeshAttributeHandle>& pass_through = {});
 
 } // namespace wmtk::components::shortest_edge_collapse

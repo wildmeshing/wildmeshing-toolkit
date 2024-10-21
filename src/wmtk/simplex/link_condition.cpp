@@ -153,73 +153,75 @@ bool link_condition(const TetMesh& mesh, const Tuple& edge)
         return false;
     }
 
-    // add dummy vertex and link it to boundary faces
-    // the check can be convert from link_dummy(a) \intersect link_dummy(b) == link_dummy(ab) to:
-    // if ab is a boundary edge, then if any boundary face incident a shares a common edge with any
-    // boundary face incident b, return false.
-    // if ab is not boundary edge, then if a is not on
-    // boundary or b is not on boundary, return true, otherwise false
+    /**
+     * The link condition on the boundary can be reduced to two cases.
+     * 1. edge is boundary: Perform the link condition on the boundary triangles.
+     * 2. edge is interior: Check if vertices are boundary. If both are, the link condition fails.
+     */
 
-    auto get_boundary_faces = [&mesh](const Tuple& _v) {
+    auto get_boundary_vertex_link = [&mesh](const Tuple& _v) {
         const Simplex input_v(mesh, PrimitiveType::Vertex, _v);
-        std::vector<Tuple> ret;
-        // get incident_faces from open_star
+        // std::vector<Tuple> ret;
+        IdSimplexCollection ret(mesh);
         // auto incident_faces =
         //    cofaces_single_dimension_tuples(mesh, input_v, PrimitiveType::Triangle);
         auto incident_faces =
             cofaces_single_dimension_iterable(mesh, input_v, PrimitiveType::Triangle);
         for (const Tuple& _f : incident_faces) {
             if (mesh.is_boundary(PrimitiveType::Triangle, _f)) {
-                // if (utils::SimplexComparisons::equal(
-                //         mesh,
-                //         Simplex(PrimitiveType::Vertex, _f.tuple()),
-                //         input_v)) {
-                //     // tuple edge is _v - x
-                //     ret.push_back(mesh.switch_edge(mesh.switch_vertex(_f.tuple())));
-                // } else if ((utils::SimplexComparisons::equal(
-                //                mesh,
-                //                Simplex(PrimitiveType::Vertex, mesh.switch_vertex(_f.tuple())),
-                //                input_v))) {
-                //     // tuple edge is x - _v
-                //     ret.push_back(mesh.switch_edge(_f.tuple()));
-                // } else {
-                //     // tuple edge is x - y
-                //     ret.push_back(_f.tuple());
-                // }
-
                 // assuming cofaces_single_dimension always return the tuple point to the input
                 // vertex
-                ret.push_back(mesh.switch_edge(mesh.switch_vertex(_f)));
+                // ret.push_back(mesh.switch_tuples(_f, {PrimitiveType::Vertex,
+                // PrimitiveType::Edge})); ret.push_back(mesh.switch_edge(mesh.switch_vertex(_f)));
+                Tuple link_tuple =
+                    mesh.switch_tuples(_f, {PrimitiveType::Vertex, PrimitiveType::Edge});
+                ret.add(PrimitiveType::Edge, link_tuple);
+                ret.add(PrimitiveType::Vertex, link_tuple);
+                ret.add(
+                    PrimitiveType::Vertex,
+                    mesh.switch_tuple(link_tuple, PrimitiveType::Vertex));
             }
         }
         return ret;
     };
 
-    const auto boundary_neighbors_a = get_boundary_faces(edge);
-    const auto boundary_neighbors_b =
-        get_boundary_faces(mesh.switch_tuple(edge, PrimitiveType::Vertex));
-    if (mesh.is_boundary_edge(edge)) {
-        for (const Tuple& f_a : boundary_neighbors_a) {
-            for (const Tuple& f_b : boundary_neighbors_b) {
-                if (utils::SimplexComparisons::equal(
-                        mesh,
-                        Simplex(mesh, PrimitiveType::Edge, f_a),
-                        Simplex(mesh, PrimitiveType::Edge, f_b))) {
-                    // find common face (with dummy vertex), link condition fails
-                    return false;
-                }
+    auto get_boundary_edge_link = [&mesh](const Tuple& _v) {
+        const Simplex input_e(mesh, PrimitiveType::Edge, _v);
+        IdSimplexCollection ret(mesh);
+        auto incident_faces =
+            cofaces_single_dimension_iterable(mesh, input_e, PrimitiveType::Triangle);
+        for (const Tuple& _f : incident_faces) {
+            if (mesh.is_boundary(PrimitiveType::Triangle, _f)) {
+                Tuple link_tuple =
+                    mesh.switch_tuples(_f, {PrimitiveType::Edge, PrimitiveType::Vertex});
+                ret.add(PrimitiveType::Vertex, link_tuple);
             }
         }
-    } else {
-        if (boundary_neighbors_a.size() == 0 || boundary_neighbors_b.size() == 0) {
-            // in this case, lnk_w^0(a) ∩ lnk_w^0(b) == lnk(a) ∩ lnk(b) == lnk(ab) == lnk_w^0(ab)
-            return true;
-        } else {
-            // in this case w \in lhs but not \in rhs
-            return false;
-        }
-    }
+        return ret;
+    };
 
+    const Tuple& a_tuple = edge;
+    const Tuple b_tuple = mesh.switch_tuple(edge, PrimitiveType::Vertex);
+
+    if (mesh.is_boundary_edge(edge)) {
+        IdSimplexCollection boundary_link_a = get_boundary_vertex_link(a_tuple);
+        boundary_link_a.sort_and_clean();
+        IdSimplexCollection boundary_link_b = get_boundary_vertex_link(b_tuple);
+        boundary_link_b.sort_and_clean();
+
+        IdSimplexCollection boundary_link_ab = get_boundary_edge_link(edge);
+        boundary_link_ab.sort_and_clean();
+
+        IdSimplexCollection boundary_link_a_link_b_intersection =
+            IdSimplexCollection::get_intersection(boundary_link_a, boundary_link_b);
+
+        return IdSimplexCollection::are_simplex_collections_equal(
+            boundary_link_a_link_b_intersection,
+            boundary_link_ab);
+
+    } else if (mesh.is_boundary_vertex(a_tuple) && mesh.is_boundary_vertex(b_tuple)) {
+        return false;
+    }
 
     return true;
 }
