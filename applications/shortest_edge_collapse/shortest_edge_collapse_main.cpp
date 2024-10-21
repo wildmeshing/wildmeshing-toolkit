@@ -73,6 +73,7 @@ int main(int argc, char* argv[])
         }
         options.lock_boundary = j["lock_boundary"];
         options.use_multimesh = j["use_multimesh"];
+        options.check_inversions = j["check_inversion"];
 
         shortest_edge_collapse(mesh, options);
     }

@@ -39,6 +39,8 @@ void shortest_edge_collapse(Mesh& meshin, const ShortestEdgeCollapseOptions& opt
     attribute::MeshAttributeHandle position_handle = options.position_handle;
     attribute::MeshAttributeHandle other_position_handle;
 
+    attribute::MeshAttributeHandle inversion_position_handle;
+
     if (options.use_multimesh != MultiMeshOptions::None) {
         auto [parent_mesh, child_mesh] = wmtk::components::multimesh::multimesh(
             wmtk::components::multimesh::MultiMeshType::Boundary,
@@ -55,18 +57,23 @@ void shortest_edge_collapse(Mesh& meshin, const ShortestEdgeCollapseOptions& opt
             position_handle =
                 child_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
             other_position_handle = options.position_handle;
+            if (options.check_inversions) {
+                inversion_position_handle = other_position_handle;
+            }
         } else {
             current_mesh = parent_mesh;
             other_position_handle =
                 child_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+            if (options.check_inversions) {
+                inversion_position_handle = position_handle;
+            }
         }
+    } else if (options.check_inversions) {
+        inversion_position_handle = position_handle;
     }
 
 
     Mesh& mesh = options.use_multimesh != MultiMeshOptions::None ? *current_mesh : meshin;
-
-    const attribute::MeshAttributeHandle& inversion_position_handle =
-        options.inversion_position_handle;
 
 
     std::vector<attribute::MeshAttributeHandle> pass_through_attributes =
@@ -169,9 +176,6 @@ void shortest_edge_collapse(Mesh& meshin, const ShortestEdgeCollapseOptions& opt
     ////////////// positions
     std::vector<attribute::MeshAttributeHandle> position_handles;
     position_handles.push_back(position_handle);
-    if (inversion_position_handle.is_valid()) {
-        position_handles.push_back(inversion_position_handle);
-    }
 
     //////////////////////////////////////////
     // collapse
@@ -269,7 +273,7 @@ void shortest_edge_collapse(
     const double length_rel,
     std::optional<bool> lock_boundary,
     std::optional<double> envelope_size,
-    std::optional<attribute::MeshAttributeHandle> inversion_position_handle,
+    bool check_inversion,
     const std::vector<attribute::MeshAttributeHandle>& pass_through)
 {
     ShortestEdgeCollapseOptions options;
@@ -279,9 +283,7 @@ void shortest_edge_collapse(
         options.lock_boundary = lock_boundary.value();
     }
     options.envelope_size = envelope_size;
-    if (inversion_position_handle) {
-        options.inversion_position_handle = inversion_position_handle.value();
-    }
+
     options.pass_through_attributes = pass_through;
     shortest_edge_collapse(mesh, options);
 }

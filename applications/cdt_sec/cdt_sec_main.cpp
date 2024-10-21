@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
         options.position_handle = child_mesh_position_handle;
         options.length_rel = j["length_rel"];
         options.envelope_size = j["envelope_size"];
-        options.inversion_position_handle = parent_mesh_position_handle;
+        options.check_inversions = true;
         options.pass_through_attributes = pass_through;
 
         shortest_edge_collapse(static_cast<TriMesh&>(*child_mesh), options);

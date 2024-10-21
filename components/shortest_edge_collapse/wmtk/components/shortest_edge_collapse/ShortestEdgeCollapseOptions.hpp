@@ -28,7 +28,7 @@ struct ShortestEdgeCollapseOptions
      * If this attribute is specified, it is used to check for inversions. The mesh must be of top
      * dimension, e.g., a TriMesh in 2D or a TetMesh in 3D.
      */
-    attribute::MeshAttributeHandle inversion_position_handle;
+    bool check_inversions = false;
     /**
      * Any other attribute goes here. They are handled with the default attribute behavior.
      */
