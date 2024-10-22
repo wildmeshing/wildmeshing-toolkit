@@ -80,6 +80,22 @@ int main(int argc, char* argv[])
 
     wmtk::components::output::output(mesh, j["output"], pos_handle);
 
+    // output child meshes
+    {
+        const std::string output_name = j["output"];
+        const auto children = mesh.get_all_child_meshes();
+        for (size_t i = 0; i < children.size(); ++i) {
+            Mesh& child = *children[i];
+            if (!child.has_attribute<double>("vertices", PrimitiveType::Vertex)) {
+                logger().warn("Child has no vertices attribute");
+                continue;
+            }
+            auto ph = child.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+            wmtk::components::output::output(child, fmt::format("{}_child_{}", output_name, i), ph);
+        }
+    }
+
+
     const std::string report = j["report"];
     if (!report.empty()) {
         nlohmann::json out_json;
