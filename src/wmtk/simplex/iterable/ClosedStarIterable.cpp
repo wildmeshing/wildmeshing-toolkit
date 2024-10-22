@@ -64,6 +64,7 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::operator++()
     case PrimitiveType::Edge: return step_edge_mesh();
     case PrimitiveType::Triangle: return step_tri_mesh();
     case PrimitiveType::Tetrahedron: return step_tet_mesh();
+    case PrimitiveType::Vertex:
     default: assert(false); break;
     }
 
@@ -145,7 +146,7 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_depth_3()
                 m_t = *m_it;
                 if (m_t.is_null()) {
                     m_pt = -1;
-                    m_pt = m_pt;
+                    // m_pt = m_pt;
                     return *this;
                 }
             } else {
@@ -240,6 +241,8 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_tri_mesh()
         m_pt = 2;
         break;
     }
+    case PrimitiveType::Triangle:
+    case PrimitiveType::Tetrahedron:
     default: assert(false); break;
     }
 
@@ -312,6 +315,8 @@ ClosedStarIterable::Iterator& ClosedStarIterable::Iterator::step_tet_mesh()
         m_pt = 3;
         break;
     }
+    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::Vertex:
     default: break;
     }
 

@@ -204,7 +204,7 @@ void TopDimensionCofacesIterable::Iterator::add_neighbors_to_queue()
     }
 }
 
-const bool TopDimensionCofacesIterable::Iterator::is_intermediate() const
+bool TopDimensionCofacesIterable::Iterator::is_intermediate() const
 {
     return m_is_intermediate;
 }

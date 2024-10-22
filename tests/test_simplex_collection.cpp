@@ -3,6 +3,7 @@
 #include <set>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/simplex/IdSimplexCollection.hpp>
 #include <wmtk/simplex/RawSimplex.hpp>
 #include <wmtk/simplex/RawSimplexCollection.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -16,6 +17,7 @@
 #include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/faces_iterable.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/simplex/half_closed_star_iterable.hpp>
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/simplex/link_condition.hpp>
 #include <wmtk/simplex/link_iterable.hpp>
@@ -147,6 +149,58 @@ TEST_CASE("simplex_collection_sorting", "[simplex_collection][2D]")
     REQUIRE(simplex_collection.simplex_vector().size() == 12);
     simplex_collection.sort_and_clean();
     REQUIRE(simplex_collection.simplex_vector().size() == 11);
+}
+
+TEST_CASE("id_simplex_collection", "[id_simplex_collection][2D]")
+{
+    tests::DEBUG_TriMesh m = tests::quad();
+    const std::vector<Tuple> vertices = m.get_all(PV);
+    REQUIRE(vertices.size() == 4);
+    const std::vector<Tuple> edges = m.get_all(PE);
+    REQUIRE(edges.size() == 5);
+    const std::vector<Tuple> faces = m.get_all(PF);
+    REQUIRE(faces.size() == 2);
+
+    IdSimplexCollection simplex_collection(m);
+    for (const auto& t : vertices) {
+        simplex_collection.add(m.get_id_simplex(t, PrimitiveType::Vertex));
+    }
+    for (const auto& t : edges) {
+        simplex_collection.add(m.get_id_simplex(t, PrimitiveType::Edge));
+    }
+    for (const auto& t : faces) {
+        simplex_collection.add(m.get_id_simplex(t, PrimitiveType::Triangle));
+    }
+    REQUIRE(simplex_collection.simplex_vector().size() == 11);
+    CHECK(simplex_collection.simplex_vector(PrimitiveType::Vertex).size() == 4);
+    CHECK(simplex_collection.simplex_vector(PrimitiveType::Edge).size() == 5);
+    CHECK(simplex_collection.simplex_vector(PrimitiveType::Triangle).size() == 2);
+    CHECK(simplex_collection.simplex_vector_tuples(PrimitiveType::Vertex).size() == 4);
+    CHECK(simplex_collection.simplex_vector_tuples(PrimitiveType::Edge).size() == 5);
+    CHECK(simplex_collection.simplex_vector_tuples(PrimitiveType::Triangle).size() == 2);
+
+    // test sorting and clean-up
+    IdSimplex v0 = m.get_id_simplex(m.vertex_tuple_from_id(0), PrimitiveType::Vertex);
+    simplex_collection.add(v0);
+    REQUIRE(simplex_collection.simplex_vector().size() == 12);
+    simplex_collection.sort_and_clean();
+    REQUIRE(simplex_collection.simplex_vector().size() == 11);
+
+    CHECK(simplex_collection.contains(v0));
+
+    {
+        IdSimplexCollection sc2(m);
+        sc2.add(simplex_collection);
+        CHECK(simplex_collection.simplex_vector().size() == 11);
+
+        IdSimplexCollection sc_union = IdSimplexCollection::get_union(simplex_collection, sc2);
+        IdSimplexCollection sc_intersection =
+            IdSimplexCollection::get_intersection(simplex_collection, sc2);
+
+        CHECK(sc_union.size() == simplex_collection.size());
+        CHECK(sc_intersection.size() == simplex_collection.size());
+        CHECK(sc_union == sc_intersection);
+    }
 }
 
 TEST_CASE("simplex_faces", "[simplex_collection][2D]")
@@ -1596,6 +1650,99 @@ TEST_CASE("simplex_closed_star_edge_iterable", "[simplex_collection][iterable][1
 
     ClosedStarIterable itrb = closed_star_iterable(m, *simplex);
     SimplexCollection coll = closed_star(m, *simplex);
+
+    SimplexCollection itrb_collection(m);
+    for (const simplex::IdSimplex& s : itrb) {
+        itrb_collection.add(m.get_simplex(s));
+    }
+    REQUIRE(itrb_collection.size() == coll.size());
+
+    itrb_collection.sort_and_clean();
+
+    REQUIRE(itrb_collection.size() == coll.size());
+
+    for (size_t i = 0; i < coll.size(); ++i) {
+        const Simplex& irtb_s = itrb_collection.simplex_vector()[i];
+        const Simplex& coll_s = coll.simplex_vector()[i];
+
+        CHECK(simplex::utils::SimplexComparisons::equal(m, irtb_s, coll_s));
+    }
+}
+
+TEST_CASE("simplex_half_closed_star_tri_iterable", "[simplex_collection][iterable][3D]")
+{
+    tests::DEBUG_TriMesh m = tests::hex_plus_two();
+
+    std::unique_ptr<Simplex> simplex;
+
+    SECTION("edge_interior")
+    {
+        const Tuple t = m.edge_tuple_with_vs_and_t(4, 5, 2);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Edge, t);
+    }
+    SECTION("edge_boundary")
+    {
+        const Tuple t = m.edge_tuple_with_vs_and_t(3, 7, 5);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Edge, t);
+    }
+
+    const simplex::SimplexCollection vertex_open_star =
+        simplex::open_star(m, simplex::Simplex::vertex(m, simplex->tuple()));
+    const simplex::SimplexCollection edge_closed_star =
+        simplex::closed_star(m, simplex::Simplex::edge(m, simplex->tuple()));
+    const simplex::SimplexCollection coll =
+        simplex::SimplexCollection::get_intersection(vertex_open_star, edge_closed_star);
+
+    HalfClosedStarIterable itrb = half_closed_star_iterable(m, simplex->tuple());
+
+    SimplexCollection itrb_collection(m);
+    for (const simplex::IdSimplex& s : itrb) {
+        itrb_collection.add(m.get_simplex(s));
+    }
+    REQUIRE(itrb_collection.size() == coll.size());
+
+    itrb_collection.sort_and_clean();
+
+    REQUIRE(itrb_collection.size() == coll.size());
+
+    for (size_t i = 0; i < coll.size(); ++i) {
+        const Simplex& irtb_s = itrb_collection.simplex_vector()[i];
+        const Simplex& coll_s = coll.simplex_vector()[i];
+
+        CHECK(simplex::utils::SimplexComparisons::equal(m, irtb_s, coll_s));
+    }
+}
+
+TEST_CASE("simplex_half_closed_star_tet_iterable", "[simplex_collection][iterable][3D]")
+{
+    tests_3d::DEBUG_TetMesh m = tests_3d::six_cycle_tets();
+
+    std::unique_ptr<Simplex> simplex;
+
+    SECTION("edge_interior")
+    {
+        const Tuple t = m.edge_tuple_with_vs_and_t(2, 3, 0);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Edge, t);
+    }
+    SECTION("edge_boundary_1")
+    {
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 2, 0);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Edge, t);
+    }
+    SECTION("edge_boundary_2")
+    {
+        const Tuple t = m.edge_tuple_with_vs_and_t(0, 1, 0);
+        simplex = std::make_unique<Simplex>(m, PrimitiveType::Edge, t);
+    }
+
+    const simplex::SimplexCollection vertex_open_star =
+        simplex::open_star(m, simplex::Simplex::vertex(m, simplex->tuple()));
+    const simplex::SimplexCollection edge_closed_star =
+        simplex::closed_star(m, simplex::Simplex::edge(m, simplex->tuple()));
+    const simplex::SimplexCollection coll =
+        simplex::SimplexCollection::get_intersection(vertex_open_star, edge_closed_star);
+
+    HalfClosedStarIterable itrb = half_closed_star_iterable(m, simplex->tuple());
 
     SimplexCollection itrb_collection(m);
     for (const simplex::IdSimplex& s : itrb) {

@@ -924,6 +924,16 @@ void MultiMeshManager::serialize(MeshWriter& writer, const Mesh* local_root) con
     }
 }
 
+bool MultiMeshManager::has_child_mesh() const
+{
+    for (const bool c : m_has_child_mesh_in_dimension) {
+        if (c) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool MultiMeshManager::can_map(
     const Mesh& my_mesh,
     const Mesh& other_mesh,

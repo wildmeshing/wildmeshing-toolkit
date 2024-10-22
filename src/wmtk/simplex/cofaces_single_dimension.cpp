@@ -205,6 +205,7 @@ std::vector<Tuple> cofaces_single_dimension_tuples(
     case PrimitiveType::Edge: return cofaces_single_dimension_edge(mesh, my_simplex, cofaces_type);
     case PrimitiveType::Triangle:
         return cofaces_single_dimension_face(mesh, my_simplex, cofaces_type);
+    case PrimitiveType::Tetrahedron:
     default:
         log_and_throw_error("Unknown primitive type in cofaces_single_dimension_tuples");
         break;

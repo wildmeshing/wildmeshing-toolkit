@@ -98,7 +98,7 @@ include(CDT)
 add_library(wildmeshing_toolkit)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 target_link_libraries(wildmeshing_toolkit PUBLIC wmtk_coverage_config)
-set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR  OFF)
+set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR  ON)
 
 
 add_subdirectory(src)
