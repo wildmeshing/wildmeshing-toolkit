@@ -30,9 +30,14 @@ bool both_map_to_child(
 bool both_map_to_child(const Mesh& parent, const Mesh& child, const Tuple& input)
 {
     const PrimitiveType child_type = child.top_simplex_type();
+#if !defined(NDEBUG)
+    const PrimitiveType parent_type = parent.top_simplex_type();
+    assert(parent_type > child_type);
+#endif
     const PrimitiveType collapsed_simplex_type = child_type + 1;
     auto opposite = [&parent, collapsed_simplex_type](Tuple t) {
         for (PrimitiveType pt = collapsed_simplex_type; pt > PrimitiveType::Vertex; pt = pt - 1) {
+            assert(pt < parent.top_simplex_type());
             t = parent.switch_tuple(t, pt);
         }
         return t;
@@ -57,7 +62,11 @@ bool any_pairs_both_map_to_child(
     const PrimitiveType parent_type = parent.top_simplex_type();
     const PrimitiveType child_type = child.top_simplex_type();
     assert(parent_type > child_type);
-    if (parent_type == child_type + 1) {
+    if (parent_type == child_type) {
+        // if the meshes are the same dimension then there isn't a pair, so this function returns
+        // false
+        return false;
+    } else if (parent_type == child_type + 1) {
         return both_map_to_child(parent, child, edge.tuple());
     }
     for (const Tuple& tuple :
