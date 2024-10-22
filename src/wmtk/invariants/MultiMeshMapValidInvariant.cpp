@@ -32,7 +32,7 @@ bool both_map_to_child(const Mesh& parent, const Mesh& child, const Tuple& input
     const PrimitiveType child_type = child.top_simplex_type();
     const PrimitiveType parent_type = parent.top_simplex_type();
     assert(parent_type > child_type);
-    const PrimitiveType collapsed_simplex_type = std::min(child_type + 1, parent_type - 1);
+    const PrimitiveType collapsed_simplex_type = std::min(child_type + 1, parent_type);
     auto opposite = [&parent, collapsed_simplex_type](Tuple t) {
         //switch(collapsed_simplex_type) {
         //    case PrimitiveType::Tetrahedron:
