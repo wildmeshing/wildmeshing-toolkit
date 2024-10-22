@@ -16,4 +16,4 @@ wmtk_register_integration_test(
     EXEC_NAME shortest_edge_collapse_app
     CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/shortest_edge_collapse_test_config.json
     GIT_REPOSITORY "https://github.com/wildmeshing/data.git"
-    GIT_TAG 78158b6d3974b0fda6287737f43ca3c769ac7b8f)
+    GIT_TAG fde6f4ac5bc93cbd530d39a6d333b3a0a22157a3)

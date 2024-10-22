@@ -1,6 +1,14 @@
 {
   "test_directory": "unit_test",
-  "tests": ["shortest_edge_collapse_out.json"],
+  "tests": [
+    "shortest_edge_collapse_out.json",
+    "sec_volume_boundary_extreme_out.json",
+    "sec_volume_boundary_inversion_out.json",
+    "sec_volume_boundary_out.json",
+    "sec_volume_interior_out.json",
+    "sec_volume_inversion_out.json",
+    "sec_volume_out.json"
+  ],
   "input_tag": "input",
   "oracle_tag": "report",
   "input_directory_tag": "input_path"
