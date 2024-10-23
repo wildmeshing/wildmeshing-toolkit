@@ -174,10 +174,14 @@ public:
      */
     simplex::IdSimplex get_id_simplex(const Tuple& tuple, PrimitiveType pt) const;
 
+    simplex::IdSimplex get_id_simplex(const simplex::Simplex& s) const;
+
     /**
      * @brief Convert an IdSimplex into a Simplex.
      */
     simplex::Simplex get_simplex(const simplex::IdSimplex& s) const;
+
+    Tuple get_tuple_from_id_simplex(const simplex::IdSimplex& s) const;
 
     /**
      * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding
@@ -771,6 +775,8 @@ public:
     {
         return m_multi_mesh_manager.has_child_mesh_in_dimension(dimension);
     }
+
+    bool has_child_mesh() const { return m_multi_mesh_manager.has_child_mesh(); }
 
     /*
      * @brief returns if the other mesh is part of the same multi-mesh structure

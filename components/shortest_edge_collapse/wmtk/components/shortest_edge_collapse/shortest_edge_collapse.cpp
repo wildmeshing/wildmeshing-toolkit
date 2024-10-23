@@ -1,7 +1,7 @@
-#include "shortestedge_collapse.hpp"
+#include "shortest_edge_collapse.hpp"
 
+#include <wmtk/Mesh.hpp>
 #include <wmtk/Scheduler.hpp>
-#include <wmtk/TriMesh.hpp>
 #include <wmtk/components/utils/get_attributes.hpp>
 #include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
@@ -22,13 +22,14 @@
 #include <wmtk/utils/Logger.hpp>
 
 
-namespace wmtk::components {
+namespace wmtk::components::shortest_edge_collapse {
 
-void shortestedge_collapse(TriMesh& mesh, const ShortestEdgeCollapseOptions& options)
+void shortest_edge_collapse(Mesh& mesh, const ShortestEdgeCollapseOptions& options)
 {
-    if (mesh.top_simplex_type() != PrimitiveType::Triangle) {
+    if (mesh.top_simplex_type() != PrimitiveType::Triangle &&
+        mesh.top_simplex_type() != PrimitiveType::Tetrahedron) {
         log_and_throw_error(
-            "shortest edge collapse works only for triangle meshes: {}",
+            "shortest edge collapse works only for triangle or tet meshes: {}",
             primitive_type_name(mesh.top_simplex_type()));
     }
 
@@ -219,8 +220,8 @@ void shortestedge_collapse(TriMesh& mesh, const ShortestEdgeCollapseOptions& opt
         pass_stats.executing_time);
 }
 
-void shortestedge_collapse(
-    TriMesh& mesh,
+void shortest_edge_collapse(
+    Mesh& mesh,
     const attribute::MeshAttributeHandle& position_handle,
     const double length_rel,
     std::optional<bool> lock_boundary,
@@ -239,6 +240,6 @@ void shortestedge_collapse(
         options.inversion_position_handle = inversion_position_handle.value();
     }
     options.pass_through_attributes = pass_through;
-    shortestedge_collapse(mesh, options);
+    shortest_edge_collapse(mesh, options);
 }
-} // namespace wmtk::components
+} // namespace wmtk::components::shortest_edge_collapse

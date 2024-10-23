@@ -2,7 +2,7 @@
 
 #include <wmtk/TriMesh.hpp>
 
-namespace wmtk::components {
+namespace wmtk::components::shortest_edge_collapse {
 
 struct ShortestEdgeCollapseOptions
 {
@@ -33,4 +33,4 @@ struct ShortestEdgeCollapseOptions
     std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
 };
 
-} // namespace wmtk::components
+} // namespace wmtk::components::shortest_edge_collapse

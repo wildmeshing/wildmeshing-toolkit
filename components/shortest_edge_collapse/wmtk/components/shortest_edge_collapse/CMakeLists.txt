@@ -1,12 +1,12 @@
-set(COMPONENT_NAME shortestedge_collapse)
+set(COMPONENT_NAME shortest_edge_collapse)
 add_component(${COMPONENT_NAME})
 if(NOT ${WMTK_ENABLE_COMPONENT_${COMPONENT_NAME}})
     return()
 endif()
 
 set(SRC_FILES
-    shortestedge_collapse.hpp
-    shortestedge_collapse.cpp
+    shortest_edge_collapse.hpp
+    shortest_edge_collapse.cpp
     ShortestEdgeCollapseOptions.hpp
     )
 

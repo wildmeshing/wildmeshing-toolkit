@@ -55,6 +55,11 @@ if(WMTK_ENABLE_APPLICATION_cdt_sec)
 add_subdirectory(cdt_sec)
 endif()
 
+option(WMTK_ENABLE_APPLICATION_shortest_edge_collapse "Runs shortest-edge collapse application" ON)
+if(WMTK_ENABLE_APPLICATION_shortest_edge_collapse)
+add_subdirectory(shortest_edge_collapse)
+endif()
+
 option(WMTK_ENABLE_APPLICATION_insertion "Runs insertion application" ON)
 if(WMTK_ENABLE_APPLICATION_insertion)
 add_subdirectory(insertion)
