@@ -247,7 +247,8 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 
     // update ve
     {
-        ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) = m_neighbor_eids[1];
+        ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) =
+            (m_neighbor_eids[1] != -1) ? m_neighbor_eids[1] : m_neighbor_eids[0];
     }
 
     update_cell_hash();
