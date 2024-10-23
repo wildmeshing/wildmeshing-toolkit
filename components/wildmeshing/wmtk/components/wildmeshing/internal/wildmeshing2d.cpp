@@ -1249,6 +1249,42 @@ std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> wildmeshing2d(
         if (max_energy <= target_max_amips && is_double) break;
     }
 
+    logger().info("----------------------- Postprocess Collapse -----------------------");
+
+    logger().info("Executing collapse ...");
+
+    auto post_stats = scheduler.run_operation_on_all(*collapse_then_round, visited_edge_flag_t);
+    logger().info(
+        "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, "
+        "executing: {}",
+        "preprocessing collapse",
+        post_stats.number_of_performed_operations(),
+        post_stats.number_of_successful_operations(),
+        post_stats.number_of_failed_operations(),
+        post_stats.collecting_time,
+        post_stats.sorting_time,
+        post_stats.executing_time);
+
+    // compute max energy
+    max_energy = std::numeric_limits<double>::lowest();
+    min_energy = std::numeric_limits<double>::max();
+    avg_energy = 0;
+    for (const auto& t : mesh->get_all(mesh->top_simplex_type())) {
+        // double e = amips->get_value(simplex::Simplex(mesh->top_simplex_type(), t));
+        double e = amips_accessor.scalar_attribute(t);
+        max_energy = std::max(max_energy, e);
+        min_energy = std::min(min_energy, e);
+        avg_energy += e;
+    }
+
+    avg_energy = avg_energy / mesh->get_all(mesh->top_simplex_type()).size();
+
+    logger().info(
+        "Max AMIPS Energy: {}, Min AMIPS Energy: {}, Avg AMIPS Energy: {}",
+        max_energy,
+        min_energy,
+        avg_energy);
+
     std::vector<std::pair<std::shared_ptr<Mesh>, std::string>> all_meshes;
     all_meshes.push_back(std::make_pair(mesh, "main"));
 
