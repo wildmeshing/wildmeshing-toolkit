@@ -174,10 +174,31 @@ void shortest_edge_collapse(Mesh& mesh_in, const ShortestEdgeCollapseOptions& op
 
 
     if (options.envelope_size) {
-        collapse->add_invariant(std::make_shared<wmtk::invariants::EnvelopeInvariant>(
-            position_handle,
-            bbdiag * options.envelope_size.value(),
-            position_handle));
+        const double env_size = bbdiag * options.envelope_size.value();
+        bool envelope_added = false;
+
+        if (position_handle.mesh().top_cell_dimension() < position_handle.dimension()) {
+            logger().info("Adding envelope check on collapsing mesh.");
+            collapse->add_invariant(std::make_shared<wmtk::invariants::EnvelopeInvariant>(
+                position_handle,
+                env_size,
+                position_handle));
+            envelope_added = true;
+        }
+
+        for (auto& h : other_position_handles) {
+            if (h.mesh().top_cell_dimension() < h.dimension()) {
+                logger().info("Adding envelope check on other mesh.");
+                collapse->add_invariant(
+                    std::make_shared<wmtk::invariants::EnvelopeInvariant>(h, env_size, h));
+                envelope_added = true;
+            }
+        }
+
+        if (!envelope_added) {
+            logger().warn("Shortest-edge collapse should check for inversion but there was no "
+                          "position handle that is valid for inversion checks.");
+        }
     }
 
     for (auto& h : inversion_position_handles) {
@@ -194,7 +215,9 @@ void shortest_edge_collapse(Mesh& mesh_in, const ShortestEdgeCollapseOptions& op
     collapse->add_transfer_strategy(edge_length_update);
 
     if (options.lock_boundary) {
-        collapse->add_invariant(invariant_interior_edge);
+        if (mesh_in.top_simplex_type() != PrimitiveType::Edge) {
+            collapse->add_invariant(invariant_interior_edge);
+        }
         // set collapse towards boundary
         for (const auto& pos_handle : position_handles) {
             auto pos_collapse_strategy =
