@@ -8,6 +8,7 @@ wmtk_add_application(shortest_edge_collapse_app
 target_link_libraries(shortest_edge_collapse_app PRIVATE
 wmtk::input
 wmtk::shortest_edge_collapse
+wmtk::multimesh
 wmtk::output
 nlohmann_json::nlohmann_json
 )

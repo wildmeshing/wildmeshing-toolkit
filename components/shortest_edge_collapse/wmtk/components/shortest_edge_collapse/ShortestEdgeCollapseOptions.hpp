@@ -4,14 +4,17 @@
 
 namespace wmtk::components::shortest_edge_collapse {
 
-enum class MultiMeshOptions { None, OptBoundary, OptInterior };
-
 struct ShortestEdgeCollapseOptions
 {
     /**
      * vertex positions (double)
      */
     attribute::MeshAttributeHandle position_handle;
+    /**
+     * If this mesh is part of a multimesh, specify the vertex positions of all other meshes here,
+     * if they have any.
+     */
+    std::vector<attribute::MeshAttributeHandle> other_position_handles;
     /**
      * The desired edge length relative to the AABB.
      */
@@ -33,8 +36,6 @@ struct ShortestEdgeCollapseOptions
      * Any other attribute goes here. They are handled with the default attribute behavior.
      */
     std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
-
-    MultiMeshOptions use_multimesh = MultiMeshOptions::None;
 };
 
 } // namespace wmtk::components::shortest_edge_collapse

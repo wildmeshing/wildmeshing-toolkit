@@ -2,7 +2,6 @@
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Scheduler.hpp>
-#include <wmtk/components/multimesh/multimesh.hpp>
 #include <wmtk/components/utils/get_attributes.hpp>
 #include <wmtk/invariants/EnvelopeInvariant.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
@@ -25,61 +24,50 @@
 
 namespace wmtk::components::shortest_edge_collapse {
 
-void shortest_edge_collapse(Mesh& meshin, const ShortestEdgeCollapseOptions& options)
+void shortest_edge_collapse(Mesh& mesh_in, const ShortestEdgeCollapseOptions& options)
 {
-    if (meshin.top_simplex_type() != PrimitiveType::Edge &&
-        meshin.top_simplex_type() != PrimitiveType::Triangle &&
-        meshin.top_simplex_type() != PrimitiveType::Tetrahedron) {
+    if (mesh_in.top_simplex_type() != PrimitiveType::Edge &&
+        mesh_in.top_simplex_type() != PrimitiveType::Triangle &&
+        mesh_in.top_simplex_type() != PrimitiveType::Tetrahedron) {
         log_and_throw_error(
-            "shortest edge collapse works only for triangle or tet meshes: {}",
-            primitive_type_name(meshin.top_simplex_type()));
+            "shortest edge collapse works only for edge, triangle, or tet meshes: {}",
+            primitive_type_name(mesh_in.top_simplex_type()));
     }
 
-    std::shared_ptr<Mesh> current_mesh;
+    if (!mesh_in.is_multi_mesh_root()) {
+        log_and_throw_error("The mesh passed in shortest_edge_collapse must be the root mesh");
+    }
+
     attribute::MeshAttributeHandle position_handle = options.position_handle;
-    attribute::MeshAttributeHandle other_position_handle;
+    std::vector<attribute::MeshAttributeHandle> other_position_handles =
+        options.other_position_handles;
 
-    attribute::MeshAttributeHandle inversion_position_handle;
+    Mesh& mesh = position_handle.mesh();
 
-    if (options.use_multimesh != MultiMeshOptions::None) {
-        auto [parent_mesh, child_mesh] = wmtk::components::multimesh::multimesh(
-            wmtk::components::multimesh::MultiMeshType::Boundary,
-            meshin,
-            nullptr,
-            options.position_handle,
-            "",
-            -1,
-            -1);
-        parent_mesh->clear_attributes({options.position_handle});
-
-        if (options.use_multimesh == MultiMeshOptions::OptBoundary) {
-            current_mesh = child_mesh;
-            position_handle =
-                child_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-            other_position_handle = options.position_handle;
-            if (options.check_inversions) {
-                inversion_position_handle = other_position_handle;
-            }
-        } else {
-            current_mesh = parent_mesh;
-            other_position_handle =
-                child_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-            if (options.check_inversions) {
-                inversion_position_handle = position_handle;
+    std::vector<attribute::MeshAttributeHandle> inversion_position_handles;
+    if (options.check_inversions) {
+        if (position_handle.mesh().top_cell_dimension() == position_handle.dimension()) {
+            logger().info("Adding inversion check on collapsing mesh.");
+            inversion_position_handles.emplace_back(position_handle);
+        }
+        for (auto& h : other_position_handles) {
+            if (h.mesh().top_cell_dimension() == h.dimension()) {
+                logger().info("Adding inversion check on other mesh.");
+                inversion_position_handles.emplace_back(h);
             }
         }
-    } else if (options.check_inversions) {
-        inversion_position_handle = position_handle;
+
+        if (inversion_position_handles.empty()) {
+            logger().warn("Shortest-edge collapse should check for inversions but there was no "
+                          "position handle that is valid for inversion checks.");
+        }
     }
-
-
-    Mesh& mesh = options.use_multimesh != MultiMeshOptions::None ? *current_mesh : meshin;
-
 
     std::vector<attribute::MeshAttributeHandle> pass_through_attributes =
         options.pass_through_attributes;
-    if (options.use_multimesh != MultiMeshOptions::None) {
-        pass_through_attributes.push_back(other_position_handle);
+
+    for (auto& h : other_position_handles) {
+        pass_through_attributes.emplace_back(h);
     }
 
     /////////////////////////////////////////////
@@ -175,7 +163,7 @@ void shortest_edge_collapse(Mesh& meshin, const ShortestEdgeCollapseOptions& opt
 
     ////////////// positions
     std::vector<attribute::MeshAttributeHandle> position_handles;
-    position_handles.push_back(position_handle);
+    position_handles.emplace_back(position_handle);
 
     //////////////////////////////////////////
     // collapse
@@ -192,12 +180,11 @@ void shortest_edge_collapse(Mesh& meshin, const ShortestEdgeCollapseOptions& opt
             position_handle));
     }
 
-
-    if (inversion_position_handle.is_valid()) {
-        collapse->add_invariant(std::make_shared<SimplexInversionInvariant<double>>(
-            inversion_position_handle.mesh(),
-            inversion_position_handle.as<double>()));
+    for (auto& h : inversion_position_handles) {
+        collapse->add_invariant(
+            std::make_shared<SimplexInversionInvariant<double>>(h.mesh(), h.as<double>()));
     }
+
     collapse->set_new_attribute_strategy(
         visited_edge_flag,
         wmtk::operations::CollapseBasicStrategy::None);
@@ -232,10 +219,10 @@ void shortest_edge_collapse(Mesh& meshin, const ShortestEdgeCollapseOptions& opt
     }
 
     auto propagate_position = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd { return P; };
-    if (options.use_multimesh != MultiMeshOptions::None) {
+    for (auto& h : other_position_handles) {
         auto transfer_position =
             std::make_shared<operations::SingleAttributeTransferStrategy<double, double>>(
-                other_position_handle,
+                h,
                 position_handle,
                 propagate_position);
         collapse->add_transfer_strategy(transfer_position);

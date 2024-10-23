@@ -7,6 +7,7 @@
 #include <wmtk/utils/Logger.hpp>
 
 #include <wmtk/components/input/input.hpp>
+#include <wmtk/components/multimesh/multimesh.hpp>
 #include <wmtk/components/output/output.hpp>
 #include <wmtk/components/shortest_edge_collapse/shortest_edge_collapse.hpp>
 #include <wmtk/components/utils/resolve_path.hpp>
@@ -16,14 +17,20 @@
 using namespace wmtk;
 namespace fs = std::filesystem;
 
+
 using wmtk::components::utils::resolve_paths;
-namespace wmtk::components::shortest_edge_collapse {
+
+namespace {
+
+enum class MultiMeshOptions { None, OptBoundary, OptInterior };
+
 NLOHMANN_JSON_SERIALIZE_ENUM(
-    wmtk::components::shortest_edge_collapse::MultiMeshOptions,
-    {{wmtk::components::shortest_edge_collapse::MultiMeshOptions::None, "none"},
-     {wmtk::components::shortest_edge_collapse::MultiMeshOptions::OptInterior, "interior"},
-     {wmtk::components::shortest_edge_collapse::MultiMeshOptions::OptBoundary, "boundary"}});
-}
+    MultiMeshOptions,
+    {{MultiMeshOptions::None, "none"},
+     {MultiMeshOptions::OptInterior, "interior"},
+     {MultiMeshOptions::OptBoundary, "boundary"}});
+
+} // namespace
 
 int main(int argc, char* argv[])
 {
@@ -55,24 +62,56 @@ int main(int argc, char* argv[])
     const fs::path input_file = resolve_paths(json_input_file, {j["input_path"], j["input"]});
 
     std::shared_ptr<Mesh> mesh_in = wmtk::components::input::input(input_file);
-    Mesh& mesh = *mesh_in;
-
 
     attribute::MeshAttributeHandle pos_handle =
-        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        mesh_in->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    attribute::MeshAttributeHandle other_pos_handle;
+
+    // create multi-mesh
+    std::shared_ptr<Mesh> current_mesh = mesh_in;
+    std::shared_ptr<Mesh> other_mesh;
+    MultiMeshOptions mm_opt = j["use_multimesh"];
+
+    if (mm_opt != MultiMeshOptions::None) {
+        auto [parent_mesh, child_mesh] = wmtk::components::multimesh::multimesh(
+            wmtk::components::multimesh::MultiMeshType::Boundary,
+            *mesh_in,
+            nullptr,
+            pos_handle,
+            "",
+            -1,
+            -1);
+        parent_mesh->clear_attributes({pos_handle});
+
+        if (mm_opt == MultiMeshOptions::OptBoundary) {
+            current_mesh = child_mesh;
+            other_mesh = parent_mesh;
+        } else {
+            current_mesh = parent_mesh;
+            other_mesh = child_mesh;
+        }
+        pos_handle = current_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        other_pos_handle =
+            other_mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    }
+
+    Mesh& mesh = *mesh_in;
 
     // shortest-edge collapse
     {
         using namespace components::shortest_edge_collapse;
         ShortestEdgeCollapseOptions options;
         options.position_handle = pos_handle;
+        if (other_mesh) {
+            options.other_position_handles.emplace_back(other_pos_handle);
+        }
+
         options.length_rel = j["length_rel"];
         const double env_size = j["envelope_size"];
         if (env_size >= 0) {
             options.envelope_size = j["envelope_size"];
         }
         options.lock_boundary = j["lock_boundary"];
-        options.use_multimesh = j["use_multimesh"];
         options.check_inversions = j["check_inversion"];
 
         shortest_edge_collapse(mesh, options);
