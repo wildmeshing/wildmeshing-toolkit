@@ -125,6 +125,10 @@ SchedulerStats Scheduler::run_operation_on_all(
     int64_t success = -1;
     std::vector<std::pair<int64_t, double>> order;
 
+    for (const auto& t : tups) {
+        flag_accessor.scalar_attribute(t) = char(1);
+    }
+
     do {
         SchedulerStats internal_stats;
         // op.reserve_enough_simplices();

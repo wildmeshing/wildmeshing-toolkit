@@ -31,6 +31,7 @@ using wmtk::components::utils::resolve_paths;
 
 int main(int argc, char* argv[])
 {
+    opt_logger().set_level(spdlog::level::off);
     CLI::App app{argv[0]};
 
     app.ignore_case();
